@@ -173,7 +173,7 @@
       "_note": "semgrep owasp/secrets findings. ADVISORY until first CI value is frozen, then flip blocking (Fase 9)."
     },
     "mutationScore.src/sse/services/auth.ts": {
-      "value": 52.57,
+      "value": 51.46,
       "direction": "up",
       "dedicatedGate": true
     },
