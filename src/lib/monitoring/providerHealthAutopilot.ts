@@ -574,9 +574,10 @@ export async function buildProviderHealthAutopilotReport(
           return !connection || connection.isActive !== false;
         });
     const hasCritical = routingIssues.some((issue) => issue.severity === "critical");
+    const hasWarning = routingIssues.some((issue) => issue.severity === "warning");
     const state: ProviderAutopilotState = hasCritical
       ? "down"
-      : routingIssues.length > 0
+      : hasWarning
         ? "degraded"
         : "healthy";
 
