@@ -46,6 +46,9 @@ export const APP_STAGING_ALLOWED_EXACT_PATHS: string[] = [
   // published 3.8.47 crashed with ERR_MODULE_NOT_FOUND (same class as tls-options/3.8.41).
   "h2c-upgrade-guard.cjs",
   "head-response-guard.cjs",
+  // server-ws.mjs imports the abort guard at startup. Keep it through the
+  // prepublish prune or every clean npm install crashes before it can serve.
+  "httpClientAbortGuard.mjs",
   "http-method-guard.cjs",
   "open-sse/mcp-server/server.js",
   "open-sse/vendor/codex-chatgpt-web/adapters/chatgpt-web/mcp-server.js",
