@@ -31,6 +31,10 @@ import {
   type ImageComboDispatchResult,
 } from "@omniroute/open-sse/services/imageCombo.ts";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
+import {
+  runImageRequestWithAccounting,
+  type ImageRequestAccounting,
+} from "@/lib/usage/imageRequestAccounting";
 import * as log from "@/sse/utils/logger";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
@@ -236,6 +240,7 @@ async function handleAdobeFireflyEditRequest(params: {
   images: Array<{ bytes: Buffer; mime: string }>;
   imageBytes: Buffer | null;
   imageMime: string | null;
+  accounting: EditAccountingBase;
 }): Promise<Response> {
   const {
     parsed,
@@ -248,6 +253,7 @@ async function handleAdobeFireflyEditRequest(params: {
     images,
     imageBytes,
     imageMime,
+    accounting,
   } = params;
 
   const credentials = await getProviderCredentialsWithQuotaPreflight(
@@ -277,23 +283,27 @@ async function handleAdobeFireflyEditRequest(params: {
     return errorResponse(HTTP_STATUS.BAD_REQUEST, "Missing required field: image");
   }
 
-  const result = await handleAdobeFireflyImageGeneration({
-    provider: parsed.provider,
-    model: parsed.model,
-    providerConfig,
-    body: {
-      prompt,
-      size: size ?? undefined,
-      response_format: responseFormat ?? undefined,
-      n: 1,
-      image_url: dataUrls[0],
-      image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
-      image_urls: dataUrls,
-      images: dataUrls,
-    },
-    credentials,
-    log,
-  });
+  const result = await runImageRequestWithAccounting(
+    editAccounting(accounting, parsed.provider, parsed.model, credentials),
+    () =>
+      handleAdobeFireflyImageGeneration({
+        provider: parsed.provider,
+        model: parsed.model,
+        providerConfig,
+        body: {
+          prompt,
+          size: size ?? undefined,
+          response_format: responseFormat ?? undefined,
+          n: 1,
+          image_url: dataUrls[0],
+          image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
+          image_urls: dataUrls,
+          images: dataUrls,
+        },
+        credentials,
+        log,
+      })
+  );
 
   if ((result as { success?: boolean }).success) {
     await clearRecoveredProviderState(credentials);
@@ -304,6 +314,20 @@ async function handleAdobeFireflyEditRequest(params: {
     (result as { status?: number }).status ?? HTTP_STATUS.BAD_GATEWAY
   );
 }
+
+/** Key + start time every edit attempt is attributed to (call_logs + usage_history). */
+type EditAccountingBase = Pick<ImageRequestAccounting, "apiKeyInfo" | "startTime">;
+
+function editAccounting(
+  base: EditAccountingBase,
+  provider: string,
+  model: string | null | undefined,
+  credentials: unknown,
+  comboStrategy?: string
+): ImageRequestAccounting {
+  return { ...base, endpoint: "/v1/images/edits", provider, model, credentials, comboStrategy };
+}
+
 
 async function handleSyntxEditRequest(params: {
   parsed: ReturnType<typeof parseImageModel>;
@@ -399,6 +423,7 @@ interface ImageEditContext {
   imageInputCount: number;
   allowedConnections: string[] | null;
   request: Request;
+  accounting: EditAccountingBase;
 }
 
 /** A combo target that resolved to an edit-capable provider/node. */
@@ -680,7 +705,17 @@ async function executeImageEditCombo(comboName: string, ctx: ImageEditContext): 
         target.modelStr
       ),
     isRateLimited: isAllRateLimitedCredentials,
-    dispatch: ({ target, credentials }) => dispatchImageEditTarget(target, credentials, ctx),
+    dispatch: ({ target, credentials }) =>
+      runImageRequestWithAccounting(
+        editAccounting(
+          ctx.accounting,
+          target.parsed.provider || target.credKey,
+          target.parsed.model,
+          credentials,
+          "priority"
+        ),
+        () => dispatchImageEditTarget(target, credentials, ctx)
+      ),
     onSuccess: async (credentials) => {
       await clearRecoveredProviderState(credentials as never);
     },
@@ -705,6 +740,7 @@ async function executeImageEditCombo(comboName: string, ctx: ImageEditContext): 
 }
 
 async function postHandler(request: Request, _context?: unknown) {
+  const startTime = Date.now();
   let input: EditInput | null;
   try {
     input = await readEditInput(request);
@@ -784,6 +820,7 @@ async function postHandler(request: Request, _context?: unknown) {
         imageInputCount,
         allowedConnections: comboAllowedConnections,
         request,
+        accounting: { apiKeyInfo: comboPolicy.apiKeyInfo, startTime },
       });
     }
   }
@@ -814,6 +851,7 @@ async function postHandler(request: Request, _context?: unknown) {
     policy.apiKeyInfo?.allowedConnections && policy.apiKeyInfo.allowedConnections.length > 0
       ? policy.apiKeyInfo.allowedConnections
       : null;
+  const accounting: EditAccountingBase = { apiKeyInfo: policy.apiKeyInfo, startTime };
 
   const parsed = parseImageModel(resolvedModel);
   const providerConfig = parsed.provider ? getImageProvider(parsed.provider) : null;
@@ -891,20 +929,24 @@ async function postHandler(request: Request, _context?: unknown) {
     }
 
     const editImage = () =>
-      handleCodexImageEdit({
-        provider: parsed.provider,
-        model: parsed.model,
-        providerConfig,
-        body: {
-          prompt,
-          size: size ?? undefined,
-          response_format: responseFormat ?? undefined,
-        },
-        referenceImages: images,
-        credentials,
-        log,
-        signal: request.signal,
-      });
+      runImageRequestWithAccounting(
+        editAccounting(accounting, parsed.provider, parsed.model, credentials),
+        () =>
+          handleCodexImageEdit({
+            provider: parsed.provider,
+            model: parsed.model,
+            providerConfig,
+            body: {
+              prompt,
+              size: size ?? undefined,
+              response_format: responseFormat ?? undefined,
+            },
+            referenceImages: images,
+            credentials,
+            log,
+            signal: request.signal,
+          })
+      );
 
     const result = await (connectionId
       ? runWithProxyContext(proxyInfo?.proxy || null, editImage).catch(() => ({
@@ -946,20 +988,24 @@ async function postHandler(request: Request, _context?: unknown) {
       );
     }
 
-    const result = await handleFalAIImageEdit({
-      provider: parsed.provider,
-      model: parsed.model,
-      providerConfig,
-      body: {
-        prompt,
-        size: size ?? undefined,
-        response_format: responseFormat ?? undefined,
-        n: 1,
-      },
-      images,
-      credentials,
-      log,
-    });
+    const result = await runImageRequestWithAccounting(
+      editAccounting(accounting, parsed.provider, parsed.model, credentials),
+      () =>
+        handleFalAIImageEdit({
+          provider: parsed.provider,
+          model: parsed.model,
+          providerConfig,
+          body: {
+            prompt,
+            size: size ?? undefined,
+            response_format: responseFormat ?? undefined,
+            n: 1,
+          },
+          images,
+          credentials,
+          log,
+        })
+    );
 
     if (result.success) {
       await clearRecoveredProviderState(credentials);
@@ -984,6 +1030,7 @@ async function postHandler(request: Request, _context?: unknown) {
       images,
       imageBytes,
       imageMime,
+      accounting,
     });
   }
 
@@ -1028,18 +1075,22 @@ async function postHandler(request: Request, _context?: unknown) {
       );
     }
 
-    const result = await handleOpenRouterImageEdit({
-      provider: parsed.provider,
-      model: parsed.model,
-      baseUrl: providerConfig.baseUrl,
-      credentials,
-      prompt,
-      imageBytes,
-      imageMime,
-      size: size ?? undefined,
-      n: 1,
-      log,
-    });
+    const result = await runImageRequestWithAccounting(
+      editAccounting(accounting, parsed.provider, parsed.model, credentials),
+      () =>
+        handleOpenRouterImageEdit({
+          provider: parsed.provider,
+          model: parsed.model,
+          baseUrl: providerConfig.baseUrl,
+          credentials,
+          prompt,
+          imageBytes,
+          imageMime,
+          size: size ?? undefined,
+          n: 1,
+          log,
+        })
+    );
 
     if (result.success) {
       await clearRecoveredProviderState(credentials);
@@ -1155,18 +1206,22 @@ async function postHandler(request: Request, _context?: unknown) {
     );
   }
 
-  const result = await handleOpenAIImageEdit({
-    provider: customProviderId,
-    model: customModel,
-    credentials,
-    prompt,
-    imageBytes,
-    imageMime,
-    size,
-    responseFormat,
-    n: 1,
-    log,
-  });
+  const result = await runImageRequestWithAccounting(
+    editAccounting(accounting, customProviderId, customModel, credentials),
+    () =>
+      handleOpenAIImageEdit({
+        provider: customProviderId,
+        model: customModel,
+        credentials,
+        prompt,
+        imageBytes,
+        imageMime,
+        size,
+        responseFormat,
+        n: 1,
+        log,
+      })
+  );
 
   if (result.success) {
     await clearRecoveredProviderState(credentials);
