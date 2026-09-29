@@ -193,7 +193,23 @@ export function LlmChatCard({
     [onModelChange]
   );
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const storageKey = `omniroute-playground-messages-${providerId}-${selectedKey || "default"}`;
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window === "undefined") return [];
+
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(messages));
+  }, [messages, storageKey]);
+
   const [input, setInput] = useState<string>("");
   const [streaming, setStreaming] = useState<boolean>(false);
   const [stats, setStats] = useState<Stats | null>(null);
