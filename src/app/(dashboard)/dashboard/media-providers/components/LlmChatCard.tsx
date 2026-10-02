@@ -17,6 +17,11 @@ import {
   buildNativeCodexPlaygroundRequest,
   isNativeCodexPlaygroundModel,
 } from "../../playground/components/tabs/chatTabEndpointRequest";
+import {
+  loadPlaygroundMessages,
+  playgroundMessagesStorageKey,
+  savePlaygroundMessages,
+} from "./llmChatStorage";
 
 const CHAT_COMPLETIONS_ENDPOINT = "/api/v1/chat/completions";
 const RESPONSES_ENDPOINT = "/api/v1/responses";
@@ -193,27 +198,45 @@ export function LlmChatCard({
     [onModelChange]
   );
 
-  const storageKey = `omniroute-playground-messages-${providerId}-${selectedKey || "default"}`;
+  const storageKey = playgroundMessagesStorageKey(providerId, selectedKey);
 
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window === "undefined") return [];
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [streaming, setStreaming] = useState<boolean>(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef<Message[]>(messages);
 
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // The conversation belongs to the storage key (provider × selected API key): reload it
+  // whenever the key changes — adjusting state during render, so `messages` and the key
+  // it belongs to always commit together and the persist effect below can never write one
+  // key's conversation into another key's slot.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  if (loadedKey !== storageKey) {
+    setLoadedKey(storageKey);
+    setMessages(loadPlaygroundMessages(storageKey));
+  }
 
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(messages));
-  }, [messages, storageKey]);
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Key change / unmount mid-stream: the fetch is aborted, so keep what already arrived.
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) {
+        abortRef.current.abort();
+        savePlaygroundMessages(storageKey, messagesRef.current);
+      }
+    };
+  }, [storageKey]);
+
+  // Persist only once a turn is complete — not on every streamed token.
+  useEffect(() => {
+    if (streaming) return;
+    savePlaygroundMessages(storageKey, messages);
+  }, [messages, storageKey, streaming]);
 
   const [input, setInput] = useState<string>("");
-  const [streaming, setStreaming] = useState<boolean>(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
   const nativeCodexThreadRef = useRef<string>(crypto.randomUUID());
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
