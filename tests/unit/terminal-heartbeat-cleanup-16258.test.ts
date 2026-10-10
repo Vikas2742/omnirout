@@ -192,6 +192,54 @@ function fixture(t: TestContext, highWaterMark: number, accountUsage = false) {
 }
 
 for (const highWaterMark of [0, 16384]) {
+  test(`#16258 inbound terminal abort owns cleanup without further reads (buffer ${highWaterMark})`, async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const f = fixture(t, highWaterMark);
+    f.send(content + completed);
+    await f.receive("response.completed");
+    await settle();
+    f.incoming.abort("client_closed");
+    t.mock.timers.tick(49);
+    await settle();
+    assert.deepEqual(f.cancels, [], "keep the source open throughout the grace period");
+    assert.equal(f.sc.signal.aborted, false);
+    t.mock.timers.tick(1);
+    await settle();
+    f.disposed();
+    assert.deepEqual(f.cancels, ["terminal_stream_grace_expired"]);
+    assert.equal(f.sc.signal.aborted, true);
+    assert.deepEqual(f.disconnects, []);
+    assert.deepEqual(f.errors, []);
+  });
+
+  for (const tail of ["EOF", "DONE+EOF"]) {
+    test(`#16258 inbound terminal abort drains delayed ${tail} usage without further reads (buffer ${highWaterMark})`, async (t) => {
+      t.mock.timers.enable({ apis: ["setTimeout"] });
+      const f = fixture(t, highWaterMark, true);
+      f.send(content + completed);
+      await f.receive("response.completed");
+      await settle();
+      assert.deepEqual(f.completions, []);
+      f.incoming.abort("client_closed");
+      t.mock.timers.tick(20);
+      await settle();
+      assert.deepEqual(f.cancels, [], "disconnect must not cancel pending successful usage");
+      assert.deepEqual(f.completions, [], "EOF must occur after disconnect");
+      if (tail === "DONE+EOF") f.send("data: [DONE]\n\n");
+      f.source.close();
+      await settle();
+      f.disposed();
+      assert.deepEqual(f.completions, [{ status: 200, input: 10, output: 2 }]);
+      t.mock.timers.tick(50);
+      await settle();
+      assert.equal(f.sc.signal.aborted, false, "EOF must release the grace timer");
+      assert.deepEqual(f.cancels, []);
+      assert.deepEqual(f.disconnects, []);
+      assert.deepEqual(f.errors, []);
+      assert.equal(f.completions.length, 1);
+    });
+  }
+
   test(
     `#16258 terminal -> inbound abort -> trailing DONE disposes heartbeat (buffer ${highWaterMark})`,
     { timeout: 3000 },
