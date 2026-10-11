@@ -13,8 +13,8 @@
  *    provider handler writes (request-scoped, see callLogApiKeyContext);
  *  - on success, when the handler result carries the upstream `usage` object
  *    (OpenAI-compatible image APIs return one), writes one `usage_history` row
- *    attributed to the same key and connection, so the existing token
- *    extractors, pricing and per-key USD limits apply unchanged.
+ *    for this physical attempt, attributed to the same key and connection, so
+ *    the existing token extractors, pricing and per-key USD limits apply unchanged.
  *
  * Successful calls whose upstream reports no usage are deliberately NOT
  * written. Calls that report usage but have no pricing row are also skipped: a
@@ -93,20 +93,23 @@ export async function runImageRequestWithAccounting<T>(
     if (!priced && !failed) return result;
 
     // saveRequestUsage never throws (it logs and swallows DB errors).
-    await saveRequestUsage({
-      provider: accounting.provider,
-      model: localModel,
-      tokens: usage,
-      status: "200",
-      success: true,
-      latencyMs,
-      timeToFirstTokenMs: latencyMs,
-      connectionId,
-      apiKeyId,
-      apiKeyName,
-      comboStrategy: accounting.comboStrategy || null,
-      endpoint: accounting.endpoint,
-    });
+    await saveRequestUsage(
+      {
+        provider: accounting.provider,
+        model: localModel,
+        tokens: usage,
+        status: "200",
+        success: true,
+        latencyMs,
+        timeToFirstTokenMs: latencyMs,
+        connectionId,
+        apiKeyId,
+        apiKeyName,
+        comboStrategy: accounting.comboStrategy || null,
+        endpoint: accounting.endpoint,
+      },
+      { deduplicate: false }
+    );
   }
 
   return result;

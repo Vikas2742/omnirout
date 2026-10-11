@@ -694,3 +694,44 @@ test("parallel image requests do not cross key or connection attribution", async
   assert.ok(logs.some((row) => row.api_key_id === keyA.id && row.connection_id === a.id));
   assert.ok(logs.some((row) => row.api_key_id === keyB.id && row.connection_id === b.id));
 });
+
+test("same-millisecond priced image attempts each persist usage and spend", async (t) => {
+  await updatePricing({ openai: { "gpt-image-2": IMAGE_PRICE } });
+  const connection = await seedConnection("openai");
+  const key = await createLimitedKey(100);
+  const hits = mockOpenAiCompatibleImageUpstream("https://api.openai.com/v1/images/generations");
+  t.mock.timers.enable({ apis: ["Date"], now: 1_791_705_600_000 });
+  try {
+    const first = await imageRoute.POST(generationRequest(key.key, "openai/gpt-image-2"));
+    const second = await imageRoute.POST(generationRequest(key.key, "openai/gpt-image-2"));
+
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.equal(hits.length, 2);
+    assert.equal((await callLogRows("/v1/images/generations")).length, 2);
+    assert.equal(usageRows().length, 2);
+    assert.ok(usageRows().every((row) => row.connection_id === connection.id));
+    assert.equal((await spendOf(key.key)).weeklySpentUsd, EXPECTED_CALL_USD * 2);
+  } finally {
+    t.mock.timers.reset();
+  }
+});
+
+test("real-clock parallel priced image burst persists every physical attempt", async () => {
+  await updatePricing({ openai: { "gpt-image-2": IMAGE_PRICE } });
+  await seedConnection("openai");
+  const key = await createLimitedKey(100);
+  const hits = mockOpenAiCompatibleImageUpstream("https://api.openai.com/v1/images/generations");
+  const responses = await Promise.all(
+    Array.from({ length: 20 }, () =>
+      imageRoute.POST(generationRequest(key.key, "openai/gpt-image-2"))
+    )
+  );
+
+  assert.ok(responses.every((response) => response.status === 200));
+  assert.equal(hits.length, 20);
+  assert.equal((await callLogRows("/v1/images/generations")).length, 20);
+  assert.equal(usageRows().length, 20);
+  // The quota API rounds the Decimal total; avoid binary multiplication residue.
+  assert.equal((await spendOf(key.key)).weeklySpentUsd, 20.005);
+});
