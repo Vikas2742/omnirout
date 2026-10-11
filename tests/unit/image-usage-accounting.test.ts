@@ -439,6 +439,49 @@ test("provider-scoped image generation attributes the provider-local model, key 
   assert.equal(rows[0].connection_id, connection.id);
 });
 
+for (const requestedModel of [
+  "flux-2-dev",
+  "together/flux-2-dev",
+  "together/black-forest-labs/FLUX.2-dev",
+]) {
+  test(`provider-scoped ${requestedModel} accounts the canonical upstream model and blocks the next call`, async () => {
+    const model = "black-forest-labs/FLUX.2-dev";
+    await updatePricing({ together: { [model]: IMAGE_PRICE } });
+    const connection = await seedConnection("together");
+    const key = await createLimitedKey(1);
+    let hits = 0;
+    globalThis.fetch = async (url, init) => {
+      assert.equal(String(url), "https://api.together.xyz/v1/images/generations");
+      assert.equal(JSON.parse(String(init?.body)).model, model);
+      hits++;
+      return Response.json({ created: 1, data: [{ b64_json: "aW1hZ2U=" }], usage: IMAGE_USAGE });
+    };
+    const call = () =>
+      providerImageRoute.POST(generationRequest(key.key, requestedModel), {
+        params: Promise.resolve({ provider: "together" }),
+      });
+    const response = await call();
+    assert.equal(response.status, 200);
+    const rows = usageRows();
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].provider, "together");
+    assert.equal(rows[0].model, model);
+    assert.equal(rows[0].api_key_id, key.id);
+    assert.equal(rows[0].connection_id, connection.id);
+    assert.equal(rows[0].endpoint, "/v1/images/generations");
+    assert.equal(rows[0].tokens_input, 50);
+    assert.equal(rows[0].tokens_output, 25_000);
+    const status = await spendOf(key.key);
+    assert.equal(status.weeklySpentUsd, EXPECTED_CALL_USD);
+    assert.equal(status.weeklyExceeded, true);
+    const blocked = await call();
+    assert.equal(blocked.status, 429);
+    assert.match((await blocked.json()).error.message, /weekly usage quota/i);
+    assert.equal(hits, 1, "over-limit request must not reach upstream");
+    assert.equal(usageRows().length, 1);
+  });
+}
+
 test("combo image edits attribute the winning attempt without leaking internal usage", async () => {
   const model = "google/gemini-3.1-flash-image-preview";
   await updatePricing({ openrouter: { [model]: IMAGE_PRICE } });

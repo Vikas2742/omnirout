@@ -5,7 +5,7 @@ import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
-import { getImageProvider } from "@omniroute/open-sse/config/imageRegistry.ts";
+import { getImageProvider, parseImageModel } from "@omniroute/open-sse/config/imageRegistry.ts";
 import * as log from "@/sse/utils/logger";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
@@ -76,6 +76,16 @@ export async function POST(request, { params }) {
     );
   }
 
+  // Use the handler's registry resolution for accounting, without rewriting the
+  // request or changing credential selection/retry. Never dispatch an alias that
+  // resolves outside the provider whose credentials this scoped route selects.
+  const parsedModel = parseImageModel(body.model);
+  if (parsedModel.provider !== imageProvider.id) {
+    return errorResponse(
+      HTTP_STATUS.BAD_REQUEST,
+      `Model "${body.model}" does not belong to image provider "${rawProvider}"`
+    );
+  }
   const requestedModel = body.model.slice(rawProvider.length + 1);
   let credentials = await getProviderCredentialsWithQuotaPreflight(
     rawProvider,
@@ -106,8 +116,8 @@ export async function POST(request, { params }) {
       runImageRequestWithAccounting(
         {
           endpoint: "/v1/images/generations",
-          provider: rawProvider,
-          model: requestedModel,
+          provider: parsedModel.provider,
+          model: parsedModel.model,
           apiKeyInfo: policy.apiKeyInfo,
           credentials: attemptCredentials,
           startTime,
