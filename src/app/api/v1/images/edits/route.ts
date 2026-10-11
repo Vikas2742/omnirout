@@ -13,6 +13,10 @@ import {
 } from "@omniroute/open-sse/handlers/imageGeneration/providers/fal.ts";
 import { createInjectionGuard } from "@/middleware/promptInjectionGuard";
 import {
+  buildAdobeFireflyEditDataUrls,
+  handleAdobeFireflyEditRequest,
+} from "@/lib/images/adobeFireflyEdit";
+import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
@@ -194,125 +198,6 @@ function jsonResponse(data: unknown, status = 200): Response {
     status,
     headers: { "Content-Type": "application/json" },
   });
-}
-
-/** Reduce reference images (multi + single fallback) to data-URL strings for Firefly. */
-function buildAdobeFireflyEditDataUrls(
-  images: Array<{ bytes: Buffer; mime: string }>,
-  imageBytes: Buffer | null,
-  imageMime: string | null
-): string[] {
-  const dataUrls: string[] = [];
-  const refList = Array.isArray(images) ? images : [];
-  for (const ref of refList) {
-    if (!ref || typeof ref !== "object") continue;
-    const bytes = (ref as { bytes?: Buffer }).bytes;
-    const mime =
-      typeof (ref as { mime?: string }).mime === "string" &&
-      String((ref as { mime?: string }).mime).startsWith("image/")
-        ? String((ref as { mime?: string }).mime)
-        : "image/png";
-    if (Buffer.isBuffer(bytes) && bytes.length > 0) {
-      dataUrls.push(`data:${mime};base64,${bytes.toString("base64")}`);
-    }
-  }
-  if (dataUrls.length === 0 && imageBytes && imageBytes.length > 0) {
-    const mime =
-      typeof imageMime === "string" && imageMime.startsWith("image/") ? imageMime : "image/png";
-    dataUrls.push(`data:${mime};base64,${imageBytes.toString("base64")}`);
-  }
-  return dataUrls;
-}
-
-/**
- * Adobe Firefly edit = storage upload + generate-async referenceBlobs (same as i2i generate).
- * Extracted from postHandler to keep cyclomatic/cognitive complexity in check
- * (config/quality/complexity-baseline.json ratchet).
- */
-async function handleAdobeFireflyEditRequest(params: {
-  parsed: ReturnType<typeof parseImageModel>;
-  providerConfig: NonNullable<ReturnType<typeof getImageProvider>>;
-  allowedConnections: string[] | null;
-  resolvedModel: string;
-  prompt: string;
-  size: string | null;
-  responseFormat: string | null;
-  images: Array<{ bytes: Buffer; mime: string }>;
-  imageBytes: Buffer | null;
-  imageMime: string | null;
-  accounting: EditAccountingBase;
-}): Promise<Response> {
-  const {
-    parsed,
-    providerConfig,
-    allowedConnections,
-    resolvedModel,
-    prompt,
-    size,
-    responseFormat,
-    images,
-    imageBytes,
-    imageMime,
-    accounting,
-  } = params;
-
-  const credentials = await getProviderCredentialsWithQuotaPreflight(
-    parsed.provider,
-    null,
-    allowedConnections,
-    resolvedModel
-  );
-  if (!credentials) {
-    return errorResponse(
-      HTTP_STATUS.UNAUTHORIZED,
-      `No credentials for provider: ${parsed.provider}`
-    );
-  }
-  if (credentials.allRateLimited) {
-    return unavailableResponse(
-      HTTP_STATUS.RATE_LIMITED,
-      `[${parsed.provider}] All accounts rate limited`,
-      credentials.retryAfter,
-      credentials.retryAfterHuman
-    );
-  }
-
-  // Prefer multi-image list when present; fall back to the primary imageBytes.
-  const dataUrls = buildAdobeFireflyEditDataUrls(images, imageBytes, imageMime);
-  if (dataUrls.length === 0) {
-    return errorResponse(HTTP_STATUS.BAD_REQUEST, "Missing required field: image");
-  }
-
-  const result = await runImageRequestWithAccounting(
-    editAccounting(accounting, parsed.provider, parsed.model, credentials),
-    () =>
-      handleAdobeFireflyImageGeneration({
-        provider: parsed.provider,
-        model: parsed.model,
-        providerConfig,
-        body: {
-          prompt,
-          size: size ?? undefined,
-          response_format: responseFormat ?? undefined,
-          n: 1,
-          image_url: dataUrls[0],
-          image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
-          image_urls: dataUrls,
-          images: dataUrls,
-        },
-        credentials,
-        log,
-      })
-  );
-
-  if ((result as { success?: boolean }).success) {
-    await clearRecoveredProviderState(credentials);
-    return jsonResponse((result as { data?: unknown }).data);
-  }
-  return jsonResponse(
-    toJsonErrorPayload((result as { error?: unknown }).error, "Image edit provider error"),
-    (result as { status?: number }).status ?? HTTP_STATUS.BAD_GATEWAY
-  );
 }
 
 /** Key + start time every edit attempt is attributed to (call_logs + usage_history). */

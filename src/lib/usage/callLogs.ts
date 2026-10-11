@@ -604,7 +604,7 @@ async function saveCallLogOperation(entry: any): Promise<void> {
       );
     }
 
-    // Resilience summary for this attempt (implicit ALS store opened
+    // resilience resilience summary for this attempt (implicit ALS store opened
     // around the attempt; null outside a store or when nothing was noted).
     // Read BEFORE any await: the ALS context is synchronous and later awaits
     // (resolveAccountName, artifact write) may cross async boundaries.
