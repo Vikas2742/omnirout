@@ -7,6 +7,10 @@ import {
   storeGeminiThoughtSignature,
 } from "../../services/geminiThoughtSignatureStore.ts";
 import { splitMarkdownBoundary } from "../helpers/markdownBoundary.ts";
+import {
+  buildClaudeWebSearchBlockEvents,
+  toClaudeWebSearchResults,
+} from "../helpers/claudeServerWebSearch.ts";
 
 function normalizeToolName(name: string, toolNameMap?: Map<string, string> | null): string {
   return restoreClaudeToolName(name, toolNameMap);
@@ -124,33 +128,15 @@ function flushMarkdownBuffer(state, results) {
 }
 
 /**
- * Collect the deduplicated web results out of Gemini Google Search grounding
- * metadata. Gemini exposes them as `groundingChunks[].web` (snake_case
- * `grounding_chunks` on some upstreams); Anthropic's `web_search_tool_result`
- * block wants one `web_search_result` per URL.
+ * Extract the web hits out of Gemini Google Search grounding metadata. Gemini
+ * exposes them as `groundingChunks[].web` (snake_case `grounding_chunks` on some
+ * upstreams); normalization into Anthropic `web_search_result` entries is shared
+ * with the other response translators (helpers/claudeServerWebSearch.ts).
  */
-function collectGroundingWebResults(grounding) {
+function collectGroundingWebItems(grounding) {
   const chunks = grounding.groundingChunks || grounding.grounding_chunks;
   if (!Array.isArray(chunks)) return [];
-  const seen = new Set();
-  const webResults = [];
-  for (const chunk of chunks) {
-    const web = chunk?.web;
-    const url = web?.uri;
-    if (typeof url !== "string" || url.length === 0 || seen.has(url)) continue;
-    seen.add(url);
-    webResults.push({
-      type: "web_search_result",
-      url,
-      title: typeof web.title === "string" && web.title.length > 0 ? web.title : url,
-      // Anthropic encrypts the page body server-side; Gemini grounding has no
-      // equivalent blob, so the field is present-but-empty (Claude Code reads
-      // only url/title for display).
-      encrypted_content: "",
-      page_age: null,
-    });
-  }
-  return webResults;
+  return chunks.map((chunk) => ({ url: chunk?.web?.uri, title: chunk?.web?.title }));
 }
 
 /**
@@ -170,7 +156,7 @@ function emitGroundingWebSearch(candidate, state, results) {
   if (state.groundingProcessed) return;
   const grounding = candidate.groundingMetadata || candidate.grounding_metadata;
   if (!grounding || typeof grounding !== "object") return;
-  const webResults = collectGroundingWebResults(grounding);
+  const webResults = toClaudeWebSearchResults(collectGroundingWebItems(grounding));
   if (webResults.length === 0) return;
 
   // Close the open text/thinking block first so the search pair gets fresh indices.
@@ -182,32 +168,14 @@ function emitGroundingWebSearch(candidate, state, results) {
 
   const queries = grounding.webSearchQueries || grounding.web_search_queries;
   const query = Array.isArray(queries) && typeof queries[0] === "string" ? queries[0] : "";
-  const searchToolId = `srvtoolu_${Date.now()}_${state.contentBlockIndex}`;
 
-  const useIdx = state.contentBlockIndex++;
-  results.push({
-    type: "content_block_start",
-    index: useIdx,
-    content_block: { type: "server_tool_use", id: searchToolId, name: "web_search", input: {} },
+  const { events, nextIndex } = buildClaudeWebSearchBlockEvents({
+    query,
+    results: webResults,
+    startIndex: state.contentBlockIndex,
   });
-  results.push({
-    type: "content_block_delta",
-    index: useIdx,
-    delta: { type: "input_json_delta", partial_json: JSON.stringify({ query }) },
-  });
-  results.push({ type: "content_block_stop", index: useIdx });
-
-  const resultIdx = state.contentBlockIndex++;
-  results.push({
-    type: "content_block_start",
-    index: resultIdx,
-    content_block: {
-      type: "web_search_tool_result",
-      tool_use_id: searchToolId,
-      content: webResults,
-    },
-  });
-  results.push({ type: "content_block_stop", index: resultIdx });
+  results.push(...events);
+  state.contentBlockIndex = nextIndex;
 
   state.groundingProcessed = true;
 }
