@@ -1,0 +1,1 @@
+- **fix(call-logs, proxy-logs):** a call log row or proxy log batch blocked by a locked database is retried once after a short delay instead of being dropped ([#16390](https://github.com/diegosouzapw/OmniRoute/pull/16390)) — thanks @maxmad64bis
