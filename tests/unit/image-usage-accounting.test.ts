@@ -24,10 +24,14 @@ const providersDb = await import("../../src/lib/db/providers.ts");
 const apiKeysDb = await import("../../src/lib/db/apiKeys.ts");
 const combosDb = await import("../../src/lib/db/combos.ts");
 const { updatePricing } = await import("../../src/lib/db/settings.ts");
+const { invalidateDbCache } = await import("../../src/lib/db/readCache.ts");
 const { waitForCallLogSaves } = await import("../../src/lib/usage/callLogs.ts");
 const usageLimits = await import("../../src/lib/usage/apiKeyUsageLimits.ts");
 const imageRoute = await import("../../src/app/api/v1/images/generations/route.ts");
 const imageEditRoute = await import("../../src/app/api/v1/images/edits/route.ts");
+const chatRoute = await import("../../src/app/api/v1/chat/completions/route.ts");
+const providerImageRoute =
+  await import("../../src/app/api/v1/providers/[provider]/images/generations/route.ts");
 const v1ModelsCatalog = await import("../../src/app/api/v1/models/catalog.ts");
 
 const originalFetch = globalThis.fetch;
@@ -63,6 +67,7 @@ type CallLogRow = {
 };
 
 async function resetStorage() {
+  assert.equal(await waitForCallLogSaves(5_000), true);
   globalThis.fetch = originalFetch;
   apiKeysDb.resetApiKeyState();
   core.resetDbInstance();
@@ -75,19 +80,20 @@ test.beforeEach(async () => {
   await resetStorage();
 });
 
-test.after(() => {
+test.after(async () => {
+  assert.equal(await waitForCallLogSaves(5_000), true);
   globalThis.fetch = originalFetch;
   apiKeysDb.resetApiKeyState();
   core.resetDbInstance();
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
-async function seedConnection(provider: string) {
+async function seedConnection(provider: string, suffix = "") {
   return providersDb.createProviderConnection({
     provider,
     authType: "apikey",
-    name: `${provider}-image-usage`,
-    apiKey: `${provider}-upstream-key`,
+    name: `${provider}-image-usage${suffix}`,
+    apiKey: `${provider}-upstream-key${suffix}`,
     isActive: true,
     testStatus: "active",
     providerSpecificData: {},
@@ -187,7 +193,7 @@ test("direct /v1/images/generations moves the key's USD spend and the limit then
 
   // The next request with the same key is refused by the existing policy check.
   const blocked = await imageRoute.POST(generationRequest(key.key, "openai/gpt-image-2"));
-  assert.ok(blocked.status >= 400, "the next request must be refused by the usage policy");
+  assert.equal(blocked.status, 429, "non-Anthropic over-limit keeps the release 429 contract");
   const blockedBody = (await blocked.json()) as { error: { message: string } };
   assert.match(blockedBody.error.message, /weekly usage quota/i);
   assert.equal(hits.length, 1, "the blocked call never reaches the upstream");
@@ -333,4 +339,315 @@ test("a failed image call records no successful usage and leaves the key's spend
     []
   );
   assert.equal((await spendOf(key.key)).weeklySpentUsd, 0);
+});
+
+for (const withUsage of [false, true]) {
+  test(`image with usage=${withUsage} and no price allows the same key's real priced chat 200`, async () => {
+    await updatePricing({ openai: { "gpt-4o-mini": { input: 0.15, output: 0.6 } } });
+    const connection = await seedConnection("openai");
+    const key = await createLimitedKey(100);
+    const hits: string[] = [];
+    globalThis.fetch = async (url) => {
+      hits.push(String(url));
+      if (String(url).endsWith("/images/generations")) {
+        return Response.json({
+          created: 1,
+          data: [{ b64_json: "aW1hZ2U=" }],
+          ...(withUsage && { usage: IMAGE_USAGE }),
+        });
+      }
+      assert.match(String(url), /\/chat\/completions$/);
+      return Response.json({
+        id: "chatcmpl-image-followup",
+        choices: [
+          { index: 0, message: { role: "assistant", content: "OK" }, finish_reason: "stop" },
+        ],
+        usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+      });
+    };
+    const image = await imageRoute.POST(generationRequest(key.key, "openai/gpt-image-2"));
+    assert.equal(image.status, 200);
+    const chat = await chatRoute.POST(
+      new Request("http://localhost/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key.key}` },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini",
+          messages: [{ role: "user", content: "OK?" }],
+          stream: false,
+        }),
+      })
+    );
+    assert.equal(chat.status, 200, await chat.text());
+    assert.equal(hits.length, 2);
+    assert.equal(usageRows().filter((row) => row.model === "gpt-image-2").length, 0);
+    const status = await spendOf(key.key);
+    assert.equal(status.weeklyHasUnpricedUsage, false);
+    const logs = await callLogRows("/v1/images/generations");
+    assert.equal(logs.length, 1);
+    assert.equal(logs[0].api_key_id, key.id);
+    assert.equal(logs[0].connection_id, connection.id);
+  });
+}
+
+test("pricing store failure preserves reported image usage instead of treating it as missing price", async () => {
+  const { runImageRequestWithAccounting } =
+    await import("../../src/lib/usage/imageRequestAccounting.ts");
+  const connection = await seedConnection("openai");
+  const key = await createLimitedKey(100);
+  const db = core.getDbInstance();
+  db.exec("ALTER TABLE key_value RENAME TO key_value_pricing_failure_test");
+  invalidateDbCache("pricing");
+  try {
+    const result = await runImageRequestWithAccounting(
+      {
+        endpoint: "/v1/images/generations",
+        provider: "openai",
+        model: "gpt-image-2",
+        apiKeyInfo: { id: key.id, name: "Image usage key" },
+        credentials: { connectionId: connection.id },
+        startTime: Date.now(),
+      },
+      async () => ({ success: true, usage: IMAGE_USAGE })
+    );
+    assert.equal(result.success, true);
+    const rows = usageRows();
+    assert.equal(rows.length, 1, "failed lookup must keep usage evidence");
+    assert.equal(rows[0].api_key_id, key.id);
+    assert.equal(rows[0].connection_id, connection.id);
+    assert.equal(rows[0].tokens_output, 25_000);
+  } finally {
+    db.exec("ALTER TABLE key_value_pricing_failure_test RENAME TO key_value");
+    invalidateDbCache("pricing");
+  }
+  assert.equal((await spendOf(key.key)).weeklyHasUnpricedUsage, true);
+});
+
+test("provider-scoped image generation attributes the provider-local model, key and connection", async () => {
+  await updatePricing({ openai: { "gpt-image-2": IMAGE_PRICE } });
+  const connection = await seedConnection("openai");
+  const key = await createLimitedKey(100);
+  mockOpenAiCompatibleImageUpstream("https://api.openai.com/v1/images/generations");
+  const response = await providerImageRoute.POST(generationRequest(key.key, "gpt-image-2"), {
+    params: Promise.resolve({ provider: "openai" }),
+  });
+  assert.equal(response.status, 200);
+  const rows = usageRows();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].model, "gpt-image-2");
+  assert.equal(rows[0].api_key_id, key.id);
+  assert.equal(rows[0].connection_id, connection.id);
+});
+
+test("combo image edits attribute the winning attempt without leaking internal usage", async () => {
+  const model = "google/gemini-3.1-flash-image-preview";
+  await updatePricing({ openrouter: { [model]: IMAGE_PRICE } });
+  const connection = await seedConnection("openrouter");
+  const key = await createLimitedKey(100);
+  await combosDb.createCombo({
+    name: "image-edits-usage-combo",
+    strategy: "priority",
+    models: [`openrouter/${model}`],
+  });
+  mockOpenAiCompatibleImageUpstream("https://openrouter.ai/api/v1/images");
+  const response = await imageEditRoute.POST(
+    new Request("http://localhost/v1/images/edits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key.key}` },
+      body: JSON.stringify({
+        model: "image-edits-usage-combo",
+        prompt: "add a hat",
+        images: ["data:image/png;base64,iVBORwE="],
+      }),
+    })
+  );
+  assert.equal(response.status, 200, response.status === 200 ? undefined : await response.text());
+  assert.equal((await response.json()).usage, undefined);
+  const rows = usageRows();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].model, model);
+  assert.equal(rows[0].api_key_id, key.id);
+  assert.equal(rows[0].connection_id, connection.id);
+  assert.equal(rows[0].endpoint, "/v1/images/edits");
+  const logs = await callLogRows("/v1/images/edits");
+  assert.equal(logs.length, 1);
+  assert.equal(logs[0].api_key_id, key.id);
+  assert.equal(logs[0].connection_id, connection.id);
+});
+
+test("Codex dedicated images usage is accounted without changing the release public envelope", async () => {
+  await updatePricing({ codex: { "gpt-image-2": IMAGE_PRICE } });
+  const connection = await providersDb.createProviderConnection({
+    provider: "codex",
+    authType: "oauth",
+    name: "codex-images",
+    accessToken: "test-codex-token",
+    isActive: true,
+    testStatus: "active",
+    providerSpecificData: { chatgptPlanType: "plus" },
+  });
+  const key = await createLimitedKey(100);
+  const usage = { ...IMAGE_USAGE, output_tokens_details: { image_tokens: 25_000, text_tokens: 0 } };
+  globalThis.fetch = async (url) => {
+    assert.equal(String(url), "https://chatgpt.com/backend-api/codex/images/generations");
+    return Response.json({ created: 1, data: [{ b64_json: "aW1hZ2U=" }], usage });
+  };
+  const response = await imageRoute.POST(generationRequest(key.key, "codex/gpt-image-2"));
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).usage, usage, "Codex release public usage is preserved");
+  const rows = usageRows();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].provider, "codex");
+  assert.equal(rows[0].model, "gpt-image-2");
+  assert.equal(rows[0].tokens_output, 25_000);
+  assert.equal(rows[0].api_key_id, key.id);
+  assert.equal(rows[0].connection_id, connection.id);
+});
+
+test("combo fallback records only the successful target and keeps both call-log contexts", async () => {
+  const model = "google/gemini-3.1-flash-image-preview";
+  await updatePricing({
+    openai: { "gpt-image-2": IMAGE_PRICE },
+    openrouter: { [model]: IMAGE_PRICE },
+  });
+  const failed = await seedConnection("openai");
+  const winner = await seedConnection("openrouter");
+  const key = await createLimitedKey(100);
+  await combosDb.createCombo({
+    name: "image-usage-fallback",
+    strategy: "priority",
+    models: ["openai/gpt-image-2", `openrouter/${model}`],
+  });
+  const hits: string[] = [];
+  globalThis.fetch = async (url) => {
+    hits.push(String(url));
+    if (String(url).includes("api.openai.com"))
+      return Response.json(
+        { error: { message: "upstream unavailable" }, usage: IMAGE_USAGE },
+        { status: 500 }
+      );
+    return Response.json({ created: 1, data: [{ b64_json: "aW1hZ2U=" }], usage: IMAGE_USAGE });
+  };
+  const response = await imageRoute.POST(generationRequest(key.key, "image-usage-fallback"));
+  assert.equal(response.status, 200);
+  assert.equal(hits.length, 2);
+  const rows = usageRows();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].provider, "openrouter");
+  assert.equal(rows[0].connection_id, winner.id);
+  assert.equal(rows[0].api_key_id, key.id);
+  assert.equal((await spendOf(key.key)).weeklySpentUsd, EXPECTED_CALL_USD);
+  const logs = await callLogRows("/v1/images/generations");
+  assert.equal(logs.length, 2);
+  assert.ok(
+    logs.some(
+      (row) => row.connection_id === failed.id && row.status === 500 && row.api_key_id === key.id
+    )
+  );
+  assert.ok(
+    logs.some(
+      (row) => row.connection_id === winner.id && row.status === 200 && row.api_key_id === key.id
+    )
+  );
+});
+
+test("credential retry accounts only the real successful attempt", async () => {
+  const { runImageRequestWithAccounting } =
+    await import("../../src/lib/usage/imageRequestAccounting.ts");
+  const { executeImageWithCredentialFallback } =
+    await import("../../src/sse/services/imageCredentialRetry.ts");
+  const { handleImageGeneration } = await import("../../open-sse/handlers/imageGeneration.ts");
+  await updatePricing({ openai: { "gpt-image-2": IMAGE_PRICE } });
+  const first = await seedConnection("openai");
+  const second = await seedConnection("openai", "-retry");
+  assert.notEqual(first.id, second.id, "retry fixture must use distinct provider accounts");
+  const key = await createLimitedKey(100);
+  let hits = 0;
+  globalThis.fetch = async () =>
+    ++hits === 1
+      ? Response.json(
+          { error: { message: "expired account" }, usage: IMAGE_USAGE },
+          { status: 401 }
+        )
+      : Response.json({ created: 1, data: [{ b64_json: "aW1hZ2U=" }], usage: IMAGE_USAGE });
+  const result = await executeImageWithCredentialFallback({
+    provider: "openai",
+    requestedModel: "gpt-image-2",
+    credentials: { connectionId: first.id, apiKey: "test-first" },
+    selectNextCredentials: async () => ({ connectionId: second.id, apiKey: "test-second" }),
+    execute: (credentials) =>
+      runImageRequestWithAccounting(
+        {
+          endpoint: "/v1/images/generations",
+          provider: "openai",
+          model: "gpt-image-2",
+          apiKeyInfo: { id: key.id, name: "Image usage key" },
+          credentials,
+          startTime: Date.now(),
+        },
+        () =>
+          handleImageGeneration({
+            body: { model: "openai/gpt-image-2", prompt: "retry" },
+            credentials,
+            log: null,
+          })
+      ),
+  });
+  assert.equal(result.result.success, true);
+  assert.equal(hits, 2);
+  const rows = usageRows();
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].connection_id, second.id);
+  assert.equal(rows[0].api_key_id, key.id);
+  const logs = await callLogRows("/v1/images/generations");
+  assert.equal(logs.length, 2);
+  assert.ok(logs.some((row) => row.connection_id === first.id && row.status === 401));
+  assert.ok(logs.some((row) => row.connection_id === second.id && row.status === 200));
+});
+
+test("parallel image requests do not cross key or connection attribution", async () => {
+  const model = "google/gemini-3.1-flash-image-preview";
+  await updatePricing({
+    openai: { "gpt-image-2": IMAGE_PRICE },
+    openrouter: { [model]: IMAGE_PRICE },
+  });
+  const a = await seedConnection("openai");
+  const b = await seedConnection("openrouter");
+  const keyA = await createLimitedKey(100);
+  const keyB = await createLimitedKey(100);
+  let releaseFirst: (() => void) | undefined;
+  const bothStarted = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  let hits = 0;
+  globalThis.fetch = async () => {
+    if (++hits === 2) releaseFirst?.();
+    await bothStarted;
+    return Response.json({ created: 1, data: [{ b64_json: "aW1hZ2U=" }], usage: IMAGE_USAGE });
+  };
+  const responses = await Promise.all([
+    imageRoute.POST(generationRequest(keyA.key, "openai/gpt-image-2")),
+    imageRoute.POST(generationRequest(keyB.key, `openrouter/${model}`)),
+  ]);
+  assert.deepEqual(
+    responses.map((response) => response.status),
+    [200, 200]
+  );
+  const rows = usageRows();
+  assert.equal(rows.length, 2);
+  assert.ok(
+    rows.some(
+      (row) => row.provider === "openai" && row.api_key_id === keyA.id && row.connection_id === a.id
+    )
+  );
+  assert.ok(
+    rows.some(
+      (row) =>
+        row.provider === "openrouter" && row.api_key_id === keyB.id && row.connection_id === b.id
+    )
+  );
+  const logs = await callLogRows("/v1/images/generations");
+  assert.equal(logs.length, 2);
+  assert.ok(logs.some((row) => row.api_key_id === keyA.id && row.connection_id === a.id));
+  assert.ok(logs.some((row) => row.api_key_id === keyB.id && row.connection_id === b.id));
 });

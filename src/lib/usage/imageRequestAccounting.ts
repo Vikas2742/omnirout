@@ -49,7 +49,10 @@ function connectionIdOf(credentials: unknown): string | null {
 }
 
 function upstreamUsageOf(result: unknown): Record<string, unknown> | null {
-  const usage = (result as { usage?: unknown } | null)?.usage;
+  // Codex dedicated Images keeps usage in the existing public data envelope.
+  // Read it without mutating that envelope or exposing internal handler fields.
+  const imageResult = result as { usage?: unknown; data?: { usage?: unknown } } | null;
+  const usage = imageResult?.usage ?? imageResult?.data?.usage;
   return usage && typeof usage === "object" && !Array.isArray(usage)
     ? (usage as Record<string, unknown>)
     : null;
@@ -79,13 +82,15 @@ export async function runImageRequestWithAccounting<T>(
     // with no pricing entry would therefore lock the key after one successful image.
     // Keep the raw provider usage here so exact provider-reported costs (for example
     // xAI's cost_in_usd_ticks) remain visible to the calculator.
-    const { priced } = await calculateCostDetailed(
+    const { priced, failed } = await calculateCostDetailed(
       accounting.provider,
       localModel,
       usage as Record<string, number | undefined>,
       { provider: accounting.provider, model: localModel }
     );
-    if (!priced) return result;
+    // Skip only a genuinely missing price. A store failure must retain the
+    // upstream token evidence for the existing fail-closed budget policy.
+    if (!priced && !failed) return result;
 
     // saveRequestUsage never throws (it logs and swallows DB errors).
     await saveRequestUsage({
