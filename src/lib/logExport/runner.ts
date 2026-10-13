@@ -16,13 +16,62 @@ import {
   resetLogExportCursor,
   type LogExportDestinationRow,
 } from "@/lib/db/logExportDestinations";
-import { countCallLogsAfterRowId, getMaxCallLogRowId } from "@/lib/usage/callLogExportSource";
+import {
+  attachExportBodies,
+  countCallLogsAfterRowId,
+  getCallLogsForExport,
+  getMaxCallLogRowId,
+} from "@/lib/usage/callLogExportSource";
 import { runExportChild } from "./childRunner";
 export { __setLogExportChildOptionsForTest } from "./childRunner";
 import { exportSecretValues, safeExportError } from "./safeExportError";
 import { getLogExportDestinationType } from "./registry";
 import { decryptDestinationConfig } from "./secrets";
 import type { LogExportClient } from "./types";
+import type { ExportChildStart } from "./childProtocol";
+
+/** Bun's production Docker/CLI compatibility path has no node:sqlite child runtime. */
+export function selectLogExportRuntime(
+  versions: { bun?: string; node?: string } = process.versions
+): "child" | "in-process" {
+  return versions.bun ? "in-process" : "child";
+}
+let warnedBun = false;
+async function runBunExport(
+  start: ExportChildStart,
+  onBatch: (cursor: number, count: number) => void
+) {
+  if (!warnedBun) {
+    warnedBun = true;
+    console.warn(
+      "[LogExport] Bun compatibility mode: exporting in-process; child heap/timeout isolation is unavailable. Use Node for isolated exports."
+    );
+  }
+  const client = getLogExportDestinationType(start.destination.type)!.createClient(start.config);
+  const throughRowId = getMaxCallLogRowId();
+  let cursor = start.cursorRowId;
+  let exported = 0;
+  let prepared = false;
+  while (exported < start.maxRowsPerRun) {
+    const summaries = getCallLogsForExport(
+      cursor,
+      Math.min(start.batchSize, start.maxRowsPerRun - exported)
+    ).filter((row) => row.rowId <= throughRowId);
+    if (!summaries.length) break;
+    const batch = start.includeBodies
+      ? await attachExportBodies(summaries, start.maxBodyBytes)
+      : summaries;
+    if (!prepared) {
+      await client.prepare();
+      prepared = true;
+    }
+    await client.send(batch.map((row) => row.record));
+    cursor = batch[batch.length - 1].rowId;
+    onBatch(cursor, batch.length);
+    exported += batch.length;
+    if (batch.length < start.batchSize) break;
+  }
+}
 
 export interface DestinationRunResult {
   destinationId: string;
@@ -56,7 +105,7 @@ function parseDestinationConfig(destination: LogExportDestinationRow): Record<st
   return parsed.data;
 }
 
-/** Connectivity probes keep their existing API; export runs create clients only in the child. */
+/** Probes keep their API; Node exports create clients in the child, Bun uses compatibility mode. */
 export function createClientForDestination(destination: LogExportDestinationRow): LogExportClient {
   const config = parseDestinationConfig(destination);
   return getLogExportDestinationType(destination.type)!.createClient(config);
@@ -120,7 +169,8 @@ export async function runDestinationExport(
     const cursor = reconcileCursor(destination);
     result.cursorRowId = cursor;
     const batchSize = Math.max(1, Math.min(destination.batchSize, 10_000));
-    await runExportChild(
+    const run = selectLogExportRuntime() === "child" ? runExportChild : runBunExport;
+    await run(
       {
         kind: "start",
         destination: { id: destination.id, type: destination.type, name: destination.name },
