@@ -1,0 +1,1 @@
+- **perf(logs):** Isolate each log-export destination run in a short-lived OS child process so payload hydration, JSON work and destination I/O do not block the server event loop; preserve acknowledged cursors across crashes and enforce per-run timeout and child heap limits. (#0000)
