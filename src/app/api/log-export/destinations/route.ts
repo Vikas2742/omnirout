@@ -10,11 +10,14 @@ import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import {
+  resetLogExportCursor,
+  getLogExportDestination,
   createLogExportDestination,
   getLogExportDestinations,
 } from "@/lib/db/logExportDestinations";
 import { getLogExportDestinationType } from "@/lib/logExport/registry";
 import { encryptDestinationConfig, requiresEncryptionKey } from "@/lib/logExport/secrets";
+import { getMaxCallLogRowId } from "@/lib/usage/callLogExportSource";
 import { toDestinationView } from "@/lib/logExport/presenter";
 
 const createDestinationSchema = z.object({
@@ -23,6 +26,7 @@ const createDestinationSchema = z.object({
   enabled: z.boolean().optional().default(false),
   config: z.record(z.string(), z.unknown()).optional().default({}),
   batchSize: z.number().int().min(1).max(10_000).optional().default(500),
+  startFromCurrentPosition: z.boolean().optional().default(false),
   includeBodies: z.boolean().optional().default(false),
   maxBodyBytes: z.number().int().min(1024).max(5_000_000).optional().default(262_144),
   maxRowsPerRun: z.number().int().min(1).max(1_000_000).optional().default(10_000),
@@ -102,7 +106,11 @@ export async function POST(request: Request) {
       maxRowsPerRun: data.maxRowsPerRun,
     });
 
-    return NextResponse.json({ destination: toDestinationView(created) }, { status: 201 });
+    // Capture the high-water mark without an await between creation and reset: an enabled
+    // destination cannot be scheduled with cursor zero in the middle of this handler.
+    if (data.startFromCurrentPosition) resetLogExportCursor(created.id, getMaxCallLogRowId());
+    const view = data.startFromCurrentPosition ? getLogExportDestination(created.id)! : created;
+    return NextResponse.json({ destination: toDestinationView(view) }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
       { error: sanitizeErrorMessage(error) || "Failed to create log export destination" },

@@ -14864,5 +14864,8 @@
     "saveMessage": "Guardar mensagem",
     "defaultModel": "Modelo de teste predefinido",
     "defaultModelHint": "Utilizado automaticamente pelos botões Testar mensagem para esta conta. Guardado com a ligação; nenhuma mensagem é enviada."
+  },
+  "logExport": {
+    "startFromCurrentPosition": "Começar na posição atual (ignorar os registos existentes)"
   }
 }

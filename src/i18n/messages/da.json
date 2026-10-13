@@ -14864,5 +14864,8 @@
     "saveMessage": "Gem besked",
     "defaultModel": "Standardtestmodel",
     "defaultModelHint": "Bruges automatisk af knapperne Testmeddelelse for denne konto. Gemmes sammen med forbindelsen; der sendes ingen meddelelse."
+  },
+  "logExport": {
+    "startFromCurrentPosition": "Start fra den aktuelle position (spring eksisterende logfiler over)"
   }
 }

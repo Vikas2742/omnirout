@@ -1002,6 +1002,7 @@
       "kiroAuthModal",
       "kiroSocialOAuthModal",
       "landing",
+      "logExport",
       "noAuthProvider",
       "oauthModal",
       "proxyConfigModal",

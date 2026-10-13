@@ -14864,5 +14864,8 @@
     "saveMessage": "Salvesta sõnum",
     "defaultModel": "Vaikimisi testmudel",
     "defaultModelHint": "Selle konto puhul kasutavad seda automaatselt nupud „Testi sõnumit“. Salvestatakse koos ühendusega; ühtegi sõnumit ei saadeta."
+  },
+  "logExport": {
+    "startFromCurrentPosition": "Alusta praegusest asukohast (jäta olemasolevad logid vahele)"
   }
 }
