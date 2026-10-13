@@ -47,6 +47,7 @@ const RECORD: LogExportRecord = {
   account: "team@example.com",
   connectionId: "conn-1",
   duration: 1234,
+  ttftMs: 250,
   tokensIn: 100,
   tokensOut: 200,
   tokensCacheRead: 10,
@@ -160,6 +161,11 @@ test("toBigQueryRow_EveryDashboardField_HasAColumn", () => {
   assert.equal(row.id, "log-1");
   assert.equal(row.requested_model, "anthropic/claude-opus-5");
   assert.equal(row.duration_ms, 1234);
+  assert.equal(row.ttft_ms, 250);
+  assert.equal(
+    bigquery.toBigQueryRow({ ...RECORD, ttftMs: null }, "2026-08-28T11:00:00.000Z").ttft_ms,
+    null
+  );
   assert.equal(row.tokens_cache_write, 5);
   assert.equal(row.model_pinned, true);
   assert.equal(row.exported_at, "2026-08-28T11:00:00.000Z");

@@ -35,6 +35,8 @@ export interface LogExportRecord {
   account: string | null;
   connectionId: string | null;
   duration: number | null;
+  /** Time to first token, in milliseconds; null when unknown. */
+  ttftMs: number | null;
   tokensIn: number | null;
   tokensOut: number | null;
   tokensCacheRead: number | null;
