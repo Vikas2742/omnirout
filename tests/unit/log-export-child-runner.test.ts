@@ -4,7 +4,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { monitorEventLoopDelay } from "node:perf_hooks";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, execFileSync, type ChildProcess } from "node:child_process";
+import http from "node:http";
+import https from "node:https";
+import net from "node:net";
+import { generateKeyPairSync } from "node:crypto";
 import { build } from "esbuild";
 import { setTimeout as delay } from "node:timers/promises";
 
@@ -26,6 +30,7 @@ type TestOptions = {
   modulePath: string;
   beforeAck?: () => Promise<void>;
   onSpawn?: (child: ChildProcess) => void;
+  config?: Record<string, unknown>;
 };
 const configure = (
   runner as unknown as { __setLogExportChildOptionsForTest?: (options: TestOptions | null) => void }
@@ -40,7 +45,7 @@ function options(beforeAck?: () => Promise<void>) {
     },
   });
 }
-function destination(mode = "records", batchSize = 2) {
+function destination(mode = "records", batchSize = 2, extra: Record<string, unknown> = {}) {
   return dbDest.createLogExportDestination({
     name: "fixture",
     type: fixture.testDestination.id,
@@ -48,7 +53,12 @@ function destination(mode = "records", batchSize = 2) {
     batchSize,
     maxRowsPerRun: 1000,
     includeBodies: true,
-    config: secrets.encryptDestinationConfig(fixture.testDestination.id, { secret, output, mode }),
+    config: secrets.encryptDestinationConfig(fixture.testDestination.id, {
+      secret,
+      output,
+      mode,
+      ...extra,
+    }),
   });
 }
 function rows(count: number, artifactBytes = 0) {
@@ -233,7 +243,7 @@ test("secret travels over IPC only, not argv/env, and child gets explicit heap l
     assert.equal(JSON.stringify(info.argv).includes(secret), false);
     assert.equal(JSON.stringify(info.env).includes(secret), false);
     assert.equal(info.env.STORAGE_ENCRYPTION_KEY, undefined);
-    assert.ok(info.execArgv.includes("--max-old-space-size=512"));
+    assert.ok(info.execArgv.includes("--max-old-space-size=1024"));
     assertGone();
   } finally {
     delete process.env.UNRELATED_SECRET;
@@ -373,10 +383,16 @@ test("packaged ESM child bundles without server/Next imports and runs from a Com
     });
     assert.ok(
       !Object.keys(result.metafile!.inputs).some((file) =>
-        /db\/core|callLogs\.ts|next\//.test(file)
+        /db\/core|migration|featureFlags|proxyFetch\.ts|callLogs\.ts|next\//.test(file)
       ),
       "bundle must not initialize the server singleton"
     );
+    for (const file of Object.keys(result.metafile!.inputs)) {
+      assert.ok(
+        !fs.readFileSync(path.resolve(root, file), "utf8").includes("getDbInstance"),
+        `child imports singleton through ${file}`
+      );
+    }
     const fixtureFile = path.join(stage, "fixture.mjs");
     await build({
       entryPoints: [modulePath],
@@ -429,5 +445,400 @@ test("packaged ESM child bundles without server/Next imports and runs from a Com
     assert.equal(received().flat().length, 2);
   } finally {
     fs.rmSync(stage, { recursive: true, force: true });
+  }
+});
+
+const proxyNames = [
+  "HTTP_PROXY",
+  "HTTPS_PROXY",
+  "ALL_PROXY",
+  "NO_PROXY",
+  "http_proxy",
+  "https_proxy",
+  "all_proxy",
+  "no_proxy",
+  "OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS",
+  "NODE_EXTRA_CA_CERTS",
+  "SSL_CERT_FILE",
+  "SSL_CERT_DIR",
+];
+async function withProxyEnv(values: Record<string, string>, action: () => Promise<void>) {
+  const saved = Object.fromEntries(proxyNames.map((name) => [name, process.env[name]]));
+  for (const name of proxyNames) delete process.env[name];
+  Object.assign(process.env, values);
+  try {
+    await action();
+  } finally {
+    for (const name of proxyNames) {
+      if (saved[name] === undefined) delete process.env[name];
+      else process.env[name] = saved[name];
+    }
+  }
+}
+async function listen(server: http.Server | https.Server): Promise<number> {
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  return (server.address() as net.AddressInfo).port;
+}
+async function closeServer(server: http.Server | https.Server) {
+  server.closeAllConnections();
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+}
+
+test("R1 real child routes public HTTP and HTTPS through env proxy, NO_PROXY and private literals direct", async () => {
+  rows(1);
+  const cert = path.join(dir, "synthetic-ca.pem");
+  const key = path.join(dir, "synthetic-key.pem");
+  execFileSync(
+    "openssl",
+    [
+      "req",
+      "-x509",
+      "-newkey",
+      "rsa:2048",
+      "-nodes",
+      "-keyout",
+      key,
+      "-out",
+      cert,
+      "-days",
+      "1",
+      "-subj",
+      "/CN=public.example",
+      "-addext",
+      "subjectAltName=DNS:public.example",
+    ],
+    { stdio: "ignore" }
+  );
+  const direct: string[] = [];
+  const handle: http.RequestListener = (req, res) => {
+    direct.push(req.url ?? "");
+    res.end("loopback-fixture");
+  };
+  const origin = http.createServer(handle);
+  const secureOrigin = https.createServer(
+    { key: fs.readFileSync(key), cert: fs.readFileSync(cert) },
+    handle
+  );
+  const tunnels: string[] = [];
+  const sockets = new Set<net.Socket>();
+  const proxy = http.createServer((_req, res) => {
+    res.end("loopback-fixture");
+  });
+  proxy.on("connect", (req, client, head) => {
+    tunnels.push(req.url ?? "");
+    // Never use the requested hostname for DNS/egress: the fake proxy is loopback-only.
+    const port = Number(req.url?.split(":").at(-1));
+    const upstream = net.connect(port, "127.0.0.1", () => {
+      client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      upstream.write(head);
+      client.pipe(upstream);
+      upstream.pipe(client);
+    });
+    sockets.add(upstream);
+    sockets.add(client as net.Socket);
+    upstream.on("error", () => client.destroy());
+  });
+  const port = await listen(origin);
+  const securePort = await listen(secureOrigin);
+  const proxyPort = await listen(proxy);
+  try {
+    for (const lower of [false, true]) {
+      tunnels.length = 0;
+      direct.length = 0;
+      configure?.({
+        modulePath,
+        config: { network: true },
+        onSpawn: (spawned) => {
+          child = spawned;
+        },
+      });
+      const proxyUrl = `http://synthetic-user:synthetic-p%40ss@127.0.0.1:${proxyPort}`;
+      await withProxyEnv(
+        {
+          [lower ? "http_proxy" : "HTTP_PROXY"]: proxyUrl,
+          [lower ? "https_proxy" : "HTTPS_PROXY"]: proxyUrl,
+          [lower ? "no_proxy" : "NO_PROXY"]: `bypass.example:${port}`,
+          NODE_EXTRA_CA_CERTS: cert,
+          OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS: "sidecar",
+        },
+        async () => {
+          const probe = await runner.runDestinationExport(
+            destination("network", 2, { urls: [`http://public.example:${port}/probe`] })
+          );
+          assert.equal(probe.success, true, probe.error ?? "");
+          assert.deepEqual(
+            tunnels,
+            [`public.example:${port}`],
+            "public origin must traverse env proxy"
+          );
+          assertGone();
+          tunnels.length = 0;
+          direct.length = 0;
+          const result = await runner.runDestinationExport(
+            destination("network", 2, {
+              urls: [
+                `http://public.example:${port}/public`,
+                `https://public.example:${securePort}/secure`,
+                `http://bypass.example:${port}/bypass`,
+                `http://127.0.0.1:${port}/private`,
+                `http://sidecar:${port}/sidecar`,
+              ],
+            })
+          );
+          assert.equal(result.success, true, result.error ?? "");
+          assert.deepEqual(tunnels, [`public.example:${port}`, `public.example:${securePort}`]);
+          assert.deepEqual(direct, ["/public", "/secure", "/bypass", "/private", "/sidecar"]);
+          assertGone();
+        }
+      );
+    }
+  } finally {
+    for (const socket of sockets) socket.destroy();
+    await Promise.all([closeServer(proxy), closeServer(origin), closeServer(secureOrigin)]);
+  }
+});
+
+test("R1 proxy credentials are absent from forwarded output and recorded errors", async () => {
+  rows(1);
+  const logs: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => logs.push(args.join(" "));
+  try {
+    await withProxyEnv(
+      { HTTP_PROXY: "http://synthetic-proxy-user:synthetic-p%40ss@127.0.0.1:1" },
+      async () => {
+        const { safeExportError } = await import("../../src/lib/logExport/safeExportError.ts");
+        const sanitized = safeExportError(
+          "http://synthetic-proxy-user:synthetic-p%40ss@127.0.0.1:1 synthetic-proxy-user synthetic-p@ss"
+        );
+        assert.ok(
+          !sanitized.includes("synthetic-proxy-user") && !sanitized.includes("synthetic-p@ss"),
+          sanitized
+        );
+        const result = await runner.runDestinationExport(destination("proxy-leak"));
+        assert.equal(result.success, false);
+        const text = [
+          ...logs,
+          result.error,
+          dbDest.getLogExportDestination(result.destinationId)?.lastError,
+        ].join("\n");
+        for (const token of ["synthetic-proxy-user", "synthetic-p%40ss", "synthetic-p@ss"])
+          assert.ok(!text.includes(token), text);
+        assert.match(text, /REDACTED/);
+        assertGone();
+      }
+    );
+  } finally {
+    console.error = original;
+  }
+});
+
+test("R2 WAL writer continues during export and post-snapshot rows wait for next run", async () => {
+  rows(4, 1000);
+  const db = core.getDbInstance();
+  assert.equal(
+    (db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }).journal_mode,
+    "wal"
+  );
+  const before = db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all();
+  const initial = db.prepare("SELECT * FROM call_logs ORDER BY rowid").all();
+  let insertions = 0;
+  options(async () => {
+    if (insertions >= 4) return;
+    // Normal server handle holds an IMMEDIATE writer transaction while child reads its snapshot.
+    db.exec("BEGIN IMMEDIATE");
+    for (let i = 0; i < 2; i++)
+      db.prepare(
+        "INSERT INTO call_logs (id, timestamp, model, status) VALUES (?, ?, 'writer', 200)"
+      ).run(`live-${insertions++}`, "2026-10-13T00:00:00Z");
+    await delay(30);
+    db.exec("COMMIT");
+  });
+  const dest = destination("records", 2);
+  const result = await runner.runDestinationExport(dest);
+  assert.equal(result.success, true, result.error ?? "");
+  assert.equal(result.exported, 4);
+  assert.equal(result.cursorRowId, 4);
+  assert.equal(result.pendingAfterRun, 4);
+  assertGone();
+  options();
+  const next = await runner.runSingleLogExport(dest.id);
+  assert.equal(next?.success, true, next?.error ?? "");
+  assert.equal(next?.exported, 4);
+  assert.equal(next?.cursorRowId, 8);
+  assert.equal(next?.pendingAfterRun, 0);
+  assert.equal(dbDest.getLogExportDestination(dest.id)?.exportedTotal, 8);
+  assert.deepEqual(
+    received()
+      .flat()
+      .map((row) => (row as { id: string }).id),
+    ["row-0", "row-1", "row-2", "row-3", "live-0", "live-1", "live-2", "live-3"]
+  );
+  assert.deepEqual(
+    db.prepare("SELECT * FROM call_logs WHERE rowid <= 4 ORDER BY rowid").all(),
+    initial
+  );
+  assert.deepEqual(
+    db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all(),
+    before
+  );
+  assertGone();
+});
+
+test("R3 tiny heap OOM is actionable and keeps the last acknowledged cursor", async () => {
+  rows(6);
+  process.env.OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB = "96";
+  try {
+    const dest = destination("oom", 2);
+    const result = await runner.runDestinationExport(dest);
+    assert.equal(result.success, false);
+    assert.equal(result.exported, 2);
+    assert.equal(result.cursorRowId, 2);
+    assert.equal(dbDest.getLogExportDestination(dest.id)?.cursorRowId, 2);
+    assert.match(result.error ?? "", /heap.*(exhaust|out of memory)/i);
+    assert.match(result.error ?? "", /lower.*batch size/i);
+    assert.match(result.error ?? "", /OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB/);
+    assert.equal(dbDest.getLogExportDestination(dest.id)?.lastError, result.error);
+    assertGone();
+  } finally {
+    delete process.env.OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB;
+  }
+});
+
+test("R3 10000-row bodies batch exhausts only a tiny export child heap", async () => {
+  rows(10_000);
+  const db = core.getDbInstance();
+  fs.writeFileSync(
+    path.join(dir, "call_logs", "shared-oom.json"),
+    JSON.stringify({ requestBody: { text: "x".repeat(32_000) }, pipeline: {} })
+  );
+  db.exec(
+    "UPDATE call_logs SET artifact_relpath = 'shared-oom.json', detail_state = 'ready', has_request_body = 1"
+  );
+  process.env.OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB = "96";
+  try {
+    const dest = destination("discard", 10_000);
+    const result = await runner.runDestinationExport({ ...dest, maxBodyBytes: 5_000_000 });
+    assert.equal(result.success, false);
+    assert.equal(result.cursorRowId, 0);
+    assert.equal(result.exported, 0);
+    assert.match(result.error ?? "", /heap.*(exhaust|out of memory)/i);
+    assert.match(
+      result.error ?? "",
+      /lower batch size or raise OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB/
+    );
+    assert.equal(dbDest.getLogExportDestination(dest.id)?.cursorRowId, 0);
+    assert.equal(
+      source.countCallLogsAfterRowId(0),
+      10_000,
+      "parent remains responsive and DB survives"
+    );
+    assertGone();
+  } finally {
+    delete process.env.OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB;
+  }
+});
+
+test("R3 default 500-row maximum artifacts batch passes with heap margin through BigQuery serialization", async (t) => {
+  const { MAX_CALL_LOG_ARTIFACT_BYTES } = await import("../../src/lib/usage/callLogArtifacts.ts");
+  rows(500);
+  const empty = JSON.stringify({ requestBody: { text: "" }, responseBody: null, pipeline: {} });
+  // Exact 512 KiB per artifact. A single large field maximizes retained serialized strings.
+  const payload = JSON.stringify({
+    requestBody: { text: "x".repeat(MAX_CALL_LOG_ARTIFACT_BYTES - Buffer.byteLength(empty)) },
+    responseBody: null,
+    pipeline: {},
+  });
+  assert.equal(Buffer.byteLength(payload), MAX_CALL_LOG_ARTIFACT_BYTES);
+  const db = core.getDbInstance();
+  for (let i = 0; i < 500; i++) {
+    const rel = `maximum-${i}.json`;
+    fs.writeFileSync(path.join(dir, "call_logs", rel), payload);
+    db.prepare(
+      "UPDATE call_logs SET artifact_relpath = ?, detail_state = 'ready', has_request_body = 1 WHERE id = ?"
+    ).run(rel, `row-${i}`);
+  }
+  const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const serviceAccountJson = JSON.stringify({
+    type: "service_account",
+    client_email: "synthetic@example.invalid",
+    private_key: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+  });
+  let gc = "";
+  const original = console.log;
+  console.log = () => {}; // Capture raw GC output instead of flooding test logs.
+  configure?.({
+    modulePath,
+    config: { memoryOutput: `${output}.memory` },
+    onSpawn: (spawned) => {
+      child = spawned;
+      spawned.stdout?.on("data", (chunk: Buffer) => {
+        gc += chunk.toString();
+      });
+    },
+  });
+  const dest = destination("memory", 500, { serviceAccountJson });
+  let result: Awaited<ReturnType<typeof runner.runDestinationExport>>;
+  try {
+    result = await runner.runDestinationExport({ ...dest, maxBodyBytes: 5_000_000 });
+  } finally {
+    console.log = original;
+  }
+  if (process.env.LOG_EXPORT_TEST_EVIDENCE_DIR) {
+    fs.writeFileSync(
+      path.join(process.env.LOG_EXPORT_TEST_EVIDENCE_DIR, `memory-${process.pid}.gc.log`),
+      gc
+    );
+    if (fs.existsSync(`${output}.memory`))
+      fs.copyFileSync(
+        `${output}.memory`,
+        path.join(process.env.LOG_EXPORT_TEST_EVIDENCE_DIR, `memory-${process.pid}.samples.jsonl`)
+      );
+  }
+  assert.equal(result.success, true, result.error ?? "");
+  assert.equal(result.exported, 500);
+  const samples = fs
+    .readFileSync(`${output}.memory`, "utf8")
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as { heapUsed: number; rss: number; maxRSS: number });
+  const peakHeap = Math.max(
+    ...samples.map((sample) => sample.heapUsed),
+    ...Array.from(gc.matchAll(/total_size_before=(\d+)/g), (match) => Number(match[1]))
+  );
+  const peakRss = Math.max(...samples.map((sample) => sample.maxRSS * 1024));
+  const info = JSON.parse(fs.readFileSync(`${output}.process`, "utf8")) as { execArgv: string[] };
+  const heapMb = Number(
+    info.execArgv.find((arg) => arg.startsWith("--max-old-space-size="))?.split("=")[1]
+  );
+  t.diagnostic(
+    `memory: rows=500 artifactBytes=${MAX_CALL_LOG_ARTIFACT_BYTES} maxBodyBytes=5000000 heapLimitMiB=${heapMb} peakHeapBytes=${peakHeap} peakRssBytes=${peakRss} (heap: GC before-collection + 5ms/fetch samples; RSS: OS high-water)`
+  );
+  assert.ok(peakHeap < heapMb * 1024 * 1024 * 0.8, "default heap must have >=20% margin");
+  assertGone();
+});
+
+test("R4 runtime selection keeps Node isolated and Bun on warned in-process compatibility path", async () => {
+  const selection = (
+    runner as unknown as { selectLogExportRuntime?: (versions: { bun?: string }) => string }
+  ).selectLogExportRuntime;
+  assert.equal(typeof selection, "function");
+  assert.equal(selection?.({}), "child");
+  assert.equal(selection?.({ bun: "1.4.2" }), "in-process");
+});
+
+test("R5 forwarded child output suppresses ExperimentalWarning but not other warnings", async () => {
+  rows(1);
+  const logs: string[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => logs.push(args.join(" "));
+  try {
+    const result = await runner.runDestinationExport(destination("warning"));
+    assert.equal(result.success, true, result.error ?? "");
+    assert.ok(!logs.join("\n").includes("ExperimentalWarning"), logs.join("\n"));
+    assert.match(logs.join("\n"), /fixture-warning/);
+    assertGone();
+  } finally {
+    console.error = original;
   }
 });
