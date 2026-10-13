@@ -79,7 +79,8 @@ export async function POST(request: Request) {
       );
     }
 
-    if (requiresEncryptionKey(data.type, parsedConfig.data as Record<string, unknown>)) {
+    const config = destinationType.initializeConfig?.(parsedConfig.data) ?? parsedConfig.data;
+    if (requiresEncryptionKey(data.type, config as Record<string, unknown>)) {
       return NextResponse.json(
         {
           error:
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
       name: data.name,
       type: data.type,
       enabled: data.enabled,
-      config: encryptDestinationConfig(data.type, parsedConfig.data as Record<string, unknown>),
+      config: encryptDestinationConfig(data.type, config as Record<string, unknown>),
       batchSize: data.batchSize,
       includeBodies: data.includeBodies,
       maxBodyBytes: data.maxBodyBytes,

@@ -38,7 +38,7 @@ function initialValues(
 ): FormValues {
   const values: FormValues = {};
   for (const field of descriptor?.fields ?? []) {
-    const stored = destination?.config?.[field.key];
+    const stored = destination?.config?.[field.key] ?? field.defaultValue;
     if (field.type === "boolean") {
       values[field.key] = stored === undefined ? true : Boolean(stored);
     } else {
@@ -102,6 +102,7 @@ function DestinationForm({
         continue;
       }
       if (field.type === "number") {
+        if (value === "" || value === undefined) continue;
         const numeric = Number(value);
         if (Number.isFinite(numeric)) config[field.key] = numeric;
         continue;
