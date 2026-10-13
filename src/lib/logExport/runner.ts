@@ -16,13 +16,10 @@ import {
   resetLogExportCursor,
   type LogExportDestinationRow,
 } from "@/lib/db/logExportDestinations";
-import {
-  attachExportBodies,
-  countCallLogsAfterRowId,
-  getCallLogsForExport,
-  getMaxCallLogRowId,
-} from "@/lib/usage/callLogExportSource";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { countCallLogsAfterRowId, getMaxCallLogRowId } from "@/lib/usage/callLogExportSource";
+import { runExportChild } from "./childRunner";
+export { __setLogExportChildOptionsForTest } from "./childRunner";
+import { exportSecretValues, safeExportError } from "./safeExportError";
 import { getLogExportDestinationType } from "./registry";
 import { decryptDestinationConfig } from "./secrets";
 import type { LogExportClient } from "./types";
@@ -47,15 +44,7 @@ export interface LogExportRunSummary {
   failures: number;
 }
 
-function errMessage(err: unknown): string {
-  return sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
-}
-
-/**
- * Build a live client for a stored destination row. Throws when the type is unknown or
- * the stored config no longer satisfies the type's schema (e.g. after a downgrade).
- */
-export function createClientForDestination(destination: LogExportDestinationRow): LogExportClient {
+function parseDestinationConfig(destination: LogExportDestinationRow): Record<string, unknown> {
   const type = getLogExportDestinationType(destination.type);
   if (!type) throw new Error(`Unknown log export destination type "${destination.type}"`);
   const parsed = type.configSchema.safeParse(
@@ -64,7 +53,13 @@ export function createClientForDestination(destination: LogExportDestinationRow)
   if (!parsed.success) {
     throw new Error(`Stored configuration for "${destination.name}" is invalid or incomplete`);
   }
-  return type.createClient(parsed.data);
+  return parsed.data;
+}
+
+/** Connectivity probes keep their existing API; export runs create clients only in the child. */
+export function createClientForDestination(destination: LogExportDestinationRow): LogExportClient {
+  const config = parseDestinationConfig(destination);
+  return getLogExportDestinationType(destination.type)!.createClient(config);
 }
 
 /**
@@ -115,47 +110,41 @@ export async function runDestinationExport(
   }
   inFlight.add(destination.id);
 
+  let secretValues: string[] = [];
   try {
-    const client = createClientForDestination(destination);
-    let cursor = reconcileCursor(destination);
+    const config = parseDestinationConfig(destination);
+    secretValues = exportSecretValues(
+      config,
+      getLogExportDestinationType(destination.type)?.secretFields ?? []
+    );
+    const cursor = reconcileCursor(destination);
     result.cursorRowId = cursor;
-
     const batchSize = Math.max(1, Math.min(destination.batchSize, 10_000));
-    const maxRows = Math.max(batchSize, destination.maxRowsPerRun);
-    let prepared = false;
-
-    while (result.exported < maxRows) {
-      const remaining = maxRows - result.exported;
-      const summaries = getCallLogsForExport(cursor, Math.min(batchSize, remaining));
-      if (summaries.length === 0) break;
-
-      // Payload hydration is per-row filesystem work, so it only runs when the
-      // destination asked for bodies.
-      const batch = destination.includeBodies
-        ? await attachExportBodies(summaries, destination.maxBodyBytes)
-        : summaries;
-
-      if (!prepared) {
-        await client.prepare();
-        prepared = true;
-      }
-
-      await client.send(batch.map((row) => row.record));
-
-      cursor = batch[batch.length - 1].rowId;
-      advanceLogExportCursor(destination.id, cursor, batch.length);
-      result.exported += batch.length;
-      result.batches += 1;
-      result.cursorRowId = cursor;
-
-      if (batch.length < batchSize) break;
-    }
-
-    result.pendingAfterRun = countCallLogsAfterRowId(cursor);
+    await runExportChild(
+      {
+        kind: "start",
+        destination: { id: destination.id, type: destination.type, name: destination.name },
+        config,
+        batchSize,
+        maxRowsPerRun: Math.max(batchSize, destination.maxRowsPerRun),
+        includeBodies: destination.includeBodies,
+        maxBodyBytes: destination.maxBodyBytes,
+        cursorRowId: cursor,
+      },
+      (batchCursor, count) => {
+        // Persist BEFORE acknowledging: the child cannot send another batch until this succeeds.
+        advanceLogExportCursor(destination.id, batchCursor, count);
+        result.exported += count;
+        result.batches += 1;
+        result.cursorRowId = batchCursor;
+      },
+      secretValues
+    );
+    result.pendingAfterRun = countCallLogsAfterRowId(result.cursorRowId);
     recordLogExportRun(destination.id, "success", null);
   } catch (error) {
     result.success = false;
-    result.error = errMessage(error);
+    result.error = safeExportError(error, secretValues);
     result.pendingAfterRun = countCallLogsAfterRowId(result.cursorRowId);
     recordLogExportRun(destination.id, "failure", result.error);
     console.error(`[LogExport] ${destination.name} failed: ${result.error}`);
