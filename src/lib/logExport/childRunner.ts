@@ -5,6 +5,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import type { Readable } from "node:stream";
 import { DATA_DIR } from "../db/core";
 import { safeExportError } from "./safeExportError";
+import { EXPORT_PROXY_TLS_ENV } from "./childEnvironment";
 import type { ExportChildStart, ExportChildReply } from "./childProtocol";
 
 interface ResolutionContext {
@@ -53,13 +54,15 @@ function positiveInteger(value: string | undefined, fallback: number): number {
 function forwardOutput(
   stream: Readable | null,
   log: (message: string) => void,
-  secrets: readonly string[]
+  secrets: readonly string[],
+  observe?: (chunk: string) => void
 ): () => void {
   if (!stream) return () => {};
   let pending = "";
   let oversized = false;
   stream.setEncoding("utf8");
   const data = (chunk: string) => {
+    observe?.(chunk);
     for (const part of chunk.split(/(?<=\n)/)) {
       if (pending.length + part.length > 8192) oversized = true;
       if (!oversized) pending += part;
@@ -95,22 +98,37 @@ export function runExportChild(
     process.env.OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS,
     15 * 60 * 1000
   );
-  const heapMb = positiveInteger(process.env.OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB, 512);
+  const heapMb = positiveInteger(process.env.OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB, 1024);
   const env: NodeJS.ProcessEnv = { DATA_DIR, NODE_ENV: process.env.NODE_ENV ?? "production" };
   if (process.env.ELECTRON_RUN_AS_NODE) env.ELECTRON_RUN_AS_NODE = process.env.ELECTRON_RUN_AS_NODE;
   // Legacy disk filenames depend on local time. Explicit TZ is the only extra path input.
   if (process.env.TZ) env.TZ = process.env.TZ;
+  // Preserve outbound routing/TLS trust without copying unrelated server secrets.
+  for (const name of EXPORT_PROXY_TLS_ENV) {
+    if (process.env[name] !== undefined) env[name] = process.env[name];
+  }
   const child = spawn(
     process.execPath,
-    [`--max-old-space-size=${heapMb}`, ...execArgv, childFile],
+    [
+      `--max-old-space-size=${heapMb}`,
+      "--disable-warning=ExperimentalWarning",
+      ...execArgv,
+      childFile,
+    ],
     {
       env,
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe", "ipc"],
     }
   );
+  let heapExhausted = false;
+  let stderrTail = "";
   const stopStdout = forwardOutput(child.stdout, console.log, secretValues);
-  const stopStderr = forwardOutput(child.stderr, console.error, secretValues);
+  const stopStderr = forwardOutput(child.stderr, console.error, secretValues, (chunk) => {
+    const text = stderrTail + chunk;
+    heapExhausted ||= /Reached heap limit|JavaScript heap out of memory/i.test(text);
+    stderrTail = text.slice(-128);
+  });
   return new Promise<void>((resolve, reject) => {
     let done = false;
     let finishing = false;
@@ -192,6 +210,12 @@ export function runExportChild(
       stopStdout();
       stopStderr();
       if (failure) reject(failure);
+      else if (heapExhausted || signal === "SIGABRT" || code === 134)
+        reject(
+          new Error(
+            `Log export child ${heapExhausted ? "V8 heap exhausted (JavaScript heap out of memory)" : "aborted (possible V8 heap exhaustion)"}; lower batch size or raise OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB. The cursor remains at the last acknowledged batch.`
+          )
+        );
       else if (!done || code !== 0)
         reject(
           new Error(

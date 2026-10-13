@@ -1,4 +1,5 @@
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import { exportProxySecretValues } from "./childEnvironment";
 
 /** Include embedded JSON credentials and multiline fragments, not only the outer blob. */
 export function exportSecretValues(
@@ -30,7 +31,9 @@ export function exportSecretValues(
 /** Redact declared secret values as well as the shared stack/path/token patterns. */
 export function safeExportError(value: unknown, secrets: readonly string[] = []): string {
   let message = value instanceof Error ? value.message : String(value);
-  for (const secret of secrets) {
+  for (const secret of [...secrets, ...exportProxySecretValues()].sort(
+    (a, b) => b.length - a.length
+  )) {
     if (secret) message = message.split(secret).join("[REDACTED]");
   }
   return sanitizeErrorMessage(message).slice(0, 4000);

@@ -242,7 +242,8 @@ export function countCallLogsAfterRowId(db: CallLogReadDb, afterRowId: number): 
 export function getCallLogsForExport(
   db: CallLogReadDb,
   afterRowId: number,
-  limit: number
+  limit: number,
+  throughRowId: number = Number.MAX_SAFE_INTEGER
 ): LogExportSourceRow[] {
   const rows = db
     .prepare(
@@ -253,11 +254,11 @@ export function getCallLogsForExport(
          FROM call_logs cl
          LEFT JOIN provider_nodes pn ON pn.id = cl.provider
          LEFT JOIN provider_connections pc ON pc.id = cl.connection_id
-        WHERE cl.rowid > @afterRowId
+        WHERE cl.rowid > @afterRowId AND cl.rowid <= @throughRowId
         ORDER BY cl.rowid ASC
         LIMIT @limit`
     )
-    .all({ afterRowId, limit }) as ExportSourceRow[];
+    .all({ afterRowId, limit, throughRowId }) as ExportSourceRow[];
 
   return rows.map((row) => ({ rowId: Number(row.row_id), record: mapExportRow(row) }));
 }

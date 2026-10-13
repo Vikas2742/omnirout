@@ -3,11 +3,18 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { openLogExportReadOnlyDb } from "../db/logExportReadOnly";
 import { resolveDataDir } from "../dataPaths";
-import { attachExportBodies, getCallLogsForExport } from "../usage/callLogExportQueries";
+import {
+  attachExportBodies,
+  getCallLogsForExport,
+  getMaxCallLogRowId,
+} from "../usage/callLogExportQueries";
 import { resolveCallLogDetail, type CallLogDetailEntry } from "../usage/callLogDetailResolver";
 import { getLogExportDestinationType, __registerLogExportDestinationTypeForTest } from "./registry";
 import { exportSecretValues, safeExportError } from "./safeExportError";
+import { installExportProxyDispatcher } from "./childProxy";
 import type { ExportChildReply, ExportChildStart } from "./childProtocol";
+
+installExportProxyDispatcher();
 
 function post(message: ExportChildReply): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -49,6 +56,9 @@ async function run(start: ExportChildStart) {
     const client = type.createClient(start.config);
     db = openLogExportReadOnlyDb();
     const readDb = db;
+    // Snapshot the insertion boundary, not a long-lived SQLite read transaction:
+    // live WAL writers/checkpoints remain free while destination I/O awaits.
+    const throughRowId = getMaxCallLogRowId(readDb);
     const baseDir = path.join(resolveDataDir(), "call_logs");
     let cursor = start.cursorRowId;
     let exported = 0;
@@ -57,7 +67,8 @@ async function run(start: ExportChildStart) {
       const summaries = getCallLogsForExport(
         readDb,
         cursor,
-        Math.min(start.batchSize, start.maxRowsPerRun - exported)
+        Math.min(start.batchSize, start.maxRowsPerRun - exported),
+        throughRowId
       );
       if (!summaries.length) break;
       const batch = start.includeBodies
