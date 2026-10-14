@@ -458,6 +458,127 @@ for (const [username, password] of [
   });
 }
 
+// Adapted from the independent review's unicode-json-probe.test.ts: exercise all
+// error surfaces with a real child, not only the destination's in-process probe.
+function asciiJson(value: string, uppercase = false): string {
+  return JSON.stringify(value)
+    .slice(1, -1)
+    .replace(/[\u0080-\uffff]/g, (char) => {
+      const hex = char.charCodeAt(0).toString(16).padStart(4, "0");
+      return `\\u${uppercase ? hex.toUpperCase() : hex}`;
+    });
+}
+
+async function assertCredentialEchoContained(
+  t: test.TestContext,
+  username: string,
+  password: string,
+  body: string
+) {
+  insertRows();
+  const decoded = `${username}:${password}`;
+  const token = Buffer.from(decoded).toString("base64");
+  const s = await server((_q, r) =>
+    r.writeHead(400, { "Content-Type": "application/json" }).end(body)
+  );
+  const output: string[] = [];
+  const originalError = console.error;
+  let spawned = 0;
+  console.error = (...args: unknown[]) => output.push(args.join(" "));
+  runner.__setLogExportChildOptionsForTest({
+    onSpawn: (child) => {
+      spawned++;
+      child.stdout?.on("data", (c: Buffer) => output.push(c.toString()));
+      child.stderr?.on("data", (c: Buffer) => output.push(c.toString()));
+    },
+  });
+  try {
+    const cfg = config({ endpoint: s.endpoint, headers: { Authorization: `Basic ${token}` } });
+    const probe = await otlp.otlpHttpDestination.createClient(cfg).test();
+    const dest = dbDest.createLogExportDestination({
+      name: "unicode-json-fixture",
+      type: "otlp-http",
+      config: secrets.encryptDestinationConfig("otlp-http", cfg),
+    });
+    const result = await runner.runDestinationExport(dest);
+    const lastError = dbDest.getLogExportDestination(dest.id)?.lastError;
+    assert.equal(probe.ok, false);
+    assert.equal(result.success, false);
+    assert.equal(spawned, 1, "must exercise the real child path");
+    assert.equal(s.calls.length, 2, "one probe and one child request, with no retry");
+    assert.equal(result.cursorRowId, 0);
+    assert.equal(dbDest.getLogExportDestination(dest.id)?.cursorRowId, 0);
+    assert.ok(lastError);
+    assert.ok(output.some((line) => line.includes("[LogExport]")));
+    for (const [surface, text] of Object.entries({
+      "test detail": probe.detail,
+      "runner result": result.error,
+      "stored lastError": lastError,
+      "console output": output.join("\n"),
+    })) {
+      await t.test(surface, () => {
+        assert.ok(text);
+        assert.match(text, /OTLP\/HTTP permanent status 400/);
+        for (const value of [decoded, username, password, token]) {
+          for (const encoded of [
+            value,
+            JSON.stringify(value).slice(1, -1),
+            encodeURIComponent(value),
+            asciiJson(value),
+            asciiJson(value, true),
+            value.replace(
+              /[\s\S]/g,
+              (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`
+            ),
+          ]) {
+            assert.equal(text.includes(encoded), false, `${surface} leaks a credential`);
+            assert.equal(
+              JSON.stringify(text).includes(JSON.stringify(encoded).slice(1, -1)),
+              false,
+              `${surface} leaks a JSON-serialized credential`
+            );
+          }
+        }
+        assert.match(text, /\[REDACTED\]/, `${surface} must redact the echoed credential`);
+      });
+    }
+  } finally {
+    console.error = originalError;
+    runner.__setLogExportChildOptionsForTest(null);
+    await s.close();
+  }
+}
+
+for (const [label, username, password, echoed, invalid, uppercase] of [
+  ["password lowercase", "synthetic-user", "synthetic-pässword-secret", "password", false, false],
+  ["password uppercase", "synthetic-user", "synthetic-pässword-secret", "password", false, true],
+  ["username lowercase", "synthetic-üsér-name", "synthetic-password", "username", false, false],
+  ["username uppercase", "synthetic-üsér-name", "synthetic-password", "username", false, true],
+  ["truncated lowercase", "synthetic-user", "synthetic-pässword-secret", "password", true, false],
+  ["truncated uppercase", "synthetic-user", "synthetic-pässword-secret", "password", true, true],
+  ["truncated surrogate pair", "synthetic-user", "synthetic-🔐-secret", "password", true, true],
+] as const) {
+  test(`Unicode-escaped JSON Basic credential echoes: ${label}`, async (t) => {
+    const secret = echoed === "username" ? username : password;
+    // Valid JSON mirrors ASCII-safe encoders; invalid JSON simulates a clipped response.
+    const body = `{"error":"rejected ${asciiJson(secret, uppercase)}${invalid ? "" : '"}'}`;
+    if (invalid) assert.throws(() => JSON.parse(body));
+    else assert.equal(JSON.parse(body).error, `rejected ${secret}`);
+    await assertCredentialEchoContained(t, username, password, body);
+  });
+}
+
+test("Unicode-escaped JSON Basic credential echoes: every UTF-16 code unit escaped", async (t) => {
+  const password = "synthetic-pässword-secret";
+  const escaped = password.replace(
+    /[\s\S]/g,
+    (char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`
+  );
+  const body = `{"error":"rejected ${escaped}"}`;
+  assert.equal(JSON.parse(body).error, `rejected ${password}`);
+  await assertCredentialEchoContained(t, "synthetic-user", password, body);
+});
+
 test("400 permanent excerpt redacts echoed header values; redirects never forward credentials", async () => {
   for (const status of [400, 302]) {
     const s = await server((_q, r) => {

@@ -142,8 +142,21 @@ function headerSecretValues(config: OtlpHttpConfig): string[] {
     }
   }
   for (const value of [...values]) {
-    values.add(JSON.stringify(value).slice(1, -1));
+    const jsonEscaped = JSON.stringify(value).slice(1, -1);
+    values.add(jsonEscaped);
     values.add(encodeURIComponent(value));
+    // Invalid/clipped JSON cannot be canonicalized. Cover ASCII-safe encoders,
+    // including surrogate pairs: without /u, each non-ASCII UTF-16 unit is escaped.
+    for (const form of [value, jsonEscaped]) {
+      for (const uppercase of [false, true]) {
+        values.add(
+          form.replace(/[\u0080-\uffff]/g, (char) => {
+            const hex = char.charCodeAt(0).toString(16).padStart(4, "0");
+            return `\\u${uppercase ? hex.toUpperCase() : hex}`;
+          })
+        );
+      }
+    }
   }
   return [...values].filter(Boolean).sort((a, b) => b.length - a.length);
 }
@@ -375,8 +388,13 @@ function createClient(config: OtlpHttpConfig) {
             if (Number.isFinite(parsed))
               retryMs = Math.min(RETRY_AFTER_CAP_MS, Math.max(retryMs, parsed));
           }
+          // Canonical JSON decodes every JSON escape before secret matching. Invalid
+          // or clipped responses stay raw and use the registered escaped variants.
           // Redact before clipping: a credential can straddle the 256-character excerpt boundary.
-          const excerpt = safeExportError(responseBody.text, secretValues).slice(0, 256);
+          const excerpt = safeExportError(canonicalBody(responseBody.text), secretValues).slice(
+            0,
+            256
+          );
           failure = new Error(
             `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${response.status}${excerpt ? ": " + excerpt : ""}`
           );

@@ -338,7 +338,14 @@ three attempts, with 250/500 ms exponential backoff. `Retry-After` seconds or HT
 can extend a delay up to 5 seconds. Other statuses fail immediately. OTLP 2xx partial rejection also throws instead of
 acknowledging a lost span; empty or valid JSON acknowledgements are accepted, with a
 64 KiB response-read cap. Errors include
-status and a short sanitized response excerpt, with configured header values redacted.
+status and a short sanitized response excerpt. Parseable JSON responses are canonicalized
+with `JSON.parse` / `JSON.stringify` before redaction, decoding JSON escapes. Configured
+header values, Authorization tokens and valid UTF-8 Basic usernames/passwords are redacted
+before the excerpt is clipped. Raw, JSON-escaped and URL-encoded secret variants are matched;
+ASCII-safe JSON variants (non-ASCII UTF-16 units escaped as `\uXXXX`, with lowercase or
+uppercase hex) also protect invalid or truncated JSON fragments. This is not an arbitrary
+encoding decoder: HTML entities, separately base64-encoded secret parts and other unregistered
+encodings can remain visible. Only configure trusted collectors.
 `prepare()` provisions nothing; Test posts exactly `{"resourceSpans":[]}` and reports
 HTTP status without writing call-log spans.
 
