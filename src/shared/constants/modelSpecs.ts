@@ -871,7 +871,7 @@ export const MODEL_SPECS: Record<string, ModelSpec> = {
   },
   "minimax-m2.5": {
     maxOutputTokens: 131072,
-    contextWindow: 200000,
+    contextWindow: 204800,
     thinkingBudgetCap: 32768,
     supportsThinking: true,
     supportsTools: true,

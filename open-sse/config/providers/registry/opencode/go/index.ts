@@ -41,7 +41,10 @@ export const opencode_goProvider: RegistryEntry = {
     ...OPENCODE_ZEN_GO_SHARED_MODELS,
     // models[0] (glm-5.2) is the dashboard default (LlmChatCard/ProviderTestSlideOver take models[0]).
 
-    { id: "glm-5.1", name: "GLM-5.1" },
+    // #16579: pin the real 200K window + 128K output on the row itself (matches
+    // MODEL_SPECS["glm-5.1"]) instead of riding the 200000 defaultContextLength
+    // by coincidence.
+    { id: "glm-5.1", name: "GLM-5.1", contextLength: 200000, maxOutputTokens: 128000 },
     { id: "glm-5", name: "GLM-5" },
     // kimi-k2.7-code declared identically on opencode-zen — see OPENCODE_ZEN_GO_SHARED_MODELS.
     { id: "kimi-k2.6", name: "Kimi K2.6" },
@@ -67,6 +70,20 @@ export const opencode_goProvider: RegistryEntry = {
       contextLength: 1048576,
       maxOutputTokens: 131072,
     },
+    // #16579: same 1M windows as the free tier above
+    // (opencode.ai/data/xiaomi/mimo-v2-6-flash, mimo-v2-6-pro).
+    {
+      id: "mimo-v2.6-flash",
+      name: "MiMo V2.6 Flash",
+      contextLength: 1048576,
+      maxOutputTokens: 131072,
+    },
+    {
+      id: "mimo-v2.6-pro",
+      name: "MiMo V2.6 Pro",
+      contextLength: 1048576,
+      maxOutputTokens: 131072,
+    },
     // #3110: MiniMax M3 via OpenCode Go tier
     {
       id: "minimax-m3",
@@ -75,8 +92,23 @@ export const opencode_goProvider: RegistryEntry = {
       contextLength: 1048576,
       supportsVision: true,
     },
-    { id: "minimax-m2.7", name: "MiniMax M2.7", targetFormat: "claude" },
-    { id: "minimax-m2.5", name: "MiniMax M2.5", targetFormat: "claude" },
+    // #16579: real window is 204800 (opencode.ai/data/minimax/minimax-m2-7,
+    // contextTokens: 204800) - both ids were inheriting the 200000 provider
+    // default; MODEL_SPECS["minimax-m2.5"] aligned to 204800 too.
+    {
+      id: "minimax-m2.7",
+      name: "MiniMax M2.7",
+      targetFormat: "claude",
+      contextLength: 204800,
+      maxOutputTokens: 131072,
+    },
+    {
+      id: "minimax-m2.5",
+      name: "MiniMax M2.5",
+      targetFormat: "claude",
+      contextLength: 204800,
+      maxOutputTokens: 131072,
+    },
     // Issue #2292: Qwen models on opencode-go reject oa-compat format
     // ("Model qwen3.x-* is not supported for format oa-compat") — same
     // upstream behavior already declared for opencode-zen. Route them
@@ -92,6 +124,9 @@ export const opencode_goProvider: RegistryEntry = {
       supportsVision: false,
       supportsReasoning: true,
       supportedThinkingEfforts: ["high", "max"],
+      // #16579: 1M window / 64K output (opencode.ai/data/alibaba/qwen3-7-max).
+      contextLength: 1000000,
+      maxOutputTokens: 65536,
     },
     {
       id: "qwen3.7-max-high",
@@ -99,6 +134,8 @@ export const opencode_goProvider: RegistryEntry = {
       targetFormat: "claude",
       supportsVision: false,
       supportsReasoning: true,
+      contextLength: 1000000,
+      maxOutputTokens: 65536,
     },
     {
       id: "qwen3.7-max-max",
@@ -106,6 +143,8 @@ export const opencode_goProvider: RegistryEntry = {
       targetFormat: "claude",
       supportsVision: false,
       supportsReasoning: true,
+      contextLength: 1000000,
+      maxOutputTokens: 65536,
     },
     {
       id: "qwen3.7-plus",
@@ -114,6 +153,9 @@ export const opencode_goProvider: RegistryEntry = {
       supportsVision: false,
       supportsReasoning: true,
       supportedThinkingEfforts: ["high", "max"],
+      // #16579: 1M window / 64K output (opencode.ai/data/alibaba/qwen3-7-plus).
+      contextLength: 1000000,
+      maxOutputTokens: 65536,
     },
     {
       id: "qwen3.7-plus-high",
@@ -121,6 +163,8 @@ export const opencode_goProvider: RegistryEntry = {
       targetFormat: "claude",
       supportsVision: false,
       supportsReasoning: true,
+      contextLength: 1000000,
+      maxOutputTokens: 65536,
     },
     {
       id: "qwen3.7-plus-max",
@@ -128,6 +172,8 @@ export const opencode_goProvider: RegistryEntry = {
       targetFormat: "claude",
       supportsVision: false,
       supportsReasoning: true,
+      contextLength: 1000000,
+      maxOutputTokens: 65536,
     },
     // #14181: OpenCode Go now serves a GA `qwen3.8-max` alongside the preview.
     // Without this row the provider-aware exemption in resolveModelAlias could not
@@ -140,6 +186,21 @@ export const opencode_goProvider: RegistryEntry = {
       targetFormat: "claude",
       supportsVision: false,
       supportsReasoning: true,
+      // #16579: 1M window / 131K output (opencode.ai/data/alibaba/qwen3-8-max).
+      contextLength: 1000000,
+      maxOutputTokens: 131072,
+    },
+    // #16579: Qwen3.8 Flash - 1M window / 131K output
+    // (opencode.ai/data/alibaba/qwen3-8-flash); claude-format + text-only like
+    // its qwen siblings (#2292 / #2822).
+    {
+      id: "qwen3.8-flash",
+      name: "Qwen3.8 Flash",
+      targetFormat: "claude",
+      supportsVision: false,
+      supportsReasoning: true,
+      contextLength: 1000000,
+      maxOutputTokens: 131072,
     },
     // qwen3.6-plus / qwen3.5-plus base ids declared identically on opencode-zen — see
     // OPENCODE_ZEN_GO_SHARED_MODELS.
@@ -184,6 +245,14 @@ export const opencode_goProvider: RegistryEntry = {
       supportsReasoning: true,
     },
     { id: "hy3-preview", name: "Hunyuan3 Preview" },
+    // #16579: Hunyuan4 Preview - 1M window / 64K output
+    // (opencode.ai/data/tencent/hy4-preview).
+    {
+      id: "hy4-preview",
+      name: "Hunyuan4 Preview",
+      contextLength: 1024000,
+      maxOutputTokens: 64000,
+    },
     // Muse Spark 1.2 Contributor — base + effort-tier aliases from the OpenCode Go
     // registry (`opencode models opencode-go --verbose`; exact suffix set:
     // minimal/low/medium/high/xhigh, no max).
@@ -344,16 +413,77 @@ export const opencode_goProvider: RegistryEntry = {
     { id: "grok-4.5-low", name: "Grok 4.5 (low effort)", supportsReasoning: true },
     { id: "grok-4.5-medium", name: "Grok 4.5 (medium effort)", supportsReasoning: true },
     { id: "grok-4.5-high", name: "Grok 4.5 (high effort)", supportsReasoning: true },
+    // #16579: Grok 4.6 / 4.7 - 500K window / 500K max output
+    // (opencode.ai/data/xai/grok-4-6, grok-4-7).
+    {
+      id: "grok-4.6",
+      name: "Grok 4.6",
+      supportsReasoning: true,
+      contextLength: 500000,
+      maxOutputTokens: 500000,
+    },
+    {
+      id: "grok-4.7",
+      name: "Grok 4.7",
+      supportsReasoning: true,
+      contextLength: 500000,
+      maxOutputTokens: 500000,
+    },
+    // #16579: Claude Haiku 5.5 - 1M window / 128K output
+    // (opencode.ai/data/anthropic/claude-haiku-5-5).
+    {
+      id: "claude-haiku-5-5",
+      name: "Claude Haiku 5.5",
+      contextLength: 1000000,
+      maxOutputTokens: 128000,
+    },
+    // #16579: LongCat 2.0 - 1M window / 131K output
+    // (opencode.ai/data/meituan/longcat-2-0).
+    {
+      id: "longcat-2.0",
+      name: "LongCat 2.0",
+      contextLength: 1000000,
+      maxOutputTokens: 131072,
+    },
     {
       id: "deepseek-v4-pro",
       name: "DeepSeek V4 Pro",
       supportsReasoning: true,
       supportedThinkingEfforts: ["none", "low", "high", "max"],
       targetFormat: "openai-responses",
+      // #16579: 1M window / 384K output (opencode.ai/data/deepseek/deepseek-v4-pro).
+      contextLength: 1000000,
+      maxOutputTokens: 384000,
     },
     {
       id: "deepseek-v4-flash",
       name: "DeepSeek V4 Flash",
+      supportsReasoning: true,
+      supportedThinkingEfforts: ["none", "low", "high", "max"],
+      targetFormat: "openai-responses",
+      // #16579: 1M window / 384K output (opencode.ai/data/deepseek/deepseek-v4-flash).
+      contextLength: 1000000,
+      maxOutputTokens: 384000,
+    },
+    // #16579: the Go tier exposes DeepSeek V4.1 Flash under BOTH ids -
+    // `deepseek-v4.1-flash` and the bare `deepseek-flash` alias (same upstream
+    // model, see #13922) - with a 1M window / 384K output
+    // (opencode.ai/data/deepseek/deepseek-v4-1-flash), mirroring the deepseek
+    // provider's own registry row for the same model.
+    {
+      id: "deepseek-v4.1-flash",
+      name: "DeepSeek V4.1 Flash",
+      contextLength: 1000000,
+      maxOutputTokens: 384000,
+      supportsReasoning: true,
+      supportedThinkingEfforts: ["none", "low", "high", "max"],
+      targetFormat: "openai-responses",
+    },
+    {
+      id: "deepseek-flash",
+      name: "DeepSeek V4.1 Flash",
+      contextLength: 1000000,
+      maxOutputTokens: 384000,
       supportsReasoning: true,
       supportedThinkingEfforts: ["none", "low", "high", "max"],
       targetFormat: "openai-responses",
@@ -368,6 +498,8 @@ export const opencode_goProvider: RegistryEntry = {
       supportedThinkingEfforts: ["low", "medium", "high", "xhigh", "max"],
       targetFormat: "openai-responses",
       maxOutputTokens: 128000,
+      // #16579: 1.05M context window (opencode.ai/data/openai/gpt-5-6-luna).
+      contextLength: 1050000,
     },
     // OpenCode Zen Go serves gpt-6-luna ONLY on /responses: live-verified
     // 2026-10-02, POST /chat/completions returns 400
@@ -389,6 +521,8 @@ export const opencode_goProvider: RegistryEntry = {
       supportedThinkingEfforts: ["none", "low", "medium", "high", "xhigh", "max"],
       targetFormat: "openai-responses",
       maxOutputTokens: 128000,
+      // #16579: 1.05M context window (opencode.ai/data/openai/gpt-6-luna).
+      contextLength: 1050000,
     },
     // Console Go free GLM-tier model (live-verified 2026-08-23): the upstream
     // rejects every reasoning_effort outside {low, high, max} whenever tools
