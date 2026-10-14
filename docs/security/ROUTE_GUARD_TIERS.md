@@ -132,7 +132,10 @@ operator responsibilities remain:
   only with a `manage`-scoped API key. The `SPAWN_CAPABLE_PREFIXES` can never be
   added to the bypass list — the zod schema rejects them and
   `isLocalOnlyBypassableByManageScope` denies them at runtime (defence-in-depth),
-  which is what the dashboard means by "cannot be made bypassable". The runtime
+  which is what the dashboard means by "cannot be made bypassable". The same
+  deny-list also holds a few LOCAL_ONLY routes that do not spawn but must never be
+  remotely reachable either — `/api/oauth/kiro/auto-import` (reads host-local Kiro
+  credential files), `/api/discovery/` and `/api/issue-agent/`. The runtime
   snapshot loader also drops such entries from a stored settings row, and the
   legacy JSON import (`/api/settings/import-json`) never writes the bypass keys.
   Every `LOCAL_ONLY_API_PREFIXES` entry must be either in the deny-list or
