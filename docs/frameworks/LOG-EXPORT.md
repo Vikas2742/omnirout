@@ -316,11 +316,14 @@ variants. Error spans have ERROR status and a sanitized status message. The cano
 record has no upstream host URL, so `server.address` is omitted rather than incorrectly
 identifying the collector as the model server. Cost is not exported.
 
-Only `includeBodies=true` hydrates content. `gen_ai.input.messages` and
-`gen_ai.output.messages` contain the complete sanitized request/response body as a JSON
-string (canonicalized when parseable), or raw text when clipped/non-JSON. These attributes
-are body snapshots, not a normalized message-array schema. They inherit `maxBodyBytes`
-from the existing hydration path; `omniroute.bodies_truncated=true` marks clipping.
+Only `includeBodies=true` hydrates content. With `langfuseMapping=false`,
+`gen_ai.input.messages` / `gen_ai.output.messages` carry the sanitized request/response
+body JSON as stored by OmniRoute (canonicalized when parseable), not a re-shaped semconv
+messages array. Clipped/non-JSON bodies remain raw text. With `langfuseMapping=true`,
+bodies are emitted only as `langfuse.observation.input` / `langfuse.observation.output`;
+the `gen_ai.*.messages` attributes are omitted so each body is sent once. Both modes
+inherit `maxBodyBytes` from the existing hydration path;
+`omniroute.bodies_truncated=true` marks clipping.
 No extra pipeline snapshots or unsanitized artifact reads are added by this destination.
 Use a minute-level cadence such as `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` when exporting
 bodies, rather than accumulating an hourly backlog.

@@ -192,11 +192,11 @@ test("error status sanitized; bodies are JSON strings or clipped raw text with t
   assert.equal(span.status.code, 2);
   assert.equal(span.status.message?.includes("synthetic-sensitive-value"), false);
   const attrs = attributes(span);
-  assert.deepEqual(attrs["gen_ai.input.messages"], str('{"messages":[]}'));
-  assert.deepEqual(attrs["gen_ai.output.messages"], str("clipped…[truncated]"));
+  assert.equal(attrs["gen_ai.input.messages"], undefined);
+  assert.equal(attrs["gen_ai.output.messages"], undefined);
   assert.deepEqual(attrs["omniroute.bodies_truncated"], { boolValue: true });
-  assert.deepEqual(attrs["langfuse.observation.input"], attrs["gen_ai.input.messages"]);
-  assert.deepEqual(attrs["langfuse.observation.output"], attrs["gen_ai.output.messages"]);
+  assert.deepEqual(attrs["langfuse.observation.input"], str('{"messages":[]}'));
+  assert.deepEqual(attrs["langfuse.observation.output"], str("clipped…[truncated]"));
   assert.deepEqual(attrs["langfuse.observation.status_message"], str(span.status.message!));
   assert.deepEqual(attrs["langfuse.observation.level"], str("ERROR"));
 });
@@ -579,6 +579,37 @@ test("preflight rejects a late oversize span before sending any accepted prefix"
   }
 });
 
+test("body attributes occur exactly once on the wire in either mapping mode", async () => {
+  const s = await server((_q, r) => r.writeHead(200).end());
+  try {
+    const row = {
+      ...record,
+      requestBody: '{ "messages": ["synthetic-input-body"] }',
+      responseBody: '{"text":"synthetic-output-body"}',
+    };
+    for (const langfuseMapping of [false, true]) {
+      await otlp.otlpHttpDestination
+        .createClient(config({ endpoint: s.endpoint, langfuseMapping }))
+        .send([row]);
+      const call = s.calls.at(-1)!;
+      const attrs = attributes(spans(JSON.parse(call.body) as Payload)[0]);
+      const keys = langfuseMapping
+        ? ["langfuse.observation.input", "langfuse.observation.output"]
+        : ["gen_ai.input.messages", "gen_ai.output.messages"];
+      const absent = langfuseMapping
+        ? ["gen_ai.input.messages", "gen_ai.output.messages"]
+        : ["langfuse.observation.input", "langfuse.observation.output"];
+      assert.deepEqual(attrs[keys[0]], str('{"messages":["synthetic-input-body"]}'));
+      assert.deepEqual(attrs[keys[1]], str(row.responseBody));
+      for (const key of absent) assert.equal(attrs[key], undefined);
+      assert.equal(call.body.split("synthetic-input-body").length - 1, 1);
+      assert.equal(call.body.split("synthetic-output-body").length - 1, 1);
+    }
+  } finally {
+    await s.close();
+  }
+});
+
 function insertRows() {
   const db = core.getDbInstance();
   db.exec("DELETE FROM call_logs");
@@ -641,6 +672,55 @@ test("child runner end-to-end: cursor advances filtered rows, ttft mapped, secre
       ),
       false
     );
+
+    // One acknowledged batch stays committed. A later HTTP chunk failure retries
+    // only the next cursor batch, including its accepted prefix, not earlier batches.
+    const db = core.getDbInstance();
+    db.exec("DELETE FROM call_logs");
+    const insert = db.prepare("INSERT INTO call_logs (id,timestamp,path,status) VALUES (?,?,?,?)");
+    db.transaction(() => {
+      for (let i = 0; i < 1004; i++)
+        insert.run(
+          `window-${i}`,
+          record.timestamp,
+          i === 0 || (i >= 502 && i < 1003) ? record.path : "/v1/embeddings",
+          200
+        );
+    })();
+    const chunks = await server((_q, r, _body, i) => r.writeHead(i === 3 ? 400 : 200).end());
+    try {
+      const windowDest = dbDest.createLogExportDestination({
+        name: "later-chunk-window",
+        type: "otlp-http",
+        batchSize: 502,
+        config: secrets.encryptDestinationConfig(
+          "otlp-http",
+          config({ endpoint: chunks.endpoint })
+        ),
+      });
+      const partial = await runner.runDestinationExport(windowDest);
+      assert.equal(partial.success, false);
+      assert.equal(partial.exported, 502, "processed count includes filtered rows");
+      assert.equal(partial.batches, 1);
+      assert.equal(partial.cursorRowId, 502);
+      const saved = dbDest.getLogExportDestination(windowDest.id)!;
+      assert.equal(saved.cursorRowId, 502);
+      assert.equal(saved.exportedTotal, 502);
+      const retried = await runner.runDestinationExport(saved);
+      assert.equal(retried.success, true, retried.error ?? "");
+      assert.equal(retried.exported, 502);
+      assert.equal(retried.cursorRowId, 1004);
+      assert.equal(dbDest.getLogExportDestination(windowDest.id)?.exportedTotal, 1004);
+      assert.deepEqual(
+        chunks.calls.map((c) => spans(JSON.parse(c.body) as Payload).length),
+        [1, 500, 1, 500, 1]
+      );
+      assert.equal(chunks.calls[1].body, chunks.calls[3].body);
+      assert.equal(chunks.calls[2].body, chunks.calls[4].body);
+      assert.equal(spans(JSON.parse(chunks.calls[0].body) as Payload)[0].name, record.path);
+    } finally {
+      await chunks.close();
+    }
   } finally {
     console.error = originalError;
     runner.__setLogExportChildOptionsForTest(null);
@@ -687,11 +767,13 @@ test("child hydration sends capped bodies only when includeBodies is enabled", a
         assert.equal(attrs["langfuse.observation.input"], undefined);
       } else {
         assert.match(
-          (attrs["gen_ai.input.messages"] as { stringValue: string }).stringValue,
+          (attrs["langfuse.observation.input"] as { stringValue: string }).stringValue,
           /truncated/
         );
         assert.deepEqual(attrs["omniroute.bodies_truncated"], { boolValue: true });
-        assert.deepEqual(attrs["gen_ai.output.messages"], str('{"text":"sanitized-fixture"}'));
+        assert.deepEqual(attrs["langfuse.observation.output"], str('{"text":"sanitized-fixture"}'));
+        assert.equal(attrs["gen_ai.input.messages"], undefined);
+        assert.equal(attrs["gen_ai.output.messages"], undefined);
       }
     }
   } finally {
@@ -733,7 +815,15 @@ test("routes encrypt/redact headers and generated salt; updates retain salt and 
   const get = await oneRoute.GET(new Request("http://localhost/"), {
     params: Promise.resolve({ id: stored.id }),
   });
-  assert.equal((await get.text()).includes("synthetic-route-value"), false);
+  const getText = await get.text();
+  const listed = await route.GET(new Request("http://localhost/api/log-export/destinations"));
+  const listText = await listed.text();
+  for (const text of [JSON.stringify(body), getText, listText]) {
+    assert.equal(text.includes("synthetic-route-value"), false);
+    assert.equal(text.includes(String(plain.identitySalt)), false);
+    assert.equal(text.includes(String(stored.config.headers)), false);
+    assert.equal(text.includes(String(stored.config.identitySalt)), false);
+  }
   const put = await oneRoute.PUT(
     new Request("http://localhost/", {
       method: "PUT",
@@ -759,12 +849,37 @@ test("routes encrypt/redact headers and generated salt; updates retain salt and 
 });
 
 test("create startFromCurrentPosition uses max rowid; default remains zero", async () => {
-  insertRows();
-  for (const flag of [false, true]) {
-    const res = await create({ startFromCurrentPosition: flag });
-    assert.equal(res.status, 201);
-    const body = (await res.json()) as { destination: { cursorRowId: number } };
-    assert.equal(body.destination.cursorRowId, flag ? source.getMaxCallLogRowId() : 0);
+  const s = await server((_q, r) => r.writeHead(200).end());
+  try {
+    for (const flag of [false, true]) {
+      insertRows();
+      s.calls.length = 0;
+      const res = await create({
+        startFromCurrentPosition: flag,
+        config: { endpoint: s.endpoint },
+      });
+      assert.equal(res.status, 201);
+      const body = (await res.json()) as { destination: { id: string; cursorRowId: number } };
+      assert.equal(body.destination.cursorRowId, flag ? source.getMaxCallLogRowId() : 0);
+      core
+        .getDbInstance()
+        .prepare("INSERT INTO call_logs (id,timestamp,path,status) VALUES (?,?,?,?)")
+        .run("after-create", record.timestamp, record.path, 200);
+      const result = await runner.runDestinationExport(
+        dbDest.getLogExportDestination(body.destination.id)!
+      );
+      assert.equal(result.success, true, result.error ?? "");
+      assert.equal(result.exported, flag ? 1 : 3);
+      assert.equal(result.cursorRowId, 3);
+      const sent = spans(JSON.parse(s.calls[0].body) as Payload);
+      assert.equal(sent.length, flag ? 1 : 2);
+      assert.equal(
+        sent.at(-1)?.spanId,
+        spans(otlp.buildOtlpPayload([{ ...record, id: "after-create" }], config()))[0].spanId
+      );
+    }
+  } finally {
+    await s.close();
   }
 });
 

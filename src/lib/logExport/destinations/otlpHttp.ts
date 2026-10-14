@@ -198,8 +198,10 @@ function toSpan(row: LogExportRecord, config: OtlpHttpConfig): Span {
   // Only the opt-in export hydration path populates these fields. No pipeline or unsanitized source reads here.
   const input = canonicalBody(row.requestBody);
   const output = canonicalBody(row.responseBody);
-  add("gen_ai.input.messages", input);
-  add("gen_ai.output.messages", output);
+  if (!config.langfuseMapping) {
+    add("gen_ai.input.messages", input);
+    add("gen_ai.output.messages", output);
+  }
   if (row.bodiesTruncated) add("omniroute.bodies_truncated", true);
   if (config.langfuseMapping) {
     add("langfuse.observation.type", "generation");
