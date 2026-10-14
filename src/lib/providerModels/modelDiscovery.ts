@@ -65,7 +65,7 @@ function labelsIncludeVision(value: unknown): boolean {
  * Returns false when the upstream exposes no modality info.
  */
 export function detectVisionInput(record: JsonRecord): boolean {
-  if (record.supportsVision === true) return true;
+  if (record.supportsVision === true || record.vision === true) return true;
 
   const architecture = asRecord(record.architecture);
   if (modalitiesIncludeImage(architecture.input_modalities)) return true;
@@ -631,9 +631,12 @@ export function normalizeDiscoveredModels(
       record.context_length,
       record.contextLength,
       record.contextWindow,
+      record.context_window,
       record.max_model_len,
       record.maxModelLen,
       record.max_context_window,
+      record.max_context_window_tokens,
+      record.context_window_tokens,
       record.max_input_tokens,
       record.maxInputTokens,
       topProvider.context_length
