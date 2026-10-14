@@ -17,7 +17,7 @@ export type JevHoldReason =
   "below_probability_floor" | "dominated" | "low_confidence" | "jev_unavailable";
 
 export type JevCandidate = {
-  /** Choice criteria key — must match System One option ids (use stepId). */
+  /** Opaque, request-local option key. It must not expose model or account identifiers. */
   id: string;
   /** 0-based preference rank from the stored combo list. */
   userRank: number;

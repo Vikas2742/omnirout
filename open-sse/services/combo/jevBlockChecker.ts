@@ -12,8 +12,13 @@ import { findOpenCircuitBreaker, readConnectionForCooldownGate } from "./execute
 import { resolvePersistedConnectionCooldownSkipReason } from "./comboPredicates.ts";
 import { resolveQuotaExhaustionCutoffForTarget } from "./quotaExhaustionCutoff.ts";
 import { resolveResetWindowConfig } from "./quotaScoring.ts";
-import { filterTargetsByRequestCompatibility } from "./comboStructure.ts";
+import {
+  deriveRequestCompatibilityRequirements,
+  filterTargetsByRequestCompatibility,
+} from "./comboStructure.ts";
 import { applyContextRequirements } from "./contextRequirements.ts";
+import { evaluateContextLimit } from "./contextOverrideGate.ts";
+import { getResolvedModelCapabilities } from "../modelCapabilities.ts";
 import {
   modelAvailabilitySkipReason,
   type ComboLogger,
@@ -30,6 +35,7 @@ export type JevBlockCheckerDeps = {
   log: ComboLogger;
   isModelAvailable?: IsModelAvailable;
   comboName: string;
+  deferContextOverflowWhenCompressible?: boolean;
 };
 
 /**
@@ -135,14 +141,71 @@ export async function partitionJevTargetsForAsk(
     "Jev pre-ask",
     { failOpen: compatFailOpen }
   );
-  const compatibilityBlocks = getRemovedTargets(perTarget.eligible, compatibility);
-  const eligible = applyContextRequirements(compatibility, contextRequirements, deps.log);
-  const contextBlocks = getRemovedTargets(compatibility, eligible);
+  const compatibilityOrdered = preserveInputOrder(perTarget.eligible, compatibility);
+  const compatibilityBlocks = getRemovedTargets(perTarget.eligible, compatibilityOrdered);
+  const contextEligible = filterJevTargetsByHardRequestContext(
+    compatibilityOrdered,
+    deps.body,
+    deps.deferContextOverflowWhenCompressible
+  );
+  const hardContextBlocks = getRemovedTargets(compatibilityOrdered, contextEligible).map(
+    (item) => ({
+      ...item,
+      reason: "context_window" as const,
+    })
+  );
+  const afterRequirements = applyContextRequirements(
+    contextEligible,
+    contextRequirements,
+    deps.log
+  );
+  const contextRequirementBlocks = getRemovedTargets(contextEligible, afterRequirements).map(
+    (item) => ({ ...item, reason: "context_requirements" as const })
+  );
+  const eligible = preserveInputOrder(contextEligible, afterRequirements);
 
   return {
     eligible,
-    blocked: [...perTarget.blocked, ...compatibilityBlocks, ...contextBlocks],
+    blocked: [
+      ...perTarget.blocked,
+      ...compatibilityBlocks,
+      ...hardContextBlocks,
+      ...contextRequirementBlocks,
+    ],
   };
+}
+
+/**
+ * Context limits are advisory to the general combo filter. Jev should not
+ * choose a known-too-small model while a known-fitting candidate exists.
+ * Keep the existing fail-open pool when none fit so compression and the
+ * normal attempt loop retain their chance to recover.
+ */
+export function filterJevTargetsByHardRequestContext(
+  targets: readonly ResolvedComboTarget[],
+  body: Record<string, unknown>,
+  deferContextOverflowWhenCompressible = false
+): ResolvedComboTarget[] {
+  if (deferContextOverflowWhenCompressible || targets.length < 2) return [...targets];
+  const requirements = deriveRequestCompatibilityRequirements(body);
+  if (requirements.requiredContextTokens <= 0) return [...targets];
+
+  const fitting = targets.filter((target) => {
+    const capabilities = getResolvedModelCapabilities({
+      provider: target.providerId || target.provider || null,
+      model: target.modelStr,
+    });
+    return evaluateContextLimit(capabilities, requirements, target.modelStr) !== false;
+  });
+  return fitting.length > 0 ? fitting : [...targets];
+}
+
+function preserveInputOrder(
+  before: readonly ResolvedComboTarget[],
+  after: readonly ResolvedComboTarget[]
+): ResolvedComboTarget[] {
+  const survivorKeys = new Set(after.map((target) => target.executionKey));
+  return before.filter((target) => survivorKeys.has(target.executionKey));
 }
 
 function getRemovedTargets(

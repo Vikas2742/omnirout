@@ -893,6 +893,8 @@ async function handleComboChatInner({
     allCombos,
     relayOptions,
     signal,
+    nativeTurnPin: activeNativeTurnPin,
+    deferContextOverflowWhenCompressible,
     apiKeyAllowedConnections,
     log,
     resilienceSettings,

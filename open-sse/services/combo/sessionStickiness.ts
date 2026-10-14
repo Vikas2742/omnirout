@@ -410,6 +410,24 @@ export function peekStickyConnectionId(messageHash: string): string | null {
   return stickyMap.get(messageHash)?.connectionId ?? null;
 }
 
+/**
+ * Read the request's combo-scoped sticky binding without changing its TTL or
+ * clearing a binding whose target has not been expanded into the current pool.
+ */
+export function peekSessionStickinessBinding(
+  messages: Array<{ role?: string; content?: unknown }> | null | undefined,
+  namespace?: string
+): { messageHash: string | null; connectionId: string | null } {
+  const rawMessageHash = deriveMessageHash(messages);
+  if (!rawMessageHash) return { messageHash: null, connectionId: null };
+  const messageHash = scopeMessageHash(rawMessageHash, namespace);
+  const entry = stickyMap.get(messageHash);
+  if (!entry || Date.now() - entry.lastUsedAt > TTL_MS) {
+    return { messageHash, connectionId: null };
+  }
+  return { messageHash, connectionId: entry.connectionId };
+}
+
 /** Reset the entire store (for testing). */
 export function clearAllStickyBindings(): void {
   stickyMap.clear();

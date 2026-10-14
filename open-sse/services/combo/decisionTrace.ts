@@ -26,6 +26,8 @@ export const COMBO_SKIP_REASONS = [
   "request_exhaustion",
   "model_lockout",
   "quota_cutoff",
+  "context_window",
+  "context_requirements",
   "availability",
   "model_not_in_catalog",
   "credential_gate",

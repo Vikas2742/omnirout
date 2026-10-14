@@ -12,7 +12,6 @@ import type { ResolvedComboTarget } from "./types.ts";
 import {
   buildJevCriteria,
   judgeJev,
-  orderTargetsByJevVerdicts,
   type JevCandidate,
   type JevChoiceAnswer,
   type JevHoldReason,
@@ -73,9 +72,9 @@ export type JevOrderOutcome = {
   holds: JevHoldRecord[];
   admitted: JevAdmittedRecord[];
   /**
-   * True when this request's head is a Jev verdict or a fail-open preference
-   * head and later stages must not replace it. False when a session pin owns
-   * the request — stickiness promotes that pin afterwards.
+   * True when this request's head is a Jev verdict or fail-open preference
+   * head and later stages must not replace it. The pipeline also protects an
+   * already-resolved continuation pin before it reaches this pure orderer.
    */
   protectHead: boolean;
   fellOpen: boolean;
@@ -88,21 +87,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
-function toTextContent(content: unknown): string {
+function toUserTextContent(content: unknown): string | null {
   if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => {
-        if (typeof part === "string") return part;
-        if (!isRecord(part)) return "";
-        if (typeof part.text === "string") return part.text;
-        if (typeof part.content === "string") return part.content;
-        return "";
-      })
-      .filter(Boolean)
-      .join("\n");
-  }
-  return "";
+  if (!Array.isArray(content)) return null;
+  const text = content
+    .filter(
+      (part) =>
+        isRecord(part) &&
+        (part.type === "text" || part.type === "input_text") &&
+        typeof part.text === "string"
+    )
+    .map((part) => (part as Record<string, unknown>).text as string)
+    .filter((part) => part.length > 0)
+    .join("\n");
+  return text.length > 0 ? text : null;
 }
 
 /**
@@ -123,8 +121,12 @@ export function extractPromptForJevState(body: Record<string, unknown> | null | 
 
 function latestUserMessageText(messages: unknown): string | null {
   if (!Array.isArray(messages)) return null;
-  const message = [...messages].reverse().find((item) => isRecord(item) && item.role === "user");
-  return isRecord(message) ? toTextContent(message.content) : null;
+  for (const message of [...messages].reverse()) {
+    if (!isRecord(message) || message.role !== "user") continue;
+    const text = toUserTextContent(message.content);
+    if (text !== null) return text;
+  }
+  return null;
 }
 
 function latestResponsesUserInput(input: unknown): string | null {
@@ -132,9 +134,10 @@ function latestResponsesUserInput(input: unknown): string | null {
   for (const item of [...input].reverse()) {
     if (!isRecord(item) || item.role !== "user") continue;
     if (typeof item.content === "string" || Array.isArray(item.content)) {
-      return toTextContent(item.content);
+      const text = toUserTextContent(item.content);
+      if (text !== null) return text;
     }
-    if (typeof item.text === "string") return item.text;
+    if (typeof item.text === "string" && item.text.length > 0) return item.text;
   }
   return null;
 }
@@ -157,7 +160,7 @@ export async function orderJevComboTargets(
   }
 
   const candidates = targets.map((target, index) => ({
-    id: target.executionKey,
+    id: `jev-option-${index + 1}`,
     userRank: index,
     label: target.label || target.modelStr,
   }));
@@ -165,6 +168,7 @@ export async function orderJevComboTargets(
 
   return toOutcome(
     targets,
+    candidates,
     judgeJev(candidates, answer),
     missingApiKey,
     answer?.confidence ?? null
@@ -201,11 +205,12 @@ function formatHoldDetail(
 
 function toOutcome(
   targets: readonly ResolvedComboTarget[],
+  candidates: readonly JevCandidate[],
   judged: JudgeJevResult,
   missingApiKey: boolean,
   confidence: number | null
 ): JevOrderOutcome {
-  const byId = new Map(targets.map((target) => [target.executionKey, target]));
+  const byId = new Map(candidates.map((candidate, index) => [candidate.id, targets[index]]));
   const holds: JevHoldRecord[] = [];
   for (const row of judged.held) {
     const target = byId.get(row.id);
@@ -237,8 +242,11 @@ function toOutcome(
       ),
     });
   }
+  const orderedTargets = judged.admitted
+    .map((row) => byId.get(row.id))
+    .filter((target): target is ResolvedComboTarget => target !== undefined);
   return {
-    targets: orderTargetsByJevVerdicts(targets, judged.admitted),
+    targets: orderedTargets,
     holds,
     admitted,
     protectHead: true,

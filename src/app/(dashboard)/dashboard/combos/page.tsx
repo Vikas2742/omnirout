@@ -3449,6 +3449,17 @@ function ComboFormModal({
                   </button>
                 ))}
               </div>
+              {strategy === "jev" && (
+                <div className="mt-2 rounded-md border border-indigo-500/20 bg-indigo-500/5 px-2.5 py-2">
+                  <p className="text-[10px] text-indigo-700 dark:text-indigo-300">
+                    {getI18nOrFallback(
+                      t,
+                      "jevPrivacyNote",
+                      "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
+                    )}
+                  </p>
+                </div>
+              )}
               {!isExpertMode && (
                 <>
                   <p className="text-[10px] text-text-muted mt-0.5">
@@ -4665,19 +4676,6 @@ function ComboFormModal({
                           }
                           className="w-full text-xs py-1.5 px-2 rounded border border-black/10 dark:border-white/10 bg-transparent focus:border-primary focus:outline-none"
                         />
-                      </div>
-                    </div>
-                  )}
-                  {strategy === "jev" && (
-                    <div className="pt-2 border-t border-black/5 dark:border-white/5">
-                      <div className="rounded-md border border-indigo-500/20 bg-indigo-500/5 px-2 py-1.5">
-                        <p className="text-[10px] text-indigo-700 dark:text-indigo-300">
-                          {getI18nOrFallback(
-                            t,
-                            "jevPrivacyNote",
-                            "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
-                          )}
-                        </p>
                       </div>
                     </div>
                   )}

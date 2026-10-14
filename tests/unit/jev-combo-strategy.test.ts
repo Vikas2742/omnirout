@@ -268,12 +268,15 @@ test("orderJevComboTargets keeps accounts distinct when step ids collide", async
   const outcome = await orderJevComboTargets(targets, "write a parser", {
     sessionPinned: false,
     ask: async ({ criteria }) => {
-      assert.deepEqual(Object.keys(criteria), ["acct-1", "acct-2"]);
+      const optionIds = Object.keys(criteria);
+      assert.equal(optionIds.length, 2);
+      assert.ok(optionIds.every((id) => !id.includes("acct-")));
+      const winner = optionIds[1];
       return {
         ok: true,
         answer: {
-          choice: "acct-2",
-          probabilities: { "acct-1": 0.2, "acct-2": 0.8 },
+          choice: winner,
+          probabilities: { [optionIds[0]]: 0.2, [winner]: 0.8 },
           confidence: 0.9,
         },
       };
@@ -358,6 +361,21 @@ test("extractPromptForJevState uses only the latest user text from Responses inp
   assert.doesNotMatch(state, /tool blob|you are a router|first answer/);
 });
 
+test("extractPromptForJevState skips Anthropic tool-result user turns", () => {
+  const state = extractPromptForJevState({
+    messages: [
+      { role: "user", content: "Summarize the file without exposing credentials." },
+      { role: "assistant", content: [{ type: "tool_use", id: "read-1", name: "read_file" }] },
+      {
+        role: "user",
+        content: [{ type: "tool_result", tool_use_id: "read-1", content: "API_KEY=secret" }],
+      },
+    ],
+  });
+  assert.equal(state, "Summarize the file without exposing credentials.");
+  assert.doesNotMatch(state, /API_KEY|secret|read_file/);
+});
+
 test("partitionJevTargets drops breaker, lockout, and quota before the ask", async () => {
   const cases: Array<{ reason: ComboSkipReason; blockedKey: string }> = [
     { reason: "circuit_open", blockedKey: "broken" },
@@ -388,17 +406,18 @@ test("partitionJevTargets drops breaker, lockout, and quota before the ask", asy
       sessionPinned: false,
       ask: async ({ criteria }) => {
         askedKeys = Object.keys(criteria);
+        const winner = askedKeys[1];
         return {
           ok: true,
           answer: {
-            choice: "healthy-b",
-            probabilities: { "healthy-a": 0.2, "healthy-b": 0.8 },
+            choice: winner,
+            probabilities: { [askedKeys[0]]: 0.2, [winner]: 0.8 },
             confidence: 0.9,
           },
         };
       },
     });
-    assert.deepEqual(askedKeys.sort(), ["healthy-a", "healthy-b"]);
+    assert.deepEqual(askedKeys, ["jev-option-1", "jev-option-2"]);
     assert.ok(!askedKeys.includes(blockedKey));
     assert.ok(!outcome.targets.some((target) => target.executionKey === blockedKey));
     assert.deepEqual(

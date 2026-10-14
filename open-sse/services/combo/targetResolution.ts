@@ -86,21 +86,7 @@ import {
   type ApplyStickinessResult,
 } from "./sessionStickiness.ts";
 import { applyRequestTagRouting } from "./autoStrategy.ts";
-import {
-  extractPromptForJevState,
-  orderJevComboTargets,
-  type JevAsk,
-  type JevOrderOutcome,
-} from "./jevOrdering.ts";
-import { partitionJevTargetsForAsk } from "./jevBlockChecker.ts";
-import type { JevPartition } from "./jevEligibility.ts";
-import { recordComboDecision } from "./decisionTrace.ts";
-import {
-  evaluateSystemOneChoice,
-  type SystemOneChoiceUnavailable,
-  TYPESAFE_PROVIDER_ID,
-} from "../typesafe/systemOne.ts";
-import { getProviderCredentials } from "../../../src/sse/services/auth";
+import { orderByJevStrategy } from "./jevPipeline.ts";
 import { getStrategyTraits, type StrategyTraits } from "./strategyRegistry.ts";
 import type {
   ComboCollectionLike,
@@ -113,6 +99,7 @@ import type {
   HiddenModelsByProvider,
   ResolvedComboTarget,
 } from "./types.ts";
+import type { NativeTurnPin } from "./nativeCodexTurnPin.ts";
 
 export interface ResolveComboTargetPipelineDeps {
   body: Record<string, unknown>;
@@ -123,6 +110,8 @@ export interface ResolveComboTargetPipelineDeps {
   allCombos?: ComboCollectionLike;
   relayOptions?: ComboRelayOptions | null;
   signal?: AbortSignal | null;
+  nativeTurnPin?: NativeTurnPin | null;
+  deferContextOverflowWhenCompressible?: boolean;
   apiKeyAllowedConnections: string[] | null;
   log: ComboLogger;
   resilienceSettings: ResilienceSettings;
@@ -474,6 +463,7 @@ async function orderByStrategy(
       orderedTargets: ResolvedComboTarget[];
       autoUsedExplicitRouter: boolean;
       quotaShareRelease: (() => void) | null;
+      stickyOverride?: ApplyStickinessResult;
     }
 > {
   const { strategy, body, combo, settings, config, log } = deps;
@@ -497,11 +487,13 @@ async function orderByStrategy(
     };
   }
   if (strategy === "jev") {
-    const outcome = await orderByJevStrategy(deps, initialOrderedTargets);
+    const result = await orderByJevStrategy(deps, initialOrderedTargets);
+    if ("earlyResponse" in result) return result;
     return {
-      orderedTargets: outcome.targets,
-      autoUsedExplicitRouter: outcome.protectHead,
+      orderedTargets: result.outcome.targets,
+      autoUsedExplicitRouter: result.outcome.protectHead,
       quotaShareRelease: null,
+      stickyOverride: result.sticky,
     };
   }
   const { orderedTargets, quotaShareRelease } = await applyStrategyOrdering(
@@ -519,185 +511,12 @@ async function orderByStrategy(
   return { orderedTargets, autoUsedExplicitRouter: false, quotaShareRelease };
 }
 
-/**
- * #15276: Jev-managed combo ordering.
- *
- * - Drop breaker / lockout / quota / other pre-dispatch blocks before the
- *   TypeSafe call (they are traced once and never attempted).
- * - Live session pin → skip the TypeSafe call; leave user order (continuity
- *   filters promote the pin afterwards).
- * - Otherwise one System One choice call; admit winner + options ≥ 0.15 in
- *   user order (cap 4). Fall open to user order on missing key / timeout /
- *   low confidence / bad winner id.
- */
-async function orderByJevStrategy(
-  deps: ResolveComboTargetPipelineDeps,
-  initialOrderedTargets: ResolvedComboTarget[]
-) {
-  const { body, combo, log, signal } = deps;
-
-  const partition = await partitionJevTargetsForAsk(initialOrderedTargets, {
-    body,
-    config: deps.config as Record<string, unknown> | null | undefined,
-    resilienceSettings: deps.resilienceSettings,
-    log,
-    isModelAvailable: deps.isModelAvailable,
-    comboName: combo.name,
-  });
-
-  recordJevBlockedTargets(deps.traceInvocationId, partition.blocked);
-
-  const eligible = partition.eligible;
-  const sessionPinned = await jevSessionPinned(deps, eligible);
-  const ask: JevAsk = async ({ state, criteria }) => {
-    try {
-      const credentials = await getProviderCredentials(
-        TYPESAFE_PROVIDER_ID,
-        null,
-        deps.apiKeyAllowedConnections ?? null
-      );
-      const apiKey =
-        credentials && typeof (credentials as { apiKey?: unknown }).apiKey === "string"
-          ? (credentials as { apiKey: string }).apiKey
-          : null;
-      const result = await evaluateSystemOneChoice({
-        apiKey,
-        state,
-        criteria,
-        signal,
-      });
-      if (result.ok) {
-        return {
-          ok: true as const,
-          answer: {
-            choice: result.choice,
-            probabilities: result.probabilities,
-            confidence: result.confidence,
-          },
-        };
-      }
-      const unavailable = result as SystemOneChoiceUnavailable;
-      log.info("COMBO", `[jev] System One unavailable: ${unavailable.reason}`);
-      if (unavailable.reason === "missing_api_key") {
-        return { ok: false as const, reason: "missing_api_key" as const };
-      }
-      return { ok: false as const, reason: "unavailable" as const };
-    } catch {
-      log.warn("COMBO", "[jev] System One call failed (non-fatal); falling open to user order");
-      return { ok: false as const, reason: "unavailable" as const };
-    }
-  };
-
-  const outcome = await orderJevComboTargets(eligible, extractPromptForJevState(body), {
-    sessionPinned,
-    ask,
-  });
-
-  recordJevOrderingOutcome(deps.traceInvocationId, outcome, log);
-  logJevOrderingSummary({
-    sessionPinned,
-    comboName: combo.name,
-    outcome,
-    eligibleCount: eligible.length,
-    blockedCount: partition.blocked.length,
-    log,
-  });
-  return outcome;
-}
-
-function recordJevBlockedTargets(
-  invocationId: string | null | undefined,
-  blocked: JevPartition["blocked"]
-): void {
-  if (!invocationId) return;
-  for (const item of blocked) {
-    recordComboDecision(invocationId, {
-      step: item.target.executionKey,
-      target: item.target.modelStr,
-      decision: "skipped_before_dispatch",
-      reason: item.reason,
-      detail: `verdict=blocked reason=${item.reason}`,
-    });
-  }
-}
-
-function recordJevOrderingOutcome(
-  invocationId: string | null | undefined,
-  outcome: JevOrderOutcome,
-  log: ComboLogger
-): void {
-  if (invocationId) {
-    for (const hold of outcome.holds) {
-      recordComboDecision(invocationId, {
-        step: hold.executionKey,
-        target: hold.modelStr,
-        decision: "skipped_before_dispatch",
-        reason: hold.reason,
-        detail: hold.detail,
-      });
-    }
-    for (const admitted of outcome.admitted) {
-      recordComboDecision(invocationId, {
-        step: admitted.executionKey,
-        target: admitted.modelStr,
-        decision: "not_reached",
-        detail: admitted.detail,
-      });
-    }
-  }
-
-  if (!outcome.fellOpen || !outcome.fallbackReason) return;
-  log.info(
-    "COMBO",
-    outcome.missingApiKey
-      ? "[jev] Falling open to user order (Jev is not configured)"
-      : `[jev] Falling open to user order (${outcome.fallbackReason})`
-  );
-}
-
-function logJevOrderingSummary({
-  sessionPinned,
-  comboName,
-  outcome,
-  eligibleCount,
-  blockedCount,
-  log,
-}: {
-  sessionPinned: boolean;
-  comboName: string;
-  outcome: JevOrderOutcome;
-  eligibleCount: number;
-  blockedCount: number;
-  log: ComboLogger;
-}): void {
-  if (sessionPinned) {
-    log.info("COMBO", `[jev] Skipping System One — live session pin for combo "${comboName}"`);
-    return;
-  }
-  const targetNames = outcome.targets.map((target) => target.modelStr).join(" → ");
-  log.info(
-    "COMBO",
-    `[jev] Admitted ${outcome.targets.length}/${eligibleCount} eligible (${blockedCount} blocked): ${targetNames}`
-  );
-}
-
-/** True when continuity will pin this combo. Uses the same stickiness pass the pipeline runs again. */
-async function jevSessionPinned(
-  deps: ResolveComboTargetPipelineDeps,
-  targets: ResolvedComboTarget[]
-): Promise<boolean> {
-  const disableSessionStickiness =
-    resolveDisableSessionStickiness(
-      deps.config as Record<string, unknown> | null | undefined,
-      deps.settings as Record<string, unknown> | null | undefined
-    ) === true;
-  if (disableSessionStickiness || targets.length <= 1) return false;
-  const stickyPreview = await applySessionStickiness(
-    targets,
-    normalizeStickinessMessages(deps.body as { messages?: unknown; input?: unknown }),
-    deps.combo.name
-  );
-  return stickyPreview.stuck;
+function preserveJevOrder(
+  preferredOrder: ResolvedComboTarget[],
+  filteredTargets: ResolvedComboTarget[]
+): ResolvedComboTarget[] {
+  const survivingKeys = new Set(filteredTargets.map((target) => target.executionKey));
+  return preferredOrder.filter((target) => survivingKeys.has(target.executionKey));
 }
 
 /**
@@ -712,7 +531,8 @@ async function jevSessionPinned(
  */
 async function applyContinuityFilters(
   deps: ResolveComboTargetPipelineDeps,
-  initialOrderedTargets: ResolvedComboTarget[]
+  initialOrderedTargets: ResolvedComboTarget[],
+  stickyOverride?: ApplyStickinessResult
 ): Promise<
   | { orderedTargets: ResolvedComboTarget[]; sticky: ApplyStickinessResult }
   | { earlyResponse: Response }
@@ -722,7 +542,9 @@ async function applyContinuityFilters(
   // An explicit cache-optimized combo outranks the global cache-affinity default,
   // but only protects its ordering when this request actually produced a reusable
   // cache key. Cache misses retain the normal session/eval routing behavior.
+  const jevOwnsOrder = strategy === "jev" && stickyOverride !== undefined;
   const cacheStrategyAffinityApplied =
+    strategy !== "jev" &&
     traits.cacheAffinityOwnsOrdering &&
     applyPromptCacheAffinity(initialOrderedTargets, body).applied;
   // #6168: session stickiness opt-out. Per-combo `config.disableSessionStickiness`
@@ -744,23 +566,27 @@ async function applyContinuityFilters(
   if (disableSessionStickiness) {
     clearStickyBindingsForCombo(combo.name);
   }
-  const sticky: ApplyStickinessResult = disableSessionStickiness
-    ? { targets: initialOrderedTargets, messageHash: null, stuck: false }
-    : await applySessionStickiness(
-        initialOrderedTargets,
-        // #7270: normalize both wire shapes (.messages / Responses-API .input) so the
-        // stickiness key is derivable on the /v1/responses surface, not just Chat Completions.
-        normalizeStickinessMessages(body as { messages?: unknown; input?: unknown }),
-        combo.name,
-        // #15241: priority is an operator-declared failover order. A mid-list
-        // success must not silently become runtime try-slot #1 while the stored
-        // hop list still names another head. Other strategies keep their existing
-        // session-stickiness behavior.
-        { respectDeclaredOrder: traits.stickinessRespectsDeclaredOrder }
-      );
-  let orderedTargets = sticky.targets;
+  const sticky: ApplyStickinessResult =
+    stickyOverride ??
+    (disableSessionStickiness
+      ? { targets: initialOrderedTargets, messageHash: null, stuck: false }
+      : await applySessionStickiness(
+          initialOrderedTargets,
+          // #7270: normalize both wire shapes (.messages / Responses-API .input) so the
+          // stickiness key is derivable on the /v1/responses surface, not just Chat Completions.
+          normalizeStickinessMessages(body as { messages?: unknown; input?: unknown }),
+          combo.name,
+          // #15241: priority is an operator-declared failover order. A mid-list
+          // success must not silently become runtime try-slot #1 while the stored
+          // hop list still names another head. Other strategies keep their existing
+          // session-stickiness behavior.
+          { respectDeclaredOrder: traits.stickinessRespectsDeclaredOrder }
+        ));
+  let orderedTargets = jevOwnsOrder ? initialOrderedTargets : sticky.targets;
   if (!cacheStrategyAffinityApplied) {
-    orderedTargets = orderTargetsByEvalScores(orderedTargets, config.evalRouting, log);
+    if (!jevOwnsOrder) {
+      orderedTargets = orderTargetsByEvalScores(orderedTargets, config.evalRouting, log);
+    }
   }
   // #8488 / #8494: fail closed when hard capability filters empty the pool.
   // Opt-in escape hatch: combo.config.compatFilterFailOpen OR settings.compatFilterFailOpen.
@@ -769,9 +595,17 @@ async function applyContinuityFilters(
     (settings as { compatFilterFailOpen?: unknown } | null | undefined)?.compatFilterFailOpen ===
       true;
   const preCompatTargets = orderedTargets;
-  orderedTargets = filterTargetsByRequestCompatibility(orderedTargets, body, log, undefined, {
-    failOpen: compatFilterFailOpen,
-  });
+  const compatibleTargets = filterTargetsByRequestCompatibility(
+    orderedTargets,
+    body,
+    log,
+    undefined,
+    {
+      failOpen: compatFilterFailOpen,
+    }
+  );
+  if (jevOwnsOrder) orderedTargets = preserveJevOrder(orderedTargets, compatibleTargets);
+  else orderedTargets = compatibleTargets;
   if (orderedTargets.length === 0 && preCompatTargets.length > 0) {
     const exhaustion = describeCapabilityFilterExhaustion(preCompatTargets, body, combo.name);
     if (exhaustion) {
@@ -800,7 +634,9 @@ async function applyContinuityFilters(
   // #8786: capture pre-filter pool so a strict/minContextWindow wipe can
   // surface context_requirements_exhausted instead of a generic 404.
   const preContextTargets = orderedTargets;
-  orderedTargets = applyContextRequirements(orderedTargets, config.contextRequirements, log);
+  const contextTargets = applyContextRequirements(orderedTargets, config.contextRequirements, log);
+  if (jevOwnsOrder) orderedTargets = preserveJevOrder(orderedTargets, contextTargets);
+  else orderedTargets = contextTargets;
   if (orderedTargets.length === 0 && preContextTargets.length > 0) {
     const effectiveSessionId: string | null = combo.context_cache_protection
       ? (relayOptions?.sessionId ?? null)
@@ -865,6 +701,7 @@ function isPromptCacheAffinityEnabled(
   config: ReturnType<typeof resolveComboSetupConfig>,
   settings?: Record<string, unknown> | null
 ): boolean {
+  if (strategy === "jev") return false;
   const autoConfigForCacheWeight = getStrategyTraits(strategy).autoWeightsCacheAffinity
     ? ((combo.autoConfig ||
         ((config as Record<string, unknown>).auto &&
@@ -1075,7 +912,11 @@ export async function resolveComboTargetPipeline(
   let { quotaShareRelease } = ordering;
   const drawnId = ordering.orderedTargets[0]?.connectionId ?? "";
 
-  const continuity = await applyContinuityFilters(deps, ordering.orderedTargets);
+  const continuity = await applyContinuityFilters(
+    deps,
+    ordering.orderedTargets,
+    ordering.stickyOverride
+  );
   if ("earlyResponse" in continuity) {
     // #11371: selection already reserved the winner's in-flight slot; a hard
     // filter exhausting the pool must not leak it.
