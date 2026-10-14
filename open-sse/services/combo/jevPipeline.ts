@@ -13,6 +13,7 @@ import {
   buildEmptyComboTargetsPayload,
   buildRecoveryHint,
   type PreDispatchExclusion,
+  type PreDispatchExclusionReason,
 } from "./pinRecovery.ts";
 import { describeCapabilityFilterExhaustion } from "./comboStructure.ts";
 import {
@@ -257,7 +258,12 @@ function buildJevAllTargetsBlockedResponse(
       case "quota_cutoff":
         return { provider: target.provider, model, reason, retryAfterMs: null };
       default:
-        return { provider: target.provider, model, reason, retryAfterMs: null };
+        return {
+          provider: target.provider,
+          model,
+          reason: reason as PreDispatchExclusionReason,
+          retryAfterMs: null,
+        };
     }
   });
 

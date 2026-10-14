@@ -317,8 +317,8 @@ test("orderJevComboTargets falls open when ask throws and records holds by execu
     ask: async () => ({
       ok: true,
       answer: {
-        choice: "b",
-        probabilities: { a: 0.04, b: 0.9, c: 0.06 },
+        choice: "jev-option-2",
+        probabilities: { "jev-option-1": 0.04, "jev-option-2": 0.9, "jev-option-3": 0.06 },
         confidence: 0.92,
       },
     }),

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import CombosPage from "@/app/(dashboard)/dashboard/combos/page";
 
 describe("combos page memoization", () => {
@@ -11,7 +12,7 @@ describe("combos page memoization", () => {
 
   it("shows the Jev privacy notice beside the strategy selector", () => {
     const source = readFileSync(
-      new URL("../../../src/app/(dashboard)/dashboard/combos/page.tsx", import.meta.url),
+      resolve(process.cwd(), "src/app/(dashboard)/dashboard/combos/page.tsx"),
       "utf8"
     );
     const strategySelector = source.indexOf("{/* Strategy Toggle */}");
