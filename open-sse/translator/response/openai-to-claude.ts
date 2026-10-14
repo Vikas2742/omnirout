@@ -759,9 +759,15 @@ export function openaiToClaudeResponse(chunk, state) {
     // dropped the held text silently — for a single-chunk response whose block
     // never closes, that is the ENTIRE answer replaced by an empty message.
     // Release whatever is still held before the terminal blocks are emitted.
+    // The same goes for an unclosed <invoke>/<tool_call> tag and the DSML holdback:
+    // no further chunk can complete them, so they were prose and must reach the client.
     const flushedPreamble =
       (state._directiveStripper?.flush?.() ?? "") +
-      (state._systemPreambleStripper?.flush?.() ?? "");
+      (state._systemPreambleStripper?.flush?.() ?? "") +
+      (state._xmlInvokeBuffer ?? "") +
+      (state._dsmlHoldback ?? "");
+    state._xmlInvokeBuffer = "";
+    state._dsmlHoldback = undefined;
     if (flushedPreamble) {
       if (!state.textBlockStarted || state.textBlockClosed) {
         state.textBlockIndex = state.nextBlockIndex++;
