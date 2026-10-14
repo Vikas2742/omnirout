@@ -122,21 +122,7 @@ function canonicalBody(body: string | null): string | null {
 }
 
 function secretForms(value: string): string[] {
-  const jsonEscaped = JSON.stringify(value).slice(1, -1);
-  const forms = new Set<string>([value, jsonEscaped, encodeURIComponent(value)]);
-  // Invalid/clipped JSON cannot be canonicalized. Cover ASCII-safe encoders,
-  // including surrogate pairs: without /u, each non-ASCII UTF-16 unit is escaped.
-  for (const form of [value, jsonEscaped]) {
-    for (const uppercase of [false, true]) {
-      forms.add(
-        form.replace(/[\u0080-\uffff]/g, (char) => {
-          const hex = char.charCodeAt(0).toString(16).padStart(4, "0");
-          return `\\u${uppercase ? hex.toUpperCase() : hex}`;
-        })
-      );
-    }
-  }
-  return [...forms].filter(Boolean);
+  return [...new Set([value, JSON.stringify(value).slice(1, -1)])].filter(Boolean);
 }
 
 function headerSecretValues(config: OtlpHttpConfig, includeShortUsernames = true): string[] {
@@ -180,8 +166,39 @@ function collectorSecrets(config: OtlpHttpConfig): CollectorSecrets {
 
 const RESPONSE_EXCERPT_WITHHELD = "[response excerpt withheld]";
 
-/** Canonicalize, redact, sanitize and re-redact untrusted collector text to a fixed point. */
-function redactCollectorText(text: string, secrets: CollectorSecrets): string {
+/** Decode one JSON layer; withhold any residual encoding before rendering/redaction. */
+function redactCollectorText(text: string, secrets: CollectorSecrets, truncated = false): string {
+  let decoded: unknown = text;
+  let parsed = false;
+  if (!truncated) {
+    try {
+      decoded = JSON.parse(text);
+      parsed = true;
+    } catch {
+      // Non-JSON/clipped responses are inspected as-is, never partially decoded.
+    }
+  }
+  const pending: unknown[] = [decoded];
+  const residualEncoding = /\\|%[0-9A-Fa-f]{2}|&#\d+;|&#x[0-9A-Fa-f]+;|&[A-Za-z][A-Za-z0-9]*;/;
+  while (pending.length) {
+    const value = pending.pop();
+    if (typeof value === "string") {
+      if (residualEncoding.test(value)) return RESPONSE_EXCERPT_WITHHELD;
+    } else if (value !== null && typeof value === "object") {
+      // Iterative traversal also handles JSON deeper than the native call stack.
+      for (const [key, leaf] of Object.entries(value)) {
+        if (residualEncoding.test(key)) return RESPONSE_EXCERPT_WITHHELD;
+        pending.push(leaf);
+      }
+    }
+  }
+  let rendered: string;
+  try {
+    rendered = parsed ? JSON.stringify(decoded) : text;
+  } catch {
+    // JSON.parse can accept depths that JSON.stringify cannot safely render.
+    return RESPONSE_EXCERPT_WITHHELD;
+  }
   const matchSecrets = (value: string) => {
     // Do not recursively redact our own marker, notably for one-letter usernames.
     // The final containment scan still checks markers against non-exempt secrets.
@@ -193,7 +210,7 @@ function redactCollectorText(text: string, secrets: CollectorSecrets): string {
     }
     return value;
   };
-  let output = matchSecrets(canonicalBody(text) ?? "");
+  let output = matchSecrets(rendered);
   let stable = false;
   for (let iteration = 0; iteration < 4; iteration++) {
     const next = matchSecrets(sanitizeErrorMessage(output));
@@ -448,7 +465,11 @@ function createClient(config: OtlpHttpConfig) {
             if (Number.isFinite(parsed))
               retryMs = Math.min(RETRY_AFTER_CAP_MS, Math.max(retryMs, parsed));
           }
-          const excerpt = redactCollectorText(responseBody.text, collectorSecretValues);
+          const excerpt = redactCollectorText(
+            responseBody.text,
+            collectorSecretValues,
+            responseBody.truncated
+          );
           failure = new Error(
             `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${redactCollectorText(String(response.status), collectorSecretValues)}${excerpt ? ": " + excerpt : ""}`
           );

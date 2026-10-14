@@ -338,23 +338,21 @@ three attempts, with 250/500 ms exponential backoff. `Retry-After` seconds or HT
 can extend a delay up to 5 seconds. Other statuses fail immediately. OTLP 2xx partial rejection also throws instead of
 acknowledging a lost span; empty or valid JSON acknowledgements are accepted, with a
 64 KiB response-read cap. Errors include
-status and a short sanitized response excerpt. Every collector-derived string that can reach an
-error message — the HTTP response excerpt, the `partialSuccess.rejectedSpans` count, and the
-stringified HTTP status — uses
-one redaction pipeline: parseable JSON is canonicalized, registered header forms are matched,
-the generic sanitizer runs, then header matching and sanitization repeat for at most four
-iterations until a fixed point, before the 256-character excerpt clip. Non-convergence also
-withholds the excerpt. The shared generic sanitizer retains its own bounded scan/output limits.
-If a registered raw value, password, credential pair, or
-username of at least four characters remains, the complete excerpt becomes `[response excerpt withheld]`; short usernames are still redacted in collector text but do not withhold generated
-status wording. Generated `OTLP/HTTP ...` wording is added only after this pipeline. Configured
-header values, Authorization tokens and valid UTF-8 Basic usernames/passwords are redacted before
-the excerpt is clipped. Raw, JSON-escaped, slash-escaped, URL-encoded and ASCII-safe JSON
-variants (non-ASCII UTF-16 units escaped as `\uXXXX`, with lowercase or uppercase hex) also
-protect invalid or truncated JSON fragments. This is not an arbitrary encoding decoder: HTML
-entities, separately base64-encoded secret parts and arbitrary nested encodings can remain visible.
-Only configure trusted collectors. Call-log error summaries use the existing export sanitizer
-separately; network-exception text is discarded.
+status and a short sanitized response excerpt.
+
+Every collector-derived excerpt, partial-success count and stringified HTTP status
+uses one boundary: decode exactly one JSON layer for complete, non-truncated parseable
+JSON; otherwise inspect raw text. Any residual backslash, percent-encoded octet or HTML
+character reference in the decoded view (including JSON keys and string leaves) yields
+`[response excerpt withheld]`. Otherwise render JSON canonically (or keep raw text),
+redact literal/JSON-escaped header and UTF-8 Basic credential forms, and sanitize/re-redact
+to a fixed point (at most four iterations). Rendering failure, non-convergence or a
+remaining registered secret withholds the excerpt; clip to 256 characters last. Short
+usernames are redacted without withholding markers; generated wording stays outside
+redaction. Remaining limits are non-escape transformations of secret parts, such as a
+separately base64-encoded password part, reversed or split strings. Only configure trusted
+collectors. The shared sanitizer retains its bounded limits; call-log error summaries use
+it separately, and network-exception text is discarded.
 `prepare()` provisions nothing; Test posts exactly `{"resourceSpans":[]}` and reports
 HTTP status without writing call-log spans.
 
