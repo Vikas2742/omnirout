@@ -517,6 +517,41 @@ async function handleChatImplementation(
       }
     );
   }
+  // Same for `tools[]` and `input[]`: both are `z.array(z.unknown())`, and a `null` entry
+  // reaches `generateSessionId` and the translators (`null.name` / `null.role`) as a 500.
+  // `input` may legitimately carry plain strings (Responses API), so only `null` is rejected there.
+  const toolsBody = body as { tools?: unknown };
+  if (
+    Array.isArray(toolsBody.tools) &&
+    toolsBody.tools.some((t) => t === null || typeof t !== "object" || Array.isArray(t))
+  ) {
+    log.warn("CHAT", "Rejecting request with non-object tools entries");
+    return logHandlerRejection(
+      errorResponse(HTTP_STATUS.BAD_REQUEST, "tools: Expected array of objects"),
+      {
+        path: new URL(request.url).pathname,
+        model: typeof body?.model === "string" && body.model ? body.model : "-",
+        requestBody: body ?? null,
+        apiKeyId: null,
+        apiKeyName: null,
+        correlationId: reqId,
+      }
+    );
+  }
+  if (Array.isArray(msgBody.input) && msgBody.input.some((i) => i === null)) {
+    log.warn("CHAT", "Rejecting request with null input entries");
+    return logHandlerRejection(
+      errorResponse(HTTP_STATUS.BAD_REQUEST, "input: Expected array of objects or strings"),
+      {
+        path: new URL(request.url).pathname,
+        model: typeof body?.model === "string" && body.model ? body.model : "-",
+        requestBody: body ?? null,
+        apiKeyId: null,
+        apiKeyName: null,
+        correlationId: reqId,
+      }
+    );
+  }
   if (!("messages" in msgBody) && !("input" in msgBody) && sourceFormat !== "antigravity") {
     log.warn("CHAT", "Rejecting request with missing messages");
     return logHandlerRejection(
