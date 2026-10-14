@@ -273,6 +273,105 @@ test("prepare_ExistingTable_CreatesNothing", async () => {
   assert.equal(writes.length, 0);
 });
 
+// Exact pre-TTFT schema, independent of the evolving new-table schema.
+const BASE_SCHEMA_NAMES = [
+  "id",
+  "timestamp",
+  "method",
+  "path",
+  "status",
+  "model",
+  "requested_model",
+  "provider",
+  "provider_display",
+  "account",
+  "connection_id",
+  "duration_ms",
+  "tokens_in",
+  "tokens_out",
+  "tokens_cache_read",
+  "tokens_cache_write",
+  "tokens_reasoning",
+  "tokens_compressed",
+  "cache_source",
+  "request_type",
+  "source_format",
+  "target_format",
+  "api_key_id",
+  "api_key_name",
+  "combo_name",
+  "combo_step_id",
+  "combo_execution_key",
+  "error_summary",
+  "error_type",
+  "correlation_id",
+  "session_tag",
+  "model_pinned",
+  "detail_state",
+  "has_request_body",
+  "has_response_body",
+  "has_pipeline_details",
+  "request_body",
+  "response_body",
+  "pipeline_route_decision",
+  "pipeline_client_request",
+  "pipeline_openai_request",
+  "pipeline_provider_request",
+  "pipeline_provider_response",
+  "pipeline_client_response",
+  "pipeline_error",
+  "bodies_truncated",
+  "exported_at",
+];
+for (const hasTtft of [false, true]) {
+  test(`prepare existing schema exports without alteration: ttft_ms=${hasTtft}`, async () => {
+    const names = [...BASE_SCHEMA_NAMES, ...(hasTtft ? ["ttft_ms"] : [])];
+    const schema = {
+      fields: bigquery.BIGQUERY_TABLE_SCHEMA.fields.filter((field) => names.includes(field.name)),
+    };
+    assert.deepEqual(schema.fields.map((field) => field.name).sort(), [...names].sort());
+    const { fetchImpl, calls } = stubFetch([
+      (call) => {
+        if (call.method === "GET" && call.url.endsWith("/tables/call_logs"))
+          return { status: 200, json: { schema } };
+        if (call.url.endsWith("/insertAll")) {
+          const unknown = (call.body.rows ?? []).flatMap((row) =>
+            Object.keys(row.json).filter((name) => !names.includes(name))
+          );
+          return {
+            status: 200,
+            json: unknown.length
+              ? {
+                  insertErrors: [
+                    { index: 0, errors: [{ message: `no such field: ${unknown[0]}` }] },
+                  ],
+                }
+              : {},
+          };
+        }
+        return null;
+      },
+    ]);
+    const client = bigquery.createBigQueryClientForTest(
+      { ...CONFIG, autoCreate: false },
+      fetchImpl
+    );
+    await client.prepare();
+    await client.send([RECORD]);
+    assert.equal(
+      calls.some((call) => call.method === "PATCH"),
+      false
+    );
+    const writes = calls.filter((call) => call.method !== "GET" && !call.url.includes("oauth2"));
+    assert.equal(writes.length, 1);
+    const row = writes[0].body.rows?.[0].json;
+    assert.ok(row);
+    assert.deepEqual(Object.keys(row).sort(), [...names].sort());
+    assert.equal(Object.hasOwn(row, "ttft_ms"), hasTtft);
+    if (hasTtft) assert.equal(row.ttft_ms, RECORD.ttftMs);
+  });
+}
+
 test("prepare_AutoCreateDisabledAndTableMissing_Throws", async () => {
   const { fetchImpl } = stubFetch([]);
   const client = bigquery.createBigQueryClientForTest({ ...CONFIG, autoCreate: false }, fetchImpl);

@@ -395,8 +395,10 @@ It is not an update-time cursor reset setting.
 
 The shared `ttftMs` addition also adds a nullable `ttft_ms` column to the BigQuery mapper
 and new-table schema: its schema test requires every canonical record field to have a
-column. Existing BigQuery tables must add this nullable INT64 column before exporting,
-or use a new table; this change does not automatically alter existing backend schemas.
+column. Existing tables keep exporting unchanged: `prepare()` reads the table schema and
+omits only `ttft_ms` when that column is absent. Add the nullable INT64 column to get TTFT
+on the next run, or use a new table. No PATCH, automatic schema alteration or additional
+permissions are required; all other row fields retain strict schema checking.
 
 ---
 

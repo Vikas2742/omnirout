@@ -177,7 +177,7 @@ export const BIGQUERY_TABLE_SCHEMA = {
 } as const;
 
 /** Project a canonical export record onto the BigQuery column names. */
-export function toBigQueryRow(record: LogExportRecord, exportedAt: string) {
+export function toBigQueryRow(record: LogExportRecord, exportedAt: string, includeTtft = true) {
   return {
     id: record.id,
     timestamp: record.timestamp,
@@ -191,7 +191,7 @@ export function toBigQueryRow(record: LogExportRecord, exportedAt: string) {
     account: record.account,
     connection_id: record.connectionId,
     duration_ms: record.duration,
-    ttft_ms: record.ttftMs,
+    ...(includeTtft ? { ttft_ms: record.ttftMs } : {}),
     tokens_in: record.tokensIn,
     tokens_out: record.tokensOut,
     tokens_cache_read: record.tokensCacheRead,
@@ -246,6 +246,7 @@ function estimateRowBytes(record: LogExportRecord, exportedAt: string): number {
 }
 
 interface BigQueryResponseBody {
+  schema?: { fields?: Array<{ name?: string }> };
   error?: { message?: string; status?: string };
   insertErrors?: Array<{ index?: number; errors?: Array<{ message?: string }> }>;
 }
@@ -266,6 +267,8 @@ class BigQueryClient implements LogExportClient {
   private readonly key: ServiceAccountKey;
   /** Set when prepare() created the table in this run — see MAX_FRESH_TABLE_ATTEMPTS. */
   private createdTableThisRun = false;
+  /** Only TTFT is optional for legacy tables; all other columns remain strictly checked. */
+  private includeTtft = true;
 
   constructor(
     private readonly config: BigQueryConfig,
@@ -333,7 +336,11 @@ class BigQueryClient implements LogExportClient {
 
   async prepare(): Promise<void> {
     const table = await this.request("GET", this.tablePath);
-    if (table.ok) return;
+    if (table.ok) {
+      this.includeTtft =
+        table.json?.schema?.fields?.some((field) => field.name === "ttft_ms") ?? false;
+      return;
+    }
     if (table.status !== 404) throw new Error(describeFailure(table.status, table.json));
     if (!this.config.autoCreate) {
       throw new Error(
@@ -380,6 +387,15 @@ class BigQueryClient implements LogExportClient {
     if (!createdTable.ok && createdTable.status !== 409) {
       throw new Error(describeFailure(createdTable.status, createdTable.json));
     }
+    if (createdTable.status === 409) {
+      // A parallel creator may have supplied the legacy schema; inspect the winner.
+      const existing = await this.request("GET", this.tablePath);
+      if (!existing.ok) throw new Error(describeFailure(existing.status, existing.json));
+      this.includeTtft =
+        existing.json?.schema?.fields?.some((field) => field.name === "ttft_ms") ?? false;
+      return;
+    }
+    this.includeTtft = true;
     this.createdTableThisRun = true;
   }
 
@@ -427,7 +443,7 @@ class BigQueryClient implements LogExportClient {
       ignoreUnknownValues: false,
       rows: records.map((record) => ({
         insertId: record.id,
-        json: toBigQueryRow(record, exportedAt),
+        json: toBigQueryRow(record, exportedAt, this.includeTtft),
       })),
     };
 
