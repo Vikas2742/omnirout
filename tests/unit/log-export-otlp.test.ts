@@ -556,6 +556,29 @@ test("chunk requests obey byte and row caps; a single oversize span fails withou
   }
 });
 
+test("preflight rejects a late oversize span before sending any accepted prefix", async () => {
+  const s = await server((_q, r) => r.writeHead(200).end());
+  try {
+    const client = otlp.otlpHttpDestination.createClient(config({ endpoint: s.endpoint }));
+    const rows = [2100000, 2100000, otlp.OTLP_MAX_REQUEST_BYTES].map((bytes, i) => ({
+      ...record,
+      id: `late-oversize-${i}`,
+      requestBody: "x".repeat(bytes),
+    }));
+    await assert.rejects(client.send(rows), /reduce maxBodyBytes/);
+    assert.equal(s.calls.length, 0, "no accepted prefix may be sent before validation completes");
+    await client.send(rows.slice(0, 2));
+    assert.deepEqual(
+      s.calls.map((c) => spans(JSON.parse(c.body) as Payload).length),
+      [1, 1]
+    );
+    for (const call of s.calls)
+      assert.ok(Buffer.byteLength(call.body) <= otlp.OTLP_MAX_REQUEST_BYTES);
+  } finally {
+    await s.close();
+  }
+});
+
 function insertRows() {
   const db = core.getDbInstance();
   db.exec("DELETE FROM call_logs");

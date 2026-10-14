@@ -326,8 +326,11 @@ Use a minute-level cadence such as `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` whe
 bodies, rather than accumulating an hourly backlog.
 
 Requests are bounded to 500 spans and 4 MiB of UTF-8 JSON, including the envelope.
-An individual span larger than the limit fails with guidance to lower `maxBodyBytes`;
-it is not silently dropped. HTTP 408/429/5xx, network failures and timeouts get at most
+Every allowed span is size-checked before the first request of a cursor batch. An individual
+span larger than the limit sends no part of that batch and fails with guidance to lower
+`maxBodyBytes`; it is not silently dropped. Preflight retains only record references and
+byte counts, discarding each temporary span/JSON; spans are rebuilt for bounded chunks
+rather than holding a second serialized copy of the batch. HTTP 408/429/5xx, network failures and timeouts get at most
 three attempts, with 250/500 ms exponential backoff. `Retry-After` seconds or HTTP dates
 can extend a delay up to 5 seconds. Other statuses fail immediately. OTLP 2xx partial rejection also throws instead of
 acknowledging a lost span; empty or valid JSON acknowledgements are accepted, with a

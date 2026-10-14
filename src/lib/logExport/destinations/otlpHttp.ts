@@ -408,19 +408,25 @@ function createClient(config: OtlpHttpConfig) {
         chunk = [];
         bytes = envelopeBytes;
       };
+      // Preflight the entire cursor batch before any HTTP side effect. Keep only row
+      // references and sizes, not span objects or a second serialized copy of bodies.
+      // Each transient span/JSON is discarded; the send pass rebuilds one bounded chunk.
+      const allowed: { row: LogExportRecord; spanBytes: number }[] = [];
       for (const row of records) {
         if (row.path === null || !config.paths.includes(row.path)) continue;
-        const span = toSpan(row, config);
-        const spanBytes = Buffer.byteLength(JSON.stringify(span));
+        const spanBytes = Buffer.byteLength(JSON.stringify(toSpan(row, config)));
         if (envelopeBytes + spanBytes > OTLP_MAX_REQUEST_BYTES)
           throw new Error("OTLP span exceeds the request size limit; reduce maxBodyBytes");
+        allowed.push({ row, spanBytes });
+      }
+      for (const { row, spanBytes } of allowed) {
         if (
           chunk.length >= MAX_SPANS_PER_REQUEST ||
           bytes + spanBytes + (chunk.length ? 1 : 0) > OTLP_MAX_REQUEST_BYTES
         )
           await flush();
         bytes += spanBytes + (chunk.length ? 1 : 0);
-        chunk.push(span);
+        chunk.push(toSpan(row, config));
       }
       await flush();
     },
