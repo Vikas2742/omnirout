@@ -149,7 +149,7 @@ export async function orderJevComboTargets(
       });
       if (asked.ok) {
         answer = asked.answer;
-      } else if (asked.reason === "missing_api_key") {
+      } else if ((asked as Extract<JevAskResult, { ok: false }>).reason === "missing_api_key") {
         missingApiKey = true;
       }
     } catch {

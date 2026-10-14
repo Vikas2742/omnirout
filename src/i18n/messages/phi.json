@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Ito ay kukuha ng snapshot ng kasalukuyang nakakonektang mga provider/model na tugma sa template na ito sa isang editable na combo.",
     "duplicateAutoComboFailedPrefix": "Nabigo ang pag-duplicate ng auto-combo:",
     "duplicateAutoComboUnknownError": "Hindi alam na error",
-    "duplicateAutoComboTitle": "Gumawa ng static combo mula sa {name}"
+    "duplicateAutoComboTitle": "Gumawa ng static combo mula sa {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Mga gastos",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Provider (lahat ng mga account ay nagbabahagi ng iisang breaker)",
     "resilienceTokenRefreshScopeConnection": "Koneksyon (bawat account ay may sariling breaker)",
     "resilienceTokenRefreshThreshold": "Mga kabiguan bago magpahinto",
-    "resilienceTokenRefreshCooldown": "Magpahinga pagkatapos ma-trigger"
+    "resilienceTokenRefreshCooldown": "Magpahinga pagkatapos ma-trigger",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "Engine ng RTK",

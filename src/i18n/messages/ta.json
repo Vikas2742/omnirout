@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "இந்த டெம்ப்ளேட்டுடன் பொருந்தும் தற்போதைய இணைக்கப்பட்ட வழங்குநர்கள்/மாதிரிகளை திருத்தக்கூடிய கம்போவில் எடுக்கும்.",
     "duplicateAutoComboFailedPrefix": "ஆட்டோகம்போ நகலெடுத்தல் தோல்வியடைந்தது:",
     "duplicateAutoComboUnknownError": "அறியப்படாத பிழை",
-    "duplicateAutoComboTitle": "{name} இலிருந்து நிலையான கம்போ உருவாக்கவும்"
+    "duplicateAutoComboTitle": "{name} இலிருந்து நிலையான கம்போ உருவாக்கவும்",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "செலவுகள்",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "வழங்குநர் (அனைத்து கணக்குகளும் ஒரே பிரேக்கரைப் பகிர்ந்துகொள்கின்றன)",
     "resilienceTokenRefreshScopeConnection": "இணைப்பு (ஒவ்வொரு கணக்கிற்கும் தனி பிரேக்கர் உள்ளது)",
     "resilienceTokenRefreshThreshold": "இடைநிறுத்துவதற்கு முன் தோல்விகள்",
-    "resilienceTokenRefreshCooldown": "தாவல் பின் இடைநிறுத்தம்"
+    "resilienceTokenRefreshCooldown": "தாவல் பின் இடைநிறுத்தம்",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK எஞ்சின்",

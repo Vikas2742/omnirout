@@ -324,7 +324,7 @@ export async function POST(request) {
       }
       jev = await buildJevComboTestSummary({
         targets,
-        comboName: combo.name,
+        comboName: String(combo.name),
         config: (combo.config as Record<string, unknown> | null | undefined) ?? null,
         resilienceSettings,
         hasTypesafeKey,

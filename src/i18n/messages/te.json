@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "ఈ టెంప్లేట్‌తో సరిపోయే ప్రస్తుత కనెక్ట్ చేసిన ప్రొవైడర్లు/మోడల్‌లను ఎడిటబుల్ కంబోలో స్నాప్‌షాట్ తీసుకుంటుంది.",
     "duplicateAutoComboFailedPrefix": "ఆటోకంబో డూప్లికేట్ చేయడంలో విఫలమైంది:",
     "duplicateAutoComboUnknownError": "తెలియని దోషం",
-    "duplicateAutoComboTitle": "{name} నుండి స్థిర కంబో సృష్టించండి"
+    "duplicateAutoComboTitle": "{name} నుండి స్థిర కంబో సృష్టించండి",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "ఖర్చులు",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "ప్రొవైడర్ (అన్ని ఖాతాలు ఒకే బ్రేకర్‌ను పంచుకుంటాయి)",
     "resilienceTokenRefreshScopeConnection": "కనెక్షన్ (ప్రతి ఖాతాకు దాని సొంత బ్రేకర్ ఉంటుంది)",
     "resilienceTokenRefreshThreshold": "నిలిపివేయడానికి ముందు వైఫల్యాలు",
-    "resilienceTokenRefreshCooldown": "తావు తర్వాత విరామం"
+    "resilienceTokenRefreshCooldown": "తావు తర్వాత విరామం",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK ఇంజిన్",

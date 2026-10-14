@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "এটি এই টেমপ্লেটের সাথে মিলে যায় এমন বর্তমান সংযুক্ত প্রদানকারী/মডেলগুলিকে একটি সম্পাদনযোগ্য কম্বোতে স্ন্যাপশট নেবে।",
     "duplicateAutoComboFailedPrefix": "অটোকম্বো ডুপ্লিকেশন ব্যর্থ:",
     "duplicateAutoComboUnknownError": "অজানা ত্রুটি",
-    "duplicateAutoComboTitle": "{name} থেকে একটি স্ট্যাটিক কম্বো তৈরি করুন"
+    "duplicateAutoComboTitle": "{name} থেকে একটি স্ট্যাটিক কম্বো তৈরি করুন",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "খরচ",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "প্রদানকারী (সমস্ত অ্যাকাউন্ট একটি ব্রেকার ভাগ করে নেয়)",
     "resilienceTokenRefreshScopeConnection": "সংযোগ (প্রতিটি অ্যাকাউন্টের নিজস্ব ব্রেকার আছে)",
     "resilienceTokenRefreshThreshold": "বিরতি নেওয়ার আগে ব্যর্থতা",
-    "resilienceTokenRefreshCooldown": "ট্রিপ হওয়ার পরে বিরতি"
+    "resilienceTokenRefreshCooldown": "ট্রিপ হওয়ার পরে বিরতি",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK ইঞ্জিন",

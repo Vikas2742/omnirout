@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "វានឹងថតស្ថានភាពបច្ចុប្បន្ននៃអ្នកផ្តល់សេវា/ម៉ូដែលដែលបានតភ្ជាប់ និងត្រូវគ្នានឹងគំរូនេះ ទៅជាបន្សំដែលអាចកែសម្រួលបាន។",
     "duplicateAutoComboFailedPrefix": "មិនអាចចម្លងបន្សំស្វ័យប្រវត្តិបានទេ៖",
     "duplicateAutoComboUnknownError": "កំហុសដែលមិនស្គាល់",
-    "duplicateAutoComboTitle": "បង្កើតបន្សំថេរពី {name}"
+    "duplicateAutoComboTitle": "បង្កើតបន្សំថេរពី {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "ការចំណាយ",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "អ្នកផ្គត់ផ្គង់ (គណនីទាំងអស់ចែករំលែកប៊្រីកឃើរតែមួយ)",
     "resilienceTokenRefreshScopeConnection": "ការតភ្ជាប់ (គណនីនីមួយៗមានឧបករណ៍ផ្ទុះផ្ទាល់ខ្លួន)",
     "resilienceTokenRefreshThreshold": "ការបរាជ័យមុនពេលផ្អាក",
-    "resilienceTokenRefreshCooldown": "ផ្អាកបន្ទាប់ពីដំណើរការ"
+    "resilienceTokenRefreshCooldown": "ផ្អាកបន្ទាប់ពីដំណើរការ",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "ម៉ាស៊ីន RTK",

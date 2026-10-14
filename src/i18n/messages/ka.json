@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "ამჟამად დაკავშირებული პროვაიდერებისა და მოდელების, რომლებიც ამ შაბლონს შეესაბამება, მიმდინარე მდგომარეობა დაფიქსირდება რედაქტირებად კომბოდ.",
     "duplicateAutoComboFailedPrefix": "ავტოკომბოს დუბლირება ვერ მოხერხდა:",
     "duplicateAutoComboUnknownError": "უცნობი შეცდომა",
-    "duplicateAutoComboTitle": "სტატიკური კომბოს შექმნა {name}-დან"
+    "duplicateAutoComboTitle": "სტატიკური კომბოს შექმნა {name}-დან",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "ხარჯები",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "პროვაიდერი (ყველა ანგარიში იყენებს ერთ გამთიშელს)",
     "resilienceTokenRefreshScopeConnection": "კავშირი (თითოეულ ანგარიშს აქვს საკუთარი გამთიშელი)",
     "resilienceTokenRefreshThreshold": "შეჩერებამდე დაშვებული მარცხების რაოდენობა",
-    "resilienceTokenRefreshCooldown": "შეჩერება გამორთვის შემდეგ"
+    "resilienceTokenRefreshCooldown": "შეჩერება გამორთვის შემდეგ",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK ძრავა",

@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Dette vil tage et øjebliksbillede af de aktuelt tilsluttede udbydere/modeller, der matcher denne skabelon, i en redigerbar kombination.",
     "duplicateAutoComboFailedPrefix": "Kopiering af auto-kombination mislykkedes:",
     "duplicateAutoComboUnknownError": "Ukendt fejl",
-    "duplicateAutoComboTitle": "Opret en statisk kombination fra {name}"
+    "duplicateAutoComboTitle": "Opret en statisk kombination fra {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Omkostninger",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Udbyder (alle konti deler én afbryder)",
     "resilienceTokenRefreshScopeConnection": "Forbindelse (hver konto har sin egen afbryder)",
     "resilienceTokenRefreshThreshold": "Fejl før pause",
-    "resilienceTokenRefreshCooldown": "Pause efter udløsning"
+    "resilienceTokenRefreshCooldown": "Pause efter udløsning",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK Engine",

@@ -371,7 +371,7 @@ export function openaiResponsesToOpenAIRequest(
           if (currentAssistantMsg) {
             messages.push(currentAssistantMsg);
           }
-          for (const toolCall of roleBasedToolCalls) pendingCallIds.push(toolCall.id);
+          for (const toolCall of roleBasedToolCalls) pendingCallIds.push(toString(toolCall.id));
           currentAssistantMsg = {
             role,
             content,

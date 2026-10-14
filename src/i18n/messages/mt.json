@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Dan se joħloq snapshot tal-fornituri/mudelli konnessi bħalissa li jaqblu ma’ din is-sagoma, f’kombinazzjoni li tista’ tiġi editjata.",
     "duplicateAutoComboFailedPrefix": "Ma rnexxilniex nidduplikaw il-kombinazzjoni awtomatika:",
     "duplicateAutoComboUnknownError": "Żball mhux magħruf",
-    "duplicateAutoComboTitle": "Oħloq kombinazzjoni statika minn {name}"
+    "duplicateAutoComboTitle": "Oħloq kombinazzjoni statika minn {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Spejjeż",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Provider (l-kontijiet kollha jaqsmu breaker wieħed)",
     "resilienceTokenRefreshScopeConnection": "Konnessjoni (kull kont għandu l-breaker tiegħu)",
     "resilienceTokenRefreshThreshold": "Fallimenti qabel ma jieqaf",
-    "resilienceTokenRefreshCooldown": "Waqqaf wara li tinstab"
+    "resilienceTokenRefreshCooldown": "Waqqaf wara li tinstab",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "Magna RTK",

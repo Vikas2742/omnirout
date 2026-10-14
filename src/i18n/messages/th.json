@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "สิ่งนี้จะจับภาพผู้ให้บริการ/โมเดลที่เชื่อมต่ออยู่ในปัจจุบันซึ่งตรงกับเทมเพลตนี้ลงในคอมโบที่แก้ไขได้",
     "duplicateAutoComboFailedPrefix": "ล้มเหลวในการทำสำเนาคอมโบอัตโนมัติ:",
     "duplicateAutoComboUnknownError": "ข้อผิดพลาดที่ไม่ทราบสาเหตุ",
-    "duplicateAutoComboTitle": "สร้างคอมโบคงที่จาก {name}"
+    "duplicateAutoComboTitle": "สร้างคอมโบคงที่จาก {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "ค่าใช้จ่าย",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "ผู้ให้บริการ (บัญชีทั้งหมดใช้ตัวเบรกเกอร์เดียวกัน)",
     "resilienceTokenRefreshScopeConnection": "การเชื่อมต่อ (แต่ละบัญชีมีตัวเบรกเกอร์ของตัวเอง)",
     "resilienceTokenRefreshThreshold": "ความล้มเหลวก่อนหยุดชั่วคราว",
-    "resilienceTokenRefreshCooldown": "หยุดชั่วคราวหลังจากกระตุ้น"
+    "resilienceTokenRefreshCooldown": "หยุดชั่วคราวหลังจากกระตุ้น",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK Engine",

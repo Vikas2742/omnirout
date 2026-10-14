@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Այս ձևանմուշին համապատասխանող՝ ներկայումս միացված մատակարարների/մոդելների պատճենը կպահվի որպես խմբագրվող կոմբինացիա։",
     "duplicateAutoComboFailedPrefix": "Չհաջողվեց կրկնօրինակել ավտոմատ կոմբինացիան՝",
     "duplicateAutoComboUnknownError": "Անհայտ սխալ",
-    "duplicateAutoComboTitle": "Ստեղծել ստատիկ կոմբինացիա {name}-ից"
+    "duplicateAutoComboTitle": "Ստեղծել ստատիկ կոմբինացիա {name}-ից",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Ծախսեր",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Մատակարար (բոլոր հաշիվները կիսում են մեկ ընդհատիչ)",
     "resilienceTokenRefreshScopeConnection": "Կապ (յուրաքանչյուր հաշիվ ունի իր ընդհատիչը)",
     "resilienceTokenRefreshThreshold": "Հաջողությունից առաջ կանգնեցնելու համար պարտություններ",
-    "resilienceTokenRefreshCooldown": "Կանգ առնել անջատվելուց հետո"
+    "resilienceTokenRefreshCooldown": "Կանգ առնել անջատվելուց հետո",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK շարժիչ",

@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "یہ اس ٹیمپلیٹ سے ملنے والے موجودہ منسلک فراہم کنندگان/ماڈلز کو ایڈیٹ ایبل کمبو میں اسنیپ شاট لے گا۔",
     "duplicateAutoComboFailedPrefix": "آٹو کمبو ڈپلیکیٹ کرنے میں ناکام:",
     "duplicateAutoComboUnknownError": "نامعلوم خرابی",
-    "duplicateAutoComboTitle": "{name} سے ایک جامد کمبو بنائیں"
+    "duplicateAutoComboTitle": "{name} سے ایک جامد کمبو بنائیں",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "اخراجات",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "فراہم کنندہ (تمام اکاؤنٹس ایک ہی بریکر کا اشتراک کرتے ہیں)",
     "resilienceTokenRefreshScopeConnection": "کنکشن (ہر اکاؤنٹ کا اپنا بریکر ہوتا ہے)",
     "resilienceTokenRefreshThreshold": "روکنے سے پہلے ناکامیاں",
-    "resilienceTokenRefreshCooldown": "ٹرپ ہونے کے بعد وقفہ"
+    "resilienceTokenRefreshCooldown": "ٹرپ ہونے کے بعد وقفہ",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK انجن",

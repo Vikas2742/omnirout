@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Tím se zachytí aktuálně připojení poskytovatelé/modely, které odpovídají této šabloně, do upravitelné kombinace.",
     "duplicateAutoComboFailedPrefix": "Duplikace automatické kombinace selhala:",
     "duplicateAutoComboUnknownError": "Neznámá chyba",
-    "duplicateAutoComboTitle": "Vytvořte statickou kombinaci z {name}"
+    "duplicateAutoComboTitle": "Vytvořte statickou kombinaci z {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Náklady",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Poskytovatel (všechny účty sdílejí jeden přerušovač)",
     "resilienceTokenRefreshScopeConnection": "Připojení (každý účet má vlastní jistič)",
     "resilienceTokenRefreshThreshold": "Neúspěchy před pozastavením",
-    "resilienceTokenRefreshCooldown": "Pauza po spuštění"
+    "resilienceTokenRefreshCooldown": "Pauza po spuštění",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "Modul RTK",

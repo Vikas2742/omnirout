@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "这将把与此模板匹配的当前连接提供者/模型快照到可编辑的组合中。",
     "duplicateAutoComboFailedPrefix": "复制自动组合失败：",
     "duplicateAutoComboUnknownError": "未知错误",
-    "duplicateAutoComboTitle": "从{name}创建静态组合"
+    "duplicateAutoComboTitle": "从{name}创建静态组合",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "成本",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "提供程序（所有帐户共享一个断路器）",
     "resilienceTokenRefreshScopeConnection": "连接（每个账户都有自己的熔断器）",
     "resilienceTokenRefreshThreshold": "暂停前的失败次数",
-    "resilienceTokenRefreshCooldown": "触发后暂停"
+    "resilienceTokenRefreshCooldown": "触发后暂停",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "命令输出过滤引擎",

@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Это создаст снимок текущих подключенных провайдеров/моделей, соответствующих этому шаблону, в редактируемом комбо.",
     "duplicateAutoComboFailedPrefix": "Не удалось дублировать автоматическое комбо:",
     "duplicateAutoComboUnknownError": "Неизвестная ошибка",
-    "duplicateAutoComboTitle": "Создать статическое комбо из {name}"
+    "duplicateAutoComboTitle": "Создать статическое комбо из {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Затраты",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Провайдер (все аккаунты используют один предохранитель)",
     "resilienceTokenRefreshScopeConnection": "Подключение (у каждого аккаунта свой автоматический выключатель)",
     "resilienceTokenRefreshThreshold": "Количество сбоев до приостановки",
-    "resilienceTokenRefreshCooldown": "Пауза после срабатывания"
+    "resilienceTokenRefreshCooldown": "Пауза после срабатывания",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK Engine",

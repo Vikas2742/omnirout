@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "ಈ ಟೆಂಪ್ಲೇಟ್ಗೆ ಹೊಂದಿಕೆಯಾಗುವ ಪ್ರಸ್ತುತ ಸಂಪರ್ಕಿತ ಪೂರೈಕೆದಾರರು/ಮಾಡೆಲ್ಗಳ ಸ್ನ್ಯಾಪ್ಶಾಟ್ ತೆಗೆದು, ಅದನ್ನು ಸಂಪಾದಿಸಬಹುದಾದ ಕಾಂಬೊ ಆಗಿ ರಚಿಸಲಾಗುತ್ತದೆ.",
     "duplicateAutoComboFailedPrefix": "ಸ್ವಯಂ-ಕಾಂಬೊವನ್ನು ನಕಲಿಸಲು ವಿಫಲವಾಗಿದೆ:",
     "duplicateAutoComboUnknownError": "ಅಜ್ಞಾತ ದೋಷ",
-    "duplicateAutoComboTitle": "{name} ನಿಂದ ಸ್ಥಿರ ಕಾಂಬೊವನ್ನು ರಚಿಸಿ"
+    "duplicateAutoComboTitle": "{name} ನಿಂದ ಸ್ಥಿರ ಕಾಂಬೊವನ್ನು ರಚಿಸಿ",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "ವೆಚ್ಚಗಳು",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "ಪೂರೈಕೆದಾರ (ಎಲ್ಲಾ ಖಾತೆಗಳು ಒಂದೇ ಬ್ರೇಕರ್ ಅನ್ನು ಹಂಚಿಕೊಳ್ಳುತ್ತವೆ)",
     "resilienceTokenRefreshScopeConnection": "ಸಂಪರ್ಕ (ಪ್ರತಿ ಖಾತೆಗೂ ತನ್ನದೇ ಆದ ಬ್ರೇಕರ್ ಇದೆ)",
     "resilienceTokenRefreshThreshold": "ವಿರಾಮ ತೆಗೆದುಕೊಳ್ಳುವ ಮೊದಲು ವಿಫಲತೆಗಳು",
-    "resilienceTokenRefreshCooldown": "ಟ್ರಿಪ್ ಆದ ನಂತರ ವಿರಾಮ"
+    "resilienceTokenRefreshCooldown": "ಟ್ರಿಪ್ ಆದ ನಂತರ ವಿರಾಮ",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK ಎಂಜಿನ್",

@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "ਇਹ ਇਸ ਟੈਂਪਲੇਟ ਨਾਲ ਮੇਲ ਖਾਂਦੇ ਮੌਜੂਦਾ ਕਨੈਕਟ ਕੀਤੇ ਪ੍ਰਦਾਤਾਵਾਂ/ਮਾਡਲਾਂ ਦਾ ਸਨੈਪਸ਼ਾਟ ਲੈ ਕੇ ਇੱਕ ਸੰਪਾਦਨਯੋਗ ਕੌਂਬੋ ਬਣਾਏਗਾ।",
     "duplicateAutoComboFailedPrefix": "ਆਟੋ-ਕੌਂਬੋ ਦੀ ਨਕਲ ਬਣਾਉਣ ਵਿੱਚ ਅਸਫਲ:",
     "duplicateAutoComboUnknownError": "ਅਣਜਾਣ ਗਲਤੀ",
-    "duplicateAutoComboTitle": "{name} ਤੋਂ ਇੱਕ ਸਥਿਰ ਕੌਂਬੋ ਬਣਾਓ"
+    "duplicateAutoComboTitle": "{name} ਤੋਂ ਇੱਕ ਸਥਿਰ ਕੌਂਬੋ ਬਣਾਓ",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "ਲਾਗਤਾਂ",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "ਪ੍ਰੋਵਾਈਡਰ (ਸਾਰੇ ਖਾਤੇ ਇੱਕ ਬ੍ਰੇਕਰ ਸਾਂਝਾ ਕਰਦੇ ਹਨ)",
     "resilienceTokenRefreshScopeConnection": "ਕਨੈਕਸ਼ਨ (ਹਰ ਖਾਤੇ ਦਾ ਆਪਣਾ ਬ੍ਰੇਕਰ ਹੈ)",
     "resilienceTokenRefreshThreshold": "ਰੋਕਣ ਤੋਂ ਪਹਿਲਾਂ ਅਸਫਲਤਾਵਾਂ",
-    "resilienceTokenRefreshCooldown": "ਟ੍ਰਿੱਪ ਹੋਣ ਤੋਂ ਬਾਅਦ ਵਿਰਾਮ ਦਿਓ"
+    "resilienceTokenRefreshCooldown": "ਟ੍ਰਿੱਪ ਹੋਣ ਤੋਂ ਬਾਅਦ ਵਿਰਾਮ ਦਿਓ",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK ਇੰਜਣ",

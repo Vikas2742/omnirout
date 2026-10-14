@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Dette vil ta et øyeblikksbilde av de nåvørende tilkoblede leverandørene/modellene som matcher denne malen i en redigerbar kombinasjon.",
     "duplicateAutoComboFailedPrefix": "Duplisering av auto-kombinasjon mislyktes:",
     "duplicateAutoComboUnknownError": "Ukjent feil",
-    "duplicateAutoComboTitle": "Opprett en statisk kombinasjon fra {name}"
+    "duplicateAutoComboTitle": "Opprett en statisk kombinasjon fra {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Kostnader",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Provider (alle kontoer deler én breaker)",
     "resilienceTokenRefreshScopeConnection": "Tilkobling (hver konto har sin egen breaker)",
     "resilienceTokenRefreshThreshold": "Feil før pausing",
-    "resilienceTokenRefreshCooldown": "Pause etter utløsning"
+    "resilienceTokenRefreshCooldown": "Pause etter utløsning",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK-motor",

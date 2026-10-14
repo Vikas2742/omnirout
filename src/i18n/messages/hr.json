@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "Time će se izraditi snimka trenutačno povezanih davatelja/modela koji odgovaraju ovom predlošku i pretvoriti u uređivu kombinaciju.",
     "duplicateAutoComboFailedPrefix": "Dupliciranje automatske kombinacije nije uspjelo:",
     "duplicateAutoComboUnknownError": "Nepoznata pogreška",
-    "duplicateAutoComboTitle": "Stvori statičnu kombinaciju iz {name}"
+    "duplicateAutoComboTitle": "Stvori statičnu kombinaciju iz {name}",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "Troškovi",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "Pružatelj usluge (svi računi dijele jedan prekidač)",
     "resilienceTokenRefreshScopeConnection": "Veza (svaki račun ima vlastiti prekidač)",
     "resilienceTokenRefreshThreshold": "Neuspjesi prije pauziranja",
-    "resilienceTokenRefreshCooldown": "Pauza nakon aktivacije"
+    "resilienceTokenRefreshCooldown": "Pauza nakon aktivacije",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK mehanizam",

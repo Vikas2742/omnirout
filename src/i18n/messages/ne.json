@@ -3994,7 +3994,10 @@
     "duplicateAutoComboSnapshotMsg": "यसले यो टेम्प्लेटसँग मेल खाने हाल जडान भएका प्रदायक/मोडेलहरूको स्न्यापसट लिएर सम्पादनयोग्य कम्बो बनाउनेछ।",
     "duplicateAutoComboFailedPrefix": "स्वचालित कम्बो डुप्लिकेट गर्न असफल भयो:",
     "duplicateAutoComboUnknownError": "अज्ञात त्रुटि",
-    "duplicateAutoComboTitle": "{name} बाट स्थिर कम्बो सिर्जना गर्नुहोस्"
+    "duplicateAutoComboTitle": "{name} बाट स्थिर कम्बो सिर्जना गर्नुहोस्",
+    "jev": "Jev",
+    "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
   },
   "costs": {
     "title": "लागत",
@@ -8789,7 +8792,8 @@
     "resilienceTokenRefreshScopeProvider": "प्रोभाइडर (सबै खाताहरूले एउटै ब्रेकर साझा गर्छन्)",
     "resilienceTokenRefreshScopeConnection": "जडान (प्रत्येक खातासँग आफ्नै ब्रेकर हुन्छ)",
     "resilienceTokenRefreshThreshold": "रोक्नु अघिको असफलताहरू",
-    "resilienceTokenRefreshCooldown": "ट्रिप भएपछि विश्राम गर्नुहोस्"
+    "resilienceTokenRefreshCooldown": "ट्रिप भएपछि विश्राम गर्नुहोस्",
+    "jev": "Jev"
   },
   "contextRtk": {
     "title": "RTK इन्जिन",
