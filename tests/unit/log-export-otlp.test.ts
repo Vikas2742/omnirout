@@ -579,6 +579,30 @@ test("Unicode-escaped JSON Basic credential echoes: every UTF-16 code unit escap
   await assertCredentialEchoContained(t, "synthetic-user", password, body);
 });
 
+test("short Basic usernames preserve generated OTLP wording", async (t) => {
+  for (const username of ["a", "api"]) {
+    await t.test(username, async () => {
+      const password = "synthetic-password-secret";
+      const token = Buffer.from(`${username}:${password}`).toString("base64");
+      const s = await server((_q, r) => r.writeHead(400).end(`rejected ${password}`));
+      try {
+        const client = otlp.otlpHttpDestination.createClient(
+          config({ endpoint: s.endpoint, headers: { Authorization: `Basic ${token}` } })
+        );
+        assert.deepEqual(await client.test(), {
+          ok: false,
+          detail: "OTLP/HTTP permanent status 400: rejected [REDACTED]",
+        });
+        await assert.rejects(client.send([record]), {
+          message: "OTLP/HTTP permanent status 400: rejected [REDACTED]",
+        });
+      } finally {
+        await s.close();
+      }
+    });
+  }
+});
+
 test("400 permanent excerpt redacts echoed header values; redirects never forward credentials", async () => {
   for (const status of [400, 302]) {
     const s = await server((_q, r) => {

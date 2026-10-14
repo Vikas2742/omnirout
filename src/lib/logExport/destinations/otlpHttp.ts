@@ -415,7 +415,9 @@ function createClient(config: OtlpHttpConfig) {
       try {
         return { ok: true, detail: `OTLP/HTTP status ${await post('{"resourceSpans":[]}')}` };
       } catch (error) {
-        return { ok: false, detail: safeExportError(error, secretValues) };
+        // post() already redacts remote text. Decoded header parts must not
+        // redact our generated wording (e.g. a Basic username of "a").
+        return { ok: false, detail: safeExportError(error) };
       }
     },
     async prepare() {}, // Collector/backend owns storage; there is nothing to provision.

@@ -345,7 +345,9 @@ before the excerpt is clipped. Raw, JSON-escaped and URL-encoded secret variants
 ASCII-safe JSON variants (non-ASCII UTF-16 units escaped as `\uXXXX`, with lowercase or
 uppercase hex) also protect invalid or truncated JSON fragments. This is not an arbitrary
 encoding decoder: HTML entities, separately base64-encoded secret parts and other unregistered
-encodings can remain visible. Only configure trusted collectors.
+encodings can remain visible. Only configure trusted collectors. Header-derived redaction
+applies to untrusted response excerpts and call-log error summaries, not OmniRoute's generated
+status wording; Test applies only the generic sanitizer to an already-redacted failure.
 `prepare()` provisions nothing; Test posts exactly `{"resourceSpans":[]}` and reports
 HTTP status without writing call-log spans.
 
