@@ -49,7 +49,7 @@ test("canonical JSON escape/format matrix contains credentials", async () => {
     ]) {
       const result = await probe(password, body);
       assert.equal(result.ok, false);
-      assert.match(result.detail!, /\[REDACTED\]/);
+      assert.match(result.detail!, /\[REDACTED\]|\[response excerpt withheld\]/);
       assert.equal(result.detail!.includes(password), false);
       assert.equal(result.detail!.includes(escapeEveryUnit(password)), false);
     }
@@ -69,7 +69,7 @@ test("large flat and moderately nested valid JSON stays contained", async () => 
       "}",
   ]) {
     const result = await probe(password, body);
-    assert.match(result.detail!, /\[REDACTED\]/);
+    assert.match(result.detail!, /\[REDACTED\]|\[response excerpt withheld\]/);
     assert.equal(result.detail!.includes(escapeEveryUnit(password)), false);
   }
 });
@@ -93,13 +93,12 @@ test("deep parseable JSON stays contained on the actual review runtime", async (
   const parsed = JSON.parse(body);
   assert.equal(parsed.error, password);
   // Node 24 on this host parses this depth but JSON.stringify can exceed its
-  // native stack. Exercise canonicalBody's raw fallback instead of failing in
-  // the test harness before the destination is called.
+  // native stack. Exercise fail-closed rendering rather than failing in the
+  // test harness before the destination is called.
   const result = await probe(password, body);
-  console.log(
-    "DEEP_JSON_RESULT",
-    JSON.stringify({ bytes: Buffer.byteLength(body), detail: result.detail })
-  );
+  // Rendering failure now withholds the excerpt rather than falling back to
+  // encoded raw text after successfully decoding JSON.
+  assert.equal(result.detail, "OTLP/HTTP permanent status 400: [response excerpt withheld]");
   assert.equal(result.detail!.includes(password), false);
   assert.equal(
     result.detail!.includes(escaped),

@@ -127,7 +127,7 @@ test("raw header, token, UTF-8 username, password and pair registered forms are 
     const body = [header, token, username, password, pair].map(encode).join(" | ");
     const result = await probe(body, headers);
     assert.equal(result.ok, false);
-    assert.match(result.detail!, /\[REDACTED\]/);
+    assert.match(result.detail!, /\[REDACTED\]|\[response excerpt withheld\]/);
     for (const value of [header, token, username, password, pair]) {
       assert.equal(result.detail!.includes(value), false);
       assert.equal(result.detail!.includes(encode(value)), false);
