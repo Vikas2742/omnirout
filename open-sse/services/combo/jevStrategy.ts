@@ -58,6 +58,54 @@ function probabilityFor(answer: JevChoiceAnswer, id: string): number {
   return typeof n === "number" && Number.isFinite(n) ? n : 0;
 }
 
+function admitCandidates(
+  candidates: readonly JevCandidate[],
+  winner: JevCandidate,
+  answer: JevChoiceAnswer
+): Pick<JudgeJevResult, "admitted" | "held"> {
+  const admitted: JevVerdictRow[] = [
+    {
+      id: winner.id,
+      userRank: winner.userRank,
+      verdict: "admitted",
+      probability: probabilityFor(answer, winner.id),
+    },
+  ];
+  const held: JevVerdictRow[] = [];
+
+  for (const candidate of [...candidates].sort(byUserRank)) {
+    if (candidate.id === winner.id) continue;
+    const probability = probabilityFor(answer, candidate.id);
+    if (probability < JEV_PROBABILITY_FLOOR) {
+      held.push({
+        id: candidate.id,
+        userRank: candidate.userRank,
+        verdict: "held",
+        reason: "below_probability_floor",
+        probability,
+      });
+      continue;
+    }
+    if (admitted.length >= JEV_MAX_ADMITTED) {
+      held.push({
+        id: candidate.id,
+        userRank: candidate.userRank,
+        verdict: "held",
+        reason: "dominated",
+        probability,
+      });
+      continue;
+    }
+    admitted.push({
+      id: candidate.id,
+      userRank: candidate.userRank,
+      verdict: "admitted",
+      probability,
+    });
+  }
+  return { admitted, held };
+}
+
 /**
  * Fall open: admit every candidate in user order, mark the hold reason on none
  * of them as "held" — the attempt loop walks the full preference list.
@@ -131,47 +179,7 @@ export function judgeJev(
     return fallOpen(candidates, "jev_unavailable");
   }
 
-  const ranked = [...candidates].sort(byUserRank);
-  const admitted: JevVerdictRow[] = [
-    {
-      id: winner.id,
-      userRank: winner.userRank,
-      verdict: "admitted",
-      probability: probabilityFor(answer, winner.id),
-    },
-  ];
-  const held: JevVerdictRow[] = [];
-
-  for (const candidate of ranked) {
-    if (candidate.id === winner.id) continue;
-    const probability = probabilityFor(answer, candidate.id);
-    if (probability < JEV_PROBABILITY_FLOOR) {
-      held.push({
-        id: candidate.id,
-        userRank: candidate.userRank,
-        verdict: "held",
-        reason: "below_probability_floor",
-        probability,
-      });
-      continue;
-    }
-    if (admitted.length >= JEV_MAX_ADMITTED) {
-      held.push({
-        id: candidate.id,
-        userRank: candidate.userRank,
-        verdict: "held",
-        reason: "dominated",
-        probability,
-      });
-      continue;
-    }
-    admitted.push({
-      id: candidate.id,
-      userRank: candidate.userRank,
-      verdict: "admitted",
-      probability,
-    });
-  }
+  const { admitted, held } = admitCandidates(candidates, winner, answer);
 
   return {
     admitted,

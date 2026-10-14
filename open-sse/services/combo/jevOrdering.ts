@@ -13,6 +13,7 @@ import {
   buildJevCriteria,
   judgeJev,
   orderTargetsByJevVerdicts,
+  type JevCandidate,
   type JevChoiceAnswer,
   type JevHoldReason,
   type JudgeJevResult,
@@ -26,6 +27,30 @@ export type JevAsk = (input: {
   state: string;
   criteria: Record<string, string | null>;
 }) => Promise<JevAskResult>;
+
+type JevAnswerResolution = { answer: JevChoiceAnswer | null; missingApiKey: boolean };
+
+async function requestJevAnswer(
+  candidates: readonly JevCandidate[],
+  state: string,
+  ask: JevAsk
+): Promise<JevAnswerResolution> {
+  const uniqueIds = new Set(candidates.map((candidate) => candidate.id));
+  if (uniqueIds.size !== candidates.length || candidates.length > TYPESAFE_MAX_CHOICE_OPTIONS) {
+    return { answer: null, missingApiKey: false };
+  }
+
+  const boundedState =
+    state.length > TYPESAFE_MAX_STATE_CHARS ? state.slice(0, TYPESAFE_MAX_STATE_CHARS) : state;
+  try {
+    const result = await ask({ state: boundedState, criteria: buildJevCriteria(candidates) });
+    if (result.ok) return { answer: result.answer, missingApiKey: false };
+    const unavailable = result as Extract<JevAskResult, { ok: false }>;
+    return { answer: null, missingApiKey: unavailable.reason === "missing_api_key" };
+  } catch {
+    return { answer: null, missingApiKey: false };
+  }
+}
 
 export type JevHoldRecord = {
   executionKey: string;
@@ -87,30 +112,31 @@ function toTextContent(content: unknown): string {
  */
 export function extractPromptForJevState(body: Record<string, unknown> | null | undefined): string {
   if (!body || typeof body !== "object") return "";
-
-  if (Array.isArray(body.messages)) {
-    const fromMessages = [...body.messages].reverse().find((m) => isRecord(m) && m.role === "user");
-    if (isRecord(fromMessages)) return toTextContent(fromMessages.content);
-  }
-
+  const fromMessages = latestUserMessageText(body.messages);
+  if (fromMessages !== null) return fromMessages;
   if (typeof body.input === "string") return body.input;
-  if (Array.isArray(body.input)) {
-    for (const item of [...body.input].reverse()) {
-      if (!isRecord(item)) continue;
-      const role = typeof item.role === "string" ? item.role : null;
-      if (role === "user") {
-        if (typeof item.content === "string" || Array.isArray(item.content)) {
-          return toTextContent(item.content);
-        }
-        if (typeof item.text === "string") return item.text;
-      }
-      // Responses message items sometimes nest content without a top-level role
-      // on every shape; prefer explicit user role only.
-    }
-  }
-
+  const fromInput = latestResponsesUserInput(body.input);
+  if (fromInput !== null) return fromInput;
   if (typeof body.prompt === "string") return body.prompt;
   return "";
+}
+
+function latestUserMessageText(messages: unknown): string | null {
+  if (!Array.isArray(messages)) return null;
+  const message = [...messages].reverse().find((item) => isRecord(item) && item.role === "user");
+  return isRecord(message) ? toTextContent(message.content) : null;
+}
+
+function latestResponsesUserInput(input: unknown): string | null {
+  if (!Array.isArray(input)) return null;
+  for (const item of [...input].reverse()) {
+    if (!isRecord(item) || item.role !== "user") continue;
+    if (typeof item.content === "string" || Array.isArray(item.content)) {
+      return toTextContent(item.content);
+    }
+    if (typeof item.text === "string") return item.text;
+  }
+  return null;
 }
 
 export async function orderJevComboTargets(
@@ -135,27 +161,7 @@ export async function orderJevComboTargets(
     userRank: index,
     label: target.label || target.modelStr,
   }));
-  const uniqueIds = new Set(candidates.map((candidate) => candidate.id));
-  const boundedState =
-    state.length > TYPESAFE_MAX_STATE_CHARS ? state.slice(0, TYPESAFE_MAX_STATE_CHARS) : state;
-
-  let answer: JevChoiceAnswer | null = null;
-  let missingApiKey = false;
-  if (uniqueIds.size === candidates.length && candidates.length <= TYPESAFE_MAX_CHOICE_OPTIONS) {
-    try {
-      const asked = await ports.ask({
-        state: boundedState,
-        criteria: buildJevCriteria(candidates),
-      });
-      if (asked.ok) {
-        answer = asked.answer;
-      } else if ((asked as Extract<JevAskResult, { ok: false }>).reason === "missing_api_key") {
-        missingApiKey = true;
-      }
-    } catch {
-      answer = null;
-    }
-  }
+  const { answer, missingApiKey } = await requestJevAnswer(candidates, state, ports.ask);
 
   return toOutcome(
     targets,

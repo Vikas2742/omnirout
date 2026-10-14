@@ -63,7 +63,7 @@ import {
 } from "@/lib/combos/builderDraft";
 import { normalizeComboConfigMode } from "@/shared/constants/comboConfigMode";
 import AutoComboCatalog from "./AutoComboCatalog";
-import { AutoComboTruncatedNote, getI18nOrFallback } from "./comboPageHelpers";
+import { ComboTestSummaryNote, getI18nOrFallback } from "./comboPageHelpers";
 import KimiComboPresetCard from "./KimiComboPresetCard";
 import { KIMI_CODING_PRESET, hasKimiCodingPreset } from "./kimiComboPreset";
 import BuilderIntelligentStep from "./BuilderIntelligentStep";
@@ -2017,10 +2017,6 @@ const ComboCard = memo(ComboCardInner);
 
 function TestResultsView({ results }) {
   const emailsVisible = useEmailPrivacyStore((s) => s.emailsVisible);
-  const strategy = String(results?.strategy || "")
-    .trim()
-    .toLowerCase();
-  const isJev = strategy === "jev";
 
   if (results.error) {
     return (
@@ -2033,34 +2029,7 @@ function TestResultsView({ results }) {
 
   return (
     <div className="flex flex-col gap-2">
-      {isJev && results.jev ? (
-        <div className="rounded-md border border-indigo-500/20 bg-indigo-500/5 px-2.5 py-2 flex flex-col gap-1.5">
-          <p className="text-xs text-indigo-800 dark:text-indigo-200">
-            {results.jev.admittedSentence}
-          </p>
-          <p className="text-xs text-indigo-800 dark:text-indigo-200">{results.jev.heldSentence}</p>
-          <p className="text-xs text-indigo-800 dark:text-indigo-200">
-            {results.jev.blockedSentence}
-          </p>
-          {results.jev.configurationNote ? (
-            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
-              {results.jev.configurationNote}
-            </p>
-          ) : null}
-          <p className="text-[10px] text-text-muted">
-            Target rows below are independent health probes. Live Jev admission is recorded on the
-            decision trace for a real chat request.
-          </p>
-        </div>
-      ) : (
-        <>
-          <p className="text-xs text-text-muted">
-            Targets are tested independently. This checks model health, not the combo’s routing
-            strategy or fallback order.
-          </p>
-          <AutoComboTruncatedNote results={results} />
-        </>
-      )}
+      <ComboTestSummaryNote results={results} />
       {results.resolvedBy && (
         <div className="flex items-center gap-2 text-sm">
           <span className="material-symbols-outlined text-emerald-500 text-[18px]">

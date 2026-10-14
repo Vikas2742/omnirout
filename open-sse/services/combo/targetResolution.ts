@@ -86,8 +86,14 @@ import {
   type ApplyStickinessResult,
 } from "./sessionStickiness.ts";
 import { applyRequestTagRouting } from "./autoStrategy.ts";
-import { extractPromptForJevState, orderJevComboTargets, type JevAsk } from "./jevOrdering.ts";
+import {
+  extractPromptForJevState,
+  orderJevComboTargets,
+  type JevAsk,
+  type JevOrderOutcome,
+} from "./jevOrdering.ts";
 import { partitionJevTargetsForAsk } from "./jevBlockChecker.ts";
+import type { JevPartition } from "./jevEligibility.ts";
 import { recordComboDecision } from "./decisionTrace.ts";
 import {
   evaluateSystemOneChoice,
@@ -539,17 +545,7 @@ async function orderByJevStrategy(
     comboName: combo.name,
   });
 
-  if (deps.traceInvocationId) {
-    for (const blocked of partition.blocked) {
-      recordComboDecision(deps.traceInvocationId, {
-        step: blocked.target.executionKey,
-        target: blocked.target.modelStr,
-        decision: "skipped_before_dispatch",
-        reason: blocked.reason,
-        detail: `verdict=blocked reason=${blocked.reason}`,
-      });
-    }
-  }
+  recordJevBlockedTargets(deps.traceInvocationId, partition.blocked);
 
   const eligible = partition.eligible;
   const sessionPinned = await jevSessionPinned(deps, eligible);
@@ -597,9 +593,42 @@ async function orderByJevStrategy(
     ask,
   });
 
-  if (deps.traceInvocationId) {
+  recordJevOrderingOutcome(deps.traceInvocationId, outcome, log);
+  logJevOrderingSummary({
+    sessionPinned,
+    comboName: combo.name,
+    outcome,
+    eligibleCount: eligible.length,
+    blockedCount: partition.blocked.length,
+    log,
+  });
+  return outcome;
+}
+
+function recordJevBlockedTargets(
+  invocationId: string | null | undefined,
+  blocked: JevPartition["blocked"]
+): void {
+  if (!invocationId) return;
+  for (const item of blocked) {
+    recordComboDecision(invocationId, {
+      step: item.target.executionKey,
+      target: item.target.modelStr,
+      decision: "skipped_before_dispatch",
+      reason: item.reason,
+      detail: `verdict=blocked reason=${item.reason}`,
+    });
+  }
+}
+
+function recordJevOrderingOutcome(
+  invocationId: string | null | undefined,
+  outcome: JevOrderOutcome,
+  log: ComboLogger
+): void {
+  if (invocationId) {
     for (const hold of outcome.holds) {
-      recordComboDecision(deps.traceInvocationId, {
+      recordComboDecision(invocationId, {
         step: hold.executionKey,
         target: hold.modelStr,
         decision: "skipped_before_dispatch",
@@ -608,34 +637,48 @@ async function orderByJevStrategy(
       });
     }
     for (const admitted of outcome.admitted) {
-      recordComboDecision(deps.traceInvocationId, {
+      recordComboDecision(invocationId, {
         step: admitted.executionKey,
         target: admitted.modelStr,
         decision: "not_reached",
         detail: admitted.detail,
       });
     }
-    if (outcome.fellOpen && outcome.fallbackReason) {
-      log.info(
-        "COMBO",
-        outcome.missingApiKey
-          ? `[jev] Falling open to user order (Jev is not configured)`
-          : `[jev] Falling open to user order (${outcome.fallbackReason})`
-      );
-    }
   }
 
+  if (!outcome.fellOpen || !outcome.fallbackReason) return;
+  log.info(
+    "COMBO",
+    outcome.missingApiKey
+      ? "[jev] Falling open to user order (Jev is not configured)"
+      : `[jev] Falling open to user order (${outcome.fallbackReason})`
+  );
+}
+
+function logJevOrderingSummary({
+  sessionPinned,
+  comboName,
+  outcome,
+  eligibleCount,
+  blockedCount,
+  log,
+}: {
+  sessionPinned: boolean;
+  comboName: string;
+  outcome: JevOrderOutcome;
+  eligibleCount: number;
+  blockedCount: number;
+  log: ComboLogger;
+}): void {
   if (sessionPinned) {
-    log.info("COMBO", `[jev] Skipping System One — live session pin for combo "${combo.name}"`);
-  } else {
-    log.info(
-      "COMBO",
-      `[jev] Admitted ${outcome.targets.length}/${eligible.length} eligible (${partition.blocked.length} blocked): ${outcome.targets
-        .map((target) => target.modelStr)
-        .join(" → ")}`
-    );
+    log.info("COMBO", `[jev] Skipping System One — live session pin for combo "${comboName}"`);
+    return;
   }
-  return outcome;
+  const targetNames = outcome.targets.map((target) => target.modelStr).join(" → ");
+  log.info(
+    "COMBO",
+    `[jev] Admitted ${outcome.targets.length}/${eligibleCount} eligible (${blockedCount} blocked): ${targetNames}`
+  );
 }
 
 /** True when continuity will pin this combo. Uses the same stickiness pass the pipeline runs again. */

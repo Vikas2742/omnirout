@@ -14,7 +14,6 @@ import { resolveQuotaExhaustionCutoffForTarget } from "./quotaExhaustionCutoff.t
 import { resolveResetWindowConfig } from "./quotaScoring.ts";
 import { filterTargetsByRequestCompatibility } from "./comboStructure.ts";
 import { applyContextRequirements } from "./contextRequirements.ts";
-import type { ComboSkipReason } from "./decisionTrace.ts";
 import {
   modelAvailabilitySkipReason,
   type ComboLogger,
@@ -39,37 +38,46 @@ export type JevBlockCheckerDeps = {
  */
 export function createJevBlockChecker(deps: JevBlockCheckerDeps): CheckJevBlock {
   const resetWindowConfig = resolveResetWindowConfig(deps.config);
-
-  return async (target) => {
-    const provider = target.provider;
-    const rawModel = parseModel(target.modelStr).model || target.modelStr;
-
-    if (provider) {
-      const open = findOpenCircuitBreaker(provider, target.connectionId);
-      if (open) return "circuit_open";
-    }
-
-    if (
-      deps.resilienceSettings.providerCooldown.enabled &&
-      Boolean(provider && provider !== "unknown") &&
-      (isProviderInCooldown(provider, target.connectionId ?? undefined, deps.resilienceSettings) ||
-        isProviderInCooldown(provider, undefined, deps.resilienceSettings))
-    ) {
-      return "provider_cooldown";
-    }
-
-    if (target.connectionId) {
+  const gates: Array<CheckJevBlock> = [
+    async (target) => {
+      const provider = target.provider;
+      if (!provider) return null;
+      return findOpenCircuitBreaker(provider, target.connectionId) ? "circuit_open" : null;
+    },
+    async (target) => {
+      const provider = target.provider;
+      if (
+        !deps.resilienceSettings.providerCooldown.enabled ||
+        !provider ||
+        provider === "unknown"
+      ) {
+        return null;
+      }
+      return isProviderInCooldown(
+        provider,
+        target.connectionId ?? undefined,
+        deps.resilienceSettings
+      ) || isProviderInCooldown(provider, undefined, deps.resilienceSettings)
+        ? "provider_cooldown"
+        : null;
+    },
+    async (target) => {
+      if (!target.connectionId) return null;
       const persisted = await resolvePersistedConnectionCooldownSkipReason(target, (id) =>
         readConnectionForCooldownGate(id, false)
       );
-      if (persisted) return "persisted_cooldown";
-    }
-
-    if (provider && rawModel && isModelLocked(provider, target.connectionId || "", rawModel)) {
-      return "model_lockout";
-    }
-
-    if (provider && target.connectionId) {
+      return persisted ? "persisted_cooldown" : null;
+    },
+    async (target) => {
+      const provider = target.provider;
+      const rawModel = parseModel(target.modelStr).model || target.modelStr;
+      return provider && rawModel && isModelLocked(provider, target.connectionId || "", rawModel)
+        ? "model_lockout"
+        : null;
+    },
+    async (target) => {
+      const provider = target.provider;
+      if (!provider || !target.connectionId) return null;
       const quotaCutoff = await resolveQuotaExhaustionCutoffForTarget(
         provider,
         target.connectionId,
@@ -79,20 +87,26 @@ export function createJevBlockChecker(deps: JevBlockCheckerDeps): CheckJevBlock 
         deps.log,
         target.modelStr
       );
-      if (quotaCutoff.blocked) return "quota_cutoff";
-    }
+      return quotaCutoff.blocked ? "quota_cutoff" : null;
+    },
+    async (target) => {
+      if (!deps.isModelAvailable) return null;
+      return modelAvailabilitySkipReason(await deps.isModelAvailable(target.modelStr, target));
+    },
+    async (target) => {
+      if (!target.connectionId) return null;
+      return checkCredentialGate(target.connectionId, target.provider, target.modelStr).allowed ===
+        false
+        ? "credential_gate"
+        : null;
+    },
+  ];
 
-    if (deps.isModelAvailable) {
-      const available = await deps.isModelAvailable(target.modelStr, target);
-      const skipReason = modelAvailabilitySkipReason(available);
-      if (skipReason) return skipReason;
+  return async (target) => {
+    for (const gate of gates) {
+      const reason = await gate(target);
+      if (reason) return reason;
     }
-
-    if (target.connectionId) {
-      const gate = checkCredentialGate(target.connectionId, provider, target.modelStr);
-      if (gate.allowed === false) return "credential_gate";
-    }
-
     return null;
   };
 }
@@ -111,31 +125,32 @@ export async function partitionJevTargetsForAsk(
   const compatFailOpen =
     (deps.config as { compatFilterFailOpen?: unknown } | null | undefined)?.compatFilterFailOpen ===
     true;
-  const afterCompat = filterTargetsByRequestCompatibility(
+  const contextRequirements = (
+    deps.config as { contextRequirements?: Parameters<typeof applyContextRequirements>[1] } | null
+  )?.contextRequirements;
+  const compatibility = filterTargetsByRequestCompatibility(
     perTarget.eligible,
     deps.body,
     deps.log,
     "Jev pre-ask",
     { failOpen: compatFailOpen }
   );
-  const blocked: typeof perTarget.blocked = [...perTarget.blocked];
-  const compatSurvivors = new Set(afterCompat.map((t) => t.executionKey));
-  for (const target of perTarget.eligible) {
-    if (!compatSurvivors.has(target.executionKey)) {
-      blocked.push({ target, reason: "availability" });
-    }
-  }
+  const compatibilityBlocks = getRemovedTargets(perTarget.eligible, compatibility);
+  const eligible = applyContextRequirements(compatibility, contextRequirements, deps.log);
+  const contextBlocks = getRemovedTargets(compatibility, eligible);
 
-  const contextRequirements = (
-    deps.config as { contextRequirements?: Parameters<typeof applyContextRequirements>[1] } | null
-  )?.contextRequirements;
-  const afterContext = applyContextRequirements(afterCompat, contextRequirements, deps.log);
-  const contextSurvivors = new Set(afterContext.map((t) => t.executionKey));
-  for (const target of afterCompat) {
-    if (!contextSurvivors.has(target.executionKey)) {
-      blocked.push({ target, reason: "availability" as ComboSkipReason });
-    }
-  }
+  return {
+    eligible,
+    blocked: [...perTarget.blocked, ...compatibilityBlocks, ...contextBlocks],
+  };
+}
 
-  return { eligible: afterContext, blocked };
+function getRemovedTargets(
+  before: readonly ResolvedComboTarget[],
+  after: readonly ResolvedComboTarget[]
+): JevPartition["blocked"] {
+  const survivors = new Set(after.map((target) => target.executionKey));
+  return before
+    .filter((target) => !survivors.has(target.executionKey))
+    .map((target) => ({ target, reason: "availability" as const }));
 }
