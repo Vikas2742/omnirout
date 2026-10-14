@@ -2,6 +2,7 @@ import { isUtf8 } from "node:buffer";
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
+import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
 import { version } from "../../../../package.json";
 import { parseAndValidateNonMetadataUrl } from "../../../shared/network/outboundUrlGuard";
 import { safeExportError } from "../safeExportError";
@@ -120,7 +121,25 @@ function canonicalBody(body: string | null): string | null {
   } // clipped/non-JSON bodies remain readable
 }
 
-function headerSecretValues(config: OtlpHttpConfig): string[] {
+function secretForms(value: string): string[] {
+  const jsonEscaped = JSON.stringify(value).slice(1, -1);
+  const forms = new Set<string>([value, jsonEscaped, encodeURIComponent(value)]);
+  // Invalid/clipped JSON cannot be canonicalized. Cover ASCII-safe encoders,
+  // including surrogate pairs: without /u, each non-ASCII UTF-16 unit is escaped.
+  for (const form of [value, jsonEscaped]) {
+    for (const uppercase of [false, true]) {
+      forms.add(
+        form.replace(/[\u0080-\uffff]/g, (char) => {
+          const hex = char.charCodeAt(0).toString(16).padStart(4, "0");
+          return `\\u${uppercase ? hex.toUpperCase() : hex}`;
+        })
+      );
+    }
+  }
+  return [...forms].filter(Boolean);
+}
+
+function headerSecretValues(config: OtlpHttpConfig, includeShortUsernames = true): string[] {
   const values = new Set<string>([config.headers, config.identitySalt ?? ""]);
   for (const [name, value] of Object.entries(parseOtlpHeaders(config.headers))) {
     values.add(value);
@@ -135,30 +154,59 @@ function headerSecretValues(config: OtlpHttpConfig): string[] {
           if (isUtf8(decodedBytes) && colon >= 0) {
             values.add(decoded);
             values.add(decoded.slice(colon + 1));
-            values.add(decoded.slice(0, colon));
+            const username = decoded.slice(0, colon);
+            if (includeShortUsernames || username.length >= 4) values.add(username);
           }
         }
       }
     }
   }
-  for (const value of [...values]) {
-    const jsonEscaped = JSON.stringify(value).slice(1, -1);
-    values.add(jsonEscaped);
-    values.add(encodeURIComponent(value));
-    // Invalid/clipped JSON cannot be canonicalized. Cover ASCII-safe encoders,
-    // including surrogate pairs: without /u, each non-ASCII UTF-16 unit is escaped.
-    for (const form of [value, jsonEscaped]) {
-      for (const uppercase of [false, true]) {
-        values.add(
-          form.replace(/[\u0080-\uffff]/g, (char) => {
-            const hex = char.charCodeAt(0).toString(16).padStart(4, "0");
-            return `\\u${uppercase ? hex.toUpperCase() : hex}`;
-          })
-        );
-      }
+  return [...new Set([...values].flatMap(secretForms))].sort((a, b) => b.length - a.length);
+}
+
+type CollectorSecrets = {
+  redact: string[];
+  failClosed: string[];
+};
+
+function collectorSecrets(config: OtlpHttpConfig): CollectorSecrets {
+  return {
+    redact: headerSecretValues(config),
+    // Short usernames are still replaced in collector text, but their forms
+    // alone must not trigger whole-excerpt withholding (including our marker).
+    failClosed: headerSecretValues(config, false),
+  };
+}
+
+const RESPONSE_EXCERPT_WITHHELD = "[response excerpt withheld]";
+
+/** Canonicalize, redact, sanitize and re-redact untrusted collector text to a fixed point. */
+function redactCollectorText(text: string, secrets: CollectorSecrets): string {
+  const matchSecrets = (value: string) => {
+    // Do not recursively redact our own marker, notably for one-letter usernames.
+    // The final containment scan still checks markers against non-exempt secrets.
+    for (const secret of secrets.redact) {
+      value = value
+        .split("[REDACTED]")
+        .map((part) => part.split(secret).join("[REDACTED]"))
+        .join("[REDACTED]");
     }
+    return value;
+  };
+  let output = matchSecrets(canonicalBody(text) ?? "");
+  let stable = false;
+  for (let iteration = 0; iteration < 4; iteration++) {
+    const next = matchSecrets(sanitizeErrorMessage(output));
+    if (next === output) {
+      stable = true;
+      break;
+    }
+    output = next;
   }
-  return [...values].filter(Boolean).sort((a, b) => b.length - a.length);
+  // Withhold before clipping, so clipping cannot hide a failed containment check.
+  if (!stable || secrets.failClosed.some((secret) => output.includes(secret)))
+    return RESPONSE_EXCERPT_WITHHELD;
+  return output.slice(0, 256);
 }
 
 function toSpan(row: LogExportRecord, config: OtlpHttpConfig): Span {
@@ -337,14 +385,22 @@ const acknowledgementSchema = z.object({
 });
 
 /** Empty 2xx responses are supported; explicit OTLP partial rejection must not move the cursor. */
-function acknowledgementFailure(text: string, truncated: boolean): string | null {
+function acknowledgementFailure(
+  text: string,
+  truncated: boolean,
+  secrets: CollectorSecrets
+): string | null {
   if (truncated) return "OTLP/HTTP acknowledgement exceeds the response size limit";
   if (!text.trim()) return null;
   try {
     const result = acknowledgementSchema.safeParse(JSON.parse(text));
     if (!result.success) return "OTLP/HTTP invalid acknowledgement";
     const rejected = BigInt(result.data.partialSuccess?.rejectedSpans ?? 0);
-    return rejected > 0n ? `OTLP/HTTP rejected ${rejected} spans (partial success)` : null;
+    if (rejected <= 0n) return null;
+    const redactedCount = redactCollectorText(String(rejected), secrets);
+    return redactedCount.includes("[REDACTED]") || redactedCount === RESPONSE_EXCERPT_WITHHELD
+      ? "OTLP/HTTP rejected spans (partial success)"
+      : `OTLP/HTTP rejected ${redactedCount} spans (partial success)`;
   } catch {
     return "OTLP/HTTP invalid JSON acknowledgement";
   }
@@ -356,7 +412,7 @@ function createClient(config: OtlpHttpConfig) {
   headers.set("Content-Type", "application/json");
   if (config.langfuseMapping) headers.set("x-langfuse-ingestion-version", "4");
   else headers.delete("x-langfuse-ingestion-version");
-  const secretValues = headerSecretValues(config);
+  const collectorSecretValues = collectorSecrets(config);
   async function post(body: string): Promise<number> {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let retryMs = 250 * 2 ** attempt;
@@ -373,7 +429,11 @@ function createClient(config: OtlpHttpConfig) {
         });
         const responseBody = await responseText(response);
         if (response.ok) {
-          const rejected = acknowledgementFailure(responseBody.text, responseBody.truncated);
+          const rejected = acknowledgementFailure(
+            responseBody.text,
+            responseBody.truncated,
+            collectorSecretValues
+          );
           if (!rejected) return response.status;
           retryable = false;
           failure = new Error(rejected);
@@ -388,15 +448,9 @@ function createClient(config: OtlpHttpConfig) {
             if (Number.isFinite(parsed))
               retryMs = Math.min(RETRY_AFTER_CAP_MS, Math.max(retryMs, parsed));
           }
-          // Canonical JSON decodes every JSON escape before secret matching. Invalid
-          // or clipped responses stay raw and use the registered escaped variants.
-          // Redact before clipping: a credential can straddle the 256-character excerpt boundary.
-          const excerpt = safeExportError(canonicalBody(responseBody.text), secretValues).slice(
-            0,
-            256
-          );
+          const excerpt = redactCollectorText(responseBody.text, collectorSecretValues);
           failure = new Error(
-            `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${response.status}${excerpt ? ": " + excerpt : ""}`
+            `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${redactCollectorText(String(response.status), collectorSecretValues)}${excerpt ? ": " + excerpt : ""}`
           );
         }
       } catch {
@@ -413,7 +467,11 @@ function createClient(config: OtlpHttpConfig) {
   return {
     async test() {
       try {
-        return { ok: true, detail: `OTLP/HTTP status ${await post('{"resourceSpans":[]}')}` };
+        const status = await post('{"resourceSpans":[]}');
+        return {
+          ok: true,
+          detail: `OTLP/HTTP status ${redactCollectorText(String(status), collectorSecretValues)}`,
+        };
       } catch (error) {
         // post() already redacts remote text. Decoded header parts must not
         // redact our generated wording (e.g. a Basic username of "a").
