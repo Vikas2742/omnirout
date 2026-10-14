@@ -392,6 +392,72 @@ test("HTTP error redacts Authorization token fragments and JSON-escaped custom h
   }
 });
 
+for (const [username, password] of [
+  ["synthetic-user", "synthetic-pässword-secret"],
+  ['synthetic-üsér"name', "synthetic-password-secret"],
+]) {
+  test(`UTF-8 Basic credentials redact every error surface: ${username}`, async (t) => {
+    insertRows();
+    const decoded = `${username}:${password}`;
+    const token = Buffer.from(decoded).toString("base64");
+    const secretValues = [decoded, username, password, token];
+    for (const [variant, encode] of [
+      ["raw", (value: string) => value],
+      ["JSON-escaped", (value: string) => JSON.stringify(value).slice(1, -1)],
+      ["URL-encoded", encodeURIComponent],
+    ] as const) {
+      const s = await server((_q, r) =>
+        r.writeHead(400).end(`rejected ${[decoded, password, username].map(encode).join(" ")}`)
+      );
+      const output: string[] = [];
+      const originalError = console.error;
+      let spawned = 0;
+      console.error = (...args: unknown[]) => output.push(args.join(" "));
+      runner.__setLogExportChildOptionsForTest({
+        onSpawn: (child) => {
+          spawned++;
+          child.stdout?.on("data", (c: Buffer) => output.push(c.toString()));
+          child.stderr?.on("data", (c: Buffer) => output.push(c.toString()));
+        },
+      });
+      try {
+        const cfg = config({ endpoint: s.endpoint, headers: { Authorization: `Basic ${token}` } });
+        const probe = await otlp.otlpHttpDestination.createClient(cfg).test();
+        const dest = dbDest.createLogExportDestination({
+          name: "utf8-basic-fixture",
+          type: "otlp-http",
+          config: secrets.encryptDestinationConfig("otlp-http", cfg),
+        });
+        const result = await runner.runDestinationExport(dest);
+        assert.equal(probe.ok, false);
+        assert.equal(result.success, false);
+        assert.equal(spawned, 1, "must exercise the real child path");
+        assert.equal(result.cursorRowId, 0);
+        const lastError = dbDest.getLogExportDestination(dest.id)?.lastError;
+        assert.ok(lastError);
+        assert.ok(output.some((line) => line.includes("[LogExport]")));
+        for (const [surface, text] of Object.entries({
+          "test detail": probe.detail,
+          "runner result": JSON.stringify(result),
+          "stored lastError": lastError,
+          "console output": output.join("\n"),
+        })) {
+          await t.test(`${variant}: ${surface}`, () => {
+            for (const value of secretValues) {
+              for (const encoded of [value, encode(value), JSON.stringify(value).slice(1, -1)])
+                assert.equal(text?.includes(encoded), false, `${surface} leaks a credential`);
+            }
+          });
+        }
+      } finally {
+        console.error = originalError;
+        runner.__setLogExportChildOptionsForTest(null);
+        await s.close();
+      }
+    }
+  });
+}
+
 test("400 permanent excerpt redacts echoed header values; redirects never forward credentials", async () => {
   for (const status of [400, 302]) {
     const s = await server((_q, r) => {

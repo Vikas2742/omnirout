@@ -1,3 +1,4 @@
+import { isUtf8 } from "node:buffer";
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
@@ -128,10 +129,13 @@ function headerSecretValues(config: OtlpHttpConfig): string[] {
       if (match) {
         values.add(match[2]);
         if (match[1].toLowerCase() === "basic") {
-          const decoded = Buffer.from(match[2], "base64").toString("utf8");
-          if (/^[\x20-\x7e]+$/.test(decoded) && decoded.includes(":")) {
+          const decodedBytes = Buffer.from(match[2], "base64");
+          const decoded = decodedBytes.toString("utf8");
+          const colon = decoded.indexOf(":");
+          if (isUtf8(decodedBytes) && colon >= 0) {
             values.add(decoded);
-            values.add(decoded.slice(decoded.indexOf(":") + 1));
+            values.add(decoded.slice(colon + 1));
+            values.add(decoded.slice(0, colon));
           }
         }
       }
