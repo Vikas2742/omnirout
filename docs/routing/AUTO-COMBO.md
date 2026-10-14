@@ -863,7 +863,7 @@ See [`docs/guides/TIERS.md`](../guides/TIERS.md) for tier definitions and provid
 public strategies end-to-end through the real combo pipeline with a mocked upstream.
 Coverage includes:
 
-- All 19 `ROUTING_STRATEGY_VALUES` strategies (ordered, weighted, cost, context, fusion, …).
+- All 21 `ROUTING_STRATEGY_VALUES` strategies (ordered, weighted, cost, context, fusion, …).
 - `quota-share` (internal) end-to-end: DRR fairness + saturation deprioritization via the
   real `selectQuotaShareTarget` seam (`registerQuotaFetcher` / `setLKGP` /
   `__setHeadroomSaturationFetcherForTests`).
@@ -897,5 +897,5 @@ intentionally excluded from CI because they require live credentials and VPS acc
 | `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/` prefix parser + 6 variants                                                                        |
 | `open-sse/services/autoCombo/virtualFactory.ts`           | Builds in-memory `AutoComboConfig` from live connections                                                  |
 | `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Test hook for mocking provider registry                                                                   |
-| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 strategies)                                                                 |
+| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (21 strategies)                                                                 |
 | `src/sse/handlers/chat.ts`                                | Integration: auto-prefix short-circuit                                                                    |
