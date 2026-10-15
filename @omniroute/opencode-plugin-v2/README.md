@@ -95,7 +95,9 @@ active. When a gateway rejects that fallback, the catalog still
 publishes — but with raw model ids instead of display names, no canonical
 alias dedupe, no pricing and no combos. The plugin warns once per endpoint
 when this happens, naming the endpoint and the consequence, so the degraded
-catalog is never a mystery.
+catalog is never a mystery. Environment variables must reach the opencode
+server process: when the host runs as a service, export the key where the
+server reads it, not only in the shell that runs `opencode models`.
 
 ## Options
 

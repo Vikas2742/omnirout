@@ -188,8 +188,12 @@ describe("catalog fail-open", () => {
     } finally {
       console.warn = origWarn;
     }
-    assert.equal(warns.length, 1);
-    assert.match(warns[0], /combos fetch failed/);
+    assert.equal(warns.filter((w) => /combos fetch failed/.test(w)).length, 1);
+    assert.match(
+      warns.find((w) => /combos fetch failed/.test(w))!,
+      /combos fetch failed/
+    );
+    assert.ok(warns.some((w) => /catalog refresh:/.test(w)));
     assert.ok(draft.models.has("omniroute/m1"));
   });
 
@@ -214,9 +218,12 @@ describe("catalog fail-open", () => {
     } finally {
       console.warn = origWarn;
     }
-    assert.equal(warns.length, 1);
-    assert.match(warns[0], /combos fetch failed/);
-    assert.match(warns[0], /403/);
+    assert.equal(warns.filter((w) => /combos fetch failed/.test(w)).length, 1);
+    assert.match(
+      warns.find((w) => /combos fetch failed/.test(w))!,
+      /403/
+    );
+    assert.ok(warns.some((w) => /catalog refresh:/.test(w)));
     assert.ok(draft.models.has("omniroute/m1"));
   });
 
@@ -241,9 +248,12 @@ describe("catalog fail-open", () => {
     } finally {
       console.warn = origWarn;
     }
-    assert.equal(warns.length, 1);
-    assert.match(warns[0], /combos fetch failed/);
-    assert.match(warns[0], /500/);
+    assert.equal(warns.filter((w) => /combos fetch failed/.test(w)).length, 1);
+    assert.match(
+      warns.find((w) => /combos fetch failed/.test(w))!,
+      /500/
+    );
+    assert.ok(warns.some((w) => /catalog refresh:/.test(w)));
     assert.ok(draft.models.has("omniroute/m1"));
   });
 
@@ -268,8 +278,12 @@ describe("catalog fail-open", () => {
     } finally {
       console.warn = origWarn;
     }
-    assert.equal(warns.length, 1);
-    assert.match(warns[0], /combos fetch failed/);
+    assert.equal(warns.filter((w) => /combos fetch failed/.test(w)).length, 1);
+    assert.match(
+      warns.find((w) => /combos fetch failed/.test(w))!,
+      /combos fetch failed/
+    );
+    assert.ok(warns.some((w) => /catalog refresh:/.test(w)));
     assert.ok(draft.models.has("omniroute/m1"));
   });
 });
@@ -306,7 +320,10 @@ describe("catalog combo vs combo", () => {
     // Under name-based keying the combos publish at their own keys
     // (`omniroute/Dupe Combo` and `omniroute/Dupe Combo Again`) — they no
     // longer collide with the model `dupe` at `omniroute/dupe`.
-    assert.equal(warns.length, 0);
+    assert.deepEqual(
+      warns.filter((w) => !/catalog refresh:/.test(w)),
+      []
+    );
     const m = draft.models.get("omniroute/dupe");
     assert.ok(m, "raw model remains at its own key");
     assert.equal(m?.name, "dupe");
@@ -345,8 +362,11 @@ describe("catalog model bare vs combo", () => {
     // Name-based keying: the combo advertises `Dupe Combo`, so it sits at
     // `omniroute/Dupe Combo` instead of collapsing onto the raw model's
     // `omniroute/dupe` key (the accidental-collision class the warn was
-    // written for). Both entries publish, nothing warns.
-    assert.equal(warns.length, 0);
+    // written for). Both entries publish; only the refresh summary warns.
+    assert.deepEqual(
+      warns.filter((w) => !/catalog refresh:/.test(w)),
+      []
+    );
     assert.ok(draft.models.get("omniroute/dupe"), "raw model keeps its id key");
     assert.ok(draft.models.get("omniroute/Dupe Combo"), "combo published under its name");
   });
@@ -402,8 +422,12 @@ describe("catalog capability presets", () => {
     } finally {
       restore();
     }
-    assert.equal(warns.length, 1);
-    assert.match(warns[0], /freeOnly.*enrichment|enrichment.*free/i);
+    assert.equal(warns.filter((w) => /freeOnly.*enrichment|enrichment.*free/i.test(w)).length, 1);
+    assert.match(
+      warns.find((w) => /freeOnly.*enrichment|enrichment.*free/i.test(w))!,
+      /freeOnly.*enrichment|enrichment.*free/i
+    );
+    assert.ok(warns.some((w) => /catalog refresh:/.test(w)));
   });
 
   it("freeOnly with enrichment disabled publishes nothing", async () => {
@@ -422,8 +446,12 @@ describe("catalog capability presets", () => {
     } finally {
       restore();
     }
-    assert.equal(warns.length, 1);
-    assert.match(warns[0], /freeOnly.*enrichment|enrichment.*free/i);
+    assert.equal(warns.filter((w) => /freeOnly.*enrichment|enrichment.*free/i.test(w)).length, 1);
+    assert.match(
+      warns.find((w) => /freeOnly.*enrichment|enrichment.*free/i.test(w))!,
+      /freeOnly.*enrichment|enrichment.*free/i
+    );
+    assert.ok(warns.some((w) => /catalog refresh:/.test(w)));
   });
 
   it("freeOnly drops combos without an enrichment entry", async () => {

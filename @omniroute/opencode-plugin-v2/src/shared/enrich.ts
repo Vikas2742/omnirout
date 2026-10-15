@@ -46,6 +46,36 @@ export interface OmniRouteEnrichmentEntry {
 export type OmniRouteEnrichmentMap = Map<string, OmniRouteEnrichmentEntry>;
 
 /**
+ * Free-tier match between the enrichment overlay and the served catalog:
+ * how many overlay lines carry a `freeType`, and how many of them a served
+ * id reaches through the alias-aware lookup the collection pass uses.
+ */
+export interface FreeTierMatch {
+  total: number;
+  matched: number;
+  unmatched: number;
+}
+
+export function countFreeTierMatch(
+  servedIds: readonly string[],
+  enrichment: OmniRouteEnrichmentMap | undefined,
+  canonicalToAlias: ReadonlyMap<string, string>
+): FreeTierMatch {
+  if (!enrichment) return { total: 0, matched: 0, unmatched: 0 };
+  let total = 0;
+  const matched = new Set<object>();
+  for (const entry of enrichment.values()) {
+    if (entry.freeType !== undefined) total += 1;
+  }
+  for (const id of servedIds) {
+    if (typeof id !== "string" || id.length === 0) continue;
+    const hit = lookupEnrichment(id, enrichment, canonicalToAlias);
+    if (hit !== undefined && hit.freeType !== undefined) matched.add(hit);
+  }
+  return { total, matched: matched.size, unmatched: total - matched.size };
+}
+
+/**
  * Reverse-index the enrichment map from `providerCanonical → providerAlias`.
  *
  * OmniRoute's `/api/pricing/models` is keyed by short ALIAS (`cc`, `cx`,
@@ -94,7 +124,7 @@ export function buildCanonicalToAliasMap(
 export function lookupEnrichment(
   rawId: string,
   enrichment: OmniRouteEnrichmentMap | undefined,
-  canonicalToAlias: Map<string, string>
+  canonicalToAlias: ReadonlyMap<string, string>
 ): OmniRouteEnrichmentEntry | undefined {
   if (!enrichment) return undefined;
   const direct = enrichment.get(rawId);

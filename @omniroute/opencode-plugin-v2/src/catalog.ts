@@ -1,12 +1,9 @@
 import type { Model, Provider } from "@opencode/plugin";
 import {
-  buildProviderResolve,
-  compileProviderFilter,
-  filterAllUnknown,
   passesProviderCombo,
   passesProviderFilter,
-  warnNoVocabulary,
-  warnUnknownProviders,
+  resolveProviderFilter,
+  warnProviderMatchedNothing,
   type ProviderFilter,
   type ProviderResolve,
 } from "./provider-filter.js";
@@ -28,6 +25,7 @@ import {
   applyEnrichment,
   buildCanonicalToAliasMap,
   canonicalDedupSet,
+  countFreeTierMatch,
   createLogger,
   defaultOmniRouteEnrichmentFetcher,
   defaultOmniRouteProvidersFetcher,
@@ -426,54 +424,6 @@ export function legacyApiToInfoApi(api: LegacyModel["api"]): {
     );
   }
   return { id: api.id, type: "aisdk", package: api.npm, url: api.url };
-}
-
-function legacyCostToInfoCost(cost: LegacyModel["cost"]): StableModelInfo["cost"] {
-  const c = [{ input: cost.input, output: cost.output, cache: cost.cache }];
-  return c as unknown as StableModelInfo["cost"];
-}
-
-function legacyCapabilitiesToInfoCapabilities(
-  caps: LegacyModel["capabilities"]
-): StableModelInfo["capabilities"] {
-  const input: string[] = [];
-  if (caps.input.text) input.push("text");
-  if (caps.input.audio) input.push("audio");
-  if (caps.input.image) input.push("image");
-  if (caps.input.video) input.push("video");
-  if (caps.input.pdf) input.push("pdf");
-  const output: string[] = [];
-  if (caps.output.text) output.push("text");
-  if (caps.output.audio) output.push("audio");
-  if (caps.output.image) output.push("image");
-  if (caps.output.video) output.push("video");
-  if (caps.output.pdf) output.push("pdf");
-  return { tools: caps.toolcall, input, output };
-}
-
-function legacyToInfo(providerID: string, modelID: string, m: LegacyModel): StableModelInfo {
-  const variants = Object.entries(m.variants ?? {}).map(([id, body]) => ({
-    id,
-    headers: {},
-    body: body as Record<string, unknown>,
-  }));
-  const parsed = Date.parse(m.release_date);
-  const out = {
-    id: modelID,
-    modelID,
-    providerID,
-    ...(m.family !== undefined ? { family: m.family } : {}),
-    name: m.name,
-    capabilities: legacyCapabilitiesToInfoCapabilities(m.capabilities),
-    headers: { ...m.headers },
-    variants,
-    time: { released: Number.isNaN(parsed) ? 0 : parsed },
-    cost: legacyCostToInfoCost(m.cost),
-    status: m.status,
-    enabled: true,
-    limit: { ...m.limit },
-  };
-  return out as unknown as StableModelInfo;
 }
 
 export interface PublishCounts {
@@ -919,17 +869,25 @@ export async function collectCatalog(
   // `freeOnly` reads the overlay: an empty overlay (no management token,
   // `enrichment: false`, or fetch failure) would otherwise empty the catalog
   // silently. Warn once per refresh and keep filtering (fail-closed).
+  // A sparse overlay (free-tier lines that never meet a served id) warns
+  // with its match ratio instead, so a short catalog names its cause.
+  const {
+    total: freeTotal,
+    matched: freeMatched,
+    unmatched: freeUnmatched,
+  } = countFreeTierMatch(
+    rawModels.map((e) => e.id),
+    enrichment,
+    canonicalToAlias
+  );
   if (opts.freeOnly === true) {
-    let hasFreeEntry = false;
-    for (const entry of enrichment.values()) {
-      if (entry.freeType !== undefined) {
-        hasFreeEntry = true;
-        break;
-      }
-    }
-    if (!hasFreeEntry) {
+    if (freeTotal === 0) {
       log.warn(
         `[omniroute-v2] freeOnly is on but the enrichment overlay has no free-tier entries (no management token, enrichment disabled, or free-tier fetch failed); publishing an empty catalog. Disable freeOnly or configure the management token.`
+      );
+    } else if (freeUnmatched > 0) {
+      log.warn(
+        `[omniroute-v2] freeOnly dropped ${freeUnmatched} of ${freeTotal} free-tier lines: ${freeMatched}/${freeTotal} free-tier entries match the served catalog.`
       );
     }
   }
@@ -944,27 +902,16 @@ export async function collectCatalog(
   );
 
   // Provider allowlist (same seam as the allowlists above, applied last):
-  // compile once, resolve alias<->canonical once via the usable pass, then
-  // one predicate per collection point. `buildCanonicalToAliasMap` returns
-  // canonical->alias; the resolve table needs the inverse alias->canonical.
+  // compiled once here, then one predicate per collection point.
   const warnedCombos = opts.collisionWarned ?? new Set<string>();
-  const providerFilter = compileProviderFilter(opts.providersAllow);
-  let providerResolve: ProviderResolve | undefined;
-  let providerAllUnknown = false;
-  if (providerFilter) {
-    const pairs: Array<{ alias?: string; canonical?: string }> = [];
-    for (const entry of enrichment.values()) {
-      pairs.push({ alias: entry.providerAlias, canonical: entry.providerCanonical });
-    }
-    for (const [canonical, alias] of canonicalToAlias) {
-      pairs.push({ alias, canonical });
-    }
-    providerResolve = buildProviderResolve(pairs, usable?.canonicals);
-    providerAllUnknown = filterAllUnknown(providerFilter, providerResolve);
-    if (providerResolve.known.size === 0)
-      warnNoVocabulary(providerFilter, providerResolve.known, warnedCombos, log);
-    else warnUnknownProviders(providerFilter, providerResolve.known, warnedCombos, log);
-  }
+  const { providerFilter, providerResolve, providerAllUnknown } = resolveProviderFilter(
+    opts.providersAllow,
+    enrichment,
+    canonicalToAlias,
+    usable?.canonicals,
+    warnedCombos,
+    log
+  );
 
   const rawModelById = new Map<string, OmniRouteRawModelEntry>();
   for (const entry of rawModels) {
@@ -1008,6 +955,12 @@ export async function collectCatalog(
         windowMs
       );
   const staticallyDropped: OmniRouteRawModelEntry[] = [];
+  // Stage counters for the refresh summary line. Frozen at the end of the
+  // static pass, before the usage-memory restoration below: restored
+  // entries rejoin `collected` (so `published` can exceed `afterPresets`),
+  // and the summary keeps reading the filter stages, not the restore.
+  let afterDefaultView = 0;
+  let afterPresets = 0;
   for (const entry of rawModels) {
     if (!entry.id) continue;
     if (canonicalDedup.has(entry.id)) continue;
@@ -1024,6 +977,7 @@ export async function collectCatalog(
       staticallyDropped.push(entry);
       continue;
     }
+    afterDefaultView += 1;
     const mapped = mapRawModelToModelV2(entry, {
       providerId: X,
       baseURL: opts.baseURL,
@@ -1041,6 +995,7 @@ export async function collectCatalog(
       } satisfies CapabilityPresetFlags)
     )
       continue;
+    afterPresets += 1;
     const mid = mapped.id.startsWith(X + "/") ? mapped.id.slice(X.length + 1) : mapped.id;
     const key = X + "/" + mid;
     collected.set(key, mapped);
@@ -1100,8 +1055,19 @@ export async function collectCatalog(
     warnedCombos,
     cacheKey,
   });
-  if (comboResult === undefined)
+  // One summary line per successful refresh: the stage counters plus the
+  // free-tier lines the served catalog never reached. Audible at the
+  // default `warn` level so a service install (stdout lost) still reads
+  // the cause of a short catalog in the host log.
+  const emitSummary = (published: number): void => {
+    log.warn(
+      `[omniroute-v2] catalog refresh: served=${rawModels.length} default=${afterDefaultView} presets=${afterPresets} published=${published} unmatched-free=${freeUnmatched}`
+    );
+  };
+  if (comboResult === undefined) {
+    emitSummary(collected.size);
     return { entries: collected, counts: { models: modelCount, combos: 0 } };
+  }
   const comboCount = comboResult.published;
   providerDroppedCount += comboResult.providerDropped;
 
@@ -1114,24 +1080,11 @@ export async function collectCatalog(
     warnProviderMatchedNothing(providerFilter, warnedCombos, log);
   }
 
+  emitSummary(collected.size);
   return {
     entries: collected,
     counts: { models: modelCount, combos: comboCount },
   };
-}
-
-function warnProviderMatchedNothing(
-  providerFilter: ProviderFilter | undefined,
-  warnedCombos: Set<string>,
-  log: Logger
-): void {
-  if (!providerFilter) return;
-  const key = `provider-matched-nothing::${[...providerFilter.allow].sort().join(",")}`;
-  if (warnedCombos.has(key)) return;
-  warnedCombos.add(key);
-  log.warn(
-    `[omniroute-v2] providersAllow [${providerFilter.originals.join(", ")}] matched nothing, publishing empty catalog.`
-  );
 }
 
 /**
