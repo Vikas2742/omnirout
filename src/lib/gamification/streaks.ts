@@ -69,12 +69,17 @@ function emptyStreak(): StreakData {
   };
 }
 
+/** Stored counters are day counts: finite, integral and never negative. */
+function toDayCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
 function parseStreakJson(raw: string): StreakData {
   try {
     const parsed = JSON.parse(raw) as Partial<StreakData>;
     return {
-      currentStreak: typeof parsed.currentStreak === "number" ? parsed.currentStreak : 0,
-      longestStreak: typeof parsed.longestStreak === "number" ? parsed.longestStreak : 0,
+      currentStreak: toDayCount(parsed.currentStreak),
+      longestStreak: toDayCount(parsed.longestStreak),
       lastActiveDate: typeof parsed.lastActiveDate === "string" ? parsed.lastActiveDate : "",
       streakStartDate: typeof parsed.streakStartDate === "string" ? parsed.streakStartDate : "",
     };
