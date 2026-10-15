@@ -1,3 +1,4 @@
+import { SYSTEMONE_LEDGER_SERVICE_TIER } from "@/lib/db/costLedger";
 import { recordKeyQuotaUsage } from "@/domain/keyQuota";
 import { recordTokenUsage } from "../../services/tokenLimitCounter.ts";
 import { safeSystemOneText } from "./shared.ts";
@@ -15,7 +16,9 @@ export async function recordSystemOneSuccess(
       const billable = attempt.result.usage.input_tokens + attempt.result.usage.output_tokens;
       recordKeyQuotaUsage(options.apiKeyId, billable);
       if (billable > 0)
-        recordTokenUsage(options.apiKeyId, options.target.provider, options.target.id, billable);
+        recordTokenUsage(options.apiKeyId, options.target.provider, options.target.id, billable, [
+          `${options.target.provider}/${options.target.id}`,
+        ]);
     } catch {
       // Counter recording must never block or turn a successful inference into a retry.
     }
@@ -30,6 +33,7 @@ export async function recordSystemOneSuccess(
         success: true,
         timestamp: new Date().toISOString(),
         requestId,
+        serviceTier: SYSTEMONE_LEDGER_SERVICE_TIER,
       });
     } catch {
       // Accounting failure must not turn paid inference into a retryable failure.

@@ -253,12 +253,14 @@ export function checkTokenLimits(
  * @param provider  resolved upstream provider id
  * @param model     resolved model id
  * @param tokens    billable tokens consumed by this request (no-op if <= 0)
+ * @param additionalModels opt-in equivalent model spellings; each limit advances once
  */
 export function recordTokenUsage(
   apiKeyId: string,
   provider: string,
   model: string,
-  tokens: number
+  tokens: number,
+  additionalModels: readonly string[] = []
 ): void {
   if (!apiKeyId) return;
   const delta = Number.isFinite(tokens) && tokens > 0 ? Math.floor(tokens) : 0;
@@ -268,7 +270,17 @@ export function recordTokenUsage(
   Promise.resolve()
     .then(() => {
       const now = Date.now();
-      const limits = getTokenLimitsForRequest(apiKeyId, provider || "", model || "");
+      // Optional model spellings are opt-in (System One); legacy chat callers
+      // still match only their bare model. Deduplicate global/provider limits.
+      const limits = [
+        ...new Map(
+          [model, ...additionalModels].flatMap((id) =>
+            getTokenLimitsForRequest(apiKeyId, provider || "", id || "").map(
+              (limit) => [limit.id, limit] as const
+            )
+          )
+        ).values(),
+      ];
       if (!limits || limits.length === 0) return;
 
       const db = getDbInstance();

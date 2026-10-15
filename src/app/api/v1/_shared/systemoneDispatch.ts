@@ -76,10 +76,8 @@ export async function dispatchSystemOne(
   const canonicalModel = `${target.provider}/${target.id}`;
   const policy = requestPolicy ?? (await deps.enforcePolicy(request, canonicalModel));
   if (policy.rejection) return policy.rejection;
-  if (requestPolicy) {
-    const rejection = await enforceSystemOneTargetPolicy(request, canonicalModel, policy);
-    if (rejection) return rejection;
-  }
+  const rejection = await enforceSystemOneTargetPolicy(request, canonicalModel, policy);
+  if (rejection) return rejection;
   const credentials = await selectCredentials(
     target,
     targetInfo,

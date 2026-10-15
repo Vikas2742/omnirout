@@ -71,6 +71,8 @@ export interface MeteredBudgetDecision {
   allowed: boolean;
   /** Client-facing reason, present only when `allowed` is false. */
   reason?: string;
+  /** Epoch-ms instant at which the exhausted budget resets. */
+  resetAt?: number;
 }
 
 const ALLOWED: MeteredBudgetDecision = { allowed: true };
@@ -95,7 +97,11 @@ export function checkMeteredBudgetForProvider(
   if (!consumesMeteredBudget(providerId)) return ALLOWED;
   const budget = checkBudget(apiKeyId);
   if (budget.allowed) return ALLOWED;
-  return { allowed: false, reason: budget.reason || "Budget limit exceeded" };
+  return {
+    allowed: false,
+    reason: budget.reason || "Budget limit exceeded",
+    resetAt: budget.budgetResetAt ?? undefined,
+  };
 }
 
 /**
@@ -118,5 +124,6 @@ export function rejectIfMeteredBudgetExceeded(
   );
   return errorResponse(HTTP_STATUS.RATE_LIMITED, decision.reason || "Budget limit exceeded", {
     code: "BUDGET_EXCEEDED",
+    retryAfter: decision.resetAt,
   });
 }
