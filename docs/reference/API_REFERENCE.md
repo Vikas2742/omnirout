@@ -477,13 +477,22 @@ or the existing combo API, for example:
 }
 ```
 
-Send the same request with `"model": "decision-fallback"`. HTTP 5xx, 429, 402 and
-timeouts advance to the next member; validation/policy 4xx errors are not hidden by
-another upstream. Each attempt defaults to 30 seconds; caller cancellation propagates.
+Send the same request with `"model": "decision-fallback"`. Combo routing stops on
+400 `api_usage_error` from body/model validation, 413, 422, or caller cancellation
+(499). It fails over on member-level 401/402/403/404/408/429, HTTP 5xx, timeout or
+network failure, no usable credential, and member budget or token-limit rejection.
+Every resolved member rechecks token limits, key quotas and its provider's metered
+dollar budget before dispatch; client request-rate-limit slots are consumed only
+once per request. If every member is rejected, the policy/upstream failure keeps
+its native error envelope and `Retry-After` when supplied. Each attempt defaults
+to 30 seconds; caller cancellation propagates without dispatching another member.
 Invalid bodies return a FastAPI-style 422 `detail` array. Other errors use
 `{detail:{error_type,message}}`: 400 `api_usage_error`, 401/403 `authentication_error`,
-402 `insufficient_balance`, 429 `rate_limit_error` (with `Retry-After`), 504
+402 `insufficient_balance`, 429 `rate_limit_error` (with `Retry-After`),
+429 `token_limit_exceeded` for an exhausted token cap, 504
 `timeout_error`, 502 `connection_error`, or 499 `request_aborted`.
+Successful upstream attempts advance token caps and key tpm/rpm quotas using
+`input_tokens + output_tokens`; failed members and pre-aborted requests do not.
 
 `GET /v1/models` lists these models only for active channels with `type: systemone`,
 `supported_endpoints: ["systemone"]`, and `output_modalities: ["structured"]`.

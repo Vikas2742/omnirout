@@ -30,6 +30,22 @@ test("generated API Explorer includes System One without growing the frozen modu
   );
 });
 
+test("System One docs distinguish combo stop conditions from member failover", () => {
+  const section = fs
+    .readFileSync(new URL("../../docs/reference/API_REFERENCE.md", import.meta.url), "utf8")
+    .split("## System One Decisions")[1]
+    .split("## List Models")[0];
+  assert.match(
+    section,
+    /stops on\s+400 `api_usage_error` from body\/model validation, 413, 422, or caller cancellation\s+\(499\)/
+  );
+  assert.match(
+    section,
+    /fails over on member-level 401\/402\/403\/404\/408\/429, HTTP 5xx, timeout or\s+network failure, no usable credential, and member budget or token-limit rejection/
+  );
+  assert.doesNotMatch(section, /validation\/policy 4xx errors are not hidden/);
+});
+
 test("documented System One request parses with the real schema", () => {
   const text = fs
     .readFileSync(new URL("../../docs/reference/API_REFERENCE.md", import.meta.url), "utf8")
