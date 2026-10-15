@@ -99,6 +99,7 @@ export type DevinDesktopPromptInput = {
   prompt: string;
   toolCalls?: DevinDesktopToolCallInput[];
   toolCallId?: string;
+  images?: DevinDesktopImageInput[];
 };
 
 export type DevinDesktopToolInput = {
@@ -168,6 +169,13 @@ function encodeChatMessagePrompt(prompt: DevinDesktopPromptInput): Uint8Array {
     fields.push(encodeField(6, encodeChatToolCall(toolCall)));
   }
   fields.push(encodeString(7, prompt.toolCallId ?? ""));
+  for (const image of prompt.images ?? []) {
+    const imageFields: Uint8Array[] = [];
+    if (image.base64Data) imageFields.push(encodeString(1, image.base64Data));
+    if (image.mimeType) imageFields.push(encodeString(2, image.mimeType));
+    if (image.uri) imageFields.push(encodeString(4, image.uri));
+    fields.push(encodeField(10, concatBytes(imageFields)));
+  }
   return concatBytes(fields);
 }
 
@@ -227,6 +235,34 @@ type OpenAIMessage = {
   }>;
 };
 
+export type DevinDesktopImageInput = {
+  base64Data?: string;
+  mimeType?: string;
+  uri?: string;
+};
+
+function messageImages(content: unknown): DevinDesktopImageInput[] {
+  if (!Array.isArray(content)) return [];
+  const images: DevinDesktopImageInput[] = [];
+  for (const part of content) {
+    if (!part || typeof part !== "object") continue;
+    const p = part as Record<string, unknown>;
+    if (p.type !== "image_url") continue;
+    const imageUrl =
+      p.image_url && typeof p.image_url === "object"
+        ? (p.image_url as Record<string, unknown>).url
+        : p.image_url;
+    if (typeof imageUrl !== "string" || !imageUrl) continue;
+    const dataUri = /^data:([^;,]+);base64,(.+)$/s.exec(imageUrl);
+    if (dataUri) {
+      images.push({ base64Data: dataUri[2], mimeType: dataUri[1] });
+    } else if (/^https?:\/\//.test(imageUrl)) {
+      images.push({ uri: imageUrl });
+    }
+  }
+  return images;
+}
+
 function messageText(content: unknown): string {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return "";
@@ -282,6 +318,10 @@ function convertMessages(messages: OpenAIMessage[]): {
       prompt,
       ...(source === 2 ? { toolCalls: convertHistoryToolCalls(message.tool_calls) } : {}),
       ...(source === 4 && message.tool_call_id ? { toolCallId: message.tool_call_id } : {}),
+      ...(() => {
+        const images = messageImages(message.content);
+        return images.length ? { images } : {};
+      })(),
     });
   }
   return { systemPrompt: systemParts.join("\n\n"), prompts };

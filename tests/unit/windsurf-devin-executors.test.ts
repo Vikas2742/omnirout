@@ -283,3 +283,52 @@ test("Devin Desktop reassembles fragmented tool call arguments", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+// ─── Devin Desktop: image parts are forwarded as ImageData (field 10) ───────
+// Previously messageText() dropped every non-text content part, so client
+// images never reached the upstream and vision prompts returned text-only
+// answers ("无法确定" for images that were never sent).
+
+test("Devin Desktop encodes image_url parts into the request", async () => {
+  const executor = await getExecutor("devin-desktop");
+  const originalFetch = globalThis.fetch;
+  let requestBody: Uint8Array | null = null;
+  globalThis.fetch = async (url, init) => {
+    if (String(url).endsWith("/exa.auth_pb.AuthService/GetUserJwt")) {
+      const jwt = new TextEncoder().encode("test-jwt");
+      return new Response(new Uint8Array([0x0a, jwt.length, ...jwt]));
+    }
+    requestBody = new Uint8Array(init?.body as ArrayBuffer);
+    return new Response("expected test stop", { status: 418 });
+  };
+
+  const imageB64 = "aGVsbG8tdmlzaW9uLWJsb2I="; // stable marker blob
+  try {
+    await executor.execute({
+      model: "swe-2-medium",
+      body: {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "what is in this image?" },
+              { type: "image_url", image_url: { url: `data:image/png;base64,${imageB64}` } },
+            ],
+          },
+        ],
+      },
+      stream: true,
+      credentials: { accessToken: "test-devin-desktop-token" },
+    });
+
+    assert.ok(requestBody);
+    const bodyText = new TextDecoder().decode(requestBody);
+    assert.ok(
+      bodyText.includes(imageB64),
+      "image base64 payload must be present in the upstream request"
+    );
+    assert.ok(bodyText.includes("image/png"), "image mime type must be present");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
