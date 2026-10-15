@@ -7,6 +7,7 @@
  * @module lib/usage/costCalculator
  */
 
+import { toNumber } from "@/shared/utils/numeric";
 import { isFlatRateProvider } from "./flatRateProviders";
 
 /**
@@ -91,15 +92,6 @@ function extractExactCostUsd(tokens: CostTokenUsage | null | undefined): number 
     return ticks / USD_TICKS_PER_DOLLAR;
   }
   return null;
-}
-
-function toNumber(value: unknown, fallback = 0): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim().length > 0) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  }
-  return fallback;
 }
 
 function normalizeServiceTier(value: unknown): string {
