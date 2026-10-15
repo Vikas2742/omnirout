@@ -2,11 +2,13 @@ import {
   enforceApiKeyPolicy,
   validateApiKeyRoutingTarget,
   type ApiKeyMetadata,
+  type EnforceApiKeyPolicyOptions,
 } from "@/shared/utils/apiKeyPolicy";
 import { extractApiKey } from "@/sse/services/auth";
 import { validateApiKey } from "@/lib/db/apiKeys";
 import { getSettings } from "@/lib/db/settings";
 import { asRecord, systemOneErrorResponse } from "@omniroute/open-sse/handlers/systemone/shared.ts";
+import { systemOneCandidateRejection } from "./systemoneLimits";
 
 export type SystemOnePolicyResult = {
   apiKey?: string | null;
@@ -30,7 +32,9 @@ export async function systemOnePolicyRejection(
     status: response.status,
     error_type:
       response.status === 429
-        ? "rate_limit_error"
+        ? error?.code === "token_limit_exceeded"
+          ? "token_limit_exceeded"
+          : "rate_limit_error"
         : [401, 403].includes(response.status)
           ? "authentication_error"
           : response.status >= 500
@@ -41,7 +45,7 @@ export async function systemOnePolicyRejection(
   });
 }
 
-/** Authorization only: never charge request limits again for a combo leg. */
+/** Recheck authorization and non-consuming limits, never client request slots. */
 export async function enforceSystemOneTargetPolicy(
   request: Request,
   model: string,
@@ -54,11 +58,17 @@ export async function enforceSystemOneTargetPolicy(
     { ...policy.apiKeyInfo, id: policy.apiKeyInfo.id },
     model
   );
-  return systemOnePolicyRejection(rejection);
+  return systemOnePolicyRejection(
+    rejection ?? systemOneCandidateRejection(policy.apiKeyInfo.id, model)
+  );
 }
 
 /** The policy helper alone does not authenticate unknown keys. */
-export async function enforceSystemOnePolicy(request: Request, model: string) {
+export async function enforceSystemOnePolicy(
+  request: Request,
+  model: string,
+  options?: EnforceApiKeyPolicyOptions
+) {
   const key = extractApiKey(request);
   const settings = await getSettings();
   if (
@@ -74,6 +84,6 @@ export async function enforceSystemOnePolicy(request: Request, model: string) {
       }),
     };
   }
-  const policy = await enforceApiKeyPolicy(request, model);
+  const policy = await enforceApiKeyPolicy(request, model, options);
   return { ...policy, rejection: await systemOnePolicyRejection(policy.rejection) };
 }

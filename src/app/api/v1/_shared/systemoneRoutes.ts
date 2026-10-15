@@ -24,7 +24,11 @@ type CredentialResult =
   | null;
 export interface SystemOneRouteDependencies {
   resolveAlias: (id: string) => Promise<string | null>;
-  enforcePolicy: (request: Request, model: string) => Promise<SystemOnePolicyResult>;
+  enforcePolicy: (
+    request: Request,
+    model: string,
+    options?: import("@/shared/utils/apiKeyPolicy").EnforceApiKeyPolicyOptions
+  ) => Promise<SystemOnePolicyResult>;
   getCredentials: (
     provider: string,
     exclude?: string | null,

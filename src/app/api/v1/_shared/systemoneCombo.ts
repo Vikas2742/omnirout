@@ -31,7 +31,9 @@ export async function dispatchSystemOneCombo(
   combo: ComboLike,
   deps: SystemOneRouteDependencies
 ): Promise<Response> {
-  const policy = await deps.enforcePolicy(request, body.model);
+  const policy = await deps.enforcePolicy(request, body.model, {
+    meteredBudget: "defer-to-candidate",
+  });
   if (policy.rejection) return policy.rejection;
   if (request.signal.aborted) return abortedResponse();
   // The generic combo engine understands chat errors, not TypeSafe's detail envelope.
