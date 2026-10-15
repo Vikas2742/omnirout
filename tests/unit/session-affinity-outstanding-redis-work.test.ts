@@ -144,6 +144,48 @@ for (const outcome of ["resolve", "reject"] as const) {
   });
 }
 
+test("capacity fallback warnings are throttled and reset after Redis recovery", async (t) => {
+  const warnings: unknown[][] = [];
+  t.mock.method(console, "warn", (...args: unknown[]) => warnings.push(args));
+  const client = new StalledRedis();
+  const store = new RedisSessionAffinityStore(async () => client, local, timeout);
+  try {
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await Promise.all(
+        Array.from({ length: cap }, (_, i) => write(store, `synthetic-warning-${cycle}-${i}`))
+      );
+      for (let i = 0; i < 5; i++) await write(store, `synthetic-capacity-${cycle}-${i}`);
+      assert.equal(
+        warnings.filter(
+          ([message]) =>
+            message === "[SESSION_AFFINITY] Redis capacity reached; falling back to SQLite."
+        ).length,
+        cycle + 1,
+        "repeated saturated calls log once until a healthy Redis reply resets the throttle"
+      );
+      client.settle("resolve");
+      await flush();
+      client.holding = false;
+      await write(store, `synthetic-warning-recovery-${cycle}`);
+      client.holding = true;
+    }
+    assert.ok(
+      warnings.every(
+        (args) =>
+          args.length === 1 &&
+          [
+            "[SESSION_AFFINITY] Redis timeout; falling back to SQLite.",
+            "[SESSION_AFFINITY] Redis capacity reached; falling back to SQLite.",
+          ].includes(String(args[0]))
+      ),
+      "warnings contain only fixed states, never raw Redis errors or command values"
+    );
+  } finally {
+    client.settle("resolve");
+    await flush();
+  }
+});
+
 test("outstanding admission is per store and includes stalled client acquisition", async () => {
   const client = new StalledRedis();
   let acquisitions = 0;
