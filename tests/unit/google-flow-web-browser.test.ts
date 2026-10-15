@@ -44,6 +44,11 @@ function fake(
     echo?: string;
     agentCount?: number;
     decoratedRadio?: boolean;
+    radioDelayReads?: number;
+    finalRadioDelay?: boolean;
+    finalUnstuck?: string;
+    afterRadioRead?: (name: string, count: number) => void;
+    familyMenu?: string;
     replyText?: string;
   } = {}
 ) {
@@ -59,16 +64,25 @@ function fake(
   const makePage = () => {
     let text = "";
     const selected = new Set<string>();
+    const reads = new Map<string, number>();
+    let family = options.family ?? "Nano Banana 2.1";
+    let familyReads = 0;
+    let finalRead = false;
     let waitRegistered = false;
     const locator = (name: string): unknown => ({
-      filter: ({ hasText }: { hasText: string | RegExp }) =>
-        locator(
+      filter: ({ hasText }: { hasText: string | RegExp }) => {
+        if (name.includes('[role="option"]') && options.familyMenu) {
+          assert.ok(hasText instanceof RegExp);
+          return locator(hasText.test(options.familyMenu) ? "family-option" : "missing-option");
+        }
+        return locator(
           typeof hasText === "string"
             ? hasText
             : hasText.source.includes("Agent")
               ? "Agent"
               : hasText.source.replace(/[^a-zA-Z0-9:.-]/g, "")
-        ),
+        );
+      },
       getByRole: (_role: string, opts: { name: string | RegExp; exact?: boolean }) =>
         locator(
           options.decoratedRadio && opts.exact
@@ -82,19 +96,36 @@ function fake(
       nth: () => locator(name),
       isVisible: async () => true,
       boundingBox: async () => ({ width: 600, height: 100 }),
-      innerText: async () =>
-        name.includes("Select model family") ? (options.family ?? "Nano Banana 2.1") : text,
+      innerText: async () => {
+        if (!name.includes("Select model family")) return text;
+        if (++familyReads === 2 && (options.finalRadioDelay || options.finalUnstuck)) {
+          reads.clear();
+          finalRead = true;
+        }
+        return family;
+      },
       textContent: async () => options.echo ?? text,
       getAttribute: async (attr: string) => {
         events.push(`read:${name}:${attr}`);
         if (attr === "aria-pressed") return options.agent ?? "false";
-        return selected.has(name) && options.unstuck !== name ? "true" : "false";
+        const count = (reads.get(name) ?? 0) + 1;
+        reads.set(name, count);
+        options.afterRadioRead?.(name, count);
+        const delay = finalRead ? 3 : (options.radioDelayReads ?? 1);
+        return selected.has(name) &&
+          options.unstuck !== name &&
+          !(finalRead && options.finalUnstuck === name) &&
+          count >= delay
+          ? "true"
+          : "false";
       },
       focus: async () => {
         events.push("focus");
       },
       evaluate: async () => text,
       click: async () => {
+        if (name === "missing-option") throw new Error("No matching model option");
+        if (name === "family-option") family = options.familyMenu!;
         if (name === "missing-radio")
           throw new Error("Radio accessible name includes a material icon");
         if (name.includes("arrow_forward")) {
@@ -256,6 +287,44 @@ test("CJK original correlation carries Flow's revised_prompt on every image", as
     }))
   );
 });
+for (const options of [{ radioDelayReads: 3 }, { finalRadioDelay: true }]) {
+  test(`Angular radios settle on third read: ${JSON.stringify(options)}`, async () => {
+    const f = await setup(options);
+    assert.equal((await f.bridge.generate(request, config)).length, 2);
+    assert.equal(f.counts().clicks, 1);
+  });
+}
+test("abort during Angular radio polling stops before send", async () => {
+  const controller = new AbortController();
+  const f = await setup({
+    radioDelayReads: 3,
+    afterRadioRead: (name, count) => {
+      if (name === "Image" && count === 2) controller.abort();
+    },
+  });
+  await assert.rejects(f.bridge.generate(request, config, controller.signal), /before submission/i);
+  assert.equal(f.counts().clicks, 0);
+  assert.equal(f.counts().ownedClose, 1);
+});
+for (const familyMenu of ["🍌 Nano Banana 2.1\narrow_drop_down", "Nano Banana 2.1"]) {
+  test(`model menu accepts exact family with decorations: ${familyMenu}`, async () => {
+    const f = await setup({ family: "Nano Banana Pro", familyMenu });
+    assert.equal((await f.bridge.generate(request, config)).length, 2);
+    assert.equal(f.counts().clicks, 1);
+    assert.ok(f.events.includes("click:family-option"));
+  });
+}
+for (const familyMenu of [
+  "🍌 Nano Banana 2 Lite",
+  "🍌 Nano Banana 2.1 Pro",
+  "🍌 Nano Banana 2.10",
+]) {
+  test(`model menu rejects another family: ${familyMenu}`, async () => {
+    const f = await setup({ family: "Nano Banana Pro", familyMenu });
+    await assert.rejects(f.bridge.generate(request, config));
+    assert.equal(f.counts().clicks, 0);
+  });
+}
 test("Agent readback uses Playwright auto-wait rather than an immediate DOM count", async () => {
   const f = await setup({ agentCount: 0 });
   assert.equal((await f.bridge.generate(request, config)).length, 2);
@@ -271,12 +340,13 @@ for (const [name, options, message] of [
   ["hidden tab", { visibility: "hidden" }, /visible|foreground/i],
   ["sign-in redirect", { signIn: true }, /sign in/i],
   ["radio fails to stick", { unstuck: "16:9" }, /setting|option/i],
+  ["final radio never settles", { finalUnstuck: "16:9" }, /setting|option/i],
   ["model family fails to stick", { family: "Nano Banana Pro" }, /model|stick/i],
   ["prompt insertion mismatch", { echo: "rewritten prompt" }, /prompt|exact/i],
 ] as const) {
   test(`${name}: error and zero clicks`, async () => {
     const f = await setup(options);
-    await assert.rejects(f.bridge.generate(request, config), message);
+    await assert.rejects(f.bridge.generate(request, { ...config, timeoutMs: 5000 }), message);
     assert.equal(f.counts().clicks, 0);
     assert.equal(f.counts().ownedClose, 1);
     assert.equal(f.counts().dangerousClose, 0);
