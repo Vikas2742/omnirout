@@ -42,7 +42,8 @@ function enabled(sessionKey: string, provider: string, ttlMs: number): boolean {
 
 /**
  * Redis alone is authoritative while it answers. Confirmed shared mutations
- * never install SQLite pins: only error/timeout fallbacks write local decisions.
+ * never install SQLite pins: only error, timeout or admission-saturation
+ * fallbacks write local decisions.
  *
  * Invalidation rules:
  * R1. Any in-time Redis reply for a session (accepted, rejected/lost CAS,
