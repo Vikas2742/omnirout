@@ -759,9 +759,15 @@ export function openaiToClaudeResponse(chunk, state) {
     // dropped the held text silently — for a single-chunk response whose block
     // never closes, that is the ENTIRE answer replaced by an empty message.
     // Release whatever is still held before the terminal blocks are emitted.
+    // The same goes for an unclosed <invoke>/<tool_call> tag and the DSML holdback:
+    // no further chunk can complete them, so they were prose and must reach the client.
     const flushedPreamble =
       (state._directiveStripper?.flush?.() ?? "") +
-      (state._systemPreambleStripper?.flush?.() ?? "");
+      (state._systemPreambleStripper?.flush?.() ?? "") +
+      (state._xmlInvokeBuffer ?? "") +
+      (state._dsmlHoldback ?? "");
+    state._xmlInvokeBuffer = "";
+    state._dsmlHoldback = undefined;
     if (flushedPreamble) {
       if (!state.textBlockStarted || state.textBlockClosed) {
         state.textBlockIndex = state.nextBlockIndex++;
@@ -885,8 +891,9 @@ export function openaiToClaudeResponse(chunk, state) {
   return results.length > 0 ? results : null;
 }
 
-// Convert OpenAI finish_reason to Claude stop_reason
-function convertFinishReason(reason) {
+// Convert OpenAI finish_reason to Claude stop_reason. Shared with the
+// non-streaming translator so both paths give a Claude client the same value.
+export function convertFinishReason(reason) {
   switch (reason) {
     case "stop":
       return "end_turn";
@@ -894,6 +901,10 @@ function convertFinishReason(reason) {
       return "max_tokens";
     case "tool_calls":
       return "tool_use";
+    case "content_filter":
+      // Claude's own name for a blocked turn; a clean end_turn would read as a
+      // complete answer.
+      return "refusal";
     default:
       // Gemini/Antigravity abort reasons (e.g. MALFORMED_FUNCTION_CALL,
       // UNEXPECTED_TOOL_CALL — see isAbortFinishReason) reach here unrecognized

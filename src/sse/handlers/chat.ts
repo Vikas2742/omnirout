@@ -143,7 +143,7 @@ import {
 } from "./reasoningRouting";
 import { createVirtualAutoCombo, resolveAutoRoutingState } from "./autoRouting";
 import { getComboFailureLogError } from "./comboFailureLogging";
-import { logAdmissionRejection, logHandlerRejection } from "./admissionRejectionLog";
+import { logAdmissionRejection, logHandlerRejection, rejectPayload } from "./admissionRejectionLog";
 
 // Pipeline integration — wired modules
 import { classify429FromError, type FailureKind } from "@/shared/utils/classify429";
@@ -450,6 +450,7 @@ async function handleChatImplementation(
     });
   }
 
+  if ((body = rejectPayload(body, request, reqId)) instanceof Response) return body;
   // Only the server's policy resolver may attach execution directives or route traces.
   // Discard lookalike JSON fields supplied by callers before evaluating any rule.
   if (body && typeof body === "object") {
