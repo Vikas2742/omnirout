@@ -2,6 +2,7 @@ import {
   isPublicApiRoute,
   isPublicReadonlyCorsRoute,
 } from "../../shared/constants/publicApiRoutes";
+import { canonicalSystemOneSdkPath } from "../../shared/constants/systemoneEndpoints";
 import type { ClassificationReason, RouteClassification } from "./types";
 
 const CLIENT_API_ALIAS_PREFIXES: ReadonlyArray<{ alias: string; canonical: string }> = [
@@ -23,6 +24,8 @@ function normalizePathname(rawPath: string): { path: string; reason?: Classifica
   // dispatched to (GHSA-jvqc-mp9f-q936). Only the leading control segment is
   // lowercased for detection; the original-case tail is preserved.
   const lower = path.toLowerCase();
+  const systemOnePath = canonicalSystemOneSdkPath(path);
+  if (systemOnePath) return { path: `/api${systemOnePath}`, reason: "client_api_alias" };
 
   if (lower === "/codex" || lower.startsWith("/codex/")) {
     return { path: "/api/v1/responses", reason: "client_api_codex_alias" };

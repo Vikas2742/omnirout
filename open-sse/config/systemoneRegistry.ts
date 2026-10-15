@@ -73,7 +73,7 @@ export function resolveSystemOneModel(model: string): SystemOneTarget | null {
   const registered = entry.models.find((candidate) => candidate.id === id);
   if (registered) return { ...registered, provider, adapter: entry.adapter };
   // Only semantic version selectors are dynamic; never used in a URL path.
-  if (provider === "typesafe" && /^jev-\d{1,9}\.\d{1,9}\.\d{1,9}$/.test(id)) {
+  if (provider === "typesafe" && /^jev-\d+\.\d+\.\d+$/.test(id)) {
     return { ...entry.models[0], id, upstreamModel: id, provider, adapter: entry.adapter };
   }
   return null;
@@ -92,8 +92,8 @@ export function getAllSystemOneModels() {
 /** TypeSafe is exclusively non-chat, including unrecognised/versioned selectors. */
 export function isSystemOneOnlyModel(provider: string | null | undefined, model: string): boolean {
   if (provider === "typesafe") return true;
-  return Boolean(
-    provider &&
-    resolveSystemOneModel(`${provider}/${model.replace(new RegExp(`^${provider}/`), "")}`)
-  );
+  if (!provider) return false;
+  const prefix = `${provider}/`;
+  const relative = model.startsWith(prefix) ? model.slice(prefix.length) : model;
+  return Boolean(resolveSystemOneModel(`${provider}/${relative}`));
 }

@@ -10,6 +10,8 @@
  * @module shared/constants/endpointCategories
  */
 
+import { canonicalSystemOneSdkPath } from "./systemoneEndpoints";
+
 export interface EndpointCategory {
   id: string;
   label: string;
@@ -65,6 +67,12 @@ export const ENDPOINT_CATEGORIES: readonly EndpointCategory[] = [
     label: "Music",
     description: "Music generation",
     prefixes: ["/v1/music"],
+  },
+  {
+    id: "systemone",
+    label: "System One",
+    description: "Structured decisions (Jev, Clef)",
+    prefixes: ["/v1/systemone"],
   },
   {
     id: "rerank",
@@ -163,6 +171,8 @@ const ENDPOINT_ALIAS_REWRITES: readonly { source: string; canonical: string }[] 
  * already canonical, or belonging to no category, comes back unchanged.
  */
 export function resolveCanonicalEndpointPath(pathname: string): string {
+  const systemOnePath = canonicalSystemOneSdkPath(pathname);
+  if (systemOnePath) return systemOnePath;
   const path = pathname.replace(/^\/api(?=\/v1\/)/, "").replace(/^\/v1\/v1(?=\/|$)/, "/v1");
 
   for (const { source, canonical } of ENDPOINT_ALIAS_REWRITES) {

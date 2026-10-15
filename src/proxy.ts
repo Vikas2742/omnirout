@@ -55,5 +55,6 @@ export const config = {
     "/:codexseg([cC][oO][dD][eE][xX])/:path*",
     "/:codexseg([cC][oO][dD][eE][xX])",
     "/:modelsseg([mM][oO][dD][eE][lL][sS])",
+    "/:typesafeseg([tT][yY][pP][eE][sS][aA][fF][eE])/:path*",
   ],
 };

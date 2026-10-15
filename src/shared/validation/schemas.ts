@@ -8,6 +8,7 @@ export * from "./schemas/provider";
 export * from "./schemas/payloadRules";
 export * from "./schemas/routing";
 export * from "./schemas/apiV1";
+export * from "./schemas/systemone";
 export * from "./schemas/gemini";
 export * from "./schemas/cli";
 export * from "./schemas/evals";
