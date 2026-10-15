@@ -6,6 +6,7 @@ import { fetchGoogleFlowMedia } from "./googleFlowWebMedia.ts";
 import { acquireGoogleFlowSlot } from "./googleFlowWebQueue.ts";
 import { GoogleFlowWebError, parseGoogleFlowResponse } from "./googleFlowWebResponse.ts";
 import { assertGoogleFlowVisible, configureGoogleFlowPage } from "./googleFlowWebUi.ts";
+import { openGoogleFlowWindow } from "./googleFlowWebWindow.ts";
 
 /** Only connect is injectable: hermetic tests fake Playwright, not the UI/response contract. */
 export function createGoogleFlowWebBridge(
@@ -77,18 +78,19 @@ export function createGoogleFlowWebBridge(
             "Attached Chrome has no default context; open Flow in Chrome first."
           );
         check();
-        const owned = context.newPage().then(async (created) => {
-          if (finished || controller.signal.aborted) {
-            await created.close();
-            throw cancellation();
+        const owned = openGoogleFlowWindow(cached.browser, context, config.timeoutMs).then(
+          async (created) => {
+            if (finished || controller.signal.aborted) {
+              await created.close();
+              throw cancellation();
+            }
+            page = created;
+            return created;
           }
-          page = created;
-          return created;
-        });
+        );
         page = await step(owned);
         page.setDefaultTimeout(Math.min(config.timeoutMs, 15000));
         const projectUrl = `https://flow.google.com/project/${config.projectId}`;
-        await step(page.bringToFront());
         await step(
           page.goto(projectUrl, { waitUntil: "domcontentloaded", timeout: config.timeoutMs })
         );

@@ -1,6 +1,6 @@
 # Google Flow web image provider
 
-`google-flow-web/nano-banana-2.1` is an experimental, opt-in, image-only provider. It drives the operator's own already-authenticated headed Chrome tab through the Chrome DevTools Protocol (CDP); OmniRoute does not store Google credentials, cookies, storage state, verification tokens, or signed download URLs.
+`google-flow-web/nano-banana-2.1` is an experimental, opt-in, image-only provider. It drives the operator's own already-authenticated headed Chrome instance through the Chrome DevTools Protocol (CDP), using an owned background window; OmniRoute does not store Google credentials, cookies, storage state, verification tokens, or signed download URLs.
 
 Setup:
 
@@ -14,7 +14,7 @@ Supported API inputs are direct text-to-image requests for `nano-banana-2.1`, `n
 Limitations:
 
 - This is a browser UI integration, not an official Google Flow API. Flow UI changes can break it.
-- One generation is allowed at a time per OmniRoute process; the queue is bounded. Multi-process coordination is not supported. OmniRoute opens and brings its owned Flow tab to the foreground while generating, then closes only that owned tab.
+- One generation is allowed at a time per OmniRoute process; the queue is bounded. Multi-process coordination is not supported. OmniRoute opens a separate background window per request; it does not take focus; do not minimize it. After generating, OmniRoute closes only its owned page (closing the last tab also closes that dedicated window).
 - Flow may rewrite non-English prompts. Correlation uses the recorded original prompt when present, falling back to the used prompt; comparison trims only leading/trailing whitespace, matching the UI. If the used prompt differs from the trimmed request, each returned image includes OpenAI's `revised_prompt`.
 - Sign-in, CAPTCHA, verification, unusual-activity responses, or UI changes require operator takeover in the attached browser. OmniRoute does not solve CAPTCHA, read verification tokens, replay generation RPCs, or retry uncertain submissions.
 - The browser must already be running and authenticated. OmniRoute never launches Chrome, creates a browser profile, exports cookies, reads storage state, or closes the shared browser/context.

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { EventEmitter } from "node:events";
 import type { Browser, Page } from "playwright-core";
 
 const prompt = "A red apple on a white table, studio photo.";
@@ -50,12 +51,20 @@ function fake(
     afterRadioRead?: (name: string, count: number) => void;
     familyMenu?: string;
     replyText?: string;
+    unrelatedPage?: boolean;
+    holdCreate?: boolean;
+    omitPageEvent?: boolean;
   } = {}
 ) {
   const events: string[] = [];
   const pages: Page[] = [];
+  const pageEvents = new EventEmitter();
+  const targetIds = new Map<Page, string>();
+  const createParams: unknown[] = [];
   const clicked = deferred<void>();
   const reply = deferred<void>();
+  const creating = deferred<void>();
+  const createReply = deferred<void>();
   let clicks = 0;
   let active = 0;
   let maxActive = 0;
@@ -213,22 +222,81 @@ function fake(
     pages.push(page);
     return page;
   };
-  const browser = {
-    contexts: () => [
-      {
-        newPage: async () => makePage(),
-        close: () => {
-          dangerousClose++;
-        },
-        pages: () => [
-          {
-            close: () => {
-              dangerousClose++;
-            },
-          },
-        ],
+  const existing = {
+    close: () => {
+      dangerousClose++;
+    },
+  } as unknown as Page;
+  targetIds.set(existing, "operator-target");
+  const context = {
+    newPage: async () => makePage(), // Legacy path retained so RED exposes the missing CDP contract.
+    waitForEvent: (
+      event: string,
+      opts: { predicate: (page: Page) => Promise<boolean>; timeout: number }
+    ) => {
+      assert.equal(event, "page");
+      events.push("wait-page");
+      return new Promise<Page>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pageEvents.off("page", listener);
+          reject(new Error("page event timed out"));
+        }, opts.timeout);
+        const listener = (page: Page) => {
+          void opts.predicate(page).then((matches) => {
+            if (!matches) return;
+            clearTimeout(timer);
+            pageEvents.off("page", listener);
+            resolve(page);
+          }, reject);
+        };
+        pageEvents.on("page", listener);
+      });
+    },
+    newCDPSession: async (page: Page) => ({
+      send: async (method: string) => {
+        assert.equal(method, "Target.getTargetInfo");
+        events.push(`target-info:${targetIds.get(page)}`);
+        return { targetInfo: { targetId: targetIds.get(page) } };
       },
-    ],
+      detach: async () => {
+        events.push("detach-page-session");
+      },
+    }),
+    close: () => {
+      dangerousClose++;
+    },
+    pages: () => [existing, ...pages],
+  };
+  const browser = {
+    contexts: () => [context],
+    newBrowserCDPSession: async () => ({
+      send: async (method: string, params: unknown) => {
+        if (method === "Target.closeTarget") {
+          const owned = pages.find(
+            (page) => targetIds.get(page) === (params as { targetId: string }).targetId
+          );
+          assert.ok(owned, "fallback must close only a target created by this request");
+          await owned.close();
+          events.push("close-owned-target");
+          return { success: true };
+        }
+        assert.equal(method, "Target.createTarget");
+        events.push("create-target");
+        createParams.push(params);
+        creating.resolve();
+        if (options.holdCreate) await createReply.promise;
+        if (options.unrelatedPage) pageEvents.emit("page", existing);
+        const page = makePage();
+        const targetId = `owned-target-${pages.length}`;
+        targetIds.set(page, targetId);
+        // Exercise event arrival before createTarget resolves, unless simulating pickup failure.
+        if (!options.omitPageEvent) pageEvents.emit("page", page);
+        return { targetId };
+      },
+      detach: async () => {
+        events.push("detach-browser-session");
+      },
+    }),
     on: () => {},
     isConnected: () => true,
     close: () => {
@@ -241,6 +309,9 @@ function fake(
     browser,
     clicked,
     reply,
+    creating,
+    createReply,
+    createParams,
     counts: () => ({ clicks, maxActive, dangerousClose, ownedClose }),
   };
 }
@@ -254,10 +325,19 @@ async function setup(options: Parameters<typeof fake>[0] = {}) {
   });
   return { ...seam, bridge };
 }
-test("UI readback, exact prompt, foreground and one send; close only owned page", async () => {
+test("UI readback, exact prompt and one send in an owned background window without taking focus", async () => {
   const f = await setup();
   const images = await f.bridge.generate(request, config);
   assert.equal(images.length, 2);
+  assert.deepEqual(f.createParams, [{ url: "about:blank", newWindow: true, background: true }]);
+  assert.ok(f.events.indexOf("wait-page") < f.events.indexOf("create-target"));
+  assert.ok(
+    f.events.indexOf("create-target") <
+      f.events.indexOf(`goto:https://flow.google.com/project/${config.projectId}`)
+  );
+  assert.ok(!f.events.includes("front"), "must never call bringToFront");
+  assert.ok(f.events.includes("detach-browser-session"));
+  assert.ok(f.events.includes("detach-page-session"));
   assert.deepEqual(f.counts(), { clicks: 1, maxActive: 1, dangerousClose: 0, ownedClose: 1 });
   for (const event of [
     "read:Agent:aria-pressed",
@@ -271,6 +351,47 @@ test("UI readback, exact prompt, foreground and one send; close only owned page"
   ])
     assert.ok(f.events.includes(event), event);
   assert.ok(f.events.indexOf("wait") < f.events.indexOf("send"));
+});
+test("target id matching ignores another page and closes only the owned window page", async () => {
+  const f = await setup({ unrelatedPage: true });
+  await f.bridge.generate(request, config);
+  assert.ok(f.events.includes("target-info:operator-target"));
+  assert.ok(f.events.includes("target-info:owned-target-1"));
+  assert.deepEqual(f.counts(), { clicks: 1, maxActive: 1, dangerousClose: 0, ownedClose: 1 });
+  assert.ok(!f.events.includes("front"));
+});
+test("page pickup timeout closes only the created target and detaches the browser session", async () => {
+  const f = await setup({ omitPageEvent: true });
+  const { openGoogleFlowWindow } = await import("../../open-sse/services/googleFlowWebWindow.ts");
+  await assert.rejects(openGoogleFlowWindow(f.browser, f.browser.contexts()[0], 10), /timed out/i);
+  assert.deepEqual(f.counts(), { clicks: 0, maxActive: 0, dangerousClose: 0, ownedClose: 1 });
+  assert.ok(f.events.includes("close-owned-target"));
+  assert.ok(f.events.includes("detach-browser-session"));
+  assert.ok(!f.events.includes("front"));
+});
+test("abort during target creation closes the late owned page without sending", async () => {
+  const f = await setup({ holdCreate: true });
+  const controller = new AbortController();
+  const pending = f.bridge.generate(request, config, controller.signal);
+  await Promise.race([f.creating.promise, pending]);
+  assert.ok(f.events.includes("create-target"));
+  controller.abort();
+  await assert.rejects(pending, /before submission/i);
+  f.createReply.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(f.counts(), { clicks: 0, maxActive: 0, dangerousClose: 0, ownedClose: 1 });
+  assert.ok(!f.events.some((event) => event.startsWith("goto:")));
+});
+test("visibility check never brings a hidden dedicated window to the foreground", async () => {
+  const f = await setup({ visibility: "hidden" });
+  const { assertGoogleFlowVisible } = await import("../../open-sse/services/googleFlowWebUi.ts");
+  // Exercise the assertion directly as well as through generation below.
+  await f.browser.contexts()[0].newPage();
+  await assert.rejects(
+    assertGoogleFlowVisible(f.pages[0]),
+    /dedicated Flow window must not be minimized/i
+  );
+  assert.ok(!f.events.includes("front"));
 });
 test("CJK original correlation carries Flow's revised_prompt on every image", async () => {
   const f = await setup({ replyText: raw });
@@ -359,7 +480,11 @@ test("Flow radio labels may include material icons around their text", async () 
 });
 for (const [name, options, message] of [
   ["Agent true", { agent: "true" }, /Agent/],
-  ["hidden tab", { visibility: "hidden" }, /visible|foreground/i],
+  [
+    "hidden dedicated window",
+    { visibility: "hidden" },
+    /dedicated Flow window must not be minimized/i,
+  ],
   ["sign-in redirect", { signIn: true }, /sign in/i],
   ["radio fails to stick", { unstuck: "16:9" }, /setting|option/i],
   ["final radio never settles", { finalUnstuck: "16:9" }, /setting|option/i],
@@ -387,6 +512,17 @@ test("FIFO serialization and queue timeout never submit the queued call", async 
   await Promise.all([first, second, third]);
   assert.equal(f.counts().maxActive, 1);
   assert.equal(f.counts().clicks, 3);
+  assert.equal(f.counts().ownedClose, 3);
+  assert.equal(f.counts().dangerousClose, 0);
+  assert.deepEqual(
+    f.createParams,
+    Array.from({ length: 3 }, () => ({
+      url: "about:blank",
+      newWindow: true,
+      background: true,
+    }))
+  );
+  assert.ok(!f.events.includes("front"));
 });
 test("queued abort removes its FIFO waiter without submitting", async () => {
   const f = await setup({ hold: true });

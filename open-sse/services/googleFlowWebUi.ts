@@ -30,11 +30,10 @@ async function radio(page: Page, text: string, check: () => void) {
   await waitForRadio(option, check);
 }
 export async function assertGoogleFlowVisible(page: Page) {
-  await page.bringToFront();
   if ((await page.evaluate(() => document.visibilityState)) !== "visible")
     throw new GoogleFlowWebError(
       "browser_hidden",
-      "The owned Flow tab must be visible in the foreground; activate attached Chrome."
+      "The dedicated Flow window must not be minimized; restore it without needing to take focus."
     );
 }
 export async function configureGoogleFlowPage(
