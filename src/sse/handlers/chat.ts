@@ -16,10 +16,10 @@ import {
   getProviderCredentialsWithQuotaPreflight,
   markAccountUnavailable,
   buildExhaustionOptions,
-  extractApiKey,
   isValidApiKey,
   extractSessionAffinityKey,
 } from "../services/auth";
+import { resolveClientApiKey } from "../services/clientApiKeyResolver";
 import {
   getRuntimeProviderProfile,
   clearModelLock,
@@ -143,7 +143,7 @@ import {
 } from "./reasoningRouting";
 import { createVirtualAutoCombo, resolveAutoRoutingState } from "./autoRouting";
 import { getComboFailureLogError } from "./comboFailureLogging";
-import { logAdmissionRejection, logHandlerRejection } from "./admissionRejectionLog";
+import { logAdmissionRejection, logHandlerRejection, rejectPayload } from "./admissionRejectionLog";
 
 // Pipeline integration — wired modules
 import { classify429FromError, type FailureKind } from "@/shared/utils/classify429";
@@ -450,6 +450,7 @@ async function handleChatImplementation(
     });
   }
 
+  if ((body = rejectPayload(body, request, reqId)) instanceof Response) return body;
   // Only the server's policy resolver may attach execution directives or route traces.
   // Discard lookalike JSON fields supplied by callers before evaluating any rule.
   if (body && typeof body === "object") {
@@ -507,41 +508,6 @@ async function handleChatImplementation(
     log.warn("CHAT", "Rejecting request with non-object message entries");
     return logHandlerRejection(
       errorResponse(HTTP_STATUS.BAD_REQUEST, "messages: Expected array of objects"),
-      {
-        path: new URL(request.url).pathname,
-        model: typeof body?.model === "string" && body.model ? body.model : "-",
-        requestBody: body ?? null,
-        apiKeyId: null,
-        apiKeyName: null,
-        correlationId: reqId,
-      }
-    );
-  }
-  // Same for `tools[]` and `input[]`: both are `z.array(z.unknown())`, and a `null` entry
-  // reaches `generateSessionId` and the translators (`null.name` / `null.role`) as a 500.
-  // `input` may legitimately carry plain strings (Responses API), so only `null` is rejected there.
-  const toolsBody = body as { tools?: unknown };
-  if (
-    Array.isArray(toolsBody.tools) &&
-    toolsBody.tools.some((t) => t === null || typeof t !== "object" || Array.isArray(t))
-  ) {
-    log.warn("CHAT", "Rejecting request with non-object tools entries");
-    return logHandlerRejection(
-      errorResponse(HTTP_STATUS.BAD_REQUEST, "tools: Expected array of objects"),
-      {
-        path: new URL(request.url).pathname,
-        model: typeof body?.model === "string" && body.model ? body.model : "-",
-        requestBody: body ?? null,
-        apiKeyId: null,
-        apiKeyName: null,
-        correlationId: reqId,
-      }
-    );
-  }
-  if (Array.isArray(msgBody.input) && msgBody.input.some((i) => i === null)) {
-    log.warn("CHAT", "Rejecting request with null input entries");
-    return logHandlerRejection(
-      errorResponse(HTTP_STATUS.BAD_REQUEST, "input: Expected array of objects or strings"),
       {
         path: new URL(request.url).pathname,
         model: typeof body?.model === "string" && body.model ? body.model : "-",
@@ -715,7 +681,7 @@ async function handleChatImplementation(
   // masked prefix/last4. These debug lines get copied verbatim into bug reports
   // and support tickets, so any key fragment is sensitive.
   const authHeader = request.headers.get("Authorization");
-  const apiKey = extractApiKey(request);
+  const { apiKey } = await resolveClientApiKey(request);
   if (authHeader && apiKey) {
     log.debug("AUTH", "API key provided");
   } else {
@@ -1681,7 +1647,7 @@ async function handleSingleModelChat(
   })();
   const resolvedModelGate = resolvedPolicy.createVisibleResolvedModelGate({
     apiKeyInfo,
-    apiKey: extractApiKey(request),
+    apiKey: (await resolveClientApiKey(request)).apiKey,
     contextModel: runtimeOptions.authorizationContextModel,
     comboGrantsTargets: runtimeOptions.comboGrantsTargets,
     provider,

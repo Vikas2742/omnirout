@@ -8,6 +8,7 @@ import {
   mergeInjectedFallbackOwnerNames,
 } from "./chatCore/memorySkillsInjection.ts";
 import { resolveChatCoreRequestSetup } from "./chatCore/requestSetup.ts";
+import { stripOutputConfigFormatForCompat } from "./chatCore/outputConfigFormatStrip.ts";
 import {
   normalizeOpenAICompatibleTools,
   shouldNormalizeFunctionToolsOnly,
@@ -300,6 +301,7 @@ import {
   resolveComboContextLimit,
 } from "../services/contextManager.ts";
 import { resolveBackgroundTaskRedirect } from "./chatCore/backgroundRedirect.ts";
+import { resolveCopilotAuto } from "./chatCore/copilotAutoModel.ts";
 import { emitThinkingSignatureDiagnostics } from "./chatCore/thinkingSignatureDiagnostics.ts";
 import type {
   CompressionConfig,
@@ -760,6 +762,9 @@ async function handleChatCoreInner({
     });
   }
 
+  const ca = await resolveCopilotAuto(provider, model, body, credentials, sessionAffinityKey, log);
+  if (ca.errorResult) return ca.errorResult;
+  ({ model, credentials } = ca);
   // Custom aliases remain explicit; lifecycle replacements are advisory and never silently routed.
   let [resolvedModel, effectiveModel, routedLifecycleError] = resolveLifecycle(
     provider,
@@ -2446,20 +2451,11 @@ async function handleChatCoreInner({
         delete translatedBody.output_format;
       }
 
-      // Fix #1719: Strip output_config.format for non-Anthropic Claude-compatible providers.
+      // Fix #1719: Strip output_config.format for non-Anthropic Claude-compatible providers
+      // (first-party `claude` OAuth and `anthropic` API-key keep it).
       // Third-party Claude endpoints (MiniMax, DeepSeek via aggregators) reject this field
       // with 400 errors since they don't support Anthropic's structured output / json_schema.
-      if (
-        provider !== "claude" &&
-        translatedBody.output_config &&
-        typeof translatedBody.output_config === "object"
-      ) {
-        const oc = translatedBody.output_config as Record<string, unknown>;
-        delete oc.format;
-        if (Object.keys(oc).length === 0) {
-          delete translatedBody.output_config;
-        }
-      }
+      stripOutputConfigFormatForCompat(translatedBody, provider);
     } else {
       translatedBody = { ...body };
 
@@ -3930,8 +3926,4 @@ async function handleChatCoreInner({
     }
   }
 }
-export function isTokenExpiringSoon(expiresAt, bufferMs = 5 * 60 * 1000) {
-  if (!expiresAt) return false;
-  const expiresAtMs = new Date(expiresAt).getTime();
-  return expiresAtMs - Date.now() < bufferMs;
-}
+export { isTokenExpiringSoon } from "./chatCore/tokenExpiry.ts";
