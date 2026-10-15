@@ -7,6 +7,7 @@ import type { SystemOneCredentials } from "@omniroute/open-sse/handlers/systemon
 import type { SingleModelTarget } from "@omniroute/open-sse/services/combo/types.ts";
 import { isAllRateLimitedCredentials, rateLimitedProviderResponse } from "./rateLimit";
 import type { SystemOneBody, SystemOneRouteDependencies } from "./systemoneRoutes";
+import { enforceSystemOneTargetPolicy, type SystemOnePolicyResult } from "./systemonePolicy";
 
 async function selectCredentials(
   target: SystemOneTarget,
@@ -60,7 +61,8 @@ export async function dispatchSystemOne(
   request: Request,
   body: SystemOneBody,
   deps: SystemOneRouteDependencies,
-  targetInfo?: SingleModelTarget
+  targetInfo?: SingleModelTarget,
+  requestPolicy?: SystemOnePolicyResult
 ): Promise<Response> {
   const alias = await deps.resolveAlias(body.model);
   const target = resolveSystemOneModel(alias || body.model);
@@ -71,8 +73,13 @@ export async function dispatchSystemOne(
       message:
         "Unknown System One model; use typesafe/jev-latest or cloudflare-ai/jev|clef|clef-flash",
     });
-  const policy = await deps.enforcePolicy(request, `${target.provider}/${target.id}`);
+  const canonicalModel = `${target.provider}/${target.id}`;
+  const policy = requestPolicy ?? (await deps.enforcePolicy(request, canonicalModel));
   if (policy.rejection) return policy.rejection;
+  if (requestPolicy) {
+    const rejection = await enforceSystemOneTargetPolicy(request, canonicalModel, policy);
+    if (rejection) return rejection;
+  }
   const credentials = await selectCredentials(
     target,
     targetInfo,

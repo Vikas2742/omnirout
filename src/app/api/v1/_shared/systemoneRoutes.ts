@@ -12,22 +12,19 @@ import { getComboByName, getCombos } from "@/lib/db/combos";
 import { getUserDatabaseSettings } from "@/lib/db/databaseSettings";
 import { v1SystemOneSchema } from "@/shared/validation/schemas/systemone";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
-import { enforceSystemOnePolicy } from "./systemonePolicy";
+import { enforceSystemOnePolicy, type SystemOnePolicyResult } from "./systemonePolicy";
 import { dispatchSystemOne } from "./systemoneDispatch";
 import { dispatchSystemOneCombo } from "./systemoneCombo";
 
 export type SystemOneBody = { model: string; state: unknown; questions: Record<string, unknown> };
-type PolicyResult = {
-  rejection: Response | null;
-  apiKeyInfo: { id?: string; name?: string; allowedConnections?: string[] } | null;
-};
 type CredentialResult =
   | SystemOneCredentials
+  | { allExpired: true }
   | { allRateLimited: true; retryAfter?: string | number | Date | null }
   | null;
 export interface SystemOneRouteDependencies {
   resolveAlias: (id: string) => Promise<string | null>;
-  enforcePolicy: (request: Request, model: string) => Promise<PolicyResult>;
+  enforcePolicy: (request: Request, model: string) => Promise<SystemOnePolicyResult>;
   getCredentials: (
     provider: string,
     exclude?: string | null,

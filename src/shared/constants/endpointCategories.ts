@@ -138,6 +138,7 @@ const SORTED_PREFIXES: readonly { prefix: string; categoryId: string }[] =
  * Returns `null` if the path doesn't match any category (e.g. management routes).
  */
 export function resolveEndpointCategory(pathname: string): string | null {
+  pathname = pathname.toLowerCase();
   for (const { prefix, categoryId } of SORTED_PREFIXES) {
     if (pathname === prefix || pathname.startsWith(prefix + "/")) {
       return categoryId;
@@ -173,10 +174,10 @@ const ENDPOINT_ALIAS_REWRITES: readonly { source: string; canonical: string }[] 
 export function resolveCanonicalEndpointPath(pathname: string): string {
   const systemOnePath = canonicalSystemOneSdkPath(pathname);
   if (systemOnePath) return systemOnePath;
-  const path = pathname.replace(/^\/api(?=\/v1\/)/, "").replace(/^\/v1\/v1(?=\/|$)/, "/v1");
+  const path = pathname.replace(/^\/api(?=\/v1\/)/i, "").replace(/^\/v1(?:\/v1)?(?=\/|$)/i, "/v1");
 
   for (const { source, canonical } of ENDPOINT_ALIAS_REWRITES) {
-    if (path === source || path.startsWith(source + "/")) {
+    if (path.toLowerCase() === source || path.toLowerCase().startsWith(source + "/")) {
       return canonical + path.slice(source.length);
     }
   }

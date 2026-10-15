@@ -35,14 +35,16 @@ async function fetchSystemOne(
       )
     : null;
   const doFetch = () => {
-    markAttempted();
-    signal.throwIfAborted();
-    return (options.fetchImpl ?? globalThis.fetch)(upstreamRequest.url, {
+    const init = {
       method: "POST",
       headers: { ...options.forwardedHeaders, ...upstreamRequest.headers },
       body: JSON.stringify(upstreamRequest.body),
       signal,
-    });
+    };
+    const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+    signal.throwIfAborted();
+    markAttempted();
+    return fetchImpl(upstreamRequest.url, init);
   };
   return (options.runProxyImpl ?? runWithProxyContext)(proxyInfo?.proxy || null, doFetch);
 }

@@ -158,8 +158,9 @@ for (const status of [400, 401, 402, 403, 429, 503]) {
 }
 
 for (const kind of ["timeout", "network", "abort"] as const) {
-  test(`${kind} propagates, logs once and returns a native error`, async () => {
+  test(`${kind} propagates, counts only real fetches and returns a native error`, async () => {
     const opts = options();
+    let fetches = 0;
     const controller = new AbortController();
     if (kind === "abort") controller.abort();
     const response = await handleSystemOneProxy({
@@ -167,6 +168,7 @@ for (const kind of ["timeout", "network", "abort"] as const) {
       timeoutMs: 5,
       signal: controller.signal,
       fetchImpl: async (_url, init) => {
+        fetches++;
         if (kind === "network") throw new Error(`network ${token} ${accountId}`);
         return new Promise((_resolve, reject) => {
           const abort = () => reject(new Error("abort"));
@@ -176,7 +178,8 @@ for (const kind of ["timeout", "network", "abort"] as const) {
       },
     });
     assert.equal(response.status, { timeout: 504, network: 502, abort: 499 }[kind]);
-    assert.equal(opts.logs.length, 1);
+    assert.equal(fetches, kind === "abort" ? 0 : 1);
+    assert.equal(opts.logs.length, fetches);
     assert.doesNotMatch(
       (await response.text()) + JSON.stringify(opts.logs),
       new RegExp(`${token}|${accountId}`)
