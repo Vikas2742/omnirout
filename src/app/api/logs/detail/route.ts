@@ -3,6 +3,7 @@
  * POST /api/logs/detail — Enable/disable pipeline capture for unified call log artifacts
  */
 import { NextRequest, NextResponse } from "next/server";
+import { parseIntegerQueryParam } from "@/lib/api/queryIntegerParam";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import {
   getRequestDetailLogs,
@@ -19,8 +20,12 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   const url = new URL(req.url);
-  const limit = Math.min(Number(url.searchParams.get("limit") ?? 50), 200);
-  const offset = Number(url.searchParams.get("offset") ?? 0);
+  const parsedLimit = parseIntegerQueryParam(url.searchParams, "limit", 50);
+  if (!parsedLimit.ok) return parsedLimit.response;
+  const parsedOffset = parseIntegerQueryParam(url.searchParams, "offset", 0);
+  if (!parsedOffset.ok) return parsedOffset.response;
+  const limit = Math.min(parsedLimit.value, 200);
+  const offset = parsedOffset.value;
 
   const logs = getRequestDetailLogs(limit, offset);
   const total = getRequestDetailLogCount();
