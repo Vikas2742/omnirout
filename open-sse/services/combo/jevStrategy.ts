@@ -107,8 +107,9 @@ function admitCandidates(
 }
 
 /**
- * Fall open: admit every candidate in user order, mark the hold reason on none
- * of them as "held" — the attempt loop walks the full preference list.
+ * Fall open: admit every candidate in user order, tagging each admitted row
+ * with the fallback reason and setting fellOpen/fallbackReason — the attempt
+ * loop walks the full preference list.
  */
 function fallOpen(
   candidates: readonly JevCandidate[],

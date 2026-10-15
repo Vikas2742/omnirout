@@ -427,7 +427,7 @@ test("partitionJevTargets drops breaker, lockout, and quota before the ask", asy
   }
 });
 
-test("buildJevComboTestSummary sentences cover admitted held blocked without calling TypeSafe", async () => {
+test("buildJevComboTestSummary returns structured eligible/blocked without calling TypeSafe", async () => {
   const { buildJevComboTestSummary } =
     await import("../../open-sse/services/combo/jevTestSummary.ts");
   const { resolveResilienceSettings } = await import("../../src/lib/resilience/settings.ts");
@@ -438,8 +438,10 @@ test("buildJevComboTestSummary sentences cover admitted held blocked without cal
     resilienceSettings: resolveResilienceSettings(null),
     hasTypesafeKey: false,
   });
-  assert.match(summary.admittedSentence, /^Admitted:/);
-  assert.match(summary.heldSentence, /^Held:/);
-  assert.match(summary.blockedSentence, /^Blocked:/);
+  assert.deepEqual(
+    summary.eligible.map((row) => row.model),
+    ["cc/opus", "glm/glm"]
+  );
+  assert.equal(summary.blocked.length, 0);
   assert.equal(summary.configurationNote, "Jev is not configured");
 });

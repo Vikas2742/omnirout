@@ -415,8 +415,10 @@ export function peekStickyConnectionId(messageHash: string): string | null {
 }
 
 /**
- * Read the request's combo-scoped sticky binding without changing its TTL or
- * clearing a binding whose target has not been expanded into the current pool.
+ * Read the request's combo-scoped sticky binding without refreshing its TTL or
+ * clearing a live binding whose target has not been expanded into the current
+ * pool. An expired entry is evicted on read so peek-heavy callers (the Jev
+ * preview paths) keep the store self-cleaning even when no writer runs.
  */
 export function peekSessionStickinessBinding(
   messages: Array<{ role?: string; content?: unknown }> | null | undefined,
@@ -426,7 +428,9 @@ export function peekSessionStickinessBinding(
   if (!rawMessageHash) return { messageHash: null, connectionId: null, modelStr: null };
   const messageHash = scopeMessageHash(rawMessageHash, namespace);
   const entry = stickyMap.get(messageHash);
-  if (!entry || Date.now() - entry.lastUsedAt > TTL_MS) {
+  if (!entry) return { messageHash, connectionId: null, modelStr: null };
+  if (Date.now() - entry.lastUsedAt > TTL_MS) {
+    stickyMap.delete(messageHash);
     return { messageHash, connectionId: null, modelStr: null };
   }
   return { messageHash, connectionId: entry.connectionId, modelStr: entry.modelStr ?? null };

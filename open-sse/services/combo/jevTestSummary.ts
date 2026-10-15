@@ -2,8 +2,9 @@
  * Combo health-check summary for strategy `jev` (#15276).
  *
  * Runs the same pre-ask block partition as live routing. Does not call TypeSafe:
- * without a user message a choice would be a fake decision. Eligible targets are
- * listed as not-yet-judged; blocked targets use their skip reason.
+ * without a user message a choice would be a fake decision. Returns structured
+ * rows only; the dashboard renders the Admitted/Held/Blocked sentences via
+ * next-intl so every locale can translate them.
  */
 
 import type { ResilienceSettings } from "../../../src/lib/resilience/settings";
@@ -11,13 +12,12 @@ import { partitionJevTargetsForAsk } from "./jevBlockChecker.ts";
 import type { ComboLogger, ResolvedComboTarget } from "./types.ts";
 
 export type JevComboTestSummary = {
-  admittedSentence: string;
-  heldSentence: string;
-  blockedSentence: string;
+  /** Eligible targets, not yet judged (a test cannot call Jev without a user message). */
+  eligible: Array<{ model: string; executionKey: string }>;
+  /** Targets blocked before Jev, with their pre-ask skip reason. */
+  blocked: Array<{ model: string; executionKey: string; reason: string }>;
   /** Present when no TypeSafe API key is configured. */
   configurationNote: string | null;
-  eligible: Array<{ model: string; executionKey: string }>;
-  blocked: Array<{ model: string; executionKey: string; reason: string }>;
 };
 
 const noopLog: ComboLogger = {
@@ -52,27 +52,9 @@ export async function buildJevComboTestSummary(args: {
     reason: row.reason,
   }));
 
-  const admittedSentence =
-    eligible.length === 0
-      ? "Admitted: none — every target is blocked before Jev."
-      : `Admitted: not yet judged (live Jev needs a user message). Eligible: ${eligible
-          .map((row) => row.model)
-          .join(" → ")}.`;
-
-  const heldSentence =
-    "Held: none until Jev runs on a live request (probability floor and dominated).";
-
-  const blockedSentence =
-    blocked.length === 0
-      ? "Blocked: none."
-      : `Blocked: ${blocked.map((row) => `${row.model} (${row.reason})`).join(", ")}.`;
-
   return {
-    admittedSentence,
-    heldSentence,
-    blockedSentence,
-    configurationNote: args.hasTypesafeKey ? null : "Jev is not configured",
     eligible,
     blocked,
+    configurationNote: args.hasTypesafeKey ? null : "Jev is not configured",
   };
 }

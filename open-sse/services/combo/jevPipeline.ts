@@ -6,7 +6,7 @@ import { errorResponseWithComboDiagnostics } from "../../utils/error.ts";
 import { getCachedProviderPoolConnections } from "../providerConnectionPool.ts";
 import { parseModel } from "../model.ts";
 import { evaluateSystemOneChoice, TYPESAFE_PROVIDER_ID } from "../typesafe/systemOne.ts";
-import { getProviderCredentials } from "../../../src/sse/services/auth";
+import { getProviderCredentials } from "../../../src/sse/services/auth.ts";
 import { findOpenCircuitBreaker } from "./executeTargetGates.ts";
 import {
   buildAllTargetsCoolingDownResponse,
@@ -421,7 +421,7 @@ async function expandJevStickyConnectionTarget(
       }
       providerPools.set(provider, pool);
     }
-    const connection = pool.find((candidate) => candidate.id === connectionId);
+    const connection = pool.find((candidate) => String(candidate.id) === connectionId);
     if (!connection) {
       expanded.push(target);
       continue;
