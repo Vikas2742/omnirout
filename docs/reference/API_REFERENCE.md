@@ -420,6 +420,12 @@ defaults to `us-central1`. Both resolutions happen in `open-sse/handlers/ocr.ts`
 and `score` questions, not chat messages. Authenticate with an OmniRoute API key;
 provider credentials remain in the existing provider connections. Model/connection
 restrictions and budgets apply to the resolved target, including each combo member.
+Token limits use the resolved provider id (for example `typesafe` or `cloudflare-ai`)
+and either the bare model id (`jev-latest`, `jev`, `clef`) or its qualified
+`provider/model` spelling (`typesafe/jev-latest`, `cloudflare-ai/jev`). Successful
+attempts advance every matching global, provider, bare-model and qualified-model
+limit exactly once. System One spend counts toward API-key metered dollar budgets
+and daily/weekly USD usage limits.
 
 | Channel               | Public model ids                                                               | Default input USD / 1M tokens |
 | --------------------- | ------------------------------------------------------------------------------ | ----------------------------- |
