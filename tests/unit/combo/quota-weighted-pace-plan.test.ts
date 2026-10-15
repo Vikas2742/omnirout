@@ -390,5 +390,8 @@ test("pace unknown plan: identical scores and draw boundary to absent plan", asy
   const targets = await seedTargets(quotas);
   assert.deepEqual(await draw(targets, 0.5 - 1e-8), [0, 1]);
   assert.deepEqual(await draw(targets, 0.5 + 1e-8), [1, 0]);
-  assert.equal(await capacityScore(quotas[0]), await capacityScore(quotas[1]));
+  assert.equal(
+    scoreQuotaPace(quotas[0], resolveResetAwareConfig({}), NOW).score,
+    scoreQuotaPace(quotas[1], resolveResetAwareConfig({}), NOW).score
+  );
 });
