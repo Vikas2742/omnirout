@@ -96,6 +96,11 @@ function parseStreakJson(raw: string): StreakData {
  * console.log(streak.currentStreak); // 7
  */
 export async function getStreak(apiKeyId: string): Promise<StreakData> {
+  return readStreak(apiKeyId);
+}
+
+/** Synchronous read, so advanceStreak's read-modify-write has no await between them. */
+function readStreak(apiKeyId: string): StreakData {
   if (isBuildPhase || isCloud) return emptyStreak();
 
   const db = getDbInstance() as unknown as DbLike;
@@ -193,7 +198,8 @@ export async function advanceStreak(apiKeyId: string): Promise<StreakAdvance> {
 
   const db = getDbInstance() as unknown as DbLike;
   const today = todayUtc();
-  const streak = await getStreak(apiKeyId);
+  // No await between this read and the write below: concurrent calls must not both extend.
+  const streak = readStreak(apiKeyId);
 
   // Already counted today
   if (streak.lastActiveDate === today) {
