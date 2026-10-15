@@ -15,6 +15,7 @@ Limitations:
 
 - This is a browser UI integration, not an official Google Flow API. Flow UI changes can break it.
 - One generation is allowed at a time per OmniRoute process; the queue is bounded. Multi-process coordination is not supported.
+- Flow may rewrite non-English prompts. Correlation uses the recorded original prompt when present, falling back to the used prompt; comparison trims only leading/trailing whitespace, matching the UI. If the used prompt differs from the trimmed request, each returned image includes OpenAI's `revised_prompt`.
 - Sign-in, CAPTCHA, verification, unusual-activity responses, or UI changes require operator takeover in the attached browser. OmniRoute does not solve CAPTCHA, read verification tokens, replay generation RPCs, or retry uncertain submissions.
 - The browser must already be running and authenticated. OmniRoute never launches Chrome, creates a browser profile, exports cookies, reads storage state, or closes the shared browser/context.
 - Google Flow availability, subscription access, generated content, and compliance with Google's terms remain the operator's responsibility. Do not expose the loopback CDP port.

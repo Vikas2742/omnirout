@@ -32,7 +32,7 @@ async function installSeam() {
     async (_input: unknown, _config: unknown, signal: AbortSignal) => {
       calls++;
       lastSignal = signal;
-      return ["/9j/4A=="];
+      return [{ b64_json: "/9j/4A==" }];
     }
   );
 }
@@ -125,6 +125,19 @@ for (const index of [0, 1]) {
     assert.equal(response.headers.has("x-omniroute-tokens-in"), false);
     assert.equal(response.headers.has("x-omniroute-response-cost"), false);
     assert.deepEqual((await response.json()).data, [{ b64_json: "/9j/4A==" }]);
+  });
+  test(`route ${index}: revised_prompt survives the handler without signed URLs`, async () => {
+    const { googleFlowWebBrowser } =
+      await import("../../open-sse/services/googleFlowWebBrowser.ts");
+    test.mock.method(googleFlowWebBrowser, "generate", async () => [
+      { b64_json: "/9j/4A==", revised_prompt: "English rewrite" },
+    ]);
+    const key = await createKey({ name: "flow-rewrite" });
+    const { response } = await invoke(index, base, key.key);
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).data, [
+      { b64_json: "/9j/4A==", revised_prompt: "English rewrite" },
+    ]);
   });
   test(`route ${index}: unsupported params rejected without browser work`, async () => {
     const key = await createKey({ name: "flow-inputs" });

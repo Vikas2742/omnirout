@@ -15,6 +15,7 @@ export interface GoogleFlowMedia {
   url: string;
   width: number;
   height: number;
+  revisedPrompt?: string;
 }
 const uuid = z.uuid();
 const dimensions = z.tuple([
@@ -61,10 +62,9 @@ export function parseGoogleFlowResponse(
     const length = Number(lines[i]);
     const line = lines[++i];
     if (!line) malformed();
-    const bytes = Buffer.byteLength(line);
-    // Google may count the two line separators as part of a frame's byte length.
-    const includesSeparators = length === bytes + 2 && lines[i + 1] === "";
-    if (length !== bytes && !includesSeparators) malformed();
+    // Live batchexecute framing counts UTF-16 code units plus two separators on EVERY
+    // frame, including adjacent frames and the final frame (not UTF-8 bytes).
+    if (length !== line.length + 2) malformed();
     let entries: unknown;
     try {
       entries = JSON.parse(line);
@@ -111,13 +111,25 @@ export function parseGoogleFlowResponse(
     if (
       seen.has(id) ||
       !Array.isArray(image) ||
-      image[7] !== prompt ||
+      typeof image[7] !== "string" ||
       typeof image[13] !== "string" ||
       !isGoogleFlowMediaUrl(image[13], id) ||
       !size.success
     )
       malformed();
+    // Flow trims the submitted text and may rewrite it for generation (image[7]).
+    // Correlate with its recorded original when present; never accept a matching
+    // rewrite in place of a different original. Only fall back for older responses.
+    const original: unknown = image[15]?.[2]?.[0]?.[2]?.[0]?.[0]?.[0];
+    const correlation = original ?? image[7];
+    if (typeof correlation !== "string" || correlation.trim() !== prompt.trim()) malformed();
     seen.add(id);
-    return { id, url: image[13], width: size.data[0], height: size.data[1] };
+    return {
+      id,
+      url: image[13],
+      width: size.data[0],
+      height: size.data[1],
+      ...(image[7] !== prompt.trim() ? { revisedPrompt: image[7] } : {}),
+    };
   });
 }

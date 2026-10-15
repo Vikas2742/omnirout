@@ -17,7 +17,7 @@ export function createGoogleFlowWebBridge(
       input: GoogleFlowWebRequest,
       config: GoogleFlowWebConfig,
       signal?: AbortSignal
-    ): Promise<string[]> {
+    ): Promise<Array<{ b64_json: string; revised_prompt?: string }>> {
       const release = await acquireGoogleFlowSlot(config.queueTimeoutMs, signal);
       let page: Page | undefined;
       let submitted = false;
@@ -123,10 +123,13 @@ export function createGoogleFlowWebBridge(
             "Flow generation failed; inspect the project in the browser. Do not automatically resubmit."
           );
         const media = parseGoogleFlowResponse(await step(response.text()), input.n, input.prompt);
-        const images: string[] = [];
+        const images: Array<{ b64_json: string; revised_prompt?: string }> = [];
         for (const item of media) {
           check();
-          images.push(await step(fetchGoogleFlowMedia(page, item)));
+          images.push({
+            b64_json: await step(fetchGoogleFlowMedia(page, item)),
+            ...(item.revisedPrompt !== undefined ? { revised_prompt: item.revisedPrompt } : {}),
+          });
         }
         return images;
       } catch (error) {

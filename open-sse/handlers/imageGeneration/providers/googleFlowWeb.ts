@@ -33,7 +33,7 @@ export async function handleGoogleFlowWebImageGeneration({
       startTime,
       requestBody: { model, n: input.n },
       responseBody: { images_count: images.length },
-      images: images.map((b64_json) => ({ b64_json })),
+      images,
     });
   } catch (error) {
     const message =

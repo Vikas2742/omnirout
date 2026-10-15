@@ -5,8 +5,15 @@ import type { Browser, Page } from "playwright-core";
 
 const prompt = "A red apple on a white table, studio photo.";
 const raw = readFileSync(new URL("./fixtures/google-flow-web-ogiZ0b.txt", import.meta.url), "utf8");
-const json = JSON.stringify(JSON.parse(raw.split("\n")[3]));
-const responseText = `)]}'\n\n${Buffer.byteLength(json)}\n${json}\n`;
+const frame = JSON.parse(raw.split("\n")[3]);
+const payload = JSON.parse(frame[0][2]);
+for (const media of payload[0]) {
+  media[6][0][7] = prompt;
+  media[6][0][15][2][0][2][0][0][0] = prompt;
+}
+frame[0][2] = JSON.stringify(payload);
+const json = JSON.stringify(frame);
+const responseText = `)]}'\n\n${json.length + 2}\n${json}\n`;
 const config = {
   cdpUrl: "http://127.0.0.1:19345",
   projectId: "00000001-0000-4000-8000-000000000001",
@@ -37,6 +44,7 @@ function fake(
     echo?: string;
     agentCount?: number;
     decoratedRadio?: boolean;
+    replyText?: string;
   } = {}
 ) {
   const events: string[] = [];
@@ -161,7 +169,7 @@ function fake(
         );
         return (options.hold ? reply.promise : Promise.resolve()).then(() => ({
           ok: () => true,
-          text: async () => responseText,
+          text: async () => options.replyText ?? responseText,
         }));
       },
       close: async () => {
@@ -232,6 +240,21 @@ test("UI readback, exact prompt, foreground and one send; close only owned page"
   ])
     assert.ok(f.events.includes(event), event);
   assert.ok(f.events.indexOf("wait") < f.events.indexOf("send"));
+});
+test("CJK original correlation carries Flow's revised_prompt on every image", async () => {
+  const f = await setup({ replyText: raw });
+  const images = await f.bridge.generate(
+    { ...request, prompt: "一只橘猫趴在窗台上晒太阳，温暖的午后光线，照片风格。" },
+    config
+  );
+  assert.deepEqual(
+    images,
+    Array.from({ length: 2 }, () => ({
+      b64_json: "/9j/4A==",
+      revised_prompt:
+        "A ginger cat lying on a windowsill basking in the sun, warm afternoon light, photography style.",
+    }))
+  );
 });
 test("Agent readback uses Playwright auto-wait rather than an immediate DOM count", async () => {
   const f = await setup({ agentCount: 0 });
