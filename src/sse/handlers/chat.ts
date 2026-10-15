@@ -450,6 +450,23 @@ async function handleChatImplementation(
     });
   }
 
+  // A JSON body that is not an object (`null`, a string, a number, `true`) made the `in` checks below throw a
+  // TypeError and the request ended as a 500; `/v1/responses` already answers it with this 400.
+  if (body === null || typeof body !== "object") {
+    log.warn("CHAT", "Rejecting request whose body is not a JSON object");
+    return logHandlerRejection(
+      errorResponse(HTTP_STATUS.BAD_REQUEST, "Request body must be a JSON object"),
+      {
+        path: new URL(request.url).pathname,
+        model: "-",
+        requestBody: null,
+        apiKeyId: null,
+        apiKeyName: null,
+        correlationId: reqId,
+      }
+    );
+  }
+
   // Only the server's policy resolver may attach execution directives or route traces.
   // Discard lookalike JSON fields supplied by callers before evaluating any rule.
   if (body && typeof body === "object") {
