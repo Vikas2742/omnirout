@@ -1,0 +1,1 @@
+- **feat(systemone):** Serve TypeSafe Jev and Cloudflare Workers AI Jev, Clef and Clef-flash through a provider-neutral `/v1/systemone` endpoint, with TypeSafe SDK compatibility, OmniRoute key policy, ordered combo failover, per-attempt usage/cost accounting and chat-isolated model lockouts (#0000 — TypeSafe compatibility adapted from Sean P. Ford's PR #14498; thanks @seanford).
