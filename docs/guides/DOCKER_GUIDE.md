@@ -670,7 +670,8 @@ or the reader's clock. Local snapshots map that remaining TTL to a local deadlin
 existing JSON keys remain readable and their raw bytes are retained for CAS.
 Redis is the only source of truth while it answers. Confirmed shared upserts,
 touches and deletes remove the local entry, never install or refresh it. SQLite
-on the Redis path holds only this instance's own error/timeout fallback decisions,
+on the Redis path holds only this instance's own fallback decisions from Redis
+errors, timeouts or admission saturation,
 TTL-bounded as before. A missing local pin on a later outage costs one fresh pick
 (one prompt-cache miss), not a wrong or evicted account. Rejected upserts return
 the shared winner and its remaining TTL atomically: ordinary selection rechecks
@@ -679,7 +680,8 @@ and uses a still-live eligible winner, touching usage and logging for that accou
 without another shared write.
 If it is unavailable, selection keeps the local candidate, leaves the
 shared pin unchanged and emits one debug message. Rejected CAS does not write
-SQLite; Redis errors/timeouts apply the existing local operation instead. If a
+SQLite; Redis errors, timeouts or admission saturation apply the existing local
+operation instead. If a
 sent mutation's reply arrives after timeout (accepted, rejected or error), a
 synchronous exact serialized-value compare-and-delete removes only the
 byte-identical timeout fallback row. There is no await between that comparison
