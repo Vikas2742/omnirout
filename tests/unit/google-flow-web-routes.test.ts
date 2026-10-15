@@ -65,7 +65,54 @@ async function invoke(index: number, body = base, key?: string) {
   });
   return { response, request };
 }
+async function withFlowComboMapping(run: (comboName: string) => Promise<void>) {
+  const combos = await import("../../src/lib/db/combos.ts");
+  const mappings = await import("../../src/lib/db/modelComboMappings.ts");
+  const comboName = "review-approved-openai-only";
+  const combo = await combos.createCombo({
+    name: comboName,
+    models: [{ model: "openai/gpt-image-2" }],
+  });
+  const mapping = await mappings.createModelComboMapping({
+    pattern: "google-flow-web/*",
+    comboId: String(combo.id),
+    enabled: true,
+  });
+  try {
+    await run(comboName);
+  } finally {
+    await mappings.deleteModelComboMapping(mapping.id);
+    await combos.deleteCombo(String(combo.id));
+  }
+}
 for (const index of [0, 1]) {
+  test(`route ${index}: combo mapping cannot authorize direct Flow dispatch`, async () => {
+    await withFlowComboMapping(async (comboName) => {
+      const key = await createKey({
+        name: "flow-combo-bypass",
+        modelAccessMode: "restricted",
+        allowedModels: ["openai/gpt-image-2"],
+        allowedCombos: [comboName],
+      });
+      assert.equal((await invoke(index, base, key.key)).response.status, 403);
+      assert.equal(calls, 0);
+    });
+  });
+  for (const scope of [canonical, "google-flow-web/*", "unrestricted"]) {
+    test(`route ${index}: direct Flow scope ${scope} survives combo mapping`, async () => {
+      await withFlowComboMapping(async (comboName) => {
+        const key = await createKey({
+          name: "flow-direct-scope",
+          ...(scope === "unrestricted"
+            ? {}
+            : { modelAccessMode: "restricted" as const, allowedModels: [scope] }),
+          allowedCombos: [comboName],
+        });
+        assert.equal((await invoke(index, base, key.key)).response.status, 200);
+        assert.equal(calls, 1);
+      });
+    });
+  }
   test(`route ${index}: unreadable disable state fails closed`, async () => {
     const { googleFlowWebSettings } = await import("../../src/lib/images/googleFlowWebRoute.ts");
     test.mock.method(googleFlowWebSettings, "read", async () => {

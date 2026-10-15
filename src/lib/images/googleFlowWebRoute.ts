@@ -1,4 +1,6 @@
 import { getSettings } from "@/lib/db/settings";
+import { isModelAllowedForKey } from "@/lib/db/apiKeys";
+import { hasApiKeyModelRestrictions } from "@/shared/utils/resolvedModelAccess";
 import { isProviderBlockedByIdOrAlias } from "@/shared/utils/noAuthProviders";
 import { extractApiKey, isValidApiKey } from "@/sse/services/auth";
 import { enforceApiKeyPolicy, checkApiKeyAuthorization } from "@/shared/utils/apiKeyPolicy";
@@ -47,6 +49,25 @@ async function admission(request: Request, model: string) {
   if (policy.apiKeyInfo) {
     const rejection = await checkApiKeyAuthorization(request, key, policy.apiKeyInfo, model);
     if (rejection) return { response: rejection };
+  }
+  // Flow is dispatched directly: a model-to-combo mapping never grants model authority here.
+  if (hasApiKeyModelRestrictions(policy.apiKeyInfo)) {
+    try {
+      if (!(await isModelAllowedForKey(key, model)))
+        return {
+          response: errorResponse(
+            HTTP_STATUS.FORBIDDEN,
+            "This API key is not allowed to use the Google Flow web model directly."
+          ),
+        };
+    } catch {
+      return {
+        response: errorResponse(
+          HTTP_STATUS.SERVICE_UNAVAILABLE,
+          "Google Flow model authorization is unavailable; request refused."
+        ),
+      };
+    }
   }
   if (
     Array.isArray(policy.apiKeyInfo?.allowedConnections) &&
