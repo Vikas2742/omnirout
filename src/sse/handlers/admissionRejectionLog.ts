@@ -95,13 +95,27 @@ function rejectWith(
 }
 
 /**
- * 400 before handleChat reads messages off a payload that would throw into a 500.
- * Returns the same body when the payload may proceed.
+ * 400 before handleChat reads messages, tools, or input off a payload that would
+ * throw into a 500. Returns the same body when the payload may proceed.
  */
 export function rejectPayload(body: unknown, request: ChatPayloadRequest, reqId: string): unknown {
   if (body === null || typeof body !== "object") {
     log.warn("CHAT", "Rejecting request whose body is not a JSON object");
     return rejectWith(request, reqId, null, "Request body must be a JSON object");
+  }
+  const record = body as { tools?: unknown; input?: unknown };
+  if (
+    Array.isArray(record.tools) &&
+    record.tools.some(
+      (entry) => entry === null || typeof entry !== "object" || Array.isArray(entry)
+    )
+  ) {
+    log.warn("CHAT", "Rejecting request with non-object tools entries");
+    return rejectWith(request, reqId, body, "tools: Expected array of objects");
+  }
+  if (Array.isArray(record.input) && record.input.some((entry) => entry === null)) {
+    log.warn("CHAT", "Rejecting request with null input entries");
+    return rejectWith(request, reqId, body, "input: Expected array of objects or strings");
   }
   return body;
 }
