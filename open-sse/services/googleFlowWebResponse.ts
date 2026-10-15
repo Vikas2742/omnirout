@@ -95,11 +95,16 @@ export function parseGoogleFlowResponse(
     !Array.isArray(payload) ||
     !Array.isArray(payload[0]) ||
     !Array.isArray(payload[1]) ||
-    payload[0].length !== n ||
+    payload[0].length > n ||
     n < 1 ||
     n > 4
   )
     malformed();
+  if (payload[0].length < n)
+    throw new GoogleFlowWebError(
+      "partial_results",
+      `Flow returned ${payload[0].length} of ${n} images; the rest may be visible in the Flow project. Inspect the project before another request. Do not resubmit automatically.`
+    );
   const seen = new Set<string>();
   return payload[0].map((media: unknown) => {
     if (!Array.isArray(media) || !uuid.safeParse(media[0]).success || !Array.isArray(media[6]))

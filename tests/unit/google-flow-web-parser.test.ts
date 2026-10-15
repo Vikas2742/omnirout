@@ -100,6 +100,24 @@ test("original field takes precedence even when the rewrite equals the request",
   changed[0][2] = JSON.stringify(payload);
   assert.throws(() => parseGoogleFlowResponse(frame(changed), 1, asciiPrompt));
 });
+test("partial results report the returned and requested counts", async () => {
+  const { parseGoogleFlowResponse, GoogleFlowWebError } = await parser();
+  const changed = structuredClone(cjkFrame);
+  const payload = JSON.parse(changed[0][2]);
+  payload[0] = payload[0].slice(0, 1);
+  changed[0][2] = JSON.stringify(payload);
+  assert.throws(
+    () => parseGoogleFlowResponse(frame(changed), 2, cjkPrompt),
+    (error: unknown) => {
+      assert.ok(error instanceof GoogleFlowWebError);
+      assert.equal(error.code, "partial_results");
+      assert.match(error.message, /1 of 2/);
+      assert.match(error.message, /rest may be visible in the Flow project/);
+      assert.match(error.message, /not resubmit automatically/);
+      return true;
+    }
+  );
+});
 for (const url of [
   "https://example.com/image/00000001-0000-4000-8000-000000000001",
   "http://flow-content.google/image/00000001-0000-4000-8000-000000000001",

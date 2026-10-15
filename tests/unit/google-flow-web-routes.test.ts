@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -155,6 +155,29 @@ for (const index of [0, 1]) {
     assert.equal(calls, 0);
   });
 }
+test("partial Flow outputs are non-retryable at the provider boundary", async () => {
+  const { googleFlowWebBrowser } = await import("../../open-sse/services/googleFlowWebBrowser.ts");
+  const { parseGoogleFlowResponse } =
+    await import("../../open-sse/services/googleFlowWebResponse.ts");
+  const { handleGoogleFlowWebImageGeneration } =
+    await import("../../open-sse/handlers/imageGeneration/providers/googleFlowWeb.ts");
+  const raw = readFileSync(
+    new URL("./fixtures/google-flow-web-ogiZ0b-9x16.txt", import.meta.url),
+    "utf8"
+  );
+  test.mock.method(googleFlowWebBrowser, "generate", async () => {
+    parseGoogleFlowResponse(raw, 2, "A white ceramic mug on a wooden desk, minimal product photo.");
+    throw new Error("expected partial result error");
+  });
+  const result = await handleGoogleFlowWebImageGeneration({
+    body: { prompt: "mug", n: 2 },
+    model: "nano-banana-2.1",
+  });
+  assert.equal(result.success, false);
+  assert.equal("retryable" in result && result.retryable, false);
+  assert.equal("status" in result && result.status, 502);
+  assert.match("error" in result ? String(result.error) : "", /1 of 2 images/);
+});
 test("combo rejects a Flow target before dispatching even an earlier non-Flow target", async () => {
   const { runImageComboTargets } = await import("../../open-sse/services/imageCombo.ts");
   let dispatches = 0;
