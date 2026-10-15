@@ -1190,8 +1190,8 @@
       "include": "Parts to include (comma-separated)"
     },
     "import": {
-      "description": "Import a bundle file",
-      "dryRun": "Validate without applying"
+      "description": "Replace the server database with a .sqlite backup",
+      "dryRun": "Validate the backup locally; never contacts the server"
     },
     "initialize": {
       "fromCloud": "Initialize from cloud backup"

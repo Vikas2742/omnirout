@@ -1190,8 +1190,8 @@
       "include": "Partes a incluir (separadas por vírgula)"
     },
     "import": {
-      "description": "Importar arquivo bundle",
-      "dryRun": "Validar sem aplicar"
+      "description": "Substituir o banco do servidor por um backup .sqlite",
+      "dryRun": "Validar o backup localmente; nunca contata o servidor"
     },
     "initialize": {
       "fromCloud": "Inicializar a partir de backup na cloud"

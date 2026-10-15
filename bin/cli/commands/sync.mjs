@@ -1,9 +1,10 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { createInterface } from "node:readline";
 import { apiFetch, getBaseUrl, isRouteUnavailableStatus } from "../api.mjs";
 import { emit } from "../output.mjs";
 import { t } from "../i18n.mjs";
+import { runSyncImport } from "./sync-import.mjs";
 
 function fmtTs(v) {
   if (!v) return "-";
@@ -188,24 +189,12 @@ export function registerSync(program) {
     .description(t("sync.import.description"))
     .option("--dry-run", t("sync.import.dryRun"))
     .action(async (bundlePath, opts, cmd) => {
-      const globalOpts = cmd.optsWithGlobals();
-      const body = readFileSync(bundlePath);
-      const res = await fetch(
-        `${getBaseUrl(globalOpts)}/api/db-backups/import?dryRun=${opts.dryRun ? "true" : "false"}`,
-        {
-          method: "POST",
-          headers: {
-            ...authHeaders(globalOpts),
-            "Content-Type": "application/octet-stream",
-          },
-          body,
-        }
+      const exitCode = await runSyncImport(
+        bundlePath,
+        { dryRun: !!opts.dryRun },
+        cmd.optsWithGlobals()
       );
-      if (!res.ok) {
-        process.stderr.write(`HTTP ${res.status}\n`);
-        process.exit(1);
-      }
-      emit(await res.json(), globalOpts);
+      if (exitCode !== 0) process.exit(exitCode);
     });
 
   sync
