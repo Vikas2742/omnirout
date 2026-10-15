@@ -53,8 +53,9 @@ const USD_TICKS_PER_DOLLAR = 10_000_000_000;
 
 /**
  * Extract an exact, provider-reported USD cost from a token/usage record when one
- * is present, so callers can trust it over the token × pricing estimate. Currently
- * only xAI's `cost_in_usd_ticks` field is handled — see comment above.
+ * is present, so callers can trust it over the token × pricing estimate. Handles
+ * xAI's `cost_in_usd_ticks` (see comment above) first, then the normalized
+ * `cost_usd` carried from OpenRouter's `usage.cost` (bare USD number).
  */
 function extractExactCostUsd(
   tokens: Record<string, number | undefined> | null | undefined
@@ -62,6 +63,10 @@ function extractExactCostUsd(
   const ticks = tokens?.cost_in_usd_ticks;
   if (typeof ticks === "number" && Number.isFinite(ticks) && ticks >= 0) {
     return ticks / USD_TICKS_PER_DOLLAR;
+  }
+  const costUsd = tokens?.cost_usd;
+  if (typeof costUsd === "number" && Number.isFinite(costUsd) && costUsd >= 0) {
+    return costUsd;
   }
   return null;
 }
@@ -274,7 +279,7 @@ export async function calculateCostDetailed(
   if (!tokens || !provider || !model) return { costUsd: 0, priced: true };
 
   // Short-circuit before any pricing DB lookup when an exact, provider-reported
-  // cost is present (currently xAI's `cost_in_usd_ticks` — see extractExactCostUsd).
+  // cost is present (xAI ticks or OpenRouter's USD cost — see extractExactCostUsd).
   const exactCostUsd = extractExactCostUsd(tokens);
   if (exactCostUsd !== null) return { costUsd: exactCostUsd, priced: true };
 
