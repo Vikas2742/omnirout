@@ -24,6 +24,9 @@ export interface AffinityRedisClient {
   ): Promise<unknown>;
 }
 
+// Healthy affinity calls finish in a few ms with only a handful in flight; 8 caps stalled work.
+const MAX_OUTSTANDING_REDIS_OPERATIONS = 8;
+
 type LocalStore = Pick<
   typeof sqliteSessionAffinityStore,
   "get" | "upsert" | "touch" | "delete" | "deleteIfValue" | "getSerialized" | "evict"
@@ -57,6 +60,7 @@ function enabled(sessionKey: string, provider: string, ttlMs: number): boolean {
 export class RedisSessionAffinityStore implements SessionAffinityStore {
   readonly driver = "redis" as const;
   private readonly throttle = createRedisLogThrottle();
+  private outstanding = 0;
   // Opaque provenance retains original Redis bytes across local deadline mapping.
   // SQLite fallback objects carry no shared authority and compare as a miss.
   private readonly observations = new WeakMap<SessionAccountAffinityRecord, string>();
@@ -72,6 +76,13 @@ export class RedisSessionAffinityStore implements SessionAffinityStore {
     fallback: () => T | Promise<T>,
     late?: () => void
   ): Promise<T> {
+    if (this.outstanding >= MAX_OUTSTANDING_REDIS_OPERATIONS) {
+      if (this.throttle.shouldLog("capacity")) {
+        console.warn("[SESSION_AFFINITY] Redis capacity reached; falling back to SQLite.");
+      }
+      return await fallback();
+    }
+    this.outstanding++;
     const controller = new AbortController();
     let commandSettled = false;
     let callSettled = false;
@@ -95,6 +106,8 @@ export class RedisSessionAffinityStore implements SessionAffinityStore {
             controller.signal.throwIfAborted();
             return await operation(client, controller.signal);
           } finally {
+            // A caller deadline cannot cancel sent commands or release their admission slot.
+            this.outstanding--;
             commandSettled = true;
             cleanLate();
           }

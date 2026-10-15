@@ -1445,6 +1445,8 @@ Limits and safety knobs applied when the Skills framework (`src/lib/skills/`) ex
 
 Redis session-affinity fallback invalidation (opt-in only; SQLite default is unchanged):
 
+Each Redis affinity store admits at most 8 outstanding operations; at capacity, calls immediately use SQLite, and slots remain occupied until the underlying Redis work settles, even after the 100 ms caller deadline.
+
 - R1. Any Redis reply delivered in time for a session operation is authoritative: accepted mutations, rejected/lost CAS, missing keys, absent-key deletes, and eviction hits or misses synchronously clear that session's local fallback row, with no await between reply and clear. Clearing is safe (at worst one re-selection during a later outage); a stale row is not.
 - R2. An operation that times out or errors and writes a local fallback records exactly what it wrote as serialized bytes. If its Redis command completes late, synchronous SQLite compare-and-delete clears only that byte-identical row, never by account or connection match. A newer outage write survives.
 - R3. Eviction always removes the failed account's local pin, including during an outage; its reply handling then follows R1/R2. Healthy Redis never writes local pins: there is no mirror or ordering ledger, and instances may diverge during an outage.

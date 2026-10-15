@@ -653,7 +653,10 @@ IDs. Known account identities take precedence over contradictory local IDs in
 pin resolution and guarded eviction; records without identity (or eviction callers
 without identity) retain the legacy ID guard. Accounts without a stable usage
 identity still require matching IDs. Redis
-errors or calls exceeding 100 ms fall back to local SQLite. During a Redis outage
+errors or calls exceeding 100 ms fall back to local SQLite. Each Redis affinity
+store caps outstanding operations at 8, bypasses Redis immediately when full, and
+releases slots only when the underlying work settles, not at the caller deadline.
+During a Redis outage
 there is no shared truth: each instance falls back to its own local affinity,
 sessions may re-pin once per instance, and instances may diverge. Stickiness
 re-converges through Redis when it recovers. The timeout bounds waiting, not a sent
