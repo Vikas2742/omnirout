@@ -1,6 +1,7 @@
 import type { CodexGlobalServiceMode } from "@/lib/providers/codexFastTier";
 import type { CodexAccountPoolProjection } from "@omniroute/open-sse/services/codexAccount/index.ts";
 import type { ProviderQuotaCacheEntry } from "../hooks/useProviderQuota";
+import type { QuotaRefreshState } from "../hooks/providerQuotaRefresh";
 
 export interface ConnectionRowConnection {
   id?: string;
@@ -88,5 +89,6 @@ export interface ConnectionRowProps {
   /** Latest cached usage/limits snapshot for this account (see useProviderQuota). */
   quotaCache?: ProviderQuotaCacheEntry | null;
   quotaRefreshing?: boolean;
+  quotaRefreshState?: QuotaRefreshState;
   onRefreshQuota?: () => void;
 }

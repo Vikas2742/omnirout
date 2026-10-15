@@ -21,6 +21,7 @@ import { normalizeCodexLimitPolicy, providerText } from "../providerPageHelpers"
 import { getCodexPlanLabel } from "../codexPlanLabel";
 import CodexAccountDetails from "./CodexAccountDetails";
 import ConnectionQuotaPanel from "./ConnectionQuotaPanel";
+import ConnectionQuotaRefreshButton from "./ConnectionQuotaRefreshButton";
 import {
   isProviderQuotaVisible,
   supportsProviderQuota,
@@ -133,6 +134,7 @@ export default function ConnectionRow({
   onToggleProxyEnabled,
   quotaCache,
   quotaRefreshing,
+  quotaRefreshState,
   onRefreshQuota,
 }: ConnectionRowProps) {
   const t = useTranslations("providers");
@@ -412,6 +414,13 @@ export default function ConnectionRow({
               <ProviderQuotaVisibilityToggle
                 visible={quotaVisible}
                 onToggle={onToggleQuotaVisibility}
+              />
+            )}
+            {connection.provider === "codex" && onRefreshQuota && (
+              <ConnectionQuotaRefreshButton
+                refreshing={quotaRefreshing}
+                state={quotaRefreshState}
+                onRefresh={onRefreshQuota}
               />
             )}
             {onToggleAutoSync && (
@@ -769,7 +778,7 @@ export default function ConnectionRow({
           connection={connection}
           cache={quotaCache}
           refreshing={quotaRefreshing}
-          onRefresh={onRefreshQuota}
+          onRefresh={connection.provider === "codex" ? undefined : onRefreshQuota}
         />
       ) : null}
     </div>
