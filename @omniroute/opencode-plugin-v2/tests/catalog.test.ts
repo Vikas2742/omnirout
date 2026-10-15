@@ -605,6 +605,84 @@ describe("catalog capability presets", () => {
     assert.deepEqual(res, { models: 2, combos: 0 });
   });
 
+  it("freeOnly drops single-use and retired entries but keeps them without the flag", async () => {
+    async function publishWith(freeOnly: boolean) {
+      const draft = fakeDraft();
+      const res = await publishCatalog(
+        draft,
+        { ...baseOpts, freeOnly, visibleModels: ["*"] },
+        {
+          fetcher: async () => [{ id: "cf/one-time-m" }, { id: "cf/retired-m" }],
+          enrichmentFetcher: async () =>
+            new Map([
+              ["cf/one-time-m", { freeType: "one-time-initial" as const }],
+              ["cf/retired-m", { freeType: "discontinued" as const }],
+            ]),
+          combosFetcher: async () => [],
+        }
+      );
+      return { draft, res };
+    }
+    const filtered = await publishWith(true);
+    assert.deepEqual(filtered.res, { models: 0, combos: 0 });
+    const unfiltered = await publishWith(false);
+    assert.equal(unfiltered.res.models, 2);
+    assert.match(String(unfiltered.draft.models.get("omniroute/cf/one-time-m")?.name), /one-time/);
+    assert.match(
+      String(unfiltered.draft.models.get("omniroute/cf/retired-m")?.name),
+      /discontinued/
+    );
+  });
+
+  it("freeOnly keeps uncapped entries with a non-empty budget", async () => {
+    const draft = fakeDraft();
+    const res = await publishCatalog(
+      draft,
+      { ...baseOpts, freeOnly: true, visibleModels: ["*"] },
+      {
+        fetcher: async () => [{ id: "cf/open-m" }],
+        enrichmentFetcher: async () =>
+          new Map([["cf/open-m", { freeType: "recurring-uncapped" as const }]]) as never,
+        combosFetcher: async () => [],
+      }
+    );
+    assert.equal(res.models, 1);
+    assert.match(String(draft.models.get("omniroute/cf/open-m")?.name), /uncapped/);
+  });
+
+  it("freeOnly predicate admits recurring and keyless entries, refuses the rest", async () => {
+    const { passesCapabilityPresets } = await import("../src/capability-presets.js");
+    const { isFreeOnlyFreeType } = (await import("../src/shared/naming.js")) as unknown as {
+      isFreeOnlyFreeType: (v: unknown) => boolean;
+    };
+    const admitted = [
+      "recurring-daily",
+      "recurring-monthly",
+      "recurring-credit",
+      "recurring-uncapped",
+      "keyless",
+    ];
+    for (const freeType of admitted) {
+      assert.equal(isFreeOnlyFreeType(freeType), true);
+      assert.equal(
+        passesCapabilityPresets({} as never, { freeType: freeType as never }, { freeOnly: true }),
+        true
+      );
+    }
+    const refused: unknown[] = ["one-time-initial", "discontinued", "some-future-type", undefined];
+    for (const freeType of refused) {
+      assert.equal(isFreeOnlyFreeType(freeType), false);
+      assert.equal(
+        passesCapabilityPresets(
+          {} as never,
+          freeType === undefined ? undefined : ({ freeType: freeType as never } as never),
+          { freeOnly: true }
+        ),
+        false
+      );
+    }
+  });
+
   it("presets shrink a large stub catalog below threshold", async () => {
     const stubModels = async () =>
       Array.from({ length: 4000 }, (_, i) => ({

@@ -1,5 +1,6 @@
 import type { LegacyModel } from "./legacy-model.js";
 import type { OmniRouteEnrichmentEntry } from "./shared/enrich.js";
+import { isFreeOnlyFreeType } from "./shared/naming.js";
 
 export interface CapabilityPresetFlags {
   freeOnly?: boolean;
@@ -20,7 +21,7 @@ export function passesCapabilityPresets(
   enrichment: OmniRouteEnrichmentEntry | undefined,
   flags: CapabilityPresetFlags
 ): boolean {
-  if (flags.freeOnly === true && enrichment?.freeType === undefined) return false;
+  if (flags.freeOnly === true && !isFreeOnlyFreeType(enrichment?.freeType)) return false;
   if (flags.toolsOnly === true && mapped.capabilities.toolcall !== true) return false;
   if (
     flags.visionOnly === true &&
