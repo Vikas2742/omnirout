@@ -50,6 +50,8 @@ function fake(
     finalUnstuck?: string;
     afterRadioRead?: (name: string, count: number) => void;
     familyMenu?: string;
+    familyDelayReads?: number;
+    afterFamilyRead?: (count: number) => void;
     replyText?: string;
     unrelatedPage?: boolean;
     holdCreate?: boolean;
@@ -76,6 +78,8 @@ function fake(
     const reads = new Map<string, number>();
     let family = options.family ?? "Nano Banana 2.1";
     let familyReads = 0;
+    let familySelected = false;
+    let menuFamilyReads = 0;
     let finalRead = false;
     let waitRegistered = false;
     const locator = (name: string): unknown => ({
@@ -107,6 +111,11 @@ function fake(
       boundingBox: async () => ({ width: 600, height: 100 }),
       innerText: async () => {
         if (!name.includes("Select model family")) return text;
+        if (familySelected) {
+          events.push(`read:family:${++menuFamilyReads}`);
+          options.afterFamilyRead?.(menuFamilyReads);
+          if (menuFamilyReads >= (options.familyDelayReads ?? 1)) family = options.familyMenu!;
+        }
         if (++familyReads === 2 && (options.finalRadioDelay || options.finalUnstuck)) {
           reads.clear();
           finalRead = true;
@@ -134,7 +143,7 @@ function fake(
       evaluate: async () => text,
       click: async () => {
         if (name === "missing-option") throw new Error("No matching model option");
-        if (name === "family-option") family = options.familyMenu!;
+        if (name === "family-option") familySelected = true;
         if (name === "missing-radio")
           throw new Error("Radio accessible name includes a material icon");
         if (name.includes("arrow_forward")) {
@@ -424,6 +433,55 @@ test("abort during Angular radio polling stops before send", async () => {
     },
   });
   await assert.rejects(f.bridge.generate(request, config, controller.signal), /before submission/i);
+  assert.equal(f.counts().clicks, 0);
+  assert.equal(f.counts().ownedClose, 1);
+});
+test("model family settles on third read after menu click with exactly one send", async () => {
+  const f = await setup({
+    family: "🍌 Nano Banana 2 Lite\narrow_drop_down",
+    familyMenu: "🍌 Nano Banana 2.1",
+    familyDelayReads: 3,
+  });
+  assert.equal((await f.bridge.generate(request, config)).length, 2);
+  assert.deepEqual(
+    f.events.filter((event) => event.startsWith("read:family:")),
+    ["read:family:1", "read:family:2", "read:family:3"]
+  );
+  assert.ok(f.events.indexOf("read:family:3") < f.events.indexOf("send"));
+  assert.equal(f.counts().clicks, 1);
+});
+test("model family never settles after menu click: bounded failure and zero sends", async () => {
+  const f = await setup({
+    family: "🍌 Nano Banana 2 Lite\narrow_drop_down",
+    familyMenu: "🍌 Nano Banana 2.1",
+    familyDelayReads: Infinity,
+  });
+  await assert.rejects(f.bridge.generate(request, { ...config, timeoutMs: 5000 }), {
+    name: "GoogleFlowWebError",
+    code: "ui_changed",
+    message: /Flow UI model Nano Banana 2\.1 did not stick/,
+  });
+  assert.ok(f.events.includes("read:family:2"), "must poll instead of failing on the first read");
+  assert.equal(f.counts().clicks, 0);
+  assert.equal(f.counts().ownedClose, 1);
+});
+test("abort during model family polling surfaces cancellation with zero sends", async () => {
+  const controller = new AbortController();
+  const f = await setup({
+    family: "🍌 Nano Banana 2 Lite\narrow_drop_down",
+    familyMenu: "🍌 Nano Banana 2.1",
+    familyDelayReads: 3,
+    afterFamilyRead: (count) => {
+      if (count === 2) controller.abort();
+    },
+  });
+  await assert.rejects(f.bridge.generate(request, config, controller.signal), {
+    name: "GoogleFlowWebError",
+    code: "cancelled",
+    status: 499,
+    message: /cancelled or timed out before submission/,
+  });
+  assert.ok(f.events.includes("read:family:2"));
   assert.equal(f.counts().clicks, 0);
   assert.equal(f.counts().ownedClose, 1);
 });

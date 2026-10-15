@@ -9,19 +9,27 @@ const fail = (message: string): never => {
 // emoji and material-icon text in both the selected button and menu options.
 const modelFamily =
   /^\s*(?:\p{Extended_Pictographic}\uFE0F?\s*)?Nano Banana 2\.1\s*(?:arrow_drop_down|check|check_circle)?\s*$/u;
-async function waitForRadio(option: Locator, check: () => void) {
+async function waitForSetting(
+  read: (timeout: number) => Promise<boolean>,
+  check: () => void,
+  message: string
+) {
   const deadline = Date.now() + 2000;
   while (true) {
     check();
-    const checked = await option.getAttribute("aria-checked", {
-      timeout: Math.max(1, deadline - Date.now()),
-    });
+    const matched = await read(Math.max(1, deadline - Date.now()));
     check();
-    if (checked === "true") return;
-    if (Date.now() >= deadline)
-      fail("Flow UI setting did not stick; inspect the settings in the browser.");
+    if (matched) return;
+    if (Date.now() >= deadline) fail(message);
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
+}
+async function waitForRadio(option: Locator, check: () => void) {
+  await waitForSetting(
+    async (timeout) => (await option.getAttribute("aria-checked", { timeout })) === "true",
+    check,
+    "Flow UI setting did not stick; inspect the settings in the browser."
+  );
 }
 async function radio(page: Page, text: string, check: () => void) {
   check();
@@ -63,8 +71,11 @@ export async function configureGoogleFlowPage(
       .filter({ hasText: modelFamily })
       .click();
   }
-  if (!modelFamily.test(await family.innerText()))
-    fail("Flow UI model Nano Banana 2.1 did not stick; inspect the browser.");
+  await waitForSetting(
+    async (timeout) => modelFamily.test(await family.innerText({ timeout })),
+    check,
+    "Flow UI model Nano Banana 2.1 did not stick; inspect the browser."
+  );
   // Re-read every setting after model changes, which may reset aspect/count.
   for (const label of ["Image", input.aspect, `x${input.n}`]) {
     await waitForRadio(
