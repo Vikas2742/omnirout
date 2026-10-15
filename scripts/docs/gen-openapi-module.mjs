@@ -114,32 +114,26 @@ async function main() {
 // (\`OPENAPI_VERSION\`, \`OPENAPI_TITLE\`) is surfaced in the page header.
 `;
 
+  const systemOneEndpoints = endpoints.filter(
+    (ep) =>
+      ep.path.endsWith("/systemone") ||
+      ep.path.startsWith("/typesafe/") ||
+      ep.path === "/api/v1/models"
+  );
+  const otherEndpoints = endpoints.filter((ep) => !systemOneEndpoints.includes(ep));
+  const chunkPath = path.join(path.dirname(OUT_PATH), "openapi.systemone.generated.ts");
   const body = `
-export interface OpenApiEndpoint {
-  /** Path template — may contain \`{param}\` placeholders. */
-  path: string;
-  /** HTTP method in upper case (GET / POST / PUT / DELETE / PATCH / ...). */
-  method: string;
-  /** Short one-line summary from the spec. */
-  summary: string;
-  /** Long-form description (markdown is allowed). */
-  description: string;
-  /** Primary tag — used for sidebar grouping in the Api Explorer. */
-  tag: string;
-  /** All tags declared on the operation. */
-  tags: string[];
-  /** \`true\` when the operation declares a non-empty \`security\` array. */
-  requiresAuth: boolean;
-  /** \`true\` when the operation declares a \`requestBody\`. */
-  hasRequestBody: boolean;
-}
+import type { OpenApiEndpoint } from "./openapiTypes";
+import { SYSTEMONE_ENDPOINTS } from "./openapi.systemone.generated";
+export type { OpenApiEndpoint } from "./openapiTypes";
 
 export const OPENAPI_VERSION = ${quote(version)};
 export const OPENAPI_TITLE = ${quote(title)};
 
 export const OPENAPI_ENDPOINTS: OpenApiEndpoint[] = [
-${endpoints.map(renderEndpoint).join(",\n")}${endpoints.length > 0 ? "," : ""}
-];
+${otherEndpoints.map(renderEndpoint).join(",\n")}${otherEndpoints.length > 0 ? "," : ""}
+  ...SYSTEMONE_ENDPOINTS,
+].sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
 
 export const OPENAPI_TAGS: string[] = Array.from(
   new Set(OPENAPI_ENDPOINTS.map((endpoint) => endpoint.tag))
@@ -148,6 +142,11 @@ export const OPENAPI_TAGS: string[] = Array.from(
 
   await fs.mkdir(path.dirname(OUT_PATH), { recursive: true });
   await fs.writeFile(OUT_PATH, `${header}${body}`, "utf8");
+  await fs.writeFile(
+    chunkPath,
+    `${header}\nimport type { OpenApiEndpoint } from "./openapiTypes";\n\nexport const SYSTEMONE_ENDPOINTS: OpenApiEndpoint[] = [\n${systemOneEndpoints.map(renderEndpoint).join(",\n")}\n];\n`,
+    "utf8"
+  );
 
   console.log(
     `[gen-openapi-module] wrote ${path.relative(ROOT, OUT_PATH)} (${endpoints.length} endpoints, v${version}, skipped ${totalManagement} management paths)`

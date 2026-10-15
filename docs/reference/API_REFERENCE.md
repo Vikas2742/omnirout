@@ -22,6 +22,7 @@ For the focused OpenAI-compatible protocol and provider capability matrix, see
 - [Embeddings](#embeddings)
 - [Image Generation](#image-generation)
 - [Document OCR](#document-ocr)
+- [System One Decisions](#system-one-decisions)
 - [List Models](#list-models)
 - [Provider Plugin Manifest](#provider-plugin-manifest)
 - [Compatibility Endpoints](#compatibility-endpoints)
@@ -412,6 +413,98 @@ defaults to `us-central1`. Both resolutions happen in `open-sse/handlers/ocr.ts`
 `src/app/api/v1/ocr/route.ts` before dispatching to `handleOcr`.
 
 ---
+
+## System One Decisions
+
+`POST /v1/systemone` (also `/api/v1/systemone`) evaluates structured `noul`, `choice`,
+and `score` questions, not chat messages. Authenticate with an OmniRoute API key;
+provider credentials remain in the existing provider connections. Model/connection
+restrictions and budgets apply to the resolved target, including each combo member.
+Token limits use the resolved provider id (for example `typesafe` or `cloudflare-ai`)
+and either the bare model id (`jev-latest`, `jev`, `clef`) or its qualified
+`provider/model` spelling (`typesafe/jev-latest`, `cloudflare-ai/jev`). Successful
+attempts advance every matching global, provider, bare-model and qualified-model
+limit exactly once. System One spend counts toward API-key metered dollar budgets
+and daily/weekly USD usage limits.
+
+| Channel               | Public model ids                                                               | Default input USD / 1M tokens |
+| --------------------- | ------------------------------------------------------------------------------ | ----------------------------- |
+| TypeSafe direct       | `typesafe/jev-latest`, `typesafe/jev-preview`, versioned `typesafe/jev-1.13.0` | 0.042                         |
+| Cloudflare Workers AI | `cloudflare-ai/jev` (or `cf/jev`)                                              | 0.042                         |
+| Cloudflare Workers AI | `cloudflare-ai/clef`, `cloudflare-ai/clef-flash`                               | 0.24 / 0.038                  |
+
+Output tokens are free. A configured pricing-table input row overrides these defaults.
+Cloudflare Jev draws from AI Gateway credits; Clef and Clef-flash draw from Workers AI
+neurons. The Cloudflare connection uses its API token and a provider-settings Account ID
+of exactly 32 lowercase hexadecimal characters. A System One failure locks only that
+model/connection, never the Cloudflare chat connection as a whole.
+
+```json
+{
+  "model": "cloudflare-ai/jev",
+  "state": "Synthetic example: an urgent support request",
+  "questions": {
+    "urgent": { "type": "noul", "instructions": "Is this urgent?" },
+    "queue": {
+      "type": "choice",
+      "instructions": "Choose the queue",
+      "criteria": { "support": "Needs help", "sales": "Wants to buy" }
+    },
+    "priority": {
+      "type": "score",
+      "instructions": "Rate the urgency",
+      "criteria": ["Low", "Medium", "High"]
+    }
+  }
+}
+```
+
+The response is always TypeSafe-native `{model, answers, usage}`. `model` is the
+upstream string (for example `jev-1.13.0` or `clef`); `usage` contains `input_tokens`
+and `output_tokens`. Answers preserve native probabilities, confidence and legends.
+OmniRoute metadata headers report the selected channel, model, cost and latency, and
+one call-log row is saved per upstream attempt.
+
+For official TypeSafe SDKs, use the base URL `http://localhost:20128/typesafe` with
+an OmniRoute key: `POST /typesafe/v1/systemone` accepts bare `jev-latest`, `jev-preview`
+and version selectors; `GET /typesafe/v1/models` preserves TypeSafe's native discovery
+envelope and requires a direct TypeSafe connection. Bare `clef` / `clef-flash` select
+Cloudflare. Operator model aliases run first, so `jev-latest` can instead map to
+`cloudflare-ai/jev` without changing SDK requests.
+
+For ordered cross-channel failover, create a named priority combo through the dashboard
+or the existing combo API, for example:
+
+```json
+{
+  "name": "decision-fallback",
+  "strategy": "priority",
+  "models": ["cloudflare-ai/jev", "typesafe/jev-latest"]
+}
+```
+
+Send the same request with `"model": "decision-fallback"`. Combo routing stops on
+400 `api_usage_error` from body/model validation, 413, 422, or caller cancellation
+(499). It fails over on member-level 401/402/403/404/408/429, HTTP 5xx, timeout or
+network failure, no usable credential, and member budget or token-limit rejection.
+Every resolved member rechecks token limits, key quotas and its provider's metered
+dollar budget before dispatch; client request-rate-limit slots are consumed only
+once per request. If every member is rejected, the policy/upstream failure keeps
+its native error envelope and `Retry-After` when supplied. Each attempt defaults
+to 30 seconds; caller cancellation propagates without dispatching another member.
+Invalid bodies return a FastAPI-style 422 `detail` array. Other errors use
+`{detail:{error_type,message}}`: 400 `api_usage_error`, 401/403 `authentication_error`,
+402 `insufficient_balance`, 429 `rate_limit_error` (with `Retry-After`),
+429 `token_limit_exceeded` for an exhausted token cap, 504
+`timeout_error`, 502 `connection_error`, or 499 `request_aborted`.
+Successful upstream attempts advance token caps and key tpm/rpm quotas using
+`input_tokens + output_tokens`; failed members and pre-aborted requests do not.
+
+`GET /v1/models` lists these models only for active channels with `type: systemone`,
+`supported_endpoints: ["systemone"]`, and `output_modalities: ["structured"]`.
+System One models cannot be selected for chat completions.
+
+Compatibility and schema credit: Sean P. Ford's TypeSafe implementation in upstream PR #14498.
 
 ## List Models
 

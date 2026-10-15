@@ -1,4 +1,5 @@
 import { BaseExecutor } from "./base.ts";
+import { assertSystemOneChatSupported } from "../config/systemoneChatGuard.ts";
 import { PROVIDERS } from "../config/constants.ts";
 
 type CloudflareCredentials = {
@@ -33,6 +34,7 @@ export class CloudflareAIExecutor extends BaseExecutor {
     _urlIndex = 0,
     credentials: CloudflareCredentials = null
   ): string {
+    assertSystemOneChatSupported("cloudflare-ai", _model);
     // Account ID can be stored in providerSpecificData or at top level credentials
     const accountId =
       credentials?.providerSpecificData?.accountId ||

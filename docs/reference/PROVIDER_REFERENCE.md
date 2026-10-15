@@ -1,14 +1,14 @@
 ---
 title: "Provider Reference"
 version: 3.8.52
-lastUpdated: 2026-10-10
+lastUpdated: 2026-10-15
 ---
 
 # Provider Reference
 
 > **Auto-generated** from `src/shared/constants/providers.ts` — do not edit by hand.
 > Regenerate with: `npm run gen:provider-reference`
-> **Last generated:** 2026-10-10
+> **Last generated:** 2026-10-15
 
 Total providers: **372**. See category breakdown below.
 
@@ -118,7 +118,7 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 | `twinmind` | `tm` | Twinmind (Unofficial/Experimental) | Web cookie | [link](https://app.twinmind.com) | Paste the stsTokenManager JSON from app.twinmind.com IndexedDB (accessToken + refreshToken). Chat uses accessToken; refreshToken mints a new JWT when it expires. | emulated |
 | `uc` | `ucn` | UC (uncensored.com) | Web cookie | [link](https://uncensored.com) | Sign in once with an email code to bootstrap a UC (uncensored.com) subscription session. OmniRoute mints a fresh short-lived token per request browserlessly, so the connection renews on its own; you only re-run the email login about once a month when the subscription session rolls over. | emulated |
 | `v0-vercel-web` | `v0-vercel-web` | v0 Vercel Web (Code Gen) | Web cookie | [link](https://v0.dev) | Paste your session cookie from v0.dev (DevTools → Application → Cookies) | — |
-| `venice-web` | `ven` | Venice Web (Privacy) | Web cookie | [link](https://venice.ai) | Paste your session cookie from venice.ai (DevTools → Application → Cookies) | — |
+| `venice-web` | `ven` | Venice Web (Privacy) | Web cookie | [link](https://venice.ai) | Paste your __client cookie value from .clerk.venice.ai (DevTools → Application → Cookies) | — |
 | `yuanbao-web` | `ybw` | Tencent Yuanbao (Free) | Web cookie | [link](https://yuanbao.tencent.com) | Log in to yuanbao.tencent.com, then paste the full Cookie header (DevTools → Network → any /api request → Request Headers → Cookie). It must contain hy_user and hy_token. | — |
 | `zai-web` | `zw` | Z.ai Web | Web cookie | [link](https://chat.z.ai) | Copy the "token" value from chat.z.ai → DevTools → Application → Local Storage. Do not copy cookies; OmniRoute handles the per-request CAPTCHA through its browser transport. | — |
 | `zenmux-free` | `zmf` | ZenMux Free (Web) | Web cookie | [link](https://zenmux.ai) | Login at zenmux.ai, then export all cookies using EditThisCookie or Cookie-Editor and paste the full Cookie header string here. Refresh every ~30 days. | — |
@@ -456,11 +456,35 @@ Use the dashboard at `/dashboard/providers` to enable, configure, and test each 
 |----|-------|------|------|---------|-------|
 | `auto` | `auto` | Auto (Zero-Config) | System | — | — |
 
+## System One decision channels
+
+Use `POST /v1/systemone` with an OmniRoute key and existing TypeSafe or Cloudflare Workers AI connections.
+The `cf/` alias also selects Cloudflare. Bare `jev-*` selects TypeSafe; bare `clef` and `clef-flash` select Cloudflare.
+Versioned TypeSafe selectors such as `typesafe/jev-1.13.0` are forwarded unchanged; operator aliases run first.
+
+| Model id | Display name | Input USD / 1M tokens |
+| --- | --- | --- |
+| `typesafe/jev-latest` | Jev (latest stable) | 0.042 |
+| `typesafe/jev-preview` | Jev (preview) | 0.042 |
+| `cloudflare-ai/jev` | Jev (Cloudflare) | 0.042 |
+| `cloudflare-ai/clef` | Clef | 0.24 |
+| `cloudflare-ai/clef-flash` | Clef Flash | 0.038 |
+
+Output tokens are free. Pricing-table input rows override defaults.
+Cloudflare Jev uses AI Gateway credits, whereas Clef and Clef-flash use Workers AI neurons.
+Configure the Cloudflare Account ID as 32 lowercase hexadecimal characters in provider settings.
+System One errors lock only the selected Cloudflare model/connection, not Cloudflare chat.
+
+For ordered failover, create a priority combo named `decision-fallback` with `models: ["cloudflare-ai/jev", "typesafe/jev-latest"]`.
+Send `"model": "decision-fallback"` to fail over on 5xx, 429, 402 or timeout, without hiding validation errors.
+TypeSafe SDK compatibility: `POST /typesafe/v1/systemone` and direct TypeSafe discovery at `GET /typesafe/v1/models`.
+These models are advertised as `systemone`, never as chat. See [API Reference](./API_REFERENCE.md#system-one-decisions).
+
 ## Sources of truth
 
 - Catalog: [`src/shared/constants/providers.ts`](../../src/shared/constants/providers.ts)
 - Registry (per-model details): [`open-sse/config/providerRegistry.ts`](../../open-sse/config/providerRegistry.ts)
-- Executors: [`open-sse/executors/`](../../open-sse/executors/) (148 implementations)
+- Executors: [`open-sse/executors/`](../../open-sse/executors/) (149 implementations)
 - Translators: [`open-sse/translator/`](../../open-sse/translator/)
 
 ## See Also

@@ -2023,6 +2023,138 @@ paths:
             cost-telemetry headers (see `POST /api/v1/chat/completions`);
             moderations are always cost `0` (free).
 
+  /api/v1/systemone:
+    post: &SystemOnePost
+      tags: [System]
+      summary: Evaluate structured decisions with System One
+      description: >-
+        POST /v1/systemone (also /api/v1/systemone and /typesafe/v1/systemone).
+        TypeSafe-native decisions via TypeSafe direct or Cloudflare Workers AI.
+        Models: typesafe/jev-latest, typesafe/jev-preview, typesafe/jev-x.y.z,
+        cloudflare-ai/jev, cloudflare-ai/clef, cloudflare-ai/clef-flash; cf is an alias.
+        Bare jev-* selects TypeSafe; bare clef and clef-flash select Cloudflare.
+        Operator aliases are resolved first. Named priority combos fail over on
+        5xx, 429, 402 and timeouts, not validation errors. Cloudflare Jev uses
+        AI Gateway credits; Clef uses Workers AI neurons. Each upstream attempt
+        has a 30-second timeout and propagates caller cancellation.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [model, state, questions]
+              properties:
+                model:
+                  type: string
+                  minLength: 1
+                  maxLength: 512
+                  example: cloudflare-ai/jev
+                state:
+                  description: Structured text (string, object, array, or null).
+                  nullable: true
+                questions:
+                  type: object
+                  minProperties: 1
+                  additionalProperties:
+                    oneOf:
+                      - type: object
+                        required: [type, instructions]
+                        properties:
+                          type: { type: string, enum: [noul] }
+                          instructions: { nullable: true }
+                          criteria:
+                            type: object
+                            properties:
+                              "true": { nullable: true }
+                              "false": { nullable: true }
+                      - type: object
+                        required: [type, instructions, criteria]
+                        properties:
+                          type: { type: string, enum: [choice] }
+                          instructions: { nullable: true }
+                          criteria:
+                            type: object
+                            minProperties: 1
+                            maxProperties: 255
+                            additionalProperties: { nullable: true }
+                      - type: object
+                        required: [type, instructions, criteria]
+                        properties:
+                          type: { type: string, enum: [score] }
+                          instructions: { nullable: true }
+                          criteria:
+                            type: array
+                            minItems: 2
+                            maxItems: 10
+                            items: { nullable: true }
+      responses:
+        "200":
+          description: >-
+            TypeSafe-native model (upstream model string), answers, and usage.
+            X-OmniRoute-* metadata headers report provider, model, cost and latency.
+            Input tokens are priced per channel; output tokens are free.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [model, answers, usage]
+                properties:
+                  model: { type: string, example: jev-1.13.0 }
+                  answers:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      description: Native noul, choice, or score answer, including probabilities and confidence where provided.
+                  usage:
+                    type: object
+                    required: [input_tokens, output_tokens]
+                    properties:
+                      input_tokens: { type: integer, minimum: 0 }
+                      output_tokens: { type: integer, minimum: 0 }
+        "400":
+          description: Unknown model, invalid Cloudflare account configuration, or upstream api_usage_error. Errors use detail with error_type and message.
+        "401":
+          description: authentication_error (missing/invalid OmniRoute or upstream credentials).
+        "402":
+          description: insufficient_balance (Cloudflare AI Gateway credits exhausted).
+        "403":
+          description: API-key policy rejection or upstream authentication_error.
+        "422":
+          description: FastAPI-style validation detail array with type, loc, and msg, or upstream api_usage_error.
+        "429":
+          description: rate_limit_error; Retry-After forwarded when present.
+        "499":
+          description: request_aborted by caller.
+        "502":
+          description: connection_error or malformed upstream response.
+        "504":
+          description: timeout_error after the per-attempt deadline.
+  /v1/systemone:
+    post: *SystemOnePost
+  /typesafe/v1/systemone:
+    post: *SystemOnePost
+  /api/typesafe/v1/systemone:
+    post: *SystemOnePost
+  /api/typesafe/v1/models:
+    get: &TypeSafeModelsGet
+      tags: [Models]
+      summary: TypeSafe SDK native model discovery
+      description: Authenticated TypeSafe-native models envelope, including release metadata; requires a TypeSafe connection.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: TypeSafe models envelope (models array with name, description and release_date).
+        "401":
+          description: Missing or invalid credentials.
+        "429":
+          description: TypeSafe credentials are rate limited.
+  /typesafe/v1/models:
+    get: *TypeSafeModelsGet
+
   /api/v1/rerank:
     post:
       tags: [Rerank]

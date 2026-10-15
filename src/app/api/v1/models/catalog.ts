@@ -1,3 +1,4 @@
+import { buildEvaluationCatalogModels } from "./catalogSystemOne";
 import { createCatalogConnectionExclusionFilter } from "@/lib/providerModels/copilotCatalogRejections";
 import { PROVIDER_MODELS, PROVIDER_ID_TO_ALIAS } from "@/shared/constants/models";
 import { NOAUTH_PROVIDERS } from "@/shared/constants/providers";
@@ -19,7 +20,6 @@ import {
   parseImageModel,
 } from "@omniroute/open-sse/config/imageRegistry";
 import { aiHordeImageCatalog } from "@omniroute/open-sse/services/aihordeImageCatalog";
-import { getAllRerankModels } from "@omniroute/open-sse/config/rerankRegistry";
 import { getAllAudioModels } from "@omniroute/open-sse/config/audioRegistry";
 import { getAllModerationModels } from "@omniroute/open-sse/config/moderationRegistry";
 import { getAllVideoModels } from "@omniroute/open-sse/config/videoRegistry";
@@ -1574,25 +1574,19 @@ async function buildUnifiedModelsResponseCore(
       });
     }
 
-    // Add rerank models (filtered by active providers)
-    for (const rerankModel of getAllRerankModels()) {
-      await maybeYieldCatalogBuild();
-      if (!isProviderActive(rerankModel.provider)) continue;
-      const rawModelId = getSpecialtyModelRelativeId(rerankModel.id, rerankModel.provider);
-      if (!providerSupportsModel(rerankModel.provider, rawModelId)) continue;
-      if (isModelHiddenBulk(rerankModel.provider, rawModelId, null, "rerank")) continue;
-      if (hasEquivalentSpecialtyModel(rerankModel.provider, rawModelId, "rerank", rerankModel.id)) {
-        continue;
-      }
-      models.push({
-        id: rerankModel.id,
-        object: "model",
-        created: timestamp,
-        owned_by: rerankModel.provider,
-        root: rawModelId,
-        type: "rerank",
-      });
-    }
+    models.push(
+      ...(await buildEvaluationCatalogModels(
+        {
+          timestamp,
+          isProviderActive,
+          providerSupportsModel,
+          isModelHidden: (provider, model, modality) =>
+            isModelHiddenBulk(provider, model, null, modality),
+          hasEquivalentModel: hasEquivalentSpecialtyModel,
+        },
+        maybeYieldCatalogBuild
+      ))
+    );
 
     // Add audio models (filtered by active providers)
     for (const audioModel of getAllAudioModels()) {

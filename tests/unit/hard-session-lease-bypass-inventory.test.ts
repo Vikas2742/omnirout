@@ -42,6 +42,10 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     "src/app/api/search/providers/route.ts": 3,
     "src/app/api/v1/_shared/elevenLabsProxy.ts": 1,
     "src/app/api/v1/_shared/fishAudioProxy.ts": 1,
+    // System One uses the same quota-preflight credential selector as rerank (class B).
+    // SDK discovery is also independently authenticated and connection-allowlisted.
+    "src/app/api/v1/_shared/systemoneRoutes.ts": 1,
+    "src/app/api/typesafe/v1/models/route.ts": 1,
     "src/app/api/v1/audio/speech/route.ts": 1,
     "src/app/api/v1/_shared/videoModelResolution.ts": 1,
     "src/app/api/v1/audio/transcriptions/route.ts": 2,

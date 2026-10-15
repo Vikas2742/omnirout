@@ -8,6 +8,7 @@ export const MODEL_SUPPORTED_ENDPOINT_VALUES = [
   "audio-speech",
   "audio-transcriptions",
   "images-generations",
+  "systemone",
   // Persisted legacy values remain valid input and normalize on write/edit.
   "video",
   "audio",
@@ -35,13 +36,14 @@ export function normalizeModelSupportedEndpoints(endpoints: readonly string[]): 
 }
 
 export function classifyModelSupportedEndpoints(endpoints: readonly string[]): {
-  type?: "embedding" | "rerank" | "image" | "video" | "audio";
+  type?: "embedding" | "rerank" | "image" | "video" | "audio" | "systemone";
   subtype?: "speech" | "transcription";
 } {
   // "chat" and "responses" are text-conversation endpoints; they carry no
   // modality type, so they fall through to the empty return below.
   if (endpoints.includes("embeddings")) return { type: "embedding" };
   if (endpoints.includes("rerank")) return { type: "rerank" };
+  if (endpoints.includes("systemone")) return { type: "systemone" };
   if (endpoints.includes("images")) return { type: "image" };
   if (endpoints.includes("videos") || endpoints.includes("video")) return { type: "video" };
 
