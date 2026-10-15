@@ -3997,7 +3997,14 @@
     "duplicateAutoComboTitle": "Criar uma combinação estática de {name}",
     "jev": "Jev",
     "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
-    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model.",
+    "jevAdmitted": "Admitidos: ainda não julgados (o Jev ao vivo precisa de uma mensagem do utilizador). Elegíveis: {models}.",
+    "jevAdmittedNone": "Admitidos: nenhum — todos os alvos estão bloqueados antes do Jev.",
+    "jevHeld": "Em espera: nenhum até o Jev correr num pedido ao vivo (limite de probabilidade e dominados).",
+    "jevBlocked": "Bloqueados: {models}.",
+    "jevBlockedNone": "Bloqueados: nenhum.",
+    "jevNotConfigured": "O Jev não está configurado",
+    "jevTestSummaryFootnote": "As linhas de alvo abaixo são sondagens de saúde independentes. A admissão do Jev ao vivo é registada no rasto de decisão de um pedido de chat real."
   },
   "costs": {
     "title": "Custos",

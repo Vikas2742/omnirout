@@ -3997,7 +3997,14 @@
     "duplicateAutoComboTitle": "Maak een statische combinatie van {name}",
     "jev": "Jev",
     "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
-    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model.",
+    "jevAdmitted": "Toegelaten: nog niet beoordeeld (live Jev heeft een gebruikersbericht nodig). Geschikt: {models}.",
+    "jevAdmittedNone": "Toegelaten: geen — elk doel is geblokkeerd vóór Jev.",
+    "jevHeld": "Vastgehouden: geen tot Jev op een live verzoek draait (waarschijnlijkheidsdrempel en gedomineerd).",
+    "jevBlocked": "Geblokkeerd: {models}.",
+    "jevBlockedNone": "Geblokkeerd: geen.",
+    "jevNotConfigured": "Jev is niet geconfigureerd",
+    "jevTestSummaryFootnote": "De doelrijen hieronder zijn onafhankelijke gezondheidssondes. Live Jev-toelating wordt vastgelegd in het beslissingsspoor van een echt chatverzoek."
   },
   "costs": {
     "title": "Kosten",

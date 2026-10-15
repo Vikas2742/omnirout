@@ -380,6 +380,25 @@ export function recordStickyBinding(
   }
 }
 
+/** Record the successful attempt's effective account, and Jev's selected model when applicable. */
+export function recordSuccessfulComboStickyBinding(
+  context: {
+    sticky: { messageHash: string | null };
+    combo: { name: string };
+    strategy: string;
+  },
+  connectionId: string,
+  modelStr: string
+): void {
+  if (!context.sticky.messageHash || !connectionId) return;
+  recordStickyBinding(
+    context.sticky.messageHash,
+    connectionId,
+    context.combo.name,
+    context.strategy === "jev" ? modelStr : undefined
+  );
+}
+
 /** Remove a binding (e.g. after the connection is confirmed unhealthy). */
 export function clearStickyBinding(messageHash: string): void {
   stickyMap.delete(messageHash);

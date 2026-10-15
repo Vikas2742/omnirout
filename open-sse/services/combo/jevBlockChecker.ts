@@ -3,7 +3,7 @@
  * gates the attempt loop would apply, without mutating attempt state.
  */
 
-import { isModelLocked } from "../accountFallback.ts";
+import { isAccountSemaphoreFull, isModelLocked } from "../accountFallback.ts";
 import { checkCredentialGate } from "../credentialGate.ts";
 import { isProviderInCooldown } from "../providerCooldownTracker.ts";
 import { parseModel } from "../model.ts";
@@ -18,6 +18,7 @@ import {
 } from "./comboStructure.ts";
 import { applyContextRequirements } from "./contextRequirements.ts";
 import { evaluateContextLimit } from "./contextOverrideGate.ts";
+import { lookupPositiveCap } from "./concurrencyCaps.ts";
 import { getResolvedModelCapabilities } from "../modelCapabilities.ts";
 import {
   modelAvailabilitySkipReason,
@@ -104,6 +105,13 @@ export function createJevBlockChecker(deps: JevBlockCheckerDeps): CheckJevBlock 
       return checkCredentialGate(target.connectionId, target.provider, target.modelStr).allowed ===
         false
         ? "credential_gate"
+        : null;
+    },
+    async (target) => {
+      if (!target.connectionId || !target.provider) return null;
+      const cap = await lookupPositiveCap(target.connectionId);
+      return cap && isAccountSemaphoreFull(target.provider, target.connectionId, cap)
+        ? "concurrency_cap"
         : null;
     },
   ];

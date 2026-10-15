@@ -3997,7 +3997,14 @@
     "duplicateAutoComboTitle": "Buat kombo statis dari {name}",
     "jev": "Jev",
     "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
-    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model.",
+    "jevAdmitted": "Diterima: belum dinilai (Jev langsung membutuhkan pesan pengguna). Layak: {models}.",
+    "jevAdmittedNone": "Diterima: tidak ada — setiap target diblokir sebelum Jev.",
+    "jevHeld": "Ditahan: tidak ada sampai Jev berjalan pada permintaan langsung (batas probabilitas dan didominasi).",
+    "jevBlocked": "Diblokir: {models}.",
+    "jevBlockedNone": "Diblokir: tidak ada.",
+    "jevNotConfigured": "Jev belum dikonfigurasi",
+    "jevTestSummaryFootnote": "Baris target di bawah adalah probe kesehatan independen. Penerimaan Jev langsung dicatat pada jejak keputusan permintaan obrolan nyata."
   },
   "costs": {
     "title": "Biaya",

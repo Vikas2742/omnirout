@@ -5,8 +5,6 @@ import { getRemainingCooldownMs } from "../providerCooldownTracker.ts";
 import { errorResponseWithComboDiagnostics } from "../../utils/error.ts";
 import { getCachedProviderPoolConnections } from "../providerConnectionPool.ts";
 import { parseModel } from "../model.ts";
-import { evaluateSystemOneChoice, TYPESAFE_PROVIDER_ID } from "../typesafe/systemOne.ts";
-import { getProviderCredentials } from "../../../src/sse/services/auth.ts";
 import { findOpenCircuitBreaker } from "./executeTargetGates.ts";
 import {
   buildAllTargetsCoolingDownResponse,
@@ -24,20 +22,29 @@ import {
   type ApplyStickinessResult,
 } from "./sessionStickiness.ts";
 import { extractPromptForJevState, orderJevComboTargets } from "./jevOrdering.ts";
-import type { JevAsk, JevOrderOutcome } from "./jevOrdering.ts";
+import type { JevOrderOutcome } from "./jevOrdering.ts";
+import { createJevAsk } from "./jevAsk.ts";
+import { applyPromptCacheAffinity, resolvePromptCacheAffinityKey } from "./promptCacheAffinity.ts";
 import { partitionJevTargetsForAsk } from "./jevBlockChecker.ts";
 import type { JevPartition } from "./jevEligibility.ts";
 import { recordComboDecision } from "./decisionTrace.ts";
 import type { resolveComboSetupConfig } from "../comboConfig.ts";
 import type { ResilienceSettings } from "../../../src/lib/resilience/settings";
 import type { NativeTurnPin } from "./nativeCodexTurnPin.ts";
-import type { ComboLike, ComboLogger, IsModelAvailable, ResolvedComboTarget } from "./types.ts";
+import type {
+  ComboLike,
+  ComboLogger,
+  ComboRelayOptions,
+  IsModelAvailable,
+  ResolvedComboTarget,
+} from "./types.ts";
 
 export interface JevPipelineDeps {
   body: Record<string, unknown>;
   combo: ComboLike;
   config: ReturnType<typeof resolveComboSetupConfig>;
   settings?: Record<string, unknown> | null;
+  relayOptions?: ComboRelayOptions | null;
   signal?: AbortSignal | null;
   nativeTurnPin?: NativeTurnPin | null;
   apiKeyAllowedConnections: string[] | null;
@@ -74,42 +81,30 @@ export async function orderByJevStrategy(
   }
 
   const sessionPreview = await previewJevSessionStickiness(deps, eligible);
-  const pinOwnsRequest =
-    sessionPreview.sticky.stuck || isNativeJevTargetPinned(deps.nativeTurnPin, eligible, deps);
-  const askTargets = sessionPreview.sticky.stuck ? sessionPreview.targets : eligible;
-  const ask: JevAsk = async ({ state, criteria }) => {
-    try {
-      const credentials = await getProviderCredentials(
-        TYPESAFE_PROVIDER_ID,
-        null,
-        deps.apiKeyAllowedConnections ?? null
-      );
-      const apiKey =
-        credentials && typeof (credentials as { apiKey?: unknown }).apiKey === "string"
-          ? (credentials as { apiKey: string }).apiKey
-          : null;
-      const result = await evaluateSystemOneChoice({ apiKey, state, criteria, signal });
-      if (result.ok) {
-        return {
-          ok: true as const,
-          answer: {
-            choice: result.choice,
-            probabilities: result.probabilities,
-            confidence: result.confidence,
-          },
-        };
-      }
-      const unavailable = result as { reason: string };
-      log.info("COMBO", `[jev] System One unavailable: ${unavailable.reason}`);
-      if (unavailable.reason === "missing_api_key") {
-        return { ok: false as const, reason: "missing_api_key" as const };
-      }
-      return { ok: false as const, reason: "unavailable" as const };
-    } catch {
-      log.warn("COMBO", "[jev] System One call failed (non-fatal); falling open to user order");
-      return { ok: false as const, reason: "unavailable" as const };
-    }
-  };
+  const nativePinOwnsRequest = isNativeJevTargetPinned(deps.nativeTurnPin, eligible, deps);
+  const hasPromptCachePin =
+    !sessionPreview.sticky.stuck &&
+    !nativePinOwnsRequest &&
+    resolvePromptCacheAffinityKey(body) !== null;
+  const promptCacheAffinity = hasPromptCachePin
+    ? applyPromptCacheAffinity(eligible, body, true, "global", deps.relayOptions?.sessionId)
+    : null;
+  const promptCacheWinner = promptCacheAffinity?.targets[0];
+  const promptCacheOrderedTargets = promptCacheWinner
+    ? [
+        promptCacheWinner,
+        ...eligible.filter((target) => target.executionKey !== promptCacheWinner.executionKey),
+      ]
+    : eligible;
+  const pinOwnsRequest = sessionPreview.sticky.stuck || nativePinOwnsRequest || hasPromptCachePin;
+  const askTargets = sessionPreview.sticky.stuck
+    ? sessionPreview.targets
+    : promptCacheOrderedTargets;
+  const ask = createJevAsk({
+    apiKeyAllowedConnections: deps.apiKeyAllowedConnections,
+    log,
+    signal,
+  });
 
   const outcome = await orderJevComboTargets(askTargets, extractPromptForJevState(body), {
     sessionPinned: pinOwnsRequest,

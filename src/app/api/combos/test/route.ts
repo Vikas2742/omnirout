@@ -312,6 +312,7 @@ export async function POST(request) {
     if (strategy === "jev") {
       const settings = await getCachedSettings();
       const resilienceSettings = resolveResilienceSettings(settings);
+      const probeByExecutionKey = new Map(results.map((result) => [result.executionKey, result]));
       let hasTypesafeKey = false;
       try {
         const credentials = await getProviderCredentials(TYPESAFE_PROVIDER_ID);
@@ -328,6 +329,10 @@ export async function POST(request) {
         config: (combo.config as Record<string, unknown> | null | undefined) ?? null,
         resilienceSettings,
         hasTypesafeKey,
+        isModelAvailable: async (_model, target) => {
+          const probe = target ? probeByExecutionKey.get(target.executionKey) : undefined;
+          return probe?.status === "ok";
+        },
       });
     }
 

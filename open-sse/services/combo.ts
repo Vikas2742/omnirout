@@ -818,8 +818,8 @@ async function handleComboChatInner({
     hiddenModelsByProvider,
   });
   if (pipelineDispatch) return pipelineDispatch;
-
   const runtimeUnitDispatch = await tryRuntimeUnitDispatch({
+    invocationId: traceInvocationId,
     body,
     combo,
     config,

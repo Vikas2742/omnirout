@@ -445,3 +445,23 @@ test("buildJevComboTestSummary returns structured eligible/blocked without calli
   assert.equal(summary.blocked.length, 0);
   assert.equal(summary.configurationNote, "Jev is not configured");
 });
+
+test("buildJevComboTestSummary blocks an unavailable dynamic-account probe", async () => {
+  const { buildJevComboTestSummary } =
+    await import("../../open-sse/services/combo/jevTestSummary.ts");
+  const { resolveResilienceSettings } = await import("../../src/lib/resilience/settings.ts");
+  const target = modelTarget("dynamic-unavailable", "openai/gpt-4.1-nano");
+  assert.equal(target.connectionId, null);
+  const summary = await buildJevComboTestSummary({
+    targets: [target],
+    comboName: "stack",
+    resilienceSettings: resolveResilienceSettings(null),
+    hasTypesafeKey: true,
+    isModelAvailable: async () => false,
+  });
+  assert.equal(summary.eligible.length, 0);
+  assert.deepEqual(
+    summary.blocked.map((row) => ({ key: row.executionKey, reason: row.reason })),
+    [{ key: target.executionKey, reason: "availability" }]
+  );
+});

@@ -3997,7 +3997,14 @@
     "duplicateAutoComboTitle": "{name} asosida statik kombinatsiya yaratish",
     "jev": "Jev",
     "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
-    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model.",
+    "jevAdmitted": "Qabul qilingan: hali hukm qilinmagan (jonli Jev foydalanuvchi xabari kerak). Muvofiq: {models}.",
+    "jevAdmittedNone": "Qabul qilingan: hech biri — Jev dan oldin har bir nishon bloklanadi.",
+    "jevHeld": "O'tkazildi: Jev jonli so'rov bo'yicha ishlamaguncha hech biri (ehtimollik darajasi va ustunlik qiladi).",
+    "jevBlocked": "Bloklangan: {models}.",
+    "jevBlockedNone": "Bloklangan: yo'q.",
+    "jevNotConfigured": "Jev sozlanmagan",
+    "jevTestSummaryFootnote": "Quyidagi maqsadli qatorlar mustaqil sog'liqni tekshirishlardir. Jonli Jev qabuli haqiqiy chat so'rovi uchun qaror izida qayd etiladi."
   },
   "costs": {
     "title": "Xarajatlar",

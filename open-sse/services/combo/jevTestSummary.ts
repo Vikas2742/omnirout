@@ -9,7 +9,7 @@
 
 import type { ResilienceSettings } from "../../../src/lib/resilience/settings";
 import { partitionJevTargetsForAsk } from "./jevBlockChecker.ts";
-import type { ComboLogger, ResolvedComboTarget } from "./types.ts";
+import type { ComboLogger, IsModelAvailable, ResolvedComboTarget } from "./types.ts";
 
 export type JevComboTestSummary = {
   /** Eligible targets, not yet judged (a test cannot call Jev without a user message). */
@@ -32,6 +32,7 @@ export async function buildJevComboTestSummary(args: {
   config?: Record<string, unknown> | null;
   resilienceSettings: ResilienceSettings;
   hasTypesafeKey: boolean;
+  isModelAvailable?: IsModelAvailable;
   log?: ComboLogger;
 }): Promise<JevComboTestSummary> {
   const partition = await partitionJevTargetsForAsk(args.targets, {
@@ -40,6 +41,7 @@ export async function buildJevComboTestSummary(args: {
     resilienceSettings: args.resilienceSettings,
     log: args.log ?? noopLog,
     comboName: args.comboName,
+    isModelAvailable: args.isModelAvailable,
   });
 
   const eligible = partition.eligible.map((target) => ({

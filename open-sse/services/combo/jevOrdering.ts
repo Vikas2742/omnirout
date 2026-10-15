@@ -67,8 +67,14 @@ export type JevAdmittedRecord = {
   detail: string;
 };
 
-export type JevOrderOutcome = {
-  targets: ResolvedComboTarget[];
+export type JevOrderableTarget = {
+  executionKey: string;
+  modelStr: string;
+  label?: string | null;
+};
+
+export type JevOrderOutcome<T extends JevOrderableTarget = ResolvedComboTarget> = {
+  targets: T[];
   holds: JevHoldRecord[];
   admitted: JevAdmittedRecord[];
   /**
@@ -142,11 +148,11 @@ function latestResponsesUserInput(input: unknown): string | null {
   return null;
 }
 
-export async function orderJevComboTargets(
-  targets: readonly ResolvedComboTarget[],
+export async function orderJevComboTargets<T extends JevOrderableTarget>(
+  targets: readonly T[],
   state: string,
   ports: { sessionPinned: boolean; ask: JevAsk }
-): Promise<JevOrderOutcome> {
+): Promise<JevOrderOutcome<T>> {
   if (ports.sessionPinned || targets.length <= 1) {
     return {
       targets: [...targets],
@@ -203,13 +209,13 @@ function formatHoldDetail(
   return parts.join(" ");
 }
 
-function toOutcome(
-  targets: readonly ResolvedComboTarget[],
+function toOutcome<T extends JevOrderableTarget>(
+  targets: readonly T[],
   candidates: readonly JevCandidate[],
   judged: JudgeJevResult,
   missingApiKey: boolean,
   confidence: number | null
-): JevOrderOutcome {
+): JevOrderOutcome<T> {
   const byId = new Map(candidates.map((candidate, index) => [candidate.id, targets[index]]));
   const holds: JevHoldRecord[] = [];
   for (const row of judged.held) {
@@ -244,7 +250,7 @@ function toOutcome(
   }
   const orderedTargets = judged.admitted
     .map((row) => byId.get(row.id))
-    .filter((target): target is ResolvedComboTarget => target !== undefined);
+    .filter((target): target is T => target !== undefined);
   return {
     targets: orderedTargets,
     holds,

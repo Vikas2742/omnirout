@@ -3997,7 +3997,14 @@
     "duplicateAutoComboTitle": "Ustvari statično kombinacijo iz {name}",
     "jev": "Jev",
     "jevDesc": "You rank providers; TypeSafe Jev decides which of those entries run for each request. Failover among admitted targets keeps your order.",
-    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model."
+    "jevPrivacyNote": "Order is who you trust. TypeSafe Jev chooses which of these models run for each request. The latest user message is sent to TypeSafe for that decision. Store a TypeSafe API key under Providers. Continuations with a live session pin skip Jev and stay on the pinned model.",
+    "jevAdmitted": "Sprejeto: še ni ocenjeno (živ Jev potrebuje uporabniško sporočilo). Primerni: {models}.",
+    "jevAdmittedNone": "Sprejeto: noben — vsaka tarča je blokirana pred Jevom.",
+    "jevHeld": "Zadržano: noben, dokler Jev ne teče na živi zahtevi (prag verjetnosti in dominirani).",
+    "jevBlocked": "Blokirano: {models}.",
+    "jevBlockedNone": "Blokirano: noben.",
+    "jevNotConfigured": "Jev ni konfiguriran",
+    "jevTestSummaryFootnote": "Vrstice ciljev spodaj so neodvisne sonde zdravja. Sprejem živega Jeva se zabeleži v sledi odločitve prave zahteve za klepet."
   },
   "costs": {
     "title": "Stroški",

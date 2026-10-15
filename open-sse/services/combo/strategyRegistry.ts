@@ -169,6 +169,7 @@ const STRATEGY_TRAIT_OVERRIDES: Record<AnyRoutingStrategyValue, StrategyTraitOve
   lkgp: { ordering: "lkgp", protectsFirstTargetFromAffinity: true },
   jev: {
     ordering: "declared",
+    runtimeUnitOrder: "declared",
     promptCacheAffinityScope: "model",
     protectsFirstTargetFromAffinity: true,
   },
