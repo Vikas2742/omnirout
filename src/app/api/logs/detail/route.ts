@@ -33,8 +33,17 @@ export async function POST(req: NextRequest) {
   const authError = await requireManagementAuth(req);
   if (authError) return authError;
 
-  const body = await req.json();
-  const enabled = body.enabled === true || body.enabled === "1";
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Request body must be a JSON object" }, { status: 400 });
+  }
+  const { enabled: rawEnabled } = body as { enabled?: unknown };
+  const enabled = rawEnabled === true || rawEnabled === "1";
 
   await updateSettings({ call_log_pipeline_enabled: enabled });
   const databaseSettings = getUserDatabaseSettings();
