@@ -8,6 +8,24 @@ import { GoogleFlowWebError, parseGoogleFlowResponse } from "./googleFlowWebResp
 import { assertGoogleFlowVisible, configureGoogleFlowPage } from "./googleFlowWebUi.ts";
 import { openGoogleFlowWindow } from "./googleFlowWebWindow.ts";
 
+const CLEANUP_MS = 1000;
+async function closeOwnedPage(page: Page): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      // Keep handling late rejection after the cleanup deadline (including synchronous throws).
+      Promise.resolve()
+        .then(() => page.close())
+        .catch(() => {}),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, CLEANUP_MS);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Only connect is injectable: hermetic tests fake Playwright, not the UI/response contract. */
 export function createGoogleFlowWebBridge(
   connect: (url: string) => Promise<Browser> = connectGoogleFlowBrowser
@@ -81,7 +99,7 @@ export function createGoogleFlowWebBridge(
         const owned = openGoogleFlowWindow(cached.browser, context, config.timeoutMs).then(
           async (created) => {
             if (finished || controller.signal.aborted) {
-              await created.close();
+              await closeOwnedPage(created);
               throw cancellation();
             }
             page = created;
@@ -157,9 +175,12 @@ export function createGoogleFlowWebBridge(
         finished = true;
         clearTimeout(timer);
         signal?.removeEventListener("abort", abort);
-        // Owned resource only. Never close the operator's browser, contexts, or existing pages.
-        if (page) await page.close().catch(() => {}); // an already-closed owned tab needs no further cleanup
-        release();
+        // Owned resource only. A stuck close must not hold the global slot or replace the result.
+        try {
+          if (page) await closeOwnedPage(page);
+        } finally {
+          release();
+        }
       }
     },
   };

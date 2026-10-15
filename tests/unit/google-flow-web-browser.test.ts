@@ -56,6 +56,7 @@ function fake(
     unrelatedPage?: boolean;
     holdCreate?: boolean;
     omitPageEvent?: boolean;
+    stallNavigationAndClose?: boolean;
   } = {}
 ) {
   const events: string[] = [];
@@ -67,12 +68,16 @@ function fake(
   const reply = deferred<void>();
   const creating = deferred<void>();
   const createReply = deferred<void>();
+  const navigating = deferred<void>();
+  const navigationReply = deferred<void>();
+  const closeReply = deferred<void>();
   let clicks = 0;
   let active = 0;
   let maxActive = 0;
   let dangerousClose = 0;
   let ownedClose = 0;
   const makePage = () => {
+    const stalled = options.stallNavigationAndClose && pages.length === 0;
     let text = "";
     const selected = new Set<string>();
     const reads = new Map<string, number>();
@@ -167,6 +172,8 @@ function fake(
       },
       goto: async (url: string) => {
         events.push(`goto:${url}`);
+        navigating.resolve();
+        if (stalled) await navigationReply.promise;
       },
       url: () =>
         options.signIn
@@ -225,6 +232,7 @@ function fake(
         events.push("close-page");
         ownedClose++;
         active = Math.max(0, active - 1);
+        if (stalled) await closeReply.promise;
       },
       setDefaultTimeout: () => {},
     } as unknown as Page;
@@ -320,6 +328,9 @@ function fake(
     reply,
     creating,
     createReply,
+    navigating,
+    navigationReply,
+    closeReply,
     createParams,
     counts: () => ({ clicks, maxActive, dangerousClose, ownedClose }),
   };
@@ -555,6 +566,48 @@ for (const [name, options, message] of [
     assert.equal(f.counts().clicks, 0);
     assert.equal(f.counts().ownedClose, 1);
     assert.equal(f.counts().dangerousClose, 0);
+  });
+}
+for (const mode of ["abort", "deadline"] as const) {
+  test(`stalled owned-page close bounds ${mode} and releases the global slot`, async () => {
+    const f = await setup({ stallNavigationAndClose: true });
+    const controller = new AbortController();
+    const first = f.bridge.generate(request, { ...config, timeoutMs: 1000 }, controller.signal);
+    // Observe rejection immediately, even if navigation setup unexpectedly fails.
+    void first.catch(() => {});
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([f.navigating.promise, first]);
+      if (mode === "abort") controller.abort();
+      const bounded = new Promise<never>((_resolve, reject) => {
+        watchdog = setTimeout(() => reject(new Error("owned-page cleanup did not settle")), 3000);
+      });
+      await assert.rejects(Promise.race([first, bounded]), {
+        name: "GoogleFlowWebError",
+        code: "cancelled",
+        status: mode === "abort" ? 499 : 504,
+        message: /cancelled or timed out before submission/,
+      });
+      // A different bridge shares the same process-global queue. The first close is STILL stalled.
+      const next = await setup({ unrelatedPage: true });
+      assert.equal(
+        (await next.bridge.generate(request, { ...config, queueTimeoutMs: 20 })).length,
+        2
+      );
+      assert.deepEqual(f.counts(), { clicks: 0, maxActive: 0, dangerousClose: 0, ownedClose: 1 });
+      assert.deepEqual(next.counts(), {
+        clicks: 1,
+        maxActive: 1,
+        dangerousClose: 0,
+        ownedClose: 1,
+      });
+    } finally {
+      clearTimeout(watchdog);
+      // Recover the fake on RED too, so a failed regression does not poison later tests.
+      f.closeReply.resolve();
+      f.navigationReply.resolve();
+      await first.catch(() => {});
+    }
   });
 }
 test("FIFO serialization and queue timeout never submit the queued call", async () => {
