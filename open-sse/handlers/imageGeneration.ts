@@ -844,6 +844,12 @@ export async function handleImageGeneration({
     });
   }
 
+  if (providerConfig.format === "google-flow-web") {
+    const { handleGoogleFlowWebImageGeneration } =
+      await import("./imageGeneration/providers/googleFlowWeb.ts");
+    return handleGoogleFlowWebImageGeneration({ body, model, signal });
+  }
+
   return handleOpenAIImageGeneration({ model, provider, providerConfig, body, credentials, log });
 }
 

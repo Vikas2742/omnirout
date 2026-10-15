@@ -1,0 +1,280 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import type { Browser, Page } from "playwright-core";
+
+const prompt = "A red apple on a white table, studio photo.";
+const raw = readFileSync(new URL("./fixtures/google-flow-web-ogiZ0b.txt", import.meta.url), "utf8");
+const json = JSON.stringify(JSON.parse(raw.split("\n")[3]));
+const responseText = `)]}'\n\n${Buffer.byteLength(json)}\n${json}\n`;
+const config = {
+  cdpUrl: "http://127.0.0.1:19345",
+  projectId: "00000001-0000-4000-8000-000000000001",
+  timeoutMs: 2000,
+  queueTimeoutMs: 50,
+};
+const request = { prompt, n: 2, aspect: "16:9" as const };
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+function fake(
+  options: {
+    agent?: string;
+    visibility?: string;
+    signIn?: boolean;
+    unstuck?: string;
+    bytes?: string;
+    hold?: boolean;
+    beforeClick?: () => void;
+    afterClick?: () => void;
+  } = {}
+) {
+  const events: string[] = [];
+  const pages: Page[] = [];
+  const clicked = deferred<void>();
+  const reply = deferred<void>();
+  let clicks = 0;
+  let active = 0;
+  let maxActive = 0;
+  let dangerousClose = 0;
+  let ownedClose = 0;
+  const makePage = () => {
+    let text = "";
+    const selected = new Set<string>();
+    let waitRegistered = false;
+    const locator = (name: string): unknown => ({
+      filter: ({ hasText }: { hasText: string | RegExp }) =>
+        locator(
+          typeof hasText === "string"
+            ? hasText
+            : hasText.source.includes("Agent")
+              ? "Agent"
+              : hasText.source.replace(/[^a-zA-Z0-9:.-]/g, "")
+        ),
+      getByRole: (_role: string, opts: { name: string | RegExp }) =>
+        locator(
+          typeof opts.name === "string"
+            ? opts.name
+            : opts.name.source.replace(/[^a-zA-Z0-9:.-]/g, "")
+        ),
+      locator: (selector: string) => locator(selector),
+      count: async () => 1,
+      nth: () => locator(name),
+      isVisible: async () => true,
+      boundingBox: async () => ({ width: 600, height: 100 }),
+      innerText: async () => (name.includes("Select model family") ? "Nano Banana 2.1" : text),
+      textContent: async () => text,
+      getAttribute: async (attr: string) => {
+        events.push(`read:${name}:${attr}`);
+        if (attr === "aria-pressed") return options.agent ?? "false";
+        return selected.has(name) && options.unstuck !== name ? "true" : "false";
+      },
+      focus: async () => {
+        events.push("focus");
+      },
+      evaluate: async () => text,
+      click: async () => {
+        if (name.includes("arrow_forward")) {
+          options.beforeClick?.();
+          assert.equal(waitRegistered, true, "waitForResponse before click");
+          clicks++;
+          active++;
+          maxActive = Math.max(maxActive, active);
+          events.push("send");
+          clicked.resolve();
+          options.afterClick?.();
+        } else {
+          events.push(`click:${name}`);
+          selected.add(name);
+        }
+      },
+    });
+    const page = {
+      bringToFront: async () => {
+        events.push("front");
+      },
+      goto: async (url: string) => {
+        events.push(`goto:${url}`);
+      },
+      url: () =>
+        options.signIn
+          ? "https://accounts.google.com/signin"
+          : `https://flow.google.com/project/${config.projectId}`,
+      locator: (selector: string) => locator(selector),
+      getByRole: (_role: string, opts: { name: string | RegExp }) =>
+        locator(
+          typeof opts.name === "string"
+            ? opts.name
+            : opts.name.source.replace(/[^a-zA-Z0-9:.-]/g, "")
+        ),
+      keyboard: {
+        press: async (key: string) => {
+          events.push(key);
+          if (key === "Backspace") text = "";
+        },
+        insertText: async (value: string) => {
+          events.push("insert");
+          text = value;
+        },
+      },
+      evaluate: async (_fn: unknown, arg: unknown) => {
+        if (!arg) return options.visibility ?? "visible";
+        return {
+          base64: options.bytes ?? Buffer.from([255, 216, 255, 224]).toString("base64"),
+          width: 1376,
+          height: 768,
+        };
+      },
+      waitForResponse: (predicate: (value: unknown) => boolean) => {
+        waitRegistered = true;
+        events.push("wait");
+        assert.equal(
+          predicate({
+            url: () =>
+              "https://flow.google.com/_/AiSandboxAngularFrontend/data/batchexecute?rpcids=ogiZ0b",
+            request: () => ({ method: () => "POST" }),
+          }),
+          true
+        );
+        assert.equal(
+          predicate({
+            url: () => "https://evil.example/?rpcids=ogiZ0b",
+            request: () => ({ method: () => "POST" }),
+          }),
+          false
+        );
+        return (options.hold ? reply.promise : Promise.resolve()).then(() => ({
+          ok: () => true,
+          text: async () => responseText,
+        }));
+      },
+      close: async () => {
+        events.push("close-page");
+        ownedClose++;
+        active = Math.max(0, active - 1);
+      },
+      setDefaultTimeout: () => {},
+    } as unknown as Page;
+    pages.push(page);
+    return page;
+  };
+  const browser = {
+    contexts: () => [
+      {
+        newPage: async () => makePage(),
+        close: () => {
+          dangerousClose++;
+        },
+        pages: () => [
+          {
+            close: () => {
+              dangerousClose++;
+            },
+          },
+        ],
+      },
+    ],
+    on: () => {},
+    isConnected: () => true,
+    close: () => {
+      dangerousClose++;
+    },
+  } as unknown as Browser;
+  return {
+    events,
+    pages,
+    browser,
+    clicked,
+    reply,
+    counts: () => ({ clicks, maxActive, dangerousClose, ownedClose }),
+  };
+}
+async function setup(options: Parameters<typeof fake>[0] = {}) {
+  const seam = fake(options);
+  const { createGoogleFlowWebBridge } =
+    await import("../../open-sse/services/googleFlowWebBrowser.ts");
+  const bridge = createGoogleFlowWebBridge(async (url) => {
+    assert.equal(url, config.cdpUrl);
+    return seam.browser;
+  });
+  return { ...seam, bridge };
+}
+test("UI readback, exact prompt, foreground and one send; close only owned page", async () => {
+  const f = await setup();
+  const images = await f.bridge.generate(request, config);
+  assert.equal(images.length, 2);
+  assert.deepEqual(f.counts(), { clicks: 1, maxActive: 1, dangerousClose: 0, ownedClose: 1 });
+  for (const event of [
+    "read:Agent:aria-pressed",
+    "click:Image",
+    "click:16:9",
+    "click:x2",
+    "Escape",
+    "insert",
+    "wait",
+    "send",
+  ])
+    assert.ok(f.events.includes(event), event);
+  assert.ok(f.events.indexOf("wait") < f.events.indexOf("send"));
+});
+for (const [name, options, message] of [
+  ["Agent true", { agent: "true" }, /Agent/],
+  ["hidden tab", { visibility: "hidden" }, /visible|foreground/i],
+  ["sign-in redirect", { signIn: true }, /sign in/i],
+  ["radio fails to stick", { unstuck: "16:9" }, /setting|option/i],
+] as const) {
+  test(`${name}: error and zero clicks`, async () => {
+    const f = await setup(options);
+    await assert.rejects(f.bridge.generate(request, config), message);
+    assert.equal(f.counts().clicks, 0);
+    assert.equal(f.counts().ownedClose, 1);
+    assert.equal(f.counts().dangerousClose, 0);
+  });
+}
+test("FIFO serialization and queue timeout never submit the queued call", async () => {
+  const f = await setup({ hold: true });
+  const first = f.bridge.generate(request, config);
+  await f.clicked.promise;
+  const timeout = f.bridge.generate(request, config);
+  await assert.rejects(timeout, /busy/i);
+  const second = f.bridge.generate(request, { ...config, queueTimeoutMs: 1000 });
+  const third = f.bridge.generate(request, { ...config, queueTimeoutMs: 1000 });
+  assert.equal(f.counts().clicks, 1);
+  f.reply.resolve();
+  await Promise.all([first, second, third]);
+  assert.equal(f.counts().maxActive, 1);
+  assert.equal(f.counts().clicks, 3);
+});
+test("abort before submit never clicks", async () => {
+  const f = await setup();
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(f.bridge.generate(request, config, controller.signal), /abort|cancel/i);
+  assert.equal(f.counts().clicks, 0);
+});
+test("abort after submit closes owned page with uncertain outcome and no retry", async () => {
+  const controller = new AbortController();
+  const f = await setup({ hold: true, afterClick: () => controller.abort() });
+  await assert.rejects(
+    f.bridge.generate(request, config, controller.signal),
+    /may still have been generated/i
+  );
+  assert.equal(f.counts().clicks, 1);
+  assert.equal(f.counts().ownedClose, 1);
+  assert.equal(f.counts().dangerousClose, 0);
+});
+for (const [name, bytes] of [
+  ["bad magic", Buffer.from("not an image").toString("base64")],
+  ["size cap", Buffer.alloc(20 * 1024 * 1024 + 1).toString("base64")],
+]) {
+  test(`media ${name} rejected`, async () => {
+    const f = await setup({ bytes });
+    await assert.rejects(f.bridge.generate(request, config), /media|image/i);
+    assert.equal(f.counts().ownedClose, 1);
+    assert.equal(f.counts().clicks, 1);
+  });
+}
