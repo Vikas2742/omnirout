@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import path from "node:path";
+import { tmpdir } from "node:os";
 
-const dataDir = fs.mkdtempSync(path.join(process.env.TMPDIR || process.cwd(), "systemone-r1-"));
+const dataDir = fs.mkdtempSync(path.join(tmpdir(), "systemone-r1-"));
 process.env.DATA_DIR = dataDir;
 process.env.API_KEY_SECRET = "synthetic-r1-secret";
 const core = await import("../../src/lib/db/core.ts");

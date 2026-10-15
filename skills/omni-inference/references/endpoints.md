@@ -23,6 +23,7 @@
 - [`POST /api/v1/audio/speech`](#post-apiv1audiospeech)
 - [`POST /api/v1/audio/transcriptions`](#post-apiv1audiotranscriptions)
 - [`POST /api/v1/moderations`](#post-apiv1moderations)
+- [`POST /api/v1/systemone`](#post-apiv1systemone)
 - [`POST /api/v1/rerank`](#post-apiv1rerank)
 - [`GET /api/v1`](#get-apiv1)
 - [`GET /api/v1/providers/{provider}/models`](#get-apiv1providersprovidermodels)
@@ -363,6 +364,19 @@ Content moderation endpoint. Routes to configured moderation providers.
 
 ```bash
 curl -X POST http://localhost:20128/api/v1/moderations \
+  -H "Authorization: Bearer $OMNIROUTE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### POST /api/v1/systemone
+
+Evaluate structured decisions with System One
+
+POST /v1/systemone (also /api/v1/systemone and /typesafe/v1/systemone). TypeSafe-native decisions via TypeSafe direct or Cloudflare Workers AI. Models: typesafe/jev-latest, typesafe/jev-preview, typesafe/jev-x.y.z, cloudflare-ai/jev, cloudflare-ai/clef, cloudflare-ai/clef-flash; cf is an alias. Bare jev-* selects TypeSafe; bare clef and clef-flash select Cloudflare. Operator aliases are resolved first. Named priority combos fail over on 5xx, 429, 402 and timeouts, not validation errors. Cloudflare Jev uses AI Gateway credits; Clef uses Workers AI neurons. Each upstream attempt has a 30-second timeout and propagates caller cancellation.
+
+```bash
+curl -X POST http://localhost:20128/api/v1/systemone \
   -H "Authorization: Bearer $OMNIROUTE_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{}'

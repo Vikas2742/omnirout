@@ -42,6 +42,10 @@
   "plugins": ["@stryker-mutator/tap-runner"],
   "tap": {
     "testFiles": [
+      "tests/unit/systemone-chat-isolation-r1.test.ts",
+      "tests/unit/systemone-review-boundaries.test.ts",
+      "tests/unit/systemone-routes.test.ts",
+      "tests/unit/systemone-sdk.test.ts",
       "tests/unit/account-weighted-runtime-16459.test.ts",
       "tests/unit/codex-reasoning-replay-retry.test.ts",
       "tests/unit/authz/local-only-bypass-spawn-denylist.test.ts",

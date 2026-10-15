@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import path from "node:path";
+import { tmpdir } from "node:os";
 
-const dataDir = fs.mkdtempSync(
-  path.join(process.env.TMPDIR || process.cwd(), ".review-combo-rate-limit-")
-);
+const dataDir = fs.mkdtempSync(path.join(tmpdir(), ".review-combo-rate-limit-"));
 process.env.DATA_DIR = dataDir;
 Object.assign(process.env, { NODE_ENV: "test" });
 process.env.API_KEY_SECRET = "review-probe-secret";

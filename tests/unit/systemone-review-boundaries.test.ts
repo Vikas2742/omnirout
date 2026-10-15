@@ -2,9 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import path from "node:path";
-const dataDir = fs.mkdtempSync(
-  path.join(process.env.TMPDIR || process.cwd(), ".review-systemone-")
-);
+import { tmpdir } from "node:os";
+const dataDir = fs.mkdtempSync(path.join(tmpdir(), ".review-systemone-"));
 process.env.DATA_DIR = dataDir;
 Object.assign(process.env, { NODE_ENV: "test" });
 process.env.API_KEY_SECRET = "review-synthetic-secret";

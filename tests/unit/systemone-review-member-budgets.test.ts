@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
+import path from "node:path";
+import { tmpdir } from "node:os";
 process.env.API_KEY_SECRET = "synthetic-review-secret";
 Object.assign(process.env, { NODE_ENV: "test" });
-process.env.DATA_DIR = fs.mkdtempSync(process.env.TMPDIR! + "/independent-policy-");
+process.env.DATA_DIR = fs.mkdtempSync(path.join(tmpdir(), "independent-policy-"));
 const core = await import("../../src/lib/db/core.ts");
 const keys = await import("../../src/lib/db/apiKeys.ts");
 const combos = await import("../../src/lib/db/combos.ts");

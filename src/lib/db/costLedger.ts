@@ -212,10 +212,10 @@ export function sumLedgerOnlySpendSince(apiKeyId: string, sinceIso: string): num
     .prepare(
       `SELECT COALESCE(SUM(amount_usd), 0) AS amount_usd
        FROM request_cost_ledger
-       WHERE api_key_id = ? AND timestamp >= ? AND service_tier IN (?, ?)`
+       WHERE api_key_id = ? AND timestamp >= ? AND service_tier = ?`
     )
-    .get(apiKeyId, sinceIso, SEARCH_LEDGER_SERVICE_TIER, SYSTEMONE_LEDGER_SERVICE_TIER);
-  return getAggRow(row).amountUsd;
+    .get(apiKeyId, sinceIso, SYSTEMONE_LEDGER_SERVICE_TIER);
+  return sumSearchLedgerSpendSince(apiKeyId, sinceIso) + getAggRow(row).amountUsd;
 }
 
 /**

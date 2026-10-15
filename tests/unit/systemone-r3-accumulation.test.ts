@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import path from "node:path";
+import { tmpdir } from "node:os";
 
-const dir = fs.mkdtempSync(path.join(process.env.TMPDIR!, "systemone-r3-"));
+const dir = fs.mkdtempSync(path.join(tmpdir(), "systemone-r3-"));
 process.env.DATA_DIR = dir;
 process.env.API_KEY_SECRET = "synthetic-r3-secret";
 // A concrete calendar reset makes the weekly Retry-After assertion deterministic.
