@@ -8,9 +8,12 @@
  * turn a rejection into a second failure. Fire-and-forget on purpose:
  * awaiting disk I/O here would hold the rejection path.
  */
+import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
+import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
 import { saveCallLog } from "@/lib/usageDb";
 import { cloneLogPayload } from "@/lib/logPayloads";
 import { redactVideoTranscriptFieldsForLog } from "@/lib/guardrails/videoBridgeSnapshotRedaction";
+import * as log from "../utils/logger";
 
 export interface AdmissionRejectionLogEntry {
   path: string;
@@ -63,4 +66,42 @@ export function logHandlerRejection(
 ): Response {
   void logAdmissionRejection(rejection, entry);
   return rejection;
+}
+
+type ChatPayloadRequest = { url: string };
+
+function payloadModel(body: unknown): string {
+  if (body !== null && typeof body === "object" && !Array.isArray(body)) {
+    const model = (body as { model?: unknown }).model;
+    if (typeof model === "string" && model) return model;
+  }
+  return "-";
+}
+
+function rejectWith(
+  request: ChatPayloadRequest,
+  reqId: string,
+  body: unknown,
+  message: string
+): Response {
+  return logHandlerRejection(errorResponse(HTTP_STATUS.BAD_REQUEST, message), {
+    path: new URL(request.url).pathname,
+    model: payloadModel(body),
+    requestBody: body ?? null,
+    apiKeyId: null,
+    apiKeyName: null,
+    correlationId: reqId,
+  });
+}
+
+/**
+ * 400 before handleChat reads messages off a payload that would throw into a 500.
+ * Returns the same body when the payload may proceed.
+ */
+export function rejectPayload(body: unknown, request: ChatPayloadRequest, reqId: string): unknown {
+  if (body === null || typeof body !== "object") {
+    log.warn("CHAT", "Rejecting request whose body is not a JSON object");
+    return rejectWith(request, reqId, null, "Request body must be a JSON object");
+  }
+  return body;
 }
