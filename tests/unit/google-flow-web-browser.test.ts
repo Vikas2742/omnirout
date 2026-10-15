@@ -325,6 +325,28 @@ for (const familyMenu of [
     assert.equal(f.counts().clicks, 0);
   });
 }
+test("attach TimeoutError explains frozen tabs without creating pages or leaking raw errors", async () => {
+  const { createGoogleFlowWebBridge } =
+    await import("../../open-sse/services/googleFlowWebBrowser.ts");
+  const { GoogleFlowWebError } = await import("../../open-sse/services/googleFlowWebResponse.ts");
+  const bridge = createGoogleFlowWebBridge(async () => {
+    const error = new Error(
+      "browserType.connectOverCDP: Timeout 10000ms exceeded. /private/secret Signature=private"
+    );
+    error.name = "TimeoutError";
+    throw error;
+  });
+  await assert.rejects(bridge.generate(request, config), (error: unknown) => {
+    assert.ok(error instanceof GoogleFlowWebError);
+    assert.equal(error.code, "browser_attach_timeout");
+    assert.equal(error.status, 504);
+    assert.match(error.message, /discarded|frozen/i);
+    assert.match(error.message, /dedicated.*profile/i);
+    assert.match(error.message, /activate|close/i);
+    assert.doesNotMatch(error.message, /private|Signature/);
+    return true;
+  });
+});
 test("Agent readback uses Playwright auto-wait rather than an immediate DOM count", async () => {
   const f = await setup({ agentCount: 0 });
   assert.equal((await f.bridge.generate(request, config)).length, 2);

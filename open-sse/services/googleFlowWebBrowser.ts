@@ -54,7 +54,17 @@ export function createGoogleFlowWebBridge(
       try {
         check();
         if (!cached || cached.url !== config.cdpUrl || !cached.browser.isConnected()) {
-          const browser = await step(connect(config.cdpUrl));
+          const browser = await step(
+            connect(config.cdpUrl).catch((error: unknown) => {
+              if (error instanceof Error && error.name === "TimeoutError")
+                throw new GoogleFlowWebError(
+                  "browser_attach_timeout",
+                  "Attaching to Chrome over CDP timed out; a discarded/frozen tab can block attach. Use a dedicated Chrome profile for Flow or activate/close frozen tabs. No image was submitted.",
+                  504
+                );
+              throw error;
+            })
+          );
           cached = { url: config.cdpUrl, browser };
           browser.on("disconnected", () => {
             if (cached?.browser === browser) cached = undefined;

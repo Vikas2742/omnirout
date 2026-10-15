@@ -4,7 +4,7 @@
 
 Setup:
 
-1. Run your own headed Chrome with remote debugging bound to loopback only (for example `--remote-debugging-port=9222`). Do not expose the port to a network.
+1. Strongly recommended: run a dedicated headed Chrome instance/profile for Flow, with only Flow open. Bind remote debugging to loopback only (for example `--remote-debugging-port=9222`); do not expose the port to a network. Playwright's `connectOverCDP` attaches to every existing tab in that browser, not just Flow: a discarded/frozen tab can block attachment until it is activated or closed. An attach timeout reports `browser_attach_timeout` internally and gives these recovery instructions; no image has been submitted at that point.
 2. Sign in to Flow in that Chrome profile and create a Flow project.
 3. Set `GOOGLE_FLOW_WEB_CDP_URL` to the loopback HTTP CDP address and `GOOGLE_FLOW_WEB_PROJECT_ID` to the project's UUID.
 4. Restart OmniRoute. The provider appears in the model catalog only while both values are valid.
@@ -14,7 +14,7 @@ Supported API inputs are direct text-to-image requests for `nano-banana-2.1`, `n
 Limitations:
 
 - This is a browser UI integration, not an official Google Flow API. Flow UI changes can break it.
-- One generation is allowed at a time per OmniRoute process; the queue is bounded. Multi-process coordination is not supported.
+- One generation is allowed at a time per OmniRoute process; the queue is bounded. Multi-process coordination is not supported. OmniRoute opens and brings its owned Flow tab to the foreground while generating, then closes only that owned tab.
 - Flow may rewrite non-English prompts. Correlation uses the recorded original prompt when present, falling back to the used prompt; comparison trims only leading/trailing whitespace, matching the UI. If the used prompt differs from the trimmed request, each returned image includes OpenAI's `revised_prompt`.
 - Sign-in, CAPTCHA, verification, unusual-activity responses, or UI changes require operator takeover in the attached browser. OmniRoute does not solve CAPTCHA, read verification tokens, replay generation RPCs, or retry uncertain submissions.
 - The browser must already be running and authenticated. OmniRoute never launches Chrome, creates a browser profile, exports cookies, reads storage state, or closes the shared browser/context.
