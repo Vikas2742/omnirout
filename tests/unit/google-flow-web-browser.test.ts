@@ -31,6 +31,10 @@ function fake(
     hold?: boolean;
     beforeClick?: () => void;
     afterClick?: () => void;
+    afterInsert?: () => void;
+    family?: string;
+    width?: number;
+    echo?: string;
   } = {}
 ) {
   const events: string[] = [];
@@ -66,8 +70,9 @@ function fake(
       nth: () => locator(name),
       isVisible: async () => true,
       boundingBox: async () => ({ width: 600, height: 100 }),
-      innerText: async () => (name.includes("Select model family") ? "Nano Banana 2.1" : text),
-      textContent: async () => text,
+      innerText: async () =>
+        name.includes("Select model family") ? (options.family ?? "Nano Banana 2.1") : text,
+      textContent: async () => options.echo ?? text,
       getAttribute: async (attr: string) => {
         events.push(`read:${name}:${attr}`);
         if (attr === "aria-pressed") return options.agent ?? "false";
@@ -119,13 +124,14 @@ function fake(
         insertText: async (value: string) => {
           events.push("insert");
           text = value;
+          options.afterInsert?.();
         },
       },
       evaluate: async (_fn: unknown, arg: unknown) => {
         if (!arg) return options.visibility ?? "visible";
         return {
           base64: options.bytes ?? Buffer.from([255, 216, 255, 224]).toString("base64"),
-          width: 1376,
+          width: options.width ?? 1376,
           height: 768,
         };
       },
@@ -226,6 +232,8 @@ for (const [name, options, message] of [
   ["hidden tab", { visibility: "hidden" }, /visible|foreground/i],
   ["sign-in redirect", { signIn: true }, /sign in/i],
   ["radio fails to stick", { unstuck: "16:9" }, /setting|option/i],
+  ["model family fails to stick", { family: "Nano Banana Pro" }, /model|stick/i],
+  ["prompt insertion mismatch", { echo: "rewritten prompt" }, /prompt|exact/i],
 ] as const) {
   test(`${name}: error and zero clicks`, async () => {
     const f = await setup(options);
@@ -249,6 +257,18 @@ test("FIFO serialization and queue timeout never submit the queued call", async 
   assert.equal(f.counts().maxActive, 1);
   assert.equal(f.counts().clicks, 3);
 });
+test("queued abort removes its FIFO waiter without submitting", async () => {
+  const f = await setup({ hold: true });
+  const first = f.bridge.generate(request, config);
+  await f.clicked.promise;
+  const controller = new AbortController();
+  const queued = f.bridge.generate(request, config, controller.signal);
+  controller.abort();
+  await assert.rejects(queued, /cancel/i);
+  f.reply.resolve();
+  await first;
+  assert.equal(f.counts().clicks, 1);
+});
 test("abort before submit never clicks", async () => {
   const f = await setup();
   const controller = new AbortController();
@@ -266,6 +286,27 @@ test("abort after submit closes owned page with uncertain outcome and no retry",
   assert.equal(f.counts().clicks, 1);
   assert.equal(f.counts().ownedClose, 1);
   assert.equal(f.counts().dangerousClose, 0);
+});
+test("abort during prompt insertion releases owned tab without sending", async () => {
+  const controller = new AbortController();
+  const f = await setup({ afterInsert: () => controller.abort() });
+  await assert.rejects(f.bridge.generate(request, config, controller.signal), /before submission/i);
+  assert.equal(f.counts().clicks, 0);
+  assert.equal(f.counts().ownedClose, 1);
+});
+test("deadline after submit reports uncertain generation and closes page", async () => {
+  const f = await setup({ hold: true });
+  await assert.rejects(
+    f.bridge.generate(request, { ...config, timeoutMs: 20 }),
+    /may still have been generated/i
+  );
+  assert.equal(f.counts().clicks, 1);
+  assert.equal(f.counts().ownedClose, 1);
+});
+test("decoded media dimensions must match current response", async () => {
+  const f = await setup({ width: 286 });
+  await assert.rejects(f.bridge.generate(request, config), /dimensions/i);
+  assert.equal(f.counts().ownedClose, 1);
 });
 for (const [name, bytes] of [
   ["bad magic", Buffer.from("not an image").toString("base64")],

@@ -54,6 +54,12 @@ export async function discoverGoogleFlowWebSocket(cdpUrl: string): Promise<strin
         });
       }
     );
+    // Socket inactivity alone does not bound a server that trickles response bytes.
+    const deadline = setTimeout(() => {
+      request.destroy();
+      fail();
+    }, 5000);
+    request.once("close", () => clearTimeout(deadline));
     request.on("timeout", () => {
       request.destroy();
       fail();
