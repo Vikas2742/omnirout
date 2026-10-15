@@ -656,7 +656,8 @@ cooldown and client errors; account-deactivation signals still lock permanently.
 
 Manual dashboard/API refresh returns `409` with code `refresh_disabled` and an
 instruction to refresh on the active instance and synchronize. Implicit refreshes
-(chat, usage, health checks and import validation) do not surface that error.
+(chat, usage, health checks and import validation) do not surface that error; on-demand
+usage 401 recovery retries once with an adopted synchronized token.
 Codex auth imports store the supplied tokens without a refresh-token exchange;
 new OAuth logins are unchanged. No pre-dispatch synchronization is added outside
 the existing proactive refresh path.

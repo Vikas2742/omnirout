@@ -102,7 +102,7 @@ export async function refreshAndUpdateCredentialsWithResolver(
   connection: ProviderConnectionLike,
   resolveExecutor: CredentialExecutorResolver,
   opts: CredentialRefreshOptions = {}
-) {
+): Promise<{ connection: ProviderConnectionLike; refreshed: boolean; adopted?: boolean }> {
   if (!shouldAttemptRotatingRefresh(connection.provider, opts.allowRotatingRefresh)) {
     return { connection, refreshed: false };
   }
@@ -122,7 +122,12 @@ export async function refreshAndUpdateCredentialsWithResolver(
   }
 
   if (passive.isPassiveCodex(connection.provider)) {
-    return { connection: await passive.adoptPassiveCodex(connection), refreshed: false };
+    const adopted = await passive.adoptPassiveCodex(connection);
+    return {
+      connection: adopted,
+      refreshed: false,
+      adopted: adopted.accessToken !== connection.accessToken,
+    };
   }
 
   const refreshResult = (await serializeRefresh(connection.provider, () =>
