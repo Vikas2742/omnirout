@@ -1,4 +1,5 @@
 import { updateProviderConnection } from "@/lib/db/providers";
+import * as passive from "@omniroute/open-sse/services/tokenRefresh/passiveCodex.ts";
 import type { BaseExecutor } from "@omniroute/open-sse/executors/base";
 import { isUnrecoverableRefreshError } from "@omniroute/open-sse/services/tokenRefresh/shared.ts";
 import {
@@ -118,6 +119,10 @@ export async function refreshAndUpdateCredentialsWithResolver(
 
   if (!opts.force && !executor.needsRefresh(credentials)) {
     return { connection, refreshed: false };
+  }
+
+  if (passive.isPassiveCodex(connection.provider)) {
+    return { connection: await passive.adoptPassiveCodex(connection), refreshed: false };
   }
 
   const refreshResult = (await serializeRefresh(connection.provider, () =>

@@ -1,4 +1,5 @@
 import { learnCopilotModelRejection } from "../services/copilotModelRejections.ts";
+import { isPassiveCodex } from "../services/tokenRefresh/passiveCodex.ts";
 import {
   extractRequestToolMetadata,
   resolveResponseToolNameMap,
@@ -3238,7 +3239,7 @@ async function handleChatCoreInner({
         Object.assign(credentials, newCredentials);
       }
       const errorConnectionId = String(getCurrentConnectionId() || connectionId || "");
-      if (errorConnectionId) {
+      if (errorConnectionId && !isPassiveCodex(provider)) {
         updateProviderConnection(errorConnectionId, newCredentials).catch(() => {});
       }
       return newCredentials;
@@ -3248,6 +3249,7 @@ async function handleChatCoreInner({
 
   const handleCredentialsRefreshed = async (refreshed: Record<string, unknown>) => {
     Object.assign(credentials, refreshed);
+    if (isPassiveCodex(provider)) return;
     if (!credentialRefreshPersistRan && onCredentialsRefreshed) {
       credentialRefreshPersistRan = true;
       const targetConnectionId =
@@ -3269,6 +3271,8 @@ async function handleChatCoreInner({
       }
     }
   };
+
+  if (isPassiveCodex(provider)) executeProviderRequestDeps.onCredentialsRefreshed = handleCredentialsRefreshed;
 
   const applyProviderFailureClassification = async ({
     statusCode,
