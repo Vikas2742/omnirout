@@ -15,6 +15,7 @@
 
 import { getModelContextLimit } from "../../../src/lib/modelCapabilities";
 import { getHiddenModelsByProvider } from "../../../src/lib/db/models";
+import { PROVIDER_MAX_TOKENS } from "../../config/constants.ts";
 import {
   getComboModelString,
   implicitPinAllowlist,
@@ -647,7 +648,18 @@ function getTargetCompatibilityFailures(
     failures.push("structured_output");
   }
 
-  if (exceedsKnownOutputLimit(requirements.requestedOutputTokens, capabilities.maxOutputTokens)) {
+  // The leaf dispatch clamps output fields to the remaining context budget before
+  // sending them upstream. Compare that effective request when the target context is known.
+  const contextOutputBudget =
+    capabilities.contextWindow === null
+      ? null
+      : Math.max(0, capabilities.contextWindow - Math.ceil(requirements.estimatedInputTokens));
+  const providerOutputCap = PROVIDER_MAX_TOKENS[capabilities.provider || ""];
+  const dispatchOutputCaps = [contextOutputBudget, providerOutputCap].filter(
+    (cap): cap is number => cap !== null && cap !== undefined
+  );
+  const requestedOutputTokens = Math.min(requirements.requestedOutputTokens, ...dispatchOutputCaps);
+  if (exceedsKnownOutputLimit(requestedOutputTokens, capabilities.maxOutputTokens)) {
     failures.push("output_tokens");
   }
 
