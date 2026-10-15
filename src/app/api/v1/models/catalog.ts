@@ -19,6 +19,7 @@ import {
   parseImageModel,
 } from "@omniroute/open-sse/config/imageRegistry";
 import { aiHordeImageCatalog } from "@omniroute/open-sse/services/aihordeImageCatalog";
+import { getGoogleFlowWebConfig } from "@omniroute/open-sse/services/googleFlowWebConfig";
 import { getAllRerankModels } from "@omniroute/open-sse/config/rerankRegistry";
 import { getAllAudioModels } from "@omniroute/open-sse/config/audioRegistry";
 import { getAllModerationModels } from "@omniroute/open-sse/config/moderationRegistry";
@@ -1552,6 +1553,7 @@ async function buildUnifiedModelsResponseCore(
     }
     for (const imgModel of getAllImageModels()) {
       await maybeYieldCatalogBuild();
+      if (imgModel.provider === "google-flow-web" && !getGoogleFlowWebConfig()) continue;
       if (!isProviderActive(imgModel.provider)) continue;
       const parsedImageModel = parseImageModel(imgModel.id);
       const rawModelId =

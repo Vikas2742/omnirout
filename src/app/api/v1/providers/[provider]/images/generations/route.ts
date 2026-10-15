@@ -15,6 +15,7 @@ import { enforceClientApiRouteAuth } from "@/shared/utils/clientApiRouteAuth";
 import { runWithCallLogApiKeyContext } from "@/lib/usage/callLogApiKeyContext";
 import { executeImageWithCredentialFallback } from "@/sse/services/imageCredentialRetry";
 import { rejectRetiredCommonChatGptWebProvider } from "@/lib/providers/chatgptWebRetirementResponse";
+import { maybeHandleGoogleFlowWebImageRoute } from "@/lib/images/googleFlowWebRoute";
 
 /**
  * Handle CORS preflight
@@ -48,6 +49,13 @@ export async function POST(request, { params }) {
   } catch {
     return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid JSON body");
   }
+  const googleFlowResponse = await maybeHandleGoogleFlowWebImageRoute(
+    request,
+    rawBody,
+    rawProvider
+  );
+  if (googleFlowResponse) return googleFlowResponse;
+
   const validation = validateBody(v1ImageGenerationSchema, rawBody);
   if (isValidationFailure(validation)) {
     return errorResponse(HTTP_STATUS.BAD_REQUEST, validation.error.message);

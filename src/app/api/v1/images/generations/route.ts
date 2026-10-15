@@ -42,6 +42,7 @@ import { calculateModalCost } from "@/lib/usage/costCalculator";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { getSpecialtyModelsResponse } from "@/app/api/v1/_shared/specialtyCatalog";
 import { enforceClientApiRouteAuth } from "@/shared/utils/clientApiRouteAuth";
+import { maybeHandleGoogleFlowWebImageRoute } from "@/lib/images/googleFlowWebRoute";
 import { runWithCallLogApiKeyContext } from "@/lib/usage/callLogApiKeyContext";
 import { executeImageWithCredentialFallback } from "@/sse/services/imageCredentialRetry";
 import { AUTHZ_HEADER_PEER_LOCALITY } from "@/server/authz/headers";
@@ -119,6 +120,9 @@ async function postHandler(request, context) {
     log.warn("IMAGE", "Invalid JSON body");
     return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid JSON body");
   }
+
+  const googleFlowResponse = await maybeHandleGoogleFlowWebImageRoute(request, rawBody);
+  if (googleFlowResponse) return googleFlowResponse;
 
   const validation = validateBody(v1ImageGenerationSchema, rawBody);
   if (isValidationFailure(validation)) {

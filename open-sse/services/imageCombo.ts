@@ -100,6 +100,15 @@ export async function runImageComboTargets<T extends ImageComboTarget>(
   targets: T[],
   opts: RunImageComboTargetsOptions<T>
 ): Promise<RunImageComboTargetsResult> {
+  if (targets.some((target) => opts.resolveProvider(target).provider === "google-flow-web")) {
+    return {
+      outcome: "terminal",
+      provider: "google-flow-web",
+      status: 403,
+      error: "google-flow-web cannot be used inside an image combo; submit it as a direct model.",
+      fallbackCount: 0,
+    };
+  }
   const isRateLimited = opts.isRateLimited ?? isAllRateLimitedCredentials;
   const failureLabel = opts.failureLabel ?? "Image generation failed";
   let lastError: { status: number; error: string } | null = null;
@@ -107,6 +116,15 @@ export async function runImageComboTargets<T extends ImageComboTarget>(
 
   for (const target of targets) {
     const { provider, model } = opts.resolveProvider(target);
+    if (provider === "google-flow-web") {
+      return {
+        outcome: "terminal",
+        provider,
+        status: 403,
+        error: "google-flow-web cannot be used inside an image combo; submit it as a direct model.",
+        fallbackCount,
+      };
+    }
     if (!provider) {
       lastError = { status: 400, error: `Invalid image model: ${target.modelStr}` };
       fallbackCount += 1;
@@ -199,6 +217,13 @@ export async function executeImageCombo(
   const targets = resolveComboTargets(combo as never, allCombos as never);
   if (!targets || targets.length === 0) {
     return errorResponse(HTTP_STATUS.BAD_REQUEST, `Combo "${comboName}" has no usable targets`);
+  }
+
+  if (targets.some((target) => parseImageModel(target.modelStr).provider === "google-flow-web")) {
+    return errorResponse(
+      HTTP_STATUS.FORBIDDEN,
+      "google-flow-web cannot be used inside an image combo; submit it as a direct model."
+    );
   }
 
   // 2. Filter to images-capable targets
