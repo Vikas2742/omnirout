@@ -134,6 +134,20 @@ for (const url of [
     assert.throws(() => parseGoogleFlowResponse(frame(changed), 2, cjkPrompt));
   });
 }
+test("successful prompt can quote PUBLIC_ERROR_UNUSUAL_ACTIVITY without verification", async () => {
+  const { parseGoogleFlowResponse } = await parser();
+  const prompt = "A sign reading PUBLIC_ERROR_UNUSUAL_ACTIVITY";
+  const changed = structuredClone(cjkFrame);
+  const payload = JSON.parse(changed[0][2]);
+  for (const media of payload[0]) {
+    media[6][0][7] = prompt;
+    media[6][0][15][2][0][2][0][0][0] = prompt;
+  }
+  changed[0][2] = JSON.stringify(payload);
+  const images = parseGoogleFlowResponse(frame(changed), 2, prompt);
+  assert.equal(images.length, 2);
+  assert.ok(images.every((image) => image.revisedPrompt === undefined));
+});
 test("HTTP 200 business error requires operator verification without retry", async () => {
   const { parseGoogleFlowResponse, GoogleFlowWebError } = await parser();
   assert.throws(

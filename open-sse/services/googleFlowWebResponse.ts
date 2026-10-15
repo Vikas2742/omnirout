@@ -77,7 +77,19 @@ export function parseGoogleFlowResponse(
   const matches = frames.filter((entry) => entry[0] === "wrb.fr" && entry[1] === "ogiZ0b");
   if (matches.length !== 1) malformed();
   const frame = matches[0];
-  if (JSON.stringify(frame).includes("PUBLIC_ERROR_UNUSUAL_ACTIVITY")) {
+  const status = frame[5];
+  if (
+    frame[2] === null &&
+    Array.isArray(status) &&
+    Array.isArray(status[2]) &&
+    status[2].some(
+      (detail: unknown) =>
+        Array.isArray(detail) &&
+        detail[0] === "type.googleapis.com/google.rpc.ErrorInfo" &&
+        Array.isArray(detail[1]) &&
+        detail[1][0] === "PUBLIC_ERROR_UNUSUAL_ACTIVITY"
+    )
+  ) {
     throw new GoogleFlowWebError(
       "verification_required",
       "Flow verification/unusual activity — operator must take over in the browser. No retry was attempted.",
