@@ -21,7 +21,7 @@ const { convertUsageToQuotaInfo } =
 const { orderTargetsByQuotaWeighted } =
   await import("../../../open-sse/services/combo/quotaStrategies.ts");
 const { scoreQuotaPace } = await import("../../../open-sse/services/combo/quotaPaceScoring.ts");
-const { resolveResetAwareConfig, scoreResetAwareQuota } =
+const { resolveResetAwareConfig, scoreResetAwareQuota, getResetAwareRemainingPercent } =
   await import("../../../open-sse/services/combo/quotaScoring.ts");
 const { resetAllCircuitBreakers } = await import("../../../src/shared/utils/circuitBreaker.ts");
 const { _setSecureRandomFloatSource } = await import("../../../src/shared/utils/secureRandom.ts");
@@ -74,7 +74,7 @@ function quotaAt(plan?: string, percentUsed = 0.4): PlanQuota {
   };
 }
 
-async function seedTargets(quotas: PlanQuota[], provider = "codex") {
+async function seedTargets(quotas: PlanQuota[], provider = "codex", targetProvider = provider) {
   const snapshots = new Map<string, PlanQuota>();
   const targets: ResolvedComboTarget[] = [];
   for (const quota of quotas) {
@@ -90,10 +90,10 @@ async function seedTargets(quotas: PlanQuota[], provider = "codex") {
     targets.push({
       kind: "model",
       stepId: `step-${connectionId}`,
-      executionKey: `${provider}/model@${connectionId}`,
-      modelStr: `${provider}/model`,
-      provider,
-      providerId: provider,
+      executionKey: `${targetProvider}/model@${connectionId}`,
+      modelStr: `${targetProvider}/model`,
+      provider: targetProvider,
+      providerId: targetProvider,
       connectionId,
       weight: 1,
       label: null,
@@ -309,6 +309,71 @@ test("pace plan draw: prolite versus pro has 1:2 weights and price-scaled scorer
   assert.deepEqual(await draw(targets, 1 / 3 + 1e-8), [1, 0]);
   closeTo(await capacityScore(quotas[0]), 0.03);
   closeTo(await capacityScore(quotas[1]), 0.06);
+});
+
+test("pace plan alias: cx targets use canonical Codex capacity and reserve the boundary winner", async () => {
+  const targets = await seedTargets([quotaAt("prolite"), quotaAt("pro")], "codex", "cx");
+  for (const [random, expected] of [
+    [1 / 3 - 1e-8, [0, 1]],
+    [1 / 3 + 1e-8, [1, 0]],
+  ] as const) {
+    assert.deepEqual(await draw(targets, random), expected);
+    assert.deepEqual(
+      targets.map((target) => getInflight(target.connectionId!)),
+      targets.map((_, i) => (i === expected[0] ? 1 : 0))
+    );
+  }
+});
+
+test("pace plan zero scores: integer fallback ignores capacity and keeps index-ordered remainder", async () => {
+  // limitReached would exclude the account. A named outer window can instead zero pace
+  // while the canonical session/weekly windows retain positive eligibility headroom.
+  const quotas = [quotaAt("pro", 0.8), quotaAt("prolite", 0.2), quotaAt("promax", 0.5)].map(
+    (quota) => ({
+      ...quota,
+      windows: { "model-outer": { percentUsed: 100, resetAt: resetAt(200) } },
+    })
+  );
+  for (const quota of quotas) {
+    assert.equal(scoreQuotaPace(quota, resolveResetAwareConfig({}), NOW).score, 0);
+    assert.ok(getResetAwareRemainingPercent(quota) > 1);
+  }
+  const targets = await seedTargets(quotas);
+  let draws = 0;
+  let random = 0;
+  _setSecureRandomFloatSource(() => {
+    draws++;
+    return random;
+  });
+  // A singleton integer draw needs no entropy; a positive weight would consult the float.
+  assert.deepEqual(
+    await orderTargetsByQuotaWeighted([targets[0]], "pace-plan-zero", pace, log, null),
+    [targets[0]]
+  );
+  assert.equal(draws, 0);
+  assert.equal(getInflight(targets[0].connectionId!), 1);
+
+  // secureRandomInt shares this source, consuming exactly one value for multiple accounts.
+  // Straddle uniform thirds, not the unequal plan-capacity boundaries (10:5:25).
+  for (const [value, winner] of [
+    [0, 0],
+    [1 / 3 - 1e-8, 0],
+    [1 / 3 + 1e-8, 1],
+    [2 / 3 - 1e-8, 1],
+    [2 / 3 + 1e-8, 2],
+    [1 - 1e-8, 2],
+  ]) {
+    _clearInflightForTest();
+    draws = 0;
+    random = value;
+    const ordered = await orderTargetsByQuotaWeighted(targets, "pace-plan-zero", pace, log, null);
+    assert.equal(draws, 1);
+    assert.deepEqual(ordered, [targets[winner], ...targets.filter((_, i) => i !== winner)]);
+    assert.deepEqual(
+      targets.map((target) => getInflight(target.connectionId!)),
+      targets.map((_, i) => (i === winner ? 1 : 0))
+    );
+  }
 });
 
 test("pace plan draw: plus versus promax has 1:25 weights and price-scaled scorer values", async () => {
