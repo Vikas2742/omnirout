@@ -3,6 +3,21 @@
  * Pure data literal; re-exported by the providers.ts barrel. No behavior change.
  */
 export const NOAUTH_PROVIDERS = {
+  "google-flow-web": {
+    id: "google-flow-web",
+    name: "Google Flow Web (experimental)",
+    icon: "image",
+    color: "#4285F4",
+    textIcon: "GF",
+    website: "https://flow.google.com",
+    noAuth: true,
+    hasFree: false,
+    serviceKinds: ["image"],
+    authHint: "Admin-configured attached Chrome; no Google credentials stored in OmniRoute.",
+    notice: {
+      text: "Experimental: OmniRoute stores no Google credentials. It drives the operator's own already-signed-in Chrome over an admin-configured loopback CDP endpoint. Flow UI changes can break this integration. The operator remains responsible for Google's terms.",
+    },
+  },
   "devin-cli-agentic": {
     id: "devin-cli-agentic",
     alias: "dva",

@@ -39,6 +39,7 @@ import { WEB_COOKIE_PROVIDERS } from "@/shared/constants/providers/web-cookie";
  * distinct from the `claude`/`cc` Claude Code plan below).
  */
 const FLAT_RATE_SUBSCRIPTION_PROVIDER_IDS: ReadonlySet<string> = new Set([
+  "google-flow-web", // Operator-owned Flow subscription; no inferred per-image price.
   "minimax", // "Minimax Coding" plan
   "kimi-coding", // Kimi Coding plan (OAuth)
   "kimi-coding-apikey", // Kimi Coding plan (API-key auth, still flat-rate)

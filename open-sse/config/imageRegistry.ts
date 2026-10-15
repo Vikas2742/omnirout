@@ -137,6 +137,7 @@ export function parseImageModel(modelStr) {
       (model) => model.id === modelStr || model.catalogId === modelStr
     );
     if (
+      !config.requireProviderPrefix &&
       config.authHeader !== "cookie" &&
       (config.routingAliases?.includes(modelStr) || modelConfig)
     ) {
