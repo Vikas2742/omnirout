@@ -26,7 +26,13 @@ const ALLOWED_NOAUTH_PROVIDERS = [
   "opencode",
   "uncloseai",
 ];
-const EXCLUDED_NOAUTH_PROVIDERS = ["aihorde", "auggie", "codex-app-server", "zcode"];
+const EXCLUDED_NOAUTH_PROVIDERS = [
+  "aihorde",
+  "auggie",
+  "codex-app-server",
+  "veoaifree-web",
+  "zcode",
+];
 
 async function resetStorage() {
   core.resetDbInstance();
@@ -293,9 +299,11 @@ test("createVirtualAutoCombo restricts the no-auth pool to the emulated-tool-cal
   // Policy: the no-auth (keyless) auto-combo pool is built from the NOAUTH_PROVIDERS
   // entries that opted into prompt-emulated tool calling (`toolCalling: "emulated"`),
   // discovered at startup by
-  // open-sse/services/autoCombo/virtualFactory.ts::getEmulatedToolCallingNoAuthProviders().
-  // The others stay usable via direct `<alias>/<model>` calls but must NOT be
-  // auto-routed to. Dedicated guard: tests/unit/noauth-autocombo-allowlist.test.ts.
+  // open-sse/services/autoCombo/emulatedNoAuthAllowlist.ts::getEmulatedToolCallingNoAuthProviders().
+  // The admitted set is cloudflare-playground, devin-cli-agentic, duckduckgo-web,
+  // opencode, and uncloseai — duckduckgo-web is included, not excluded. The others
+  // stay usable via direct `<alias>/<model>` calls but must NOT be auto-routed to.
+  // Dedicated guard: tests/unit/noauth-autocombo-allowlist.test.ts.
   // contract changed by #15979 (on top of #15839): `excludeTosAvoid` is ON by default and
   // uncataloged models now inherit the provider's curated `tos: "avoid"` verdict, so every
   // opencode model is ToS-filtered out by default. Opt out explicitly so this test keeps

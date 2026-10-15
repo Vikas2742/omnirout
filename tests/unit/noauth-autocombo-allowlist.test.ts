@@ -11,16 +11,20 @@
  * Every other keyless provider stays OUT of every auto/* pool — it remains fully
  * usable via direct `<alias>/<model>` calls, it is just not auto-routed to.
  *
- * Historical note: this widens the pool relative to the operator decision of
- * 2026-07-24 (refs #8183/#6453/#7032), which admitted only `opencode` after
- * verifying it answers 200 on the reference egress (VPS .15) with zero
- * configuration — `duckduckgo-web` (429/VQD) and `aihorde` (401, anon key
- * rejected) were unreliable there. Re-verify before trusting those in auto/*.
+ * Owner-accepted set (no feature flag): `cloudflare-playground`,
+ * `devin-cli-agentic`, `duckduckgo-web`, `opencode`, and `uncloseai`.
+ * `duckduckgo-web` and `devin-cli-agentic` already carried
+ * `toolCalling: "emulated"`; the other three opt in the same way.
+ * `aihorde`, `auggie`, `codex-app-server`, `veoaifree-web`, and `zcode` have no
+ * flag and stay out. `duckduckgo-web` is in the pool, not excluded.
+ *
+ * Historical note: until 2026-07-24 (refs #8183/#6453/#7032) the pool was a
+ * hardcoded `{opencode}` allowlist. That narrowing is retired.
  *
  * Regression guard: EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS in
- * open-sse/services/autoCombo/virtualFactory.ts drives what belongs here. Adding
- * `toolCalling: "emulated"` to another NOAUTH_PROVIDERS entry WILL change the pool
- * and must update ALLOWED_NOAUTH_PROVIDERS below.
+ * open-sse/services/autoCombo/emulatedNoAuthAllowlist.ts drives what belongs
+ * here. Adding `toolCalling: "emulated"` to another NOAUTH_PROVIDERS entry WILL
+ * change the pool and must update ALLOWED_NOAUTH_PROVIDERS below.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
