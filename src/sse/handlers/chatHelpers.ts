@@ -1,9 +1,6 @@
 import { credentialCooldownResponse } from "./credentialCooldownResponse";
-import {
-  getModelInfo,
-  getComboForModel,
-  getModelInfoOrRetirementResponse,
-} from "../services/model";
+import { getModelInfo, getComboForModel } from "../services/model";
+import { getChatModelInfo } from "./chatModelResolution";
 import {
   clearAccountError,
   markAccountUnavailable,
@@ -115,7 +112,7 @@ export async function resolveModelOrError(
   endpointPath: string = "",
   requestHeaders: Record<string, unknown> | null | undefined = null
 ) {
-  const modelInfo = await getModelInfoOrRetirementResponse(modelStr);
+  const modelInfo = await getChatModelInfo(modelStr);
   if ("error" in modelInfo) return modelInfo;
   const sourceFormat = detectFormatFromEndpoint(body, endpointPath);
 
