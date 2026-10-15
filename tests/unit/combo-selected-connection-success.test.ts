@@ -85,7 +85,7 @@ test.after(() => {
 });
 
 describe("combo selected connection success handling", () => {
-  test("Jev binds the dynamically selected connection for the next turn", async () => {
+  test("Jev pins the dynamically selected model and connection on the next turn", async () => {
     const comboName = "jev-dynamic-sticky-binding";
     const firstConnection = await providersDb.createProviderConnection({
       provider: "openai",
@@ -107,7 +107,7 @@ describe("combo selected connection success handling", () => {
       config: { maxRetries: 0, disableSessionStickiness: false },
     };
     const firstTurn = [{ role: "user", content: "Keep the same account across turns." }];
-    const selectedOnEachTurn: Array<string | null> = [];
+    const selectedOnEachTurn: Array<{ connectionId: string | null; modelStr: string }> = [];
     const logMessages: string[] = [];
     const log = {
       info: (_tag: string, message: string) => logMessages.push(message),
@@ -126,10 +126,10 @@ describe("combo selected connection success handling", () => {
         allCombos: null,
         handleSingleModel: async (
           _body: unknown,
-          _model: string,
+          modelStr: string,
           target?: { connectionId?: string | null }
         ) => {
-          selectedOnEachTurn.push(target?.connectionId ?? null);
+          selectedOnEachTurn.push({ connectionId: target?.connectionId ?? null, modelStr });
           return new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), {
             status: 200,
             headers: {
@@ -151,7 +151,8 @@ describe("combo selected connection success handling", () => {
     assert.equal(secondResult.ok, true);
     assert.ok(firstConnection.id);
     assert.equal(selectedOnEachTurn.length, 2);
-    assert.equal(selectedOnEachTurn[1], selectedConnectionId);
+    assert.equal(selectedOnEachTurn[1]?.connectionId, selectedConnectionId);
+    assert.equal(selectedOnEachTurn[1]?.modelStr, selectedOnEachTurn[0]?.modelStr);
     assert.ok(
       logMessages.some((message) => message.includes("[jev] Skipping System One")),
       "the continued turn must use its bound account without asking System One again"

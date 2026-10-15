@@ -364,6 +364,7 @@ async function previewJevSessionStickiness(
     const expanded = await expandJevStickyConnectionTarget(
       targets,
       binding.connectionId,
+      binding.modelStr,
       deps.apiKeyAllowedConnections,
       deps.log
     );
@@ -382,6 +383,7 @@ async function previewJevSessionStickiness(
 async function expandJevStickyConnectionTarget(
   targets: ResolvedComboTarget[],
   connectionId: string,
+  modelStr: string | null,
   apiKeyAllowedConnections: string[] | null,
   log: ComboLogger
 ): Promise<ResolvedComboTarget[] | null> {
@@ -389,6 +391,10 @@ async function expandJevStickyConnectionTarget(
   let found = false;
   const expanded: ResolvedComboTarget[] = [];
   for (const target of targets) {
+    if (modelStr && target.modelStr !== modelStr) {
+      expanded.push(target);
+      continue;
+    }
     if (target.connectionId) {
       expanded.push(target);
       continue;

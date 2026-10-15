@@ -666,7 +666,12 @@ export async function executeTargetAttempt(opts: {
         }
       }
       if (deps.sticky.messageHash && effectiveConnectionId)
-        recordStickyBinding(deps.sticky.messageHash, effectiveConnectionId); // LKGP (#919):
+        recordStickyBinding(
+          deps.sticky.messageHash,
+          effectiveConnectionId,
+          deps.combo.name,
+          deps.strategy === "jev" ? modelStr : undefined
+        ); // LKGP (#919):
       if (provider) {
         const connId = effectiveConnectionId || undefined;
         recordLkgpPin({
