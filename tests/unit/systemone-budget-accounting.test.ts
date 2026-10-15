@@ -131,6 +131,35 @@ test("combo rechecks key quota consumed during an earlier failed member", async 
   assert.equal(attempts, 1);
 });
 
+test("fresh global cap rejects the request after a 10-token success with native token error", async () => {
+  const key = await keys.createApiKey("global-native-error", "synthetic-machine");
+  upsertTokenLimit({ apiKeyId: key.id, scopeType: "global", tokenLimit: 10 });
+  let fetches = 0;
+  const post = createSystemOnePost({
+    getCombo: async () => null,
+    getCredentials: async () => ({ apiKey: "synthetic" }),
+    clearRecovered: async () => {},
+    proxy: async (options) =>
+      handleSystemOneProxy({
+        ...options,
+        fetchImpl: async () => {
+          fetches++;
+          return Response.json(native);
+        },
+        saveCallLogImpl: async () => {},
+        recordCostImpl: () => {},
+        calculateCostImpl: async () => ({ priced: false, costUsd: 0 }),
+      }),
+  });
+  assert.equal((await post(request("typesafe/jev-latest", key.key))).status, 200);
+  await new Promise((resolve) => setImmediate(resolve));
+  const response = await post(request("typesafe/jev-latest", key.key));
+  assert.equal(response.status, 429);
+  assert.equal((await response.json()).detail.error_type, "token_limit_exceeded");
+  assert.match(response.headers.get("retry-after") || "", /^\d+$/);
+  assert.equal(fetches, 1);
+});
+
 test("success records input plus output once; failed and pre-aborted attempts record nothing", async () => {
   const key = await keys.createApiKey("accounting", "synthetic-machine");
   for (const scope of ["global", "provider", "model"] as const) {
