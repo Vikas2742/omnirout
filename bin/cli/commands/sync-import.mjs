@@ -1,14 +1,9 @@
 import { readFileSync } from "node:fs";
-import { basename } from "node:path";
-import { apiFetch, isRouteUnavailableStatus } from "../api.mjs";
 import { emit } from "../output.mjs";
 
-// `omniroute sync import` — kept out of sync.mjs so the destructive import path (and its
-// dry run, which must never reach the server) is reviewable on its own.
+// Local side of `omniroute sync import` (the upload lives in sync.mjs): reading and
+// sanity-checking the backup, and the dry run, which must never reach the server.
 
-const IMPORT_PATH = "/api/db-backups/import";
-// Uploading + validating + swapping a large database can outlast the 30 s default timeout.
-const IMPORT_TIMEOUT_MS = 300_000;
 const SQLITE_MAGIC = Buffer.from("SQLite format 3\0", "latin1");
 const MIN_SQLITE_BYTES = 4096;
 // Kept in sync with REQUIRED_TABLES in src/app/api/db-backups/import/route.ts.
@@ -86,7 +81,7 @@ async function inspectBackupLocally(filePath) {
  * Validate the backup locally and print what an import would load. NEVER contacts the
  * server: an older server ignores `dryRun` and would replace the live database.
  */
-async function runImportDryRun(filePath, buf, globalOpts) {
+export async function runImportDryRun(filePath, buf, globalOpts) {
   const report = await inspectBackupLocally(filePath);
   if (report.error) return importFail(report.error);
   const summary = {
@@ -103,70 +98,18 @@ async function runImportDryRun(filePath, buf, globalOpts) {
   return 0;
 }
 
-function importFailureHint(status) {
-  if (status === 401 || status === 403) {
-    return (
-      "importing replaces the whole database: run this on the server host (local CLI " +
-      "credential), sign in to the dashboard, or pass an API key with the 'manage' scope."
-    );
-  }
-  if (isRouteUnavailableStatus(status)) {
-    return `the server does not serve POST ${IMPORT_PATH}; update OmniRoute on the server.`;
-  }
-  return null;
-}
-
-async function reportImportFailure(res) {
-  let message = `HTTP ${res.status}`;
-  try {
-    await res.assertOk();
-  } catch (err) {
-    if (err?.message) message = err.message;
-  }
-  const hint = importFailureHint(res.status);
-  process.stderr.write(
-    `Error: sync import failed (HTTP ${res.status}): ${message}${hint ? `\n  ${hint}` : ""}\n`
-  );
-  return res.exitCode || 1;
-}
-
 /**
- * `omniroute sync import <file> [--dry-run]` — replace the server's database with a
- * `.sqlite` backup via `POST /api/db-backups/import`. With `--dry-run` the file is only
- * validated locally (see runImportDryRun). Goes through `apiFetch`, so a loopback server
- * receives the machine-bound local CLI credential.
+ * Read the backup and run the cheap header check every import starts with. Returns
+ * `{ buf }`, or `{ exitCode }` after printing why the file cannot be imported.
  */
-export async function runSyncImport(filePath, opts = {}, globalOpts = {}) {
+export function readImportFile(filePath) {
   let buf;
   try {
     buf = readFileSync(filePath);
   } catch (err) {
-    return importFail(`cannot read ${filePath}: ${err?.code || err?.message}`, 1);
+    return { exitCode: importFail(`cannot read ${filePath}: ${err?.code || err?.message}`, 1) };
   }
   const shapeError = checkSqliteShape(buf);
-  if (shapeError) return importFail(shapeError);
-
-  if (opts.dryRun) return runImportDryRun(filePath, buf, globalOpts);
-
-  const name = basename(filePath);
-  const query = name.endsWith(".sqlite") ? `?filename=${encodeURIComponent(name)}` : "";
-  let res;
-  try {
-    res = await apiFetch(`${IMPORT_PATH}${query}`, {
-      method: "POST",
-      apiKey: globalOpts.apiKey,
-      baseUrl: globalOpts.baseUrl,
-      context: globalOpts.context,
-      headers: { "content-type": "application/octet-stream" },
-      body: buf,
-      timeout: IMPORT_TIMEOUT_MS,
-      // A replace is not something to replay blindly after a gateway error.
-      retry: false,
-    });
-  } catch (err) {
-    return importFail(err?.message || "network error", err?.exitCode || 1);
-  }
-  if (!res.ok) return reportImportFailure(res);
-  emit(await res.json(), globalOpts);
-  return 0;
+  if (shapeError) return { exitCode: importFail(shapeError) };
+  return { buf };
 }
