@@ -446,8 +446,11 @@ function parseCodexUsageResponse(
   const bankedResetCredits = parseBankedResetCredits(obj);
   const paidCredits = parseCodexPaidCredits(obj.credits);
   const rateLimitReachedType = parseRateLimitReachedType(obj);
+  const rawPlan = obj["plan_type"] ?? obj["planType"];
+  const plan = typeof rawPlan === "string" ? rawPlan.trim() : "";
 
   return {
+    ...(plan ? { plan } : {}),
     used: Math.round(worstPercentUsed * 100),
     total: 100,
     percentUsed: worstPercentUsed,
