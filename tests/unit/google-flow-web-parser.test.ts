@@ -16,6 +16,12 @@ function frame(value: unknown) {
 async function parser() {
   return import("../../open-sse/services/googleFlowWebResponse.ts");
 }
+test("Google frame lengths may include the two trailing line separators", async () => {
+  const { parseGoogleFlowResponse } = await parser();
+  const json = JSON.stringify(fixtureFrame);
+  const framed = `)]}'\n\n${Buffer.byteLength(json) + 2}\n${json}\n\n`;
+  assert.equal(parseGoogleFlowResponse(framed, 2, prompt).length, 2);
+});
 test("fixture success: two current original images, ids and 1376x768 dimensions", async () => {
   const { parseGoogleFlowResponse } = await parser();
   const images = parseGoogleFlowResponse(frame(fixtureFrame), 2, prompt);

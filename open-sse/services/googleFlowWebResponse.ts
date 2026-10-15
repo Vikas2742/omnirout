@@ -60,7 +60,11 @@ export function parseGoogleFlowResponse(
     if (!/^[1-9][0-9]{0,7}$/.test(lines[i])) malformed();
     const length = Number(lines[i]);
     const line = lines[++i];
-    if (!line || Buffer.byteLength(line) !== length) malformed();
+    if (!line) malformed();
+    const bytes = Buffer.byteLength(line);
+    // Google may count the two line separators as part of a frame's byte length.
+    const includesSeparators = length === bytes + 2 && lines[i + 1] === "";
+    if (length !== bytes && !includesSeparators) malformed();
     let entries: unknown;
     try {
       entries = JSON.parse(line);
