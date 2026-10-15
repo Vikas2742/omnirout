@@ -239,8 +239,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Business validation
-    const isNoAuthProvider = typeof provider === "string" && provider in NOAUTH_PROVIDERS;
+    // Business validation. Own-property only: `in` is also true for Object.prototype
+    // keys ("toString", "constructor"), which are not catalogued providers.
+    const isNoAuthProvider =
+      typeof provider === "string" && Object.hasOwn(NOAUTH_PROVIDERS, provider);
     const isValidProvider =
       isManagedProviderConnectionId(provider) ||
       isOpenAICompatibleProvider(provider) ||
