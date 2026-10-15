@@ -50,7 +50,7 @@ import {
   getExecutorTimeoutMs,
   resolveConnectionTimeoutMs,
 } from "../handlers/chatCore/upstreamTimeouts.ts";
-import { boundedMap } from "@/lib/quota/boundedMap";
+import { boundedMap } from "../../src/lib/quota/boundedMap.ts";
 
 interface LearnedLimitEntry {
   provider: string;
@@ -100,17 +100,11 @@ function errorRateLimit(...args: unknown[]): void {
 const limiters = new Map<string, Bottleneck>();
 
 // Store connections that have rate limit protection enabled
-// Bounded to 10000 entries with LRU-like cleanup via watchdog
 const enabledConnections = new Set<string>();
 
 // Store per-connection rate limit overrides (RPM, TPM, TPD, minTime, maxConcurrent)
 // Populated from provider_connections.rateLimitOverrides on startup and refresh.
-// Bounded to 5000 entries (max connections) with LRU eviction
-const connectionRateLimitOverrides = boundedMap<ConnectionRateLimitOverrides>(
-  "rate-limit-overrides",
-  5000,
-  "lru"
-);
+const connectionRateLimitOverrides = new Map<string, ConnectionRateLimitOverrides>();
 
 // Store learned limits for persistence (debounced)
 // One learned entry per limiter key (provider:connection[:model]). The previous
@@ -138,13 +132,7 @@ export const ZAI_WEB_REQUEST_QUEUE_MAX_WAIT_MS = 60_000;
 export const MAXAI_REQUEST_QUEUE_MAX_WAIT_MS = 300_000;
 
 const limiterEffectiveSettings = new WeakMap<Bottleneck, Bottleneck.ConstructorOptions>();
-// Store replacement settings for evicted limiters that may be recreated
-// Bounded to 2048 entries with LRU eviction
-const preservedReplacementSettings = boundedMap<Bottleneck.ConstructorOptions>(
-  "preserved-replacement-settings",
-  2048,
-  "lru"
-);
+const preservedReplacementSettings = new Map<string, Bottleneck.ConstructorOptions>();
 const limiterWatchdog = new LimiterWedgeWatchdog({
   limiters,
   limiterLastUsed,

@@ -249,9 +249,6 @@ import {
  */
 const CLAUDE_TOOL_MODEL_PREFIXES = ["cc/", "claude/"] as const;
 
-// Pre-compiled constant to avoid allocation per transformRequest call
-const TRANSFORM_REQUEST_OPTIONAL_KEYS = ["user", "stop", "seed", "response_format"] as const;
-
 export function stripVersionedToolModelPrefix(tools: unknown): void {
   if (!Array.isArray(tools)) return;
   for (const t of tools as Array<Record<string, unknown>>) {
@@ -553,11 +550,9 @@ export class BaseExecutor {
     // like tool descriptions to avoid upstream validation failures.
     if (body && typeof body === "object" && !Array.isArray(body)) {
       const cloned = { ...body } as Record<string, unknown>;
-      let modified = false;
 
       if (Array.isArray(cloned.input)) {
         cloned.input = sanitizeResponsesInputItems(cloned.input, false);
-        modified = true;
       }
 
       if (Array.isArray(cloned.tools)) {
@@ -567,19 +562,11 @@ export class BaseExecutor {
             const toolFunction = toolRecord.function;
             if (toolFunction && typeof toolFunction === "object" && !Array.isArray(toolFunction)) {
               const func = { ...(toolFunction as JsonRecord) };
-              let toolModified = false;
-              if (func.description === "") {
-                delete func.description;
-                toolModified = true;
-              }
+              if (func.description === "") delete func.description;
               if (typeof func.name !== "string" || func.name.trim() === "") {
                 func.name = "unnamed_tool";
-                toolModified = true;
               }
-              if (toolModified) {
-                modified = true;
-                return { ...toolRecord, function: func };
-              }
+              return { ...toolRecord, function: func };
             }
           }
           return tool;
@@ -587,26 +574,17 @@ export class BaseExecutor {
       }
 
       // Fix #1884: Cursor sends prompt_cache_retention which breaks strict upstream endpoints
-      if ("prompt_cache_retention" in cloned) {
-        delete cloned.prompt_cache_retention;
-        modified = true;
-      }
+      delete cloned.prompt_cache_retention;
 
       // Also clean up top level optional fields that commonly cause issues when empty
-      // Pre-compiled array to avoid allocation per request
-      for (const key of TRANSFORM_REQUEST_OPTIONAL_KEYS) {
-        if (cloned[key] === "") {
-          delete cloned[key];
-          modified = true;
-        }
+      const optionalKeys = ["user", "stop", "seed", "response_format"];
+      for (const key of optionalKeys) {
+        if (cloned[key] === "") delete cloned[key];
       }
 
-      if (modified) {
-        stripInternalBodyFields(cloned);
-        return cloned;
-      }
+      stripInternalBodyFields(cloned);
 
-      return body;
+      return cloned;
     }
 
     return body;

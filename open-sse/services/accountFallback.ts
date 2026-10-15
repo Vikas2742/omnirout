@@ -555,14 +555,19 @@ const modelFailureState = new Map<string, ModelFailureState>();
 
 // Aliases (e.g. "cx" → "codex") must share lockout state with their canonical
 // provider, otherwise a model locked via one spelling stays routable via the other.
-// Bounded to 512 entries (max ~372 providers + aliases) with LRU eviction.
-const canonicalProviderCache = boundedMap<string>("canonical-provider-cache", 512, "lru");
-function getCanonicalLockProvider(provider: string): string {
-  let canonical = canonicalProviderCache.get(provider);
-  if (!canonical) {
-    canonical = resolveProviderId(provider);
-    canonicalProviderCache.set(provider, canonical);
-  }
+// Bounded LRU: resolveProviderId is a pure catalog lookup, so evicting an entry
+// and recomputing it returns the same id. Exported so the cap is testable.
+export const CANONICAL_PROVIDER_CACHE_LIMIT = 512;
+export const canonicalProviderCache = boundedMap<string>(
+  "canonical-provider-cache",
+  CANONICAL_PROVIDER_CACHE_LIMIT,
+  "lru"
+);
+export function getCanonicalLockProvider(provider: string): string {
+  const cached = canonicalProviderCache.get(provider);
+  if (cached !== undefined) return cached;
+  const canonical = resolveProviderId(provider);
+  canonicalProviderCache.set(provider, canonical);
   return canonical;
 }
 
