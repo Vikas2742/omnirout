@@ -94,6 +94,7 @@ export function isMalformedToolCallFinishReason(value: unknown): boolean {
 
 export function normalizeOpenAICompatibleFinishReason(value: unknown): unknown {
   if (typeof value !== "string") return value;
+  if (!value.trim()) return null;
 
   const normalized = value.toLowerCase();
   if (OPENAI_FINISH_REASONS.has(normalized)) return normalized;
