@@ -1,3 +1,5 @@
+import { recordKeyQuotaUsage } from "@/domain/keyQuota";
+import { recordTokenUsage } from "../../services/tokenLimitCounter.ts";
 import { safeSystemOneText } from "./shared.ts";
 import { systemOneCost, systemOneDefaults, type SystemOneProxyOptions } from "./runtime.ts";
 import type { SystemOneAttempt } from "./attempt.ts";
@@ -7,7 +9,17 @@ export async function recordSystemOneSuccess(
   attempt: SystemOneAttempt,
   requestId: string
 ): Promise<number> {
-  if (!attempt.result) return 0;
+  if (!attempt.attempted || attempt.error || !attempt.result) return 0;
+  if (options.apiKeyId) {
+    try {
+      const billable = attempt.result.usage.input_tokens + attempt.result.usage.output_tokens;
+      recordKeyQuotaUsage(options.apiKeyId, billable);
+      if (billable > 0)
+        recordTokenUsage(options.apiKeyId, options.target.provider, options.target.id, billable);
+    } catch {
+      // Counter recording must never block or turn a successful inference into a retry.
+    }
+  }
   const costUsd = await systemOneCost(options, attempt.result.usage.input_tokens);
   if (options.apiKeyId) {
     try {
