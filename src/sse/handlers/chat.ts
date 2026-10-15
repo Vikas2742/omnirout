@@ -16,10 +16,10 @@ import {
   getProviderCredentialsWithQuotaPreflight,
   markAccountUnavailable,
   buildExhaustionOptions,
-  extractApiKey,
   isValidApiKey,
   extractSessionAffinityKey,
 } from "../services/auth";
+import { resolveClientApiKey } from "../services/clientApiKeyResolver";
 import {
   getRuntimeProviderProfile,
   clearModelLock,
@@ -85,6 +85,7 @@ import { dispatchChatWithAffinityEviction } from "./chatDispatch";
 import { getCachedSettings, getCombosCacheVersion } from "@/lib/db/readCache";
 import { comboCheckProvider, ghComboGate } from "./chat/githubLiveCatalogFilter.ts";
 import { markEmergencyFallback } from "./emergencyFallbackHeader.ts";
+import { resolveEmergencyFallbackDecision } from "./emergencyFallbackHeader.ts";
 import { evaluateComboTargetPreflight } from "./chat/comboTargetKeyPolicy.ts";
 import * as resolvedPolicy from "./chat/resolvedModelPolicy.ts";
 import { recordGateRejection, recordQuotaParkedSkip } from "./quotaParkedSkipUsage";
@@ -181,10 +182,7 @@ import {
   isSessionRegisteredForKey,
 } from "@omniroute/open-sse/services/sessionManager.ts";
 import { startQuotaMonitor } from "@omniroute/open-sse/services/quotaMonitor.ts";
-import {
-  isFallbackDecision,
-  shouldUseFallback,
-} from "@omniroute/open-sse/services/emergencyFallback.ts";
+import { isFallbackDecision } from "@omniroute/open-sse/services/emergencyFallback.ts";
 import {
   registerCodexConnection,
   registerCodexQuotaFetcher,
@@ -682,7 +680,7 @@ async function handleChatImplementation(
   // masked prefix/last4. These debug lines get copied verbatim into bug reports
   // and support tickets, so any key fragment is sensitive.
   const authHeader = request.headers.get("Authorization");
-  const apiKey = extractApiKey(request);
+  const { apiKey } = await resolveClientApiKey(request);
   if (authHeader && apiKey) {
     log.debug("AUTH", "API key provided");
   } else {
@@ -1648,7 +1646,7 @@ async function handleSingleModelChat(
   })();
   const resolvedModelGate = resolvedPolicy.createVisibleResolvedModelGate({
     apiKeyInfo,
-    apiKey: extractApiKey(request),
+    apiKey: (await resolveClientApiKey(request)).apiKey,
     contextModel: runtimeOptions.authorizationContextModel,
     comboGrantsTargets: runtimeOptions.comboGrantsTargets,
     provider,
@@ -2454,10 +2452,11 @@ async function handleSingleModelChat(
       // (target-level orchestration plus the global fallback #689 after it), and a
       // per-target hop burns extra upstream calls against exhausted providers (#1731).
       if (!runtimeOptions.emergencyFallbackTried && !comboName) {
-        const fallbackDecision = shouldUseFallback(
+        const fallbackDecision = await resolveEmergencyFallbackDecision(
           Number(result.status || 0),
           String(result.error || ""),
-          Array.isArray(body?.tools) && body.tools.length > 0
+          Array.isArray(body?.tools) && body.tools.length > 0,
+          runtimeOptions
         );
 
         if (isFallbackDecision(fallbackDecision)) {

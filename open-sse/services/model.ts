@@ -5,10 +5,16 @@ import { resolveWildcardAlias } from "./wildcardRouter.ts";
 import { getRegisteredProviderEffortBaseModelId } from "../utils/registeredEffortVariants.ts";
 import { hasProviderModelAlias, resolveProviderModelAlias } from "./modelCanonicalization.ts";
 import { resolveActivePrefixedProviderModel } from "./prefixedProviderModel.ts";
-import { boundedMap } from "@/lib/quota/boundedMap";
+import { logger } from "../utils/logger.ts";
 
 export { resolveProviderAlias };
 export { resolveCanonicalProviderModel } from "./modelCanonicalization.ts";
+
+// Tagged, level-gated logger (honors APP_LOG_LEVEL, default "info"). Routing the
+// former console.debug calls through this skips the synchronous stdout write when
+// the level is above debug — console.* blocks the event loop per line, and
+// parseModel() sits on the per-request hot path (combo scoring, chatCore).
+const log = logger("MODEL");
 
 type ModelAliasValue = string | { provider?: string; model?: string };
 type ModelAliasMap = Record<string, ModelAliasValue>;
@@ -26,9 +32,6 @@ type ResolvedModelTarget = {
 
 // Client context-window tags are routing hints, not part of provider model IDs.
 const CONTEXT_WINDOW_SUFFIX_RE = /\[(\d+)([kKmM])?\]\s*$/;
-
-// Cache for parseModel results - bounded to 2048 entries with LRU eviction
-const parseModelCache = boundedMap<ParsedModel>("parse-model-cache", 2048, "lru");
 
 export function stripContextWindowSuffix(
   modelStr: string | null | undefined
@@ -68,6 +71,15 @@ for (const [aliasOrId, models] of Object.entries(PROVIDER_MODELS)) {
   }
 }
 const KNOWN_MODEL_IDS = new Set(MODEL_TO_PROVIDERS.keys());
+
+/**
+ * True when `modelId` is a model id some static provider catalog exposes verbatim
+ * (including slash-bearing ids such as `meta-llama/...`). Used by the combo resolver
+ * so a catalogued model id is never re-read as `<client-namespace>/<combo>`.
+ */
+export function isKnownCatalogModelId(modelId: string | null | undefined): boolean {
+  return typeof modelId === "string" && KNOWN_MODEL_IDS.has(modelId);
+}
 // Bare Codex CLI defaults must always route to the `codex` provider (chatgpt.com
 // OAuth) even when other providers that also catalog the model id (e.g.
 // `agentrouter`, `openai`) are active. The Codex cookie quota on the user's
@@ -180,7 +192,7 @@ export function normalizeCrossProxyModelId(modelId: unknown): {
     return { modelId, applied: false, original: null };
   }
 
-  console.debug(`[MODEL] Cross-proxy alias applied: "${modelId}" → "${normalized}"`);
+  log.debug(`Cross-proxy alias applied: "${modelId}" → "${normalized}"`);
   return { modelId: normalized, applied: true, original: modelId };
 }
 
@@ -360,25 +372,18 @@ function shouldTreatAsExactModelId(modelStr: string | null) {
  * Supports [1m] suffix for extended 1M context window (e.g. "claude-sonnet-4-6[1m]")
  */
 export function parseModel(modelStr: string | null | undefined): ParsedModel {
-  // Fast path: check cache first
-  if (modelStr && typeof modelStr === "string") {
-    const cached = parseModelCache.get(modelStr);
-    if (cached) return cached;
-  }
-
   // Guard truthy non-strings (object/number/array), not just falsy values — a
   // malformed combo `modelStr` or providerSpecificData saved as an object would
   // otherwise reach `cleanStr.endsWith("[1m]")` and crash with
   // `endsWith is not a function`. Same class as #2359 / #2463.
   if (!modelStr || typeof modelStr !== "string") {
-    const result = {
+    return {
       provider: null,
       model: null,
       isAlias: false,
       providerAlias: null,
       extendedContext: false,
     };
-    return result;
   }
 
   // Sanitize: reject strings with path traversal, control characters, or syntax that would let
@@ -388,15 +393,14 @@ export function parseModel(modelStr: string | null | undefined): ParsedModel {
     /[\x00-\x1f]/.test(modelStr) ||
     hasUnsafeModelIdSyntax(modelStr)
   ) {
-    console.log(`[MODEL] Warning: rejected malformed model string: "${modelStr.substring(0, 50)}"`);
-    const result = {
+    log.warn(`Rejected malformed model string: "${modelStr.substring(0, 50)}"`);
+    return {
       provider: null,
       model: null,
       isAlias: false,
       providerAlias: null,
       extendedContext: false,
     };
-    return result;
   }
 
   // Extract the legacy [1m] marker while stripping all client context tags.
@@ -415,16 +419,8 @@ export function parseModel(modelStr: string | null | undefined): ParsedModel {
   }
 
   if (shouldTreatAsExactModelId(cleanStr)) {
-    console.debug(`[MODEL] Treating "${cleanStr}" as an exact model id`);
-    const result = {
-      provider: null,
-      model: cleanStr,
-      isAlias: true,
-      providerAlias: null,
-      extendedContext,
-    };
-    parseModelCache.set(modelStr, result);
-    return result;
+    log.debug(`Treating "${cleanStr}" as an exact model id`);
+    return { provider: null, model: cleanStr, isAlias: true, providerAlias: null, extendedContext };
   }
 
   // Check if standard format: provider/model or alias/model
@@ -433,27 +429,11 @@ export function parseModel(modelStr: string | null | undefined): ParsedModel {
     const providerOrAlias = cleanStr.slice(0, firstSlash).trim();
     const model = cleanStr.slice(firstSlash + 1).trim();
     const provider = resolveProviderAlias(providerOrAlias);
-    const result = {
-      provider,
-      model,
-      isAlias: false,
-      providerAlias: providerOrAlias,
-      extendedContext,
-    };
-    parseModelCache.set(modelStr, result);
-    return result;
+    return { provider, model, isAlias: false, providerAlias: providerOrAlias, extendedContext };
   }
 
   // Alias format (model alias, not provider alias)
-  const result = {
-    provider: null,
-    model: cleanStr,
-    isAlias: true,
-    providerAlias: null,
-    extendedContext,
-  };
-  parseModelCache.set(modelStr, result);
-  return result;
+  return { provider: null, model: cleanStr, isAlias: true, providerAlias: null, extendedContext };
 }
 
 /**
@@ -731,7 +711,7 @@ async function resolveModelByProviderInference(modelId: string, extendedContext:
     const aliasesForHint = candidatesToUse.map((p) => PROVIDER_ID_TO_ALIAS[p] || p);
     const hints = aliasesForHint.slice(0, 2).map((alias) => `${alias}/${modelId}`);
     const message = `Ambiguous model '${modelId}'. Use provider/model prefix (ex: ${hints.join(" or ")}).`;
-    console.warn(`[MODEL] ${message} Candidates: ${aliasesForHint.join(", ")}`);
+    log.warn(`${message} Candidates: ${aliasesForHint.join(", ")}`);
     return {
       provider: null,
       model: modelId,
