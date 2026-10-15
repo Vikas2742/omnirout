@@ -31,7 +31,8 @@ test("live UTF-16 frame lengths parse across multiple frames", async () => {
     "A ginger cat lying on a windowsill basking in the sun, warm afternoon light, photography style."
   );
 });
-test("live ASCII frame parses and omits revised_prompt when Flow preserves the request", async () => {
+// The legacy fixture filename says 9x16; the untouched live response is a 1:1 mug, n=1.
+test("live ASCII 1:1 white ceramic mug, n=1, omits revised_prompt for an unchanged prompt", async () => {
   const { parseGoogleFlowResponse } = await parser();
   const images = parseGoogleFlowResponse(asciiRaw, 1, asciiPrompt);
   assert.equal(images.length, 1);
