@@ -337,22 +337,16 @@ rather than holding a second serialized copy of the batch. HTTP 408/429/5xx, net
 three attempts, with 250/500 ms exponential backoff. `Retry-After` seconds or HTTP dates
 can extend a delay up to 5 seconds. Other statuses fail immediately. OTLP 2xx partial rejection also throws instead of
 acknowledging a lost span; empty or valid JSON acknowledgements are accepted, with a
-64 KiB response-read cap. Errors include
-status and a short sanitized response excerpt.
+64 KiB response-read cap.
 
-Every collector-derived excerpt, partial-success count and stringified HTTP status
-uses one boundary: decode exactly one JSON layer for complete, non-truncated parseable
-JSON; otherwise inspect raw text. Any residual backslash, percent-encoded octet or HTML
-character reference in the decoded view (including JSON keys and string leaves) yields
-`[response excerpt withheld]`. Otherwise render JSON canonically (or keep raw text),
-redact literal/JSON-escaped header and UTF-8 Basic credential forms, and sanitize/re-redact
-to a fixed point (at most four iterations). Rendering failure, non-convergence or a
-remaining registered secret withholds the excerpt; clip to 256 characters last. Short
-usernames are redacted without withholding markers; generated wording stays outside
-redaction. Remaining limits are non-escape transformations of secret parts, such as a
-separately base64-encoded password part, reversed or split strings. Only configure trusted
-collectors. The shared sanitizer retains its bounded limits; call-log error summaries use
-it separately, and network-exception text is discarded.
+Errors contain only exporter-owned facts: HTTP status, retry class, attempts and sent span
+counts, or fixed acknowledgement/network failure wording. Collector response bodies,
+partial-success counts and response headers are never copied into errors, logs or the
+dashboard. A failed or partially accepted batch is not acknowledged: the destination shows
+Failing with that status, the cursor stays at the last acknowledged batch, and the next run
+resends the same rows. Permanent statuses keep failing until the collector or configuration
+is fixed. Use the collector's own logs for response details. Call-log error summaries retain
+their separate redaction.
 `prepare()` provisions nothing; Test posts exactly `{"resourceSpans":[]}` and reports
 HTTP status without writing call-log spans.
 

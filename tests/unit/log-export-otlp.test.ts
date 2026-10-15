@@ -3,12 +3,13 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { createHmac } from "node:crypto";
 import { once } from "node:events";
 import { getLogExportDestinationType } from "../../src/lib/logExport/registry.ts";
 import type { LogExportRecord } from "../../src/lib/logExport/types.ts";
 
-const dir = fs.mkdtempSync(path.join(process.cwd(), ".tmp-otlp-"));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), "otlp-"));
 process.env.DATA_DIR = dir;
 process.env.STORAGE_ENCRYPTION_KEY = "synthetic-otlp-encryption-key";
 Object.assign(process.env, { NODE_ENV: "test" });
@@ -354,7 +355,10 @@ test("OTLP partial success throws without retrying or acknowledging rejected spa
         )
         .send([record]),
       (error: Error) => {
-        assert.match(error.message, /rejected 1 spans/);
+        assert.equal(
+          error.message,
+          "OTLP/HTTP collector reported partial success (1 spans not acknowledged)"
+        );
         assert.equal(error.message.includes("synthetic-sensitive-value"), false);
         return true;
       }
@@ -382,6 +386,10 @@ test("HTTP error redacts Authorization token fragments and JSON-escaped custom h
         )
         .send([record]),
       (error: Error) => {
+        assert.equal(
+          error.message,
+          "OTLP/HTTP permanent status 400 (1 attempt, 1 spans not acknowledged)"
+        );
         for (const value of [token, "synthetic-private", "synthetic-quoted"])
           assert.equal(error.message.includes(value), false);
         return true;
@@ -396,68 +404,15 @@ for (const [username, password] of [
   ["synthetic-user", "synthetic-pässword-secret"],
   ['synthetic-üsér"name', "synthetic-password-secret"],
 ]) {
-  test(`UTF-8 Basic credentials redact every error surface: ${username}`, async (t) => {
-    insertRows();
+  test(`UTF-8 Basic credentials omit collector echoes: ${username}`, async (t) => {
     const decoded = `${username}:${password}`;
-    const token = Buffer.from(decoded).toString("base64");
-    const secretValues = [decoded, username, password, token];
-    // Encoding variants are table-driven through the loopback client matrix;
-    // retain literal UTF-8 echoes here as representative real-child coverage.
-    for (const [variant, encode] of [["raw", (value: string) => value]] as const) {
-      const s = await server((_q, r) =>
-        r.writeHead(400).end(`rejected ${[decoded, password, username].map(encode).join(" ")}`)
-      );
-      const output: string[] = [];
-      const originalError = console.error;
-      let spawned = 0;
-      console.error = (...args: unknown[]) => output.push(args.join(" "));
-      runner.__setLogExportChildOptionsForTest({
-        onSpawn: (child) => {
-          spawned++;
-          child.stdout?.on("data", (c: Buffer) => output.push(c.toString()));
-          child.stderr?.on("data", (c: Buffer) => output.push(c.toString()));
-        },
-      });
-      try {
-        const cfg = config({ endpoint: s.endpoint, headers: { Authorization: `Basic ${token}` } });
-        const probe = await otlp.otlpHttpDestination.createClient(cfg).test();
-        const dest = dbDest.createLogExportDestination({
-          name: "utf8-basic-fixture",
-          type: "otlp-http",
-          config: secrets.encryptDestinationConfig("otlp-http", cfg),
-        });
-        const result = await runner.runDestinationExport(dest);
-        assert.equal(probe.ok, false);
-        assert.equal(result.success, false);
-        assert.equal(spawned, 1, "must exercise the real child path");
-        assert.equal(result.cursorRowId, 0);
-        const lastError = dbDest.getLogExportDestination(dest.id)?.lastError;
-        assert.ok(lastError);
-        assert.ok(output.some((line) => line.includes("[LogExport]")));
-        for (const [surface, text] of Object.entries({
-          "test detail": probe.detail,
-          "runner result": JSON.stringify(result),
-          "stored lastError": lastError,
-          "console output": output.join("\n"),
-        })) {
-          await t.test(`${variant}: ${surface}`, () => {
-            for (const value of secretValues) {
-              for (const encoded of [value, encode(value), JSON.stringify(value).slice(1, -1)])
-                assert.equal(text?.includes(encoded), false, `${surface} leaks a credential`);
-            }
-          });
-        }
-      } finally {
-        console.error = originalError;
-        runner.__setLogExportChildOptionsForTest(null);
-        await s.close();
-      }
-    }
+    const body = `rejected ${[decoded, password, username].join(" ")}`;
+    await assertCredentialEchoContained(t, username, password, body);
   });
 }
 
-// Adapted from the independent review's unicode-json-probe.test.ts: exercise all
-// error surfaces with a real child, not only the destination's in-process probe.
+// Encoding variants use the in-process client; the failure/recovery test below
+// covers Test detail, runner result, persisted lastError and console with real children.
 function asciiJson(value: string, uppercase = false): string {
   return JSON.stringify(value)
     .slice(1, -1)
@@ -473,50 +428,29 @@ async function assertCredentialEchoContained(
   password: string,
   body: string
 ) {
-  insertRows();
   const decoded = `${username}:${password}`;
   const token = Buffer.from(decoded).toString("base64");
-  const s = await server((_q, r) =>
-    r.writeHead(400, { "Content-Type": "application/json" }).end(body)
-  );
-  const output: string[] = [];
-  const originalError = console.error;
-  let spawned = 0;
-  console.error = (...args: unknown[]) => output.push(args.join(" "));
-  runner.__setLogExportChildOptionsForTest({
-    onSpawn: (child) => {
-      spawned++;
-      child.stdout?.on("data", (c: Buffer) => output.push(c.toString()));
-      child.stderr?.on("data", (c: Buffer) => output.push(c.toString()));
-    },
-  });
+  const s = await server((_q, r) => r.writeHead(400).end(body));
   try {
-    const cfg = config({ endpoint: s.endpoint, headers: { Authorization: `Basic ${token}` } });
-    const probe = await otlp.otlpHttpDestination.createClient(cfg).test();
-    const dest = dbDest.createLogExportDestination({
-      name: "unicode-json-fixture",
-      type: "otlp-http",
-      config: secrets.encryptDestinationConfig("otlp-http", cfg),
+    const client = otlp.otlpHttpDestination.createClient(
+      config({ endpoint: s.endpoint, headers: { Authorization: `Basic ${token}` } })
+    );
+    const probe = await client.test();
+    assert.deepEqual(probe, {
+      ok: false,
+      detail: "OTLP/HTTP permanent status 400 (1 attempt, 0 spans not acknowledged)",
     });
-    const result = await runner.runDestinationExport(dest);
-    const lastError = dbDest.getLogExportDestination(dest.id)?.lastError;
-    assert.equal(probe.ok, false);
-    assert.equal(result.success, false);
-    assert.equal(spawned, 1, "must exercise the real child path");
-    assert.equal(s.calls.length, 2, "one probe and one child request, with no retry");
-    assert.equal(result.cursorRowId, 0);
-    assert.equal(dbDest.getLogExportDestination(dest.id)?.cursorRowId, 0);
-    assert.ok(lastError);
-    assert.ok(output.some((line) => line.includes("[LogExport]")));
+    let message = "";
+    await assert.rejects(client.send([record]), (error: Error) => {
+      message = error.message;
+      assert.equal(message, "OTLP/HTTP permanent status 400 (1 attempt, 1 spans not acknowledged)");
+      return true;
+    });
     for (const [surface, text] of Object.entries({
-      "test detail": probe.detail,
-      "runner result": result.error,
-      "stored lastError": lastError,
-      "console output": output.join("\n"),
+      "test detail": probe.detail!,
+      "send error": message,
     })) {
       await t.test(surface, () => {
-        assert.ok(text);
-        assert.match(text, /OTLP\/HTTP permanent status 400/);
         for (const value of [decoded, username, password, token]) {
           for (const encoded of [
             value,
@@ -537,16 +471,9 @@ async function assertCredentialEchoContained(
             );
           }
         }
-        assert.match(
-          text,
-          /\[REDACTED\]|\[response excerpt withheld\]/,
-          `${surface} must contain the echoed credential`
-        );
       });
     }
   } finally {
-    console.error = originalError;
-    runner.__setLogExportChildOptionsForTest(null);
     await s.close();
   }
 }
@@ -590,10 +517,10 @@ test("short Basic usernames preserve generated OTLP wording", async (t) => {
         );
         assert.deepEqual(await client.test(), {
           ok: false,
-          detail: "OTLP/HTTP permanent status 400: rejected [REDACTED]",
+          detail: "OTLP/HTTP permanent status 400 (1 attempt, 0 spans not acknowledged)",
         });
         await assert.rejects(client.send([record]), {
-          message: "OTLP/HTTP permanent status 400: rejected [REDACTED]",
+          message: "OTLP/HTTP permanent status 400 (1 attempt, 1 spans not acknowledged)",
         });
       } finally {
         await s.close();
@@ -617,8 +544,10 @@ test("400 permanent excerpt redacts echoed header values; redirects never forwar
         })
       );
       await assert.rejects(client.send([record]), (e: Error) => {
-        assert.match(e.message, new RegExp(String(status)));
-        assert.match(e.message, /rejected/);
+        assert.equal(
+          e.message,
+          `OTLP/HTTP permanent status ${status} (1 attempt, 1 spans not acknowledged)`
+        );
         assert.equal(e.message.includes("synthetic-auth-value"), false);
         assert.equal(e.message.includes("synthetic-header-value"), false);
         return true;
@@ -652,7 +581,14 @@ test("429 respects Retry-After then succeeds; 5xx and timeout retries bounded an
         otlp.otlpHttpDestination
           .createClient(config({ endpoint: s.endpoint, timeoutMs: 30 }))
           .send([record]),
-        /503|timed out|network/
+        {
+          message:
+            mode === "5xx"
+              ? "OTLP/HTTP retryable status 503 (3 attempts, 1 spans not acknowledged)"
+              : mode === "timeout"
+                ? "OTLP/HTTP request timed out"
+                : "OTLP/HTTP network request failed",
+        }
       );
       assert.equal(s.calls.length, 3);
     } finally {
@@ -869,6 +805,127 @@ test("child runner end-to-end: cursor advances filtered rows, ttft mapped, secre
     console.error = originalError;
     runner.__setLogExportChildOptionsForTest(null);
     await s.close();
+  }
+});
+
+test("real runner marks failure, retains pending rows and resends identical spans after recovery", async (t) => {
+  for (const mode of ["400", "partial success"]) {
+    await t.test(mode, async () => {
+      insertRows();
+      const password = "8675309";
+      const secret = 'synthetic-/"secret';
+      const token = Buffer.from(`synthetic-user:${password}`).toString("base64");
+      const encoded = secret.replace(
+        /[\s\S]/g,
+        (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`
+      );
+      let recovered = false;
+      const body = `{"secret":${JSON.stringify(secret)},"escaped":"${encoded}","numeric":${password},"partialSuccess":{"rejectedSpans":${password}}}`;
+      const s = await server((_q, r) =>
+        r.writeHead(recovered ? 200 : mode === "400" ? 400 : 200).end(recovered ? "{}" : body)
+      );
+      const output: string[] = [];
+      const original = console.error;
+      console.error = (...args: unknown[]) => output.push(args.join(" "));
+      let spawned = 0;
+      runner.__setLogExportChildOptionsForTest({
+        modulePath: "",
+        onSpawn(child) {
+          spawned++;
+          child.stdout?.on("data", (c: Buffer) => output.push(c.toString()));
+          child.stderr?.on("data", (c: Buffer) => output.push(c.toString()));
+        },
+      });
+      try {
+        const cfg = config({
+          endpoint: s.endpoint,
+          headers: { Authorization: `Basic ${token}`, "X-Secret": secret },
+          paths: [record.path, "/v1/embeddings"],
+        });
+        const dest = dbDest.createLogExportDestination({
+          name: "failure-retry",
+          type: "otlp-http",
+          batchSize: 2,
+          config: secrets.encryptDestinationConfig("otlp-http", cfg),
+        });
+        const expected =
+          mode === "400"
+            ? "OTLP/HTTP permanent status 400 (1 attempt, 2 spans not acknowledged)"
+            : "OTLP/HTTP collector reported partial success (2 spans not acknowledged)";
+        const probe = await otlp.otlpHttpDestination.createClient(cfg).test();
+        assert.deepEqual(probe, { ok: false, detail: expected.replace("2 spans", "0 spans") });
+        const failed = await runner.runDestinationExport(dest);
+        const saved = dbDest.getLogExportDestination(dest.id)!;
+        assert.equal(spawned, 1, "must use the real child");
+        assert.equal(s.calls.length, 2, "one probe and one send; no in-run resend");
+        assert.equal(failed.success, false);
+        assert.equal(failed.error, expected);
+        assert.equal(saved.lastStatus, "failure");
+        assert.equal(saved.lastError, expected);
+        assert.equal(failed.cursorRowId, 0);
+        assert.equal(saved.cursorRowId, 0);
+        assert.equal(failed.pendingAfterRun, 2);
+        assert.equal(failed.exported, 0);
+        assert.ok(output.includes(`[LogExport] failure-retry failed: ${expected}`));
+        for (const surface of [
+          probe.detail!,
+          JSON.stringify(failed),
+          saved.lastError!,
+          output.join("\n"),
+        ]) {
+          for (const value of [
+            secret,
+            encoded,
+            password,
+            token,
+            "synthetic-user",
+            "synthetic-extra-header",
+          ]) {
+            for (const form of [
+              value,
+              JSON.stringify(value).slice(1, -1),
+              encodeURIComponent(value),
+              asciiJson(value),
+              asciiJson(value, true),
+            ])
+              assert.equal(surface.includes(form), false);
+          }
+        }
+        const expectedIds = spans(
+          otlp.buildOtlpPayload(
+            [
+              { ...record, id: "e2e-chat" },
+              { ...record, id: "e2e-embedding", path: "/v1/embeddings" },
+            ],
+            cfg
+          )
+        ).map((span) => span.spanId);
+        assert.deepEqual(
+          spans(JSON.parse(s.calls[1].body) as Payload).map((span) => span.spanId),
+          expectedIds
+        );
+        recovered = true;
+        const retried = await runner.runDestinationExport(saved);
+        const success = dbDest.getLogExportDestination(dest.id)!;
+        assert.equal(spawned, 2);
+        assert.equal(s.calls.length, 3);
+        assert.deepEqual(
+          spans(JSON.parse(s.calls[2].body) as Payload).map((span) => span.spanId),
+          expectedIds
+        );
+        assert.equal(retried.success, true, retried.error ?? "");
+        assert.equal(retried.exported, 2);
+        assert.equal(retried.pendingAfterRun, 0);
+        assert.equal(retried.cursorRowId, 2);
+        assert.equal(success.lastStatus, "success");
+        assert.equal(success.lastError, null);
+        assert.equal(success.cursorRowId, 2);
+      } finally {
+        console.error = original;
+        runner.__setLogExportChildOptionsForTest(null);
+        await s.close();
+      }
+    });
   }
 });
 

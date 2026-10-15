@@ -2,7 +2,6 @@ import { isUtf8 } from "node:buffer";
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
 import { version } from "../../../../package.json";
 import { parseAndValidateNonMetadataUrl } from "../../../shared/network/outboundUrlGuard";
 import { safeExportError } from "../safeExportError";
@@ -125,7 +124,7 @@ function secretForms(value: string): string[] {
   return [...new Set([value, JSON.stringify(value).slice(1, -1)])].filter(Boolean);
 }
 
-function headerSecretValues(config: OtlpHttpConfig, includeShortUsernames = true): string[] {
+function headerSecretValues(config: OtlpHttpConfig): string[] {
   const values = new Set<string>([config.headers, config.identitySalt ?? ""]);
   for (const [name, value] of Object.entries(parseOtlpHeaders(config.headers))) {
     values.add(value);
@@ -140,90 +139,13 @@ function headerSecretValues(config: OtlpHttpConfig, includeShortUsernames = true
           if (isUtf8(decodedBytes) && colon >= 0) {
             values.add(decoded);
             values.add(decoded.slice(colon + 1));
-            const username = decoded.slice(0, colon);
-            if (includeShortUsernames || username.length >= 4) values.add(username);
+            values.add(decoded.slice(0, colon));
           }
         }
       }
     }
   }
   return [...new Set([...values].flatMap(secretForms))].sort((a, b) => b.length - a.length);
-}
-
-type CollectorSecrets = {
-  redact: string[];
-  failClosed: string[];
-};
-
-function collectorSecrets(config: OtlpHttpConfig): CollectorSecrets {
-  return {
-    redact: headerSecretValues(config),
-    // Short usernames are still replaced in collector text, but their forms
-    // alone must not trigger whole-excerpt withholding (including our marker).
-    failClosed: headerSecretValues(config, false),
-  };
-}
-
-const RESPONSE_EXCERPT_WITHHELD = "[response excerpt withheld]";
-
-/** Decode one JSON layer; withhold any residual encoding before rendering/redaction. */
-function redactCollectorText(text: string, secrets: CollectorSecrets, truncated = false): string {
-  let decoded: unknown = text;
-  let parsed = false;
-  if (!truncated) {
-    try {
-      decoded = JSON.parse(text);
-      parsed = true;
-    } catch {
-      // Non-JSON/clipped responses are inspected as-is, never partially decoded.
-    }
-  }
-  const pending: unknown[] = [decoded];
-  const residualEncoding = /\\|%[0-9A-Fa-f]{2}|&#\d+;|&#x[0-9A-Fa-f]+;|&[A-Za-z][A-Za-z0-9]*;/;
-  while (pending.length) {
-    const value = pending.pop();
-    if (typeof value === "string") {
-      if (residualEncoding.test(value)) return RESPONSE_EXCERPT_WITHHELD;
-    } else if (value !== null && typeof value === "object") {
-      // Iterative traversal also handles JSON deeper than the native call stack.
-      for (const [key, leaf] of Object.entries(value)) {
-        if (residualEncoding.test(key)) return RESPONSE_EXCERPT_WITHHELD;
-        pending.push(leaf);
-      }
-    }
-  }
-  let rendered: string;
-  try {
-    rendered = parsed ? JSON.stringify(decoded) : text;
-  } catch {
-    // JSON.parse can accept depths that JSON.stringify cannot safely render.
-    return RESPONSE_EXCERPT_WITHHELD;
-  }
-  const matchSecrets = (value: string) => {
-    // Do not recursively redact our own marker, notably for one-letter usernames.
-    // The final containment scan still checks markers against non-exempt secrets.
-    for (const secret of secrets.redact) {
-      value = value
-        .split("[REDACTED]")
-        .map((part) => part.split(secret).join("[REDACTED]"))
-        .join("[REDACTED]");
-    }
-    return value;
-  };
-  let output = matchSecrets(rendered);
-  let stable = false;
-  for (let iteration = 0; iteration < 4; iteration++) {
-    const next = matchSecrets(sanitizeErrorMessage(output));
-    if (next === output) {
-      stable = true;
-      break;
-    }
-    output = next;
-  }
-  // Withhold before clipping, so clipping cannot hide a failed containment check.
-  if (!stable || secrets.failClosed.some((secret) => output.includes(secret)))
-    return RESPONSE_EXCERPT_WITHHELD;
-  return output.slice(0, 256);
 }
 
 function toSpan(row: LogExportRecord, config: OtlpHttpConfig): Span {
@@ -366,7 +288,7 @@ export function buildOtlpPayload(records: readonly LogExportRecord[], config: Ot
   );
 }
 
-/** Limit acknowledgement and error response reads as well as outbound request bodies. */
+/** Bound acknowledgement reads; non-2xx bodies are cancelled without reading text. */
 async function responseText(response: Response): Promise<{ text: string; truncated: boolean }> {
   const reader = response.body?.getReader();
   if (!reader) return { text: "", truncated: false };
@@ -405,7 +327,7 @@ const acknowledgementSchema = z.object({
 function acknowledgementFailure(
   text: string,
   truncated: boolean,
-  secrets: CollectorSecrets
+  spanCount: number
 ): string | null {
   if (truncated) return "OTLP/HTTP acknowledgement exceeds the response size limit";
   if (!text.trim()) return null;
@@ -414,12 +336,9 @@ function acknowledgementFailure(
     if (!result.success) return "OTLP/HTTP invalid acknowledgement";
     const rejected = BigInt(result.data.partialSuccess?.rejectedSpans ?? 0);
     if (rejected <= 0n) return null;
-    const redactedCount = redactCollectorText(String(rejected), secrets);
-    return redactedCount.includes("[REDACTED]") || redactedCount === RESPONSE_EXCERPT_WITHHELD
-      ? "OTLP/HTTP rejected spans (partial success)"
-      : `OTLP/HTTP rejected ${redactedCount} spans (partial success)`;
+    return `OTLP/HTTP collector reported partial success (${spanCount} spans not acknowledged)`;
   } catch {
-    return "OTLP/HTTP invalid JSON acknowledgement";
+    return "OTLP/HTTP invalid acknowledgement";
   }
 }
 
@@ -429,8 +348,7 @@ function createClient(config: OtlpHttpConfig) {
   headers.set("Content-Type", "application/json");
   if (config.langfuseMapping) headers.set("x-langfuse-ingestion-version", "4");
   else headers.delete("x-langfuse-ingestion-version");
-  const collectorSecretValues = collectorSecrets(config);
-  async function post(body: string): Promise<number> {
+  async function post(body: string, spanCount: number): Promise<number> {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let retryMs = 250 * 2 ** attempt;
       let failure: Error;
@@ -444,12 +362,12 @@ function createClient(config: OtlpHttpConfig) {
           signal,
           redirect: "manual",
         });
-        const responseBody = await responseText(response);
         if (response.ok) {
+          const responseBody = await responseText(response);
           const rejected = acknowledgementFailure(
             responseBody.text,
             responseBody.truncated,
-            collectorSecretValues
+            spanCount
           );
           if (!rejected) return response.status;
           retryable = false;
@@ -465,13 +383,14 @@ function createClient(config: OtlpHttpConfig) {
             if (Number.isFinite(parsed))
               retryMs = Math.min(RETRY_AFTER_CAP_MS, Math.max(retryMs, parsed));
           }
-          const excerpt = redactCollectorText(
-            responseBody.text,
-            collectorSecretValues,
-            responseBody.truncated
-          );
+          // Discard collector text without decoding or copying it into any error surface.
+          try {
+            await response.body?.cancel();
+          } catch {
+            // Best-effort cleanup: a closed/aborted body cannot change the HTTP failure.
+          }
           failure = new Error(
-            `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${redactCollectorText(String(response.status), collectorSecretValues)}${excerpt ? ": " + excerpt : ""}`
+            `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${response.status} (${attempt + 1} ${attempt === 0 ? "attempt" : "attempts"}, ${spanCount} spans not acknowledged)`
           );
         }
       } catch {
@@ -488,14 +407,13 @@ function createClient(config: OtlpHttpConfig) {
   return {
     async test() {
       try {
-        const status = await post('{"resourceSpans":[]}');
+        const status = await post('{"resourceSpans":[]}', 0);
         return {
           ok: true,
-          detail: `OTLP/HTTP status ${redactCollectorText(String(status), collectorSecretValues)}`,
+          detail: `OTLP/HTTP status ${status}`,
         };
       } catch (error) {
-        // post() already redacts remote text. Decoded header parts must not
-        // redact our generated wording (e.g. a Basic username of "a").
+        // post() emits only exporter-owned messages, never collector response text.
         return { ok: false, detail: safeExportError(error) };
       }
     },
@@ -505,7 +423,7 @@ function createClient(config: OtlpHttpConfig) {
       const envelopeBytes = Buffer.byteLength(JSON.stringify(envelope([], config)));
       let bytes = envelopeBytes;
       const flush = async () => {
-        if (chunk.length) await post(JSON.stringify(envelope(chunk, config)));
+        if (chunk.length) await post(JSON.stringify(envelope(chunk, config)), chunk.length);
         chunk = [];
         bytes = envelopeBytes;
       };
