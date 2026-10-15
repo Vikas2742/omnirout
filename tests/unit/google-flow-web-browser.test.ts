@@ -35,6 +35,8 @@ function fake(
     family?: string;
     width?: number;
     echo?: string;
+    agentCount?: number;
+    decoratedRadio?: boolean;
   } = {}
 ) {
   const events: string[] = [];
@@ -59,14 +61,16 @@ function fake(
               ? "Agent"
               : hasText.source.replace(/[^a-zA-Z0-9:.-]/g, "")
         ),
-      getByRole: (_role: string, opts: { name: string | RegExp }) =>
+      getByRole: (_role: string, opts: { name: string | RegExp; exact?: boolean }) =>
         locator(
-          typeof opts.name === "string"
-            ? opts.name
-            : opts.name.source.replace(/[^a-zA-Z0-9:.-]/g, "")
+          options.decoratedRadio && opts.exact
+            ? "missing-radio"
+            : typeof opts.name === "string"
+              ? opts.name
+              : opts.name.source.replace(/[^a-zA-Z0-9:.-]/g, "")
         ),
       locator: (selector: string) => locator(selector),
-      count: async () => 1,
+      count: async () => (name === "Agent" ? (options.agentCount ?? 1) : 1),
       nth: () => locator(name),
       isVisible: async () => true,
       boundingBox: async () => ({ width: 600, height: 100 }),
@@ -83,6 +87,8 @@ function fake(
       },
       evaluate: async () => text,
       click: async () => {
+        if (name === "missing-radio")
+          throw new Error("Radio accessible name includes a material icon");
         if (name.includes("arrow_forward")) {
           options.beforeClick?.();
           assert.equal(waitRegistered, true, "waitForResponse before click");
@@ -226,6 +232,16 @@ test("UI readback, exact prompt, foreground and one send; close only owned page"
   ])
     assert.ok(f.events.includes(event), event);
   assert.ok(f.events.indexOf("wait") < f.events.indexOf("send"));
+});
+test("Agent readback uses Playwright auto-wait rather than an immediate DOM count", async () => {
+  const f = await setup({ agentCount: 0 });
+  assert.equal((await f.bridge.generate(request, config)).length, 2);
+  assert.equal(f.counts().clicks, 1);
+});
+test("Flow radio labels may include material icons around their text", async () => {
+  const f = await setup({ decoratedRadio: true });
+  assert.equal((await f.bridge.generate(request, config)).length, 2);
+  assert.equal(f.counts().clicks, 1);
 });
 for (const [name, options, message] of [
   ["Agent true", { agent: "true" }, /Agent/],

@@ -6,7 +6,7 @@ const fail = (message: string): never => {
   throw new GoogleFlowWebError("ui_changed", message);
 };
 async function radio(page: Page, text: string) {
-  const option = page.locator(".cdk-overlay-pane").getByRole("radio", { name: text, exact: true });
+  const option = page.locator(".cdk-overlay-pane").getByRole("radio", { name: text });
   await option.click();
   if ((await option.getAttribute("aria-checked")) !== "true")
     fail("Flow UI setting did not stick; inspect the settings in the browser.");
@@ -25,7 +25,8 @@ export async function configureGoogleFlowPage(
   check: () => void
 ) {
   const agent = page.locator("button").filter({ hasText: /^\s*Agent\s*$/ });
-  if ((await agent.count()) !== 1 || (await agent.getAttribute("aria-pressed")) !== "false")
+  // Attribute read auto-waits for Angular to mount; count() would fail immediately during navigation.
+  if ((await agent.getAttribute("aria-pressed")) !== "false")
     throw new GoogleFlowWebError(
       "agent_mode",
       "Flow Agent mode must be off (direct image mode); operator must switch it in the browser."
@@ -52,7 +53,7 @@ export async function configureGoogleFlowPage(
     if (
       (await page
         .locator(".cdk-overlay-pane")
-        .getByRole("radio", { name: label, exact: true })
+        .getByRole("radio", { name: label })
         .getAttribute("aria-checked")) !== "true"
     )
       fail("Flow UI setting did not stick; inspect the browser.");
