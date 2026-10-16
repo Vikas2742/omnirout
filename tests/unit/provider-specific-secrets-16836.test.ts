@@ -95,3 +95,23 @@ test("#16836 all existing audit-redacted console secrets are encrypted", () => {
     workspaceId: "ws-visible",
   });
 });
+
+test("#16836 invalid nested ciphertext sets the existing credential recovery flag", () => {
+  const row = encryptConnectionFields({
+    id: "conn-stale-nested",
+    provider: "agentrouter",
+    providerSpecificData: { consoleApiKey: "stale-console-secret", workspaceId: "public" },
+  });
+  const metadata = row.providerSpecificData as Record<string, string>;
+  const encrypted = metadata.consoleApiKey;
+  assert.equal(looksEncrypted(encrypted), true);
+  metadata.consoleApiKey = encrypted.slice(0, -1) + (encrypted.endsWith("0") ? "1" : "0");
+  const restored = decryptConnectionFields(row);
+  assert.equal(restored.credentialDecryptFailed, true);
+  assert.equal(
+    (restored.providerSpecificData as Record<string, unknown>).consoleApiKey,
+    null,
+    "corrupt ciphertext must not be forwarded to quota or provider APIs"
+  );
+  assert.equal((restored.providerSpecificData as Record<string, unknown>).workspaceId, "public");
+});
