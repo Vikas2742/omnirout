@@ -103,11 +103,18 @@ async function settingsSentinel(): Promise<unknown> {
   return ((await getSettings()) as Record<string, unknown>)[SETTINGS_SENTINEL_KEY];
 }
 
-function assertLiveDbUntouched(before: string) {
+/**
+ * The live database was not replaced: its sentinel row is still there and the candidate's
+ * marker row is not. `before` adds byte-for-byte equality of the file — only meaningful for
+ * calls that carry no API key or access token, because validating one stamps `last_used_at`.
+ */
+function assertLiveDbUntouched(before?: string) {
   const names = apiKeyNames();
   assert.ok(names.includes(LIVE_SENTINEL), "the live database must keep its rows");
   assert.ok(!names.includes(CANDIDATE_MARKER), "the candidate rows must not be loaded");
-  assert.equal(liveDbHash(), before, "live database file must be byte-for-byte unchanged");
+  if (before !== undefined) {
+    assert.equal(liveDbHash(), before, "live database file must be byte-for-byte unchanged");
+  }
 }
 
 const LOCAL_CLI_STAMP = {
@@ -145,7 +152,7 @@ type Endpoint = {
   route: PostRoute;
   /** A request that WOULD mutate the live data if the guard let it through. */
   destructive: (headers: Record<string, string>) => Request;
-  assertUntouched: (snapshot: { dbHash: string; setting: unknown }) => void | Promise<void>;
+  assertUntouched: (snapshot: { dbHash?: string; setting: unknown }) => void | Promise<void>;
 };
 
 const ENDPOINTS: Endpoint[] = [
@@ -171,10 +178,21 @@ const ENDPOINTS: Endpoint[] = [
   },
 ];
 
-const MACHINE_CREDENTIALS: Array<{ label: string; secret: () => string }> = [
-  { label: "a manage-scoped API key", secret: () => manageKey.key },
-  { label: "an inference-only API key (no manage scope)", secret: () => inferenceKey.key },
-  { label: "an admin oma_ access token", secret: () => adminAccessToken.secret },
+// Credentials that pass management auth (manage key, admin oma_ token) are refused by the
+// operator guard with its own message; an inference-only key never gets that far — the
+// management guard refuses it first ("lacks 'manage' scope"). Both are 403.
+const MACHINE_CREDENTIALS: Array<{ label: string; secret: () => string; refusal: RegExp }> = [
+  { label: "a manage-scoped API key", secret: () => manageKey.key, refusal: /dashboard session/i },
+  {
+    label: "an inference-only API key (no manage scope)",
+    secret: () => inferenceKey.key,
+    refusal: /manage/i,
+  },
+  {
+    label: "an admin oma_ access token",
+    secret: () => adminAccessToken.secret,
+    refusal: /dashboard session/i,
+  },
 ];
 
 // ─── Machine credentials: refused, nothing mutated (runs before any real restore) ───
@@ -182,7 +200,8 @@ const MACHINE_CREDENTIALS: Array<{ label: string; secret: () => string }> = [
 for (const endpoint of ENDPOINTS) {
   for (const credential of MACHINE_CREDENTIALS) {
     test(`${endpoint.name}: ${credential.label} is refused with 403 and changes nothing`, async () => {
-      const snapshot = { dbHash: liveDbHash(), setting: await settingsSentinel() };
+      // No byte hash here: validating the credential itself stamps `last_used_at`.
+      const snapshot = { setting: await settingsSentinel() };
       assert.ok(apiKeyNames().includes(LIVE_SENTINEL), "precondition: live sentinel present");
 
       const response = await endpoint.route.POST(
@@ -191,7 +210,7 @@ for (const endpoint of ENDPOINTS) {
       const body = await response.json();
 
       assert.equal(response.status, 403, JSON.stringify(body));
-      assert.match(JSON.stringify(body), /dashboard session/i);
+      assert.match(JSON.stringify(body), credential.refusal);
       assert.ok(
         !JSON.stringify(body).includes(credential.secret()),
         "403 body must not echo the credential"
@@ -213,14 +232,13 @@ for (const endpoint of ENDPOINTS) {
 }
 
 test("POST /api/db-backups/import?dryRun=true: a manage key is refused with 403 too", async () => {
-  const before = liveDbHash();
   const response = await importRoute.POST(
     importRequest({ authorization: `Bearer ${manageKey.key}` }, true)
   );
   const body = await response.json();
   assert.equal(response.status, 403, JSON.stringify(body));
   assert.notEqual(body.dryRun, true, "a refused dry run must not report a validation result");
-  assertLiveDbUntouched(before);
+  assertLiveDbUntouched();
 });
 
 // ─── Operator credentials: allowed (dry-run import first — it mutates nothing) ───
