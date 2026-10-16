@@ -13638,39 +13638,89 @@ paths:
       tags:
         - V1 Registered-keys
       summary: "GET registered keys"
+      description: >
+        Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an
+        API key with `manage`/`admin` scope. Inference-only API keys get 403.
+      security:
+        - BearerAuth: []
+        - ManagementSessionAuth: []
       responses:
         "200":
           description: OK
+        "401":
+          $ref: "#/components/responses/ManagementAuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/ManagementInvalidToken"
     post:
       tags:
         - V1 Registered-keys
       summary: "POST registered keys"
+      description: >
+        Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an
+        API key with `manage`/`admin` scope. Inference-only API keys get 403.
+      security:
+        - BearerAuth: []
+        - ManagementSessionAuth: []
       responses:
         "200":
           description: OK
+        "401":
+          $ref: "#/components/responses/ManagementAuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/ManagementInvalidToken"
   /api/v1/registered-keys/{id}:
     delete:
       tags:
         - V1 Registered-keys
       summary: "DELETE registered keys › <id>"
+      description: >
+        Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an
+        API key with `manage`/`admin` scope. Inference-only API keys get 403.
+      security:
+        - BearerAuth: []
+        - ManagementSessionAuth: []
       responses:
         "200":
           description: OK
+        "401":
+          $ref: "#/components/responses/ManagementAuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/ManagementInvalidToken"
     get:
       tags:
         - V1 Registered-keys
       summary: "GET registered keys › <id>"
+      description: >
+        Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an
+        API key with `manage`/`admin` scope. Inference-only API keys get 403.
+      security:
+        - BearerAuth: []
+        - ManagementSessionAuth: []
       responses:
         "200":
           description: OK
+        "401":
+          $ref: "#/components/responses/ManagementAuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/ManagementInvalidToken"
   /api/v1/registered-keys/{id}/revoke:
     post:
       tags:
         - V1 Registered-keys
       summary: "POST registered keys › <id> › revoke"
+      description: >
+        Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an
+        API key with `manage`/`admin` scope. Inference-only API keys get 403.
+      security:
+        - BearerAuth: []
+        - ManagementSessionAuth: []
       responses:
         "200":
           description: OK
+        "401":
+          $ref: "#/components/responses/ManagementAuthenticationRequired"
+        "403":
+          $ref: "#/components/responses/ManagementInvalidToken"
   /api/v1/relay/chat/completions:
     post:
       tags:
