@@ -1,7 +1,4 @@
-import {
-  extractRequestToolMetadata,
-  resolveResponseToolNameMap,
-} from "./chatCore/requestToolIdentity.ts";
+import { finalizeTranslatedRequest } from "./chatCore/translatedRequestFinalize.ts";
 import {
   injectMemoryAndSkills,
   mergeInjectedFallbackOwnerNames,
@@ -11,7 +8,6 @@ import {
   normalizeOpenAICompatibleTools,
   shouldNormalizeFunctionToolsOnly,
 } from "./chatCore/openAICompatibleTools.ts";
-import { normalizeToolSchemasForProvider } from "./chatCore/openrouterToolSchemas.ts";
 import {
   buildFailureUsageRecord,
   readCpaAuthIndex,
@@ -95,7 +91,6 @@ import { resolveChatCoreRequestFormat } from "./chatCore/requestFormat.ts";
 import { resolveChatCoreTargetFormat } from "./chatCore/targetFormat.ts";
 import { resolveOmniGlyphTransport } from "../services/compression/imageTransportPolicy.ts";
 import { stripStore, usesClaudeBridge } from "./chatCore/agentRouterProtocol.ts";
-import { normalizeClaudeToolsForDispatch } from "./chatCore/claudeToolDefaults.ts";
 import { injectSystemPromptPreTranslation } from "../services/systemPrompt.ts";
 import { applyCustomSystemPrompt } from "./chatCore/customSystemPrompt.ts";
 import { applyProviderSystemTransforms } from "../services/systemTransforms.ts";
@@ -104,7 +99,6 @@ import { applyReasoningRuleDirective } from "@/lib/reasoningRouting/policy";
 import { withReasoningRuleContext } from "../utils/reasoningRuleContext.ts";
 import { FORMATS } from "../translator/formats.ts";
 import { collectCustomToolNamesForSourceFormat } from "../translator/request/openai-responses/additionalTools.ts";
-import { sanitizeKiroTools } from "../utils/kiroSanitizer.ts";
 import { THINKING_MARKER_HEADER } from "../utils/thinkCloseMarker.ts";
 import { resolveAgentGoalPolicy } from "../utils/agentGoalPolicy.ts";
 import { createStreamController } from "../utils/streamHandler.ts";
@@ -114,7 +108,6 @@ import { refreshWithRetry, runWithOnPersist, runWithCasGuard } from "../services
 import { createRequestLogger } from "../utils/requestLogger.ts";
 import { createPreparedRequestLogger } from "../utils/providerRequestLogging.ts";
 import { summarizeToolSources } from "../utils/toolSources.ts";
-import { applyResponsesPreviousResponseIdPolicy } from "../utils/responsesStatePolicy.ts";
 import { applyClaudeEffortVariant } from "./chatCore/claudeEffortVariant.ts";
 import {
   getStripTypesForProviderModel,
@@ -210,7 +203,6 @@ import {
 import { recordChatCallCost, buildCostCtx } from "@/domain/costRules";
 import { attachOmniRouteMetaToResponse as attachRouteMeta } from "@/domain/omnirouteResponseMeta";
 import { calculateCost } from "@/lib/usage/costCalculator";
-import { buildClaudePassthroughToolNameMap } from "./chatCore/passthroughToolNames.ts";
 import {
   createDisabledCompressionConfig,
   resolveCompressionSettings,
@@ -2392,119 +2384,24 @@ async function handleChatCoreInner({
 
   trace("post_translation");
 
-  // Keep the request translator's namespace identities separate from toolNameMap:
-  // the latter is a Kiro/Claude passthrough alias channel with string values,
-  // while namespace identities carry `{namespace, name}` for the #7936 response
-  // seam. Capture both before stripping their side channels: a Responses ->
-  // Gemini/Antigravity pivot carries both maps, not one recoverable ledger.
-  const { requestToolIdentityMap, toolNameAliasMap } = extractRequestToolMetadata(translatedBody);
-
-  // OpenRouter (→ Cohere) 400s the whole request on a malformed `pattern`
-  // regex in any tool schema; drop only those constraints before dispatch.
-  if (Array.isArray(translatedBody?.tools)) {
-    translatedBody.tools = normalizeToolSchemasForProvider(provider, translatedBody.tools, log);
-  }
-
-  // Kiro: sanitize tool schemas before dispatch. Kiro returns 400 "Improperly
-  // formed request" for unsupported JSON-Schema keywords (anyOf/$ref/if-then,
-  // etc.) and tool names >64 chars. Strip those keys and hash-truncate long
-  // names; merge the truncated→original nameMap into the existing
-  // `_toolNameMap` so kiro-to-openai maps streamed tool-call names back (#1375).
-  if (targetFormat === FORMATS.KIRO) {
-    const kiroTools =
-      translatedBody?.conversationState?.currentMessage?.userInputMessage?.userInputMessageContext
-        ?.tools;
-    if (kiroTools) {
-      const { tools: sanitizedKiroTools, nameMap: kiroNameMap } = sanitizeKiroTools(kiroTools);
-      translatedBody.conversationState.currentMessage.userInputMessage.userInputMessageContext.tools =
-        sanitizedKiroTools;
-      if (kiroNameMap.size > 0) {
-        const existing =
-          translatedBody._toolNameMap instanceof Map
-            ? translatedBody._toolNameMap
-            : new Map<string, string>();
-        kiroNameMap.forEach((original, truncated) => existing.set(truncated, original));
-        translatedBody._toolNameMap = existing;
-      }
-    }
-  }
-
-  // Claude: strict Anthropic-compatible gateways (e.g. MiniMax) reject tool
-  // definitions that omit the required `type` discriminator with HTTP 400. Default
-  // a missing `type` to "custom" before dispatch, mirroring Anthropic's own
-  // inference, so legacy Claude-format tool payloads survive strict gateways (#2195).
-  // AgentRouter is the opposite quirk: its Rust deserializer only accepts versioned
-  // tool types and 400s on `type: "custom"` — there the discriminator is stripped
-  // instead (see claudeToolDefaults.ts).
-  if (targetFormat === FORMATS.CLAUDE && Array.isArray(translatedBody.tools)) {
-    translatedBody.tools = normalizeClaudeToolsForDispatch(
-      translatedBody.tools,
-      provider
-    ) as typeof translatedBody.tools;
-  }
-
-  // Extract toolNameMap for response translation (Claude OAuth)
-  const translatedToolNameMap = translatedBody._toolNameMap ?? toolNameAliasMap;
-  const nativeClaudeToolNameMap = isClaudePassthrough
-    ? buildClaudePassthroughToolNameMap(body)
-    : null;
-  // A later provider-specific ledger (Kiro above) wins; otherwise use the
-  // alias map captured before extraction. Namespace identities are distinct
-  // from aliases and cannot restore sanitized Gemini names on their own.
-  const toolNameMap = resolveResponseToolNameMap(
-    translatedToolNameMap,
-    nativeClaudeToolNameMap,
-    requestToolIdentityMap
-  );
-  delete translatedBody._toolNameMap;
-  delete translatedBody._disableToolPrefix;
-
-  // Update model in body — use resolved alias so the provider gets the correct model ID (#472)
-  // Strip provider/alias prefix if it exactly matches the routing prefix so upstream receives the raw model name (#1261)
-  let finalModelToUpstream = effectiveModel;
-  // Defense-in-depth: only string-strip when effectiveModel is actually a string.
-  // The API guards `model` via Zod (z.string()), but internal callers could pass a
-  // non-string and a bare `.startsWith` would crash with `startsWith is not a
-  // function` (same class as #2359 / #2463). Mirrors 9router's `?.startsWith?.()`.
-  if (typeof finalModelToUpstream === "string") {
-    if (finalModelToUpstream.startsWith(`${provider}/`)) {
-      finalModelToUpstream = finalModelToUpstream.slice(provider.length + 1);
-    } else if (alias && finalModelToUpstream.startsWith(`${alias}/`)) {
-      finalModelToUpstream = finalModelToUpstream.slice(alias.length + 1);
-    }
-  }
-  translatedBody.model = finalModelToUpstream;
-
-  const previousResponseIdPolicy = applyResponsesPreviousResponseIdPolicy(translatedBody, {
-    mode: settings.responsesPreviousResponseIdMode,
+  // Request tool metadata, Kiro/Claude tool dispatch fixes, the response tool-name map, the
+  // upstream model id, the previous_response_id policy and the Codex effort guard: extracted to
+  // chatCore/translatedRequestFinalize.ts (chatCore slice 2).
+  const finalizedRequest = finalizeTranslatedRequest({
+    translatedBody,
+    body,
     provider,
+    alias,
+    effectiveModel,
     sourceFormat,
     targetFormat,
+    isClaudePassthrough,
     credentials,
+    previousResponseIdMode: settings.responsesPreviousResponseIdMode,
+    log,
   });
-  translatedBody = previousResponseIdPolicy.body as typeof translatedBody;
-
-  // #1789: Prevent output_config.effort from overriding effort encoded in model name (Codex)
-  if (provider === "codex" || provider?.startsWith("codex")) {
-    const hasEffortSuffix = finalModelToUpstream.match(/-(low|medium|high|xhigh)$/i);
-    if (
-      hasEffortSuffix &&
-      translatedBody.output_config &&
-      typeof translatedBody.output_config === "object"
-    ) {
-      const oc = translatedBody.output_config as Record<string, unknown>;
-      if (oc.effort) {
-        log?.warn?.(
-          "PARAMS",
-          `Stripped output_config.effort="${oc.effort}" because model "${finalModelToUpstream}" already encodes effort`
-        );
-        delete oc.effort;
-        if (Object.keys(oc).length === 0) {
-          delete translatedBody.output_config;
-        }
-      }
-    }
-  }
+  translatedBody = finalizedRequest.translatedBody;
+  const { requestToolIdentityMap, toolNameMap } = finalizedRequest;
 
   // Strip unsupported parameters for reasoning models (o1, o3, etc.) and any
   // provider that can't accept them at all (e.g. AI Horde's raw completion
