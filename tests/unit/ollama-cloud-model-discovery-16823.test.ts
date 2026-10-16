@@ -30,12 +30,23 @@ test("Ollama Cloud tag response produces callable model ids", () => {
 
 test("Ollama Cloud discovery also accepts id-based catalogs and ignores invalid rows", () => {
   const models = config.parseResponse({
-    data: [{ id: "glm-5.1" }, { model: "kimi-k2.6" }, null, {}, { id: "   " }],
+    data: [
+      { id: "glm-5.1" },
+      { model: "kimi-k2.6" },
+      { id: "   ", model: "model-fallback:latest", name: "Fallback" },
+      { id: 123, model: "other-fallback:latest" },
+      { id: " trimmed-id:latest ", name: " Visible model " },
+      null,
+      {},
+      { id: "   " },
+    ],
   });
   assert.deepEqual(
     models.map((model: { id: string }) => model.id),
-    ["glm-5.1", "kimi-k2.6"]
+    ["glm-5.1", "kimi-k2.6", "model-fallback:latest", "other-fallback:latest", "trimmed-id:latest"]
   );
+  assert.equal(models[2].name, "Fallback");
+  assert.equal(models[4].name, "Visible model");
   assert.deepEqual(config.parseResponse({ models: null }), []);
   assert.deepEqual(config.parseResponse({}), []);
 });
