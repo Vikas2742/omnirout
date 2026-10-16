@@ -216,23 +216,29 @@ export function toCfMessages(
  * no image-upload frame. Do not silently strip a client's image or launch a
  * browser for a request the bridge cannot fulfill (#16460).
  */
+function isUnsupportedCfImagePart(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const part = value as Record<string, unknown>;
+  return (
+    part.type === "image_url" ||
+    part.type === "input_image" ||
+    part.type === "image" ||
+    Object.hasOwn(part, "image_url")
+  );
+}
+
 export function hasUnsupportedCfImageParts(messages: unknown): boolean {
-  if (!Array.isArray(messages)) return false;
-  return messages.some((message: unknown) => {
-    if (!message || typeof message !== "object") return false;
+  // Chat Completions sends an array of role messages. Responses may supply
+  // one message object or direct input_image parts. Reject them all before
+  // allocating a browser, rather than silently sending text-only content.
+  const items = Array.isArray(messages) ? messages : [messages];
+  return items.some((message: unknown) => {
+    if (isUnsupportedCfImagePart(message)) return true;
+    if (!message || typeof message !== "object" || Array.isArray(message)) return false;
     const record = message as Record<string, unknown>;
     if (Array.isArray(record.images) && record.images.length > 0) return true;
-    if (!Array.isArray(record.content)) return false;
-    return record.content.some((part: unknown) => {
-      if (!part || typeof part !== "object") return false;
-      const item = part as Record<string, unknown>;
-      return (
-        item.type === "image_url" ||
-        item.type === "input_image" ||
-        item.type === "image" ||
-        Object.hasOwn(item, "image_url")
-      );
-    });
+    if (Array.isArray(record.content)) return record.content.some(isUnsupportedCfImagePart);
+    return isUnsupportedCfImagePart(record.content);
   });
 }
 
