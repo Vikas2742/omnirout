@@ -41,7 +41,7 @@ case "$1 $2" in
   "pr checks") cat "$dir/checks-$3.json"; exit 1 ;;
   "pr diff") cat "$dir/diff-$3.txt" ;;
   "issue view") cat "$dir/issue-$3.json" ;;
-  "api") job=$(printf '%s' "$2" | sed -E 's#.*/jobs/([0-9]+)/logs#\\1#')
+  "api "*) job=$(printf '%s' "$2" | sed -E 's#.*/jobs/([0-9]+)/logs#\\1#')
     if [ -f "$dir/fail-$job" ]; then
       left=$(cat "$dir/fail-$job")
       if [ "$left" -gt 0 ]; then
@@ -94,7 +94,10 @@ function makeSandbox() {
   );
   writeFileSync(
     join(stub, "job-9002.log"),
-    log(["✖ tests/unit/beta.test.ts (50ms)", "src/lib/db/core.ts(10,5): error TS2345: boom"])
+    log([
+      "✖ tests/unit/beta.test.ts (50ms)",
+      "##[error]src/lib/db/core.ts(10,5): error TS2345: boom",
+    ])
   );
   writeFileSync(join(stub, "fail-9002"), "2");
   writeFileSync(join(stub, "diff-101.txt"), "src/lib/db/core.ts\ntests/unit/beta.test.ts\n");
@@ -110,11 +113,12 @@ function makeSandbox() {
   );
   writeFileSync(join(stub, "diff-200.txt"), "");
 
-  // Base-red issue 15306 lists the same reds across its body and a comment.
+  // Base-red issue 15306 lists the same reds across its body and a comment, in the
+  // Release-Green wording ("❌ <gate>: <line>") and as plain markdown bullets.
   writeFileSync(
     join(stub, "issue-15306.json"),
     JSON.stringify({
-      body: "Reds on the tip:\n```\n✖ tests/unit/alpha.test.ts (77ms)\n```",
+      body: "Reds on the tip:\n  ❌ Unit tests (full suite): ✖ tests/unit/alpha.test.ts (77ms)",
       comments: [
         {
           body: "Still red:\n- 2 gate(s) failed\n- [file-size] ✗ open-sse/handlers/big.ts: 1500 > cap 1440",
@@ -173,6 +177,7 @@ test("classifies own / inherited / unknown against a reference PR and exits 1 on
   assert.doesNotMatch(r.stdout, /all good/);
   assert.doesNotMatch(r.stdout, /\(\d+(\.\d+)?ms\)/, "durations are normalized away");
   assert.doesNotMatch(r.stdout, /\u001b\[/, "ANSI colour codes are stripped");
+  assert.doesNotMatch(r.stdout, /##\[error\]/, "annotation prefixes are stripped");
   assert.match(r.stdout, /pending.*API Route Typecheck/i, "running checks are called out");
   assert.match(r.stdout, /^ci-discriminate: own=3 inherited=2 unknown=2$/m);
 
