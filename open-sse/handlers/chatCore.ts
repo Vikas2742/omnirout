@@ -213,6 +213,7 @@ import {
   isBuiltinStackedPipeline,
   type RuntimeCompressionCombo,
 } from "./chatCore/compressionComboPredicates.ts";
+import { mergeCompressionComboIntoConfig } from "./chatCore/compressionComboConfig.ts";
 import { emitOutputStyleTelemetry } from "./chatCore/outputStyleTelemetry.ts";
 import {
   writeCompressionAnalytics,
@@ -1295,61 +1296,18 @@ async function handleChatCoreInner({
       }
       let compressionComboKey = comboName ?? null;
       let compressionComboApplied = false;
+      // Combo → config merge extracted to chatCore/compressionComboConfig.ts (chatCore slice 2).
       const applyCompressionComboConfig = (
         compressionCombo: RuntimeCompressionCombo | null,
         routingOverrideIds: string[] = []
       ): boolean => {
-        if (!compressionCombo || compressionCombo.pipeline.length === 0) return false;
-        const comboLanguagePacks = [
-          ...new Set(
-            compressionCombo.languagePacks
-              .map((pack) => pack.trim())
-              .filter((pack) => pack.length > 0)
-          ),
-        ];
-        const comboOutputIntensity = (
-          ["lite", "full", "ultra"].includes(compressionCombo.outputModeIntensity)
-            ? compressionCombo.outputModeIntensity
-            : (config.cavemanOutputMode?.intensity ?? "full")
-        ) as "lite" | "full" | "ultra";
-        const comboDefaultLanguage =
-          comboLanguagePacks.find((pack) => pack === config.languageConfig?.defaultLanguage) ??
-          comboLanguagePacks[0] ??
-          config.languageConfig?.defaultLanguage ??
-          "en";
-        const comboOverrides = { ...(config.comboOverrides ?? {}) };
-        for (const id of routingOverrideIds) {
-          if (id) comboOverrides[id] = "stacked";
-        }
-        config = {
-          ...config,
-          compressionComboId: compressionCombo.id,
-          stackedPipeline: compressionCombo.pipeline,
-          languageConfig: {
-            ...(config.languageConfig ?? {
-              enabled: false,
-              defaultLanguage: "en",
-              autoDetect: true,
-              enabledPacks: ["en"],
-            }),
-            enabled: true,
-            defaultLanguage: comboDefaultLanguage,
-            enabledPacks:
-              comboLanguagePacks.length > 0
-                ? comboLanguagePacks
-                : (config.languageConfig?.enabledPacks ?? ["en"]),
-          },
-          cavemanOutputMode: {
-            ...(config.cavemanOutputMode ?? {
-              enabled: false,
-              intensity: "full",
-              autoClarity: true,
-            }),
-            enabled: compressionCombo.outputMode,
-            intensity: comboOutputIntensity,
-          },
-          comboOverrides,
-        };
+        const mergedConfig = mergeCompressionComboIntoConfig(
+          config,
+          compressionCombo,
+          routingOverrideIds
+        );
+        if (!mergedConfig) return false;
+        config = mergedConfig;
         compressionComboApplied = true;
         return true;
       };
