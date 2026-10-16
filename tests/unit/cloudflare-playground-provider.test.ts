@@ -24,6 +24,7 @@ import {
   hasUnsupportedCfImageParts,
   classifyCfBrowserStartFailure,
   type CfTransport,
+  type CfTransportStartResult,
 } from "../../open-sse/executors/cloudflare-playground.ts";
 
 const CHAT_ID = "chatcmpl-cfp-test123";
@@ -85,13 +86,15 @@ const buildRateLimitFrame = (chatId: string) =>
     type: "cf_agent_use_chat_response",
   });
 
+type CfTransportFailure = Omit<Extract<CfTransportStartResult, { ok: false }>, "ok">;
+
 class FakeTransport implements CfTransport {
   constructor(
     private framesList: string[],
-    private fail: { status: number; message: string } | null = null
+    private fail: CfTransportFailure | null = null
   ) {}
 
-  async start(): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+  async start(): Promise<CfTransportStartResult> {
     return this.fail ? { ok: false, ...this.fail } : { ok: true };
   }
 
@@ -104,7 +107,7 @@ class FakeTransport implements CfTransport {
 
 function makeExecutor(
   buildFrames: (chatId: string) => string[],
-  fail?: { status: number; message: string }
+  fail?: CfTransportFailure
 ) {
   return new CloudflarePlaygroundExecutor((chatId) => new FakeTransport(buildFrames(chatId), fail));
 }
@@ -341,6 +344,30 @@ test("#16460 image request returns a clear 400 before creating a Playwright tran
   assert.equal(created, 0, "no browser transport should start for unsupported vision");
   const response = JSON.parse(await result.response.text()) as { error: { message: string } };
   assert.match(response.error.message, /text-only|images? not supported/i);
+});
+
+test("#16460 browser dependency errors must not poison the provider circuit breaker", async () => {
+  const hostFailure = classifyCfBrowserStartFailure(
+    new Error("Playwright is not available. Run npx playwright install chromium.")
+  );
+  assert.equal(hostFailure.status, 503);
+  assert.equal(hostFailure.fallbackHint, "connection_cooldown");
+  const body = {
+    model: "zai-org/glm-4.7-flash",
+    messages: [{ role: "user", content: "hello" }],
+  };
+  const local = await makeExecutor(buildSuccessFrames, hostFailure).execute(
+    executeArgs(body, false)
+  );
+  assert.equal(local.response.status, 503);
+  assert.equal(local.response.headers.get("X-Omni-Fallback-Hint"), "connection_cooldown");
+
+  const remote = await makeExecutor(buildSuccessFrames, {
+    status: 502,
+    message: "Cloudflare Playground navigation failed",
+  }).execute(executeArgs(body, false));
+  assert.equal(remote.response.status, 502);
+  assert.equal(remote.response.headers.get("X-Omni-Fallback-Hint"), null);
 });
 
 // ── Executor behavior (fake transport, real frames) ─────────────────────────
