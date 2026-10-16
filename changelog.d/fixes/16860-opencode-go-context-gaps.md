@@ -1,1 +1,1 @@
-- **fix(providers):** Fill missing OpenCode Go model context metadata for `deepseek-flash` (1M tokens) and `minimax-m2.5` (204800 tokens), with regression tests ([#16860](https://github.com/diegosouzapw/OmniRoute/pull/16860)) — thanks @fabioKoruja00
+- **fix(providers):** Correct OpenCode Go context windows for both DeepSeek Flash aliases and MiniMax M2.5, overriding stale imported 200K placeholders with verified limits and covering all confirmed Go model windows in regression tests ([#16860](https://github.com/diegosouzapw/OmniRoute/pull/16860)) — thanks @fabioKoruja00
