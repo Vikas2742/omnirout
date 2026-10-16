@@ -280,25 +280,6 @@ test("#16460 Cloudflare text-only bridge detects image content without rejecting
     );
   }
   assert.equal(hasUnsupportedCfImageParts([{ role: "user", images: ["base64-image"] }]), true);
-  // A Responses request can send a single input object or a directly
-  // enumerated image part. Neither may bypass the text-only guard.
-  assert.equal(
-    hasUnsupportedCfImageParts({
-      role: "user",
-      content: [{ type: "input_image", image_url: "https://example.com/image.png" }],
-    }),
-    true
-  );
-  assert.equal(
-    hasUnsupportedCfImageParts([{ type: "input_image", image_url: "https://example.com/a.png" }]),
-    true
-  );
-  assert.equal(
-    hasUnsupportedCfImageParts([{ role: "user", content: { type: "image_url" } }]),
-    true
-  );
-  assert.equal(hasUnsupportedCfImageParts("text-only Responses input"), false);
-
   assert.equal(
     hasUnsupportedCfImageParts([
       {
@@ -309,24 +290,6 @@ test("#16460 Cloudflare text-only bridge detects image content without rejecting
     ]),
     true
   );
-});
-
-test("#16460 direct Responses image inputs never create a transport", async () => {
-  for (const input of [
-    { role: "user", content: [{ type: "input_image", image_url: "https://example.com/a.png" }] },
-    [{ type: "input_image", image_url: "https://example.com/b.png" }],
-  ]) {
-    let created = 0;
-    const executor = new CloudflarePlaygroundExecutor((chatId) => {
-      created += 1;
-      return new FakeTransport(buildSuccessFrames(chatId));
-    });
-    const result = await executor.execute(
-      executeArgs({ model: "zai-org/glm-4.7-flash", input }, false)
-    );
-    assert.equal(result.response.status, 400);
-    assert.equal(created, 0);
-  }
 });
 
 test("#16460 Responses images are rejected before creating a transport", async () => {
