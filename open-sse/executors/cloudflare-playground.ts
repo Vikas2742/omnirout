@@ -35,6 +35,7 @@
  */
 import { randomUUID } from "crypto";
 import { BaseExecutor, type ExecuteInput } from "./base.ts";
+import { isMissingBrowserExecutable } from "./browserExecutableCheck.ts";
 import { makeExecutorErrorResult as makeErrorResult } from "../utils/error.ts";
 import { connectObscuraBrowser } from "../services/obscura.ts";
 import type { Browser, Page } from "playwright";
@@ -235,6 +236,27 @@ export function hasUnsupportedCfImageParts(messages: unknown): boolean {
   });
 }
 
+/**
+ * A missing Playwright package/browser is a local runtime configuration
+ * problem, not a transient Cloudflare upstream failure (#16460).
+ */
+export function classifyCfBrowserStartFailure(error: unknown): {
+  status: number;
+  message: string;
+} {
+  const message = error instanceof Error ? error.message : String(error);
+  if (isMissingBrowserExecutable(message)) {
+    return {
+      status: 503,
+      message:
+        "Cloudflare Playground needs Playwright and its Chromium browser. " +
+        "Install the browser runtime (npm i playwright && npx playwright install chromium) " +
+        "or use an OmniRoute browser-enabled deployment.",
+    };
+  }
+  return { status: 502, message: `Cloudflare Playground browser session failed: ${message}` };
+}
+
 // ── Transport ────────────────────────────────────────────────────────────────
 
 export interface CfTransportConfig {
@@ -375,11 +397,7 @@ export class PlaywrightCfTransport implements CfTransport {
       return { ok: true };
     } catch (error) {
       await this.close().catch(() => {});
-      return {
-        ok: false,
-        status: 502,
-        message: `Cloudflare Playground browser session failed: ${error instanceof Error ? error.message : String(error)}`,
-      };
+      return { ok: false, ...classifyCfBrowserStartFailure(error) };
     }
   }
 
