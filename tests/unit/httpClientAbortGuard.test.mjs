@@ -117,7 +117,7 @@ test("shouldSwallowUncaught preserves crash semantics for genuine errors", () =>
   assert.equal(shouldSwallowUncaught(realErr2, "uncaughtException"), false);
 });
 
-test("plain BodyTimeoutError from open-sse is recoverable without swallowing unrelated errors (#16817)", () => {
+test("BodyTimeoutError from open-sse requires the exact timeout shape (#16817)", () => {
   const timeout = Object.assign(new Error("Response body read timeout after 60000ms"), {
     name: "BodyTimeoutError",
   });
