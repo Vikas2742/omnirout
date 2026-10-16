@@ -234,6 +234,7 @@ import { writeCavemanOutputAnalytics } from "./chatCore/cavemanOutputAnalytics.t
 import { scheduleQuotaShareConsumption } from "./chatCore/quotaShareConsumption.ts";
 import { emitRequestGamificationEvent } from "./chatCore/gamificationEvent.ts";
 import { runPluginOnResponseHook } from "./chatCore/pluginOnResponse.ts";
+import { applyPostTranslationCompression } from "./chatCore/postTranslationCompression.ts";
 import { isJsonRecord } from "./chatCore/nonStreamingResponseParse.ts";
 import { recordNonStreamingUsageStats } from "./chatCore/nonStreamingUsageStats.ts";
 import { getModelNormalizeToolCallId, getModelPreserveOpenAIDeveloperRole } from "@/lib/db/models";
@@ -2362,69 +2363,31 @@ async function handleChatCoreInner({
   // exact provider wire shape (and so a source→target conversion never embeds
   // Anthropic image blocks into an OpenAI request, or vice versa).
   if (runPostTranslationCompression && translatedBody && typeof translatedBody === "object") {
-    const transientFields = new Map<string, unknown>();
-    const postInput = { ...(translatedBody as Record<string, unknown>) };
-    for (const [key, value] of Object.entries(postInput)) {
-      // Translators keep response-side aliases in Maps under private keys. They
-      // are not JSON request fields and would otherwise be stringified to `{}`
-      // by the OmniGlyph library wrapper; restore them after the wire transform.
-      if (key.startsWith("_") && value instanceof Map) {
-        transientFields.set(key, value);
-        delete postInput[key];
-      }
-    }
-    try {
-      const [{ formatCompressionAnnotation }, { trackCompressionStats }] = await Promise.all([
-        import("../services/compression/strategySelector.ts"),
-        import("../services/compression/stats.ts"),
-      ]);
-      const postResult = await runPostTranslationCompression(postInput);
-      if (postResult.compressed) {
-        translatedBody = {
-          ...(postResult.body as typeof translatedBody),
-          ...Object.fromEntries(transientFields),
-        };
-        tokensCompressed += Math.max(
-          0,
-          (postResult.stats?.originalTokens ?? 0) - (postResult.stats?.compressedTokens ?? 0)
-        );
-        if (postResult.stats) {
-          const annotation = formatCompressionAnnotation(postResult.stats);
-          if (annotation) {
-            compressionResponseMeta = compressionResponseMeta
-              ? `${compressionResponseMeta}; ${annotation}`
-              : annotation;
-          }
-          trackCompressionStats(postResult.stats);
-          compressionAnalyticsWritePromise = writeCompressionAnalytics({
-            stats: postResult.stats,
-            provider,
-            effectiveModel,
-            effectiveServiceTier,
-            comboName,
-            mode: postResult.stats.mode,
-            compressionComboId: postResult.stats.compressionComboId ?? null,
-            skillRequestId,
-            cavemanOutputModeApplied: false,
-            cavemanOutputModeIntensity: null,
-            log,
-          });
-          await compressionAnalyticsWritePromise;
-        }
-        log?.info?.(
-          "COMPRESSION",
-          `Post-translation OmniGlyph applied (${sourceFormat} → ${targetFormat})`
-        );
-      }
-    } catch (error) {
-      // Compression is deliberately fail-open. A provider-shaped transform
-      // must never turn an otherwise valid translated request into a 500.
-      log?.warn?.(
-        "COMPRESSION",
-        "Post-translation OmniGlyph skipped: " +
-          (error instanceof Error ? error.message : String(error))
-      );
-    }
+    // Stage extracted to chatCore/postTranslationCompression.ts (chatCore slice 2). It updates the
+    // four request-scope bindings in this state object in place; they are copied back below.
+    const postTranslationState = {
+      translatedBody,
+      tokensCompressed,
+      compressionResponseMeta,
+      compressionAnalyticsWritePromise,
+    };
+    await applyPostTranslationCompression(postTranslationState, {
+      runPostTranslationCompression,
+      provider,
+      effectiveModel,
+      effectiveServiceTier,
+      comboName,
+      skillRequestId,
+      sourceFormat,
+      targetFormat,
+      log,
+    });
+    ({
+      translatedBody,
+      tokensCompressed,
+      compressionResponseMeta,
+      compressionAnalyticsWritePromise,
+    } = postTranslationState);
   }
 
   trace("post_translation");
