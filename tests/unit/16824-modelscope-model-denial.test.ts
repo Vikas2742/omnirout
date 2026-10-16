@@ -12,6 +12,14 @@ test("#16824: ModelScope invalid_model does not mark a valid credential expired"
   assert.equal(isModelScopedAccessDenial("modelscope", 401, "Invalid API key"), false);
   assert.equal(isModelScopedAccessDenial("anthropic", 401, body), false);
   assert.equal(isModelScopedAccessDenial("modelscope", 401, "Invalid API key: invalid_model"), false);
+  assert.equal(
+    isModelScopedAccessDenial("modelscope", 403, "generic upstream error", {
+      code: "invalid_model",
+      message: "Invalid API key",
+    }),
+    false,
+    "structured authentication failures must not be mistaken for model-only access errors"
+  );
   assert.equal(classifyProviderError(401, "Invalid API key", "modelscope"), PROVIDER_ERROR_TYPES.UNAUTHORIZED);
 });
 
