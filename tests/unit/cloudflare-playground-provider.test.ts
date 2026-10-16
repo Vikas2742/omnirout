@@ -280,6 +280,25 @@ test("#16460 Cloudflare text-only bridge detects image content without rejecting
     );
   }
   assert.equal(hasUnsupportedCfImageParts([{ role: "user", images: ["base64-image"] }]), true);
+  // Responses API callers may supply one message object or an array of
+  // direct image parts instead of the Chat Completions message envelope.
+  assert.equal(
+    hasUnsupportedCfImageParts({
+      role: "user",
+      content: [{ type: "input_image", image_url: "https://example.com/a.png" }],
+    }),
+    true
+  );
+  assert.equal(
+    hasUnsupportedCfImageParts([{ type: "input_image", image_url: "https://example.com/a.png" }]),
+    true
+  );
+  assert.equal(
+    hasUnsupportedCfImageParts([{ role: "user", content: { type: "image_url" } }]),
+    true
+  );
+  assert.equal(hasUnsupportedCfImageParts("hello"), false);
+
   assert.equal(
     hasUnsupportedCfImageParts([
       {
@@ -290,6 +309,25 @@ test("#16460 Cloudflare text-only bridge detects image content without rejecting
     ]),
     true
   );
+});
+
+test("#16460 direct Responses image parts are rejected before creating a transport", async () => {
+  for (const input of [
+    [{ type: "input_image", image_url: "https://example.com/a.png" }],
+    { role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,eA==" }] },
+    [{ role: "user", content: { type: "image_url" } }],
+  ]) {
+    let started = 0;
+    const executor = new CloudflarePlaygroundExecutor((chatId) => {
+      started++;
+      return new FakeTransport(buildSuccessFrames(chatId));
+    });
+    const result = await executor.execute(
+      executeArgs({ model: "zai-org/glm-4.7-flash", input }, false)
+    );
+    assert.equal(result.response.status, 400);
+    assert.equal(started, 0, "unsupported images must never create a browser transport");
+  }
 });
 
 test("#16460 Responses images are rejected before creating a transport", async () => {
