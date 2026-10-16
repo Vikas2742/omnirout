@@ -151,3 +151,26 @@ test("#16579 imported Go output respects an operator-set override", () => {
   );
   assert.equal(enriched.max_output_tokens, 64_000);
 });
+
+test("#16579 does not override explicit output caps for unrelated models", () => {
+  // The imported Go model catalogue is not generally authoritative: some
+  // gateways enforce a narrower upstream limit than the model's native spec.
+  const rows = [
+    {
+      id: "opencode-go/grok-4.7",
+      root: "grok-4.7",
+      owned_by: "opencode-go",
+      max_output_tokens: 32_000,
+    },
+    {
+      id: "deepseek/deepseek-flash",
+      root: "deepseek-flash",
+      owned_by: "deepseek",
+      max_output_tokens: 32_000,
+    },
+  ];
+  for (const row of rows) {
+    const enriched = enrichCatalogModelEntry(row);
+    assert.equal(enriched.max_output_tokens, 32_000, row.id);
+  }
+});
