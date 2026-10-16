@@ -210,6 +210,31 @@ export function toCfMessages(
   return out;
 }
 
+/**
+ * The Cloudflare Playground bridge uses text-only cf_agent chat parts. It has
+ * no image-upload frame. Do not silently strip a client's image or launch a
+ * browser for a request the bridge cannot fulfill (#16460).
+ */
+export function hasUnsupportedCfImageParts(messages: unknown): boolean {
+  if (!Array.isArray(messages)) return false;
+  return messages.some((message: unknown) => {
+    if (!message || typeof message !== "object") return false;
+    const record = message as Record<string, unknown>;
+    if (Array.isArray(record.images) && record.images.length > 0) return true;
+    if (!Array.isArray(record.content)) return false;
+    return record.content.some((part: unknown) => {
+      if (!part || typeof part !== "object") return false;
+      const item = part as Record<string, unknown>;
+      return (
+        item.type === "image_url" ||
+        item.type === "input_image" ||
+        item.type === "image" ||
+        Object.hasOwn(item, "image_url")
+      );
+    });
+  });
+}
+
 // ── Transport ────────────────────────────────────────────────────────────────
 
 export interface CfTransportConfig {
@@ -435,6 +460,14 @@ export class CloudflarePlaygroundExecutor extends BaseExecutor {
   async execute(input: ExecuteInput) {
     const { body, signal, stream: wantStream } = input;
     const bodyObj = (body || {}) as Record<string, unknown>;
+    if (hasUnsupportedCfImageParts(bodyObj.messages)) {
+      return makeErrorResult(
+        400,
+        "Cloudflare Playground accepts text-only chat. Image inputs are not supported.",
+        body,
+        PLAYGROUND_URL
+      );
+    }
     const rawModel = (bodyObj.model as string) || DEFAULT_MODEL;
     const model = rawModel.startsWith(MODEL_PREFIX) ? rawModel : MODEL_PREFIX + rawModel;
     const temperature =
