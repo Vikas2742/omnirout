@@ -1,6 +1,6 @@
 import { getComboById, getCombos } from "@/lib/db/combos";
 import { getDbInstance } from "@/lib/db/core";
-import { getQuotaSnapshots } from "@/lib/db/quotaSnapshots";
+import { getQuotaSnapshots, isUnreportedQuotaSnapshot } from "@/lib/db/quotaSnapshots";
 import { getComboMetrics } from "@omniroute/open-sse/services/comboMetrics.ts";
 import { resolveNestedComboTargets } from "@omniroute/open-sse/services/combo.ts";
 import type {
@@ -125,8 +125,10 @@ function calculateGini(values: number[]): number {
 
 export function buildProviderHealth(
   provider: string,
-  snapshots: QuotaSnapshotRow[]
+  allSnapshots: QuotaSnapshotRow[]
 ): ProviderHealth {
+  // #10095: a window the upstream did not report is a 0% placeholder, not a reading.
+  const snapshots = allSnapshots.filter((snapshot) => !isUnreportedQuotaSnapshot(snapshot));
   if (snapshots.length === 0) {
     return {
       provider,
@@ -212,8 +214,9 @@ export function buildProviderHealth(
 function buildConnectionHealth(
   provider: string,
   connectionId: string,
-  snapshots: QuotaSnapshotRow[]
+  allSnapshots: QuotaSnapshotRow[]
 ): ProviderHealth | null {
+  const snapshots = allSnapshots.filter((snapshot) => !isUnreportedQuotaSnapshot(snapshot));
   if (snapshots.length === 0) return null;
 
   const ordered = [...snapshots].sort((left, right) => {
