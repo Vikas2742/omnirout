@@ -748,7 +748,10 @@ export async function getComboBuilderOptions(): Promise<ComboBuilderOptionsPaylo
 
   // No-auth providers have no rows in provider_connections, so they are never included in the
   // connectionsByProvider loop above. Add them unless the provider is explicitly blocked.
-  for (const noAuthProvider of Object.values(NOAUTH_PROVIDERS)) {
+  for (const noAuthProvider of Object.values(NOAUTH_PROVIDERS) as {
+    id: string;
+    alias?: string;
+  }[]) {
     const providerId = noAuthProvider.id;
     if (
       blockedProviders.has(providerId) ||

@@ -20,6 +20,8 @@ import { mapImageSize } from "../translator/image/sizeMapper.ts";
 import { getCodexClientVersion, getCodexUserAgent } from "../config/codexClient.ts";
 import { isCodexFreePlan } from "../executors/codex/tools.ts";
 import { saveCallLog } from "@/lib/usageDb";
+import { saveImageSuccessResult } from "./imageGeneration/successResult.ts";
+export { saveImageSuccessResult } from "./imageGeneration/successResult.ts";
 import { sleep } from "../utils/sleep.ts";
 import { normalizeImageBuffer } from "../utils/imageNormalize.ts";
 import {
@@ -842,6 +844,12 @@ export async function handleImageGeneration({
       credentials,
       log,
     });
+  }
+
+  if (providerConfig.format === "google-flow-web") {
+    const { handleGoogleFlowWebImageGeneration } =
+      await import("./imageGeneration/providers/googleFlowWeb.ts");
+    return handleGoogleFlowWebImageGeneration({ body, model, signal });
   }
 
   return handleOpenAIImageGeneration({ model, provider, providerConfig, body, credentials, log });
@@ -2845,36 +2853,6 @@ export async function handleCodexImageEdit({
     logPath: "/v1/images/edits",
   });
   return result as CodexImageEditResult;
-}
-
-export function saveImageSuccessResult({
-  provider,
-  model,
-  startTime,
-  requestBody = null,
-  responseBody = null,
-  created = null,
-  images,
-  path = "/v1/images/generations",
-}) {
-  saveCallLog({
-    method: "POST",
-    path,
-    status: 200,
-    model: `${provider}/${model}`,
-    provider,
-    duration: Date.now() - startTime,
-    requestBody,
-    responseBody,
-  }).catch(() => {});
-
-  return {
-    success: true,
-    data: {
-      created: created || Math.floor(Date.now() / 1000),
-      data: images,
-    },
-  };
 }
 
 export function saveImageErrorResult({

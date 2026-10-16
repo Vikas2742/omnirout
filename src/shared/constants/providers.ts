@@ -88,6 +88,7 @@ export function getProviderConnectionFamilyIds(providerId: unknown): readonly st
 
 // Sub-categories within APIKEY_PROVIDERS (used by dashboard and catalog views).
 export const IMAGE_ONLY_PROVIDER_IDS = new Set([
+  "google-flow-web", // Attached-browser images are never chat/auto candidates.
   "nanobanana",
   "fal-ai",
   "stability-ai",

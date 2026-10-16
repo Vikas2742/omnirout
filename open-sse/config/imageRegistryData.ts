@@ -43,6 +43,7 @@ export interface ImageProviderConfig {
   authHeader: string;
   format: string;
   models: ImageModelEntry[];
+  requireProviderPrefix?: boolean;
   routingAliases?: readonly string[];
   supportedSizes: string[];
 }
@@ -165,6 +166,22 @@ export const IMAGE_MODEL_ALIASES: Record<string, ImageModelAliasEntry> = {
 };
 
 export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
+  "google-flow-web": {
+    id: "google-flow-web",
+    baseUrl: "https://flow.google.com",
+    authType: "none",
+    authHeader: "none",
+    format: "google-flow-web",
+    requireProviderPrefix: true,
+    models: [
+      {
+        id: "nano-banana-2.1",
+        name: "Nano Banana 2.1 (Google Flow web)",
+        inputModalities: ["text"],
+      },
+    ],
+    supportedSizes: ["1024x1024", "1536x1024", "1024x1536", "1024x768", "768x1024"],
+  },
   zenmux: ZENMUX_IMAGE_PROVIDER,
   agnes: {
     id: "agnes",
