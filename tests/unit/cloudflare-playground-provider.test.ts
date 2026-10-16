@@ -21,6 +21,7 @@ import {
   CfStreamParser,
   PlaywrightCfTransport,
   toCfMessages,
+  hasUnsupportedCfImageParts,
   type CfTransport,
 } from "../../open-sse/executors/cloudflare-playground.ts";
 
@@ -237,6 +238,55 @@ test("toCfMessages drops system/tool, flattens parts, keeps user/assistant", () 
   assert.equal(out[2].parts[0].text, "a\nb");
   assert.equal(out[0].role, "user");
   assert.equal(out[1].role, "assistant");
+});
+
+test("#16460 Cloudflare text-only bridge detects image content without rejecting text", () => {
+  assert.equal(hasUnsupportedCfImageParts([{ role: "user", content: "hello" }]), false);
+  assert.equal(
+    hasUnsupportedCfImageParts([{ role: "user", content: [{ type: "text", text: "hello" }] }]),
+    false
+  );
+  for (const part of [
+    { type: "image_url", image_url: { url: "data:image/png;base64,eA==" } },
+    { type: "input_image", image_url: "https://example.com/test.png" },
+    { type: "image", source: { type: "base64", data: "eA==" } },
+    { image_url: "https://example.com/test.png" },
+  ]) {
+    assert.equal(
+      hasUnsupportedCfImageParts([
+        { role: "user", content: [{ type: "text", text: "describe this" }, part] },
+      ]),
+      true
+    );
+  }
+  assert.equal(hasUnsupportedCfImageParts([{ role: "user", images: ["base64-image"] }]), true);
+});
+
+test("#16460 image request returns a clear 400 before creating a Playwright transport", async () => {
+  let created = 0;
+  const executor = new CloudflarePlaygroundExecutor((chatId) => {
+    created += 1;
+    return new FakeTransport(buildSuccessFrames(chatId));
+  });
+  const result = await executor.execute(
+    executeArgs(
+      {
+        model: "zai-org/glm-4.7-flash",
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: "what is in this picture?" },
+            { type: "image_url", image_url: { url: "data:image/png;base64,eA==" } },
+          ],
+        }],
+      },
+      true
+    )
+  );
+  assert.equal(result.response.status, 400);
+  assert.equal(created, 0, "no browser transport should start for unsupported vision");
+  const response = JSON.parse(await result.response.text()) as { error: { message: string } };
+  assert.match(response.error.message, /text-only|images? not supported/i);
 });
 
 // ── Executor behavior (fake transport, real frames) ─────────────────────────
