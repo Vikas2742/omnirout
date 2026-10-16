@@ -58,7 +58,9 @@ export async function POST(request: Request) {
     // Register a single background worker before replying. It drains multiple
     // batches until empty, stalled by failing embeds, or the bounded work cap.
     // Repeated clicks share that worker rather than racing SQLite/vector writes.
-    const started = pending > 0 ? reindexDrain.start() : false;
+    // Preserve the existing { started: true } response when the queue is empty.
+    // The worker exits immediately without scheduling any embedding work.
+    const started = reindexDrain.start();
     return NextResponse.json({ started, pending });
   } catch (err: unknown) {
     const message = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
