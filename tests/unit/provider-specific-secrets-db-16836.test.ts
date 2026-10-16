@@ -101,3 +101,42 @@ test("#16836 SQLite encrypts metadata secrets without breaking reads and updates
   assert.ok(!JSON.stringify(migratedOnDisk).includes(legacySecret));
   assert.equal(migratedOnDisk.workspaceId, "ws-16836");
 });
+
+test("#16836 Qwen and Volcengine cookies are encrypted through connection CRUD", async () => {
+  for (const [provider, field] of [
+    ["qwen-cloud-token-plan", "qwenCloudCookie"],
+    ["volcengine-coding-plan", "volcConsoleCookie"],
+  ] as const) {
+    const secret = `console-cookie-${provider}`;
+    const connection = await connections.createProviderConnection({
+      provider,
+      authType: "apikey",
+      apiKey: `sk-16836-${provider}`,
+      name: `Console cookie ${provider}`,
+      providerSpecificData: {
+        [field]: secret,
+        workspaceId: "visible-identity",
+      },
+    });
+    const id = typeof connection?.id === "string" ? connection.id : "";
+    assert.ok(id, `${provider}: create should return a connection`);
+    const stored = readStoredProviderMetadata(id);
+    assert.match(String(stored[field]), /^enc:v1:/, provider);
+    assert.ok(!JSON.stringify(stored).includes(secret), provider);
+    assert.equal(stored.workspaceId, "visible-identity");
+
+    const byId = await connections.getProviderConnectionById(id);
+    assert.equal((byId?.providerSpecificData as Record<string, unknown>)[field], secret);
+    const updated = await connections.updateProviderConnection(id, {
+      name: `Updated console cookie ${provider}`,
+    });
+    assert.equal((updated?.providerSpecificData as Record<string, unknown>)[field], secret);
+    assert.equal(readStoredProviderMetadata(id)[field], stored[field]);
+
+    const lazy = (await connections.getProviderConnections({ provider })).find(
+      (item) => item.id === id
+    );
+    assert.ok(lazy);
+    assert.equal((lazy.providerSpecificData as Record<string, unknown>)[field], secret);
+  }
+});
