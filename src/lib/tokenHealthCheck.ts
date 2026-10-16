@@ -748,12 +748,18 @@ export async function checkConnection(conn) {
         },
       };
 
-      const copilotResult = await refreshCopilotToken(
-        conn.accessToken,
-        healthCheckLog,
-        proxyConfig,
-        getCopilotTokenBaseUrl(conn)
-      );
+      // Refresh only when the sub-token needs renewal, or when
+      // an expired connection needs a recovery probe.
+      const shouldProbeCopilot = copilotAboutToExpire || conn.testStatus === "expired";
+
+      const copilotResult = shouldProbeCopilot
+        ? await refreshCopilotToken(
+            conn.accessToken,
+            healthCheckLog,
+            proxyConfig,
+            getCopilotTokenBaseUrl(conn)
+          )
+        : null;
       if (copilotResult?.status === 401) {
         await updateProviderConnection(conn.id, {
           testStatus: "expired",
