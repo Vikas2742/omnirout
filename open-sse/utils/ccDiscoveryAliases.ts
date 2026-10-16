@@ -88,12 +88,23 @@ function bareModelName(id: string): string {
   return slash >= 0 ? id.slice(slash + 1) : id;
 }
 
+// Match the catalog's (id, type, subtype) identity: audio speech/transcription
+// rows intentionally share a public id and must retain both discovery mirrors.
+function listingIdentity(model: CcDiscoveryCatalogEntry, id = model.id): string {
+  return JSON.stringify([
+    id,
+    typeof model.type === "string" ? model.type : "",
+    typeof model.subtype === "string" ? model.subtype : "",
+  ]);
+}
+
 export function appendCcDiscoveryAliases<T extends CcDiscoveryCatalogEntry>(
   models: T[],
   isEnabled: (entry: T) => boolean
 ): T[] {
   if (!Array.isArray(models)) return models;
 
+  const listedIdentities = new Set(models.map((model) => listingIdentity(model)));
   const aliases: T[] = [];
   for (const model of models) {
     const id = model.id;
@@ -102,6 +113,9 @@ export function appendCcDiscoveryAliases<T extends CcDiscoveryCatalogEntry>(
 
     const isCombo = model.owned_by === "combo";
     const aliasId = isCombo ? `${CC_DISCOVERY_COMBO_PREFIX}${id}` : `${CC_DISCOVERY_PREFIX}${id}`;
+    const identity = listingIdentity(model, aliasId);
+    if (listedIdentities.has(identity)) continue;
+    listedIdentities.add(identity);
     const label = typeof model.name === "string" && model.name ? model.name : id;
 
     aliases.push({

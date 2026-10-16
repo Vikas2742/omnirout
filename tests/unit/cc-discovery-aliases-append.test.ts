@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { dedupeExactCatalogIds } from "../../src/app/api/v1/models/catalogDedupe.ts";
 
 import {
   CC_DISCOVERY_PREFIX,
@@ -179,7 +180,7 @@ test("returns the same array reference when the input is empty", () => {
   assert.equal(out, models);
 });
 
-test("idempotent: running twice never double-prefixes (alias entries are skipped as already-claude)", () => {
+test("idempotent: running twice neither duplicates nor double-prefixes aliases", () => {
   const models: CatalogEntry[] = [
     { id: "kimi/kimi-k2.6", owned_by: "kimi", name: "Kimi K2.6" },
     { id: "custo-otimizado", owned_by: "combo", name: "Custo Otimizado" },
@@ -187,20 +188,84 @@ test("idempotent: running twice never double-prefixes (alias entries are skipped
   const once = appendCcDiscoveryAliases(models, alwaysEnabled);
   const twice = appendCcDiscoveryAliases(once, alwaysEnabled);
 
-  // The alias entries synthesized in `once` already start with "claude/", so the
-  // second pass's ALREADY_CLAUDE_RE guard skips them — only the still-present
-  // original entries are (re-)mirrored. Critically, no id is ever double-prefixed.
+  assert.equal(twice, once, "an already-mirrored catalog needs no allocation or duplicate aliases");
   const doublePrefixed = twice.filter(
     (m) => m.id.startsWith("claude/claude/") || m.id.startsWith("claude/combo/combo/")
   );
   assert.equal(doublePrefixed.length, 0);
 
-  // Every alias id that resulted from re-processing `once` is a stable mirror of an
-  // original entry, never a mirror of an already-mirrored one.
   const aliasIds = twice.filter((m) => m.id.startsWith(CC_DISCOVERY_PREFIX)).map((m) => m.id);
   for (const id of aliasIds) {
     assert.equal(id.startsWith("claude/claude/"), false);
   }
+});
+
+test("preserves an existing alias and emits each new alias id only once", () => {
+  const existing: CatalogEntry = {
+    id: "claude/kimi/kimi-k2.6",
+    owned_by: "kimi",
+    name: "Operator-provided alias",
+  };
+  const models: CatalogEntry[] = [
+    { id: "kimi/kimi-k2.6", owned_by: "kimi" },
+    { id: "kimi/kimi-k2.6", owned_by: "kimi" },
+    existing,
+    { id: "team/primary", owned_by: "combo" },
+    { id: "team/primary", owned_by: "combo" },
+  ];
+  const out = appendCcDiscoveryAliases(models, alwaysEnabled);
+  assert.deepEqual(
+    out.slice(models.length).map((m) => m.id),
+    ["claude/combo/team/primary"]
+  );
+  assert.equal(
+    out.find((m) => m.id === existing.id),
+    existing
+  );
+  assert.equal(models.length, 5, "the input catalog must not be mutated");
+});
+
+test("preserves distinct audio surfaces while deduplicating repeated mirror listings", () => {
+  const models: CatalogEntry[] = [
+    { id: "gemini/gemini-audio-live", type: "audio", subtype: "speech" },
+    { id: "gemini/gemini-audio-live", type: "audio", subtype: "transcription" },
+    { id: "gemini/gemini-audio-live", type: "audio", subtype: "speech" },
+  ];
+  const once = appendCcDiscoveryAliases(models, alwaysEnabled);
+  const mirrors = once.slice(models.length);
+  assert.deepEqual(
+    mirrors.map((model) => model.subtype),
+    ["speech", "transcription"]
+  );
+  assert.equal(appendCcDiscoveryAliases(once, alwaysEnabled), once);
+});
+
+test("an existing mirror only suppresses its own listing identity", () => {
+  const existing: CatalogEntry = {
+    id: "claude/gemini/gemini-audio-live",
+    type: "audio",
+    subtype: "speech",
+  };
+  const models: CatalogEntry[] = [
+    { id: "gemini/gemini-audio-live", type: "audio", subtype: "speech" },
+    { id: "gemini/gemini-audio-live", type: "audio", subtype: "transcription" },
+    existing,
+  ];
+  const out = appendCcDiscoveryAliases(models, alwaysEnabled);
+  assert.equal(out[2], existing);
+  assert.equal(out.length, models.length + 1);
+  assert.equal(out[3].subtype, "transcription");
+});
+
+test("a generic source row cannot hide its typed mirror during final catalog dedupe", () => {
+  const models: CatalogEntry[] = [
+    { id: "openai/whisper-1", type: "chat" },
+    { id: "openai/whisper-1", type: "audio", subtype: "transcription" },
+  ];
+  const out = dedupeExactCatalogIds(appendCcDiscoveryAliases(models, alwaysEnabled));
+  const mirror = out.find((model) => model.id === "claude/openai/whisper-1");
+  assert.equal(mirror?.type, "audio");
+  assert.equal(mirror?.subtype, "transcription");
 });
 
 test("non-array input is returned unchanged", () => {
