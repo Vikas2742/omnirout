@@ -54,6 +54,10 @@ import {
 } from "../config/codexIdentity.ts";
 import { trackRequestDevice } from "./chatCore/deviceTracking.ts";
 import { getCombosCached } from "./chatCore/comboContextCache.ts";
+import {
+  buildRegisteredProviderRequest,
+  countTranslatedMessages,
+} from "./chatCore/providerRequestRegistration.ts";
 import { collectPreConversionClientToolNames } from "./chatCore/clientToolNames.ts";
 export { clearCombosCache, clearUpstreamProxyConfigCache } from "./chatCore/comboContextCache.ts";
 import { resolveAccountSemaphoreKey } from "./chatCore/executorHelpers.ts";
@@ -2478,20 +2482,13 @@ async function handleChatCoreInner({
     allowDedup: boolean = false
   ) => executeProviderRequestLeaf(executeProviderRequestDeps, modelToCall, allowDedup);
 
-  const registeredProviderRequest =
-    translatedBody && typeof translatedBody === "object" && !Array.isArray(translatedBody)
-      ? {
-          ...(translatedBody as Record<string, unknown>),
-          model:
-            typeof (translatedBody as Record<string, unknown>).model === "string"
-              ? (translatedBody as Record<string, unknown>).model
-              : effectiveModel,
-          ...(!Array.isArray((translatedBody as Record<string, unknown>).messages) &&
-          Array.isArray((body as Record<string, unknown>).messages)
-            ? { messages: (body as Record<string, unknown>).messages }
-            : {}),
-        }
-      : translatedBody;
+  // Snapshot + message count helpers extracted to chatCore/providerRequestRegistration.ts
+  // (chatCore slice 2).
+  const registeredProviderRequest = buildRegisteredProviderRequest(
+    translatedBody,
+    body,
+    effectiveModel
+  );
 
   updatePendingScope(pendingScope, {
     providerRequest: registeredProviderRequest,
@@ -2503,13 +2500,7 @@ async function handleChatCoreInner({
   // Log start
   appendRequestLog({ model, provider, connectionId, status: "PENDING" }).catch(() => {});
 
-  const msgCount =
-    translatedBody.messages?.length ||
-    translatedBody.contents?.length ||
-    translatedBody.request?.contents?.length ||
-    (translatedBody.conversationState?.history?.length ?? 0) +
-      (translatedBody.conversationState?.currentMessage ? 1 : 0) ||
-    0;
+  const msgCount = countTranslatedMessages(translatedBody);
   log?.debug?.("REQUEST", `${provider?.toUpperCase()} | ${model} | ${msgCount} msgs`);
 
   // ── Tier 2: Authoritative per-model/provider token-limit check (provider now resolved) ──
