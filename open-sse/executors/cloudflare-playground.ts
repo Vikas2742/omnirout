@@ -460,7 +460,7 @@ export class CloudflarePlaygroundExecutor extends BaseExecutor {
   async execute(input: ExecuteInput) {
     const { body, signal, stream: wantStream } = input;
     const bodyObj = (body || {}) as Record<string, unknown>;
-    if (hasUnsupportedCfImageParts(bodyObj.messages)) {
+    if (hasUnsupportedCfImageParts(bodyObj.messages) || hasUnsupportedCfImageParts(bodyObj.input)) {
       return makeErrorResult(
         400,
         "Cloudflare Playground accepts text-only chat. Image inputs are not supported.",
