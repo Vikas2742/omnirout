@@ -52,6 +52,22 @@ function urlImagePart(url) {
   return { fileData: { fileUri: url, mimeType: "image/*" } };
 }
 
+function isPlainTextPart(part: { text?: unknown }): boolean {
+  return Object.keys(part).length === 1 && typeof part.text === "string";
+}
+
+function appendTextToFunctionResponse(
+  part: { functionResponse?: { response?: Record<string, unknown> } },
+  textParts: string[]
+): boolean {
+  const response = part.functionResponse?.response;
+  if (!response || typeof response.result !== "string") return false;
+  const combinedText = textParts.join("\n");
+  if (!combinedText) return false;
+  response.result = response.result ? `${response.result}\n${combinedText}` : combinedText;
+  return true;
+}
+
 function mergeTrailingTextIntoFunctionResponses(contents: GeminiContent[]) {
   for (const content of contents) {
     if (content.role !== "user") continue;
@@ -68,25 +84,37 @@ function mergeTrailingTextIntoFunctionResponses(contents: GeminiContent[]) {
       const textParts: string[] = [];
       for (let index = responseIndex + 1; index < nextResponseIndex; index++) {
         const part = content.parts[index];
-        if (Object.keys(part).length === 1 && typeof part.text === "string") {
+        if (isPlainTextPart(part)) {
           textIndexes.push(index);
-          textParts.push(part.text);
+          textParts.push(part.text as string);
         }
       }
       if (textParts.length === 0) continue;
-
-      const functionResponse = content.parts[responseIndex].functionResponse as {
-        response?: Record<string, unknown>;
-      };
-      const response = functionResponse.response;
-      if (!response || typeof response.result !== "string") continue;
-
-      const combinedText = textParts.join("\n");
-      if (!combinedText) continue;
-
-      response.result = response.result ? `${response.result}\n${combinedText}` : combinedText;
+      if (!appendTextToFunctionResponse(content.parts[responseIndex], textParts)) continue;
       for (const index of textIndexes.reverse()) content.parts.splice(index, 1);
     }
+
+    // Origin now lifts a following system turn into leading text on the same
+    // user tool-result content. Fold that text into the first functionResponse
+    // so Vertex still sees a single functionResponse part.
+    const firstResponseIndex = content.parts.findIndex((part) => part.functionResponse);
+    if (firstResponseIndex <= 0) continue;
+    const leadingIndexes: number[] = [];
+    const leadingTexts: string[] = [];
+    let leadingOnlyText = true;
+    for (let index = 0; index < firstResponseIndex; index++) {
+      const part = content.parts[index];
+      if (isPlainTextPart(part)) {
+        leadingIndexes.push(index);
+        leadingTexts.push(part.text as string);
+      } else {
+        leadingOnlyText = false;
+        break;
+      }
+    }
+    if (!leadingOnlyText || leadingTexts.length === 0) continue;
+    if (!appendTextToFunctionResponse(content.parts[firstResponseIndex], leadingTexts)) continue;
+    for (const index of leadingIndexes.reverse()) content.parts.splice(index, 1);
   }
 }
 
