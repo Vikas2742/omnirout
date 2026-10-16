@@ -347,6 +347,7 @@
     "fflate": "^0.8.3",
     "fumadocs-core": "^16.15.4",
     "fumadocs-ui": "^16.15.4",
+    "gh": "^2.8.9",
     "http-proxy-middleware": "^4.0.0",
     "https-proxy-agent": "^9.0.0",
     "ink": "^7.0.3",
