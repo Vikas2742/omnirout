@@ -41,3 +41,35 @@ test("#16579 shared MiniMax M2.5 metadata matches verified upstream limit", () =
   assert.equal(getModelSpec("MiniMax-M2.5")?.contextWindow, 204_800);
   assert.equal(getModelSpec("minimax-m2.7")?.contextWindow, 204_800);
 });
+
+test("#16579 verified affected models keep their published Go-tier limits", () => {
+  // These limits were verified in issue #16579 against the official OpenCode
+  // model pages. Do not pin space-bunny or omen-alpha: neither is verified.
+  const verified = [
+    ["deepseek-v4.1-flash", 1_000_000, 384_000],
+    ["deepseek-flash", 1_000_000, 384_000],
+    ["claude-haiku-5-5", 1_000_000, 128_000],
+    ["gpt-6-luna", 1_050_000, 128_000],
+    ["grok-4.6", 500_000, 500_000],
+    ["grok-4.7", 500_000, 500_000],
+    ["hy4-preview", 1_024_000, 64_000],
+    ["longcat-2.0", 1_000_000, 131_072],
+    ["mimo-v2.6-flash", 1_048_576, 131_072],
+    ["mimo-v2.6-pro", 1_048_576, 131_072],
+    ["qwen3.7-plus", 1_000_000, 65_536],
+    ["qwen3.8-flash", 1_000_000, 131_072],
+    ["minimax-m2.5", 204_800, 131_072],
+  ] as const;
+  const models = opencode_goProvider.models ?? [];
+  for (const [id, context, output] of verified) {
+    const model = models.find((entry) => entry.id === id);
+    assert.ok(model, `Go registry is missing ${id}`);
+    assert.equal(model.contextLength, context, `${id}: context window`);
+    assert.equal(model.maxOutputTokens, output, `${id}: output limit`);
+    const caps = getResolvedModelCapabilities(
+      { provider: "opencode-go", model: id },
+      { persistedOverrides: false }
+    );
+    assert.equal(caps.contextWindow, context, `${id}: resolved context window`);
+  }
+});
