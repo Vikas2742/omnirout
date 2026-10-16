@@ -5,7 +5,12 @@
  * Do not blanket-encrypt the JSON object: workspace/identity fields are queried
  * by SQLite and must remain readable. Unknown fields remain unchanged.
  */
-export const PROVIDER_SPECIFIC_SECRET_FIELDS = ["consoleApiKey"] as const;
+export const PROVIDER_SPECIFIC_SECRET_FIELDS = [
+  "consoleApiKey",
+  "alibabaConsoleCookie",
+  "alibabaConsoleSecToken",
+  "xiaomiMimoConsoleCookie",
+] as const;
 
 /** Return a fresh object only if a recognized secret field actually changes. */
 export function mapProviderSpecificDataSecrets(
