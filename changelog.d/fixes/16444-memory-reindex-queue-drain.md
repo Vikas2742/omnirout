@@ -1,0 +1,1 @@
+- **fix(memory):** drain the explicit memory reindex queue across sequential batches instead of stopping after the first 100 items; bound retries when embeddings fail and prevent overlapping reindex workers (refs [#16444](https://github.com/diegosouzapw/OmniRoute/issues/16444)) — thanks @fabioKoruja00
