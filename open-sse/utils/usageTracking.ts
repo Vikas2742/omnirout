@@ -42,6 +42,8 @@ export interface UsageLike {
   no_cache_tokens?: number;
   reasoning_tokens?: number;
   cost_in_usd_ticks?: number;
+  /** Internal normalized provider-billed USD cost (from OpenRouter's `usage.cost`). */
+  cost_usd?: number;
   cache_read_input_tokens?: number;
   cache_creation_input_tokens?: number;
   /** OpenRouter / Devin Desktop / codex-chatgpt-web alias for cache creation. */
@@ -248,6 +250,26 @@ export function carryCacheCreationMarker<T>(from: unknown, to: T): T {
   return to;
 }
 
+/**
+ * Provider-reported USD cost of a request, when the upstream supplied one.
+ * OpenRouter (and compatible resellers) send `usage.cost` as a bare USD number;
+ * a `{ total }` object is tolerated too, and an already-normalized `cost_usd`
+ * wins. Returns undefined for anything that is not a finite number >= 0.
+ */
+export function pickReportedCostUsd(usage: UsageLike | null | undefined): number | undefined {
+  if (!usage || typeof usage !== "object") return undefined;
+  const raw = usage.cost;
+  const candidates = [
+    usage.cost_usd,
+    raw,
+    raw && typeof raw === "object" ? (raw as { total?: unknown }).total : undefined,
+  ];
+  for (const value of candidates) {
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value;
+  }
+  return undefined;
+}
+
 export function filterUsageForFormat(usage: UsageLike | null | undefined, targetFormat: string) {
   if (!usage || typeof usage !== "object") return usage;
 
@@ -352,6 +374,8 @@ export function filterUsageForFormat(usage: UsageLike | null | undefined, target
       "cache_creation_input_tokens",
       "estimated",
       "tokens_per_second",
+      // Provider-billed USD cost (OpenRouter), only when the upstream sent one.
+      "cost",
     ],
   };
 
@@ -365,6 +389,14 @@ export function filterUsageForFormat(usage: UsageLike | null | undefined, target
     fields = formatFields[FORMATS.OPENAI_RESPONSES];
   } else if (!fields) {
     fields = formatFields.default;
+  }
+
+  if (fields === formatFields.default) {
+    // Re-emit the provider-billed cost as a bare USD number (OpenRouter's own shape),
+    // also when only the normalized `cost_usd` survived extraction. Never estimated.
+    const reportedCostUsd = pickReportedCostUsd(convertedUsage);
+    if (reportedCostUsd === undefined) delete convertedUsage.cost;
+    else convertedUsage.cost = reportedCostUsd;
   }
 
   return pickFields(fields);
@@ -668,6 +700,11 @@ export function normalizeUsage(usage: UsageLike | null | undefined) {
   ) {
     normalized.cost_in_usd_ticks = exactCostTicks;
   }
+  // OpenRouter's provider-billed USD cost (`usage.cost`), kept under a distinct
+  // name so it is never conflated with xAI ticks; costCalculator prefers it over
+  // the token × pricing estimate.
+  const reportedCostUsd = pickReportedCostUsd(usage);
+  if (reportedCostUsd !== undefined) normalized.cost_usd = reportedCostUsd;
 
   if (Object.keys(normalized).length === 0) return null;
   return normalized;
@@ -861,6 +898,8 @@ export function extractUsage(chunk: UsagePayloadLike | null | undefined) {
         chunk.usage.reasoning_tokens,
       // xAI's exact provider-reported cost (port of decolua/9router#2453, capability A).
       cost_in_usd_ticks: chunk.usage.cost_in_usd_ticks,
+      // OpenRouter's provider-billed USD cost (bare number in `usage.cost`).
+      cost_usd: pickReportedCostUsd(chunk.usage),
     });
     return carryEstimatedUsageMarker(chunk.usage, normalized);
   }

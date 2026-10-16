@@ -1,4 +1,3 @@
-import { intersectAllowedConnectionIds } from "./chat/connectionConstraints.ts";
 import { hasQoderCallerTools } from "@omniroute/open-sse/services/qoderCapabilities";
 import { randomUUID } from "crypto";
 import { resolveChatRequestBody } from "./requestBody";
@@ -47,7 +46,6 @@ import { isVerifiedNativeCodexRequest } from "@omniroute/open-sse/config/codexId
 import { resolveCompressionSettings } from "@omniroute/open-sse/handlers/chatCore/compressionSettings.ts";
 import type { CompressionExclusions } from "@omniroute/open-sse/services/compression/exclusions.ts";
 import { resolveComboConfig } from "@omniroute/open-sse/services/comboConfig.ts";
-import { comboPinAllowlist } from "@/lib/combos/steps.ts";
 import { injectHandoffIntoBody } from "@omniroute/open-sse/services/contextHandoff.ts";
 import { runWithTransientBackendRetry } from "@omniroute/open-sse/services/transientBackendRetry.ts";
 import {
@@ -227,6 +225,7 @@ import {
   validateExclusiveLeaseKeyConfiguration,
   type ManagedLeaseDispatchContext,
 } from "../services/leaseContext";
+import { resolveConnectionRestrictions } from "../services/connectionRestrictions.ts";
 
 registerCodexQuotaFetcher();
 registerQuotaTrackersBatch();
@@ -1164,10 +1163,8 @@ async function handleChatImplementation(
       const resolvedModel = modelInfo.model || modelString;
       const githubGate = await ghComboGate(comboPreselectedCredentials, provider, resolvedModel);
       if (githubGate !== null) return githubGate;
-      let allowedConnections = intersectAllowedConnectionIds(
-        apiKeyInfo?.allowedConnections ?? null,
-        comboPinAllowlist(true, target?.connectionId ?? null, target?.allowedConnectionIds ?? null)
-      );
+      const restrictions = resolveConnectionRestrictions(apiKeyInfo, target, true);
+      let allowedConnections = restrictions.allowedConnections;
 
       // A4: quota-exclusive keys must only use the pool's connection(s).
       if (apiKeyInfo?.allowedQuotas && apiKeyInfo.allowedQuotas.length > 0) {
@@ -1188,6 +1185,7 @@ async function handleChatImplementation(
         allowedConnections,
         resolvedModel,
         {
+          connectionRestrictionSources: restrictions.sources,
           requireToolCalling: hasQoderCallerTools(body),
           sessionKey: sessionAffinityKey,
           ...(target?.allowRateLimitedConnection ? { allowRateLimitedConnections: true } : {}),
@@ -1664,10 +1662,9 @@ async function handleSingleModelChat(
       ? runtimeOptions.forcedConnectionId.trim()
       : "";
   const hasForcedConnection = forcedConnectionId.length > 0;
-  let effectiveAllowedConnections = intersectAllowedConnectionIds(
-    apiKeyInfo?.allowedConnections ?? null,
-    comboPinAllowlist(isCombo, forcedConnectionId || null, runtimeOptions.allowedConnectionIds)
-  );
+  const pinTarget = { ...runtimeOptions, connectionId: forcedConnectionId };
+  const restrictions = resolveConnectionRestrictions(apiKeyInfo, pinTarget, isCombo);
+  let effectiveAllowedConnections = restrictions.allowedConnections;
 
   // A4: quota-exclusive keys must only use the pool's connection(s).
   if (apiKeyInfo?.allowedQuotas && apiKeyInfo.allowedQuotas.length > 0) {
@@ -1796,6 +1793,7 @@ async function handleSingleModelChat(
               effectiveAllowedConnections,
               model,
               {
+                connectionRestrictionSources: restrictions.sources,
                 requireToolCalling: hasQoderCallerTools(body),
                 sessionKey: occupancySessionKey,
                 reserveOAuthSession: true,

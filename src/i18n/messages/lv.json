@@ -4090,6 +4090,9 @@
     "showingTopCostRows": "Rāda {shown} no {total} atbilstošajām rindām (50 lielākās)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Mākoņa sinhronizācijas galamērķis (nevis vietējo dublējumkopiju):",
+    "cloudUploadWarning": "Jaunās instalācijās mākoņa sinhronizācija pēc noklusējuma ir izslēgta. To ieslēdzot, pakalpojumu sniedzēju API atslēgas, OAuth piekļuves un atsvaidzināšanas marķieri, OmniRoute API atslēgas un konfigurācija tiek augšupielādēti iepriekš norādītajā galamērķī tagad un turpmākajās sinhronizācijās. Šī funkcija ir atsevišķa no vietējām dublējumkopijām sadaļā Krātuve. Ieslēdziet to tikai tad, ja uzticaties šim serverim.",
+    "cloudUploadConsent": "Es saprotu un atļauju augšupielādēt savus akreditācijas datus šajā galamērķī.",
     "title": "API galapunkts",
     "subtitle": "Izmantojiet ar OpenAI saderīgu galapunktu ar vairumu SDK un rīku.",
     "testEndpoint": "Testēt galapunktu →",
@@ -8683,6 +8686,7 @@
     "cliproxyapiPort": "Ports",
     "qdrantHost": "Resursdators",
     "qdrantCollection": "Kolekcija",
+    "catalogVisibilityHint": "Slēptos modeļu ID joprojām var izsaukt ar tām pašām piekļuves atļaujām.",
     "catalogScopeTitle": "Models API saraksts",
     "catalogScopeDesc": "Ko GET /v1/models uzrāda šai atslēgai. Saraksta sašaurināšana nekad nemaina to, ko atslēga var izsaukt.",
     "catalogScopeAll": "Abi",
