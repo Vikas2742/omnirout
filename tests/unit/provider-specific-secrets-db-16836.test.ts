@@ -140,3 +140,39 @@ test("#16836 Qwen and Volcengine cookies are encrypted through connection CRUD",
     assert.equal((lazy.providerSpecificData as Record<string, unknown>)[field], secret);
   }
 });
+
+test("#16836 cookie-session dedup compares plaintext despite encrypted metadata", async () => {
+  for (const [provider, field] of [
+    ["qwen-cloud-token-plan", "qwenCloudCookie"],
+    ["volcengine-coding-plan", "volcConsoleCookie"],
+  ] as const) {
+    const sameCookie = `same-session-${provider}-16836`;
+    const first = await connections.createProviderConnection({
+      provider,
+      authType: "cookie",
+      name: `First label for ${provider}`,
+      providerSpecificData: { [field]: sameCookie },
+    });
+    assert.ok(first?.id, `${provider}: initial connection must be created`);
+    assert.match(String(readStoredProviderMetadata(String(first.id))[field]), /^enc:v1:/);
+
+    // AES-GCM uses a different nonce per encryption, so comparing the newly
+    // imported plaintext with a stored ciphertext always misses the same user.
+    const same = await connections.createProviderConnection({
+      provider,
+      authType: "cookie",
+      name: `Different label for ${provider}`,
+      providerSpecificData: { [field]: sameCookie },
+    });
+    assert.equal(same?.id, first.id, `${provider}: identical cookie must reuse the row`);
+
+    const distinct = await connections.createProviderConnection({
+      provider,
+      authType: "cookie",
+      name: `First label for ${provider}`,
+      providerSpecificData: { [field]: `different-session-${provider}-16836` },
+    });
+    assert.ok(distinct?.id);
+    assert.notEqual(distinct?.id, first.id, `${provider}: distinct sessions must not merge`);
+  }
+});
