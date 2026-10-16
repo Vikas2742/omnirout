@@ -106,6 +106,10 @@ test("#16836 all existing audit-redacted console secrets are encrypted", () => {
     "alibabaConsoleCookie",
     "alibabaConsoleSecToken",
     "xiaomiMimoConsoleCookie",
+    "qwenCloudCookie",
+    "qwenCloudSecToken",
+    "volcConsoleCookie",
+    "volcCsrfToken",
   ] as const;
   const metadata: Record<string, string> = { workspaceId: "ws-visible" };
   for (const field of sensitiveFields) metadata[field] = `test-secret-${field}`;
@@ -168,5 +172,69 @@ test("#16836 dashboard responses never expose encrypted or decrypted console cre
       assert.ok(!responseJson.includes(value), name);
     }
     assert.ok(!responseJson.includes("enc:v1:"));
+  }
+});
+
+test("#16836 quota console cookies stay encrypted in lazy and eager connection reads", () => {
+  const secrets = {
+    qwenCloudCookie: "qwen-console-cookie-secret",
+    qwenCloudSecToken: "qwen-console-csrf-secret",
+    volcConsoleCookie: "volc-console-cookie-secret",
+    volcCsrfToken: "volc-console-csrf-secret",
+  };
+  const stored = encryptConnectionFields({
+    id: "quota-console-secrets-16836",
+    provider: "qwen-cloud-token-plan",
+    providerSpecificData: { ...secrets, workspaceId: "visible-workspace" },
+  });
+  const disk = stored.providerSpecificData as Record<string, unknown>;
+  for (const [key, secret] of Object.entries(secrets)) {
+    assert.equal(looksEncrypted(disk[key]), true, key);
+    assert.ok(!JSON.stringify(disk).includes(secret), key);
+  }
+  assert.deepEqual(decryptConnectionFields(stored).providerSpecificData, {
+    ...secrets,
+    workspaceId: "visible-workspace",
+  });
+  assert.deepEqual(createLazyRowProxy(stored).providerSpecificData, {
+    ...secrets,
+    workspaceId: "visible-workspace",
+  });
+  const audited = JSON.stringify(summarizeProviderConnectionForAudit(stored));
+  for (const [key, secret] of Object.entries(secrets)) {
+    assert.ok(!audited.includes(key), key);
+    assert.ok(!audited.includes(secret), key);
+  }
+  assert.ok(!audited.includes("enc:v1:"));
+});
+
+test("#16836 compliance audits strip dashboard-redacted credential metadata", () => {
+  // Protect both ciphertext and legacy plaintext. These fields are already
+  // omitted by sanitizeProviderSpecificDataForResponse and must not leak into
+  // the longer-lived compliance audit database.
+  const secrets = {
+    qwenCloudCookie: "quota-cookie-16836",
+    qwenCloudSecToken: "quota-sectoken-16836",
+    volcConsoleCookie: "volc-cookie-16836",
+    volcCsrfToken: "volc-csrf-16836",
+    ollamaCloudUsageCookie: "ollama-usage-16836",
+    secretAccessKey: "aws-secret-16836",
+    sessionToken: "session-token-16836",
+    codexFingerprintSeed: "fingerprint-16836",
+  };
+  const row = {
+    id: "audit-redaction-16836",
+    provider: "qwen-cloud-token-plan",
+    providerSpecificData: { ...secrets, workspaceId: "safe-workspace" },
+  };
+  for (const candidate of [row, encryptConnectionFields({ ...row })]) {
+    const audit = summarizeProviderConnectionForAudit(candidate);
+    assert.deepEqual(audit?.providerSpecificData, { workspaceId: "safe-workspace" });
+    const serialized = JSON.stringify(audit);
+    for (const [key, secret] of Object.entries(secrets)) {
+      assert.ok(!serialized.includes(key), key);
+      assert.ok(!serialized.includes(secret), key);
+    }
+    assert.ok(!serialized.includes("enc:v1:"));
   }
 });
