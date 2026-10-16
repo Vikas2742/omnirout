@@ -105,7 +105,7 @@ import { FORMATS } from "../translator/formats.ts";
 import { collectCustomToolNamesForSourceFormat } from "../translator/request/openai-responses/additionalTools.ts";
 import { THINKING_MARKER_HEADER } from "../utils/thinkCloseMarker.ts";
 import { resolveAgentGoalPolicy } from "../utils/agentGoalPolicy.ts";
-import { createStreamController } from "../utils/streamHandler.ts";
+import { createChatStreamController } from "./chatCore/chatStreamController.ts";
 import * as streamFailure from "../utils/streamFailureFinalization.ts";
 import { normalizeUsage } from "../utils/usageTracking.ts";
 import { refreshWithRetry, runWithOnPersist, runWithCasGuard } from "../services/tokenRefresh.ts";
@@ -154,11 +154,7 @@ import {
   describeMalformedNonStream,
 } from "../utils/diagnostics.ts";
 import { checkTokenLimits } from "@omniroute/open-sse/services/tokenLimitCounter.ts";
-import {
-  COOLDOWN_MS,
-  HTTP_STATUS,
-  STREAM_DISCONNECT_GRACE_PERIOD_MS,
-} from "../config/constants.ts";
+import { COOLDOWN_MS, HTTP_STATUS } from "../config/constants.ts";
 
 import { resolveResilienceSettings } from "@/lib/resilience/settings";
 import { classifyProviderError, PROVIDER_ERROR_TYPES } from "../services/errorClassifier.ts";
@@ -2413,29 +2409,15 @@ async function handleChatCoreInner({
   let onClientDisconnectFinalize:
     ((event: { reason: string; duration: number }) => boolean) | null = null;
 
-  // Create stream controller for disconnect detection
-  const streamController = createStreamController({
-    onDisconnect: (event) => {
-      let finalized = false;
-      try {
-        finalized = onClientDisconnectFinalize?.(event) === true;
-      } catch {}
-      if (!finalized) {
-        try {
-          finalizePendingScope(pendingScope, {
-            status: 499,
-            error: `Client disconnected: ${event.reason}`,
-            errorCode: "client_disconnected",
-          });
-          finalized = true;
-        } catch {}
-      }
-      try {
-        onDisconnect?.(event);
-      } catch {}
-      return finalized;
-    },
-    onError: (event) => onPipelineStreamError?.(event),
+  // Create stream controller for disconnect detection — wiring extracted to
+  // chatCore/chatStreamController.ts (chatCore slice 2); the two late-bound handlers above are
+  // read through getters at event time.
+  const streamController = createChatStreamController({
+    getClientDisconnectFinalize: () => onClientDisconnectFinalize,
+    getPipelineStreamError: () => onPipelineStreamError,
+    pendingScope,
+    finalizePendingScope,
+    onDisconnect,
     provider,
     model,
     connectionId,
@@ -2443,7 +2425,6 @@ async function handleChatCoreInner({
     clientResponseFormat,
     clientAbortSignal: clientRawRequest?.signal,
     allowCompletedToolHandoffGrace: isCodexResponsesEcho,
-    clientDisconnectGracePeriodMs: STREAM_DISCONNECT_GRACE_PERIOD_MS,
   });
 
   const dedupRequestBody = { ...translatedBody, model: `${provider}/${model}`, stream };
