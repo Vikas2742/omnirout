@@ -624,6 +624,9 @@ export function normalizeDiscoveredModels(
     // window as `max_model_len`, the value the engine was actually started with.
     // Without it a vLLM model syncs with no window at all and the resolver hands
     // out the 128K default, understating a 250K deployment by half. #12858
+    // Explicit max fields beat a plain `context_window`: catalogs that send both
+    // use `context_window` as the smaller pricing tier (272K) and
+    // `max_context_window` / `max_model_len` as the usable window.
     // Anthropic Models API reports the window as `max_input_tokens` and the output
     // cap as `max_tokens`. #14159 briefly treated `max_tokens` as a window candidate;
     // that mapped Claude Opus 5 to 128K instead of 1M. Do not put `max_tokens` here.
@@ -631,12 +634,12 @@ export function normalizeDiscoveredModels(
       record.context_length,
       record.contextLength,
       record.contextWindow,
-      record.context_window,
       record.max_model_len,
       record.maxModelLen,
       record.max_context_window,
-      record.max_context_window_tokens,
+      record.context_window,
       record.context_window_tokens,
+      record.max_context_window_tokens,
       record.max_input_tokens,
       record.maxInputTokens,
       topProvider.context_length
