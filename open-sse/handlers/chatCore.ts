@@ -34,7 +34,7 @@ import {
   buildDefaultAllowClaudeMessage,
   applyClaudeClassifierReasoningDefault,
 } from "./chatCore/claudeClassifierCompat.ts";
-import { enforceOutputTokenBudget } from "./chatCore/outputTokenBudget.ts";
+import { enforceFinalOutputTokenBudget } from "./chatCore/finalOutputBudget.ts";
 import { withResilienceActionsContext } from "./chatCore/resilienceAttemptContext.ts";
 import { notePreviousResponseResumed } from "./chatCore/resumedResilienceNotes.ts";
 import { runStreamingResponse } from "./chatCore/streamingResponse.ts";
@@ -157,7 +157,6 @@ import { checkTokenLimits } from "@omniroute/open-sse/services/tokenLimitCounter
 import {
   COOLDOWN_MS,
   HTTP_STATUS,
-  DEFAULT_MAX_TOKENS,
   STREAM_DISCONNECT_GRACE_PERIOD_MS,
 } from "../config/constants.ts";
 
@@ -1974,43 +1973,29 @@ async function handleChatCoreInner({
   const modelOutputCap = toPositiveInteger(
     getExplicitModelOutputCap({ provider, model: effectiveModel })
   );
-  const outputBudget = enforceOutputTokenBudget(
-    body as Record<string, unknown>,
+  // enforceOutputTokenBudget against the concrete target + the reject / adjusted-fields logs:
+  // extracted to chatCore/finalOutputBudget.ts (chatCore slice 2).
+  const outputBudget = enforceFinalOutputTokenBudget({
+    body: body as Record<string, unknown>,
     finalEstimatedInputTokens,
-    contextWindowChecksDisabled ? Number.MAX_SAFE_INTEGER : finalContextLimit,
-    targetFormat === FORMATS.CLAUDE && sourceFormat !== FORMATS.CLAUDE ? DEFAULT_MAX_TOKENS : 0,
+    finalContextLimit,
+    contextWindowChecksDisabled,
     modelOutputCap,
-    effectiveInputCap
-  );
+    effectiveInputCap,
+    provider,
+    effectiveModel,
+    sourceFormat,
+    targetFormat,
+    log,
+  });
   if (outputBudget.ok === false) {
-    const exceededInputCap = outputBudget.maxInputTokens !== undefined;
-    const message =
-      `Input exceeds ${exceededInputCap ? "maximum input tokens" : "context window"} for ${provider}/${effectiveModel}: ` +
-      `estimated ${outputBudget.estimatedInputTokens} input tokens, ${exceededInputCap ? `max input ${outputBudget.maxInputTokens}` : `limit ${outputBudget.contextLimit}`}. ` +
-      `Reduce the prompt or route to a model with a larger ${exceededInputCap ? "input limit" : "context window"}.`;
-    log?.warn?.("CONTEXT", message);
     trackPendingRequest(model, provider, pendingConnId, false, undefined, pendingRequestId);
     return createErrorResult(
       HTTP_STATUS.BAD_REQUEST,
-      message,
+      outputBudget.message,
       null,
       "context_length_exceeded",
       "invalid_request_error"
-    );
-  }
-  if (outputBudget.adjustedFields.length > 0) {
-    // A field can also be adjusted by *removal* (invalid/non-positive value), which
-    // the cap did not cause — so state the ceiling in effect rather than claiming
-    // the cap drove this particular adjustment.
-    const modelCapIsBinding =
-      modelOutputCap != null && modelOutputCap < outputBudget.availableOutputTokens;
-    log?.info?.(
-      "CONTEXT",
-      `Adjusted invalid or oversized output token fields (${outputBudget.adjustedFields.join(", ")}); ` +
-        `${outputBudget.availableOutputTokens} tokens remain for output` +
-        (modelCapIsBinding
-          ? ` (output ceiling in effect: ${modelOutputCap}, ${provider}/${effectiveModel}'s own cap)`
-          : "")
     );
   }
   body = outputBudget.body;
