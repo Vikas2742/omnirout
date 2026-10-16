@@ -36,6 +36,21 @@ export function calibrateHeapFallbackMb(totalmemBytes) {
   return Math.min(4096, Math.max(512, target));
 }
 
+/**
+ * Heap resolution for the Docker/standalone launcher (`run-standalone.mjs`),
+ * giving it the same contract as `omniroute serve` (#16343): an explicit
+ * OMNIROUTE_MEMORY_MB always wins; when it is unset or invalid the ceiling is
+ * calibrated from host RAM (~35%, clamped [512, 4096]) instead of the
+ * resolver's fixed 512 default — which is what left the Docker server at ~1GB
+ * on hosts with plenty of RAM and shed combo traffic with 503
+ * resource_pressure.
+ * @param {NodeJS.ProcessEnv | Record<string, string | undefined>} env
+ * @param {number | undefined | null} totalmemBytes — typically `os.totalmem()`
+ */
+export function resolveStandaloneMaxOldSpaceMb(env, totalmemBytes) {
+  return resolveMaxOldSpaceMb(env?.OMNIROUTE_MEMORY_MB, calibrateHeapFallbackMb(totalmemBytes));
+}
+
 const MAX_OLD_SPACE_FLAG = "--max-old-space-size";
 
 /**

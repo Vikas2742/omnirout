@@ -253,9 +253,12 @@ ENV HOSTNAME=0.0.0.0
 # response buffered in full — see open-sse/services/fusion.ts::FUSION_DEFAULTS
 # .maxPanel, issue #1905). Override at `docker run` time with
 # `-e OMNIROUTE_MEMORY_MB=2048` (or higher) if you raise fusionTuning.maxPanel
-# above the default cap.
+# above the default cap. OMNIROUTE_MEMORY_MB is the single heap knob:
+# run-standalone.mjs appends --max-old-space-size from it, and when it is unset
+# the launcher falls back to a host-calibrated default (~35% of RAM, clamped
+# [512, 4096] — #5172/#16343). Deliberately no baked NODE_OPTIONS heap flag:
+# one used to pin 1024MB even when this var was unset, shadowing calibration.
 ENV OMNIROUTE_MEMORY_MB=1024
-ENV NODE_OPTIONS="--max-old-space-size=${OMNIROUTE_MEMORY_MB}"
 
 # Data directory inside Docker — must match the volume mount in docker-compose.yml
 ENV DATA_DIR=/app/data
