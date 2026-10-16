@@ -3,11 +3,29 @@ import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
 import { MemoryReindexSchema } from "@/shared/schemas/memory";
 import { runReindexBatch, getReindexPending } from "@/lib/memory/reindex";
+import { createReindexDrainController } from "@/lib/memory/reindexDrain";
 import { markAllMemoriesNeedReindex } from "@/lib/db/memoryVec";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
 import { logger } from "@omniroute/open-sse/utils/logger.ts";
 
 const log = logger("MEMORY_REINDEX_ROUTE");
+
+const reindexDrain = createReindexDrainController({
+  runBatch: runReindexBatch,
+  getPending: getReindexPending,
+  onComplete: (result) => {
+    if (result.reason === "drained") {
+      log.info("memory.reindex.background.complete", result);
+    } else {
+      log.warn("memory.reindex.background.paused", result);
+    }
+  },
+  onError: (err: unknown) => {
+    log.error("memory.reindex.background.fail", {
+      error: sanitizeErrorMessage(err instanceof Error ? err.message : String(err)),
+    });
+  },
+});
 
 export async function POST(request: Request) {
   const authError = await requireManagementAuth(request);
@@ -37,16 +55,11 @@ export async function POST(request: Request) {
 
     const pending = getReindexPending();
 
-    // Dispatch batch in background — do NOT await (returns immediate response).
-    setImmediate(() => {
-      runReindexBatch(100).catch((err: unknown) => {
-        log.error("memory.reindex.background.fail", {
-          error: sanitizeErrorMessage(err instanceof Error ? err.message : String(err)),
-        });
-      });
-    });
-
-    return NextResponse.json({ started: true, pending });
+    // Register a single background worker before replying. It drains multiple
+    // batches until empty, stalled by failing embeds, or the bounded work cap.
+    // Repeated clicks share that worker rather than racing SQLite/vector writes.
+    const started = pending > 0 ? reindexDrain.start() : false;
+    return NextResponse.json({ started, pending });
   } catch (err: unknown) {
     const message = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     return NextResponse.json({ error: { message } }, { status: 500 });
