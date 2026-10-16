@@ -10,6 +10,13 @@ export const PROVIDER_SPECIFIC_SECRET_FIELDS = [
   "alibabaConsoleCookie",
   "alibabaConsoleSecToken",
   "xiaomiMimoConsoleCookie",
+  // Console-only quota cookies/tokens live alongside the inference API key;
+  // none are SQLite identity fields. Keeping them plaintext on disk exposes
+  // the cloud-console account to anyone who can read the database.
+  "qwenCloudCookie",
+  "qwenCloudSecToken",
+  "volcConsoleCookie",
+  "volcCsrfToken",
 ] as const;
 
 /** Return a fresh object only if a recognized secret field actually changes. */
