@@ -80,19 +80,21 @@ test("#16579 verified affected models keep their published Go-tier limits", () =
 });
 
 test("#16579 imported catalog placeholders are replaced for verified OpenCode Go models", () => {
-  for (const [model, expected] of [
-    ["deepseek-v4.1-flash", 1_000_000],
-    ["deepseek-flash", 1_000_000],
-    ["minimax-m2.5", 204_800],
+  for (const [model, context, output] of [
+    ["deepseek-v4.1-flash", 1_000_000, 384_000],
+    ["deepseek-flash", 1_000_000, 384_000],
+    ["minimax-m2.5", 204_800, 131_072],
   ] as const) {
     const imported = {
       id: `opencode-go/${model}`,
       root: model,
       owned_by: "opencode-go",
       context_length: 200_000,
+      max_output_tokens: 32_000,
     };
     const enriched = enrichCatalogModelEntry(imported);
-    assert.equal(enriched.context_length, expected, model);
+    assert.equal(enriched.context_length, context, `${model}: context`);
+    assert.equal(enriched.max_output_tokens, output, `${model}: output`);
   }
 });
 
@@ -124,4 +126,28 @@ test("#16579 operator context overrides still win over authoritative Go metadata
     }
   );
   assert.equal(enriched.context_length, 750_000);
+});
+
+test("#16579 imported Go output respects an operator-set override", () => {
+  const snapshot = {
+    ...createModelCapabilityResolutionSnapshot(),
+    maxTokenOverrides: new Map([
+      ["opencode-go", new Map([["deepseek-flash", 64_000]])],
+    ]),
+  };
+  const enriched = enrichCatalogModelEntry(
+    {
+      id: "opencode-go/deepseek-flash",
+      root: "deepseek-flash",
+      owned_by: "opencode-go",
+      max_output_tokens: 32_000,
+    },
+    undefined,
+    {
+      modelsDevPricing: {},
+      userPricing: {},
+      capabilityResolutionSnapshot: snapshot,
+    }
+  );
+  assert.equal(enriched.max_output_tokens, 64_000);
 });
