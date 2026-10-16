@@ -1,5 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
+import { useTranslations } from "next-intl";
+
 import ConnectionTestButton from "@/shared/components/ConnectionTestButton";
 
 // Phase 1d extraction — Issue #3501
@@ -7,12 +11,11 @@ import ConnectionTestButton from "@/shared/components/ConnectionTestButton";
 // getStatusPresentation) moved out of ProviderDetailPageClient.tsx.
 
 import { readCookieExpiresAt } from "@/shared/utils/webCookieExpiry";
-import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
 import { Badge, Button, Toggle } from "@/shared/components";
 import { pickDisplayValue } from "@/shared/utils/maskEmail";
 import useEmailPrivacyStore from "@/store/emailPrivacyStore";
 import { isClaudeExtraUsageBlockEnabled } from "@/lib/providers/claudeExtraUsage";
+import { getCodexServiceTierBadge } from "./codexServiceTierBadge";
 import { shouldShowConnectionLastError } from "./connectionRowHelpers";
 import type { ConnectionRowProps } from "./connectionRowTypes";
 import { getStatusPresentation } from "./connectionRowStatus";
@@ -220,42 +223,11 @@ export default function ConnectionRow({
     : "default";
   const codexServiceTierIsGlobal =
     isCodex && codexGlobalServiceMode !== undefined && codexGlobalServiceMode !== "none";
-  const codexServiceTierBadge =
-    codexServiceTier === "priority"
-      ? {
-          label: providerText(t, "codexTierFastLabel", "Fast"),
-          icon: "bolt",
-          className: "bg-sky-500/15 text-sky-500",
-          title: codexServiceTierIsGlobal
-            ? providerText(
-                t,
-                "providerDetailGlobalPriorityActive",
-                "Global Codex priority service tier is active"
-              )
-            : providerText(
-                t,
-                "providerDetailConnectionPriorityActive",
-                "Codex priority service tier is active for this connection"
-              ),
-        }
-      : codexServiceTier === "flex"
-        ? {
-            label: providerText(t, "codexTierFlexLabel", "Flex"),
-            icon: "speed",
-            className: "bg-cyan-500/15 text-cyan-500",
-            title: codexServiceTierIsGlobal
-              ? providerText(
-                  t,
-                  "providerDetailGlobalFlexActive",
-                  "Global Codex flex service tier is active"
-                )
-              : providerText(
-                  t,
-                  "providerDetailConnectionFlexActive",
-                  "Codex flex service tier is active for this connection"
-                ),
-          }
-        : null;
+  const codexServiceTierBadge = getCodexServiceTierBadge(
+    t,
+    codexServiceTier,
+    codexServiceTierIsGlobal
+  );
   const claudeBlockExtraUsageEnabled = isClaude
     ? isClaudeExtraUsageBlockEnabled("claude", connection.providerSpecificData)
     : false;

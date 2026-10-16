@@ -7,6 +7,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
+import {
+  CODEX_ULTRAFAST_LABEL,
+  CODEX_ULTRAFAST_MODEL_LABEL,
+} from "@/lib/providers/codexServiceTierModels";
+import type { CodexServiceTier } from "@/lib/providers/requestDefaults";
 import { Badge, Card, Modal, Toggle } from "@/shared/components";
 import ProviderTestSlideOver from "@/shared/components/ProviderTestSlideOver";
 import ProviderIcon from "@/shared/components/ProviderIcon";
@@ -35,7 +40,7 @@ interface ProviderStats {
   errorTime?: string | null;
   allDisabled?: boolean;
   expiryStatus?: "expired" | "expiring_soon" | string | null;
-  codexServiceTier?: "default" | "priority" | "flex" | null;
+  codexServiceTier?: CodexServiceTier | null;
 }
 
 const KIND_LABEL_KEYS: Record<string, { key: string; fallback: string }> = {
@@ -123,6 +128,41 @@ function providerText(
     );
   }
   return fallback;
+}
+
+function renderCodexServiceTierChip(
+  providerId: string,
+  tier: CodexServiceTier | null | undefined,
+  t: ProviderMessageTranslator
+): ReactNode {
+  const codexServiceTierLabel =
+    tier === "ultrafast"
+      ? CODEX_ULTRAFAST_LABEL
+      : tier === "flex"
+        ? providerText(t, "codexTierFlexLabel", "Flex")
+        : providerText(t, "codexTierFastLabel", "Fast");
+  return providerId === "codex" && tier && tier !== "default" ? (
+    <span
+      key="codex-service-tier"
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide ${
+        tier === "flex"
+          ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
+          : "bg-sky-500/10 text-sky-600 dark:text-sky-400"
+      }`}
+      title={
+        tier === "ultrafast"
+          ? CODEX_ULTRAFAST_MODEL_LABEL
+          : providerText(t, "codexServiceTierActive", "Codex {tier} service tier is active", {
+              tier: codexServiceTierLabel,
+            })
+      }
+    >
+      <span className="material-symbols-outlined text-[10px] leading-none">
+        {tier === "flex" ? "speed" : "bolt"}
+      </span>
+      {codexServiceTierLabel}
+    </span>
+  ) : null;
 }
 
 interface WarningBadgeDetails {
@@ -330,29 +370,7 @@ const ProviderCard = forwardRef<ProviderCardHandle, ProviderCardProps>(function 
   const isCheaperInferencePartner = isCheaperInferenceProviderId(provider.id || providerId);
   const isSponsorPartner = isKimiPartner || isCheaperInferencePartner;
   const openRouterStat = useOpenRouterProviderStat(provider.id || providerId);
-  const codexServiceTierLabel =
-    stats.codexServiceTier === "flex"
-      ? providerText(t, "codexTierFlexLabel", "Flex")
-      : providerText(t, "codexTierFastLabel", "Fast");
-  const codexServiceTierChip =
-    providerId === "codex" && stats.codexServiceTier && stats.codexServiceTier !== "default" ? (
-      <span
-        key="codex-service-tier"
-        className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide ${
-          stats.codexServiceTier === "flex"
-            ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-            : "bg-sky-500/10 text-sky-600 dark:text-sky-400"
-        }`}
-        title={providerText(t, "codexServiceTierActive", "Codex {tier} service tier is active", {
-          tier: codexServiceTierLabel,
-        })}
-      >
-        <span className="material-symbols-outlined text-[10px] leading-none">
-          {stats.codexServiceTier === "flex" ? "speed" : "bolt"}
-        </span>
-        {codexServiceTierLabel}
-      </span>
-    ) : null;
+  const codexServiceTierChip = renderCodexServiceTierChip(providerId, stats.codexServiceTier, t);
 
   // Kimi (Moonshot AI) official-partnership badge — literal brand-blue Tailwind
   // arbitrary values must stay in sync with KIMI_BRAND_COLOR (featuredProviders.ts).

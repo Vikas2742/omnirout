@@ -1,3 +1,4 @@
+import { scopeCodexServiceTierDefault } from "@/lib/providers/codexServiceTierModels";
 /**
  * chatCore Codex service-tier resolvers (Quality Gate v2 / Fase 9 — chatCore god-file
  * decomposition, #3501).
@@ -38,7 +39,12 @@ export function resolveEffectiveServiceTier(
     const normalizedServiceTier = normalizeCodexServiceTier(rawServiceTier);
     if (normalizedServiceTier) return normalizedServiceTier;
   }
-  return getCodexRequestDefaults(providerSpecificData).serviceTier ?? "standard";
+  return (
+    scopeCodexServiceTierDefault(
+      getCodexRequestDefaults(providerSpecificData).serviceTier,
+      requestRecord.model
+    ) ?? "standard"
+  );
 }
 
 /**

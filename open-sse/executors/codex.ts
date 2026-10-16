@@ -1,12 +1,14 @@
+import { createRequire } from "module";
+import { scopeCodexServiceTierDefault } from "@/lib/providers/codexServiceTierModels";
+import { getCodexRequestDefaults } from "@/lib/providers/requestDefaults";
+import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { getApiKeyCodexServiceTier } from "../../src/lib/providers/codexApiKeyServiceMode";
 import { buildErrorBody } from "../utils/error.ts";
-import { getCodexRequestDefaults } from "@/lib/providers/requestDefaults";
 import {
   getCodexModelScope,
   getCodexRateLimitKey,
   type CodexQuotaScope,
 } from "../config/codexQuotaScopes.ts";
-import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import {
   BaseExecutor,
   mergeUpstreamExtraHeaders,
@@ -57,7 +59,6 @@ import * as overloadedOutput from "./codex/sseOverloadedOutput.ts";
 import * as modelUnavailable from "./codex/sseModelUnavailable.ts";
 import { normalizeCodexResponsesInput } from "../utils/responsesInputNormalization.ts";
 import * as prl from "../utils/providerRequestLogging.ts";
-import { createRequire } from "module";
 import { loadDynamicModule } from "./codex/wreqLoader.ts";
 // Quota parsing/scheduling extracted to a pure leaf; re-exported for the
 // Codex account module and tests.
@@ -1256,12 +1257,13 @@ export class CodexExecutor extends BaseExecutor {
     }
     delete body._nativeCodexPassthrough;
 
+    const connectionServiceTier = scopeCodexServiceTierDefault(requestDefaults.serviceTier, model);
     const requestServiceTier =
       getApiKeyCodexServiceTier(credentials) ?? normalizeServiceTierValue(body.service_tier);
     if (requestServiceTier) {
       body.service_tier = requestServiceTier;
-    } else if (requestDefaults.serviceTier) {
-      body.service_tier = requestDefaults.serviceTier;
+    } else if (connectionServiceTier) {
+      body.service_tier = connectionServiceTier;
     }
 
     // Issue #1832 & #1853: Map messages to input for clients like Cursor 5.5 that use responses/compact but send messages instead of input.
