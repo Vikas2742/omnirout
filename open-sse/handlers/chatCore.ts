@@ -238,7 +238,7 @@ import {
   writeCompressionAnalytics,
   writeCompressionSkip,
 } from "./chatCore/compressionAnalyticsWrite.ts";
-import { runPluginOnRequestHook } from "./chatCore/pluginOnRequest.ts";
+import { runPluginRequestGate } from "./chatCore/pluginRequestGate.ts";
 import { recordContextEditingTelemetryHook } from "./chatCore/contextEditingTelemetry.ts";
 import { recordCompressionCacheStats } from "./chatCore/compressionCacheStats.ts";
 import { writeCavemanOutputAnalytics } from "./chatCore/cavemanOutputAnalytics.ts";
@@ -486,9 +486,9 @@ async function handleChatCoreInner({
   // Extracted to chatCore/customSystemPrompt.ts (chatCore slice 2); reads cachedSettings when the
   // combo/chat layer passed it in, so the hot path does no extra DB read.
   body = applyCustomSystemPrompt(body, cachedSettings ?? (await getCachedSettings()), log);
-  // ── Plugin onRequest hook ──
-  // Dynamic import cached by Node.js after first call — minimal overhead
-  const pluginGate = await runPluginOnRequestHook({
+  // ── Plugin onRequest hook ── extracted to chatCore/pluginRequestGate.ts (chatCore slice 2):
+  // a block becomes the labelled 403 `plugin_block` result; a rewrite replaces the body.
+  const pluginGate = await runPluginRequestGate({
     requestId: traceId,
     body,
     model,
@@ -497,23 +497,8 @@ async function handleChatCoreInner({
     headers: clientRawRequest?.headers,
     log,
   });
-  if (pluginGate.blocked === true) {
-    return {
-      success: false,
-      status: 403,
-      // Label the source: this 403 is our own policy decision, not the provider
-      // rejecting us. Unlabelled, it is indistinguishable from a real upstream 403
-      // and gets the connection banned. Matches the type already sent to the client
-      // in pluginOnRequest.ts.
-      errorType: "plugin_block",
-      errorCode: "plugin_block",
-      error: "Request blocked by plugin",
-      response: pluginGate.response,
-    };
-  }
-  if (pluginGate.body) {
-    body = pluginGate.body;
-  }
+  if (pluginGate.blocked === true) return pluginGate.result;
+  body = pluginGate.body;
   // Per-API-key device/connection tracking (port of upstream 9router#931,
   // thanks @mugnimaestra). In-memory only, never blocks the request path.
   if (apiKeyInfo?.id) {
