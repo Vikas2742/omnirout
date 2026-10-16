@@ -862,10 +862,16 @@ export const PROVIDER_MODELS_CONFIG: Record<string, ProviderModelsConfigEntry> =
           : [];
       return models.flatMap((model: any) => {
         if (!model || typeof model !== "object") return [];
-        const id = model.id || model.model || model.name;
-        return typeof id === "string" && id.trim()
-          ? [{ ...model, id, name: model.name || id }]
-          : [];
+        const id = [model.id, model.model, model.name].find(
+          (value) => typeof value === "string" && value.trim().length > 0
+        );
+        if (typeof id !== "string") return [];
+        const normalizedId = id.trim();
+        const name =
+          typeof model.name === "string" && model.name.trim()
+            ? model.name.trim()
+            : normalizedId;
+        return [{ ...model, id: normalizedId, name }];
       });
     },
   },
