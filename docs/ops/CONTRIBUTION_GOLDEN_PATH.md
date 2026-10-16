@@ -219,7 +219,8 @@ scripts/dev/new-worktree.sh fix/1234-slug release/vX.Y.Z  # isolated worktree, s
   without diagnostics (read the log it names under `_artifacts/typecheck-touched/`), `0` when
   clean. The temp tsconfig is always removed; never commit one.
 - `new-worktree.sh` serialises concurrent runs on `<git-common-dir>/omniroute-new-worktree.lock`
-  (waits up to `NEW_WORKTREE_LOCK_WAIT` seconds, default 600, with a visible message) and rolls
+  (waits up to 600 s by default, with a visible message; the script header documents the
+  override) and rolls
   back the branch it created when `git worktree add` fails before the worktree exists, so a retry
   needs no manual `git branch -D`. The hard-linked `node_modules` and `.husky/_` copy are unchanged.
 
