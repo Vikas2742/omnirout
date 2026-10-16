@@ -53,6 +53,8 @@ import {
   buildSyntheticResponsesFailedEvent,
 } from "../utils/responsesSequence.ts";
 import { hasCodexSsePeekProgress } from "./codex/ssePeekProgress.ts";
+import * as overloadedOutput from "./codex/sseOverloadedOutput.ts";
+import * as modelUnavailable from "./codex/sseModelUnavailable.ts";
 import { normalizeCodexResponsesInput } from "../utils/responsesInputNormalization.ts";
 import * as prl from "../utils/providerRequestLogging.ts";
 import { createRequire } from "module";
@@ -558,41 +560,20 @@ const CODEX_SSE_TRANSIENT_ERROR_PATTERNS = [
 // buffer before giving up and passing the stream through unchanged.
 const CODEX_SSE_PEEK_MAX_BYTES = 8192;
 
-/**
- * Best-effort extraction of the human-readable error message from a peeked SSE
- * chunk, so the resulting 503 body carries something more useful than the raw
- * pattern that matched. Falls back to the matched pattern when no structured
- * `data:` payload could be parsed.
- */
-function extractCodexSseErrorMessage(text: string, fallback: string): string {
-  for (const line of text.split(/\r?\n/)) {
-    if (!line.startsWith("data:")) continue;
-    const data = line.slice("data:".length).trim();
-    if (!data || data === "[DONE]") continue;
-    try {
-      const parsed = JSON.parse(data) as Record<string, unknown>;
-      const directError = parsed.error as Record<string, unknown> | undefined;
-      const nestedError = (parsed.response as Record<string, unknown> | undefined)?.error as
-        Record<string, unknown> | undefined;
-      const message =
-        (typeof directError?.message === "string" && directError.message) ||
-        (typeof nestedError?.message === "string" && nestedError.message) ||
-        (typeof parsed.message === "string" && parsed.message);
-      if (message) return message;
-    } catch {
-      // Non-JSON SSE data line — keep scanning subsequent lines.
-    }
-  }
-  return fallback;
-}
-
 type CodexSseTransientErrorPeek =
-  | { matched: string; message: string; replacementBody: null; timedOut?: false }
+  | {
+      matched: string;
+      message: string;
+      replacementBody: null;
+      timedOut?: false;
+      modelUnavailable?: boolean;
+    }
   | {
       matched: null;
       message: null;
       replacementBody: ReadableStream<Uint8Array> | null;
       timedOut?: boolean;
+      modelUnavailable?: false;
     };
 
 /**
@@ -636,10 +617,12 @@ export async function peekCodexSseTransientError(
       text += decoder.decode(value, { stream: true });
       const lower = text.toLowerCase();
       const hit = CODEX_SSE_TRANSIENT_ERROR_PATTERNS.find((pattern) => lower.includes(pattern));
-      if (hit) {
-        matched = hit;
-        break;
-      }
+      matched = hit ?? modelUnavailable.matchCodexSseModelUnavailable(text);
+      if (matched) break;
+      // Fake-200 overload delivered as output text (decolua/9router#3232).
+      const overloadStep = overloadedOutput.codexOverloadedOutputPeekStep(text);
+      if (overloadStep === "settled") break;
+      if (overloadStep === "wait") continue;
       // Hand off actual text/reasoning/tool progress, but retain the early
       // error window across lifecycle-only frames such as response.created.
       if (hasCodexSsePeekProgress(text)) {
@@ -654,13 +637,18 @@ export async function peekCodexSseTransientError(
     );
   }
 
+  matched ??=
+    modelUnavailable.matchCodexSseModelUnavailable(text, true) ??
+    overloadedOutput.matchCodexOverloadedOutput(text);
   if (matched) {
     try {
       await reader.cancel();
     } catch {
       // Upstream socket may already be closing; nothing to clean up.
     }
-    return { matched, message: extractCodexSseErrorMessage(text, matched), replacementBody: null };
+    const message = overloadedOutput.extractCodexSseErrorMessage(text, matched);
+    const isModelUnavailable = modelUnavailable.isCodexSseModelUnavailableMatch(matched);
+    return { matched, message, replacementBody: null, modelUnavailable: isModelUnavailable };
   }
 
   // Re-assemble the stream: peeked prefix chunks, then continue draining the
@@ -836,7 +824,18 @@ export class CodexExecutor extends BaseExecutor {
       const resp = (httpResult as { response?: Response }).response;
       if (resp) {
         const peek = await peekCodexSseTransientError(resp);
-        if (peek.matched) {
+        if (peek.modelUnavailable) {
+          // Model + account scoped: a 400 lets isModelScoped400 lock the model on this
+          // connection and advance the combo; a 503 would feed the provider breaker.
+          input.log?.warn?.(
+            "FALLBACK",
+            `CODEX | 200-OK SSE reported model unavailable "${peek.matched}" — converting to 400`
+          );
+          (httpResult as { response: Response }).response = errorResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            peek.message
+          );
+        } else if (peek.matched) {
           input.log?.warn?.(
             "RETRY",
             `CODEX | 200-OK SSE carried transient error "${peek.matched}" — converting to 503 for account fallback`
