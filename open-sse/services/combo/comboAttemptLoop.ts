@@ -8,6 +8,7 @@ import {
   formatRetryAfter,
   getEarliestRateLimitedUntil,
   getModelLockoutInfo,
+  scanTransientModelLock,
 } from "../accountFallback.ts";
 import {
   getCachedProviderConnectionById,
@@ -141,6 +142,12 @@ async function computeEarliestSkippedRateLimitedUntil(
   }
 }
 
+/** Pinned lookups stay exact. An empty connection id scans every account. */
+function lookupComboModelLockout(provider: string, connectionId: string, rawModel: string) {
+  if (!connectionId) return scanTransientModelLock(provider, rawModel);
+  return getModelLockoutInfo(provider, connectionId, rawModel);
+}
+
 /**
  * Resolve the earliest TRANSIENT model-lockout expiry across the skipped
  * targets (#16319). `computeEarliestSkippedRateLimitedUntil` only reads
@@ -164,7 +171,7 @@ async function computeEarliestSkippedModelLockUntil(
       const connectionId = typeof target?.connectionId === "string" ? target.connectionId : "";
       const rawModel = parseModel(target?.modelStr ?? "").model || "";
       if (!rawModel) continue;
-      const info = getModelLockoutInfo(provider, connectionId, rawModel);
+      const info = lookupComboModelLockout(provider, connectionId, rawModel);
       if (!info || !isTransientComboCooldownReason(info.reason)) continue;
       if (typeof info.remainingMs !== "number" || !(info.remainingMs > 0)) continue;
       const untilMs = Date.now() + info.remainingMs;
@@ -584,7 +591,7 @@ export async function dispatchWithCooldownRetry(opts: {
           lookupLock: (provider, connectionId, target) => {
             const rawModel = parseModel(target?.modelStr ?? "").model || "";
             if (!rawModel) return null;
-            return getModelLockoutInfo(provider, connectionId, rawModel);
+            return lookupComboModelLockout(provider, connectionId, rawModel);
           },
           computeWaitMs: () => null,
         });
@@ -737,7 +744,7 @@ export async function dispatchWithCooldownRetry(opts: {
           lookupLock: (provider, connectionId, target) => {
             const rawModel = parseModel(target?.modelStr ?? "").model || "";
             if (!rawModel) return null;
-            return getModelLockoutInfo(provider, connectionId, rawModel);
+            return lookupComboModelLockout(provider, connectionId, rawModel);
           },
           computeWaitMs: (retryAfter) => computeClosestRetryAfter(retryAfter).waitMs,
         });

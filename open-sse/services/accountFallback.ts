@@ -101,6 +101,7 @@ import {
   parseIsoDateTimeResetMs,
   shouldPreserveQuotaSignals,
 } from "./quotaResetParsing.ts";
+import { isTransientComboCooldownReason } from "./combo/comboCooldownRetry.ts";
 import { evictLockoutOverflow } from "./accountFallback/lockoutEviction.ts";
 export { MODEL_LOCKOUT_EVICTION_CAP } from "./accountFallback/lockoutEviction.ts";
 export { hasPerModelFailureScope } from "./accountFallback/perModelFailureScope.ts";
@@ -1018,8 +1019,11 @@ export function isModelLocked(
   model: string | null | undefined
 ): boolean {
   if (!model) return false;
-  const info = getModelLockoutInfo(provider, connectionId, model);
-  return Boolean(info && info.remainingMs > 0);
+  return exactModelLock.isAnyKeyLocked(
+    modelLockouts,
+    cleanupModelLockKey,
+    getModelLockKeys(provider, connectionId, model)
+  );
 }
 
 /**
@@ -1031,7 +1035,6 @@ export function getModelLockoutInfo(
   model: string | null | undefined
 ) {
   if (!model) return null;
-  if (!connectionId) return getModelLockoutInfoAcrossConnections(provider, model);
   const entry = exactModelLock.findLatestLockEntry(
     modelLockouts,
     cleanupModelLockKey,
@@ -1046,7 +1049,7 @@ export function getModelLockoutInfo(
   };
 }
 
-function getModelLockoutInfoAcrossConnections(provider: string, model: string | null | undefined) {
+export function scanTransientModelLock(provider: string, model: string | null | undefined) {
   if (!model) return null;
   const marker = "__omniroute_connection_probe__";
   const templates = getModelLockKeys(provider, marker, model)
@@ -1062,20 +1065,21 @@ function getModelLockoutInfoAcrossConnections(provider: string, model: string | 
   if (templates.length === 0) return null;
 
   const now = Date.now();
-  let latest: ModelLockoutEntry | null = null;
+  let earliest: ModelLockoutEntry | null = null;
   for (const [key, entry] of modelLockouts) {
     cleanupModelLockKey(key, now);
     if (entry.until <= now) continue;
+    if (!isTransientComboCooldownReason(entry.reason)) continue;
     if (!templates.some(({ prefix, suffix }) => key.startsWith(prefix) && key.endsWith(suffix)))
       continue;
-    if (!latest || entry.until > latest.until) latest = entry;
+    if (!earliest || entry.until < earliest.until) earliest = entry;
   }
-  if (!latest) return null;
+  if (!earliest) return null;
   return {
-    reason: latest.reason,
-    remainingMs: latest.until - now,
-    lockedAt: new Date(latest.lockedAt).toISOString(),
-    failureCount: latest.failureCount,
+    reason: earliest.reason,
+    remainingMs: earliest.until - now,
+    lockedAt: new Date(earliest.lockedAt).toISOString(),
+    failureCount: earliest.failureCount,
   };
 }
 
