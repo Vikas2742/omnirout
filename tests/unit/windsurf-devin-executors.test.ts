@@ -19,7 +19,7 @@ test("Devin Desktop sends the curated raw model id without alias rewriting", asy
   const executor = await getExecutor("devin-desktop");
   const originalFetch = globalThis.fetch;
   let requestBody: Uint8Array | null = null;
-  globalThis.fetch = async (url, _init) => {
+  globalThis.fetch = async (url, init) => {
     if (String(url).endsWith("/exa.auth_pb.AuthService/GetUserJwt")) {
       const jwt = new TextEncoder().encode("test-jwt");
       return new Response(new Uint8Array([0x0a, jwt.length, ...jwt]));
