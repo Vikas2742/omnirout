@@ -1,0 +1,1 @@
+- **fix(copilot):** skip unnecessary refresh of healthy Copilot sub-tokens ([#16818](https://github.com/diegosouzapw/OmniRoute/pull/16818)) — thanks @gsmarcil.
