@@ -22,6 +22,7 @@ import {
   PlaywrightCfTransport,
   toCfMessages,
   hasUnsupportedCfImageParts,
+  classifyCfBrowserStartFailure,
   type CfTransport,
 } from "../../open-sse/executors/cloudflare-playground.ts";
 
@@ -238,6 +239,22 @@ test("toCfMessages drops system/tool, flattens parts, keeps user/assistant", () 
   assert.equal(out[2].parts[0].text, "a\nb");
   assert.equal(out[0].role, "user");
   assert.equal(out[1].role, "assistant");
+});
+
+test("#16460 missing Playwright package or Chromium binary is a 503 host error", () => {
+  for (const message of [
+    "Playwright is not available. Install it (npm i playwright && npx playwright install chromium).",
+    "browserType.launch: Executable doesn't exist at /home/node/.cache/ms-playwright/chromium",
+  ]) {
+    const result = classifyCfBrowserStartFailure(new Error(message));
+    assert.equal(result.status, 503);
+    assert.match(result.message, /playwright.*chromium/i);
+    assert.ok(!result.message.includes("/home/node"), "no local executable path leaks");
+  }
+
+  const upstream = classifyCfBrowserStartFailure(new Error("Navigation timeout of 45000 ms exceeded"));
+  assert.equal(upstream.status, 502);
+  assert.match(upstream.message, /browser session failed/i);
 });
 
 test("#16460 Cloudflare text-only bridge detects image content without rejecting text", () => {
