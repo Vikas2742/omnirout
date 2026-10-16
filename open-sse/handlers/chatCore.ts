@@ -64,7 +64,7 @@ import {
   isCodexOriginatedHeaders,
   isClaudeCodeOriginatedHeaders,
 } from "../config/codexIdentity.ts";
-import { trackDevice, extractIpFromHeaders } from "../services/deviceTracker.ts";
+import { trackRequestDevice } from "./chatCore/deviceTracking.ts";
 import { getCombosCached } from "./chatCore/comboContextCache.ts";
 export { clearCombosCache, clearUpstreamProxyConfigCache } from "./chatCore/comboContextCache.ts";
 import { resolveAccountSemaphoreKey } from "./chatCore/executorHelpers.ts";
@@ -501,13 +501,11 @@ async function handleChatCoreInner({
   body = pluginGate.body;
   // Per-API-key device/connection tracking (port of upstream 9router#931,
   // thanks @mugnimaestra). In-memory only, never blocks the request path.
-  if (apiKeyInfo?.id) {
-    trackDevice(
-      apiKeyInfo.id,
-      extractIpFromHeaders(clientRawRequest?.headers ?? null),
-      userAgent ?? null
-    );
-  }
+  trackRequestDevice({
+    apiKeyId: apiKeyInfo?.id,
+    headers: clientRawRequest?.headers ?? null,
+    userAgent,
+  });
   const agentGoalPolicy = resolveAgentGoalPolicy(body, clientRawRequest?.headers ?? null);
   if (agentGoalPolicy.detected) {
     log?.debug?.(
