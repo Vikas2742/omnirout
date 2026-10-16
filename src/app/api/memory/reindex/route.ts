@@ -15,9 +15,9 @@ const reindexDrain = createReindexDrainController({
   getPending: getReindexPending,
   onComplete: (result) => {
     if (result.reason === "drained") {
-      log.info("memory.reindex.background.complete", result);
+      log.info("memory.reindex.background.complete", { ...result });
     } else {
-      log.warn("memory.reindex.background.paused", result);
+      log.warn("memory.reindex.background.paused", { ...result });
     }
   },
   onError: (err: unknown) => {
