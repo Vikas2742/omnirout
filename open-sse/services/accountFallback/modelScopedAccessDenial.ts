@@ -14,7 +14,7 @@ export function isModelScopedAccessDenial(
   provider: string | null | undefined,
   status: number,
   errorText: unknown,
-  structuredError?: { code?: unknown } | null
+  structuredError?: { code?: unknown; message?: unknown } | null
 ): boolean {
   if (provider?.toLowerCase() !== "modelscope" || (status !== 401 && status !== 403)) {
     return false;
@@ -28,7 +28,9 @@ export function isModelScopedAccessDenial(
       return false;
     }
   }
-  if (INVALID_CREDENTIAL_MESSAGE.test(text)) return false;
+  const structuredMessage =
+    typeof structuredError?.message === "string" ? structuredError.message : "";
+  if (INVALID_CREDENTIAL_MESSAGE.test([text, structuredMessage].join(" "))) return false;
   return (
     (typeof structuredError?.code === "string" &&
       structuredError.code.toLowerCase() === "invalid_model") ||
