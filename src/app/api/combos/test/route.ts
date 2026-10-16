@@ -12,6 +12,11 @@ import { getRuntimePorts } from "@/lib/runtime/ports";
 import { requiresWebSessionCredential } from "@/shared/providers/webSessionCredentials";
 import { resolveNestedComboTargets } from "@omniroute/open-sse/services/combo.ts";
 import type { ComboLike, ResolvedComboTarget } from "@omniroute/open-sse/services/combo/types.ts";
+import { buildJevComboTestSummary } from "@omniroute/open-sse/services/combo/jevTestSummary.ts";
+import { TYPESAFE_PROVIDER_ID } from "@omniroute/open-sse/services/typesafe/systemOne.ts";
+import { getProviderCredentials } from "@/sse/services/auth";
+import { getCachedSettings } from "@/lib/db/readCache";
+import { resolveResilienceSettings } from "@/lib/resilience/settings";
 import { testComboSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
@@ -292,15 +297,47 @@ export async function POST(request) {
 
     const baseInternalUrl = getInternalBaseUrl();
     const internalApiKey = await getInternalApiKey();
+
     const results = await probeComboTargets(
       targets,
       baseInternalUrl,
       internalApiKey,
       request.signal ?? null
     );
+    const strategy = String(combo.strategy || "priority")
+      .trim()
+      .toLowerCase();
+
+    let jev: Awaited<ReturnType<typeof buildJevComboTestSummary>> | null = null;
+    if (strategy === "jev") {
+      const settings = await getCachedSettings();
+      const resilienceSettings = resolveResilienceSettings(settings);
+      const probeByExecutionKey = new Map(results.map((result) => [result.executionKey, result]));
+      let hasTypesafeKey = false;
+      try {
+        const credentials = await getProviderCredentials(TYPESAFE_PROVIDER_ID);
+        hasTypesafeKey =
+          !!credentials &&
+          typeof (credentials as { apiKey?: unknown }).apiKey === "string" &&
+          (credentials as { apiKey: string }).apiKey.trim().length > 0;
+      } catch {
+        hasTypesafeKey = false;
+      }
+      jev = await buildJevComboTestSummary({
+        targets,
+        comboName: String(combo.name),
+        config: (combo.config as Record<string, unknown> | null | undefined) ?? null,
+        resilienceSettings,
+        hasTypesafeKey,
+        isModelAvailable: async (_model, target) => {
+          const probe = target ? probeByExecutionKey.get(target.executionKey) : undefined;
+          return probe?.status === "ok";
+        },
+      });
+    }
 
     return NextResponse.json(
-      buildComboTestResponse(comboName, combo, results, totalAutoCandidates)
+      buildComboTestResponse(comboName, combo, results, totalAutoCandidates, jev)
     );
   } catch (error) {
     console.log("Error testing combo:", error);
@@ -341,7 +378,8 @@ function buildComboTestResponse(
   comboName: string,
   combo: ComboRecord,
   results: ComboTestResult[],
-  totalAutoCandidates: number | null
+  totalAutoCandidates: number | null,
+  jev: Awaited<ReturnType<typeof buildJevComboTestSummary>> | null
 ) {
   const resolvedResult = results.find((result) => result.status === "ok") || null;
   return {
@@ -364,6 +402,7 @@ function buildComboTestResponse(
       ? { comboType: "auto", totalCandidates: totalAutoCandidates }
       : {}),
     results,
+    ...(jev ? { jev } : {}),
     testedAt: new Date().toISOString(),
   };
 }

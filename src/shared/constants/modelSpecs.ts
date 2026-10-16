@@ -888,6 +888,10 @@ export const MODEL_SPECS: Record<string, ModelSpec> = {
     thinkingBudgetCap: 380000,
     supportsThinking: true,
     supportsTools: true,
+    // DeepSeek V4 runs thinking by default and rejects forced tool_choice
+    // (400 "Thinking mode does not support this tool_choice"), so a forced
+    // functions__exec-style call must normalize to "auto" before dispatch.
+    rejectsForcedToolChoice: true,
   },
   "deepseek-v4-flash": {
     maxOutputTokens: 384000,
@@ -895,6 +899,7 @@ export const MODEL_SPECS: Record<string, ModelSpec> = {
     thinkingBudgetCap: 380000,
     supportsThinking: true,
     supportsTools: true,
+    rejectsForcedToolChoice: true,
   },
 
   // ── Tencent Hunyuan 3 Preview ────────────────────────────────────
