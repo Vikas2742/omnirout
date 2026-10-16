@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { opencode_goProvider } from "../../open-sse/config/providers/registry/opencode/go/index.ts";
 import { getResolvedModelCapabilities } from "../../src/lib/modelCapabilities.ts";
+import { getModelSpec } from "../../src/shared/constants/modelSpecs.ts";
 
 test("#16579 OpenCode Go imports DeepSeek Flash alias with its full 1M context", () => {
   const models = opencode_goProvider.models ?? [];
@@ -33,4 +34,10 @@ test("#16579 OpenCode Go capability resolver uses the declared context windows",
     });
     assert.equal(caps.contextWindow, context, id);
   }
+});
+
+test("#16579 shared MiniMax M2.5 metadata matches verified upstream limit", () => {
+  assert.equal(getModelSpec("minimax-m2.5")?.contextWindow, 204_800);
+  assert.equal(getModelSpec("MiniMax-M2.5")?.contextWindow, 204_800);
+  assert.equal(getModelSpec("minimax-m2.7")?.contextWindow, 204_800);
 });
