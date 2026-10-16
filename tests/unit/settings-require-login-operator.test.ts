@@ -105,7 +105,10 @@ function failureReasons(): string[] {
 }
 
 async function loginWith(password: string): Promise<number> {
-  loginRoute.authRouteInternals.getCookieStore = async () => ({ set() {} });
+  // The login route sets its cookie through next/headers, which has no request scope here.
+  loginRoute.authRouteInternals.getCookieStore = (async () => ({
+    set() {},
+  })) as unknown as typeof originalGetCookieStore;
   try {
     const response = await loginRoute.POST(
       new Request("http://localhost/api/auth/login", {

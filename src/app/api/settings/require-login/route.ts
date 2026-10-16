@@ -116,15 +116,17 @@ async function authorizeLoginSettingsWrite(
   const verdict = await requireOperatorCredential(request, {
     forbiddenMessage: LOGIN_SETTINGS_FORBIDDEN_MESSAGE,
   });
-  if (verdict.ok) return { operator: verdict.operator };
-  if (verdict.response.status === 401) {
-    return { response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  if (verdict.ok === false) {
+    if (verdict.response.status === 401) {
+      return { response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    }
+    if (verdict.response.status === 403) {
+      const actor = await deriveSettingsAuditActor(request);
+      emitSettingsFailureAudit(request, actor, "OPERATOR_REQUIRED", []);
+    }
+    return { response: verdict.response };
   }
-  if (verdict.response.status === 403) {
-    const actor = await deriveSettingsAuditActor(request);
-    emitSettingsFailureAudit(request, actor, "OPERATOR_REQUIRED", []);
-  }
-  return { response: verdict.response };
+  return { operator: verdict.operator };
 }
 
 /**

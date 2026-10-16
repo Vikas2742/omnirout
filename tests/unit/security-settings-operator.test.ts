@@ -144,17 +144,18 @@ test("corsOrigins and bruteForceProtection are security-impacting and stripped b
 
 test("import-json does not write corsOrigins or bruteForceProtection", () =>
   keepingSeededPolicy(async () => {
+    // The import is management-authenticated but has no password re-auth of its own, which is
+    // exactly why it must drop these keys even for the operator's own session.
     const response = await importJsonRoute.POST(
-      new Request("http://localhost:20128/api/settings/import-json", {
+      await makeManagementSessionRequest("http://localhost:20128/api/settings/import-json", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
+        body: {
           settings: {
             corsOrigins: SECURITY_POLICY_CHANGES.corsOrigins,
             bruteForceProtection: SECURITY_POLICY_CHANGES.bruteForceProtection,
             settingsOperatorBenignKey: "kept",
           },
-        }),
+        },
       })
     );
     assert.equal(response.status, 200, await response.clone().text());

@@ -32,6 +32,10 @@ export const ADMIN_SCOPE_PREFIXES: readonly string[] = [
 
 /** Require `admin` only for mutating methods; GET/HEAD under these stay `read`. */
 export const ADMIN_MUTATION_PREFIXES: readonly string[] = [
+  // A settings write can change the operator's own authentication policy (login enforcement,
+  // the management password, OIDC identity, CORS origins, brute-force protection), so a
+  // delegated `write` token must not reach it; GET /api/settings stays `read`.
+  "/api/settings",
   "/api/providers", // POST add provider / rotate key = admin; GET status = read
   "/api/cli-tools/apply", // writes config onto the host filesystem
   // Creating/patching/regenerating an API key can attach the `manage` scope, and a

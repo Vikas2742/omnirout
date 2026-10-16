@@ -8,7 +8,10 @@ import {
 } from "@/lib/db/settings";
 import { getRuntimePorts } from "@/lib/runtime/ports";
 import { updateSettingsSchema } from "@/shared/validation/settingsSchemas";
-import { SECURITY_IMPACTING_SETTINGS_KEYS } from "@/shared/constants/securityImpactingSettings";
+import {
+  DASHBOARD_SESSION_STATE_SETTINGS_KEYS,
+  SECURITY_IMPACTING_SETTINGS_KEYS,
+} from "@/shared/constants/securityImpactingSettings";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
@@ -28,6 +31,7 @@ import {
   verifyManagementPassword,
 } from "@/lib/auth/managementPassword";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
+import { requireOperatorCredential } from "@/lib/api/operatorCredential";
 import { isPaidModelTarget } from "@/shared/utils/freeModels";
 import { getAuditRequestContext, logAuditEvent } from "@/lib/compliance";
 import { deriveSettingsAuditActor, emitSettingsFailureAudit } from "@/lib/api/settingsAudit";
@@ -131,6 +135,45 @@ function computeSettingsDiff(
     }
   }
   return diff;
+}
+
+/** 403 for API keys of any scope and `oma_` access tokens that touch a security-policy key. */
+const SECURITY_POLICY_FORBIDDEN_MESSAGE =
+  "Changing security-policy settings (login, OIDC, CORS origins, brute-force protection) requires a signed-in dashboard session or the local CLI; API keys and access tokens cannot change them.";
+
+/**
+ * Settings that decide who reaches the dashboard: the re-auth-gated keys, every `oidc*` key
+ * and the server-written session state. Only the instance operator may change them — a
+ * delegated machine credential (manage-scoped API key, `oma_` token) is refused even when it
+ * knows the password, on top of the password re-auth below.
+ */
+const OPERATOR_ONLY_SETTINGS_KEYS = new Set<string>([
+  ...SECURITY_IMPACTING_SETTINGS_KEYS,
+  ...DASHBOARD_SESSION_STATE_SETTINGS_KEYS,
+]);
+
+function touchesOperatorOnlySettings(body: Record<string, unknown>): boolean {
+  return Object.keys(body).some(
+    (key) => OPERATOR_ONLY_SETTINGS_KEYS.has(key) || key.startsWith("oidc")
+  );
+}
+
+/** 403 (audited as OPERATOR_REQUIRED) when a machine credential touches security policy. */
+async function rejectMachineSecurityPolicyWrite(
+  request: Request,
+  body: Record<string, unknown>,
+  actor: string,
+  attemptedKeys: string[]
+): Promise<Response | null> {
+  if (!touchesOperatorOnlySettings(body)) return null;
+  const verdict = await requireOperatorCredential(request, {
+    forbiddenMessage: SECURITY_POLICY_FORBIDDEN_MESSAGE,
+  });
+  if (verdict.ok === false) {
+    emitSettingsFailureAudit(request, actor, "OPERATOR_REQUIRED", attemptedKeys);
+    return verdict.response;
+  }
+  return null;
 }
 
 /** List of top-level body keys the operator attempted to change (audit context). */
@@ -262,6 +305,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     const body: typeof validation.data & { password?: string } = { ...validation.data };
+
+    const operatorOnly = await rejectMachineSecurityPolicyWrite(
+      request,
+      validation.data as Record<string, unknown>,
+      actor,
+      attemptedKeys
+    );
+    if (operatorOnly) return operatorOnly;
 
     // Sanitize model lockout settings: clamp values to valid bounds.
     if (body.modelLockout) {

@@ -2901,6 +2901,13 @@ paths:
     patch:
       tags: [Settings]
       summary: Update settings
+      description: >-
+        Security-policy keys (`requireLogin`, `newPassword`, every `oidc*` key, `corsOrigins`,
+        `bruteForceProtection`, the LOCAL_ONLY bypass list) need `currentPassword` and an
+        operator credential (dashboard session, local CLI, or login disabled); API keys of any
+        scope and `oma_` access tokens get 403 on them. Ordinary settings stay writable for a
+        manage-scoped key or an `admin` access token. Every mutation needs the `admin`
+        access-token scope.
       requestBody:
         required: true
         content:
@@ -2910,6 +2917,14 @@ paths:
       responses:
         "200":
           description: Updated settings
+        "400":
+          description: Validation failed, or `PASSWORD_REQUIRED` for a security-policy key
+        "401":
+          description: Unauthenticated, or `PASSWORD_MISMATCH`
+        "403":
+          description: >-
+            Machine credential (API key of any scope, `oma_` access token) on a security-policy
+            key, or an access token below the `admin` scope
 
   /api/settings/purge-request-history:
     post:
