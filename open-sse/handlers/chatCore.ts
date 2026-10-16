@@ -54,6 +54,7 @@ import {
 } from "../config/codexIdentity.ts";
 import { trackRequestDevice } from "./chatCore/deviceTracking.ts";
 import { getCombosCached } from "./chatCore/comboContextCache.ts";
+import { resolveConnectionUpstreamOverrides } from "./chatCore/connectionUpstreamOverrides.ts";
 import {
   buildRegisteredProviderRequest,
   countTranslatedMessages,
@@ -924,21 +925,10 @@ async function handleChatCoreInner({
   // Primary path: merge client model id + alias target so config on either key applies; resolved
   // id wins on same header name. T5 family fallback uses only (nextModel, resolveModelAlias(next))
   // so A-model headers are not sent to B — see buildUpstreamHeadersForExecute.
-  const connectionCustomUserAgent =
-    credentials?.providerSpecificData &&
-    typeof credentials.providerSpecificData === "object" &&
-    typeof credentials.providerSpecificData.customUserAgent === "string"
-      ? credentials.providerSpecificData.customUserAgent.trim()
-      : "";
-
-  // #8369: connection-level custom upstream headers from provider_specific_data.
-  const connectionCustomHeaders =
-    credentials?.providerSpecificData &&
-    typeof credentials.providerSpecificData === "object" &&
-    typeof credentials.providerSpecificData.customHeaders === "object" &&
-    !Array.isArray(credentials.providerSpecificData.customHeaders)
-      ? (credentials.providerSpecificData.customHeaders as Record<string, string>)
-      : undefined;
+  // Custom User-Agent + #8369 custom headers: extracted to chatCore/connectionUpstreamOverrides.ts
+  // (chatCore slice 2).
+  const { connectionCustomUserAgent, connectionCustomHeaders } =
+    resolveConnectionUpstreamOverrides(credentials?.providerSpecificData);
 
   // Upstream extra-header building extracted to chatCore/upstreamExecuteHeaders.ts (#3501); bind the
   // per-request inputs once and delegate so the existing call sites stay byte-identical.
