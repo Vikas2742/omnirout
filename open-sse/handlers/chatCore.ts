@@ -251,7 +251,7 @@ import { isJsonRecord } from "./chatCore/nonStreamingResponseParse.ts";
 import { recordNonStreamingUsageStats } from "./chatCore/nonStreamingUsageStats.ts";
 import { getModelNormalizeToolCallId, getModelPreserveOpenAIDeveloperRole } from "@/lib/db/models";
 import { extractSessionAffinityKey } from "@/sse/services/auth";
-import { assertExclusiveConnectionLeaseFence } from "@/lib/db/exclusiveConnectionLeases";
+import { createManagedLeaseFence } from "./chatCore/managedLeaseFence.ts";
 
 import { getCacheControlSettings } from "@/lib/cacheControlSettings";
 import { guardrailRegistry } from "@/lib/guardrails";
@@ -480,45 +480,9 @@ async function handleChatCoreInner({
         : null;
     return credentialConnectionId || connectionId || null;
   };
-  const assertManagedLeaseFence = (attemptConnectionId: string | null | undefined) => {
-    if (!managedLease) return;
-    if (!attemptConnectionId) {
-      throw Object.assign(new Error("Managed lease connection is unavailable"), {
-        code: "LEASE_CONNECTION_MISMATCH",
-        status: 409,
-      });
-    }
-    const fence = assertExclusiveConnectionLeaseFence({
-      leaseOwnerId: managedLease.context.leaseOwnerId,
-      generation: managedLease.context.generation,
-      apiKeyId: managedLease.apiKeyId,
-      connectionId: attemptConnectionId,
-    });
-    if (fence.kind === "VALID") return;
-    const code =
-      fence.kind === "REQUIRED"
-        ? "LEASE_REQUIRED"
-        : fence.kind === "STALE"
-          ? "LEASE_FENCE_STALE"
-          : fence.kind === "AUTHORIZATION_MISMATCH"
-            ? "LEASE_AUTHORIZATION_MISMATCH"
-            : "LEASE_CONNECTION_MISMATCH";
-    throw Object.assign(new Error("Managed lease request fence rejected the dispatch"), {
-      code,
-      status: 409,
-    });
-  };
-  const getManagedLeaseFenceErrorCode = (code: string | undefined): string | undefined => {
-    if (managedLease === null) return undefined;
-    return code?.startsWith("LEASE_") ? code : undefined;
-  };
-  const managedLeaseFenceErrorResult = (code: string) => {
-    return {
-      ...createErrorResult(409, "Managed lease request fence rejected the dispatch", null, code),
-      errorType: "lease_error",
-      errorCode: code,
-    };
-  };
+  // Managed-lease request fence extracted to chatCore/managedLeaseFence.ts (chatCore slice 2).
+  const { assertManagedLeaseFence, getManagedLeaseFenceErrorCode, managedLeaseFenceErrorResult } =
+    createManagedLeaseFence(managedLease);
   let tokensCompressed: number | null = null;
   // ── Per-endpoint custom system prompt (port of upstream #2063) ──
   // Reads from cachedSettings if available (passed in from combo/chat layer)
