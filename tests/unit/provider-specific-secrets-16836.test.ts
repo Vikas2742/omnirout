@@ -41,7 +41,7 @@ test("#16836 lazy views expose plaintext while the row and JSON stay protected a
   const raw = { ...stored };
   const lazy = createLazyRowProxy(raw);
   assert.equal((lazy.providerSpecificData as Record<string, unknown>).consoleApiKey, "lazy-secret-16836");
-  assert.equal((lazy.toJSON() as Record<string, any>).providerSpecificData.consoleApiKey, "lazy-secret-16836");
+  assert.equal((JSON.parse(JSON.stringify(lazy)) as { providerSpecificData: { consoleApiKey: string } }).providerSpecificData.consoleApiKey, "lazy-secret-16836");
   assert.equal(looksEncrypted((raw.providerSpecificData as Record<string, unknown>).consoleApiKey), true);
   const typed = createLazyConnectionView(raw);
   assert.equal(typed.providerSpecificData.consoleApiKey, "lazy-secret-16836");
