@@ -373,6 +373,10 @@ describe("catalog model bare vs combo", () => {
 });
 
 describe("catalog capability presets", () => {
+  function freeOverlay(ids: string[]): Map<string, { freeType: "keyless" }> {
+    return new Map(ids.map((id) => [id, { freeType: "keyless" as const }]));
+  }
+
   function captureWarns() {
     const warns: string[] = [];
     const origWarn = console.warn;
@@ -454,22 +458,30 @@ describe("catalog capability presets", () => {
     assert.ok(warns.some((w) => /catalog refresh:/.test(w)));
   });
 
-  it("freeOnly drops combos without an enrichment entry", async () => {
+  it("freeOnly publishes a combo whose members are all free", async () => {
     const draft = fakeDraft();
     const res = await publishCatalog(
       draft,
       { ...baseOpts, freeOnly: true },
       {
-        fetcher: async () => [{ id: "m1" }],
-        enrichmentFetcher: async () => new Map([["m1", { freeType: "keyless" as const }]]),
+        fetcher: async () => [{ id: "m1" }, { id: "m2" }, { id: "m3" }],
+        enrichmentFetcher: async () => freeOverlay(["m1", "m2", "m3"]),
         combosFetcher: async () => [
-          { id: "combo-a", name: "Combo A", models: [{ kind: "model", model: "m1" }] },
+          {
+            id: "combo-a",
+            name: "Combo A",
+            models: [
+              { kind: "model", model: "m1" } as never,
+              { kind: "model", model: "m2" } as never,
+              { kind: "model", model: "m3" } as never,
+            ],
+          },
         ],
       }
     );
-    assert.equal(res.models, 1);
-    assert.equal(res.combos, 0);
-    assert.ok(!draft.models.has("omniroute/Combo A"));
+    assert.equal(res.models, 3);
+    assert.equal(res.combos, 1);
+    assert.ok(draft.models.has("omniroute/Combo A"));
   });
 
   it("toolsOnly keeps only tool-calling models", async () => {

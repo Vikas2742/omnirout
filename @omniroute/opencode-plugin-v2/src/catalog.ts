@@ -8,7 +8,15 @@ import {
   type ProviderResolve,
 } from "./provider-filter.js";
 import type { LegacyModel } from "./legacy-model.js";
-import { type CapabilityPresetFlags, passesCapabilityPresets } from "./capability-presets.js";
+import {
+  comboLookupName,
+  filterRawPoolByPreset,
+  foldComboPresetSteps,
+  presetsActive,
+  recordComboPresetVerdict,
+  type CapabilityPresetFlags,
+  passesCapabilityPresets,
+} from "./capability-presets.js";
 import {
   isHttpUrl,
   type ApiFormatV2,
@@ -513,19 +521,6 @@ export function assignProviderFields(
 }
 
 /** A widened capability flag (`boolean | { field }`) read back as a plain flag. */
-function isCapabilityEnabled(value: boolean | { field: string }): boolean {
-  return value !== false;
-}
-
-/**
- * Combo steps reach us from the gateway with a shape the SDK types do not
- * describe (`kind`, `comboName`, `model` appear per step kind). One reader
- * keeps that single untyped boundary in one place instead of scattering casts.
- */
-function readStepField(step: unknown, key: "kind" | "comboName" | "model"): unknown {
-  return (step as Record<string, unknown> | null | undefined)?.[key];
-}
-
 /**
  * Resolve the display-name + pricing overlay. A caller may hand over a
  * ready-made map (tests, pre-resolved overlays) or turn the fetch off; a
@@ -684,32 +679,26 @@ async function publishCombos(
     return true;
   });
   const resolvedByName = new Map<string, LegacyModel>();
+  const presetByName = new Map<string, boolean>();
+  const activeFlags: CapabilityPresetFlags = {
+    freeOnly: opts.freeOnly,
+    toolsOnly: opts.toolsOnly,
+    visionOnly: opts.visionOnly,
+  };
   let unresolved: typeof pending = [];
 
   for (let pass = 0; pass < MAX_COMBO_PASSES && pending.length > 0; pass++) {
     const stillPending: typeof pending = [];
     for (const combo of pending) {
-      const memberSteps = Array.isArray(combo.models) ? combo.models : [];
-      const memberEntries: OmniRouteRawModelEntry[] = [];
-      let deferred = false;
-      for (const step of memberSteps) {
-        const kind = readStepField(step, "kind");
-        if (kind === "combo-ref") {
-          const comboName = readStepField(step, "comboName");
-          if (typeof comboName !== "string" || comboName.length === 0) continue;
-          const nested = resolvedByName.get(comboName);
-          if (!nested) {
-            deferred = true;
-            break;
-          }
-          memberEntries.push(synthesizeNestedMember(comboName, nested));
-          continue;
-        }
-        const modelId = readStepField(step, "model");
-        if (typeof modelId !== "string" || modelId.length === 0) continue;
-        const member = rawModelById.get(modelId);
-        if (member) memberEntries.push(member);
-      }
+      const { memberEntries, deferred, failsPreset, countable } = foldComboPresetSteps(
+        combo,
+        rawModelById,
+        resolvedByName,
+        presetByName,
+        enrichment,
+        canonicalToAlias,
+        activeFlags
+      );
       if (deferred) {
         stillPending.push(combo);
         continue;
@@ -719,12 +708,22 @@ async function publishCombos(
       applyEnrichment(mapped, comboEnrichment, {
         isCombo: true,
       });
+      const comboName = comboLookupName(combo);
+      const passesMembers = recordComboPresetVerdict(
+        presetByName,
+        combo,
+        failsPreset,
+        countable,
+        activeFlags
+      );
       if (
-        !passesCapabilityPresets(mapped, comboEnrichment, {
-          freeOnly: opts.freeOnly,
-          toolsOnly: opts.toolsOnly,
-          visionOnly: opts.visionOnly,
-        } satisfies CapabilityPresetFlags)
+        presetsActive(activeFlags)
+          ? !passesMembers
+          : !passesCapabilityPresets(mapped, comboEnrichment, {
+              freeOnly: opts.freeOnly,
+              toolsOnly: opts.toolsOnly,
+              visionOnly: opts.visionOnly,
+            } satisfies CapabilityPresetFlags)
       )
         continue;
       const mid = mapped.id.startsWith(X + "/") ? mapped.id.slice(X.length + 1) : mapped.id;
@@ -756,11 +755,7 @@ async function publishCombos(
       publishedKeys.add(key);
       publishedModelIds.set(key, mapped.id);
       comboCount += 1;
-      const lookupName =
-        typeof combo.name === "string" && combo.name.trim().length > 0
-          ? combo.name.trim()
-          : combo.id;
-      if (!resolvedByName.has(lookupName)) resolvedByName.set(lookupName, mapped);
+      if (!resolvedByName.has(comboName)) resolvedByName.set(comboName, mapped);
     }
     if (stillPending.length === pending.length) {
       unresolved = stillPending;
@@ -777,47 +772,6 @@ async function publishCombos(
     );
   }
   return { published: comboCount, providerDropped };
-}
-
-/**
- * Synthesize a raw-model entry from an already-resolved nested combo so a
- * parent combo's LCD folds the whole nested capability vector (context,
- * output, modalities, capabilities) instead of only direct raw members.
- * v1 parity (combo member synthesis at nested resolution time).
- */
-function synthesizeNestedMember(name: string, nested: LegacyModel): OmniRouteRawModelEntry {
-  const inputModalities: string[] = [];
-  if (nested.capabilities.input.text) inputModalities.push("text");
-  if (nested.capabilities.input.audio) inputModalities.push("audio");
-  if (nested.capabilities.input.image) inputModalities.push("image");
-  if (nested.capabilities.input.video) inputModalities.push("video");
-  if (nested.capabilities.input.pdf) inputModalities.push("pdf");
-  const outputModalities: string[] = [];
-  if (nested.capabilities.output.text) outputModalities.push("text");
-  if (nested.capabilities.output.audio) outputModalities.push("audio");
-  if (nested.capabilities.output.image) outputModalities.push("image");
-  if (nested.capabilities.output.video) outputModalities.push("video");
-  if (nested.capabilities.output.pdf) outputModalities.push("pdf");
-  return {
-    id: `combo-ref:${name}`,
-    context_length: nested.limit.context,
-    max_output_tokens: nested.limit.output,
-    ...(nested.limit.input !== undefined ? { max_input_tokens: nested.limit.input } : {}),
-    owned_by: "combo",
-    input_modalities: inputModalities,
-    output_modalities: outputModalities,
-    capabilities: {
-      temperature: nested.capabilities.temperature,
-      // A raw entry carries plain flags; the mapped model widens them to
-      // `boolean | { field }` (custom reasoning/thinking field). Every
-      // non-false form means the capability is present, which is all the
-      // LCD fold reads.
-      reasoning: isCapabilityEnabled(nested.capabilities.reasoning),
-      thinking: isCapabilityEnabled(nested.capabilities.interleaved),
-      attachment: nested.capabilities.attachment,
-      tool_calling: nested.capabilities.toolcall,
-    },
-  };
 }
 
 /**
@@ -928,9 +882,17 @@ export async function collectCatalog(
   let providerDroppedCount = 0;
   // Showcase ranks the allowlisted pool so the default picker stays usable
   // without pinning plus the curated dates and pinned ids below.
+  const presetFlags: CapabilityPresetFlags = {
+    freeOnly: opts.freeOnly,
+    toolsOnly: opts.toolsOnly,
+    visionOnly: opts.visionOnly,
+  };
+  const presetPool = catalogAll
+    ? []
+    : filterRawPoolByPreset(rawModels, enrichment, canonicalToAlias, presetFlags);
   const showcasePool = catalogAll
     ? []
-    : rawModels.filter(
+    : presetPool.filter(
         (entry) =>
           entry.id &&
           !canonicalDedup.has(entry.id) &&
@@ -948,7 +910,7 @@ export async function collectCatalog(
   const freshKept = catalogAll
     ? new Set<string>()
     : selectFreshKeptIds(
-        rawModels,
+        presetPool,
         opts.freshPerOwner ?? FRESH_PER_OWNER,
         nowMs,
         visibleFilter,
@@ -1021,9 +983,18 @@ export async function collectCatalog(
         baseURL: opts.baseURL,
         apiFormat: opts.apiFormat,
       });
-      applyEnrichment(mapped, lookupEnrichment(entry.id, enrichment, canonicalToAlias), {
+      const restoreEnrichment = lookupEnrichment(entry.id, enrichment, canonicalToAlias);
+      applyEnrichment(mapped, restoreEnrichment, {
         providerTag: opts.providerTag !== false,
       });
+      if (
+        !passesCapabilityPresets(mapped, restoreEnrichment, {
+          freeOnly: opts.freeOnly,
+          toolsOnly: opts.toolsOnly,
+          visionOnly: opts.visionOnly,
+        } satisfies CapabilityPresetFlags)
+      )
+        continue;
       const mid = mapped.id.startsWith(X + "/") ? mapped.id.slice(X.length + 1) : mapped.id;
       const key = X + "/" + mid;
       collected.set(key, mapped);
