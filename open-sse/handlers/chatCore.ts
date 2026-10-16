@@ -18,7 +18,7 @@ import {
   readCpaAuthIndex,
   type FailureUsageAggregate,
 } from "./chatCore/failureUsage.ts";
-import { createTranslationFailureResult } from "./chatCore/translationFailure.ts";
+import { buildRequestTranslationErrorResult } from "./chatCore/requestTranslationError.ts";
 import {
   estimateCalibratedFinalInputTokens,
   estimateFinalInputTokenBreakdown,
@@ -2486,46 +2486,17 @@ async function handleChatCoreInner({
       );
     }
   } catch (error) {
-    // ── Plugin onError hook ──
-    try {
-      const { runOnError } = await import("@/lib/plugins/hooks");
-      await runOnError(
-        { requestId: traceId, body, model, provider, apiKeyInfo, metadata: {} },
-        error instanceof Error ? error : new Error(String(error))
-      );
-    } catch (pluginErr) {
-      const pluginErrorMessage = sanitizeErrorMessage(pluginErr) || "Plugin onError hook failed";
-      log?.debug?.("PLUGIN", `onError hook error (non-fatal): ${pluginErrorMessage}`);
-    }
-
-    let parsedStatus = Number.NaN;
-    try {
-      parsedStatus = Number(error?.statusCode);
-    } catch {
-      // Hostile thrown values may expose Symbols or throwing status accessors.
-    }
-    const statusCode =
-      Number.isInteger(parsedStatus) && parsedStatus >= 400 && parsedStatus <= 599
-        ? parsedStatus
-        : HTTP_STATUS.SERVER_ERROR;
-    let message = "Invalid request";
-    try {
-      const candidate = error?.message;
-      message =
-        (typeof candidate === "string" ? candidate : sanitizeErrorMessage(candidate)) || message;
-    } catch {
-      // Hostile thrown values may expose throwing property accessors.
-    }
-    let errorType: string | null = null;
-    try {
-      const candidate = error?.errorType;
-      errorType = typeof candidate === "string" ? candidate : null;
-    } catch {
-      // Hostile thrown values may expose throwing classification accessors.
-    }
-    const result = createTranslationFailureResult(statusCode, message, errorType);
-    log?.warn?.("TRANSLATE", `Request translation failed: ${result.error}`);
-
+    // Plugin onError hook + defensive status/message/type derivation extracted to
+    // chatCore/requestTranslationError.ts (chatCore slice 2).
+    const result = await buildRequestTranslationErrorResult({
+      error,
+      traceId,
+      body,
+      model,
+      provider,
+      apiKeyInfo,
+      log,
+    });
     trackPendingRequest(model, provider, pendingConnId, false, undefined, pendingRequestId);
     return result;
   }
