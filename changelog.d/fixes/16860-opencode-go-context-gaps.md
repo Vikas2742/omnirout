@@ -1,0 +1,1 @@
+- **fix(providers):** Fill missing OpenCode Go model context metadata for `deepseek-flash` (1M tokens) and `minimax-m2.5` (204800 tokens), with regression tests ([#16860](https://github.com/diegosouzapw/OmniRoute/pull/16860)) — thanks @fabioKoruja00
