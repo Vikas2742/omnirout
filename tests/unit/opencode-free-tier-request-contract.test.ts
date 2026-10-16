@@ -19,6 +19,12 @@
  *
  * Paid models on the same host are not gated (one without tools answers 401), so the
  * request contract applies to free-tier models only.
+ *
+ * Measured again on 2026-10-14: the free tier moved to https://opencode.ai/inference/v1
+ * (the base the client now takes from the models.dev catalog), and the very same request
+ * body is refused 403 on /zen/v1. On the new base the tools condition also narrows: a
+ * declared `read` or `bash` needs a non-empty parameter schema, while an empty schema on
+ * a name outside the quartet still passes.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -27,6 +33,7 @@ import {
   configuredPlaceholderToolNames,
   mergeClientToolsWithObserved,
   noteFreeTierOutcome,
+  placeholderToolParameters,
   prepareFreeTierRequest,
   isGatedFreeTierRequest,
   requiresFreeTierRequestContract,
@@ -105,9 +112,36 @@ test("the placeholder carries the names it is given, one entry each", () => {
     tools.map((t) => t.function.name),
     ["glob", "grep", "read"]
   );
-  // Names only: an empty parameter object, so a borrowed name is a list entry rather than
-  // a tool the model could usefully call.
-  assert.deepEqual(tools[0].function.parameters, { type: "object", properties: {} });
+  // Injected quartet members carry the minimal schema the gate accepts: since 2026-10-14 a
+  // declared `read` with `properties: {}` turns the request into a 403 on /inference/v1.
+  assert.deepEqual(tools[0].function.parameters, {
+    type: "object",
+    properties: { pattern: { type: "string" } },
+    required: ["pattern"],
+  });
+  assert.deepEqual(tools[2].function.parameters, {
+    type: "object",
+    properties: { filePath: { type: "string" } },
+    required: ["filePath"],
+  });
+});
+
+test("placeholderToolParameters: quartet members get a minimal schema, others stay empty", () => {
+  // Measured 2026-10-14 on /inference/v1: `read` + `bash` with `properties: {}` is refused
+  // 403, the same pair with `{command}` on `bash` passes, and a request with no
+  // property-bearing `read` is refused — while an empty schema on a name outside the
+  // quartet (`webfetch`, `_noop`) still passes.
+  assert.deepEqual(placeholderToolParameters("bash"), {
+    type: "object",
+    properties: { command: { type: "string" } },
+    required: ["command"],
+  });
+  for (const name of ["bash", "glob", "grep", "read"]) {
+    const schema = placeholderToolParameters(name) as { properties: Record<string, unknown> };
+    assert.ok(Object.keys(schema.properties).length > 0, name);
+  }
+  assert.deepEqual(placeholderToolParameters("_noop"), { type: "object", properties: {} });
+  assert.deepEqual(placeholderToolParameters("webfetch"), { type: "object", properties: {} });
 });
 
 test("responses: several placeholder names keep the flat shape and no tool_choice", () => {
@@ -823,8 +857,32 @@ test("mergeClientToolsWithObserved: keeps client tools first and appends missing
     tools.map((t) => t.function.name),
     ["glob", "read", "edit"]
   );
-  // Appended entries are list entries, not callable tools.
+  // Appended entries are list entries, not callable tools; `edit` is outside the quartet,
+  // so it keeps the empty schema.
   assert.deepEqual(tools[2].function.parameters, { type: "object", properties: {} });
+});
+
+test("mergeClientToolsWithObserved: an appended quartet member carries a non-empty schema [free-tier-observed-tools]", () => {
+  _resetToolObservationForTests();
+  const body = {
+    ...CHAT_BODY(),
+    tools: [{ type: "function", function: { name: "Read", parameters: { type: "object" } } }],
+  };
+  const merged = mergeClientToolsWithObserved(body, "openai", "opencode", "big-pickle", undefined, [
+    "bash",
+  ]);
+  const tools = (merged as Record<string, unknown>).tools as Array<{
+    function: { name: string; parameters: object };
+  }>;
+  assert.deepEqual(
+    tools.map((t) => t.function.name),
+    ["Read", "bash"]
+  );
+  assert.deepEqual(tools[1].function.parameters, {
+    type: "object",
+    properties: { command: { type: "string" } },
+    required: ["command"],
+  });
 });
 
 test("mergeClientToolsWithObserved: leaves the body untouched when nothing observed [free-tier-observed-tools]", () => {

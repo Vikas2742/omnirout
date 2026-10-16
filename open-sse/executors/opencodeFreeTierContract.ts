@@ -16,6 +16,13 @@
  * host are not gated (a paid model without tools answers 401 CreditsError), which is why
  * `requiresFreeTierRequestContract` narrows the contract to free-tier models.
  *
+ * Measured again on 2026-10-14: the free tier moved. The client now takes its base URL
+ * from the models.dev catalog (`https://opencode.ai/inference/v1`), and the very same
+ * request is refused on `/zen/v1`; on the new base a declared `read` or `bash` whose
+ * parameters carry no properties is refused, while an empty schema on a name outside the
+ * quartet still passes. `FREE_TIER_INFERENCE_BASE_URL` and `placeholderToolParameters`
+ * carry those two facts.
+ *
  * The module also owns the free-model catalog — the catalog is what decides whether the
  * contract applies, so the two belong together and the executor imports them from here —
  * and the way back: the forced stream is rebuilt into a JSON body for a caller that asked
@@ -121,6 +128,14 @@ export type OpencodeSurface = "zen" | "go" | "other";
 const ZEN_SURFACE_BASE_URL = "https://opencode.ai/zen/v1";
 const GO_SURFACE_BASE_URL = "https://opencode.ai/zen/go/v1";
 
+/**
+ * Where a gated free-tier request is sent. Since 2026-10-14 the OpenCode client takes its
+ * base URL from the models.dev catalog (`https://opencode.ai/inference/v1`), and the free
+ * tier refuses the very same request on `/zen/v1` with 403 FreeTierError. Paid models keep
+ * the registry base URL, which still serves them.
+ */
+export const FREE_TIER_INFERENCE_BASE_URL = "https://opencode.ai/inference/v1";
+
 /** Tell the surfaces apart by registry `baseUrl`, so provider ids and aliases stay out. */
 export function surfaceFromBaseUrl(baseUrl: string | null | undefined): OpencodeSurface {
   if (baseUrl === ZEN_SURFACE_BASE_URL) return "zen";
@@ -197,6 +212,26 @@ const PLACEHOLDER_TOOL_DESCRIPTION =
 const PLACEHOLDER_TOOL_PARAMETERS = { type: "object", properties: {} } as const;
 
 /**
+ * Minimal parameter schemas for injected placeholder tools, mirroring the OpenCode client's
+ * argument names. Since 2026-10-14 the free tier refuses a declared `read` or `bash` whose
+ * parameter object has no properties (measured on /inference/v1: `read` + `bash` with
+ * `properties: {}` is 403, the same pair with `{command}` on `bash` is 200, and a request
+ * with no property-bearing `read` is 403), while an empty schema on a name outside the
+ * quartet (`webfetch`, `_noop`) still passes.
+ */
+const PLACEHOLDER_TOOL_PARAMETER_SCHEMAS: Readonly<Record<string, Record<string, unknown>>> = {
+  bash: { type: "object", properties: { command: { type: "string" } }, required: ["command"] },
+  glob: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
+  grep: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
+  read: { type: "object", properties: { filePath: { type: "string" } }, required: ["filePath"] },
+};
+
+/** Parameter schema for an injected placeholder tool named `name`. */
+export function placeholderToolParameters(name: string): Record<string, unknown> {
+  return PLACEHOLDER_TOOL_PARAMETER_SCHEMAS[name] ?? PLACEHOLDER_TOOL_PARAMETERS;
+}
+
+/**
  * Bring a free-tier request up to the upstream contract, without overriding anything the
  * caller already decided: client tools are kept as they are, and the placeholder tool is
  * only added when the caller sent none or when client-supplied tools do not yet carry the
@@ -236,7 +271,7 @@ export function applyFreeTierRequestContract<T>(
         type: "function",
         name,
         description: PLACEHOLDER_TOOL_DESCRIPTION,
-        parameters: PLACEHOLDER_TOOL_PARAMETERS,
+        parameters: placeholderToolParameters(name),
       })),
     ];
     return next as T;
@@ -250,7 +285,7 @@ export function applyFreeTierRequestContract<T>(
         function: {
           name,
           description: PLACEHOLDER_TOOL_DESCRIPTION,
-          parameters: PLACEHOLDER_TOOL_PARAMETERS,
+          parameters: placeholderToolParameters(name),
         },
       })),
     ];
@@ -270,8 +305,9 @@ export function applyFreeTierRequestContract<T>(
  * FreeTierError. When such a refusal comes back, this rebuilds the same body with the
  * observed names appended after the client's own entries: the client tools keep their
  * full shape (description, parameters) so the model can still call them, while the
- * appended names are list entries with an empty parameter object — the same shape the
- * placeholder path uses, never a callable tool.
+ * appended names are list entries carrying the minimal parameter schema
+ * `placeholderToolParameters` gives them — the same shape the placeholder path uses,
+ * never a callable tool.
  *
  * Pure: returns the input body unchanged when no observed names are missing, so the
  * caller can skip the retry on identity alone. Resolution order is the store's own:
@@ -302,7 +338,7 @@ export function mergeClientToolsWithObserved<T>(
         type: "function",
         name,
         description: PLACEHOLDER_TOOL_DESCRIPTION,
-        parameters: PLACEHOLDER_TOOL_PARAMETERS,
+        parameters: placeholderToolParameters(name),
       })),
     ];
     return next as T;
@@ -315,7 +351,7 @@ export function mergeClientToolsWithObserved<T>(
         function: {
           name,
           description: PLACEHOLDER_TOOL_DESCRIPTION,
-          parameters: PLACEHOLDER_TOOL_PARAMETERS,
+          parameters: placeholderToolParameters(name),
         },
       })),
     ];

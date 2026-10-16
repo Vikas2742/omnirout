@@ -58,6 +58,7 @@ import {
   isOpencodeUserBlocked,
 } from "./opencodeGeoBlock.ts";
 import {
+  FREE_TIER_INFERENCE_BASE_URL,
   attemptFor,
   isGatedFreeTierRequest,
   isPremiumOpencodeModel,
@@ -1279,7 +1280,10 @@ export class OpencodeExecutor extends BaseExecutor {
     void urlIndex;
     void credentials;
 
-    const base = this.config.baseUrl;
+    const base =
+      Boolean(model) && isGatedFreeTierRequest(this._surface(), this.provider, model)
+        ? FREE_TIER_INFERENCE_BASE_URL
+        : this.config.baseUrl;
     switch (this._requestFormat) {
       case "claude":
         return `${base}/messages`;
