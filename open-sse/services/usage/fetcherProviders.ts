@@ -104,6 +104,8 @@ export const USAGE_FETCHER_PROVIDERS = [
   "stx",
   // AgentRouter (New-API) console balance (GET /api/user/self)
   "agentrouter",
+  // TokenRouter Management API (optional Management Key in consoleApiKey)
+  "tokenrouter",
   "kilocode",
   // Devin CLI agentic quota (Codeium seat-management GetUserStatus, protobuf)
   "devin-cli",
