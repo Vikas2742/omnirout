@@ -93,6 +93,7 @@ import {
 } from "@omniroute/open-sse/services/accountFallback.ts";
 import { copilotRejectionFlag, lockCopilotModelNotSupported } from "./copilotModelNotSupportedLock";
 import { isSharedWalletCredits402 } from "@omniroute/open-sse/services/accountFallback/sharedWalletCredits.ts";
+import { isModelScopedAccessDenial } from "@omniroute/open-sse/services/accountFallback/modelScopedAccessDenial.ts";
 import { postOutputFailureReachesLockout } from "@omniroute/open-sse/services/accountFallback/postOutputFailureStreak.ts";
 import { isOpencodeFreeTierRefusalForProvider } from "@omniroute/open-sse/executors/opencodeGeoBlock.ts";
 import { isOpencodeFreeTierSkipped } from "@omniroute/open-sse/services/opencodeFreeTierSkip.ts";
@@ -2741,6 +2742,14 @@ export async function markAccountUnavailable(
       null,
       await resolveDailyResetForProvider(provider)
     );
+
+    // #16824: ModelScope can reject a single listed-but-inaccessible model with
+    // HTTP 401/403, while the same credential still serves its sibling models.
+    // Lock only the rejected model, before terminal credential classification.
+    if (provider && model && isModelScopedAccessDenial(provider, status, errorText, options.structuredError)) {
+      lockModel(provider, connectionId, model, "model_not_found", COOLDOWN_MS.notFound);
+      return { shouldFallback: true, cooldownMs: 0 };
+    }
 
     // T-PROBE: probe-origin failures (model test-all) must never remove the
     // connection from the pool. Record the failure for visibility but leave
