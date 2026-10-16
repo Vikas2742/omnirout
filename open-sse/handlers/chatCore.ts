@@ -40,10 +40,7 @@ import { notePreviousResponseResumed } from "./chatCore/resumedResilienceNotes.t
 import { runStreamingResponse } from "./chatCore/streamingResponse.ts";
 import { runStreamingTail } from "./chatCore/streamingTail.ts";
 import { sanitizeChatRequestBody } from "./chatCore/sanitization.ts";
-import {
-  applyReasoningInputPolicy,
-  resolveIncompatibleReasoningAction,
-} from "../services/reasoningInputPolicy.ts";
+import { isReasoningContinuationIncompatible } from "./chatCore/reasoningInputGate.ts";
 
 import {
   getHeaderValueCaseInsensitive,
@@ -1108,39 +1105,26 @@ async function handleChatCoreInner({
     return cacheHit;
   }
 
-  const reasoningInputFormat =
-    sourceFormat === FORMATS.OPENAI_RESPONSES
-      ? "responses"
-      : sourceFormat === FORMATS.OPENAI
-        ? "chat"
-        : null;
-  if (reasoningInputFormat && body && typeof body === "object") {
-    const policy = applyReasoningInputPolicy(
-      body as Record<string, unknown>,
-      reasoningInputFormat,
-      {
-        provider,
-        preserveEncryptedReasoning:
-          credentials?.providerSpecificData?.preserveEncryptedReasoning === true,
-        onIncompatibleReasoning: resolveIncompatibleReasoningAction({
-          reasoningTransportFallback,
-          // #11178 regressed combo steps whose combo record carries no explicit
-          // stepId/executionKey (plain model-list combos): their explicit
-          // `reasoningTransportFallback: "skip"` config was silently degraded to
-          // "drop". `isCombo` is the combo marker; step ids are optional
-          // finer-grained metadata that plain combos never set.
-          isComboStep: Boolean(isCombo) || Boolean(comboStepId || comboExecutionKey),
-          headers: clientRawRequest?.headers ?? null,
-        }),
-      }
+  // Reasoning-continuation input policy extracted to chatCore/reasoningInputGate.ts (chatCore
+  // slice 2); it may rewrite carried reasoning in place, and reports an incompatible target.
+  if (
+    isReasoningContinuationIncompatible({
+      body,
+      sourceFormat,
+      provider,
+      credentials,
+      reasoningTransportFallback,
+      isCombo,
+      comboStepId,
+      comboExecutionKey,
+      headers: clientRawRequest?.headers ?? null,
+    })
+  ) {
+    trackPendingRequest(model, provider, pendingConnId, false, undefined, pendingRequestId);
+    return createErrorResult(
+      HTTP_STATUS.BAD_REQUEST,
+      "Reasoning continuation is not compatible with the selected target"
     );
-    if (policy.incompatibleReasoning) {
-      trackPendingRequest(model, provider, pendingConnId, false, undefined, pendingRequestId);
-      return createErrorResult(
-        HTTP_STATUS.BAD_REQUEST,
-        "Reasoning continuation is not compatible with the selected target"
-      );
-    }
   }
 
   body = sanitizeChatRequestBody(body, sourceFormat, targetFormat);
