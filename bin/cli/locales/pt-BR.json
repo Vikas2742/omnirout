@@ -1179,8 +1179,8 @@
       "token": "Token de sincronização (de `sync tokens create`); padrão: OMNIROUTE_SYNC_TOKEN"
     },
     "import": {
-      "description": "Importar arquivo bundle",
-      "dryRun": "Validar sem aplicar"
+      "description": "Substituir o banco do servidor por um backup .sqlite",
+      "dryRun": "Validar o backup localmente; nunca contata o servidor"
     },
     "tokens": {
       "description": "Gerenciar tokens de sincronização",
