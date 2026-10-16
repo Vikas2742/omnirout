@@ -287,7 +287,7 @@ import type {
   CompressionPipelineStep,
   CompressionResult,
 } from "../services/compression/types.ts";
-import { generateSessionId } from "../services/sessionManager.ts";
+import { runLiveZoneCompression } from "./chatCore/liveZoneCompression.ts";
 import { prepareWebSearchFallbackBody } from "../services/webSearchFallback.ts";
 import { prepareWebFetchFallbackBody } from "../services/webFetchInterception.ts";
 import { resolveInterceptSearch, resolveInterceptFetch } from "@/lib/db/interceptionRules";
@@ -1586,44 +1586,18 @@ async function handleChatCoreInner({
         }
         let result: CompressionResult;
         if (compressionConfig.liveZone?.enabled === true) {
-          const { applyLiveZoneCompression } = await import("../services/compression/liveZone.ts");
-          const explicitSessionId =
-            clientRawRequest?.headers && typeof clientRawRequest.headers.get === "function"
-              ? clientRawRequest.headers.get("x-omniroute-session-id")
-              : getHeaderValueCaseInsensitive(
-                  clientRawRequest?.headers ?? null,
-                  "x-omniroute-session-id"
-                );
-          const liveZoneSessionId =
-            explicitSessionId ||
-            generateSessionId(compressionInputBody, {
-              provider,
-              connectionId: getCurrentConnectionId() ?? undefined,
-            }) ||
-            undefined;
-          result = await applyLiveZoneCompression(
+          // Live-zone lane extracted to chatCore/liveZoneCompression.ts (chatCore slice 2).
+          result = await runLiveZoneCompression({
             compressionInputBody,
-            {
-              principalId: compressionPrincipalId,
-              sessionId: liveZoneSessionId,
-              variant: {
-                mode,
-                provider,
-                model: effectiveModel,
-                config: compressionConfig,
-                cachePrefix: {
-                  system: compressionInputBody.system,
-                  systemInstruction: compressionInputBody.systemInstruction,
-                  system_instruction: compressionInputBody.system_instruction,
-                  instructions: compressionInputBody.instructions,
-                  tools: compressionInputBody.tools,
-                  toolChoice: compressionInputBody.tool_choice,
-                },
-              },
-              ttlMinutes: compressionConfig.cacheMinutes,
-            },
-            runCompression
-          );
+            clientHeaders: clientRawRequest?.headers,
+            provider,
+            getCurrentConnectionId,
+            compressionPrincipalId,
+            mode,
+            effectiveModel,
+            compressionConfig,
+            runCompression,
+          });
         } else {
           result = await runCompression(compressionInputBody);
         }
