@@ -19,6 +19,13 @@ let refreshCalls = 0;
 globalThis.fetch = (async (input) => {
   const url = String(input);
 
+  if (/\/user(?:\?|$)/.test(url) && !url.includes("copilot_internal")) {
+    return new Response("{}", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
   assert.match(url, /copilot_internal\/v2\/token/);
   refreshCalls++;
 
