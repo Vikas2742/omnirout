@@ -941,11 +941,11 @@ ordinary inference API keys. Credential families, scopes, and curl examples:
 
 ### Authentication
 
-| Endpoint                      | Method  | Description           |
-| ----------------------------- | ------- | --------------------- |
-| `/api/auth/login`             | POST    | Login                 |
-| `/api/auth/logout`            | POST    | Logout                |
-| `/api/settings/require-login` | GET/PUT | Toggle login required |
+| Endpoint                      | Method   | Description                                                                                                                                                                                                                                                            |
+| ----------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/auth/login`             | POST     | Login                                                                                                                                                                                                                                                                  |
+| `/api/auth/logout`            | POST     | Logout                                                                                                                                                                                                                                                                 |
+| `/api/settings/require-login` | GET/POST | Login status (GET, public). POST sets the password / toggles login: operator-only once a password exists (dashboard session, local CLI, or login disabled — API keys and `oma_` tokens get `403`); a dashboard session sends `currentPassword` to replace the password |
 
 ### Provider Management
 

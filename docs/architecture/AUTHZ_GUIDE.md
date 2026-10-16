@@ -107,7 +107,13 @@ credentials (`GET /api/settings/export-json`, `GET /api/db-backups/export`,
 `admin` CLI access token (`POST /api/cli/tokens`) require a dashboard session, the local CLI
 subject, or login disabled; API keys of any scope and `oma_` access tokens get `403`. The check
 lives in `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` /
-`requireOperatorCredential()`).
+`requireOperatorCredential()`). Changing the login settings is operator-only too:
+`POST /api/settings/require-login` (set the management password / toggle `requireLogin`) accepts
+only those credentials once a password exists — the first-run bootstrap window (no password yet)
+is unchanged — and a dashboard session must send `currentPassword` to replace the password
+(`403` when it is missing or wrong, audited as `settings.update_failed`). The local CLI and an
+instance with login disabled keep the recovery path and may set a password without it, since both
+are bound to the host that owns the data directory.
 
 ## Pipeline
 

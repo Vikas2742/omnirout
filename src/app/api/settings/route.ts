@@ -30,7 +30,8 @@ import {
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { isPaidModelTarget } from "@/shared/utils/freeModels";
 import { getAuditRequestContext, logAuditEvent } from "@/lib/compliance";
-import { isAuthRequired, isDashboardSessionAuthenticated } from "@/shared/utils/apiAuth";
+import { deriveSettingsAuditActor, emitSettingsFailureAudit } from "@/lib/api/settingsAudit";
+import { isAuthRequired } from "@/shared/utils/apiAuth";
 import {
   DASHBOARD_SESSION_COOKIE,
   REVOKED_SESSIONS_SETTING,
@@ -39,16 +40,12 @@ import {
   mintDashboardSessionToken,
   verifyDashboardSessionToken,
 } from "@/shared/utils/dashboardSessionToken";
-import { isCliTokenAuthValid } from "@/lib/middleware/cliTokenAuth";
-import { extractApiKey } from "@/sse/services/auth";
-import { getApiKeyMetadata } from "@/lib/db/apiKeys";
 import { getRadarAdminUrl } from "@/lib/radar/links";
 import {
   AUTHZ_HEADER_AUTH_ID,
   AUTHZ_HEADER_AUTH_KIND,
   AUTHZ_HEADER_PEER_LOCALITY,
 } from "@/server/authz/headers";
-import { readSubjectFromHeaders } from "@/server/authz/assertAuth";
 
 /**
  * Force this route to run dynamically per-request and never be cached/prerendered.
@@ -109,39 +106,6 @@ function parseExpectedRevision(
   return undefined;
 }
 
-/**
- * Derive an audit actor string from the inbound request. Falls back to
- * `"dashboard"` for cookie sessions, `"apikey:<id>"` for Bearer API keys,
- * `"cli"` for CLI machine-token sessions, and `"anonymous"` otherwise. Best
- * effort — any lookup error degrades to `"unknown"` so the audit row still
- * carries actor context.
- */
-async function deriveAuditActor(request: Request): Promise<string> {
-  try {
-    if (await isDashboardSessionAuthenticated(request)) return "dashboard";
-  } catch {
-    /* fall through */
-  }
-  const subject = readSubjectFromHeaders(request.headers);
-  if (subject.kind === "management_key" && subject.label === "local-cli-token") return "cli";
-  try {
-    if (await isCliTokenAuthValid(request)) return "cli";
-  } catch {
-    /* fall through */
-  }
-  try {
-    const apiKey = extractApiKey(request);
-    if (apiKey) {
-      const meta = await getApiKeyMetadata(apiKey);
-      if (meta?.id) return `apikey:${meta.id}`;
-      return "apikey:unknown";
-    }
-  } catch {
-    return "unknown";
-  }
-  return "anonymous";
-}
-
 /** Deep-equality for diff detection. JSON round-trip handles plain settings. */
 function isDeepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
@@ -176,30 +140,6 @@ function attemptedKeysOf(body: Record<string, unknown> | null | undefined): stri
     (k) =>
       k !== "currentPassword" && k !== "newPassword" && k !== "password" && k !== "expectedRevision"
   );
-}
-
-/** Emit a settings.update_failed row. Never throws — audit must not break flow. */
-function emitSettingsFailureAudit(
-  request: Request,
-  actor: string,
-  reason: string,
-  attemptedKeys: string[]
-) {
-  try {
-    const { ipAddress, requestId } = getAuditRequestContext(request);
-    logAuditEvent({
-      action: "settings.update_failed",
-      actor,
-      target: "settings",
-      resourceType: "settings",
-      status: "failure",
-      ipAddress: ipAddress || undefined,
-      requestId: requestId || undefined,
-      details: { reason, attempted_keys: attemptedKeys },
-    });
-  } catch {
-    /* best effort */
-  }
 }
 
 export async function GET(request: Request) {
@@ -279,7 +219,7 @@ export async function PATCH(request: Request) {
   if (authError) return authError;
 
   // Derive actor + raw body once so the rejection paths can audit consistently.
-  const actor = await deriveAuditActor(request);
+  const actor = await deriveSettingsAuditActor(request);
   let rawBody: Record<string, unknown> = {};
   try {
     rawBody = (await request.json()) as Record<string, unknown>;

@@ -3341,10 +3341,39 @@ paths:
   /api/settings/require-login:
     post:
       tags: [Settings]
-      summary: Toggle login requirement
+      summary: Set the management password and/or toggle the login requirement
+      description: >-
+        Open without a credential only during the first-run bootstrap window (no password
+        configured yet). Afterwards the write is operator-only: a dashboard session, the local
+        CLI, or an instance with login disabled. API keys of any scope and `oma_` access tokens
+        are refused with 403. A dashboard session must send `currentPassword` to replace an
+        existing password; the local CLI may reset it without one (recovery path).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requireLogin:
+                  type: boolean
+                password:
+                  type: string
+                  minLength: 4
+                currentPassword:
+                  type: string
+                  description: Current password; required when a dashboard session changes `password`.
       responses:
         "200":
           description: Updated
+        "400":
+          description: Invalid body or no field to update
+        "401":
+          description: No credential outside the bootstrap window
+        "403":
+          description: >-
+            Machine credential (API key of any scope, `oma_` access token), or a dashboard
+            session changing the password without the correct `currentPassword`
 
   /api/settings/ip-filter:
     get:
