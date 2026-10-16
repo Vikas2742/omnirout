@@ -1,0 +1,1 @@
+- **fix(security):** Encrypt the allowlisted `providerSpecificData.consoleApiKey` at rest while preserving legacy reads and lazy connection views ([#16863](https://github.com/diegosouzapw/OmniRoute/pull/16863)) — thanks @fabioKoruja00
