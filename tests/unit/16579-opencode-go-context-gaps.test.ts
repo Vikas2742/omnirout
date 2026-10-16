@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { opencode_goProvider } from "../../open-sse/config/providers/registry/opencode/go/index.ts";
 import { getResolvedModelCapabilities } from "../../src/lib/modelCapabilities.ts";
 import { getModelSpec } from "../../src/shared/constants/modelSpecs.ts";
+import { enrichCatalogModelEntry } from "../../src/lib/modelMetadataRegistry.ts";
 
 test("#16579 OpenCode Go imports DeepSeek Flash alias with its full 1M context", () => {
   const models = opencode_goProvider.models ?? [];
@@ -71,5 +72,22 @@ test("#16579 verified affected models keep their published Go-tier limits", () =
       { persistedOverrides: false }
     );
     assert.equal(caps.contextWindow, context, `${id}: resolved context window`);
+  }
+});
+
+test("#16579 imported catalog placeholders are replaced for verified OpenCode Go models", () => {
+  for (const [model, expected] of [
+    ["deepseek-v4.1-flash", 1_000_000],
+    ["deepseek-flash", 1_000_000],
+    ["minimax-m2.5", 204_800],
+  ] as const) {
+    const imported = {
+      id: `opencode-go/${model}`,
+      root: model,
+      owned_by: "opencode-go",
+      context_length: 200_000,
+    };
+    const enriched = enrichCatalogModelEntry(imported);
+    assert.equal(enriched.context_length, expected, model);
   }
 });
