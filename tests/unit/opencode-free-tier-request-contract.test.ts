@@ -19,14 +19,23 @@
  *
  * Paid models on the same host are not gated (one without tools answers 401), so the
  * request contract applies to free-tier models only.
+ *
+ * Measured again on 2026-10-14: the free tier moved to https://opencode.ai/inference/v1
+ * (the base the client now takes from the models.dev catalog), and the very same request
+ * body is refused 403 on /zen/v1. On the new base the tools condition also narrows: a
+ * declared `read` or `bash` needs a non-empty parameter schema, while an empty schema on
+ * a name outside the quartet still passes.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  _setOpencodeFreeModelsForTests,
   applyFreeTierRequestContract,
   configuredPlaceholderToolNames,
+  isPremiumOpencodeModel,
   mergeClientToolsWithObserved,
   noteFreeTierOutcome,
+  placeholderToolParameters,
   prepareFreeTierRequest,
   isGatedFreeTierRequest,
   requiresFreeTierRequestContract,
@@ -40,12 +49,23 @@ import {
 } from "../../open-sse/executors/opencodeToolObservation.ts";
 import {
   DEFAULT_OPENCODE_USER_AGENT,
-  OPENCODE_SESSION_PATTERN,
   clientSuppliedOpencodeSession,
   forwardOpencodeClientHeaders,
+  isValidOpencodeSessionValue,
   satisfiesOpencodeUserAgentContract,
 } from "../../open-sse/utils/opencodeHeaders.ts";
 import { OpencodeExecutor } from "../../open-sse/executors/opencode.ts";
+
+/**
+ * The free tier validates the session *value* (the 12-hex time part must decode to the
+ * client's `Identifier.descending()` counter window `0xFC0–0xFFF`), not just its shape.
+ * Asserting `OPENCODE_SESSION_PATTERN` alone would accept an out-of-window counter that
+ * the upstream 403s, so every synthesized session is checked through the value-level
+ * validator instead.
+ */
+function assertDescendingSession(value: string | undefined, message?: string): void {
+  assert.equal(isValidOpencodeSessionValue(value), value, message);
+}
 
 const CHAT_BODY = () => ({
   model: "nemotron-3.5-lightning-free",
@@ -69,10 +89,26 @@ test("the contract applies to free-tier models on the gated surface only", () =>
   assert.equal(requiresFreeTierRequestContract("zen", "opencode-zen", "gpt-5.6-luna"), false);
   // The other surface refuses a request that carries tools rather than one that does not
   // (upstream anomalyco/opencode#44300 and #44382), so it is never brought up to this
-  // contract — including for the free model its registry declares.
+  // contract — including for a free model.
   assert.equal(requiresFreeTierRequestContract("go", "opencode-go", "big-pickle"), false);
   assert.equal(requiresFreeTierRequestContract("go", "opencode-go", "ox-alpha-free"), false);
   assert.equal(requiresFreeTierRequestContract("other", "groq", "big-pickle"), false);
+});
+
+test("with the synced catalog pinned, only its ids count as free", () => {
+  // A model the catalog omits is premium even with a `-free` suffix (the upstream
+  // delisted it — the stale-table failure the catalog rule fixes); a listed id is free.
+  _setOpencodeFreeModelsForTests(["big-pickle", "nemotron-3.5-lightning-free"]);
+  try {
+    assert.equal(requiresFreeTierRequestContract("zen", "opencode", "big-pickle"), true);
+    assert.equal(
+      requiresFreeTierRequestContract("zen", "opencode", "nemotron-3.5-lightning-free"),
+      true
+    );
+    assert.equal(requiresFreeTierRequestContract("zen", "opencode", "delisted-model-free"), false);
+  } finally {
+    _setOpencodeFreeModelsForTests(null);
+  }
 });
 
 test("the surface is told apart by base url, so the `oc` alias needs no special case", () => {
@@ -105,9 +141,36 @@ test("the placeholder carries the names it is given, one entry each", () => {
     tools.map((t) => t.function.name),
     ["glob", "grep", "read"]
   );
-  // Names only: an empty parameter object, so a borrowed name is a list entry rather than
-  // a tool the model could usefully call.
-  assert.deepEqual(tools[0].function.parameters, { type: "object", properties: {} });
+  // Injected quartet members carry the minimal schema the gate accepts: since 2026-10-14 a
+  // declared `read` with `properties: {}` turns the request into a 403 on /inference/v1.
+  assert.deepEqual(tools[0].function.parameters, {
+    type: "object",
+    properties: { pattern: { type: "string" } },
+    required: ["pattern"],
+  });
+  assert.deepEqual(tools[2].function.parameters, {
+    type: "object",
+    properties: { filePath: { type: "string" } },
+    required: ["filePath"],
+  });
+});
+
+test("placeholderToolParameters: quartet members get a minimal schema, others stay empty", () => {
+  // Measured 2026-10-14 on /inference/v1: `read` + `bash` with `properties: {}` is refused
+  // 403, the same pair with `{command}` on `bash` passes, and a request with no
+  // property-bearing `read` is refused — while an empty schema on a name outside the
+  // quartet (`webfetch`, `_noop`) still passes.
+  assert.deepEqual(placeholderToolParameters("bash"), {
+    type: "object",
+    properties: { command: { type: "string" } },
+    required: ["command"],
+  });
+  for (const name of ["bash", "glob", "grep", "read"]) {
+    const schema = placeholderToolParameters(name) as { properties: Record<string, unknown> };
+    assert.ok(Object.keys(schema.properties).length > 0, name);
+  }
+  assert.deepEqual(placeholderToolParameters("_noop"), { type: "object", properties: {} });
+  assert.deepEqual(placeholderToolParameters("webfetch"), { type: "object", properties: {} });
 });
 
 test("responses: several placeholder names keep the flat shape and no tool_choice", () => {
@@ -249,7 +312,7 @@ test("synthesized identity headers carry a canonical session and request id", ()
     }
   );
   assert.equal(headers["User-Agent"], DEFAULT_OPENCODE_USER_AGENT);
-  assert.match(headers["x-opencode-session"] ?? "", OPENCODE_SESSION_PATTERN);
+  assertDescendingSession(headers["x-opencode-session"]);
   assert.match(headers["x-opencode-request"] ?? "", /^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/);
 });
 
@@ -278,8 +341,10 @@ test("the same conversation keeps the same session id, a different one does not"
   );
 });
 
-test("a client session already in the canonical shape is preserved", () => {
-  const canonical = "ses_0123456789abABCDEFGHIJKLMN";
+test("a genuine descending client session (counter in window) is preserved", () => {
+  // A real client id mints `ses_` + ~(ts<<12|counter) hex + 14 base62, so the time part
+  // lands in the 0xFC0–0xFFF window (this one decodes to counter 1 → `ffe`).
+  const canonical = "ses_ecc5beb7cffe2U0aluUnb5nnpZ";
   const headers: Record<string, string> = {};
   forwardOpencodeClientHeaders(
     headers,
@@ -290,9 +355,50 @@ test("a client session already in the canonical shape is preserved", () => {
         client: "desktop",
         project: "global",
       },
+      reencodeSession: true,
     }
   );
   assert.equal(headers["x-opencode-session"], canonical);
+});
+
+test("a shape-valid session with an out-of-window counter is re-minted, not passed through", () => {
+  // Right shape (12 hex + 14 base62) but the time part `0123456789ab` does not decode to
+  // the descending counter window, so the upstream would 403 it. Value-level re-encode.
+  const foreign = "ses_0123456789abABCDEFGHIJKLMN";
+  const headers: Record<string, string> = {};
+  forwardOpencodeClientHeaders(
+    headers,
+    { "x-opencode-session": foreign },
+    {
+      cliDefaults: {
+        userAgent: DEFAULT_OPENCODE_USER_AGENT,
+        client: "desktop",
+        project: "global",
+      },
+      reencodeSession: true,
+    }
+  );
+  assert.notEqual(headers["x-opencode-session"], foreign);
+  assertDescendingSession(headers["x-opencode-session"]);
+});
+
+test("an ungated surface (reencodeSession off) keeps the client's session unchanged", () => {
+  // opencode-go does not enforce the zen counter window, so the session round-trips as-is
+  // (#15311) — only the gated free-tier path validates and re-mints the value.
+  const session = "ses_00000000000000000000000000";
+  const headers: Record<string, string> = {};
+  forwardOpencodeClientHeaders(
+    headers,
+    { "x-opencode-session": session },
+    {
+      cliDefaults: {
+        userAgent: DEFAULT_OPENCODE_USER_AGENT,
+        client: "desktop",
+        project: "global",
+      },
+    }
+  );
+  assert.equal(headers["x-opencode-session"], session);
 });
 
 test("a foreign client session is translated into the canonical shape, deterministically", () => {
@@ -312,7 +418,7 @@ test("a foreign client session is translated into the canonical shape, determini
     return headers["x-opencode-session"];
   };
   const translated = translate();
-  assert.match(translated ?? "", OPENCODE_SESSION_PATTERN);
+  assertDescendingSession(translated);
   assert.equal(translate(), translated, "same client session, same upstream session");
 });
 
@@ -321,7 +427,7 @@ test("buildHeaders: a free-tier request accepts an event stream even when the cl
   const headers = executor.buildHeaders(null, false, null, "nemotron-3.5-lightning-free");
   assert.equal(headers["Accept"], "text/event-stream");
   assert.equal(headers["User-Agent"], DEFAULT_OPENCODE_USER_AGENT);
-  assert.match(headers["x-opencode-session"] ?? "", OPENCODE_SESSION_PATTERN);
+  assertDescendingSession(headers["x-opencode-session"]);
 });
 
 test("buildHeaders: a paid model keeps the client's non-streaming expectation", () => {
@@ -450,7 +556,7 @@ test("responses: two conversations on the same model get different session ids",
     })["x-opencode-session"];
 
   const first = sessionFor("first conversation");
-  assert.match(first ?? "", OPENCODE_SESSION_PATTERN);
+  assertDescendingSession(first);
   assert.equal(sessionFor("first conversation"), first, "same conversation, same session");
   assert.notEqual(
     sessionFor("a completely different opening message"),
@@ -823,8 +929,32 @@ test("mergeClientToolsWithObserved: keeps client tools first and appends missing
     tools.map((t) => t.function.name),
     ["glob", "read", "edit"]
   );
-  // Appended entries are list entries, not callable tools.
+  // Appended entries are list entries, not callable tools; `edit` is outside the quartet,
+  // so it keeps the empty schema.
   assert.deepEqual(tools[2].function.parameters, { type: "object", properties: {} });
+});
+
+test("mergeClientToolsWithObserved: an appended quartet member carries a non-empty schema [free-tier-observed-tools]", () => {
+  _resetToolObservationForTests();
+  const body = {
+    ...CHAT_BODY(),
+    tools: [{ type: "function", function: { name: "Read", parameters: { type: "object" } } }],
+  };
+  const merged = mergeClientToolsWithObserved(body, "openai", "opencode", "big-pickle", undefined, [
+    "bash",
+  ]);
+  const tools = (merged as Record<string, unknown>).tools as Array<{
+    function: { name: string; parameters: object };
+  }>;
+  assert.deepEqual(
+    tools.map((t) => t.function.name),
+    ["Read", "bash"]
+  );
+  assert.deepEqual(tools[1].function.parameters, {
+    type: "object",
+    properties: { command: { type: "string" } },
+    required: ["command"],
+  });
 });
 
 test("mergeClientToolsWithObserved: leaves the body untouched when nothing observed [free-tier-observed-tools]", () => {
@@ -941,6 +1071,64 @@ test("a deferred note without a verdict never touches the observed names", () =>
     noteFreeTierOutcome(borrowedAttempt(), false);
   }
   assert.deepEqual(getObservedToolNames("opencode", "nemotron-3.5-lightning-free"), ["glob"]);
+});
+
+test("buildHeaders re-mints a shape-valid foreign session on a gated free model", () => {
+  const foreign = "ses_0123456789abABCDEFGHIJKLMN";
+  const headers = new OpencodeExecutor("opencode-zen").buildHeaders(
+    null,
+    true,
+    { "x-opencode-session": foreign },
+    "nemotron-3.5-lightning-free"
+  );
+  assert.notEqual(headers["x-opencode-session"], foreign);
+  assertDescendingSession(headers["x-opencode-session"]);
+});
+
+test("buildHeaders leaves an opencode-go session unchanged", () => {
+  const session = "ses_0123456789abABCDEFGHIJKLMN";
+  const headers = new OpencodeExecutor("opencode-go").buildHeaders(
+    null,
+    true,
+    { "x-opencode-session": session },
+    "glm-5.2"
+  );
+  assert.equal(headers["x-opencode-session"], session);
+});
+
+test("an opencode-go synced catalog row is not in the free set", async () => {
+  // SQLITE_FILE is fixed when the db module loads, so this uses that test database
+  // and removes the rows afterwards. A later case must not inherit the synced set.
+  const core = await import("../../src/lib/db/core.ts");
+  const { saveModelsDevPricing, clearModelsDevPricing } =
+    await import("../../src/lib/modelsDevSync.ts");
+  const db = core.getDbInstance();
+  const insert = db.prepare(
+    "INSERT INTO key_value (namespace, key, value) VALUES ('syncedAvailableModels', ?, ?)"
+  );
+  const remove = db.prepare(
+    "DELETE FROM key_value WHERE namespace = 'syncedAvailableModels' AND key IN (?, ?, ?)"
+  );
+  try {
+    saveModelsDevPricing({
+      opencode: {
+        "zen-free": { input: 0, output: 0 },
+        "pickle-zen": { input: 0, output: 0 },
+        "big-pickle": { input: 0, output: 0 },
+      },
+    });
+    insert.run("opencode:conn", JSON.stringify([{ id: "zen-free" }]));
+    insert.run("opencode-zen:conn", JSON.stringify([{ id: "pickle-zen" }]));
+    insert.run("opencode-go:conn", JSON.stringify([{ id: "big-pickle" }]));
+    _setOpencodeFreeModelsForTests(null);
+    assert.equal(isPremiumOpencodeModel("zen-free", "opencode"), false);
+    assert.equal(isPremiumOpencodeModel("pickle-zen", "opencode-zen"), false);
+    assert.equal(isPremiumOpencodeModel("big-pickle", "opencode"), true);
+  } finally {
+    remove.run("opencode:conn", "opencode-zen:conn", "opencode-go:conn");
+    clearModelsDevPricing();
+    _setOpencodeFreeModelsForTests(null);
+  }
 });
 
 test("a deferred 403 verdict still counts against the borrowed names", () => {
