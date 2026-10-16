@@ -39,7 +39,7 @@ test.after(() => {
   }
 });
 
-test("#16836 SQLite persists encrypted secrets while connection reads and updates stay plaintext", async () => {
+test("#16836 SQLite encrypts metadata secrets without breaking reads and updates", async () => {
   const initialSecret = "console-secret-16836-db";
   const created = await connections.createProviderConnection({
     provider: "agentrouter",
@@ -57,7 +57,10 @@ test("#16836 SQLite persists encrypted secrets while connection reads and update
   assert.equal(stored.workspaceId, "ws-16836");
 
   const loaded = await connections.getProviderConnectionById(id);
-  assert.equal((loaded?.providerSpecificData as Record<string, unknown>).consoleApiKey, initialSecret);
+  assert.equal(
+    (loaded?.providerSpecificData as Record<string, unknown>).consoleApiKey,
+    initialSecret
+  );
 
   const lazy = (await connections.getProviderConnections({ provider: "agentrouter" })).find(
     (item) => item.id === id
@@ -70,7 +73,10 @@ test("#16836 SQLite persists encrypted secrets while connection reads and update
     name: "Console Secret DB Test Updated",
   });
   assert.ok(updated);
-  assert.equal((updated.providerSpecificData as Record<string, unknown>).consoleApiKey, initialSecret);
+  assert.equal(
+    (updated.providerSpecificData as Record<string, unknown>).consoleApiKey,
+    initialSecret
+  );
   assert.equal(readStoredProviderMetadata(id).consoleApiKey, stored.consoleApiKey);
 
   // Existing databases may contain plaintext console credentials. Reading and
@@ -86,7 +92,10 @@ test("#16836 SQLite persists encrypted secrets while connection reads and update
     legacySecret
   );
   const migrated = await connections.updateProviderConnection(id, { name: "Migrated DB Test" });
-  assert.equal((migrated?.providerSpecificData as Record<string, unknown>).consoleApiKey, legacySecret);
+  assert.equal(
+    (migrated?.providerSpecificData as Record<string, unknown>).consoleApiKey,
+    legacySecret
+  );
   const migratedOnDisk = readStoredProviderMetadata(id);
   assert.match(String(migratedOnDisk.consoleApiKey), /^enc:v1:/);
   assert.ok(!JSON.stringify(migratedOnDisk).includes(legacySecret));
