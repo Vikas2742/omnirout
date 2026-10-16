@@ -7,7 +7,13 @@ import {
   CLAUDE_FABLE_5_1_PRICING,
   CLAUDE_OPUS_5_5_PRICING,
   CLAUDE_OPUS_5_PRICING,
+  CLAUDE_SONNET_5_PRICING,
   GEMINI_3_7_FLASH_PROMO_PRICING,
+  GEMINI_3_8_FLASH_PRICING,
+  GEMINI_4_ARGON_PRICING,
+  GEMINI_3_5_FLASH_LITE_PRICING,
+  GEMINI_3_1_FLASH_LITE_PRICING,
+  GEMINI_3_FLASH_PRICING,
   GPT_5_3_CODEX_PRICING,
   GPT_5_5_PRICING,
   GPT_5_6_LUNA_PRICING,
@@ -15,10 +21,106 @@ import {
   GPT_5_6_TERRA_PRICING,
 } from "./shared-tiers";
 
+// Antigravity subscription pricing — one table shared by the `ag` (legacy
+// prefix, kept for back-compat), `antigravity` and `agy` provider ids, which
+// all serve the same Cloud Code backend. The live :fetchAvailableModels
+// catalog is authoritative (liveCatalogAuthoritative), so newly launched ids
+// become callable before a price row exists; with a per-key USD limit an
+// unpriced call then fails closed and locks the whole usage window (#12341 →
+// the lockout reported in #16570). Gemini rates are the published Standard
+// tier (see shared-tiers.ts for effective dates); Claude 5.5 tier ids reuse
+// the platform.claude.com constants.
 const ANTIGRAVITY_GEMINI_3_7_PRICING = {
   "gemini-3.7-flash-low": GEMINI_3_7_FLASH_PROMO_PRICING,
   "gemini-3.7-flash-medium": GEMINI_3_7_FLASH_PROMO_PRICING,
   "gemini-3.7-flash-high": GEMINI_3_7_FLASH_PROMO_PRICING,
+  "gemini-3.7-flash": GEMINI_3_7_FLASH_PROMO_PRICING,
+  "gemini-3.7-flash-tiered": GEMINI_3_7_FLASH_PROMO_PRICING,
+};
+
+const ANTIGRAVITY_GEMINI_3_8_PRICING = {
+  "gemini-3.8-flash-low": GEMINI_3_8_FLASH_PRICING,
+  "gemini-3.8-flash-medium": GEMINI_3_8_FLASH_PRICING,
+  "gemini-3.8-flash-high": GEMINI_3_8_FLASH_PRICING,
+  "gemini-3.8-flash": GEMINI_3_8_FLASH_PRICING,
+  "gemini-3.8-flash-tiered": GEMINI_3_8_FLASH_PRICING,
+};
+
+const ANTIGRAVITY_GEMINI_4_ARGON_PRICING = {
+  "gemini-4-argon-low": GEMINI_4_ARGON_PRICING,
+  "gemini-4-argon-medium": GEMINI_4_ARGON_PRICING,
+  "gemini-4-argon-high": GEMINI_4_ARGON_PRICING,
+};
+
+const ANTIGRAVITY_CLAUDE_5_5_PRICING = {
+  "claude-opus-5-5-low": CLAUDE_OPUS_5_5_PRICING,
+  "claude-opus-5-5-medium": CLAUDE_OPUS_5_5_PRICING,
+  "claude-opus-5-5-high": CLAUDE_OPUS_5_5_PRICING,
+  "claude-sonnet-5-5-low": CLAUDE_SONNET_5_PRICING,
+  "claude-sonnet-5-5-medium": CLAUDE_SONNET_5_PRICING,
+  "claude-sonnet-5-5-high": CLAUDE_SONNET_5_PRICING,
+};
+
+// Backend-served Gemini Pro / Claude 4.6 / GPT-OSS rows (values unchanged from
+// the retired `ag/` prefix era). Named consts so the client-facing alias
+// display ids below share the same row values as their upstream targets.
+const ANTIGRAVITY_GEMINI_3_1_PRO_LOW_PRICING = {
+  input: 2.0,
+  output: 12.0,
+  cached: 0.25,
+  reasoning: 18.0,
+  cache_creation: 2.0,
+};
+const ANTIGRAVITY_GEMINI_PRO_AGENT_PRICING = {
+  input: 4.0,
+  output: 18.0,
+  cached: 0.5,
+  reasoning: 27.0,
+  cache_creation: 4.0,
+};
+const ANTIGRAVITY_CLAUDE_SONNET_4_6_PRICING = {
+  input: 3.0,
+  output: 15.0,
+  cached: 0.3,
+  reasoning: 22.5,
+  cache_creation: 3.0,
+};
+const ANTIGRAVITY_CLAUDE_OPUS_4_6_THINKING_PRICING = {
+  input: 5.0,
+  output: 25.0,
+  cached: 0.5,
+  reasoning: 37.5,
+  cache_creation: 5.0,
+};
+const ANTIGRAVITY_GPT_OSS_120B_PRICING = {
+  input: 0.5,
+  output: 2.0,
+  cached: 0.25,
+  reasoning: 3.0,
+  cache_creation: 0.5,
+};
+
+const ANTIGRAVITY_SUBSCRIPTION_PRICING = {
+  "gemini-3.1-pro-low": ANTIGRAVITY_GEMINI_3_1_PRO_LOW_PRICING,
+  "gemini-pro-agent": ANTIGRAVITY_GEMINI_PRO_AGENT_PRICING,
+  ...ANTIGRAVITY_GEMINI_3_7_PRICING,
+  ...ANTIGRAVITY_GEMINI_3_8_PRICING,
+  ...ANTIGRAVITY_GEMINI_4_ARGON_PRICING,
+  "claude-sonnet-4-6": ANTIGRAVITY_CLAUDE_SONNET_4_6_PRICING,
+  "claude-opus-4-6-thinking": ANTIGRAVITY_CLAUDE_OPUS_4_6_THINKING_PRICING,
+  ...ANTIGRAVITY_CLAUDE_5_5_PRICING,
+  "gpt-oss-120b-medium": ANTIGRAVITY_GPT_OSS_120B_PRICING,
+  // Chat alias display ids (ANTIGRAVITY_MODEL_ALIASES): usage is recorded under
+  // the requested id, so each alias needs the same row as its resolved target.
+  "gemini-3.1-pro-high": ANTIGRAVITY_GEMINI_PRO_AGENT_PRICING, // → gemini-pro-agent
+  "gpt-oss-120b": ANTIGRAVITY_GPT_OSS_120B_PRICING, // → gpt-oss-120b-medium
+  "gemini-claude-sonnet-4-5": ANTIGRAVITY_CLAUDE_SONNET_4_6_PRICING, // → claude-sonnet-4-6
+  "gemini-claude-sonnet-4-5-thinking": ANTIGRAVITY_CLAUDE_SONNET_4_6_PRICING,
+  "gemini-claude-opus-4-5-thinking": ANTIGRAVITY_CLAUDE_OPUS_4_6_THINKING_PRICING,
+  // Live-catalog ids not in the static shared catalog yet (#16570).
+  "gemini-3.1-flash-lite": GEMINI_3_1_FLASH_LITE_PRICING,
+  "gemini-3.5-flash-lite": GEMINI_3_5_FLASH_LITE_PRICING,
+  "gemini-3-flash": GEMINI_3_FLASH_PRICING,
 };
 
 // Codex Standard: 250 / 25 / 1250 credits per MTok, at 25 credits per USD.
@@ -335,46 +437,9 @@ export const DEFAULT_PRICING_OAUTH = {
       cache_creation: 0.75,
     },
   },
-  ag: {
-    "gemini-3.1-pro-low": {
-      input: 2.0,
-      output: 12.0,
-      cached: 0.25,
-      reasoning: 18.0,
-      cache_creation: 2.0,
-    },
-    "gemini-pro-agent": {
-      input: 4.0,
-      output: 18.0,
-      cached: 0.5,
-      reasoning: 27.0,
-      cache_creation: 4.0,
-    },
-    ...ANTIGRAVITY_GEMINI_3_7_PRICING,
-    "claude-sonnet-4-6": {
-      input: 3.0,
-      output: 15.0,
-      cached: 0.3,
-      reasoning: 22.5,
-      cache_creation: 3.0,
-    },
-    "claude-opus-4-6-thinking": {
-      input: 5.0,
-      output: 25.0,
-      cached: 0.5,
-      reasoning: 37.5,
-      cache_creation: 5.0,
-    },
-    "gpt-oss-120b-medium": {
-      input: 0.5,
-      output: 2.0,
-      cached: 0.25,
-      reasoning: 3.0,
-      cache_creation: 0.5,
-    },
-  },
-  antigravity: ANTIGRAVITY_GEMINI_3_7_PRICING,
-  agy: ANTIGRAVITY_GEMINI_3_7_PRICING,
+  ag: ANTIGRAVITY_SUBSCRIPTION_PRICING,
+  antigravity: ANTIGRAVITY_SUBSCRIPTION_PRICING,
+  agy: ANTIGRAVITY_SUBSCRIPTION_PRICING,
   gh: {
     "claude-opus-5": CLAUDE_OPUS_5_PRICING,
     "gpt-5": {
