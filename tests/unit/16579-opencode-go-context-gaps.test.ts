@@ -75,6 +75,7 @@ test("#16579 verified affected models keep their published Go-tier limits", () =
       { persistedOverrides: false }
     );
     assert.equal(caps.contextWindow, context, `${id}: resolved context window`);
+    assert.equal(caps.maxOutputTokens, output, `${id}: resolved output limit`);
   }
 });
 
