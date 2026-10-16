@@ -101,10 +101,8 @@ import { resolveChatCoreTargetFormat } from "./chatCore/targetFormat.ts";
 import { resolveOmniGlyphTransport } from "../services/compression/imageTransportPolicy.ts";
 import { stripStore, usesClaudeBridge } from "./chatCore/agentRouterProtocol.ts";
 import { normalizeClaudeToolsForDispatch } from "./chatCore/claudeToolDefaults.ts";
-import {
-  injectCustomSystemPrompt,
-  injectSystemPromptPreTranslation,
-} from "../services/systemPrompt.ts";
+import { injectSystemPromptPreTranslation } from "../services/systemPrompt.ts";
+import { applyCustomSystemPrompt } from "./chatCore/customSystemPrompt.ts";
 import { applyProviderSystemTransforms } from "../services/systemTransforms.ts";
 import { translateRequest } from "../translator/index.ts";
 import { applyReasoningRuleDirective } from "@/lib/reasoningRouting/policy";
@@ -485,20 +483,9 @@ async function handleChatCoreInner({
     createManagedLeaseFence(managedLease);
   let tokensCompressed: number | null = null;
   // ── Per-endpoint custom system prompt (port of upstream #2063) ──
-  // Reads from cachedSettings if available (passed in from combo/chat layer)
-  // to avoid an extra DB read on the hot path. Falls through to getCachedSettings()
-  // only when this function is called outside the normal chat dispatch.
-  {
-    const _s = cachedSettings ?? (await getCachedSettings());
-    if (
-      _s.customSystemPromptEnabled === true &&
-      typeof _s.customSystemPrompt === "string" &&
-      _s.customSystemPrompt
-    ) {
-      body = injectCustomSystemPrompt(body as Record<string, unknown>, _s.customSystemPrompt);
-      log?.debug?.("CUSTOMSP", "custom system prompt injected");
-    }
-  }
+  // Extracted to chatCore/customSystemPrompt.ts (chatCore slice 2); reads cachedSettings when the
+  // combo/chat layer passed it in, so the hot path does no extra DB read.
+  body = applyCustomSystemPrompt(body, cachedSettings ?? (await getCachedSettings()), log);
   // ── Plugin onRequest hook ──
   // Dynamic import cached by Node.js after first call — minimal overhead
   const pluginGate = await runPluginOnRequestHook({
