@@ -385,7 +385,7 @@ function toClaudeClientUsage(usage) {
 export function openaiToClaudeResponse(chunk, state) {
   if (!chunk && !state.pendingClaudeFinishChoice) return null;
 
-  const results = [];
+  const results: Record<string, unknown>[] = [];
   const chunkUsage = chunk?.usage;
   const hasChunkUsage = chunkUsage && typeof chunkUsage === "object";
 
@@ -945,4 +945,4 @@ export function convertFinishReason(reason) {
 }
 
 // Register
-register(FORMATS.OPENAI, FORMATS.CLAUDE, null, openaiToClaudeResponse);
+register(FORMATS.OPENAI, FORMATS.CLAUDE, undefined, openaiToClaudeResponse);
