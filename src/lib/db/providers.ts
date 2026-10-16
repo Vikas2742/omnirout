@@ -1022,12 +1022,17 @@ export async function updateProviderConnection(id: string, data: JsonRecord, opt
     return getProviderConnectionById(id);
   }
 
+  // The write path keeps existing ciphertext in merged.providerSpecificData
+  // to avoid re-encrypting unchanged values. Return a decrypted copy instead:
+  // callers of updateProviderConnection must never see enc:v1 metadata as the
+  // usable console credentials (#16836).
+  const returned = decryptConnectionFields({ ...merged });
   const returnedConnection = withNullableRateLimitOverrides(
     withNullableQuotaWindowThresholds(
-      withNullableMaxConcurrent(cleanNulls(merged), merged),
-      merged
+      withNullableMaxConcurrent(cleanNulls(returned), returned),
+      returned
     ),
-    merged
+    returned
   );
 
   if (
