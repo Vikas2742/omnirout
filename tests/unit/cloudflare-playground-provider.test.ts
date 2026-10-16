@@ -262,25 +262,36 @@ test("#16460 Cloudflare text-only bridge detects image content without rejecting
   assert.equal(hasUnsupportedCfImageParts([{ role: "user", images: ["base64-image"] }]), true);
   assert.equal(
     hasUnsupportedCfImageParts([
-      { type: "message", role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,eA==" }] },
+      {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_image", image_url: "data:image/png;base64,eA==" }],
+      },
     ]),
-    true,
-    "Responses input content should be detected before a browser is started"
+    true
   );
 });
 
-test("#16460 Responses-style image input is rejected before transport creation", async () => {
+test("#16460 Responses images are rejected before creating a transport", async () => {
   let created = 0;
   const executor = new CloudflarePlaygroundExecutor((chatId) => {
     created += 1;
     return new FakeTransport(buildSuccessFrames(chatId));
   });
   const result = await executor.execute(
-    executeArgs({ model: "zai-org/glm-4.7-flash", input: [
-      { type: "message", role: "user", content: [
-        { type: "input_image", image_url: "data:image/png;base64,eA==" },
-      ] },
-    ] }, false)
+    executeArgs(
+      {
+        model: "zai-org/glm-4.7-flash",
+        input: [
+          {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_image", image_url: "data:image/png;base64,eA==" }],
+          },
+        ],
+      },
+      false
+    )
   );
   assert.equal(result.response.status, 400);
   assert.equal(created, 0);
@@ -296,13 +307,15 @@ test("#16460 image request returns a clear 400 before creating a Playwright tran
     executeArgs(
       {
         model: "zai-org/glm-4.7-flash",
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: "what is in this picture?" },
-            { type: "image_url", image_url: { url: "data:image/png;base64,eA==" } },
-          ],
-        }],
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "what is in this picture?" },
+              { type: "image_url", image_url: { url: "data:image/png;base64,eA==" } },
+            ],
+          },
+        ],
       },
       true
     )
