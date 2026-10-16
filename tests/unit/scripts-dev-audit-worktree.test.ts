@@ -222,7 +222,16 @@ test("passes a clean branch with no PR, honouring --base", () => {
 });
 
 test("fails loudly on a path that is not a git worktree", () => {
-  const r = spawnSync("bash", [SCRIPT_PATH, tmpdir()], { env: ENV, encoding: "utf8" });
+  // The sandbox may itself sit inside a repository (TMPDIR under the checkout), so git is
+  // told not to climb above it while looking for one.
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "audit-wt-norepo-")));
+  sandboxes.push(root);
+  const plain = join(root, "plain");
+  mkdirSync(plain);
+  const r = spawnSync("bash", [SCRIPT_PATH, plain], {
+    env: { ...ENV, GIT_CEILING_DIRECTORIES: root },
+    encoding: "utf8",
+  });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /not a git work tree/i);
 });
