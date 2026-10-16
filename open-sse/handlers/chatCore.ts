@@ -317,11 +317,7 @@ import { isLocalStreamLifecycleError } from "@/shared/utils/circuitBreaker";
 import { shouldIsolateProbeFailures } from "@/shared/utils/probeOrigin";
 import { writeTerminalStatus } from "@/shared/utils/terminalStatus";
 import { handleToolCallExecution } from "@/lib/skills/interception";
-import { getClaudeCodeCompatibleRequestDefaults } from "@/lib/providers/requestDefaults";
-import {
-  buildClaudeCodeCompatibleRequest,
-  resolveClaudeCodeCompatibleSessionId,
-} from "../services/claudeCodeCompatible.ts";
+import { buildClaudeCodeBridgeBody } from "./chatCore/claudeCodeBridgeBody.ts";
 import { setGeminiThoughtSignatureMode } from "../services/geminiThoughtSignatureStore.ts";
 import { classifyModelScope429, isModelScopeProvider } from "../services/modelscopePolicy.ts";
 import { incrementTokenUsage, isTpmExhausted } from "../services/geminiRateLimitTracker.ts";
@@ -2223,83 +2219,30 @@ async function handleChatCoreInner({
             : "native openai-compatible Responses passthrough enabled"
       );
     } else if (isClaudeCodeCompatible) {
-      let normalizedForCc = { ...body };
-
-      // Claude Code-compatible providers expect Anthropic Messages-shaped payloads,
-      // but we extract only role/text/max_tokens/effort from an OpenAI-like view first.
-      if (sourceFormat === FORMATS.CLAUDE && isClaudeCodeSemanticPassthrough) {
-        normalizedForCc = applyReasoningRuleDirective(
-          normalizedForCc,
-          "claude"
-        ) as typeof normalizedForCc;
-        log?.debug?.("FORMAT", "claude-code semantic passthrough enabled for compatible bridge");
-      } else if (sourceFormat !== FORMATS.OPENAI) {
-        const normalizeToolCallId = getModelNormalizeToolCallId(
-          provider || "",
-          model || "",
-          sourceFormat
-        );
-        const preserveDeveloperRole = getModelPreserveOpenAIDeveloperRole(
-          provider || "",
-          model || "",
-          sourceFormat
-        );
-        normalizedForCc = translateRequest(
-          sourceFormat,
-          FORMATS.OPENAI,
-          model,
-          { ...body },
-          stream,
-          credentials,
-          provider,
-          reqLogger,
-          {
-            normalizeToolCallId,
-            preserveDeveloperRole,
-            preserveCacheControl,
-            copilotClient: copilotCompatibleReasoning,
-            reasoningCacheScope,
-            videoTranscriptSensitive: videoBridgeObserved,
-          }
-        );
-      }
-
-      ccSessionId = resolveClaudeCodeCompatibleSessionId(clientRawRequest?.headers);
-      const ccRequestDefaults = getClaudeCodeCompatibleRequestDefaults(
-        credentials?.providerSpecificData
-      );
-      // OpenAI-shaped bridge requests skip translateRequest too.
-      if (sourceFormat === FORMATS.OPENAI) {
-        normalizedForCc = applyReasoningRuleDirective(normalizedForCc) as typeof normalizedForCc;
-      }
-      translatedBody = buildClaudeCodeCompatibleRequest({
-        sourceBody: body,
-        normalizedBody: normalizedForCc,
-        claudeBody: sourceFormat === FORMATS.CLAUDE ? body : null,
+      // Claude Code-compatible bridge body extracted to chatCore/claudeCodeBridgeBody.ts
+      // (chatCore slice 2); returns the dispatch body + the resolved bridge session id.
+      ({ translatedBody, ccSessionId } = buildClaudeCodeBridgeBody({
+        body,
+        sourceFormat,
+        targetFormat,
+        provider,
         model,
-        stream: upstreamStream,
-        sessionId: ccSessionId,
-        cwd: process.cwd(),
-        now: new Date(),
+        stream,
+        upstreamStream,
+        credentials,
+        reqLogger,
+        clientHeaders: clientRawRequest?.headers,
+        isClaudeCodeSemanticPassthrough,
         preserveCacheControl,
-        preserveClaudeMessages: sourceFormat === FORMATS.CLAUDE && isClaudeCodeSemanticPassthrough,
-        summarizeThinking: ccRequestDefaults.summarizeThinking === true,
-      });
-      log?.debug?.("FORMAT", "claude-code-compatible bridge enabled");
-
-      if (isClaudeCodeSemanticPassthrough) {
-        // Semantic passthrough: only lift system/developer role messages
-        // without converting file/document blocks, tool history, etc.
-        extractSystemRoleMessages(translatedBody);
-      } else {
-        // Non-CC path: full normalization including content type conversion.
-        // Preserve tool_result blocks only when the upstream target speaks the
-        // Anthropic Messages format — OpenAI-compatible gateways reject them
-        // and return 503. See issue #13971.
-        normalizeClaudeUpstreamMessages(translatedBody, {
-          preserveToolResultBlocks: targetFormat === FORMATS.CLAUDE,
-        });
-      }
+        copilotCompatibleReasoning,
+        reasoningCacheScope,
+        videoBridgeObserved,
+        normalizeClaudeUpstreamMessages,
+        applyReasoningRuleDirective,
+        getModelNormalizeToolCallId,
+        getModelPreserveOpenAIDeveloperRole,
+        log,
+      }));
     } else if (isClaudePassthrough) {
       // Pure passthrough: forward the body as-is without OpenAI round-trip.
       // The Claude→OpenAI→Claude double translation was lossy and corrupted
