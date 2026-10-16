@@ -80,6 +80,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { isTestContext, resolveDataDir } from "../dataPaths.ts";
+import { mapProviderSpecificDataSecrets } from "./providers/providerSpecificDataSecrets";
 
 function ensureSecretLoaded(): string | undefined {
   if (isTestContext()) {
@@ -369,6 +370,9 @@ export function encryptConnectionFields<T extends ConnectionFields | null | unde
   if (conn.accessToken) conn.accessToken = encrypt(conn.accessToken);
   if (conn.refreshToken) conn.refreshToken = encrypt(conn.refreshToken);
   if (conn.idToken) conn.idToken = encrypt(conn.idToken);
+  if (conn.providerSpecificData) {
+    conn.providerSpecificData = mapProviderSpecificDataSecrets(conn.providerSpecificData, (value) => encrypt(value));
+  }
   return conn;
 }
 
@@ -433,6 +437,7 @@ export function decryptConnectionFields<T extends ConnectionFields | null | unde
     accessToken,
     refreshToken,
     idToken,
+    providerSpecificData: mapProviderSpecificDataSecrets(row.providerSpecificData, (value) => decrypt(value, { quiet: true })),
     ...(credentialDecryptFailed ? { credentialDecryptFailed: true } : {}),
   };
 }
