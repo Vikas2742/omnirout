@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { opencode_goProvider } from "../../open-sse/config/providers/registry/opencode/go/index.ts";
-import { getResolvedModelCapabilities } from "../../src/lib/modelCapabilities.ts";
+import {
+  getResolvedModelCapabilities,
+  createModelCapabilityResolutionSnapshot,
+} from "../../src/lib/modelCapabilities.ts";
 import { getModelSpec } from "../../src/shared/constants/modelSpecs.ts";
 import { enrichCatalogModelEntry } from "../../src/lib/modelMetadataRegistry.ts";
 
@@ -90,4 +93,34 @@ test("#16579 imported catalog placeholders are replaced for verified OpenCode Go
     const enriched = enrichCatalogModelEntry(imported);
     assert.equal(enriched.context_length, expected, model);
   }
+});
+
+test("#16579 operator context overrides still win over authoritative Go metadata", () => {
+  const snapshot = {
+    ...createModelCapabilityResolutionSnapshot(),
+    contextOverrides: new Map([
+      ["opencode-go", new Map([["deepseek-flash", 750_000]])],
+    ]),
+  };
+  const caps = getResolvedModelCapabilities(
+    { provider: "opencode-go", model: "deepseek-flash" },
+    undefined,
+    snapshot
+  );
+  assert.equal(caps.contextWindow, 750_000);
+  const enriched = enrichCatalogModelEntry(
+    {
+      id: "opencode-go/deepseek-flash",
+      root: "deepseek-flash",
+      owned_by: "opencode-go",
+      context_length: 200_000,
+    },
+    undefined,
+    {
+      modelsDevPricing: {},
+      userPricing: {},
+      capabilityResolutionSnapshot: snapshot,
+    }
+  );
+  assert.equal(enriched.context_length, 750_000);
 });
