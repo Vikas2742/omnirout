@@ -70,6 +70,7 @@ for (const format of [FORMATS.ANTIGRAVITY, FORMATS.GEMINI]) {
     });
     const extracted = extractUsageFromResponse(client, "antigravity");
     assert.equal(extracted.prompt_tokens, 18020, "uncached input + cache read = full prompt");
+    assert.ok("cache_read_input_tokens" in extracted);
     assert.equal(extracted.cache_read_input_tokens, 17000);
   });
 
