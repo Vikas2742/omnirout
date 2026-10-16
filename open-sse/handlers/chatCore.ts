@@ -90,7 +90,8 @@ import { normalizeHeaders } from "../utils/headers.ts";
 import { resolveChatCoreRequestFormat } from "./chatCore/requestFormat.ts";
 import { resolveChatCoreTargetFormat } from "./chatCore/targetFormat.ts";
 import { resolveOmniGlyphTransport } from "../services/compression/imageTransportPolicy.ts";
-import { stripStore, usesClaudeBridge } from "./chatCore/agentRouterProtocol.ts";
+import { usesClaudeBridge } from "./chatCore/agentRouterProtocol.ts";
+import { normalizeUpstreamRequestParams } from "./chatCore/upstreamRequestParams.ts";
 import { injectSystemPromptPreTranslation } from "../services/systemPrompt.ts";
 import { applyCustomSystemPrompt } from "./chatCore/customSystemPrompt.ts";
 import { applyProviderSystemTransforms } from "../services/systemTransforms.ts";
@@ -153,7 +154,6 @@ import { checkTokenLimits } from "@omniroute/open-sse/services/tokenLimitCounter
 import {
   COOLDOWN_MS,
   HTTP_STATUS,
-  PROVIDER_MAX_TOKENS,
   DEFAULT_MAX_TOKENS,
   STREAM_DISCONNECT_GRACE_PERIOD_MS,
 } from "../config/constants.ts";
@@ -2429,55 +2429,21 @@ async function handleChatCoreInner({
     return createErrorResult(400, toolCallingCheck.message!, null, "tool_calling_not_supported");
   }
 
-  // Rename max_tokens to max_completion_tokens if not supported (#1961)
-  if (!supportsMaxTokens({ provider, model })) {
-    if (translatedBody.max_tokens !== undefined) {
-      if (translatedBody.max_completion_tokens === undefined) {
-        translatedBody.max_completion_tokens = translatedBody.max_tokens;
-      }
-      delete translatedBody.max_tokens;
-      log?.debug?.("PARAMS", `Renamed max_tokens to max_completion_tokens for ${model}`);
-    }
-  } else if (translatedBody.max_completion_tokens !== undefined) {
-    // Symmetric case (#6912): some providers/models (e.g. Volcengine Ark /
-    // DeepSeek) only document the legacy `max_tokens` field and silently
-    // ignore an unrecognized `max_completion_tokens`, so a client sending the
-    // newer field alone would have it dropped upstream with no cap applied.
-    if (translatedBody.max_tokens === undefined) {
-      translatedBody.max_tokens = translatedBody.max_completion_tokens;
-    }
-    delete translatedBody.max_completion_tokens;
-    log?.debug?.("PARAMS", `Renamed max_completion_tokens to max_tokens for ${model}`);
-  }
-
-  stripStore(
+  // max_tokens / max_completion_tokens reconciliation, store + stream_options strip and the
+  // provider output caps: extracted to chatCore/upstreamRequestParams.ts (chatCore slice 2).
+  // Mutates translatedBody in place.
+  normalizeUpstreamRequestParams({
     translatedBody,
+    modelSupportsMaxTokens: supportsMaxTokens({ provider, model }),
     provider,
+    model,
     targetFormat,
-    credentials?.providerSpecificData as Record<string, unknown> | null | undefined
-  );
-
-  // Chat clients may send stream_options.include_usage, but OpenAI Responses
-  // upstreams (including Azure AI Foundry /responses) reject stream_options.
-  if (targetFormat === FORMATS.OPENAI_RESPONSES && "stream_options" in translatedBody) {
-    delete translatedBody.stream_options;
-  }
-
-  // Provider-specific max_tokens caps (#711)
-  // Some providers reject requests when max_tokens exceeds their API limit.
-  // Cap before sending to avoid upstream HTTP 400 errors.
-  const providerCap = PROVIDER_MAX_TOKENS[provider];
-  if (providerCap) {
-    for (const field of ["max_tokens", "max_completion_tokens"] as const) {
-      if (typeof translatedBody[field] === "number" && translatedBody[field] > providerCap) {
-        log?.debug?.(
-          "PARAMS",
-          `Capping ${field} from ${translatedBody[field]} to ${providerCap} for ${provider}`
-        );
-        translatedBody[field] = providerCap;
-      }
-    }
-  }
+    providerSpecificData: credentials?.providerSpecificData as
+      | Record<string, unknown>
+      | null
+      | undefined,
+    log,
+  });
 
   // Resolve executor with optional upstream proxy (CLIProxyAPI) routing.
   // mode="native" (default): returns the native executor unchanged.
