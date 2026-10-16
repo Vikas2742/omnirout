@@ -2743,14 +2743,6 @@ export async function markAccountUnavailable(
       await resolveDailyResetForProvider(provider)
     );
 
-    // #16824: ModelScope can reject a single listed-but-inaccessible model with
-    // HTTP 401/403, while the same credential still serves its sibling models.
-    // Lock only the rejected model, before terminal credential classification.
-    if (provider && model && isModelScopedAccessDenial(provider, status, errorText, options.structuredError)) {
-      lockModel(provider, connectionId, model, "model_not_found", COOLDOWN_MS.notFound);
-      return { shouldFallback: true, cooldownMs: 0 };
-    }
-
     // T-PROBE: probe-origin failures (model test-all) must never remove the
     // connection from the pool. Record the failure for visibility but leave
     // ALL routing state untouched — cooldowns, terminal status, per-model
@@ -2774,6 +2766,14 @@ export async function markAccountUnavailable(
         "AUTH",
         `[T-PROBE] ${connectionId.slice(0, 8)} ${provider ?? ""} failure ${status} recorded — connection stays in the pool`
       );
+      return { shouldFallback: true, cooldownMs: 0 };
+    }
+
+    // #16824: a verified ModelScope model-access refusal does not invalidate
+    // the credential. Probe isolation above takes precedence; real requests
+    // lock only the rejected model and leave sibling models routable.
+    if (provider && model && isModelScopedAccessDenial(provider, status, errorText, options.structuredError)) {
+      lockModel(provider, connectionId, model, "model_not_found", COOLDOWN_MS.notFound);
       return { shouldFallback: true, cooldownMs: 0 };
     }
 
