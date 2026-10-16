@@ -131,7 +131,9 @@ test("BodyTimeoutError from open-sse requires the exact timeout shape (#16817)",
     new Error("Response body read timeout after 60000ms"),
     Object.assign(new Error("unrelated failure"), { name: "BodyTimeoutError" }),
     Object.assign(new Error("Response body read timeout after 0ms"), { name: "BodyTimeoutError" }),
-    Object.assign(new Error("Response body read timeout after NaNms"), { name: "BodyTimeoutError" }),
+    Object.assign(new Error("Response body read timeout after NaNms"), {
+      name: "BodyTimeoutError",
+    }),
     Object.assign(new TypeError("programmer bug"), { name: "BodyTimeoutError" }),
   ]) {
     assert.equal(sharedGuard.isRecoverableUpstreamTimeoutError(invalid), false);
