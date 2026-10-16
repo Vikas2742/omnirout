@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { encryptConnectionFields, decryptConnectionFields, looksEncrypted } from "../../src/lib/db/encryption.ts";
 import { createLazyRowProxy, createLazyConnectionView } from "../../src/lib/db/providers/lazyConnectionView.ts";
+import { summarizeProviderConnectionForAudit } from "../../src/lib/compliance/providerAudit.ts";
 
 const originalKey = process.env.STORAGE_ENCRYPTION_KEY;
 test.before(() => { process.env.STORAGE_ENCRYPTION_KEY = "provider-metadata-16836-test-key"; });
@@ -45,4 +46,25 @@ test("#16836 lazy views expose plaintext while the row and JSON stay protected a
   assert.equal(looksEncrypted((raw.providerSpecificData as Record<string, unknown>).consoleApiKey), true);
   const typed = createLazyConnectionView(raw);
   assert.equal(typed.providerSpecificData.consoleApiKey, "lazy-secret-16836");
+});
+
+// The audit writer must not persist either the decrypted value or ciphertext.
+test("#16836 audit snapshots never include nested console credentials", () => {
+  const stored = encryptConnectionFields({
+    id: "conn-audit",
+    provider: "agentrouter",
+    apiKey: "primary-secret-16836",
+    providerSpecificData: {
+      consoleApiKey: "audit-secret-16836",
+      workspaceId: "ws-public",
+    },
+  });
+  for (const row of [stored, decryptConnectionFields(stored), createLazyRowProxy(stored)]) {
+    const snapshot = summarizeProviderConnectionForAudit(row);
+    const serialized = JSON.stringify(snapshot);
+    assert.ok(!serialized.includes("audit-secret-16836"));
+    assert.ok(!serialized.includes("primary-secret-16836"));
+    assert.ok(!serialized.includes("enc:v1:"));
+    assert.deepEqual(snapshot?.providerSpecificData, { workspaceId: "ws-public" });
+  }
 });
