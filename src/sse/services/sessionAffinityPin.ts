@@ -31,7 +31,6 @@ import {
   getSessionAccountAffinity,
   getSessionAffinityStore,
   type SessionAccountAffinityRecord,
-  evictSessionAccountAffinityForConnection,
 } from "@/lib/db/sessionAccountAffinity";
 import {
   sessionAffinityAccountIdentity,
@@ -44,12 +43,15 @@ import {
   isAccountUnavailable,
   isModelLocked,
 } from "@omniroute/open-sse/services/accountFallback.ts";
-import { isComboPerModelTimeoutAbort } from "@omniroute/open-sse/services/combo/comboAbortReasons.ts";
 import * as log from "../utils/logger";
 import { readHeaderValue } from "./headerReader.ts";
 
 export { readHeaderValue } from "./headerReader.ts";
-export { evictSessionAffinityOnComboTimeoutAsync } from "./comboTimeoutSessionAffinity";
+export {
+  evictSessionAffinityOnComboTimeout,
+  evictSessionAffinityOnComboTimeoutAsync,
+  type ComboTimeoutAffinityEvictionParams,
+} from "./comboTimeoutSessionAffinity";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -273,6 +275,53 @@ function liveAffinitySnapshot(
   return record && Date.parse(record.expiresAt) > Date.now() ? record : null;
 }
 
+/** Keep obsolete-pin deletion and its log in the caller's synchronous turn. */
+function clearObsoleteSessionAffinity(
+  store: ReturnType<typeof getSessionAffinityStore>,
+  existing: SessionAccountAffinityRecord | null,
+  sessionKey: string,
+  provider: string,
+  logSelection: boolean
+): void {
+  if (!existing) return;
+  // Redis replaces the obsolete observation in one CAS, never delete-then-create.
+  if (store.driver === "sqlite") store.delete(sessionKey, provider);
+  if (logSelection)
+    log.info(
+      "AUTH",
+      `affinity cleared for session_key=${formatSessionKeyForLog(sessionKey)} provider=${provider}`
+    );
+}
+
+function logSessionAffinitySelection(
+  sessionKey: string,
+  connection: SessionAffinityConnection,
+  reused: boolean
+): void {
+  log.info(
+    "AUTH",
+    reused
+      ? `session_key=${formatSessionKeyForLog(sessionKey)} -> connection ${connection.id.slice(0, 8)} (affinity)`
+      : `new affinity created for session_key=${formatSessionKeyForLog(sessionKey)} -> connection ${connection.id.slice(0, 8)}`
+  );
+}
+
+function logSharedSessionAffinitySelection(
+  sessionKey: string,
+  provider: string,
+  selected: SessionAffinityConnection,
+  winner: SessionAccountAffinityRecord | null | void,
+  adopted: SessionAffinityConnection | null
+): void {
+  if (winner === undefined) logSessionAffinitySelection(sessionKey, selected, false);
+  else if (adopted) logSessionAffinitySelection(sessionKey, selected, true);
+  else
+    log.debug(
+      "AUTH",
+      `shared affinity winner unavailable for session_key=${formatSessionKeyForLog(sessionKey)} provider=${provider}; keeping connection ${selected.id.slice(0, 8)} without changing the shared pin`
+    );
+}
+
 /**
  * Session-affinity account selection (moved from auth.ts alongside the #5903
  * pin-override so all session-affinity logic lives in one leaf). Reuses an
@@ -303,25 +352,14 @@ export async function selectSessionAffinityConnection<T extends SessionAffinityC
     if (pinned) {
       store.touch(sessionKey, provider, Date.now(), ttlMs);
     } else {
-      if (existing) {
-        store.delete(sessionKey, provider);
-        log.info(
-          "AUTH",
-          `affinity cleared for session_key=${formatSessionKeyForLog(sessionKey)} provider=${provider}`
-        );
-      }
+      clearObsoleteSessionAffinity(store, existing, sessionKey, provider, true);
       store.upsert(sessionKey, provider, connection.id, Date.now(), ttlMs);
     }
     const nextCount = pinned ? (connection.consecutiveUseCount || 0) + 1 : 1;
     await touchConnectionLastUsed(connection.id, nextCount);
     connection.lastUsedAt = new Date().toISOString();
     connection.consecutiveUseCount = nextCount;
-    log.info(
-      "AUTH",
-      pinned
-        ? `session_key=${formatSessionKeyForLog(sessionKey)} -> connection ${connection.id.slice(0, 8)} (affinity)`
-        : `new affinity created for session_key=${formatSessionKeyForLog(sessionKey)} -> connection ${connection.id.slice(0, 8)}`
-    );
+    logSessionAffinitySelection(sessionKey, connection, Boolean(pinned));
     return connection;
   }
   const existing =
@@ -366,22 +404,10 @@ export function planSessionAffinityConnection<T extends SessionAffinityConnectio
         await touchConnectionLastUsed(connection.id, nextCount);
         connection.lastUsedAt = new Date().toISOString();
         connection.consecutiveUseCount = nextCount;
-        if (logSelection)
-          log.info(
-            "AUTH",
-            `session_key=${formatSessionKeyForLog(sessionKey)} -> connection ${connection.id.slice(0, 8)} (affinity)`
-          );
+        if (logSelection) logSessionAffinitySelection(sessionKey, connection, true);
         return;
       }
-      if (existing) {
-        // Redis replaces the obsolete observation in one CAS, never delete-then-create.
-        if (store.driver === "sqlite") store.delete(sessionKey, provider);
-        if (logSelection)
-          log.info(
-            "AUTH",
-            `affinity cleared for session_key=${formatSessionKeyForLog(sessionKey)} provider=${provider}`
-          );
-      }
+      clearObsoleteSessionAffinity(store, existing, sessionKey, provider, logSelection);
       const upserted = store.upsert(
         sessionKey,
         provider,
@@ -402,81 +428,11 @@ export function planSessionAffinityConnection<T extends SessionAffinityConnectio
       await touchConnectionLastUsed(selected.id, nextCount);
       selected.lastUsedAt = new Date().toISOString();
       selected.consecutiveUseCount = nextCount;
-      if (logSelection) {
-        if (winner === undefined)
-          log.info(
-            "AUTH",
-            `new affinity created for session_key=${formatSessionKeyForLog(sessionKey)} -> connection ${selected.id.slice(0, 8)}`
-          );
-        else if (adopted)
-          log.info(
-            "AUTH",
-            `session_key=${formatSessionKeyForLog(sessionKey)} -> connection ${selected.id.slice(0, 8)} (affinity)`
-          );
-        else
-          log.debug(
-            "AUTH",
-            `shared affinity winner unavailable for session_key=${formatSessionKeyForLog(sessionKey)} provider=${provider}; keeping connection ${selected.id.slice(0, 8)} without changing the shared pin`
-          );
-      }
+      if (logSelection)
+        logSharedSessionAffinitySelection(sessionKey, provider, selected, winner, adopted);
     },
   };
   return plan;
-}
-
-/** Inputs the combo-timeout eviction needs from the dispatch site. */
-export interface ComboTimeoutAffinityEvictionParams {
-  sessionKey?: string | null;
-  provider: string;
-  connectionId?: string | null;
-  /** Per-target abort signal handed down by the combo timeout runner. */
-  modelAbortSignal?: AbortSignal | null;
-}
-
-/**
- * #6219 follow-up — evict the sticky pin when a COMBO per-model timeout abandons
- * the pinned account.
- *
- * The #6219 eviction only fires on the generic `markAccountUnavailable` →
- * `shouldFallback` path in chat.ts. A combo target timeout never reaches it: the
- * combo runner aborts the dispatch, the abort propagates out of
- * `executeChatWithBreaker` as a rejection, and `buildTargetTimeoutRunner`
- * swallows it behind the synthetic 524. Nothing marks the account unavailable
- * (correctly — a stall is not a quota/auth failure), so the pin survived its full
- * TTL and every following request in that session was handed straight back to the
- * stalled account.
- *
- * Only a genuine per-model timeout evicts. A client disconnect or a hedge
- * cancellation says nothing about the account's health and must leave the pin
- * intact. The eviction is connection-matched, so a pin pointing at a different
- * (healthy) account is never touched. Best-effort: never throws into the dispatch
- * path.
- *
- * @returns true when a pin was actually evicted.
- */
-export function evictSessionAffinityOnComboTimeout(
-  params: ComboTimeoutAffinityEvictionParams
-): boolean {
-  const { sessionKey, provider, connectionId, modelAbortSignal } = params;
-  if (!sessionKey || !provider || !connectionId) return false;
-  if (!isComboPerModelTimeoutAbort(modelAbortSignal)) return false;
-
-  try {
-    const evicted = evictSessionAccountAffinityForConnection(sessionKey, provider, connectionId);
-    if (evicted) {
-      log.warn(
-        "AUTH",
-        `session_key=${formatSessionKeyForLog(sessionKey)} pin on ${connectionId.slice(
-          0,
-          8
-        )} evicted — ${provider} stalled past the combo target timeout`
-      );
-    }
-    return evicted;
-  } catch {
-    // Best-effort: a failed eviction must never break the dispatch path.
-    return false;
-  }
 }
 
 /** Subset of credential-selection options the pin resolution consults. */

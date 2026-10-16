@@ -33,6 +33,9 @@ const names = new Set([
   "compareLruConnections",
   "liveAffinitySnapshot",
   "formatSessionKeyForLog",
+  "clearObsoleteSessionAffinity",
+  "logSessionAffinitySelection",
+  "logSharedSessionAffinitySelection",
   "selectSessionAffinityConnection",
   "planSessionAffinityConnection",
 ]);
