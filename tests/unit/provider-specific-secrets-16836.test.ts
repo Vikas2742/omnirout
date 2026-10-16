@@ -238,3 +238,51 @@ test("#16836 compliance audits strip dashboard-redacted credential metadata", ()
     assert.ok(!serialized.includes("enc:v1:"));
   }
 });
+
+test("#16836 audit redaction cannot drift from dashboard redaction", () => {
+  const sensitive = [
+    "accessToken",
+    "refreshToken",
+    "idToken",
+    "apiKey",
+    "consoleApiKey",
+    "secretAccessKey",
+    "awsSecretAccessKey",
+    "sessionToken",
+    "awsSessionToken",
+    "openCodeGoAuthCookie",
+    "opencodeGoAuthCookie",
+    "authCookie",
+    "ollamaUsageCookie",
+    "ollamaCloudUsageCookie",
+    "ollamaCloudCookie",
+    "usageCookie",
+    "qwenCloudCookie",
+    "qwenCloudSecToken",
+    "alibabaConsoleCookie",
+    "alibabaConsoleSecToken",
+    "xiaomiMimoConsoleCookie",
+    "runtimeKey",
+    "validationId",
+    "volcConsoleCookie",
+    "volcCsrfToken",
+    "codexFingerprintSeed",
+    "codexClientIdentity",
+    "codexOriginalIdentityHeaders",
+    "codexTurnStateEcho",
+  ];
+  const metadata: Record<string, unknown> = { workspaceId: "visible-workspace" };
+  for (const key of sensitive) metadata[key] = `private-${key}`;
+  metadata.browserCdpEndpoint = "wss://private.example/browser?token=secret";
+  const dashboard = sanitizeProviderSpecificDataForResponse(metadata);
+  const audit = summarizeProviderConnectionForAudit({
+    id: "audit-should-match",
+    provider: "qwen-cloud-token-plan",
+    providerSpecificData: metadata,
+  });
+  assert.deepEqual(audit?.providerSpecificData, dashboard);
+  assert.deepEqual(dashboard, {
+    workspaceId: "visible-workspace",
+    browserCdpEndpoint: "configured",
+  });
+});
