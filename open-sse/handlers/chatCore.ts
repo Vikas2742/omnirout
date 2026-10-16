@@ -7,7 +7,6 @@ import {
   mergeInjectedFallbackOwnerNames,
 } from "./chatCore/memorySkillsInjection.ts";
 import { resolveChatCoreRequestSetup } from "./chatCore/requestSetup.ts";
-import { stripOutputConfigFormatForCompat } from "./chatCore/outputConfigFormatStrip.ts";
 import {
   normalizeOpenAICompatibleTools,
   shouldNormalizeFunctionToolsOnly,
@@ -23,11 +22,7 @@ import {
   estimateCalibratedFinalInputTokens,
   estimateFinalInputTokenBreakdown,
 } from "./chatCore/contextEstimation.ts";
-import {
-  extractSystemRoleMessages,
-  hoistLeadingTextSystemMessages,
-  relocateDirectiveOnlyMessages,
-} from "./chatCore/claudeSystemRole.ts";
+import { buildClaudePassthroughBody } from "./chatCore/claudePassthroughBody.ts";
 export {
   extractSystemRoleMessages,
   hoistLeadingTextSystemMessages,
@@ -75,7 +70,6 @@ import {
   shouldUseNativeOpenAICompatibleResponsesPassthrough,
   stampNativeResponsesPassthroughBody,
   redactPassthroughThinkingSignatures,
-  stripClaudeRejectedTopLevelFields,
   isClaudeCodeSemanticPassthroughRequest,
 } from "./chatCore/passthroughHelpers.ts";
 
@@ -111,9 +105,6 @@ import { withReasoningRuleContext } from "../utils/reasoningRuleContext.ts";
 import { FORMATS } from "../translator/formats.ts";
 import { collectCustomToolNamesForSourceFormat } from "../translator/request/openai-responses/additionalTools.ts";
 import { sanitizeKiroTools } from "../utils/kiroSanitizer.ts";
-import { splitMisplacedToolResults } from "../translator/helpers/claudeHelper.ts";
-import { hoistDeferredToolsForTarget } from "../translator/helpers/claudeDeferredTools.ts";
-import { ensureCacheControlOnLastUserMessage } from "../services/claudeCodeConstraints.ts";
 import { THINKING_MARKER_HEADER } from "../utils/thinkCloseMarker.ts";
 import { resolveAgentGoalPolicy } from "../utils/agentGoalPolicy.ts";
 import { createStreamController } from "../utils/streamHandler.ts";
@@ -125,12 +116,10 @@ import { createPreparedRequestLogger } from "../utils/providerRequestLogging.ts"
 import { summarizeToolSources } from "../utils/toolSources.ts";
 import { applyResponsesPreviousResponseIdPolicy } from "../utils/responsesStatePolicy.ts";
 import { applyClaudeEffortVariant } from "./chatCore/claudeEffortVariant.ts";
-import { sanitizeAnthropicPassthroughHistory } from "./chatCore/anthropicPassthroughHistory.ts";
 import {
   getStripTypesForProviderModel,
   stripIncompatibleMessageContent,
 } from "../services/modelStrip.ts";
-import { shouldUseMidConversationSystem } from "../executors/claudeIdentity.ts";
 import { echoModelInObject } from "../services/responseModelEcho.ts";
 import { getUnsupportedParams, REGISTRY } from "../config/providerRegistry.ts";
 
@@ -189,7 +178,6 @@ import { buildCacheUsageLogMeta } from "./chatCore/cacheUsageMeta.ts";
 
 import { resolveExecutionCredentials as resolveExecutionCredentialsFor } from "./chatCore/executionCredentials.ts";
 import { createExecutorResolver } from "./chatCore/executorProxy.ts";
-import type { ClaudeMessage } from "./chatCore/claudeMessageTypes.ts";
 import { normalizeClaudeUpstreamMessages as normalizeClaudeUpstreamMessagesFor } from "./chatCore/claudeUpstreamMessages.ts";
 import {
   persistAttemptLogs as persistAttemptLogsFor,
@@ -2244,95 +2232,20 @@ async function handleChatCoreInner({
         log,
       }));
     } else if (isClaudePassthrough) {
-      // Pure passthrough: forward the body as-is without OpenAI round-trip.
-      // The Claude→OpenAI→Claude double translation was lossy and corrupted
-      // payloads at high context (150+ msgs, 100+ tools). Fix: #1359.
-      // Claude Code sends well-formed Messages API payloads — trust them
-      // regardless of combo strategy or cache_control settings.
-      // applyReasoningRuleDirective returns unknown; the hoist helper requires a record.
-      const claudePassthroughBody = applyReasoningRuleDirective({ ...body }, "claude");
-      translatedBody = hoistDeferredToolsForTarget(
-        claudePassthroughBody !== null &&
-          typeof claudePassthroughBody === "object" &&
-          !Array.isArray(claudePassthroughBody)
-          ? (claudePassthroughBody as Record<string, unknown>)
-          : { ...(body as Record<string, unknown>) },
-        provider
-      );
-      translatedBody._disableToolPrefix = true;
-
-      // Sanitize historical thinking-block signatures for Anthropic-native Claude OAuth.
-      // Only Anthropic's first-party API validates these signatures (token-bound); third-party
-      // Claude-shape providers do not. See redactPassthroughThinkingSignatures + issue #2454.
-      if (provider === "claude") {
-        // Also drops foreign server_tool_use ids (z.ai `call_…`) that fail ^srvtoolu_ (9router#3685).
-        translatedBody.messages = sanitizeAnthropicPassthroughHistory(
-          translatedBody.messages
-        ) as typeof translatedBody.messages;
-
-        stripClaudeRejectedTopLevelFields(translatedBody, clientRawRequest?.headers);
-      }
-
-      // Legacy models reject role:"system" messages. Supported models accept
-      // them behind a beta, and hoisting them breaks the prompt cache prefix.
-      if (isClaudeCodeSemanticPassthrough) {
-        if (
-          provider !== "claude" ||
-          !shouldUseMidConversationSystem(translatedBody, effectiveModel)
-        ) {
-          extractSystemRoleMessages(translatedBody);
-        } else {
-          // The mid-conversation-system path keeps system-role messages inside
-          // messages[], but a directive-only message (content: [] +
-          // output_config) at messages[0] is rejected by Anthropic. Move it past
-          // the first real turn; Anthropic accepts the form at any other position.
-          // A text-bearing system message at messages[0] (e.g. the Output Styles
-          // injection) is rejected there too: hoist the leading run into the
-          // top-level `system` parameter first.
-          hoistLeadingTextSystemMessages(translatedBody);
-          relocateDirectiveOnlyMessages(translatedBody);
-        }
-        if (Array.isArray(translatedBody.messages)) {
-          translatedBody.messages = splitMisplacedToolResults(
-            translatedBody.messages as ClaudeMessage[]
-          ) as typeof translatedBody.messages;
-        }
-        if (provider === "claude") {
-          ensureCacheControlOnLastUserMessage(translatedBody);
-        }
-      } else {
-        // Same guard as the CC-bridge path: only preserve tool_result blocks
-        // for Anthropic-native targets. See issue #13971. This branch only runs
-        // under isClaudePassthrough (sourceFormat === targetFormat === CLAUDE,
-        // defined above), so targetFormat === FORMATS.CLAUDE always holds here —
-        // the guard is a no-op on this call site, kept for symmetry with the
-        // CC-bridge one above rather than a change to code the issue said not
-        // to touch.
-        normalizeClaudeUpstreamMessages(translatedBody, {
-          preserveToolResultBlocks: targetFormat === FORMATS.CLAUDE,
-        });
-      }
-
-      log?.debug?.("FORMAT", `claude passthrough (preserveCache=${preserveCacheControl})`);
-
-      // Migrate deprecated top-level `output_format` → `output_config.format`.
-      // Anthropic returns a 400 on the legacy field; some clients (e.g. ForgeCode)
-      // still emit it. Preserves an existing output_config.format if present.
-      if (translatedBody.output_format !== undefined) {
-        const oc =
-          translatedBody.output_config && typeof translatedBody.output_config === "object"
-            ? (translatedBody.output_config as Record<string, unknown>)
-            : {};
-        if (oc.format === undefined) oc.format = translatedBody.output_format;
-        translatedBody.output_config = oc;
-        delete translatedBody.output_format;
-      }
-
-      // Fix #1719: Strip output_config.format for non-Anthropic Claude-compatible providers
-      // (first-party `claude` OAuth and `anthropic` API-key keep it).
-      // Third-party Claude endpoints (MiniMax, DeepSeek via aggregators) reject this field
-      // with 400 errors since they don't support Anthropic's structured output / json_schema.
-      stripOutputConfigFormatForCompat(translatedBody, provider);
+      // Pure passthrough: forward the body as-is without OpenAI round-trip (#1359). Extracted to
+      // chatCore/claudePassthroughBody.ts (chatCore slice 2).
+      translatedBody = buildClaudePassthroughBody({
+        body,
+        provider,
+        clientHeaders: clientRawRequest?.headers,
+        isClaudeCodeSemanticPassthrough,
+        effectiveModel,
+        targetFormat,
+        preserveCacheControl,
+        normalizeClaudeUpstreamMessages,
+        applyReasoningRuleDirective,
+        log,
+      });
     } else {
       translatedBody = { ...body };
 
