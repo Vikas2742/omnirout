@@ -371,7 +371,10 @@ export function encryptConnectionFields<T extends ConnectionFields | null | unde
   if (conn.refreshToken) conn.refreshToken = encrypt(conn.refreshToken);
   if (conn.idToken) conn.idToken = encrypt(conn.idToken);
   if (conn.providerSpecificData) {
-    conn.providerSpecificData = mapProviderSpecificDataSecrets(conn.providerSpecificData, (value) => encrypt(value));
+    conn.providerSpecificData = mapProviderSpecificDataSecrets(
+      conn.providerSpecificData,
+      (value) => encrypt(value)
+    );
   }
   return conn;
 }
