@@ -10,6 +10,7 @@ import {
   createLazyConnectionView,
 } from "../../src/lib/db/providers/lazyConnectionView.ts";
 import { summarizeProviderConnectionForAudit } from "../../src/lib/compliance/providerAudit.ts";
+import { sanitizeProviderSpecificDataForResponse } from "../../src/lib/providers/requestDefaults.ts";
 
 const originalKey = process.env.STORAGE_ENCRYPTION_KEY;
 test.before(() => {
@@ -144,4 +145,28 @@ test("#16836 invalid nested ciphertext sets the existing credential recovery fla
     "corrupt ciphertext must not be forwarded to quota or provider APIs"
   );
   assert.equal((restored.providerSpecificData as Record<string, unknown>).workspaceId, "public");
+});
+
+test("#16836 dashboard responses never expose encrypted or decrypted console credentials", () => {
+  const secrets = {
+    consoleApiKey: "console-private-response-16836",
+    alibabaConsoleCookie: "alibaba-private-response-16836",
+    alibabaConsoleSecToken: "alibaba-sectoken-private-16836",
+    xiaomiMimoConsoleCookie: "xiaomi-private-response-16836",
+  };
+  const stored = encryptConnectionFields({
+    id: "conn-response",
+    provider: "alibaba",
+    providerSpecificData: { ...secrets, workspaceId: "workspace-visible" },
+  });
+  for (const row of [stored, decryptConnectionFields(stored), createLazyRowProxy(stored)]) {
+    const safe = sanitizeProviderSpecificDataForResponse(row.providerSpecificData);
+    assert.deepEqual(safe, { workspaceId: "workspace-visible" });
+    const responseJson = JSON.stringify(safe);
+    for (const [name, value] of Object.entries(secrets)) {
+      assert.ok(!responseJson.includes(name), name);
+      assert.ok(!responseJson.includes(value), name);
+    }
+    assert.ok(!responseJson.includes("enc:v1:"));
+  }
 });
