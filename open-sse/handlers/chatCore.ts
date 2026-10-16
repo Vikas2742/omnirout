@@ -73,7 +73,10 @@ import {
   buildStreamingResponseHeaders,
   stripStaleForwardingHeaders,
 } from "./chatCore/responseHeaders.ts";
-import { forwardDashboardEventToLiveWs } from "./chatCore/telemetryHelpers.ts";
+import {
+  emitCompressionCompletedEvent,
+  emitCompressionStepEvent,
+} from "./chatCore/compressionLiveEvents.ts";
 // Re-export the previously inline-defined helpers so existing importers of these
 // symbols from chatCore.ts (tests, sibling modules) keep resolving after the split.
 export {
@@ -192,7 +195,6 @@ import {
 import { logAuditEvent } from "@/lib/compliance";
 import { emit } from "@/lib/events/eventBus";
 import { adaptBodyForCompression } from "../services/compression/bodyAdapter.ts";
-import { ensureEngineBreakdown } from "../services/compression/engineBreakdown.ts";
 import { handleBypassRequest } from "../utils/bypassHandler.ts";
 import { saveRequestUsage, trackPendingRequest, appendRequestLog } from "@/lib/usageDb";
 import {
@@ -1574,28 +1576,8 @@ async function handleChatCoreInner({
           cachingContext: cacheCtx,
           principalId: compressionPrincipalId,
           // F3.3: stream per-engine progress live (best-effort) before compression.completed.
-          onEngineStep: (s) => {
-            try {
-              const stepPayload = {
-                requestId: traceId,
-                comboId: null,
-                mode,
-                stepIndex: s.stepIndex,
-                totalSteps: s.totalSteps,
-                engine: s.engine,
-                state: s.state,
-                originalTokens: s.originalTokens,
-                compressedTokens: s.compressedTokens,
-                savingsPercent: s.savingsPercent,
-                ...(s.durationMs !== undefined ? { durationMs: s.durationMs } : {}),
-                timestamp: Date.now(),
-              };
-              emit("compression.step", stepPayload);
-              void forwardDashboardEventToLiveWs("compression.step", stepPayload);
-            } catch (_stepErr) {
-              // best-effort live event — never fail the request
-            }
-          },
+          // Event emission extracted to chatCore/compressionLiveEvents.ts (chatCore slice 2).
+          onEngineStep: (s) => emitCompressionStepEvent(emit, traceId, mode, s),
         };
         const runCompression = (input: Record<string, unknown>) =>
           applyCompressionAsync(input, mode, compressionOptions);
@@ -1679,36 +1661,14 @@ async function handleChatCoreInner({
           // Fire-and-forget: emit live compression event for dashboard (U5).
           // Guard: only emit when compression actually ran and produced stats.
           if (result.compressed && result.stats) {
-            try {
-              const compressionCompletedPayload = {
-                requestId: traceId,
-                comboId: result.stats.compressionComboId ?? null,
-                mode,
-                originalTokens: result.stats.originalTokens,
-                compressedTokens: result.stats.compressedTokens,
-                savingsPercent: result.stats.savingsPercent,
-                // Single-engine modes leave engineBreakdown empty; synthesize a 1-entry
-                // breakdown so the studio shows a real engine node instead of an empty pipeline.
-                engineBreakdown: ensureEngineBreakdown(result.stats),
-                validationWarnings: result.stats.validationWarnings,
-                fallbackApplied: result.stats.fallbackApplied,
-                ...(adaptiveTelemetry ? { adaptive: adaptiveTelemetry } : {}),
-                timestamp: Date.now(),
-              };
-              emit("compression.completed", compressionCompletedPayload);
-              void forwardDashboardEventToLiveWs(
-                "compression.completed",
-                compressionCompletedPayload
-              );
-            } catch (_emitErr) {
-              // never propagate into the hot path — but log like the sibling
-              // fire-and-forget blocks so a throwing event bus isn't fully silent.
-              log?.debug?.(
-                "COMPRESSION",
-                "compression.completed emit skipped: " +
-                  (_emitErr instanceof Error ? _emitErr.message : String(_emitErr))
-              );
-            }
+            emitCompressionCompletedEvent({
+              emit,
+              traceId,
+              mode,
+              stats: result.stats,
+              adaptiveTelemetry,
+              log,
+            });
           }
 
           if (result.compressed || result.stats.fallbackApplied || cavemanOutputModeApplied) {
