@@ -68,3 +68,30 @@ test("#16836 audit snapshots never include nested console credentials", () => {
     assert.deepEqual(snapshot?.providerSpecificData, { workspaceId: "ws-public" });
   }
 });
+
+test("#16836 all existing audit-redacted console secrets are encrypted", () => {
+  const sensitiveFields = [
+    "consoleApiKey",
+    "alibabaConsoleCookie",
+    "alibabaConsoleSecToken",
+    "xiaomiMimoConsoleCookie",
+  ] as const;
+  const metadata: Record<string, string> = { workspaceId: "ws-visible" };
+  for (const field of sensitiveFields) metadata[field] = `test-secret-${field}`;
+  const stored = encryptConnectionFields({
+    id: "conn-all-secrets",
+    provider: "alibaba",
+    providerSpecificData: metadata,
+  });
+  const atRest = stored.providerSpecificData as Record<string, unknown>;
+  for (const field of sensitiveFields) {
+    assert.equal(looksEncrypted(atRest[field]), true, field);
+    assert.ok(!JSON.stringify(atRest).includes(`test-secret-${field}`));
+  }
+  assert.equal(atRest.workspaceId, "ws-visible");
+  const restored = decryptConnectionFields(stored);
+  assert.deepEqual(restored.providerSpecificData, metadata);
+  assert.deepEqual(summarizeProviderConnectionForAudit(restored)?.providerSpecificData, {
+    workspaceId: "ws-visible",
+  });
+});
