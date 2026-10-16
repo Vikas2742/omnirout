@@ -1,0 +1,1 @@
+- **fix(providers):** Reject image inputs sent to Cloudflare Playground's text-only chat bridge with a clear HTTP 400 before starting Playwright, instead of silently discarding the image ([#16868](https://github.com/diegosouzapw/OmniRoute/pull/16868)) — thanks @fabioKoruja00
