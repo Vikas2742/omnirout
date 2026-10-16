@@ -66,6 +66,7 @@ import {
 } from "../config/codexIdentity.ts";
 import { trackRequestDevice } from "./chatCore/deviceTracking.ts";
 import { getCombosCached } from "./chatCore/comboContextCache.ts";
+import { collectPreConversionClientToolNames } from "./chatCore/clientToolNames.ts";
 export { clearCombosCache, clearUpstreamProxyConfigCache } from "./chatCore/comboContextCache.ts";
 import { resolveAccountSemaphoreKey } from "./chatCore/executorHelpers.ts";
 import {
@@ -778,26 +779,8 @@ async function handleChatCoreInner({
   // added by the fallback preparer. Without this, a client function named
   // `omniroute_web_search` (colliding with the fallback tool name) would be
   // marked server-owned even though the client owns it.
-  const preConversionClientToolNames: string[] = (
-    Array.isArray((body as Record<string, unknown>).tools)
-      ? ((body as Record<string, unknown>).tools as unknown[])
-      : []
-  )
-    .map((tool) => {
-      if (!tool || typeof tool !== "object") return "";
-      const record = tool as Record<string, unknown>;
-      if (typeof record.name === "string") return record.name;
-      const fn = record.function;
-      if (
-        fn &&
-        typeof fn === "object" &&
-        typeof (fn as Record<string, unknown>).name === "string"
-      ) {
-        return (fn as Record<string, unknown>).name as string;
-      }
-      return "";
-    })
-    .filter(Boolean);
+  // Extracted to chatCore/clientToolNames.ts (chatCore slice 2).
+  const preConversionClientToolNames = collectPreConversionClientToolNames(body);
 
   const { body: bodyWithWebSearchFallback, fallback: webSearchFallbackPlan } =
     prepareWebSearchFallbackBody(body as Record<string, unknown>, {
