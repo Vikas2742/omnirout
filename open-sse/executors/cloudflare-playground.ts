@@ -243,11 +243,13 @@ export function hasUnsupportedCfImageParts(messages: unknown): boolean {
 export function classifyCfBrowserStartFailure(error: unknown): {
   status: number;
   message: string;
+  fallbackHint?: "connection_cooldown";
 } {
   const message = error instanceof Error ? error.message : String(error);
   if (isMissingBrowserExecutable(message)) {
     return {
       status: 503,
+      fallbackHint: "connection_cooldown",
       message:
         "Cloudflare Playground needs Playwright and its Chromium browser. " +
         "Install the browser runtime (npm i playwright && npx playwright install chromium) " +
@@ -266,10 +268,14 @@ export interface CfTransportConfig {
   signal?: AbortSignal | null;
 }
 
+export type CfTransportStartResult =
+  | { ok: true }
+  | { ok: false; status: number; message: string; fallbackHint?: "connection_cooldown" };
+
 export interface CfTransport {
   start(
     config: CfTransportConfig
-  ): Promise<{ ok: true } | { ok: false; status: number; message: string }>;
+  ): Promise<CfTransportStartResult>;
   frames(): AsyncGenerator<string>;
   close(): Promise<void>;
 }
@@ -342,7 +348,7 @@ export class PlaywrightCfTransport implements CfTransport {
 
   async start(
     config: CfTransportConfig
-  ): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+  ): Promise<CfTransportStartResult> {
     try {
       // #12274: prefer the shared Obscura browser (browser-grade TLS fingerprint
       // on the WS upgrade, ~30MB) over a full Chromium per request; fall back to
@@ -503,7 +509,15 @@ export class CloudflarePlaygroundExecutor extends BaseExecutor {
       signal,
     });
     if (started.ok !== true) {
-      return makeErrorResult(started.status, started.message, body, PLAYGROUND_URL);
+      return makeErrorResult(
+        started.status,
+        started.message,
+        body,
+        PLAYGROUND_URL,
+        started.fallbackHint
+          ? { "X-Omni-Fallback-Hint": started.fallbackHint }
+          : undefined
+      );
     }
 
     const timedOut = { current: false };
