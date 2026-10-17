@@ -24,6 +24,7 @@
 import { getDbInstance } from "./db/core";
 import { invalidateDbCache, getModelCatalogCacheVersion } from "./db/readCache";
 import { backupDbFile } from "./db/backup";
+import { preserveStoredModalitySets } from "./db/models/capabilityModalities";
 
 import {
   transformModelsDevToPricing,
@@ -623,8 +624,10 @@ export function upsertSyncedCapabilities(
   `);
   const now = new Date().toISOString();
   let changed = false;
+  let persistedModels = models;
   const tx = db.transaction(() => {
-    for (const [modelId, cap] of Object.entries(models)) {
+    persistedModels = preserveStoredModalitySets(provider, models);
+    for (const [modelId, cap] of Object.entries(persistedModels)) {
       const info = insert.run(
         provider,
         modelId,
@@ -657,7 +660,7 @@ export function upsertSyncedCapabilities(
   if (cachedCapabilities) {
     cachedCapabilities[provider] = {
       ...(cachedCapabilities[provider] || {}),
-      ...models,
+      ...persistedModels,
     };
   }
   if (changed) invalidateDbCache("model-capabilities");
