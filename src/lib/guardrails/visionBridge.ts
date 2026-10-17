@@ -57,47 +57,44 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
       : typeof s.provider === "string"
         ? s.provider
         : null;
-  // A slash is ambiguous here: "edge/acme-model" may use this node's public
-  // routing prefix, another node's prefix, OR be the raw upstream model id
-  // "vendor/model". Do not mistake every slash for a foreign node (#16801).
+  // A public prefix, an internal node ID and a raw vendor/model path can all
+  // refer to one configured compatible provider. A generic capability lookup
+  // is NOT sufficient proof for such a node: its fallback may find the same
+  // model name in a completely different provider's customModels rows.
   const internalProvider =
     provider && isCompatibleProviderConnectionId(provider) ? provider : null;
-  const slash = targetModel.indexOf("/");
-  const routingPrefix = internalProvider ? getProviderNodePrefixSync(internalProvider) : null;
-  const suppliedPrefix = slash > 0 ? targetModel.slice(0, slash) : null;
-  const isOwnPrefixedModel = Boolean(
-    suppliedPrefix &&
-    ((routingPrefix && suppliedPrefix.toLowerCase() === routingPrefix.toLowerCase()) ||
-      suppliedPrefix === provider)
-  );
+  if (internalProvider) {
+    const slash = targetModel.indexOf("/");
+    const prefix = slash > 0 ? targetModel.slice(0, slash) : null;
+    const ownPrefix = getProviderNodePrefixSync(internalProvider);
+    const hasOwnPrefix = Boolean(
+      prefix && (prefix === internalProvider ||
+        (ownPrefix && prefix.toLowerCase() === ownPrefix.toLowerCase()))
+    );
+    const candidates = hasOwnPrefix
+      ? [targetModel.slice(slash + 1), targetModel]
+      : [targetModel];
 
-  if (internalProvider && slash > 0 && !isOwnPrefixedModel) {
-    // Do not use the public-model fallback here: a foreign node's metadata
-    // could turn a non-vision internal target into a false positive. An exact,
-    // positive verdict owned by THIS provider is the only safe exception for
-    // a legitimate raw vendor/model ID. Explicit negatives remain authoritative.
-    const custom = getExactCustomModelVisionOverride(internalProvider, targetModel);
-    if (custom !== null) return custom ? "vision" : "non-vision";
-    const compat = getModelCompatVisionOverride(internalProvider, [targetModel]);
-    if (compat !== null) return compat ? "vision" : "non-vision";
-    return getSyncedAvailableModelVision(internalProvider, targetModel) === true
-      ? "vision"
-      : "non-vision";
+    // Preserve source precedence: an explicit false from this node must win
+    // before positive discoveries and must not be overridden by a foreign
+    // public-model verdict. Slash-shaped upstream IDs stay unmodified.
+    for (const id of candidates) {
+      const custom = getExactCustomModelVisionOverride(internalProvider, id);
+      if (custom !== null) return custom ? "vision" : "non-vision";
+    }
+    for (const id of candidates) {
+      const compat = getModelCompatVisionOverride(internalProvider, [id]);
+      if (compat !== null) return compat ? "vision" : "non-vision";
+    }
+    for (const id of candidates) {
+      if (getSyncedAvailableModelVision(internalProvider, id) === true) return "vision";
+    }
+    // No exact source owned by this node confirmed vision support. Do not
+    // treat an unrelated provider's row or a name heuristic as a pass.
+    return "non-vision";
   }
 
   const caps = getResolvedModelCapabilities({ provider, model: targetModel });
-  if (caps.supportsVision === true) return "vision";
-
-  // Only a missing verdict for THIS node's own public prefix can fall back
-  // to the direct-request resolver. Never override an explicit false.
-  if (
-    caps.supportsVision === null &&
-    internalProvider &&
-    isOwnPrefixedModel &&
-    getResolvedModelCapabilities(targetModel).supportsVision === true
-  ) {
-    return "vision";
-  }
   return "non-vision";
 }
 
