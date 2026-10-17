@@ -258,6 +258,16 @@ test("#16460 missing Playwright package or Chromium binary is a 503 host error",
   const upstream = classifyCfBrowserStartFailure(new Error("Navigation timeout of 45000 ms exceeded"));
   assert.equal(upstream.status, 502);
   assert.match(upstream.message, /browser session failed/i);
+
+  // A browser/proxy exception may contain local paths, bearer values or
+  // environment details. Never project the exception into an HTTP error.
+  const sensitive = "proxy token=sk-test-sensitive-16868 at /home/node/.cache/private";
+  const privateFailure = classifyCfBrowserStartFailure(new Error(sensitive));
+  assert.equal(privateFailure.status, 502);
+  assert.match(privateFailure.message, /browser session failed/i);
+  assert.ok(!privateFailure.message.includes("sk-test-sensitive-16868"));
+  assert.ok(!privateFailure.message.includes("/home/node/.cache/private"));
+  assert.ok(!privateFailure.message.includes("token="));
 });
 
 test("#16460 Cloudflare text-only bridge detects image content without rejecting text", () => {
