@@ -49,3 +49,45 @@ test("#16979 Demon Route uses the default chat executor", async () => {
   assert.equal(AGGREGATOR_PROVIDER_IDS.has("demonroute"), true);
   assert.equal(PROVIDER_ENDPOINTS.demonroute, CHAT_URL);
 });
+
+test("#16979 seed model IDs remain case-sensitive and unique", () => {
+  const ids = REGISTRY.demonroute.models.map((model: { id: string }) => model.id);
+  for (const id of [
+    "dphn/Dolphin3.0-Llama3.1-8B",
+    "dphn/Dolphin-Mistral-24B-Venice-Edition",
+    "TheDrummer/Artemis-31B-v1.2",
+    "huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated",
+    "huihui-ai/Huihui-gemma-4-31B-it-abliterated-v2",
+  ]) assert.ok(ids.includes(id), `missing model id: ${id}`);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("#16979 gateway timeout respects documented slow model behavior", () => {
+  assert.equal(REGISTRY.demonroute.timeoutMs, 120_000);
+  assert.equal(REGISTRY.demonroute.fetchStartTimeoutCapMs, 120_000);
+});
+
+test("#16979 derives embeddings without adding specialty models to chat seeds", async () => {
+  const { deriveEmbeddingProviderForChatProvider, parseEmbeddingModel } =
+    await import("../../open-sse/config/embeddingRegistry.ts");
+  const embedding = deriveEmbeddingProviderForChatProvider("demonroute", REGISTRY.demonroute);
+  assert.ok(embedding);
+  assert.equal(embedding.baseUrl, "https://api.demonroute.com/v1/embeddings");
+  assert.equal(embedding.authHeader, "bearer");
+  assert.deepEqual(
+    parseEmbeddingModel("demonroute/org/namespaced-embedding"),
+    { provider: "demonroute", model: "org/namespaced-embedding" }
+  );
+});
+
+test("#16979 model passthrough keeps exact nested upstream IDs in request payload", () => {
+  const executor = new DefaultExecutor("demonroute");
+  const model = "huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated";
+  const credential = { apiKey: "unit-test-only" };
+  const input = { model, messages: [{ role: "user", content: "hello" }], stream: true };
+  const result = executor.transformRequest(model, input, true, credential);
+  assert.equal((result as { model: string }).model, model);
+  assert.equal(input.model, model);
+  assert.equal(executor.buildUrl(model, true), CHAT_URL);
+  assert.equal(executor.buildUrl(model, false), CHAT_URL);
+});
