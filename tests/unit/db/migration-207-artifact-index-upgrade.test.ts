@@ -11,7 +11,10 @@ const migrationsDir = path.join(fixture, "migrations");
 const repoMigrations = fileURLToPath(new URL("../../../src/lib/db/migrations/", import.meta.url));
 const indexMigration = "207_call_logs_artifact_relpath_index.sql";
 fs.mkdirSync(migrationsDir);
-for (const name of fs.readdirSync(repoMigrations).filter((name) => name.endsWith(".sql"))) {
+// Pin this upgrade fixture to its target; later migrations have their own tests.
+for (const name of fs
+  .readdirSync(repoMigrations)
+  .filter((name) => /^\d+_.+\.sql$/.test(name) && Number.parseInt(name, 10) <= 207)) {
   fs.copyFileSync(path.join(repoMigrations, name), path.join(migrationsDir, name));
 }
 process.env.DATA_DIR = dataDir;
