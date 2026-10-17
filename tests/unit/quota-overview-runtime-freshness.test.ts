@@ -66,7 +66,7 @@ test("freshness uses the shared timestamp parser, runtimeObservedAt before updat
   }
 });
 
-test("newer connection does not borrow summary remaining time, errors or lockouts", () => {
+test("newer connection does not borrow summary connection fields but preserves independent model locks", () => {
   const c = { ...connection, updatedAt: iso(-1000), testStatus: "active" };
   const e = {
     ...evidence,
@@ -84,9 +84,13 @@ test("newer connection does not borrow summary remaining time, errors or lockout
   assert.equal(selected.until, 0);
   assert.equal(selected.derived, false);
   const account = buildHealthAccount(c, data, {}, now, e);
-  assert.equal(account.status, "ok");
+  assert.equal(account.status, "alert");
   assert.equal(account.runtimeObservedAt, c.updatedAt);
-  assert.ok(!account.reasons.some((r) => ["cooldown", "terminal", "lockout"].includes(r.type)));
+  assert.ok(!account.reasons.some((r) => ["cooldown", "terminal"].includes(r.type)));
+  assert.deepEqual(
+    account.reasons.filter((r) => r.type === "lockout"),
+    [{ type: "lockout", scope: "scoped", window: "synthetic-model", resetAt: iso(58000) }]
+  );
 });
 
 test("newer banned or expired connection is not hidden by a healthy summary", () => {

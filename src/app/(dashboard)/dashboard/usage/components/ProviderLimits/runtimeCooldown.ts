@@ -1,4 +1,5 @@
-import type { AvailabilityEvidence, HealthConnection } from "./healthOverview";
+import { resolveProviderAvailability } from "@/lib/providerAvailability";
+import type { AvailabilityEvidence, HealthConnection, HealthCooldown } from "./healthOverview";
 
 /** Client-only equivalent of services/accountFallback.ts:cooldownUntilMs (#3954).
  * Do not import the server fallback module (DB/auth side effects) into the dashboard.
@@ -12,7 +13,13 @@ export function parseRuntimeTimestamp(value: string | number | Date | null | und
 }
 
 export const SUMMARY_FRESHNESS_MS = 90_000;
-/** One source per projection, including explicit nulls clearing old failures.
+export function hasTerminalStatus(runtime: { testStatus?: string | null }): boolean {
+  // Without a confirmation time the shared classifier preserves every terminal
+  // status as STALE_TERMINAL; do not maintain a separate terminal-status list.
+  return resolveProviderAvailability({ testStatus: runtime.testStatus }).state === "STALE_TERMINAL";
+}
+/** Connection fields use the newer observation, including explicit null clears.
+ * In-memory model locks have no DB counterpart and use only a fresh summary.
  * Summary schema: src/lib/resilience/cooldownManager.ts:toCooldownConnection.
  */
 export function runtimeCooldownEvidence(
@@ -24,23 +31,27 @@ export function runtimeCooldownEvidence(
   const connectionTime = parseRuntimeTimestamp(
     connection.runtimeObservedAt || connection.updatedAt
   );
-  const row =
-    !evidence.summaryFailed &&
-    Number.isFinite(summaryTime) &&
-    now - summaryTime <= SUMMARY_FRESHNESS_MS &&
-    !(connectionTime > summaryTime) &&
-    evidence.cooldown?.id === connection.id
+  const summary =
+    Number.isFinite(summaryTime) && evidence.cooldown?.id === connection.id
       ? evidence.cooldown
       : undefined;
+  const fresh = !evidence.summaryFailed && now - summaryTime <= SUMMARY_FRESHNESS_MS;
+  const terminal = !!summary && hasTerminalStatus(summary);
+  const newerConnection =
+    connectionTime > summaryTime && (!terminal || connection.testStatus !== undefined);
+  // Losing freshness is not recovery evidence. Only a newer connection state or
+  // a later successful summary may supersede a confirmed terminal status.
+  const row = summary && (fresh || terminal) && !newerConnection ? summary : undefined;
   const runtime = row || connection;
-  const explicit = parseRuntimeTimestamp(runtime.rateLimitedUntil);
-  const derived = !Number.isFinite(explicit) && !!row && row.cooldownRemainingMs > 0;
+  const explicit = parseRuntimeTimestamp(row && !fresh ? undefined : runtime.rateLimitedUntil);
+  const derived = !Number.isFinite(explicit) && !!row && fresh && row.cooldownRemainingMs > 0;
   const until = Number.isFinite(explicit)
     ? explicit
     : derived
       ? summaryTime + row.cooldownRemainingMs
       : 0;
-  return { row, runtime, summaryTime, derived, until };
+  const lockouts: HealthCooldown["lockouts"] = fresh ? summary?.lockouts || [] : [];
+  return { row, runtime, summaryTime, derived, until, lockouts };
 }
 /** The same absolute runtime deadline is used by capture and projection. */
 export function runtimeCooldownUntil(

@@ -293,6 +293,7 @@ export function buildHealthAccount(
     row,
     runtime,
     summaryTime,
+    lockouts,
     until: reportedUntil,
   } = runtimeCooldownEvidence(connection, evidence, now);
   const testStatus = runtime.testStatus?.trim().toLowerCase();
@@ -332,7 +333,7 @@ export function buildHealthAccount(
         }
       : null;
   if (testStatus === "unavailable" && !cooldown) reasons.push({ type: "previousFailure" });
-  const locks: HealthReason[] = (row?.lockouts || []).flatMap((l) => {
+  const locks: HealthReason[] = lockouts.flatMap((l) => {
     const end = summaryTime + l.remainingMs;
     return summaryTime && end > now
       ? [

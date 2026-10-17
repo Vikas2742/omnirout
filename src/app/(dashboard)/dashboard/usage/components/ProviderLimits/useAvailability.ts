@@ -11,6 +11,7 @@ import {
 } from "./healthOverview";
 import type { AvailabilityPolicy } from "./availabilityPolicy";
 import {
+  hasTerminalStatus,
   parseRuntimeTimestamp,
   runtimeCooldownEvidence,
   sameCooldown,
@@ -45,7 +46,7 @@ export function useAvailability(
   errors: Record<string, string | null>
 ) {
   const [snapshot, setSnapshot] = useState<{
-    rows: Record<string, HealthCooldown>;
+    rows: Record<string, { cooldown: HealthCooldown; observedAt: string | number }>;
     observedAt?: string | number;
     receivedAt?: number;
   }>({ rows: {} });
@@ -67,13 +68,24 @@ export function useAvailability(
         !Number.isFinite(parseRuntimeTimestamp(data.generatedAt))
       )
         throw new Error("Invalid cooldown summary");
-      setSnapshot({
-        rows: Object.fromEntries(data.connections.map((row: HealthCooldown) => [row.id, row])),
-        observedAt: data.generatedAt,
-        receivedAt: Date.now(),
+      const receivedAt = Date.now();
+      setSnapshot((previous) => {
+        // Neither an out-of-order response nor an omitted row proves recovery.
+        if (parseRuntimeTimestamp(data.generatedAt) <= parseRuntimeTimestamp(previous.observedAt))
+          return previous;
+        const rows = Object.fromEntries(
+          (data.connections as HealthCooldown[]).map((cooldown) => [
+            cooldown.id,
+            { cooldown, observedAt: data.generatedAt as string | number },
+          ])
+        );
+        for (const [id, entry] of Object.entries(previous.rows)) {
+          if (!rows[id] && hasTerminalStatus(entry.cooldown)) rows[id] = entry;
+        }
+        return { rows, observedAt: data.generatedAt, receivedAt };
       });
     } catch {
-      // Keep the last successful snapshot; freshness alone controls its usability.
+      // Keep the last successful snapshot; only nonterminal fields expire.
     } finally {
       pending.current = false;
       setNow(Date.now());
@@ -139,8 +151,9 @@ export function useAvailability(
           const cooldown = runtimeCooldownEvidence(
             connection,
             {
-              cooldown: summaryFailed ? undefined : snapshot.rows[connection.id],
-              observedAt: summaryFailed ? undefined : snapshot.observedAt,
+              cooldown: snapshot.rows[connection.id]?.cooldown,
+              observedAt: snapshot.rows[connection.id]?.observedAt,
+              summaryFailed,
             },
             observedAt
           );
@@ -167,8 +180,9 @@ export function useAvailability(
         connections.map((connection) => {
           const evidence: AvailabilityEvidence = {
             policy,
-            cooldown: summaryFailed ? undefined : snapshot.rows[connection.id],
-            observedAt: summaryFailed ? undefined : snapshot.observedAt,
+            cooldown: snapshot.rows[connection.id]?.cooldown,
+            observedAt: snapshot.rows[connection.id]?.observedAt,
+            summaryFailed,
             error: errors[connection.id],
           };
           const observation = cooldownObservations.get(connection.id);
