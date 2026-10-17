@@ -66,3 +66,17 @@ export function applyRegistryToolNameLengthAliases(
 ): Map<string, string> {
   return applyToolNameLengthAliases(body, getRegistryEntry(provider)?.toolNameMaxLength, normalize);
 }
+
+/**
+ * OpenCode chat-completions 400s on tool names over 64 chars (Claude Code MCP names
+ * hit this). Called last, on the final body, so the request-scoped `_toolNameMap`
+ * restores the originals in the response. Only the OpenAI chat surface is aliased;
+ * Claude / Responses surfaces carry their own tool shapes and are left alone.
+ */
+export function applyOpencodeToolNameLengthAliases(
+  provider: string,
+  body: unknown,
+  targetFormat: string
+): void {
+  if (targetFormat === "openai") applyRegistryToolNameLengthAliases(provider, body);
+}
