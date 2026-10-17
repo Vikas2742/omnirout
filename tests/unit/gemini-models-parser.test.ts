@@ -103,3 +103,45 @@ test("parseGeminiModelsList defaults to chat and tolerates empty/missing input",
   assert.equal(m.id, "mystery");
   assert.deepEqual(m.supportedEndpoints, ["chat"]);
 });
+
+test("#16929 maps Gemini transcription and TTS generateContent models to their audio endpoints", () => {
+  const models = parseGeminiModelsList({
+    models: [
+      { name: "models/gemini-3.5-transcribe", supportedGenerationMethods: ["generateContent", "countTokens"] },
+      { name: "models/gemini-3.5-transcribe-preview", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.8-flash-tts", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.1-flash-tts-preview", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.1-flash-image", supportedGenerationMethods: ["generateContent"], thinking: true },
+      { name: "models/gemini-3.8-flash", supportedGenerationMethods: ["generateContent"], thinking: true },
+    ],
+  });
+  const endpoints = (id: string) => models.find((model) => model.id === id)?.supportedEndpoints;
+
+  assert.deepEqual(endpoints("gemini-3.5-transcribe"), ["audio-transcriptions"]);
+  assert.deepEqual(endpoints("gemini-3.5-transcribe-preview"), ["audio-transcriptions"]);
+  assert.deepEqual(endpoints("gemini-3.8-flash-tts"), ["audio-speech"]);
+  assert.deepEqual(endpoints("gemini-3.1-flash-tts-preview"), ["audio-speech"]);
+  assert.deepEqual(endpoints("gemini-3.1-flash-image"), ["chat"]);
+  assert.deepEqual(endpoints("gemini-3.8-flash"), ["chat"]);
+});
+
+test("#16929 respects actual supported methods and preserves non-chat endpoint tags", () => {
+  const parsed = parseGeminiModelsList({
+    models: [
+      { name: "models/gemini-3.5-transcribe", supportedGenerationMethods: ["embedContent"] },
+      { name: "models/gemini-3.8-flash-tts", supportedGenerationMethods: ["generateContent", "embedContent"] },
+      { name: "models/gemini-transcribe-live", supportedGenerationMethods: ["bidiGenerateContent"] },
+    ],
+  });
+  assert.deepEqual(
+    parsed.find((model) => model.id === "gemini-3.5-transcribe")?.supportedEndpoints,
+    ["embeddings"],
+    "Name heuristics must not add an audio endpoint without generateContent"
+  );
+  assert.deepEqual(
+    parsed.find((model) => model.id === "gemini-3.8-flash-tts")?.supportedEndpoints,
+    ["embeddings", "audio-speech"],
+    "Specialized models must retain unrelated advertised endpoints"
+  );
+  assert.equal(parsed.some((model) => model.id === "gemini-transcribe-live"), false);
+});
