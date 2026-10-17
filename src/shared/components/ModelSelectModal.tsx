@@ -34,6 +34,7 @@ import {
   isAnthropicCompatibleProvider,
 } from "@/shared/constants/providers";
 import { hasEligibleConnectionForModel } from "@/domain/connectionModelRules";
+import { subscribeModelVisibilityChanges } from "@/shared/utils/modelVisibility";
 import { useNotificationStore } from "@/store/notificationStore";
 
 // Provider order: OAuth first, then no-auth, then API Key (matches dashboard/providers)
@@ -136,18 +137,9 @@ export default function ModelSelectModal({
   const [visibilityRevision, setVisibilityRevision] = useState(0);
   useEffect(() => {
     if (!isOpen) return;
-    const refresh = () => setVisibilityRevision((revision) => revision + 1);
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === "omniroute:model-visibility-revision") refresh();
-    };
-    window.addEventListener("omniroute:model-visibility-changed", refresh);
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("focus", refresh);
-    return () => {
-      window.removeEventListener("omniroute:model-visibility-changed", refresh);
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focus", refresh);
-    };
+    return subscribeModelVisibilityChanges(
+      () => setVisibilityRevision((revision) => revision + 1)
+    );
   }, [isOpen]);
   // Models discovered live from a custom provider's upstream `/models` endpoint,
   // keyed by provider id. Merged into the alias/custom/fallback list below and
