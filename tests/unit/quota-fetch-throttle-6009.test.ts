@@ -50,6 +50,20 @@ test("#6009 minIntervalMs=0 disables throttling (no sleeps)", async () => {
   assert.deepEqual(clock.slept, []);
 });
 
+test("#16948 disabled minimum interval bypasses jitter and serialization entirely", async () => {
+  const clock = new FakeClock();
+  let randomCalls = 0;
+  const throttle = new MinIntervalThrottle({
+    minIntervalMs: resolveQuotaFetchMinIntervalMs({ OMNIROUTE_QUOTA_FETCH_MIN_INTERVAL_MS: "0" }),
+    jitterMs: resolveQuotaFetchJitterMs({ OMNIROUTE_QUOTA_FETCH_JITTER_MS: "60000" }),
+    clock,
+    rand: () => { randomCalls++; return 0.5; },
+  });
+  await Promise.all(Array.from({ length: 8 }, () => throttle.acquire()));
+  assert.deepEqual(clock.slept, [], "explicitly disabled throttle must not add jitter delays");
+  assert.equal(randomCalls, 0, "disabled throttle must not evaluate random jitter");
+});
+
 test("#6009 a single fetch is never delayed", async () => {
   const clock = new FakeClock();
   const throttle = new MinIntervalThrottle({ minIntervalMs: 500, jitterMs: 0, clock });
