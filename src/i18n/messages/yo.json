@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Yíyí ṣiṣàn padà kùnà"
   },
   "usage": {
+    "healthExtraUsageBypass": "Ààlà lílò ti tán; a gba àfikún lílò láàyè, nítorí náà iṣẹ́ ń bá a lọ.",
+    "healthPaidCreditsBypass": "Ààlà lílò ti tán; kírẹ́dítì tí a sanwó fún tó wà jẹ́ kí iṣẹ́ lè bá a lọ.",
+    "healthFilteringBypass": "Ààlà lílò ti tán; a ti pa àlẹ̀mọ́ ààlà lílò àdúgbò, nítorí náà iṣẹ́ ń bá a lọ.",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

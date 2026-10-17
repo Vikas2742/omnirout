@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Gagal mentransformasi stream"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kuota habis; penggunaan tambahan diizinkan, sehingga layanan berlanjut.",
+    "healthPaidCreditsBypass": "Kuota habis; kredit berbayar yang tersedia memungkinkan layanan berlanjut.",
+    "healthFilteringBypass": "Kuota habis; penyaringan kuota lokal dinonaktifkan, sehingga layanan berlanjut.",
     "title": "Penggunaan",
     "grokExtraUsageCredits": "Kredit Penggunaan Ekstra",
     "grokAutoTopUp": "Isi Ulang Otomatis",

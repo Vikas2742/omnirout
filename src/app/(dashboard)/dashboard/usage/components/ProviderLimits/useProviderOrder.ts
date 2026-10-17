@@ -1,36 +1,81 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { PROVIDER_ORDER } from "./constants";
 import {
   applyProviderOrder,
   mergeVisibleProviderOrder,
+  PROVIDER_ORDER_KEY,
   readProviderOrder,
-  writeProviderOrder,
 } from "./providerOrder";
 const ORDER_EVENT = "omniroute:limits:providerOrderChanged";
-export function useProviderOrder(ids: string[]) {
-  const [saved, setSaved] = useState<string[]>(readProviderOrder);
-  useEffect(() => {
-    const sync = () => setSaved(readProviderOrder());
+const EMPTY: string[] = [];
+let saved = EMPTY;
+let volatile = false;
+const listeners = new Set<() => void>();
+function replace(next: string[]) {
+  if (JSON.stringify(next) !== JSON.stringify(saved)) saved = next;
+}
+function refresh() {
+  let readable = false;
+  const next = readProviderOrder(() => ({
+    getItem: (key) => {
+      const value = localStorage.getItem(key);
+      readable = true;
+      return value;
+    },
+  }));
+  if (readable) {
+    replace(next);
+    volatile = false;
+  }
+}
+function snapshot() {
+  // A failed write must not be undone by a successful read of the old value.
+  if (!volatile && typeof window !== "undefined") refresh();
+  return saved;
+}
+function notify() {
+  for (const listener of listeners) listener();
+}
+function sync(event: Event) {
+  if (event instanceof StorageEvent && event.key !== null && event.key !== PROVIDER_ORDER_KEY)
+    return;
+  refresh();
+  notify();
+}
+function subscribe(listener: () => void) {
+  if (!listeners.size) {
     window.addEventListener("storage", sync);
     window.addEventListener(ORDER_EVENT, sync);
-    return () => {
+  }
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size) {
       window.removeEventListener("storage", sync);
       window.removeEventListener(ORDER_EVENT, sync);
-    };
-  }, []);
-  const order = applyProviderOrder(ids, saved, PROVIDER_ORDER);
-  const update = (next: string[]) => {
-    writeProviderOrder(next);
-    window.dispatchEvent(new Event(ORDER_EVENT));
-    // A disabled storage backend must not undo this session's drag.
-    setSaved(next);
+    }
   };
+}
+function update(next: string[]) {
+  replace(next);
+  try {
+    if (next.length) localStorage.setItem(PROVIDER_ORDER_KEY, JSON.stringify(next));
+    else localStorage.removeItem(PROVIDER_ORDER_KEY);
+    volatile = false;
+  } catch {
+    volatile = true;
+  }
+  // All mounted layouts and subsequent mounts share this module-level fallback.
+  notify();
+}
+export function useProviderOrder(ids: string[]) {
+  const orderSnapshot = useSyncExternalStore(subscribe, snapshot, () => EMPTY);
   return {
-    order,
-    custom: saved.length > 0,
+    order: applyProviderOrder(ids, orderSnapshot, PROVIDER_ORDER),
+    custom: orderSnapshot.length > 0,
     reset: () => update([]),
     reorder: (visible: string[]) =>
-      update(mergeVisibleProviderOrder(saved, ids, visible, PROVIDER_ORDER)),
+      update(mergeVisibleProviderOrder(snapshot(), ids, visible, PROVIDER_ORDER)),
   };
 }

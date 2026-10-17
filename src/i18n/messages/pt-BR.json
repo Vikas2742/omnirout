@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Falha ao transformar o stream"
   },
   "usage": {
+    "healthExtraUsageBypass": "Cota esgotada; o uso extra está permitido, então o serviço continua.",
+    "healthPaidCreditsBypass": "Cota esgotada; os créditos pagos disponíveis permitem continuar o serviço.",
+    "healthFilteringBypass": "Cota esgotada; a filtragem local de cotas está desativada, então o serviço continua.",
     "title": "Uso",
     "grokExtraUsageCredits": "Créditos de uso extra",
     "grokAutoTopUp": "Recarga automática",

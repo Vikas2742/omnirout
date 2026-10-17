@@ -11,7 +11,7 @@ export function useHealthText() {
   const all = useTranslations();
   const format = useFormatter();
   const now = useNow({ updateInterval: 1000 });
-  const relative = (value?: string) =>
+  const relative = (value?: string | null) =>
     value && Number.isFinite(parseRuntimeTimestamp(value))
       ? format.relativeTime(new Date(parseRuntimeTimestamp(value)), now)
       : t("tierUnknown");
@@ -26,7 +26,15 @@ export function useHealthText() {
       case "cooldown":
         return t("healthCooldown");
       case "quota":
-        return `${t(r.percent === 0 ? "healthQuotaExhausted" : "quotaCutoffsColumnHelp")} · ${window} · ${format.number(r.percent / 100, { style: "percent", maximumFractionDigits: 1 })} ≤ ${format.number(r.cutoff / 100, { style: "percent", maximumFractionDigits: 1 })}`;
+        return `${t(r.percent === 0 ? "healthQuotaExhausted" : "quotaCutoffsColumnHelp")} · ${window} · ${format.number(r.percent! / 100, { style: "percent", maximumFractionDigits: 1 })} ≤ ${format.number(r.cutoff! / 100, { style: "percent", maximumFractionDigits: 1 })}`;
+      case "quotaBypass":
+        return t(
+          r.bypass === "extraUsage"
+            ? "healthExtraUsageBypass"
+            : r.bypass === "paidCredits"
+              ? "healthPaidCreditsBypass"
+              : "healthFilteringBypass"
+        );
       case "lockout":
         return `${t("modelLockouts")} · ${window} · ${relative(r.resetAt)}`;
       case "quotaError":

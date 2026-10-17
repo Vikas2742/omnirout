@@ -1,5 +1,12 @@
 import { resolveProviderAvailability, type ProviderAvailability } from "@/lib/providerAvailability";
 import { parseRuntimeTimestamp, runtimeCooldownEvidence } from "./runtimeCooldown";
+import type { CodexPaidCredits } from "@/lib/providers/codexPaidCredits";
+import {
+  effectiveQuotaAlternatives,
+  quotaBypass,
+  quotaPercentage,
+  type QuotaBypass,
+} from "./quotaEligibility";
 export { runtimeCooldownUntil } from "./runtimeCooldown";
 import {
   availabilityCutoff,
@@ -30,7 +37,7 @@ export interface HealthQuota {
   modelKey?: string;
   modelScoped?: boolean;
   window?: string;
-  windowSeconds?: number;
+  windowSeconds?: number | null;
   quotaGroupId?: string;
   staleAfterReset?: boolean;
   fractionReported?: boolean;
@@ -41,6 +48,7 @@ export interface HealthData {
   raw?: {
     fetchedAt?: string;
     _stale?: boolean;
+    paidCredits?: CodexPaidCredits;
     quotas?: Record<string, Partial<HealthQuota>>;
     quotaGroups?: Array<{
       id: string;
@@ -90,6 +98,7 @@ export interface HealthReason {
     | "terminal"
     | "cooldown"
     | "quota"
+    | "quotaBypass"
     | "lockout"
     | "previousFailure"
     | "awaitingSync"
@@ -98,6 +107,7 @@ export interface HealthReason {
     | "noQuota"
     | "quotaError"
     | "noRuntime";
+  bypass?: QuotaBypass;
   scope?: HealthScope;
   scopeId?: string;
   window?: string;
@@ -118,6 +128,7 @@ export interface HealthCell {
   scopeId?: string;
   window: "fiveHour" | "overall" | null;
   awaitingSync: boolean;
+  quotaIgnored?: boolean;
 }
 export interface HealthAccount {
   runtimeAvailability?: ProviderAvailability;
@@ -148,7 +159,8 @@ export function normalizeHealthWindow(
   quota: HealthQuota,
   fetchedAt?: string
 ): "fiveHour" | "overall" | null {
-  if (quota.windowSeconds > 0) return quota.windowSeconds <= 5 * 3600 ? "fiveHour" : "overall";
+  if (quota.windowSeconds != null && quota.windowSeconds > 0)
+    return quota.windowSeconds <= 5 * 3600 ? "fiveHour" : "overall";
   const display = textWindow(quota.displayName || "");
   if (display) return display;
   const explicit = textWindow(quota.window || "");
@@ -169,14 +181,6 @@ const CODEX_SCOPED_WINDOWS: Record<string, string> = {
   code_review: "code_review",
   code_review_weekly: "code_review",
 };
-function percentage(q: HealthQuota): number | null {
-  if (q.unlimited) return 100;
-  if (typeof q.remainingPercentage === "number" && Number.isFinite(q.remainingPercentage))
-    return Math.max(0, Math.min(100, q.remainingPercentage));
-  if (Number.isFinite(q.total) && q.total > 0 && Number.isFinite(q.used))
-    return Math.max(0, Math.min(100, (1 - q.used / q.total) * 100));
-  return null;
-}
 /** All blocked is red, mixed usable/blocked is yellow, incomplete evidence is never green.
  * Paused accounts have their own count and never contribute to the available count.
  */
@@ -212,17 +216,19 @@ export function buildHealthAccount(
   const blocked: HealthReason[] = [];
   // Explicit groups describe independent pools; a scoped model never becomes an extra account.
   const groups = new Set((data?.raw?.quotaGroups || []).map((g) => g.id));
-  for (const q of quotas.values()) {
+  for (const q of effectiveQuotaAlternatives(quotas.values(), connection, evidence.policy)) {
     if (
       q.isCredits ||
       q.isResetCredits ||
       // quotaCache.ts:setQuotaCache omits these display-only Codex reserve windows.
       (connection.provider === "codex" && ["reserve_session", "reserve_weekly"].includes(q.name)) ||
       q.fractionReported === false ||
-      /^(credits|extra_usage|banked_reset_credits)$/.test(q.name)
+      /^(extra_usage|banked_reset_credits)$/.test(q.name) ||
+      (q.name === "credits" &&
+        !(connection.provider === "openrouter" && (q.total ?? 0) > 0 && !q.unlimited))
     )
       continue;
-    const percent = percentage(q);
+    const percent = quotaPercentage(q);
     if (percent === null) continue;
     const window = normalizeHealthWindow(q, data?.raw?.fetchedAt);
     // usage/antigravity.ts and antigravityWeeklyQuota.ts identify independent pools.
@@ -243,8 +249,9 @@ export function buildHealthAccount(
               ? CODEX_SCOPED_WINDOWS[q.name]
               : undefined);
     const scope: HealthScope = q.quotaGroupId ? "group" : scopeId ? "scoped" : "account";
-    if (scope === "group") groups.add(scopeId);
+    if (scope === "group" && scopeId) groups.add(scopeId);
     const awaitingSync = !!q.staleAfterReset || Date.parse(q.resetAt || "") <= now;
+    const bypass = quotaBypass(connection, q.name, data?.raw?.paidCredits);
     cells.push({
       name: q.name,
       displayName: q.displayName,
@@ -254,6 +261,7 @@ export function buildHealthAccount(
       scopeId: scopeId || undefined,
       window,
       awaitingSync,
+      ...(bypass ? { quotaIgnored: true } : {}),
     });
     const constraint = {
       scope,
@@ -267,7 +275,12 @@ export function buildHealthAccount(
       continue;
     }
     const cutoff = availabilityCutoff(connection, q.name, evidence.policy) ?? 0;
-    if (percent <= cutoff + 1e-9) blocked.push({ type: "quota", ...constraint, cutoff });
+    if (percent <= cutoff + 1e-9) {
+      if (bypass) {
+        if (!reasons.some((r) => r.type === "quotaBypass" && r.bypass === bypass))
+          reasons.push({ type: "quotaBypass", bypass });
+      } else blocked.push({ type: "quota", ...constraint, cutoff });
+    }
   }
   if (!evidence.policy) reasons.push({ type: "policyUnavailable" });
   if (cells.length && (data?.stale || data?.raw?._stale || evidence.error))

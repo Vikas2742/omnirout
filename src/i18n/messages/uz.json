@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Oqimni o‘zgartirib bo‘lmadi"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kvota tugagan; qo‘shimcha foydalanishga ruxsat berilgan, shuning uchun xizmat davom etadi.",
+    "healthPaidCreditsBypass": "Kvota tugagan; mavjud pullik kreditlar xizmatni davom ettirish imkonini beradi.",
+    "healthFilteringBypass": "Kvota tugagan; mahalliy kvota filtrlash o‘chirilgan, shuning uchun xizmat davom etadi.",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

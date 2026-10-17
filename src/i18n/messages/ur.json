@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "اسٹریم کو تبدیل کرنے میں ناکامی"
   },
   "usage": {
+    "healthExtraUsageBypass": "کوٹا ختم ہو گیا ہے؛ اضافی استعمال کی اجازت ہے، اس لیے سروس جاری ہے۔",
+    "healthPaidCreditsBypass": "کوٹا ختم ہو گیا ہے؛ دستیاب ادا شدہ کریڈٹ سے سروس جاری رہ سکتی ہے۔",
+    "healthFilteringBypass": "کوٹا ختم ہو گیا ہے؛ مقامی کوٹا فلٹر بند ہے، اس لیے سروس جاری ہے۔",
     "title": "استعمال",
     "grokExtraUsageCredits": "اضافی استعمال کے کریڈٹس",
     "grokAutoTopUp": "خودکار ٹاپ اپ",

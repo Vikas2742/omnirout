@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "An kasa canza rafi"
   },
   "usage": {
+    "healthExtraUsageBypass": "Iyakar amfani ta ƙare; an yarda da ƙarin amfani, don haka sabis yana ci gaba.",
+    "healthPaidCreditsBypass": "Iyakar amfani ta ƙare; kuɗaɗen amfani da aka biya da suke akwai suna ba da damar ci gaba da sabis.",
+    "healthFilteringBypass": "Iyakar amfani ta ƙare; an kashe tace iyakar amfani ta gida, don haka sabis yana ci gaba.",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

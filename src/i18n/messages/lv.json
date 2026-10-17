@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Neizdevās pārveidot straumi"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kvota izsmelta; papildu lietojums ir atļauts, tāpēc pakalpojums turpinās.",
+    "healthPaidCreditsBypass": "Kvota izsmelta; pieejamie apmaksātie kredīti ļauj turpināt pakalpojumu.",
+    "healthFilteringBypass": "Kvota izsmelta; lokālā kvotu filtrēšana ir izslēgta, tāpēc pakalpojums turpinās.",
     "title": "Lietojums",
     "grokExtraUsageCredits": "Papildu lietojuma kredīti",
     "grokAutoTopUp": "Automātiska bilances papildināšana",

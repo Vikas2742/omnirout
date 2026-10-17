@@ -7,7 +7,12 @@ export interface AvailabilityPolicy {
 export interface PolicyConnection {
   provider: string;
   quotaWindowThresholds?: Record<string, number> | null;
-  providerSpecificData?: { quotaPreflightEnabled?: boolean };
+  providerSpecificData?: {
+    quotaPreflightEnabled?: boolean;
+    blockExtraUsage?: boolean;
+    allowPaidCredits?: boolean;
+    limitPolicy?: { enabled?: boolean };
+  };
 }
 export function availabilityCutoff(
   connection: PolicyConnection,

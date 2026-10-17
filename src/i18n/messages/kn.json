@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "ಸ್ಟ್ರೀಮ್ ಅನ್ನು ಪರಿವರ್ತಿಸಲು ವಿಫಲವಾಗಿದೆ"
   },
   "usage": {
+    "healthExtraUsageBypass": "ಕೋಟಾ ಮುಗಿದಿದೆ; ಹೆಚ್ಚುವರಿ ಬಳಕೆಗೆ ಅನುಮತಿ ಇರುವುದರಿಂದ ಸೇವೆ ಮುಂದುವರಿಯುತ್ತದೆ.",
+    "healthPaidCreditsBypass": "ಕೋಟಾ ಮುಗಿದಿದೆ; ಲಭ್ಯವಿರುವ ಪಾವತಿಸಿದ ಕ್ರೆಡಿಟ್‌ಗಳಿಂದ ಸೇವೆ ಮುಂದುವರಿಯಬಹುದು.",
+    "healthFilteringBypass": "ಕೋಟಾ ಮುಗಿದಿದೆ; ಸ್ಥಳೀಯ ಕೋಟಾ ಫಿಲ್ಟರಿಂಗ್ ನಿಷ್ಕ್ರಿಯವಾಗಿರುವುದರಿಂದ ಸೇವೆ ಮುಂದುವರಿಯುತ್ತದೆ.",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

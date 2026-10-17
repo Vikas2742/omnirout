@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "No se pudo transformar el flujo"
   },
   "usage": {
+    "healthExtraUsageBypass": "Cuota agotada; se permite el uso adicional, por lo que el servicio continúa.",
+    "healthPaidCreditsBypass": "Cuota agotada; los créditos de pago disponibles permiten continuar el servicio.",
+    "healthFilteringBypass": "Cuota agotada; el filtrado local de cuotas está desactivado, por lo que el servicio continúa.",
     "title": "Uso",
     "grokExtraUsageCredits": "Créditos Adicionales de Uso",
     "grokAutoTopUp": "Recarga Automática",

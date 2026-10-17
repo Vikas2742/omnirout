@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Nie udało się przekształcić strumienia"
   },
   "usage": {
+    "healthExtraUsageBypass": "Limit wyczerpany; dodatkowe użycie jest dozwolone, więc usługa działa dalej.",
+    "healthPaidCreditsBypass": "Limit wyczerpany; dostępne płatne kredyty pozwalają kontynuować usługę.",
+    "healthFilteringBypass": "Limit wyczerpany; lokalne filtrowanie limitów jest wyłączone, więc usługa działa dalej.",
     "title": "Użycie",
     "grokExtraUsageCredits": "Dodatkowe Kredyty Użytkowania",
     "grokAutoTopUp": "Automatyczne Doładowanie",

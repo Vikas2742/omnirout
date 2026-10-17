@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "ଷ୍ଟ୍ରିମ୍ ରୂପାନ୍ତର କରିବାରେ ବିଫଳ"
   },
   "usage": {
+    "healthExtraUsageBypass": "କୋଟା ଶେଷ ହୋଇଛି; ଅତିରିକ୍ତ ବ୍ୟବହାର ଅନୁମୋଦିତ ଥିବାରୁ ସେବା ଜାରି ରହେ।",
+    "healthPaidCreditsBypass": "କୋଟା ଶେଷ ହୋଇଛି; ଉପଲବ୍ଧ ଦେୟଯୁକ୍ତ କ୍ରେଡିଟ୍‌ ଦ୍ୱାରା ସେବା ଜାରି ରହିପାରେ।",
+    "healthFilteringBypass": "କୋଟା ଶେଷ ହୋଇଛି; ସ୍ଥାନୀୟ କୋଟା ଫିଲ୍ଟର୍ ବନ୍ଦ ଥିବାରୁ ସେବା ଜାରି ରହେ।",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

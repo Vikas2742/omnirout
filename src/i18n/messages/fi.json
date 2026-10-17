@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Virran muuntaminen epäonnistui"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kiintiö on käytetty; lisäkäyttö on sallittu, joten palvelu jatkuu.",
+    "healthPaidCreditsBypass": "Kiintiö on käytetty; saatavilla olevat maksulliset krediitit mahdollistavat palvelun jatkumisen.",
+    "healthFilteringBypass": "Kiintiö on käytetty; paikallinen kiintiösuodatus on pois käytöstä, joten palvelu jatkuu.",
     "title": "Käyttö",
     "grokExtraUsageCredits": "Lisäkäyttöluottoja",
     "grokAutoTopUp": "Automaattinen Lataus",

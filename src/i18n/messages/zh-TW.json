@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "轉換串流失敗"
   },
   "usage": {
+    "healthExtraUsageBypass": "額度已用完；已允許額外用量，仍可繼續服務。",
+    "healthPaidCreditsBypass": "額度已用完；有可用的付費額度，仍可繼續服務。",
+    "healthFilteringBypass": "額度已用完；已關閉本機額度篩選，仍可繼續服務。",
     "title": "用量",
     "grokExtraUsageCredits": "額外使用積分",
     "grokAutoTopUp": "自動加值",

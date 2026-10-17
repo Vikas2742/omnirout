@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Imeshindwa kubadilisha mtiririko"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kiwango kimeisha; matumizi ya ziada yanaruhusiwa, hivyo huduma inaendelea.",
+    "healthPaidCreditsBypass": "Kiwango kimeisha; salio la kulipia linalopatikana linaruhusu huduma kuendelea.",
+    "healthFilteringBypass": "Kiwango kimeisha; uchujaji wa kiwango wa ndani umezimwa, hivyo huduma inaendelea.",
     "title": "Matumizi",
     "grokExtraUsageCredits": "Mikopo Ya Ziada",
     "grokAutoTopUp": "Kuongeza Otomatikia",

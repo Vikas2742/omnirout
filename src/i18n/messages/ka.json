@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "ნაკადის გარდაქმნა ვერ მოხერხდა"
   },
   "usage": {
+    "healthExtraUsageBypass": "კვოტა ამოწურულია; დამატებითი გამოყენება ნებადართულია, ამიტომ მომსახურება გრძელდება.",
+    "healthPaidCreditsBypass": "კვოტა ამოწურულია; ხელმისაწვდომი ფასიანი კრედიტები მომსახურების გაგრძელების საშუალებას იძლევა.",
+    "healthFilteringBypass": "კვოტა ამოწურულია; ლოკალური კვოტის ფილტრაცია გამორთულია, ამიტომ მომსახურება გრძელდება.",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

@@ -36,7 +36,7 @@ export function poolIds(account: HealthAccount): string[] {
       ...account.cells.filter((c) => c.scope === "group").map((c) => c.scopeId),
     ]),
   ]
-    .filter(Boolean)
+    .filter((id): id is string => !!id)
     .sort();
 }
 /** Same applicableModel fallback as the original family projection. Unknown mappings stay visible. */
@@ -88,7 +88,7 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
           ? "cd5"
           : "cdw";
       }
-      return r.durationMs <= FIVE_HOURS ? "cd5" : "cdw";
+      return (r.durationMs ?? Infinity) <= FIVE_HOURS ? "cd5" : "cdw";
     };
     const unknown = constraints.filter(
       (r) => !Number.isFinite(parseRuntimeTimestamp(r.resetAt || ""))
@@ -103,7 +103,7 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
     )[0];
     kind = latest ? classify(latest) : "cdw";
     waitDuration =
-      latest?.type === "cooldown" && latest.durationMs > 0
+      latest?.type === "cooldown" && latest.durationMs !== undefined && latest.durationMs > 0
         ? latest.durationMs
         : kind === "cd5"
           ? FIVE_HOURS
@@ -117,8 +117,17 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
     kind === "ok" && (blocked.length > 0 || reasons.some((r) => r.type === "lockout"));
   if (kind === "ok" && (!cells.length || reasons.some((r) => r.type === "noRuntime")) && !partial)
     kind = "empty";
-  const waterCells = poolId ? cells : cells.filter((c) => c.scope !== "scoped");
-  const remainingPct = waterCells.length ? Math.min(...waterCells.map((c) => c.percent)) : null;
+  const locallyLimited = cells.filter((c) => !c.quotaIgnored);
+  const bypassed = cells.some((c) => c.quotaIgnored);
+  // When plan limits are bypassed, retain any remaining scoped constraints
+  // (notably Spark); no remaining local constraint means full, not zero headroom.
+  const waterCells =
+    poolId || bypassed ? locallyLimited : locallyLimited.filter((c) => c.scope !== "scoped");
+  const remainingPct = waterCells.length
+    ? Math.min(...waterCells.map((c) => c.percent))
+    : bypassed
+      ? 100
+      : null;
   const fill =
     kind === "ok"
       ? remainingPct

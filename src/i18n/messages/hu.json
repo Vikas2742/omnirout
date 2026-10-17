@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Nem sikerült átalakítani az adatfolyamot"
   },
   "usage": {
+    "healthExtraUsageBypass": "A keret kimerült; a többlethasználat engedélyezett, így a szolgáltatás folytatódik.",
+    "healthPaidCreditsBypass": "A keret kimerült; az elérhető fizetett kreditek lehetővé teszik a szolgáltatás folytatását.",
+    "healthFilteringBypass": "A keret kimerült; a helyi keretszűrés ki van kapcsolva, így a szolgáltatás folytatódik.",
     "title": "Használat",
     "grokExtraUsageCredits": "További Használati Kreditek",
     "grokAutoTopUp": "Automatikus Feltöltés",

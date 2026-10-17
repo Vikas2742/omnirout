@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "تبدیل استریم ناموفق بود"
   },
   "usage": {
+    "healthExtraUsageBypass": "سهمیه تمام شده است؛ مصرف اضافه مجاز است، بنابراین سرویس ادامه دارد.",
+    "healthPaidCreditsBypass": "سهمیه تمام شده است؛ اعتبار پولی موجود امکان ادامه سرویس را می‌دهد.",
+    "healthFilteringBypass": "سهمیه تمام شده است؛ فیلتر محلی سهمیه غیرفعال است، بنابراین سرویس ادامه دارد.",
     "title": "میزان استفاده",
     "grokExtraUsageCredits": "اعتبارات اضافی مصرف",
     "grokAutoTopUp": "شارژ خودکار",

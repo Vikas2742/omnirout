@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "ዥረቱን መለወጥ አልተሳካም"
   },
   "usage": {
+    "healthExtraUsageBypass": "ኮታው አልቋል፤ ተጨማሪ አጠቃቀም ስለተፈቀደ አገልግሎቱ ይቀጥላል።",
+    "healthPaidCreditsBypass": "ኮታው አልቋል፤ ያሉት የተከፈሉ ክሬዲቶች አገልግሎቱ እንዲቀጥል ያስችላሉ።",
+    "healthFilteringBypass": "ኮታው አልቋል፤ የአካባቢ ኮታ ማጣሪያ ስለጠፋ አገልግሎቱ ይቀጥላል።",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

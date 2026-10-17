@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Nepodarilo sa transformovať stream"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kvóta je vyčerpaná; dodatočné využitie je povolené, takže služba pokračuje.",
+    "healthPaidCreditsBypass": "Kvóta je vyčerpaná; dostupné platené kredity umožňujú pokračovanie služby.",
+    "healthFilteringBypass": "Kvóta je vyčerpaná; miestne filtrovanie kvót je vypnuté, takže služba pokračuje.",
     "title": "Použitie",
     "grokExtraUsageCredits": "Extra Kredit na Použitie",
     "grokAutoTopUp": "Automatické dobíjanie",

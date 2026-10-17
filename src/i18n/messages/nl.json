@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Transformeren van stream mislukt"
   },
   "usage": {
+    "healthExtraUsageBypass": "Quotum verbruikt; extra gebruik is toegestaan, dus de dienst gaat door.",
+    "healthPaidCreditsBypass": "Quotum verbruikt; beschikbare betaalde credits maken voortzetting van de dienst mogelijk.",
+    "healthFilteringBypass": "Quotum verbruikt; lokale quotumfiltering is uitgeschakeld, dus de dienst gaat door.",
     "title": "Gebruik",
     "grokExtraUsageCredits": "Extra Gebruikskredieten",
     "grokAutoTopUp": "Automatische Opwaardering",

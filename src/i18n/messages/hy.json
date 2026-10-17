@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Չհաջողվեց փոխակերպել հոսքը"
   },
   "usage": {
+    "healthExtraUsageBypass": "Քվոտան սպառվել է․ լրացուցիչ օգտագործումը թույլատրված է, ուստի ծառայությունը շարունակվում է։",
+    "healthPaidCreditsBypass": "Քվոտան սպառվել է․ հասանելի վճարովի կրեդիտները թույլ են տալիս շարունակել ծառայությունը։",
+    "healthFilteringBypass": "Քվոտան սպառվել է․ տեղային քվոտայի զտումն անջատված է, ուստի ծառայությունը շարունակվում է։",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

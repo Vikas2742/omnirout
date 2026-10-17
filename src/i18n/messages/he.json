@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "המרת הזרם נכשלה"
   },
   "usage": {
+    "healthExtraUsageBypass": "המכסה נוצלה; שימוש נוסף מותר, ולכן השירות נמשך.",
+    "healthPaidCreditsBypass": "המכסה נוצלה; יתרת קרדיטים בתשלום מאפשרת את המשך השירות.",
+    "healthFilteringBypass": "המכסה נוצלה; סינון המכסות המקומי כבוי, ולכן השירות נמשך.",
     "title": "שימוש",
     "grokExtraUsageCredits": "קרדיטים נוספים לשימוש",
     "grokAutoTopUp": "טעינה אוטומטית",

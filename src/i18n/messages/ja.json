@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "ストリームの変換に失敗しました"
   },
   "usage": {
+    "healthExtraUsageBypass": "割り当てを使い切りましたが、追加使用が許可されているためサービスを継続します。",
+    "healthPaidCreditsBypass": "割り当てを使い切りましたが、利用可能な有料クレジットでサービスを継続できます。",
+    "healthFilteringBypass": "割り当てを使い切りましたが、ローカルの割り当てフィルタリングが無効なためサービスを継続します。",
     "title": "使用法",
     "grokExtraUsageCredits": "追加の使用クレジット",
     "grokAutoTopUp": "自動チャージ",

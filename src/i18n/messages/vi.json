@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Không thể chuyển đổi luồng"
   },
   "usage": {
+    "healthExtraUsageBypass": "Đã hết hạn mức; cho phép sử dụng thêm nên dịch vụ vẫn tiếp tục.",
+    "healthPaidCreditsBypass": "Đã hết hạn mức; tín dụng trả phí khả dụng cho phép dịch vụ tiếp tục.",
+    "healthFilteringBypass": "Đã hết hạn mức; bộ lọc hạn mức cục bộ đã tắt nên dịch vụ vẫn tiếp tục.",
     "title": "Mức sử dụng",
     "grokExtraUsageCredits": "Tín dụng sử dụng bổ sung",
     "grokAutoTopUp": "Tự động nạp thêm",

@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "સ્ટ્રીમ રૂપાંતરિત કરવામાં નિષ્ફળ"
   },
   "usage": {
+    "healthExtraUsageBypass": "ક્વોટા પૂરો થયો છે; વધારાના ઉપયોગની મંજૂરી હોવાથી સેવા ચાલુ રહે છે.",
+    "healthPaidCreditsBypass": "ક્વોટા પૂરો થયો છે; ઉપલબ્ધ ચૂકવેલ ક્રેડિટથી સેવા ચાલુ રહી શકે છે.",
+    "healthFilteringBypass": "ક્વોટા પૂરો થયો છે; સ્થાનિક ક્વોટા ફિલ્ટર બંધ હોવાથી સેવા ચાલુ રહે છે.",
     "title": "વપરાશ",
     "grokExtraUsageCredits": "અતિરિક્ત ઉપયોગ ક્રેડિટ",
     "grokAutoTopUp": "ઓટો ટોપ-અપ",

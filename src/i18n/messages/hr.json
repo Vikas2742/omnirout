@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Pretvorba toka nije uspjela"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kvota je iscrpljena; dodatna potrošnja je dopuštena pa se usluga nastavlja.",
+    "healthPaidCreditsBypass": "Kvota je iscrpljena; raspoloživi plaćeni krediti omogućuju nastavak usluge.",
+    "healthFilteringBypass": "Kvota je iscrpljena; lokalno filtriranje kvota je isključeno pa se usluga nastavlja.",
     "title": "Korištenje",
     "grokExtraUsageCredits": "Dodatni krediti za korištenje",
     "grokAutoTopUp": "Automatsko dopunjavanje",

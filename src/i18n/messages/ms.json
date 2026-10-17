@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Gagal mengubah strim"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kuota telah habis; penggunaan tambahan dibenarkan, jadi perkhidmatan diteruskan.",
+    "healthPaidCreditsBypass": "Kuota telah habis; kredit berbayar yang tersedia membolehkan perkhidmatan diteruskan.",
+    "healthFilteringBypass": "Kuota telah habis; penapisan kuota setempat dilumpuhkan, jadi perkhidmatan diteruskan.",
     "title": "Penggunaan",
     "grokExtraUsageCredits": "Kredit Penggunaan Tambahan",
     "grokAutoTopUp": "Pengisian Automatik",

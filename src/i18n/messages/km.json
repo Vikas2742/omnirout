@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "មិនអាចបំប្លែងទិន្នន័យបន្តបន្ទាប់បានទេ"
   },
   "usage": {
+    "healthExtraUsageBypass": "កូតាអស់ហើយ ប៉ុន្តែអនុញ្ញាតឱ្យប្រើប្រាស់បន្ថែម ដូច្នេះសេវាបន្តដំណើរការ។",
+    "healthPaidCreditsBypass": "កូតាអស់ហើយ ប៉ុន្តែឥណទានដែលបានបង់ប្រាក់នៅសល់អនុញ្ញាតឱ្យសេវាបន្តដំណើរការ។",
+    "healthFilteringBypass": "កូតាអស់ហើយ ប៉ុន្តែការត្រងកូតាក្នុងមូលដ្ឋានត្រូវបានបិទ ដូច្នេះសេវាបន្តដំណើរការ។",
     "codexPaidCreditsLabel": "Paid Codex credits",
     "codexPaidCreditsAvailable": "Available (balance not reported)",
     "codexPaidCreditsUnavailable": "Unavailable or spending limit reached",

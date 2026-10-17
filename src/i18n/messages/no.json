@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Kunne ikke transformere strømmen"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kvoten er brukt opp; ekstra bruk er tillatt, så tjenesten fortsetter.",
+    "healthPaidCreditsBypass": "Kvoten er brukt opp; tilgjengelige betalte kreditter gjør at tjenesten kan fortsette.",
+    "healthFilteringBypass": "Kvoten er brukt opp; lokal kvotefiltrering er deaktivert, så tjenesten fortsetter.",
     "title": "Bruk",
     "grokExtraUsageCredits": "Ekstra Brukskreditter",
     "grokAutoTopUp": "Automatisk Påfylling",

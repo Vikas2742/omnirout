@@ -9799,6 +9799,9 @@
     "streamTransformFailed": "Akış dönüştürülemedi"
   },
   "usage": {
+    "healthExtraUsageBypass": "Kota tükendi; ek kullanıma izin verildiği için hizmet devam ediyor.",
+    "healthPaidCreditsBypass": "Kota tükendi; kullanılabilir ücretli krediler hizmetin sürmesini sağlıyor.",
+    "healthFilteringBypass": "Kota tükendi; yerel kota filtreleme kapalı olduğu için hizmet devam ediyor.",
     "title": "Kullanım",
     "grokExtraUsageCredits": "Ekstra Kullanım Kredileri",
     "grokAutoTopUp": "Otomatik Yenileme",
