@@ -11,6 +11,7 @@ const models = await import("../../src/lib/db/models.ts");
 const combos = await import("../../src/lib/db/combos.ts");
 const core = await import("../../src/lib/db/core.ts");
 const { getResolvedModelCapabilities } = await import("../../src/lib/modelCapabilities.ts");
+const { getExactCustomModelVisionOverride } = await import("../../src/lib/db/models/customVisionOverride.ts");
 const { getComboVisionBridgeDecision, VisionBridgeGuardrail } = await import("../../src/lib/guardrails/visionBridge.ts");
 
 test.after(() => {
@@ -72,6 +73,12 @@ test("#16801: a public vision model from another node must not bless an internal
     ["chat"], undefined, {}, true
   );
   assert.equal(getResolvedModelCapabilities("other16801/vision-only").supportsVision, true);
+  assert.equal(
+    getExactCustomModelVisionOverride(sourceNode, "other16801/vision-only"),
+    null,
+    "foreign node custom metadata is not evidence about the source provider"
+  );
+  assert.equal(getExactCustomModelVisionOverride(otherNode, "vision-only"), true);
   await combos.createCombo({
     name: "cross-node-vision-16801", strategy: "priority",
     models: [{
@@ -127,6 +134,13 @@ test("#16801: raw provider-relative model IDs containing slashes retain their ex
   assert.equal(await getComboVisionBridgeDecision("raw-path-text-16801"), "no-vision");
   assert.equal(await getComboVisionBridgeDecision("mixed-raw-path-16801"), "process");
   assert.equal(await getComboVisionBridgeDecision("nested-raw-path-16801"), "skip");
+  assert.equal(getExactCustomModelVisionOverride(nodeId, "vendor/sight-16801"), true);
+  assert.equal(getExactCustomModelVisionOverride(nodeId, "vendor/blind-16801"), false);
+  assert.equal(
+    getExactCustomModelVisionOverride("openai-compatible-chat-absent-16801", "vendor/sight-16801"),
+    null,
+    "a matching model ID from a different provider must not leak to this node"
+  );
 
   // A proven all-vision combo must preserve the exact input_image/image_url bytes:
   // no describe call, no text stub, and no image representation rewrite.
@@ -148,4 +162,42 @@ test("#16801: raw provider-relative model IDs containing slashes retain their ex
   assert.equal(result.modifiedPayload, undefined);
   assert.equal(describes, 0);
   assert.equal(payload.messages[0].content[1].image_url.url, image);
+});
+
+test("#16801: only an owned synced vision verdict permits a raw namespaced ID", async () => {
+  const nodeId = "openai-compatible-chat-16801-synced-path";
+  const foreignNodeId = "openai-compatible-chat-16801-foreign-synced";
+  await providers.createProviderNode({
+    id: nodeId, type: "openai-compatible", prefix: "synced16801",
+    name: "Synced path fixture", apiType: "chat", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  await providers.createProviderNode({
+    id: foreignNodeId, type: "openai-compatible", prefix: "foreign16801",
+    name: "Foreign fixture", apiType: "chat", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  const connection = await providers.createProviderConnection({
+    provider: nodeId, authType: "apikey",
+    name: "Synced path fixture connection", apiKey: "test-fixture-key",
+    isActive: true, testStatus: "active",
+  });
+  await models.replaceSyncedAvailableModelsForConnection(nodeId, connection.id, [{
+    id: "vendor/synced-vision-16801", name: "Synced vision",
+    supportsVision: true, supportedEndpoints: ["chat"],
+  }]);
+  await combos.createCombo({
+    name: "synced-raw-path-16801", strategy: "priority",
+    models: [{ kind: "model", providerId: nodeId, model: "vendor/synced-vision-16801", weight: 1 }],
+  });
+  await combos.createCombo({
+    name: "foreign-synced-raw-path-16801", strategy: "priority",
+    models: [{
+      kind: "model", providerId: foreignNodeId,
+      model: "vendor/synced-vision-16801", weight: 1,
+    }],
+  });
+  assert.equal(await getComboVisionBridgeDecision("synced-raw-path-16801"), "skip");
+  assert.equal(
+    await getComboVisionBridgeDecision("foreign-synced-raw-path-16801"), "no-vision",
+    "a different node with the same raw vendor ID cannot inherit another node's synced verdict"
+  );
 });
