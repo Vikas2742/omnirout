@@ -5,6 +5,7 @@
 // when no stamp exists.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -17,7 +18,8 @@ process.env.RELAY_IP_PER_MINUTE = "2";
 const relaySecurity =
   await import("../../../../src/app/api/v1/relay/chat/completions/relaySecurity.ts");
 const authzHeaders = await import("../../../../src/server/authz/headers.ts");
-const { createRelayToken, getRelayLogs } = await import("../../../../src/lib/db/relayProxies.ts");
+const { getDbInstance } = await import("../../../../src/lib/db/core.ts");
+const { getRelayLogs } = await import("../../../../src/lib/db/relayProxies.ts");
 
 const { getClientIp, checkIpRateLimit } = relaySecurity;
 
@@ -124,8 +126,37 @@ async function postRelay(rawToken: string, headers: Record<string, string>) {
   );
 }
 
+// Seeded like the sibling relay tests: createRelayToken() hashes through a CommonJS `require`
+// that the ESM test runtime does not provide.
 function seedToken(name: string) {
-  return createRelayToken({ name, allowedModels: ["relay-throttle-only-model"] });
+  const id = `rl_test_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const rawToken = `relay_${name}_${Math.random().toString(16).slice(2)}`;
+  const now = Math.floor(Date.now() / 1000);
+  getDbInstance()
+    .prepare(
+      `INSERT INTO relay_tokens (id, name, token_hash, token_prefix, description, combo_id,
+        allowed_models, max_tokens_per_request, max_requests_per_minute, max_requests_per_day,
+        max_cost_per_day, enabled, created_at, updated_at, expires_at, metadata)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`
+    )
+    .run(
+      id,
+      name,
+      createHash("sha256").update(rawToken).digest("hex"),
+      "rl_test",
+      "",
+      null,
+      JSON.stringify(["relay-throttle-only-model"]),
+      128000,
+      60,
+      10000,
+      0,
+      now,
+      now,
+      null,
+      "{}"
+    );
+  return { id, rawToken };
 }
 
 test("relay route: a direct caller cannot reset the throttle by rotating X-Forwarded-For", async () => {
