@@ -53,7 +53,21 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
         ? s.provider
         : null;
   const caps = getResolvedModelCapabilities({ provider, model: targetModel });
-  return caps.supportsVision === true ? "vision" : "non-vision";
+  if (caps.supportsVision === true) return "vision";
+
+  // Compatible-node steps can carry an internal connection ID alongside the
+  // public, prefix-scoped model name. Keep an explicit negative verdict from
+  // that exact connection, but recover missing capability rows through the
+  // same public-model resolution used by direct image requests (#16801).
+  if (
+    caps.supportsVision === null &&
+    provider?.startsWith("openai-compatible-") &&
+    targetModel.includes("/") &&
+    getResolvedModelCapabilities(targetModel).supportsVision === true
+  ) {
+    return "vision";
+  }
+  return "non-vision";
 }
 
 /// Recursively resolve a `combo-ref` step to its real leaf models' vision
