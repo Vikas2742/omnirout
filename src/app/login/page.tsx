@@ -20,6 +20,9 @@ export default function LoginPage() {
   const [oidcEnabled, setOidcEnabled] = useState<boolean | null>(null);
   const [oidcDisablePasswordLogin, setOidcDisablePasswordLogin] = useState<boolean | null>(null);
   const [mounted, setMounted] = useState(false);
+  // Opt-in TOTP: set when the password step answers `mfaRequired`.
+  const [mfaStep, setMfaStep] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
   const [nodeVersion, setNodeVersion] = useState(null);
   const [nodeCompatible, setNodeCompatible] = useState(true);
   const router = useRouter();
@@ -79,6 +82,12 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data?.mfaRequired) {
+          setMfaCode("");
+          setMfaStep(true);
+          return;
+        }
         sessionStorage.setItem("omniroute_login_time", String(Date.now()));
         window.location.href = "/dashboard";
       } else {
@@ -91,6 +100,37 @@ export default function LoginPage() {
         setError(data.error || t("invalidPassword"));
       }
     } catch (err) {
+      setError(t("errorOccurredRetry"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMfaVerify = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/auth/mfa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: mfaCode }),
+      });
+
+      if (res.ok) {
+        sessionStorage.setItem("omniroute_login_time", String(Date.now()));
+        window.location.href = "/dashboard";
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (data?.mfaExpired) {
+        // The pending sign-in expired (5 min): start over from the password.
+        setMfaStep(false);
+        setPassword("");
+      }
+      setError(data?.error?.message || t("errorOccurredRetry"));
+    } catch {
       setError(t("errorOccurredRetry"));
     } finally {
       setLoading(false);
@@ -247,13 +287,60 @@ export default function LoginPage() {
               </div>
               <h1 className="text-2xl font-bold text-text-main tracking-tight">{t("signIn")}</h1>
               <p className="text-text-muted mt-1.5">
-                {oidcEnabled && oidcDisablePasswordLogin
-                  ? t("continueWithOidc")
-                  : t("enterPassword")}
+                {mfaStep
+                  ? t("mfaPrompt")
+                  : oidcEnabled && oidcDisablePasswordLogin
+                    ? t("continueWithOidc")
+                    : t("enterPassword")}
               </p>
             </div>
 
-            {oidcEnabled && oidcDisablePasswordLogin ? (
+            {mfaStep ? (
+              <form onSubmit={handleMfaVerify} className="space-y-5 w-full">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-main">{t("mfaCodeLabel")}</label>
+                  <Input
+                    type="text"
+                    inputMode="text"
+                    autoComplete="one-time-code"
+                    placeholder={t("mfaCodePlaceholder")}
+                    value={mfaCode}
+                    onChange={(e) => setMfaCode(e.target.value)}
+                    required
+                    autoFocus
+                    maxLength={64}
+                    className="h-11 tracking-widest"
+                  />
+                  {error && (
+                    <p className="text-sm text-red-500 flex items-center gap-1.5 pt-1">
+                      <span className="material-symbols-outlined text-base">error</span>
+                      {error}
+                    </p>
+                  )}
+                  <p className="text-xs text-text-muted/60 pt-0.5">{t("mfaBackupCodeHint")}</p>
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="w-full h-11 text-sm font-medium"
+                  loading={loading}
+                >
+                  {t("continue")}
+                </Button>
+                <button
+                  type="button"
+                  className="w-full text-sm text-text-muted hover:text-primary transition-colors"
+                  onClick={() => {
+                    setMfaStep(false);
+                    setMfaCode("");
+                    setError("");
+                  }}
+                >
+                  {t("backToLogin")}
+                </button>
+              </form>
+            ) : oidcEnabled && oidcDisablePasswordLogin ? (
               <div className="space-y-4">
                 <Button
                   type="button"
