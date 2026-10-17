@@ -8,6 +8,7 @@ import { selectProviderNodeForConnection } from "../providerNodeSelect";
 import { backupDbFile } from "../backup";
 import { invalidateDbCache } from "../readCache";
 import { toRecord, type JsonRecord } from "./columns";
+import { resetProviderNodePrefixCache } from "./nodePrefix";
 
 function normalizeDailyQuotaResetHour(value: unknown): number | null {
   return value === 0 || value ? Number(value) : null;
@@ -155,6 +156,7 @@ export async function createProviderNode(data: JsonRecord) {
 
   backupDbFile("pre-write");
   invalidateDbCache("nodes");
+  resetProviderNodePrefixCache();
 
   return withParsedCustomHeaders({ ...node }, customHeadersJson);
 }
@@ -213,6 +215,7 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
 
   backupDbFile("pre-write");
   invalidateDbCache("nodes");
+  resetProviderNodePrefixCache();
 
   return withParsedCustomHeaders(merged, (merged["customHeadersJson"] as string | null) ?? null);
 }
@@ -225,5 +228,6 @@ export async function deleteProviderNode(id: string) {
   db.prepare("DELETE FROM provider_nodes WHERE id = ?").run(id);
   backupDbFile("pre-write");
   invalidateDbCache("nodes");
+  resetProviderNodePrefixCache();
   return rowToCamel(existing);
 }
