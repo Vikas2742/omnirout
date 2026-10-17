@@ -43,3 +43,15 @@ test("#16929: multimodal chat models remain chat-selectable", () => {
     supportedEndpoints: ["responses"], endpointCapabilitySource: "declared",
   }, "chat"), null);
 });
+
+test("#16929: normalize legacy image alias and preserve trusted multi-endpoint route checks", () => {
+  const model = {
+    supportedEndpoints: ["images-generations", "audio-speech"],
+    endpointCapabilitySource: "operator",
+  };
+  assert.equal(getModelEndpointMismatchMessage("p/media", model, "images"), null);
+  assert.equal(getModelEndpointMismatchMessage("p/media", model, "audio-speech"), null);
+  const mismatch = getModelEndpointMismatchMessage("p/media", model, "embeddings");
+  assert.match(mismatch || "", /\/v1\/images\/generations/);
+  assert.match(mismatch || "", /\/v1\/audio\/speech/);
+});
