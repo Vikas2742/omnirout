@@ -55,3 +55,32 @@ test("#16801: unknown compatible-node models do not acquire vision by default", 
   });
   assert.equal(await getComboVisionBridgeDecision("unknown-16801"), "no-vision");
 });
+
+test("#16801: a public vision model from another node must not bless an internal target", async () => {
+  const sourceNode = "openai-compatible-chat-16801-source";
+  const otherNode = "openai-compatible-chat-16801-other";
+  await providers.createProviderNode({
+    id: sourceNode, type: "openai-compatible", prefix: "source16801",
+    name: "Non-vision source", apiType: "chat", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  await providers.createProviderNode({
+    id: otherNode, type: "openai-compatible", prefix: "other16801",
+    name: "Vision provider", apiType: "chat", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  await models.addCustomModel(
+    otherNode, "vision-only", "Vision only", "manual", "chat-completions",
+    ["chat"], undefined, {}, true
+  );
+  assert.equal(getResolvedModelCapabilities("other16801/vision-only").supportsVision, true);
+  await combos.createCombo({
+    name: "cross-node-vision-16801", strategy: "priority",
+    models: [{
+      kind: "model", providerId: sourceNode, model: "other16801/vision-only", weight: 1,
+    }],
+  });
+  assert.equal(
+    await getComboVisionBridgeDecision("cross-node-vision-16801"),
+    "no-vision",
+    "foreign public model metadata must not disable the Vision Bridge"
+  );
+});

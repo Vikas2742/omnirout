@@ -11,6 +11,7 @@
 import { BaseGuardrail, type GuardrailContext, type GuardrailResult } from "./base";
 import { getSettings as defaultGetSettings } from "@/lib/db/settings";
 import { getResolvedModelCapabilities } from "@/lib/modelCapabilities";
+import { getProviderNodePrefixSync } from "@/lib/db/providers/nodePrefix";
 import {
   extractImageParts,
   callVisionModel as defaultCallVisionModel,
@@ -62,7 +63,10 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
   if (
     caps.supportsVision === null &&
     provider?.startsWith("openai-compatible-") &&
-    targetModel.includes("/") &&
+    // Guard against a stale or cross-provider combo target: a public prefix
+    // belonging to a different node must never turn this internal node into
+    // a vision-capable target and bypass image protection.
+    getProviderNodePrefixSync(provider) === targetModel.split("/", 1)[0] &&
     getResolvedModelCapabilities(targetModel).supportsVision === true
   ) {
     return "vision";
