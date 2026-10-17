@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 // can get a Codex OAuth token revoked). MinIntervalThrottle serializes the actual
 // network calls and spaces each start >= minIntervalMs after the previous one.
 
-const { MinIntervalThrottle, resolveQuotaFetchMinIntervalMs } = await import(
+const { MinIntervalThrottle, resolveQuotaFetchMinIntervalMs, resolveQuotaFetchJitterMs } = await import(
   "../../open-sse/services/quotaFetchThrottle.ts"
 );
 
@@ -76,9 +76,32 @@ test("#6009 env resolver clamps to sane bounds and defaults", () => {
     250
   );
   assert.equal(resolveQuotaFetchMinIntervalMs({ OMNIROUTE_QUOTA_FETCH_MIN_INTERVAL_MS: "-5" }), 250);
-  // absurdly high → clamped to max 5000
+  // absurdly high → clamped to max 60000
   assert.equal(
     resolveQuotaFetchMinIntervalMs({ OMNIROUTE_QUOTA_FETCH_MIN_INTERVAL_MS: "999999" }),
-    5000
+    60000
   );
+});
+
+test("#16948 quota spacing supports bounded larger intervals and configurable jitter", () => {
+  assert.equal(resolveQuotaFetchMinIntervalMs({ OMNIROUTE_QUOTA_FETCH_MIN_INTERVAL_MS: "30000" }), 30000);
+  assert.equal(resolveQuotaFetchMinIntervalMs({ OMNIROUTE_QUOTA_FETCH_MIN_INTERVAL_MS: "999999" }), 60000);
+  assert.equal(resolveQuotaFetchJitterMs({}), 120);
+  assert.equal(resolveQuotaFetchJitterMs({ OMNIROUTE_QUOTA_FETCH_JITTER_MS: "0" }), 0);
+  assert.equal(resolveQuotaFetchJitterMs({ OMNIROUTE_QUOTA_FETCH_JITTER_MS: "30000" }), 30000);
+  assert.equal(resolveQuotaFetchJitterMs({ OMNIROUTE_QUOTA_FETCH_JITTER_MS: "999999" }), 60000);
+  assert.equal(resolveQuotaFetchJitterMs({ OMNIROUTE_QUOTA_FETCH_JITTER_MS: "NaN" }), 120);
+  assert.equal(resolveQuotaFetchJitterMs({ OMNIROUTE_QUOTA_FETCH_JITTER_MS: "-5" }), 120);
+});
+
+test("#16948 larger configured spacing is honored across simultaneous quota calls", async () => {
+  const clock = new FakeClock();
+  const throttle = new MinIntervalThrottle({
+    minIntervalMs: resolveQuotaFetchMinIntervalMs({ OMNIROUTE_QUOTA_FETCH_MIN_INTERVAL_MS: "10000" }),
+    jitterMs: resolveQuotaFetchJitterMs({ OMNIROUTE_QUOTA_FETCH_JITTER_MS: "10000" }),
+    clock,
+    rand: () => 0.5,
+  });
+  await Promise.all(Array.from({ length: 4 }, () => throttle.acquire()));
+  assert.deepEqual(clock.slept, [15000, 15000, 15000]);
 });
