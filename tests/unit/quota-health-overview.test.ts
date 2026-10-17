@@ -111,7 +111,7 @@ test("newer runtime testStatus wins rather than a permanent union of terminal hi
   );
   assert.equal(
     project(data(), { ...connection, testStatus: "banned", updatedAt: future(1000) }).status,
-    "ok"
+    "critical"
   );
 });
 test("fresh summary explicit deadline wins; remaining time is only a fallback", () => {
@@ -301,7 +301,7 @@ test("all terminal summary subtypes are used when connection has no status", () 
   for (const testStatus of ["banned", "expired", "credits_exhausted"]) {
     const a = project(
       data(),
-      { ...connection, runtimeObservedAt: future(1000) },
+      { ...connection, runtimeObservedAt: future(-1000) },
       { ...evidence, cooldown: { ...evidence.cooldown!, testStatus } }
     );
     assert.equal(a.status, "critical");

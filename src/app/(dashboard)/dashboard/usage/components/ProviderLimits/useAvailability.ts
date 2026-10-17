@@ -48,7 +48,6 @@ export function useAvailability(
     rows: Record<string, HealthCooldown>;
     observedAt?: string | number;
     receivedAt?: number;
-    failed?: boolean;
   }>({ rows: {} });
   const [policy, setPolicy] = useState<AvailabilityPolicy>();
   const [now, setNow] = useState(() => Date.now());
@@ -74,8 +73,7 @@ export function useAvailability(
         receivedAt: Date.now(),
       });
     } catch {
-      // Keep the snapshot for diagnostics, but failed reads must use connection evidence.
-      setSnapshot((previous) => ({ ...previous, failed: true }));
+      // Keep the last successful snapshot; freshness alone controls its usability.
     } finally {
       pending.current = false;
       setNow(Date.now());
@@ -126,7 +124,6 @@ export function useAvailability(
     };
   }, [refreshCooldowns]);
   const summaryFailed =
-    snapshot.failed === true ||
     snapshot.receivedAt === undefined ||
     now - snapshot.receivedAt > SUMMARY_FRESHNESS_MS ||
     now - parseRuntimeTimestamp(snapshot.observedAt) > SUMMARY_FRESHNESS_MS;

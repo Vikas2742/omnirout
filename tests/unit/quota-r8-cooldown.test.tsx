@@ -158,7 +158,7 @@ it.each(["failed", "expired", "missing-row"])(
     expect(displayAccount(result.current.accounts.a, Date.now()).kind).toBe("cd5");
   }
 );
-it("a failed poll immediately stops using even a recently successful summary", async () => {
+it("a failed poll keeps a fresh successful summary until it expires", async () => {
   let fail = false;
   setup(() => {
     if (fail) throw Error("synthetic failure");
@@ -171,6 +171,9 @@ it("a failed poll immediately stops using even a recently successful summary", a
   expect(displayAccount(result.current.accounts.a, Date.now()).kind).toBe("ok");
   fail = true;
   await flush(30000);
+  expect(result.current.summaryFailed).toBe(false);
+  expect(displayAccount(result.current.accounts.a, Date.now()).kind).toBe("ok");
+  await flush(61000);
   expect(result.current.summaryFailed).toBe(true);
   expect(displayAccount(result.current.accounts.a, Date.now()).kind).toBe("cd5");
 });

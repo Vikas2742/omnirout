@@ -21,10 +21,14 @@ export function runtimeCooldownEvidence(
   now = Date.now()
 ) {
   const summaryTime = parseRuntimeTimestamp(evidence.observedAt);
+  const connectionTime = parseRuntimeTimestamp(
+    connection.runtimeObservedAt || connection.updatedAt
+  );
   const row =
     !evidence.summaryFailed &&
     Number.isFinite(summaryTime) &&
     now - summaryTime <= SUMMARY_FRESHNESS_MS &&
+    !(connectionTime > summaryTime) &&
     evidence.cooldown?.id === connection.id
       ? evidence.cooldown
       : undefined;

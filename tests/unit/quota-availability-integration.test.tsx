@@ -85,7 +85,7 @@ function fixture(failCooldowns = false, malformed = false) {
       if (failCooldowns) throw new Error("synthetic read failure");
       return Response.json({
         connections: malformed ? [{ id: "available", status: "healthy" }] : rows,
-        generatedAt: fetchedAt,
+        generatedAt: new Date().toISOString(),
       });
     }
     throw new Error(`Unexpected request: ${url}`);

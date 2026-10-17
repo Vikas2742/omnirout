@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { useAvailability } from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/useAvailability";
+import { displayAccount } from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/availabilityDisplay";
 const fetchedAt = "2099-01-01T00:00:00Z";
 const connection = {
   id: "account@example.test",
@@ -19,7 +20,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-function fixture(cooling = false) {
+function fixture(cooling = false, durationMs = 2000) {
   vi.useFakeTimers();
   vi.setSystemTime(fetchedAt);
   vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
@@ -48,7 +49,7 @@ function fixture(cooling = false) {
             id: connection.id,
             status: cooling ? "cooling_down" : "healthy",
             cooldownRemainingMs: cooling
-              ? Math.max(0, Date.parse(fetchedAt) + 2000 - Date.now())
+              ? Math.max(0, Date.parse(fetchedAt) + durationMs - Date.now())
               : 0,
             lockouts: [],
           },
@@ -60,6 +61,9 @@ function fixture(cooling = false) {
     requests,
     fail: () => {
       fail = true;
+    },
+    succeed: () => {
+      fail = false;
     },
   };
 }
@@ -86,7 +90,7 @@ it("ticks locally and polls only cooldown GET every 30 seconds; policy only on e
   expect(result.current.accounts[connection.id].status).toBe("ok");
   expect(f.requests.filter((x) => x === "/api/resilience")).toHaveLength(1);
 });
-it("failed summary immediately falls back without losing green connection evidence", async () => {
+it("keeps last successful summary for 90s, then falls back without losing green connection evidence", async () => {
   const f = fixture();
   const { result } = renderHook(() => useAvailability(connections, quotaData, errors));
   await advance(0);
@@ -94,10 +98,44 @@ it("failed summary immediately falls back without losing green connection eviden
   await act(async () => {
     await result.current.refreshAvailability();
   });
-  expect(result.current.summaryFailed).toBe(true);
+  expect(result.current.summaryFailed).toBe(false);
   await advance(91_000);
   expect(result.current.summaryFailed).toBe(true);
   expect(result.current.accounts[connection.id].status).toBe("ok");
+});
+it("a successful read within 90s of failure replaces the summary without resetting cooldown fill or kind", async () => {
+  const f = fixture(true, 120_000);
+  const { result } = renderHook(() => useAvailability(connections, quotaData, errors));
+  await advance(0);
+  await advance(1);
+  vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+  await advance(30_000);
+  f.fail();
+  await act(async () => {
+    await result.current.refreshAvailability();
+  });
+  expect(result.current.summaryFailed).toBe(false);
+  const failed = displayAccount(result.current.accounts[connection.id], Date.now());
+  expect(failed.kind).toBe("cd5");
+  expect(failed.fill).toBeCloseTo(25, 1);
+  expect(failed.runtimeObservedAt).toBe("2099-01-01T00:00:00.000Z");
+  await advance(10_000);
+  const before = displayAccount(result.current.accounts[connection.id], Date.now());
+  f.succeed();
+  await act(async () => {
+    await result.current.refreshAvailability();
+  });
+  await advance(1);
+  const after = displayAccount(result.current.accounts[connection.id], Date.now());
+  expect(result.current.summaryFailed).toBe(false);
+  expect(after.runtimeObservedAt).toBe("2099-01-01T00:00:40.001Z");
+  expect(after.kind).toBe(before.kind);
+  expect(after.fill).toBeCloseTo(before.fill!, 2);
+  expect(after.recoverAt).toBe(before.recoverAt);
+  expect(after.recoverAt).toBe("2099-01-01T00:02:00.000Z");
+  await advance(60_000);
+  expect(result.current.summaryFailed).toBe(false);
+  expect(displayAccount(result.current.accounts[connection.id], Date.now()).kind).toBe("cd5");
 });
 it("does not poll hidden pages; returning visible immediately reads cooldowns only", async () => {
   const f = fixture();
