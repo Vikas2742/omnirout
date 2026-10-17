@@ -104,3 +104,43 @@ test("#16977 static registry effort tiers inherit base visibility too", async ()
   assert.ok(after.includes("deepseek-v4-pro"));
   assert.ok(after.includes("deepseek-v4-pro-high"));
 });
+
+test("#16977 only the explicitly allowed model survives catalog resync in precision builder", async () => {
+  const providerId = "huggingface";
+  const connection = await providers.createProviderConnection({
+    provider: providerId, authType: "apikey", name: "allowlist-precision-16977",
+    apiKey: "test-allowlist-16977", isActive: true, testStatus: "active",
+  });
+  const allowed = "vendor/only-this-16977";
+  const rejected = "vendor/brand-new-synced-16977";
+  try {
+    await models.replaceSyncedAvailableModelsForConnection(providerId, connection.id, [
+      { id: allowed, name: "Selected model", supportedThinkingEfforts: ["low", "high"] },
+    ]);
+    models.setModelVisibilityAllowlist(providerId, [allowed]);
+    let view = await getComboBuilderOptions();
+    let selected = view.providers.find((item) => item.providerId === providerId)?.models ?? [];
+    assert.ok(selected.some((model) => model.id === allowed));
+    assert.ok(selected.some((model) => model.id === `${allowed}-high`));
+
+    // Catalog changes must not turn an unrecognized raw ID into an admitted one.
+    await models.replaceSyncedAvailableModelsForConnection(providerId, connection.id, [
+      { id: allowed, name: "Selected model", supportedThinkingEfforts: ["low", "high"] },
+      { id: rejected, name: "Newly synchronized renamed model",
+        supportedThinkingEfforts: ["low", "high"] },
+    ]);
+    view = await getComboBuilderOptions();
+    selected = view.providers.find((item) => item.providerId === providerId)?.models ?? [];
+    assert.ok(selected.some((model) => model.id === allowed));
+    assert.ok(selected.some((model) => model.id === `${allowed}-low`));
+    assert.ok(!selected.some((model) => model.id === rejected));
+    assert.ok(!selected.some((model) => model.id === `${rejected}-high`));
+
+    models.setModelVisibilityAllowlist(providerId, []);
+    view = await getComboBuilderOptions();
+    selected = view.providers.find((item) => item.providerId === providerId)?.models ?? [];
+    assert.equal(selected.length, 0, "an explicit empty policy hides every model");
+  } finally {
+    models.setModelVisibilityAllowlist(providerId, null);
+  }
+});
