@@ -474,7 +474,7 @@ test("maps a per-URL failure inside HTTP 200 to a sanitized 422 that never cools
   assert.equal(result.status, 422);
   assert.ok(result.error!.includes("fetch_error"));
   assert.ok(result.error!.includes("403"));
-  assert.ok(!result.error!.includes(PAGE_URL));
+  assert.doesNotMatch(result.error!, /example\.com/); // no echo of the requested URL or host
   assert.equal(shouldCoolDownSearchConnection(result.status!, result.error!), false);
 });
 
