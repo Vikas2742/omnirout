@@ -12,6 +12,9 @@ import { BaseGuardrail, type GuardrailContext, type GuardrailResult } from "./ba
 import { getSettings as defaultGetSettings } from "@/lib/db/settings";
 import { getResolvedModelCapabilities } from "@/lib/modelCapabilities";
 import { getProviderNodePrefixSync } from "@/lib/db/providers/nodePrefix";
+import { getExactCustomModelVisionOverride } from "@/lib/db/models/customVisionOverride";
+import { getModelCompatVisionOverride } from "@/lib/db/models/compat";
+import { getSyncedAvailableModelVision } from "@/lib/db/models/syncedAvailableModelVision";
 import {
   extractImageParts,
   callVisionModel as defaultCallVisionModel,
@@ -53,30 +56,42 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
       : typeof s.provider === "string"
         ? s.provider
         : null;
-  // A combo's internal node identity is authoritative. If the requested
-  // public prefix belongs to a different node, even a positive public
-  // capability must not bless the internal node (or bypass the Vision Bridge).
-  if (
-    provider?.startsWith("openai-compatible-") &&
-    targetModel.includes("/") &&
-    getProviderNodePrefixSync(provider) !== targetModel.split("/", 1)[0]
-  ) {
-    return "non-vision";
+  // A slash is ambiguous here: "edge/acme-model" may use this node's public
+  // routing prefix, another node's prefix, OR be the raw upstream model id
+  // "vendor/model". Do not mistake every slash for a foreign node (#16801).
+  const isInternalNode = provider?.startsWith("openai-compatible-") === true;
+  const slash = targetModel.indexOf("/");
+  const routingPrefix = isInternalNode ? getProviderNodePrefixSync(provider!) : null;
+  const suppliedPrefix = slash > 0 ? targetModel.slice(0, slash) : null;
+  const isOwnPrefixedModel = Boolean(
+    suppliedPrefix &&
+    ((routingPrefix && suppliedPrefix.toLowerCase() === routingPrefix.toLowerCase()) ||
+      suppliedPrefix === provider)
+  );
+
+  if (isInternalNode && slash > 0 && !isOwnPrefixedModel) {
+    // Do not use the public-model fallback here: a foreign node's metadata
+    // could turn a non-vision internal target into a false positive. An exact,
+    // positive verdict owned by THIS provider is the only safe exception for
+    // a legitimate raw vendor/model ID. Explicit negatives remain authoritative.
+    const custom = getExactCustomModelVisionOverride(provider!, targetModel);
+    if (custom !== null) return custom ? "vision" : "non-vision";
+    const compat = getModelCompatVisionOverride(provider!, [targetModel]);
+    if (compat !== null) return compat ? "vision" : "non-vision";
+    return getSyncedAvailableModelVision(provider!, targetModel) === true
+      ? "vision"
+      : "non-vision";
   }
+
   const caps = getResolvedModelCapabilities({ provider, model: targetModel });
   if (caps.supportsVision === true) return "vision";
 
-  // Compatible-node steps can carry an internal connection ID alongside the
-  // public, prefix-scoped model name. Keep an explicit negative verdict from
-  // that exact connection, but recover missing capability rows through the
-  // same public-model resolution used by direct image requests (#16801).
+  // Only a missing verdict for THIS node's own public prefix can fall back
+  // to the direct-request resolver. Never override an explicit false.
   if (
     caps.supportsVision === null &&
-    provider?.startsWith("openai-compatible-") &&
-    // Guard against a stale or cross-provider combo target: a public prefix
-    // belonging to a different node must never turn this internal node into
-    // a vision-capable target and bypass image protection.
-    getProviderNodePrefixSync(provider) === targetModel.split("/", 1)[0] &&
+    isInternalNode &&
+    isOwnPrefixedModel &&
     getResolvedModelCapabilities(targetModel).supportsVision === true
   ) {
     return "vision";
