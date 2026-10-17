@@ -68,8 +68,12 @@ export class MinIntervalThrottle {
       await prev;
       // The chain is single-file here, so this read cannot race another acquire.
       const now = this.clock.now();
-      const startAt =
-        this.lastStart === null ? now : this.lastStart + this.minIntervalMs + this.nextJitter();
+      // After an idle period, restart the spacing window at the actual
+      // acquisition time. Otherwise a stale scheduled timestamp permits the
+      // next burst of requests to pass without the configured interval.
+      const startAt = this.lastStart === null
+        ? now
+        : Math.max(now, this.lastStart + this.minIntervalMs + this.nextJitter());
       this.lastStart = startAt;
       const wait = startAt - now;
       if (wait > 0) await this.clock.sleep(wait);
