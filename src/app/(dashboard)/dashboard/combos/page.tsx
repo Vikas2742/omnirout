@@ -2545,12 +2545,13 @@ function ComboFormModal({
   useEffect(() => {
     if (!isOpen) return;
     const unsubscribe = subscribeModelVisibilityChanges(() => { void fetchModalData(); });
+    // Keep the invalidation inside an event callback: this is a request
+    // generation counter, not a DOM ref to snapshot during effect cleanup.
+    const invalidatePendingLoads = () => { builderFetchRevisionRef.current += 1; };
     return () => {
-      ++builderFetchRevisionRef.current;
+      invalidatePendingLoads();
       unsubscribe();
     };
-    // Visibility updates are received through events, not a render dependency.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {
