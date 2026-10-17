@@ -4,7 +4,7 @@
 
 ---
 
-> **Trumpai**: Įdiekite → Prijunkite reikalavimus atitinkantį teikėją → Nukreipkite IDE į OmniRoute. Baigta.
+> **Trumpai**: Įdiekite → Prijunkite tinkamą teikėją → Nukreipkite savo IDE į OmniRoute. Atlikta.
 
 ---
 
@@ -47,11 +47,11 @@ OmniRoute paleidžiama adresu `http://localhost:20128`. Valdymo skydelis atidaro
 
 ---
 
-## 3 veiksmas: Prijunkite reikalavimus atitinkantį teikėją
+## 3 veiksmas: prijunkite tinkamą teikėją
 
-Pasirinkite teikėją, kurio sąlygos ir kvotos atitinka jūsų poreikius. Skiltyje **Valdymo skydelis → Teikėjai** prijunkite savo paskyrą arba API raktą ir išbandykite ryšį. Nemokama prieiga ir galimybė naudotis be rakto negarantuojamos.
+Pasirinkite teikėją, kurio sąlygos ir kvota atitinka jūsų poreikius. Skiltyje **Dashboard → Providers** prijunkite savo paskyrą arba API raktą, tada patikrinkite ryšį. Nemokama prieiga ir galimybė naudotis be rakto nėra garantuojamos.
 
-`auto` pagal numatytąją nuostatą neįtraukia teikėjų, pažymėtų `tos: avoid`, įskaitant Kiro ir OpenCode Free. Paskyros prijungimas šios politikos nekeičia. Įtraukimo parinktis skiltyje **Valdymo skydelis → Deriniai** taikoma visiems automatiniams deriniams. Prieš rinkdamiesi teikėją perskaitykite [Nemokamų planų vadovas](./FREE-TIERS-GUIDE.md).
+Pagal numatytuosius nustatymus `auto` neįtraukia teikėjų, pažymėtų `tos: avoid`, įskaitant Kiro ir OpenCode Free. Paskyros prijungimas šios politikos nekeičia. Skiltyje **Dashboard → Combos** pateiktas sutikimo nustatymas taikomas visiems automatiniams deriniams. Prieš pasirinkdami teikėją, peržiūrėkite [nemokamų planų vadovą](./FREE-TIERS-GUIDE.md).
 
 ---
 
@@ -130,22 +130,22 @@ Užklausos informaciją galite peržiūrėti kairėje šoninėje juostoje spuste
 
 ## Kas toliau?
 
-- **[Auto-Combo vadovas](./AUTO-COMBO-GUIDE.md)** — leiskite OmniRoute parinkti jums tinkamiausią DI
-- **[Teikėjų vadovas](./PROVIDERS-GUIDE.md)** — prijunkite daugiau teikėjų (nemokamų ir mokamų)
+- **[Automatinio derinio vadovas](./AUTO-COMBO-GUIDE.md)** — Leiskite „OmniRoute“ parinkti jums tinkamiausią DI
+- **[Teikėjų vadovas](./PROVIDERS-GUIDE.md)** — Prijunkite daugiau teikėjų (nemokamų ir mokamų)
 - **[Nemokamų planų vadovas](./FREE-TIERS-GUIDE.md)** — Peržiūrėkite teikėjų sąlygas ir nemokamų planų apribojimus
-- **[Trikčių šalinimas](../guides/TROUBLESHOOTING.md)** — išspręskite dažniausiai pasitaikančias problemas
+- **[Trikčių šalinimas](../guides/TROUBLESHOOTING.md)** — Išspręskite dažniausiai pasitaikančias problemas
 
 ---
 
-## Dažniausi klausimai
+## Dažniausiai užduodami klausimai
 
 ### „Ar man reikia API rakto?“
 
-OmniRoute API raktas autentifikuoja jūsų įrankius. Išorinės paslaugos prisijungimo duomenys priklauso nuo teikėjo: kai kurie reikalauja API rakto arba prisijungimo prie paskyros. Nemokama prieiga negarantuojama.
+OmniRoute API raktas autentifikuoja jūsų įrankius. Išorinių paslaugų prisijungimo duomenys priklauso nuo teikėjo: kai kuriems reikia API rakto arba prisijungimo prie paskyros. Nemokama prieiga negarantuojama.
 
 ### „Kas yra `auto`?“
 
-`auto` nurodo OmniRoute automatiškai parinkti tinkamiausią teikėją kiekvienai užklausai. Atsižvelgiama į greitį, kainą, kokybę ir pasiekiamumą. Išsamesnės informacijos rasite [Auto-Combo vadove](./AUTO-COMBO-GUIDE.md).
+`auto` nurodo OmniRoute automatiškai parinkti geriausią teikėją kiekvienai užklausai. Atsižvelgiama į spartą, kainą, kokybę ir pasiekiamumą. Daugiau informacijos rasite [automatinio derinio vadove](./AUTO-COMBO-GUIDE.md).
 
 ### „Kiek tai kainuoja?“
 
@@ -153,11 +153,11 @@ Pati OmniRoute yra **nemokama ir atvirojo kodo**. Mokate tik už naudojamus teik
 
 ### „Ar galiu ją naudoti su Claude Code / Cursor / Copilot?“
 
-**Taip!** OmniRoute veikia su bet kuriuo įrankiu, palaikančiu OpenAI formatą. Tiesiog nustatykite bazinį URL į `http://localhost:20128/v1`. Konkrečias sąrankos instrukcijas rasite [CLI įrankių vadove](../reference/CLI-TOOLS.md).
+**Taip!** OmniRoute veikia su bet kuriuo OpenAI formatą palaikančiu įrankiu. Tiesiog nustatykite bazinį URL į `http://localhost:20128/v1`. Konkrečias sąrankos instrukcijas rasite [CLI įrankių vadove](../reference/CLI-TOOLS.md).
 
-### „Kas nutiks, jei teikėjas nustos veikti?“
+### „Kas nutiks, jei teikėjo paslauga sutriks?“
 
-OmniRoute automatiškai praleidžia neveikiančius teikėjus ir bando kitą. Jums nieko daryti nereikia. Išsamesnės informacijos rasite [Auto-Combo vadove](./AUTO-COMBO-GUIDE.md).
+OmniRoute automatiškai praleidžia neveikiančius teikėjus ir išbando kitą. Jums nereikia nieko daryti. Daugiau informacijos rasite [automatinio derinio vadove](./AUTO-COMBO-GUIDE.md).
 
 ---
 

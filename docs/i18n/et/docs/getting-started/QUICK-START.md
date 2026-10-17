@@ -4,7 +4,7 @@
 
 ---
 
-> **Lühidalt**: Paigalda → Ühenda sobiv teenusepakkuja → Suuna IDE OmniRoute'i. Valmis.
+> **TL;DR**: Installi → Ühenda sobiv teenusepakkuja → Suuna oma IDE OmniRoute'ile. Valmis.
 
 ---
 
@@ -47,11 +47,11 @@ OmniRoute käivitub aadressil `http://localhost:20128`. Juhtpaneel avaneb automa
 
 ---
 
-## 3. samm: Ühenda sobiv teenusepakkuja
+## 3. samm: sobiva teenusepakkuja ühendamine
 
-Vali teenusepakkuja, kelle tingimused ja kvoodid sobivad sinu vajadustega. Ühenda **Juhtpaneel → Teenusepakkujad** all oma konto või API-võti ja testi ühendust. Tasuta ligipääs ja võtmeta kasutamise võimalus ei ole tagatud.
+Valige teenusepakkuja, kelle tingimused ja kvoot vastavad teie vajadustele. Jaotises **Dashboard → Providers** ühendage oma konto või API-võti ning seejärel testige ühendust. Tasuta juurdepääs ja ilma võtmeta kasutamise võimalus ei ole garanteeritud.
 
-`auto` jätab vaikimisi välja teenusepakkujad märkega `tos: avoid`, sealhulgas Kiro ja OpenCode Free. Konto ühendamine seda poliitikat ei muuda. **Juhtpaneel → Kombod** all tehtud kaasamisvalik kehtib kõigi automaatsete kombode kohta. Enne teenusepakkuja valimist loe [Tasuta pakettide juhend](./FREE-TIERS-GUIDE.md).
+`auto` välistab vaikimisi teenusepakkujad, millel on märge `tos: avoid`, sealhulgas Kiro ja OpenCode Free. Konto ühendamine seda reeglit ei muuda. Jaotises **Dashboard → Combos** antud nõusolek kehtib kõigile automaatsetele kombinatsioonidele. Enne teenusepakkuja valimist tutvuge juhendiga [Tasuta kasutustasemete juhend](./FREE-TIERS-GUIDE.md).
 
 ---
 
@@ -128,12 +128,12 @@ Päringu üksikasju saad vaadata, klõpsates vasakul külgribal valikut [Jälgim
 
 ---
 
-## Mis järgmiseks?
+## Mis saab edasi?
 
-- **[Auto-Combo juhend](./AUTO-COMBO-GUIDE.md)** — lase OmniRoute'il valida enda jaoks parim tehisintellekt
-- **[Teenusepakkujate juhend](./PROVIDERS-GUIDE.md)** — ühenda rohkem teenusepakkujaid (tasuta ja tasulisi)
-- **[Tasuta pakettide juhend](./FREE-TIERS-GUIDE.md)** — Vaata teenusepakkujate tingimusi ja tasuta pakettide piiranguid
-- **[Tõrkeotsing](../guides/TROUBLESHOOTING.md)** — lahenda levinud probleemid
+- **[Automaatse kombineerimise juhend](./AUTO-COMBO-GUIDE.md)** — Las OmniRoute valib teile parima tehisintellekti
+- **[Teenusepakkujate juhend](./PROVIDERS-GUIDE.md)** — Ühendage rohkem teenusepakkujaid (tasuta ja tasulisi)
+- **[Tasuta pakettide juhend](./FREE-TIERS-GUIDE.md)** — Vaadake üle teenusepakkujate tingimused ja tasuta pakettide piirangud
+- **[Tõrkeotsing](../guides/TROUBLESHOOTING.md)** — Lahendage levinud probleemid
 
 ---
 
@@ -141,23 +141,23 @@ Päringu üksikasju saad vaadata, klõpsates vasakul külgribal valikut [Jälgim
 
 ### „Kas mul on vaja API-võtit?”
 
-OmniRoute'i API-võti autendib sinu tööriistu. Välise teenuse pääsuandmed sõltuvad teenusepakkujast: mõni nõuab API-võtit või kontole sisselogimist. Tasuta ligipääs ei ole tagatud.
+OmniRoute'i API-võti autendib teie tööriistad. Välisteenuse identimisteave sõltub teenusepakkujast: mõned nõuavad API-võtit või kontole sisselogimist. Tasuta juurdepääs pole garanteeritud.
 
 ### „Mis on `auto`?”
 
-`auto` käsib OmniRoute'il valida iga päringu jaoks automaatselt parima teenusepakkuja. See võtab arvesse kiirust, hinda, kvaliteeti ja saadavust. Üksikasju vaata [Auto-Combo juhendist](./AUTO-COMBO-GUIDE.md).
+`auto` käsib OmniRoute'il valida iga päringu jaoks automaatselt parima teenusepakkuja. See võtab arvesse kiirust, hinda, kvaliteeti ja saadavust. Üksikasju vaadake [Auto-Combo juhendist](./AUTO-COMBO-GUIDE.md).
 
 ### „Kui palju see maksab?”
 
-OmniRoute ise on **tasuta ja avatud lähtekoodiga**. Maksad ainult kasutatavate teenusepakkujate eest. Paljudel teenusepakkujatel on tasuta paketid — vaata [tasuta pakettide juhendit](./FREE-TIERS-GUIDE.md).
+OmniRoute ise on **tasuta ja avatud lähtekoodiga**. Maksate ainult kasutatavate teenusepakkujate eest. Paljud teenusepakkujad pakuvad tasuta kasutustasemeid — vaadake [tasuta kasutustasemete juhendit](./FREE-TIERS-GUIDE.md).
 
-### „Kas saan seda kasutada koos Claude Code'i / Cursori / Copilotiga?”
+### „Kas saan seda kasutada Claude Code'i / Cursori / Copilotiga?”
 
-**Jah!** OmniRoute töötab kõigi tööriistadega, mis toetavad OpenAI vormingut. Määra baasaadressiks lihtsalt `http://localhost:20128/v1`. Konkreetseid seadistusjuhiseid vaata [CLI-tööriistade juhendist](../reference/CLI-TOOLS.md).
+**Jah!** OmniRoute töötab kõigi tööriistadega, mis toetavad OpenAI vormingut. Määrake lihtsalt baas-URL-iks `http://localhost:20128/v1`. Täpsemad seadistusjuhised leiate [CLI-tööriistade juhendist](../reference/CLI-TOOLS.md).
 
-### „Mis saab siis, kui teenusepakkuja lakkab töötamast?”
+### „Mis juhtub, kui teenusepakkuja muutub kättesaamatuks?”
 
-OmniRoute jätab mittetöötavad teenusepakkujad automaatselt vahele ja proovib järgmist. Sa ei pea midagi tegema. Üksikasju vaata [Auto-Combo juhendist](./AUTO-COMBO-GUIDE.md).
+OmniRoute jätab ebaõnnestunud teenusepakkujad automaatselt vahele ja proovib järgmist. Te ei pea midagi tegema. Üksikasju vaadake [Auto-Combo juhendist](./AUTO-COMBO-GUIDE.md).
 
 ---
 

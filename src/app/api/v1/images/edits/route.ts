@@ -213,7 +213,6 @@ function editAccounting(
   return { ...base, endpoint: "/v1/images/edits", provider, model, credentials, comboStrategy };
 }
 
-
 async function handleSyntxEditRequest(params: {
   parsed: ReturnType<typeof parseImageModel>;
   providerConfig: NonNullable<ReturnType<typeof getImageProvider>>;
@@ -1028,6 +1027,8 @@ async function postHandler(request: Request, _context?: unknown) {
       provider: parsed.provider,
       requestedModel: resolvedModel,
       credentials,
+      // GHSA-3w2r: account fallback stays inside the key's connection scope.
+      allowedConnections,
       execute: (creds) =>
         handleImageGeneration({
           body: {

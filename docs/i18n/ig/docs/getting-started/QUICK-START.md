@@ -4,7 +4,7 @@
 
 ---
 
-> **Na nkenke**: Wụnye → Jikọọ onye na-eweta ọrụ tozuru etozu → Tụgharịa IDE gị na OmniRoute. Emechala.
+> **TL;DR**: Wụnye → Jikọọ onye na-eweta ọrụ tozuru etozu → Tụnye IDE gị aka na OmniRoute. Emechara.
 
 ---
 
@@ -47,11 +47,11 @@ OmniRoute na-amalite na `http://localhost:20128`. Dashboard ga-emeghe na-akpagh�
 
 ---
 
-## Nzọụkwụ 3: Jikọọ Onye Na-eweta Ọrụ Tozuru Etozu
+## Nzọụkwụ 3: Jikọọ Onye Na-enye Ọrụ Tozuru Etوزu
 
-Họrọ onye na-eweta ọrụ nke usoro na oke ojiji ya dabara mkpa gị. Na **Dashboard → Ndị Na-eweta Ọrụ**, jikọọ akaụntụ ma ọ bụ igodo API nke gị, wee nwalee njikọ ahụ. A naghị ekwe nkwa ịnweta ọrụ n'efu ma ọ bụ iji ya na-enweghị igodo.
+Họrọ onye na-enye ọrụ nke usoro ojiji na oke ojiji ya dabara na mkpa gị. Na **Ogwe njikwa → Ndị na-enye ọrụ**, jikọọ akaụntụ nke gị ma ọ bụ igodo API, wee nwalee njikọ ahụ. Anaghị ekwe nkwa na ohere efu ma ọ bụ nnweta na-enweghị igodo ga-adị.
 
-Na ntọala mbụ, `auto` na-ewepụ ndị na-eweta ọrụ nwere akara `tos: avoid`, gụnyere Kiro na OpenCode Free. Ijikọ akaụntụ anaghị agbanwe iwu a. Nhọrọ ikwenye ka e tinye ha na **Dashboard → Combo** metụtara combo akpaka niile. Gụọ [Ntuziaka Free Tiers](./FREE-TIERS-GUIDE.md) tupu ịhọrọ onye na-eweta ọrụ.
+`auto` anaghị etinye ndị na-enye ọrụ akara ha bụ `tos: avoid`, gụnyere Kiro na OpenCode Free, na ndabara. Ijikọ akaụntụ anaghị agbanwe iwu ahụ. Nhọrọ isonye dị na **Ogwe njikwa → Ngwakọta** na-emetụta ngwakọta auto niile. Nyochaa [Ntuziaka Ọkwa Ojiji Efufụ](./FREE-TIERS-GUIDE.md) tupu ịhọrọ onye na-enye ọrụ.
 
 ---
 
@@ -130,34 +130,34 @@ Otu command a na-amalitekwa CLI ndị ọzọ site na generic launcher — `omni
 
 ## Gịnị Na-esote?
 
-- **[Ntuziaka Auto-Combo](./AUTO-COMBO-GUIDE.md)** — Kwe ka OmniRoute họrọ AI kacha mma maka gị
-- **[Ntuziaka Ndị Na-eweta Ọrụ](./PROVIDERS-GUIDE.md)** — Jikọọ ndị na-eweta ọrụ ndị ọzọ (efu na ndị a na-akwụ ụgwọ)
-- **[Ntuziaka Free Tiers](./FREE-TIERS-GUIDE.md)** — Lelee usoro ndị na-eweta ọrụ na oke atụmatụ efu
-- **[Nchọpụta na Ndozi Nsogbu](../guides/TROUBLESHOOTING.md)** — Dozie nsogbu ndị a na-ahụkarị
+- **[Nduzi Auto-Combo](./AUTO-COMBO-GUIDE.md)** — Hapụ OmniRoute ka ọ họrọ AI kacha mma maka gị
+- **[Nduzi Ndị Na-enye Ọrụ](./PROVIDERS-GUIDE.md)** — Jikọọ ndị ọzọ na-enye ọrụ (n'efu na nke a na-akwụ ụgwọ)
+- **[Nduzi Ọkwa N'efu](./FREE-TIERS-GUIDE.md)** — Nyochaa usoro ndị na-enye ọrụ na oke ọkwa n'efu
+- **[Ịdozi Nsogbu](../guides/TROUBLESHOOTING.md)** — Dozie nsogbu ndị a na-ahụkarị
 
 ---
 
 ## Ajụjụ Ndị A Na-ajụkarị
 
-### "Achọrọ m API key?"
+### "Achọrọ m igodo API?"
 
-Igodo API nke OmniRoute na-akwado njirimara ngwaọrụ gị. Ozi nbanye nke ọrụ isi na-adabere n'onye na-eweta ya: ụfọdụ chọrọ igodo API ma ọ bụ ịbanye n'akaụntụ. A naghị ekwe nkwa ịnweta ọrụ n'efu.
+Igodo API nke OmniRoute na-eme ka ngwaọrụ gị nwee nkwenye njirimara. Ozi nzere upstream dabere n’onye na-enye ọrụ: ụfọdụ chọrọ igodo API ma ọ bụ ịbanye na akaụntụ. Anaghị ekwe nkwa nnweta n’efu.
 
 ### "Gịnị bụ `auto`?"
 
-`auto` na-agwa OmniRoute ka ọ họrọ onye na-eweta ọrụ kacha mma maka arịrịọ ọ bụla na-akpaghị aka. Ọ na-atụle ọsọ, ọnụahịa, ogo, na ịdị adị. Lee [Ntuziaka Auto-Combo](./AUTO-COMBO-GUIDE.md) maka nkọwa.
+`auto` na-agwa OmniRoute ka ọ họrọ onye na-enye ọrụ kacha mma maka arịrịọ ọ bụla na-akpaghị aka. Ọ na-atụle ọsọ, ọnụ ahịa, ogo, na nnweta. Lee [Ntuziaka Auto-Combo](./AUTO-COMBO-GUIDE.md) maka nkọwa.
 
 ### "Ego ole ka ọ na-efu?"
 
-OmniRoute n'onwe ya bụ **n'efu ma bụrụ open-source**. Naanị ndị na-eweta ọrụ ị na-eji ka ị ga-akwụ ụgwọ maka ha. Ọtụtụ ndị na-eweta ọrụ nwere free tiers — lee [Ntuziaka Free Tiers](./FREE-TIERS-GUIDE.md).
+OmniRoute n’onwe ya bụ **n’efu ma bụrụ sọftụwia mepere emepe**. Naanị ihe ị na-akwụ ụgwọ ya bụ ndị na-enye ọrụ ị na-eji. Ọtụtụ ndị na-enye ọrụ nwere ọkwa ojiji n’efu — lee [Ntuziaka Ọkwa Ojiji N’efu](./FREE-TIERS-GUIDE.md).
 
 ### "Enwere m ike iji ya na Claude Code / Cursor / Copilot?"
 
-**Ee!** OmniRoute na-arụ ọrụ na ngwaọrụ ọ bụla na-akwado usoro OpenAI. Naanị hazie base URL ka ọ bụrụ `http://localhost:20128/v1`. Lee [Ntuziaka Ngwaọrụ CLI](../reference/CLI-TOOLS.md) maka ntuziaka nhazi akọwapụtara.
+**Ee!** OmniRoute na-arụ ọrụ na ngwaọrụ ọ bụla na-akwado usoro OpenAI. Naanị tọọ URL ntọala ka ọ bụrụ `http://localhost:20128/v1`. Lee [Ntuziaka Ngwaọrụ CLI](../reference/CLI-TOOLS.md) maka ntuziaka nhazi kpọmkwem.
 
-### "Gịnị ma ọ bụrụ na onye na-eweta ọrụ akwụsị ịrụ ọrụ?"
+### "Gịnị ga-eme ma ọ bụrụ na onye na-enye ọrụ akwụsị ịrụ ọrụ?"
 
-OmniRoute na-awụfe ndị na-eweta ọrụ dara ada na-akpaghị aka wee nwalee nke na-esote. Ọ dịghị ihe ị ga-eme. Lee [Ntuziaka Auto-Combo](./AUTO-COMBO-GUIDE.md) maka nkọwa.
+OmniRoute na-awụfe ndị na-enye ọrụ dara ada na-akpaghị aka ma nwaa nke na-esote. Ọ dịghị ihe ị ga-eme. Lee [Ntuziaka Auto-Combo](./AUTO-COMBO-GUIDE.md) maka nkọwa.
 
 ---
 

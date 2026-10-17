@@ -4,7 +4,7 @@
 
 ---
 
-> **Ní ṣókí**: Fi sori ẹrọ → So olùpèsè tó yẹ pọ̀ → Darí IDE rẹ sí OmniRoute. Ó parí.
+> **Ní ṣókí**: Fi sí ẹ̀rọ → So olupèsè tó yẹ pọ̀ → Darí IDE rẹ sí OmniRoute. Ó ti parí.
 
 ---
 
@@ -47,11 +47,11 @@ OmniRoute máa bẹ̀rẹ̀ ní `http://localhost:20128`. Pátákó ìdarí ná�
 
 ---
 
-## Ìgbésẹ̀ 3: So Olùpèsè Tó Yẹ Pọ̀
+## Ìgbésẹ̀ 3: So Olùpèsè Tó Tóótun Pọ̀
 
-Yan olùpèsè tí àwọn àdéhùn àti ìpín lílò rẹ bá àìní rẹ mu. Ní **Pátákó Ìṣàkóso → Àwọn Olùpèsè**, so àkọọlẹ̀ tàbí kọ́kọ́rọ́ API tirẹ pọ̀, kí o sì dán ìsopọ̀ náà wò. A kò ṣe ìdánilójú ìwọlé ọ̀fẹ́ tàbí lílò láìsí kọ́kọ́rọ́.
+Yan olùpèsè kan tí àwọn òfin àti iye lílò rẹ̀ bá àwọn àìní rẹ mu. Nínú **Dashboard → Providers**, so àkọọ́lẹ̀ tirẹ tàbí kọ́kọ́rọ́ API pọ̀, lẹ́yìn náà dán àsopọ̀ náà wò. A kò ṣe ìdánilójú pé ìráyè ọ̀fẹ́ àti lílò láìsí kọ́kọ́rọ́ yóò wà.
 
-Ní ètò àkọ́kọ́, `auto` yọ àwọn olùpèsè tí a samisi `tos: avoid` kúrò, pẹ̀lú Kiro àti OpenCode Free. Sísopọ̀ àkọọlẹ̀ kò yí ìlànà yìí padà. Àṣàyàn ìfọwọ́sí láti fi wọ́n kún un ní **Pátákó Ìṣàkóso → Àwọn Combo** kan gbogbo combo aládàáṣiṣẹ́. Ka [Ìtọ́sọ́nà Àwọn Ìpele Ọ̀fẹ́](./FREE-TIERS-GUIDE.md) kí o tó yan olùpèsè.
+`auto` kì í lo àwọn olùpèsè tí a sàmì sí `tos: avoid`, títí kan Kiro àti OpenCode Free, nípa àìyípadà. Sísopọ̀ àkọọ́lẹ̀ kan kò yí ìlànà yẹn padà. Ìforúkọsílẹ̀ àṣàyàn nínú **Dashboard → Combos** kan gbogbo àwọn àkójọpọ̀ auto. Ṣàyẹ̀wò [Ìtọ́sọ́nà Àwọn Ìpele Ọ̀fẹ́](./FREE-TIERS-GUIDE.md) kí o tó yan olùpèsè kan.
 
 ---
 
@@ -130,34 +130,34 @@ O lè rí àwọn kúlẹ̀kúlẹ̀ ìbéèrè náà nípa títẹ [Àbójútó
 
 ## Kí Ló Kàn?
 
-- **[Ìtọ́sọ́nà Auto-Combo](./AUTO-COMBO-GUIDE.md)** — Jẹ́ kí OmniRoute yan AI tó dára jù lọ fún ọ
-- **[Ìtọ́sọ́nà Àwọn Olùpèsè](./PROVIDERS-GUIDE.md)** — So àwọn olùpèsè sí i pọ̀ (ọ̀fẹ́ àti ti owó)
-- **[Ìtọ́sọ́nà Àwọn Ìpele Ọ̀fẹ́](./FREE-TIERS-GUIDE.md)** — Ṣàyẹ̀wò àdéhùn àwọn olùpèsè àti ààlà àwọn ètò ọ̀fẹ́
-- **[Ṣíṣe Àwárí Àṣìṣe](../guides/TROUBLESHOOTING.md)** — Ṣàtúnṣe àwọn ìṣòro tó wọ́pọ̀
+- **[Ìtọ́nisọ́nà Auto-Combo](./AUTO-COMBO-GUIDE.md)** — Jẹ́ kí OmniRoute yan AI tó dára jù lọ fún ọ
+- **[Ìtọ́nisọ́nà Àwọn Olùpèsè](./PROVIDERS-GUIDE.md)** — So àwọn olùpèsè míì pọ̀ (ọ̀fẹ́ àti èyí tí a ń sanwó fún)
+- **[Ìtọ́nisọ́nà Àwọn Ìpele Ọ̀fẹ́](./FREE-TIERS-GUIDE.md)** — Ṣàyẹ̀wò àwọn òfin olùpèsè àti àwọn ààlà ìpele ọ̀fẹ́
+- **[Yíyanjú Ìṣòro](../guides/TROUBLESHOOTING.md)** — Ṣàtúnṣe àwọn ìṣòro tó wọ́pọ̀
 
 ---
 
-## Àwọn Ìbéèrè Tó Wọ́pọ̀
+## Àwọn Ìbéèrè Tí A Máa Ń Béèrè
 
 ### "Ṣé mo nílò kọ́kọ́rọ́ API?"
 
-Kọ́kọ́rọ́ API OmniRoute ń jẹ́rìí àwọn irinṣẹ́ rẹ. Àwọn ẹ̀rí ìwọlé iṣẹ́ orísun dá lórí olùpèsè: àwọn kan nílò kọ́kọ́rọ́ API tàbí wíwọlé sí àkọọlẹ̀. A kò ṣe ìdánilójú ìwọlé ọ̀fẹ́.
+Kọ́kọ́rọ́ API OmniRoute ń jẹ́rìí ìdánimọ̀ àwọn irinṣẹ́ rẹ. Àwọn ẹ̀rí ìwọlé upstream sinmi lórí olùpèsè: àwọn kan nílò kọ́kọ́rọ́ API tàbí ìwọlé sí àkọọ́lẹ̀. A kò ṣe ìdánilójú pé ìráyè ọ̀fẹ́ yóò wà.
 
 ### "Kí ni `auto`?"
 
-`auto` sọ fún OmniRoute láti yan olùpèsè tó dára jù lọ fún ìbéèrè kọ̀ọ̀kan láìfọwọ́ṣe. Ó máa ń gbé iyára, iye owó, dídára, àti wíwà-lárọ̀ọ́wọ́tó yẹ̀wò. Wo [Ìtọ́sọ́nà Auto-Combo](./AUTO-COMBO-GUIDE.md) fún àwọn kúlẹ̀kúlẹ̀.
+`auto` ń sọ fún OmniRoute láti yan olùpèsè tó dára jù lọ fún ìbéèrè kọ̀ọ̀kan láìfọwọ́ṣe. Ó máa ń gbé iyára, iye owó, dídára, àti wíwà nílẹ̀ yẹ̀ wò. Wo [Ìtọ́sọ́nà Auto-Combo](./AUTO-COMBO-GUIDE.md) fún àlàyé.
 
-### "Ẹ̀lówó ni ó ń ná?"
+### "Iye wo ni ó ń ná?"
 
-OmniRoute fúnra rẹ̀ jẹ́ **ọ̀fẹ́ àti open-source**. Àwọn olùpèsè tí o lò nìkan ni o máa san owó fún. Ọ̀pọ̀ olùpèsè ní àwọn ìpele ọ̀fẹ́ — wo [Ìtọ́sọ́nà Àwọn Ìpele Ọ̀fẹ́](./FREE-TIERS-GUIDE.md).
+OmniRoute fúnra rẹ̀ jẹ́ **ọ̀fẹ́ àti orísun-ṣíṣí**. Àwọn olùpèsè tí o bá lò nìkan ni o máa sanwó fún. Ọ̀pọ̀ olùpèsè ní àwọn ìpele ọ̀fẹ́ — wo [Ìtọ́sọ́nà Àwọn Ìpele Ọ̀fẹ́](./FREE-TIERS-GUIDE.md).
 
 ### "Ṣé mo lè lò ó pẹ̀lú Claude Code / Cursor / Copilot?"
 
-**Bẹ́ẹ̀ ni!** OmniRoute ń ṣiṣẹ́ pẹ̀lú irinṣẹ́ èyíkéyìí tó ṣe àtìlẹ́yìn fún format OpenAI. Kàn ṣètò base URL sí `http://localhost:20128/v1`. Wo [Ìtọ́sọ́nà Àwọn Irinṣẹ́ CLI](../reference/CLI-TOOLS.md) fún àwọn ìtọ́nisọ́nà ìṣètò pàtó.
+**Bẹ́ẹ̀ ni!** OmniRoute ń ṣiṣẹ́ pẹ̀lú irinṣẹ́ èyíkéyìí tó ṣe àtìlẹ́yìn fún ọna kika OpenAI. Kàn ṣètò URL ìpìlẹ̀ sí `http://localhost:20128/v1`. Wo [Ìtọ́sọ́nà Àwọn Irinṣẹ́ CLI](../reference/CLI-TOOLS.md) fún àwọn ìlànà ìṣètò pàtó.
 
-### "Kí ló máa ṣẹlẹ̀ tí olùpèsè kan bá dáwọ́ iṣẹ́ dúró?"
+### "Kí ló máa ṣẹlẹ̀ tí olùpèsè kan kò bá ṣiṣẹ́?"
 
-OmniRoute máa fo àwọn olùpèsè tí ó kùnà kọjá láìfọwọ́ṣe, yóò sì gbìyànjú èyí tó kàn. O kò nílò láti ṣe ohunkóhun. Wo [Ìtọ́sọ́nà Auto-Combo](./AUTO-COMBO-GUIDE.md) fún àwọn kúlẹ̀kúlẹ̀.
+OmniRoute máa ń fo àwọn olùpèsè tí ó kùnà láìfọwọ́ṣe, yóò sì gbìyànjú èyí tó kàn. O kò nílò láti ṣe ohunkóhun. Wo [Ìtọ́sọ́nà Auto-Combo](./AUTO-COMBO-GUIDE.md) fún àlàyé.
 
 ---
 

@@ -4,7 +4,7 @@
 
 ---
 
-> **Resumo**: Instale → Conecte um provedor elegível → Aponte sua IDE para o OmniRoute. Pronto.
+> **Resumindo**: Instale → Conecte um provedor qualificado → Aponte seu IDE para o OmniRoute. Pronto.
 
 ---
 
@@ -47,11 +47,11 @@ O OmniRoute é iniciado em `http://localhost:20128`. O painel é aberto automati
 
 ---
 
-## Etapa 3: Conecte um provedor elegível
+## Etapa 3: Conecte um provedor qualificado
 
-Escolha um provedor cujos termos e cotas atendam às suas necessidades. Em **Painel → Provedores**, conecte sua própria conta ou chave de API e teste a conexão. O acesso gratuito e a disponibilidade sem chave não são garantidos.
+Escolha um provedor cujos termos e cuja cota atendam às suas necessidades. Em **Dashboard → Providers**, conecte sua própria conta ou chave de API e teste a conexão. O acesso gratuito e a disponibilidade sem chave não são garantidos.
 
-O `auto` exclui por padrão os provedores marcados como `tos: avoid`, incluindo Kiro e OpenCode Free. Conectar uma conta não altera essa política. A opção de inclusão em **Painel → Combos** vale para todos os combos automáticos. Consulte [Guia de planos gratuitos](./FREE-TIERS-GUIDE.md) antes de escolher um provedor.
+Por padrão, `auto` exclui provedores marcados como `tos: avoid`, incluindo Kiro e OpenCode Free. Conectar uma conta não altera essa política. A adesão em **Dashboard → Combos** se aplica a todas as combinações automáticas. Consulte o [Guia de níveis gratuitos](./FREE-TIERS-GUIDE.md) antes de escolher um provedor.
 
 ---
 
@@ -132,7 +132,7 @@ Você pode ver os detalhes da solicitação clicando em [Monitoramento/Logs](htt
 
 - **[Guia do Auto-Combo](./AUTO-COMBO-GUIDE.md)** — Deixe o OmniRoute escolher a melhor IA para você
 - **[Guia de provedores](./PROVIDERS-GUIDE.md)** — Conecte mais provedores (gratuitos e pagos)
-- **[Guia de planos gratuitos](./FREE-TIERS-GUIDE.md)** — Confira os termos dos provedores e os limites dos planos gratuitos
+- **[Guia de planos gratuitos](./FREE-TIERS-GUIDE.md)** — Consulte os termos dos provedores e os limites dos planos gratuitos
 - **[Solução de problemas](../guides/TROUBLESHOOTING.md)** — Corrija problemas comuns
 
 ---
@@ -141,7 +141,7 @@ Você pode ver os detalhes da solicitação clicando em [Monitoramento/Logs](htt
 
 ### "Preciso de uma chave de API?"
 
-A chave de API do OmniRoute autentica suas ferramentas. As credenciais do serviço upstream dependem do provedor: alguns exigem uma chave de API ou login em uma conta. O acesso gratuito não é garantido.
+A chave de API do OmniRoute autentica suas ferramentas. As credenciais dos provedores dependem de cada um: alguns exigem uma chave de API ou login em uma conta. O acesso gratuito não é garantido.
 
 ### "O que é `auto`?"
 
@@ -149,7 +149,7 @@ A chave de API do OmniRoute autentica suas ferramentas. As credenciais do servi�
 
 ### "Quanto custa?"
 
-O próprio OmniRoute é **gratuito e de código aberto**. Você paga apenas pelos provedores que usar. Muitos provedores têm planos gratuitos — consulte o [Guia de planos gratuitos](./FREE-TIERS-GUIDE.md).
+O OmniRoute é **gratuito e de código aberto**. Você paga apenas pelos provedores que utiliza. Muitos provedores têm planos gratuitos — consulte o [Guia de planos gratuitos](./FREE-TIERS-GUIDE.md).
 
 ### "Posso usá-lo com Claude Code / Cursor / Copilot?"
 
@@ -157,7 +157,7 @@ O próprio OmniRoute é **gratuito e de código aberto**. Você paga apenas pelo
 
 ### "E se um provedor ficar indisponível?"
 
-O OmniRoute ignora automaticamente os provedores com falha e tenta o próximo. Você não precisa fazer nada. Consulte o [Guia do Auto-Combo](./AUTO-COMBO-GUIDE.md) para obter detalhes.
+O OmniRoute ignora automaticamente os provedores que falharem e tenta o próximo. Você não precisa fazer nada. Consulte o [Guia do Auto-Combo](./AUTO-COMBO-GUIDE.md) para obter detalhes.
 
 ---
 

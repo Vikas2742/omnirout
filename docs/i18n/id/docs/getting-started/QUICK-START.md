@@ -4,7 +4,7 @@
 
 ---
 
-> **TL;DR**: Instal → Hubungkan penyedia yang memenuhi syarat → Arahkan IDE ke OmniRoute. Selesai.
+> **TL;DR**: Instal → Hubungkan penyedia yang memenuhi syarat → Arahkan IDE Anda ke OmniRoute. Selesai.
 
 ---
 
@@ -49,9 +49,9 @@ OmniRoute berjalan di `http://localhost:20128`. Dasbor akan terbuka secara otoma
 
 ## Langkah 3: Hubungkan Penyedia yang Memenuhi Syarat
 
-Pilih penyedia dengan ketentuan dan kuota yang sesuai kebutuhan Anda. Di **Dasbor → Penyedia**, hubungkan akun atau kunci API milik Anda, lalu uji koneksinya. Akses gratis dan ketersediaan tanpa kunci tidak dijamin.
+Pilih penyedia dengan ketentuan dan kuota yang sesuai dengan kebutuhan Anda. Di **Dasbor → Penyedia**, hubungkan akun atau kunci API Anda sendiri, lalu uji koneksinya. Akses gratis dan ketersediaan tanpa kunci tidak dijamin.
 
-Secara default, `auto` mengecualikan penyedia bertanda `tos: avoid`, termasuk Kiro dan OpenCode Free. Menghubungkan akun tidak mengubah kebijakan ini. Opsi untuk mengikutsertakan penyedia di **Dasbor → Combo** berlaku untuk semua combo otomatis. Baca [Panduan Tingkat Gratis](./FREE-TIERS-GUIDE.md) sebelum memilih penyedia.
+Secara default, `auto` mengecualikan penyedia yang ditandai `tos: avoid`, termasuk Kiro dan OpenCode Free. Menghubungkan akun tidak mengubah kebijakan tersebut. Opsi persetujuan di **Dasbor → Kombinasi** berlaku untuk semua kombinasi otomatis. Tinjau [Panduan Tingkat Gratis](./FREE-TIERS-GUIDE.md) sebelum memilih penyedia.
 
 ---
 
@@ -128,11 +128,11 @@ Anda dapat melihat detail permintaan dengan mengeklik [Pemantauan/Log](http://lo
 
 ---
 
-## Apa Selanjutnya?
+## Selanjutnya?
 
 - **[Panduan Auto-Combo](./AUTO-COMBO-GUIDE.md)** — Biarkan OmniRoute memilih AI terbaik untuk Anda
 - **[Panduan Penyedia](./PROVIDERS-GUIDE.md)** — Hubungkan lebih banyak penyedia (gratis dan berbayar)
-- **[Panduan Tingkat Gratis](./FREE-TIERS-GUIDE.md)** — Tinjau ketentuan penyedia dan batas paket gratis
+- **[Panduan Tingkat Gratis](./FREE-TIERS-GUIDE.md)** — Tinjau ketentuan penyedia dan batas tingkat gratis
 - **[Pemecahan Masalah](../guides/TROUBLESHOOTING.md)** — Atasi masalah umum
 
 ---
@@ -141,15 +141,15 @@ Anda dapat melihat detail permintaan dengan mengeklik [Pemantauan/Log](http://lo
 
 ### "Apakah saya memerlukan kunci API?"
 
-Kunci API OmniRoute mengautentikasi alat Anda. Kredensial layanan hulu bergantung pada penyedia: sebagian memerlukan kunci API atau login akun. Akses gratis tidak dijamin.
+Kunci API OmniRoute mengautentikasi alat Anda. Kredensial upstream bergantung pada penyedia: beberapa memerlukan kunci API atau login akun. Akses gratis tidak dijamin.
 
 ### "Apa itu `auto`?"
 
-`auto` memberi tahu OmniRoute untuk secara otomatis memilih penyedia terbaik bagi setiap permintaan. OmniRoute mempertimbangkan kecepatan, biaya, kualitas, dan ketersediaan. Lihat [Panduan Auto-Combo](./AUTO-COMBO-GUIDE.md) untuk detailnya.
+`auto` menginstruksikan OmniRoute untuk secara otomatis memilih penyedia terbaik bagi setiap permintaan. Pilihan ini mempertimbangkan kecepatan, biaya, kualitas, dan ketersediaan. Lihat [Panduan Auto-Combo](./AUTO-COMBO-GUIDE.md) untuk detailnya.
 
 ### "Berapa biayanya?"
 
-OmniRoute sendiri **gratis dan bersumber terbuka**. Anda hanya membayar penyedia yang Anda gunakan. Banyak penyedia menawarkan tingkat gratis—lihat [Panduan Tingkat Gratis](./FREE-TIERS-GUIDE.md).
+OmniRoute sendiri **gratis dan bersumber terbuka**. Anda hanya membayar penyedia yang Anda gunakan. Banyak penyedia memiliki tingkat layanan gratis — lihat [Panduan Tingkat Layanan Gratis](./FREE-TIERS-GUIDE.md).
 
 ### "Bisakah saya menggunakannya dengan Claude Code / Cursor / Copilot?"
 
