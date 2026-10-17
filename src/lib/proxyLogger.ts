@@ -301,8 +301,7 @@ function logProxyBatchFailure(err: unknown): void {
   );
 }
 
-function writeProxyBatch(batch: ProxyLogEntry[]): void {
-  const db = getDbInstance();
+function writeProxyBatch(batch: ProxyLogEntry[], db: ReturnType<typeof getDbInstance>): void {
   const insertStmt = db.prepare(
     `INSERT INTO proxy_logs (id, timestamp, status, proxy_type, proxy_host, proxy_port, proxy_name,
       level, level_id, provider, target_url, public_ip, egress_ip, latency_ms, error,
@@ -392,11 +391,13 @@ export function flushProxyLogsSync() {
     }
   }
 
-  // 2. Persist to SQLite using a single transaction for high-performance non-blocking write
+  // Keep the same database for both attempts; resets must not redirect old batches.
+  let db: ReturnType<typeof getDbInstance> | undefined;
   try {
-    writeProxyBatch(batch);
+    db = getDbInstance();
+    writeProxyBatch(batch, db);
   } catch (err: any) {
-    if (!isWriteLockError(err)) {
+    if (!db || !isWriteLockError(err)) {
       logProxyBatchFailure(err);
       return;
     }
@@ -405,14 +406,10 @@ export function flushProxyLogsSync() {
       return;
     }
     const generation = proxyLogGeneration;
+    const originalDb = db;
     void scheduleWriteRetry(() => {
       if (generation !== proxyLogGeneration) return;
-      try {
-        writeProxyBatch(batch);
-      } catch (retryErr) {
-        if (generation !== proxyLogGeneration) return;
-        logProxyBatchFailure(retryErr);
-      }
+      writeProxyBatch(batch, originalDb);
     }, logProxyBatchFailure);
   }
 }
@@ -540,6 +537,7 @@ export function getProxyLogs(filters: ProxyLogFilters = {}) {
 
 export function clearProxyLogs() {
   proxyLogs.length = 0;
+  pendingLogsQueue = [];
   pendingFirstChunk.clear();
   // Invalidate deferred retries armed before this clear so they abandon
   // their batch instead of re-inserting cleared rows.

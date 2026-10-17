@@ -578,6 +578,7 @@ async function saveCallLogOperation(entry: any): Promise<void> {
 }
 
 type PreparedCallLogRow = {
+  db: ReturnType<typeof getDbInstance>;
   logEntry: Record<string, unknown>;
   insertParams: Record<string, unknown>;
   hasResilienceColumn: boolean;
@@ -596,12 +597,16 @@ function logCallLogSaveFailure(error: unknown): void {
 }
 
 async function buildCallLogRow(entry: any): Promise<PreparedCallLogRow> {
+  // Bind before any await: a reset must never redirect this request or its retry
+  // into a replacement database (#12780). Closed handles fail normally.
+  const db = getDbInstance();
   const apiKeyContext = getCallLogApiKeyContext();
   // `||` (not `??`): an empty-string apiKeyId/apiKeyName is "unattributed",
   // same as before this fallback existed — it must not be persisted verbatim
   // nor block the request-scoped context.
   const apiKeyId = entry.apiKeyId || apiKeyContext?.apiKeyId || null;
   const apiKeyName = entry.apiKeyName || apiKeyContext?.apiKeyName || null;
+  const connectionId = entry.connectionId || apiKeyContext?.connectionId || null;
   const noLogEnabled = Boolean(entry.noLog) || (apiKeyId ? isNoLog(apiKeyId) : false);
 
   const protectedRequestBody = noLogEnabled ? null : protectPayloadForLog(entry.requestBody);
@@ -647,7 +652,7 @@ async function buildCallLogRow(entry: any): Promise<PreparedCallLogRow> {
   const resilienceActions = serializeResilienceActions();
   const hasResilienceColumn = hasCallLogsColumn("resilience_actions");
 
-  const account = await resolveAccountName(entry.connectionId || null);
+  const account = await resolveAccountName(connectionId);
   const rawProvider: string = entry.provider || "-";
   const rawRequestedModel: string | null = entry.requestedModel || null;
   let resolvedRequestedModel = rawRequestedModel;
@@ -734,7 +739,7 @@ async function buildCallLogRow(entry: any): Promise<PreparedCallLogRow> {
     requestedModel: resolvedRequestedModel,
     provider: rawProvider,
     account,
-    connectionId: entry.connectionId || null,
+    connectionId,
     duration: entry.duration || 0,
     // #13130: TTFT (ms to first forwarded stream chunk) when the streaming
     // pipeline measured it; null for non-streaming rows. The dashboard TPS
@@ -833,6 +838,7 @@ async function buildCallLogRow(entry: any): Promise<PreparedCallLogRow> {
     requestSummary,
   };
   return {
+    db,
     logEntry,
     insertParams,
     hasResilienceColumn,
@@ -842,11 +848,7 @@ async function buildCallLogRow(entry: any): Promise<PreparedCallLogRow> {
 }
 
 function insertCallLogRow(prepared: PreparedCallLogRow): void {
-  // Recapture the singleton at write time, not from the build above: the
-  // build awaits (account lookup, artifact write) and insertCallLogRow also
-  // runs inside the deferred retry timer, so a bound handle may be stale.
-  const db = getDbInstance();
-  const { insertParams, hasResilienceColumn, detailState, responseId } = prepared;
+  const { db, insertParams, hasResilienceColumn, detailState, responseId } = prepared;
   // Optional column (migration 191) — only fixed identifiers are spliced in.
   const resilienceCol = hasResilienceColumn ? ", resilience_actions" : "";
   const resilienceParam = hasResilienceColumn ? ", @resilienceActions" : "";
