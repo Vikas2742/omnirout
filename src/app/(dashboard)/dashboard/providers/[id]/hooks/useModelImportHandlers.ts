@@ -503,18 +503,17 @@ export function useModelImportHandlers({
       }));
       await fetchConnections();
       if (syncIds.length > 0) await fetchProviderModelMeta();
-      if (syncResults.some((r) => r.status === "rejected")) {
-        notify.warning(t("autoSyncImmediatePartialFailure"));
-      }
+      const syncFailed = syncResults.some((r) => r.status === "rejected");
       const fulfilled = results.filter((r) => r.status === "fulfilled" && r.value.ok).length;
-      if (fulfilled === results.length) {
+      if (fulfilled === results.length && !syncFailed) {
         notify[newValue ? "success" : "info"](
           newValue ? t("autoSyncEnabled") : t("autoSyncDisabled")
         );
       } else if (fulfilled === 0) {
         notify.error(t("autoSyncToggleFailed"));
       } else {
-        notify.warning(t("autoSyncPartialFailure"));
+        notify.warning(t(syncFailed && fulfilled === results.length
+          ? "autoSyncImmediatePartialFailure" : "autoSyncPartialFailure"));
       }
     } catch (error) {
       console.error("Error toggling auto-sync:", error);
