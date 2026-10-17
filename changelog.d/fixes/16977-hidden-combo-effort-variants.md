@@ -1,0 +1,1 @@
+- **fix(combos):** Keep generated synced/registry reasoning-effort variants out of the combo builder whenever their base model is hidden, while retaining visible siblings, exact vendor/model IDs and per-variant hiding (refs [#16977](https://github.com/diegosouzapw/OmniRoute/issues/16977)) — thanks @fabioKoruja00
