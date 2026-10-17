@@ -1119,6 +1119,8 @@ test("#16943 counts bulk cookie imports only on Web Cookie provider cards", () =
   assert.equal(connectionMatchesProviderCard(imported, "deepseek-web", "apikey"), true);
   assert.equal(connectionMatchesProviderCard(added, "deepseek-web", "apikey"), true);
   assert.equal(connectionMatchesProviderCard(imported, "deepseek-web", "free"), true);
+  assert.equal(connectionMatchesProviderCard({ provider: "deepseek-web", authType: "cookie" }, "deepseek-web", "oauth"), false);
+  assert.equal(connectionMatchesProviderCard({ provider: "deepseek-web", authType: "cookie" }, "deepseek-web", "free"), true);
   assert.equal(connectionMatchesProviderCard(imported, "claude", "apikey"), false);
   assert.equal(connectionMatchesProviderCard({ provider: "openai", authType: "cookie" }, "openai", "apikey"), false);
   assert.equal(connectionMatchesProviderCard({ provider: "claude", authType: "cookie" }, "claude", "oauth"), false);
