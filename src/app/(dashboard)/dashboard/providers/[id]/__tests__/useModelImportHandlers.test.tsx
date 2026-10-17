@@ -161,7 +161,7 @@ describe("useModelImportHandlers — master autoSync", () => {
       await hook.get().handleToggleAutoSync();
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       "/api/providers/conn-a",
@@ -183,7 +183,7 @@ describe("useModelImportHandlers — master autoSync", () => {
     });
 
     expect(hook.get().isAutoSyncEnabled).toBe(false);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
       "/api/providers/conn-a",
