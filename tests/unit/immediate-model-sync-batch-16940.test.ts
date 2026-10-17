@@ -41,3 +41,15 @@ test("#16940: empty and invalid batches do not trigger any discovery calls", asy
     RangeError
   );
 });
+
+test("#16940: single-worker sync preserves input order after a failed provider", async () => {
+  const visited: string[] = [];
+  const results = await settleBoundedSyncRequests(["first", "broken", "last"], async (id) => {
+    visited.push(id);
+    if (id === "broken") throw new Error("upstream unavailable");
+  }, 1);
+  assert.deepEqual(visited, ["first", "broken", "last"]);
+  assert.deepEqual(results.map((result) => result.status), [
+    "fulfilled", "rejected", "fulfilled",
+  ]);
+});
