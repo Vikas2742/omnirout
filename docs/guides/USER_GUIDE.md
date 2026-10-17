@@ -693,6 +693,17 @@ Notes:
 - OpenRouter and OpenAI/Anthropic-compatible providers are managed from **Available Models** only. Manual add, import, and auto-sync all land in the same available-model list, so there is no separate Custom Models section for those providers.
 - The **Custom Models** section is intended for providers that do not expose managed available-model imports.
 
+### Demon Route (API-key gateway)
+
+1. Create a Demon Route API key at [demonroute.com](https://demonroute.com).
+2. In **Providers → API Key Providers → Demon Route**, add a connection and paste the key.
+3. Use **Available Models → Import from /models** to retrieve models available to that key. The bundled seed list is illustrative, not an entitlement guarantee.
+4. Test a model using its **exact, case-sensitive** upstream ID, including the vendor prefix after `demonroute/`. An example is `demonroute/TheDrummer/Cydonia-24B-v4.3`; select an ID returned by your own account's model listing if it changes.
+
+Chat Completions and streaming use `https://api.demonroute.com/v1/chat/completions`; compatible embeddings use `https://api.demonroute.com/v1/embeddings`, with the same provider connection and an embedding-capable model ID. OmniRoute derives the latter endpoint from the registered Chat Completions endpoint. Do not choose a chat-only seed for embeddings. Slow generations allow a 120-second upstream wait, and client-side timeouts may need the same headroom.
+
+Demon Route is a metered external gateway, **not a free or locally hosted model**. Prices, availability, limits, and provider retention policies are controlled by Demon Route; check them before adding it to a combo or enabling automatic fallbacks. API credentials remain in the normal OmniRoute provider connection store, not in the combo definition.
+
 ### Custom OpenAI-Compatible Providers
 
 Any gateway that speaks the OpenAI API (a self-hosted proxy, vLLM, a third-party aggregator)
