@@ -151,7 +151,9 @@ export async function resolveQuotaAutoPingModel(
 export function createDefaultQuotaAutoPingDeps(): QuotaAutoPingDeps {
   return {
     getSettings,
-    getProviderConnections,
+    // DB rows are untyped records; the scheduler only reads the QuotaAutoPingConnection fields.
+    getProviderConnections:
+      getProviderConnections as unknown as QuotaAutoPingDeps["getProviderConnections"],
     updateProviderConnection,
     refreshAndUpdateCredentials: async (connection) =>
       refreshAndUpdateCredentialsWithResolver(connection, loadQuotaAutoPingExecutor),

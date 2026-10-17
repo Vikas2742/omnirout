@@ -28,6 +28,7 @@ import {
   supportsProviderQuota,
 } from "@/shared/utils/providerQuotaVisibility";
 import ProviderQuotaVisibilityToggle from "./ProviderQuotaVisibilityToggle";
+import CodexPingNowButton from "./CodexPingNowButton";
 
 // ---------------------------------------------------------------------------
 // Types (exported so the client can reference them without re-importing)
@@ -669,6 +670,12 @@ export default function ConnectionRow({
           >
             {t("tokenShort")}
           </Button>
+        )}
+        {isCodex && isOAuth && connection.provider === "codex" && (
+          <CodexPingNowButton
+            connectionId={connection.id}
+            disabled={connection.isActive === false}
+          />
         )}
         {isCodex && onApplyCodexAuthLocal && (
           <Button
