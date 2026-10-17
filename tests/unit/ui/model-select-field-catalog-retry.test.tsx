@@ -191,8 +191,9 @@ it("uses one second when Retry-After is malformed", async () => {
 it.each([
   { label: "one day", retryAfter: "86400" },
   { label: "numeric overflow", retryAfter: "9".repeat(400) },
+  { label: "oversized malformed header", retryAfter: "x".repeat(129) },
 ])(
-  "falls back instead of ignoring a server cooldown longer than 30 seconds ($label)",
+  "falls back for a long server cooldown or oversized Retry-After ($label)",
   async ({ retryAfter }) => {
     vi.useFakeTimers();
     const fetchMock = vi.fn(() => Promise.resolve(unavailable(retryAfter)));
