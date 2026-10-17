@@ -68,7 +68,7 @@ export default function ModelEndpointTagsEditor({
     }
   }
   return (
-    <span className="inline-flex max-w-full flex-wrap items-center gap-1 text-[10px]"
+    <div className="inline-flex max-w-full flex-wrap items-center gap-1 text-[10px]"
       data-testid="model-endpoint-capabilities">
       {effective.map((endpoint) => (
         <span key={endpoint} title={adapterStatuses[endpoint] === "unavailable"
@@ -86,7 +86,7 @@ export default function ModelEndpointTagsEditor({
         <span className="material-symbols-outlined text-sm">edit</span>
       </button>
       {editing && (
-        <span className="flex w-full flex-wrap items-center gap-1 rounded border border-border p-1">
+        <div className="flex w-full flex-wrap items-center gap-1 rounded border border-border p-1">
           <fieldset disabled={saving} className="flex flex-wrap gap-2">
             <legend className="text-text-muted">{t("supportedEndpointsLabel")}</legend>
             {OPTIONS.map((endpoint) => (
@@ -109,8 +109,8 @@ export default function ModelEndpointTagsEditor({
           <button type="button" disabled={saving} onClick={() => setEditing(false)}
             className="rounded border border-border p-1">{t("cancel")}</button>
           {error && <span role="alert" className="text-red-500">{error}</span>}
-        </span>
+        </div>
       )}
-    </span>
+    </div>
   );
 }

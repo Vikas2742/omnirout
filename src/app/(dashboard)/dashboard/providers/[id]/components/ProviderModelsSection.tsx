@@ -46,7 +46,11 @@ export interface ProviderModelsSectionProps {
 
   // Models data
   models: Array<{ id: string; name?: string; source?: string; supportedEndpoints?: string[]; endpointCapabilitySource?: string }>;
-  modelMeta: { customModels: any[]; modelCompatOverrides?: any[] };
+  modelMeta: {
+    customModels: any[];
+    modelCompatOverrides?: any[];
+    endpointAdapters?: Record<string, "available" | "unavailable" | "unknown">;
+  };
   modelAliases: Record<string, string>;
   syncedAvailableModels: any[];
   syncedCatalogAuthoritative?: boolean;
@@ -273,7 +277,7 @@ export default function ProviderModelsSection({
           syncedCatalogAuthoritative={syncedCatalogAuthoritative}
           customModels={modelMeta.customModels}
           fallbackModels={compatibleFallbackModels}
-          endpointAdapters={modelMeta.endpointAdapters}
+          endpointAdapters={(modelMeta.endpointAdapters ?? {})}
           description={description}
           inputLabel={inputLabel}
           inputPlaceholder={inputPlaceholder}
@@ -355,7 +359,7 @@ export default function ProviderModelsSection({
           syncedCatalogAuthoritative={syncedCatalogAuthoritative}
           availableModels={syncedAvailableModels}
           customModels={modelMeta.customModels}
-          endpointAdapters={modelMeta.endpointAdapters}
+          endpointAdapters={(modelMeta.endpointAdapters ?? {})}
           description={passthroughDescription}
           inputLabel={passthroughInputLabel}
           inputPlaceholder={passthroughInputPlaceholder}
@@ -515,7 +519,7 @@ export default function ProviderModelsSection({
                   discoveredEndpoints: discovered?.supportedEndpoints,
                   resettable: Boolean(discovered && operator?.endpointCapabilitySource === "operator"),
                   onChanged: fetchProviderModelMeta,
-                  adapterStatuses: modelMeta.endpointAdapters,
+                  adapterStatuses: modelMeta.endpointAdapters ?? {},
                 };
               })()}
               fullModel={`${providerDisplayAlias}/${model.id}`}
