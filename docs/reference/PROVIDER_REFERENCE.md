@@ -10,7 +10,7 @@ lastUpdated: 2026-10-17
 > Regenerate with: `npm run gen:provider-reference`
 > **Last generated:** 2026-10-17
 
-Total providers: **375**. See category breakdown below.
+Total providers: **374**. See category breakdown below.
 
 ## Categories
 
