@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "最近一次刷新失败，显示上次结果",
     "healthPreviousFailure": "上次请求失败，冷却已结束",
     "healthAwaitingSync": "已过重置时间，等待下次同步",
-    "healthPolicyUnavailable": "额度阈值策略读取失败，按 0% 判断",
+    "healthVerdictUnavailable": "可用性结论暂时读不到，仅显示额度",
     "healthSummaryFailed": "运行状态摘要读取失败，模型锁定信息可能缺失",
     "healthRuntimeObserved": "运行状态 {time}更新",
     "healthQuotaObserved": "额度观测于 {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "最快 {duration} 后恢复",
     "healthRatio": "{available, number} / {active, number} 可用",
     "healthCd5": "5h 冷却",
-    "healthCdw": "周冷却"
+    "healthCdw": "周冷却",
+    "healthRecentSuccessBypass": "此账号刚有请求成功，路由暂时放行。",
+    "healthPurchasedBalanceBypass": "套餐内额度耗尽后，仍可使用已购余额。",
+    "healthCutoffAtRequest": "实时额度阈值在路由请求时检查。"
   },
   "modals": {
     "waitingAuth": "等待授权",

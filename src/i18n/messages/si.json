@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "අවසන් යාවත්කාලීනය අසාර්ථකයි; පෙර ප්‍රතිඵලය පෙන්වයි",
     "healthPreviousFailure": "අවසන් ඉල්ලීම අසාර්ථකයි; රැඳී සිටීම අවසන්",
     "healthAwaitingSync": "යළි සැකසීමේ වේලාව පසු වී ඇත; සමමුහුර්ත කිරීම බලාපොරොත්තුවෙන්",
-    "healthPolicyUnavailable": "සීමා ප්‍රතිපත්තිය නොමැත; 0% භාවිත කෙරේ",
+    "healthVerdictUnavailable": "ලබාගත හැකි බව පරීක්ෂා කළ ප්‍රතිඵලය නොමැත; කෝටා මට්ටම් පමණක් පෙන්වයි",
     "healthSummaryFailed": "ක්‍රියාකාරී සාරාංශය කියවීම අසාර්ථකයි; ආකෘති අගුළු තොරතුරු නොතිබිය හැක",
     "healthRuntimeObserved": "ක්‍රියාකාරී තත්ත්වය යාවත්කාලීන කළේ {time}",
     "healthQuotaObserved": "කෝටාව නිරීක්ෂණය කළේ {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "ඉක්මන්ම ප්‍රතිසාධනය {duration} කින්",
     "healthRatio": "{available, plural, one {# / {active, number} ලබාගත හැක} other {# / {active, number} ලබාගත හැක}}",
     "healthCd5": "පැය 5 · රැඳී සිටීමේ කාලය",
-    "healthCdw": "සතිපතා · රැඳී සිටීමේ කාලය"
+    "healthCdw": "සතිපතා · රැඳී සිටීමේ කාලය",
+    "healthRecentSuccessBypass": "මෑතකදී ඉල්ලීමක් සාර්ථක වූ බැවින් රවුටින් මෙම ගිණුමට අවසර දෙයි.",
+    "healthPurchasedBalanceBypass": "ඇතුළත් කෝටාව අවසන් වූ පසු මිලදී ගත් ශේෂයෙන් භාවිතය දිගටම කරගෙන යා හැක.",
+    "healthCutoffAtRequest": "ඉල්ලීමක් රවුට් කරන විට සජීවී කෝටා සීමා පරීක්ෂා කෙරේ."
   },
   "modals": {
     "waitingAuth": "අවසරය සඳහා රැඳී සිටී",

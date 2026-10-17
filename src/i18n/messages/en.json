@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Last refresh failed; showing previous result",
     "healthPreviousFailure": "Last request failed; cooldown ended",
     "healthAwaitingSync": "Reset time passed; waiting for sync",
-    "healthPolicyUnavailable": "Cutoff policy unavailable; using 0%",
+    "healthVerdictUnavailable": "Availability check unavailable; showing quota meters only",
     "healthSummaryFailed": "Runtime summary read failed; model lockouts may be missing",
     "healthRuntimeObserved": "Runtime updated {time}",
     "healthQuotaObserved": "Quota observed {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Soonest recovery in {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} available} other {# / {active, number} available}}",
     "healthCd5": "5h cooldown",
-    "healthCdw": "Weekly cooldown"
+    "healthCdw": "Weekly cooldown",
+    "healthRecentSuccessBypass": "Routing permits this account because a request succeeded recently.",
+    "healthPurchasedBalanceBypass": "Purchased balance permits use after the included allowance is exhausted.",
+    "healthCutoffAtRequest": "Live quota thresholds are checked when routing a request."
   },
   "modals": {
     "waitingAuth": "Waiting for Authorization",

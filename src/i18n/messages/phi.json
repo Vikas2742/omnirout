@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Nabigo ang huling pag-refresh; ipinapakita ang dating resulta",
     "healthPreviousFailure": "Nabigo ang huling kahilingan; tapos na ang paghihintay",
     "healthAwaitingSync": "Lumipas na ang oras ng pag-reset; naghihintay ng pag-sync",
-    "healthPolicyUnavailable": "Hindi available ang patakaran sa hangganan; ginagamit ang 0%",
+    "healthVerdictUnavailable": "Hindi makuha ang resulta ng pagsusuri ng availability; mga antas lang ng quota ang ipinapakita",
     "healthSummaryFailed": "Hindi nabasa ang buod ng operasyon; maaaring kulang ang impormasyon ng lock ng modelo",
     "healthRuntimeObserved": "Na-update ang katayuan {time}",
     "healthQuotaObserved": "Naobserbahan ang quota {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Pinakamaagang pagbabalik sa loob ng {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} magagamit} other {# / {active, number} magagamit}}",
     "healthCd5": "5 oras · Panahon ng paghihintay",
-    "healthCdw": "Lingguhan · Panahon ng paghihintay"
+    "healthCdw": "Lingguhan · Panahon ng paghihintay",
+    "healthRecentSuccessBypass": "Pinapayagan ng pagruruta ang account na ito dahil may kahilingang nagtagumpay kamakailan.",
+    "healthPurchasedBalanceBypass": "Maaaring magpatuloy gamit ang biniling balanse kapag naubos ang kasamang quota.",
+    "healthCutoffAtRequest": "Sinusuri ang mga live na limitasyon ng quota kapag niruruta ang kahilingan."
   },
   "modals": {
     "waitingAuth": "Naghihintay ng Awtorisasyon",

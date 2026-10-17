@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Theip ar an athnuachan dheireanach; an toradh roimhe seo á thaispeáint",
     "healthPreviousFailure": "Theip ar an iarratas deireanach; tá an tréimhse feithimh thart",
     "healthAwaitingSync": "Tá am an athshocraithe caite; ag fanacht le sioncronú",
-    "healthPolicyUnavailable": "Níl polasaí tairsí ar fáil; úsáidtear 0%",
+    "healthVerdictUnavailable": "Níl toradh na seiceála infhaighteachta ar fáil; ní thaispeántar ach leibhéil na gcuótaí",
     "healthSummaryFailed": "Theip ar léamh na hachoimre; d’fhéadfadh glasálacha samhlacha a bheith ar iarraidh",
     "healthRuntimeObserved": "Staid nuashonraithe {time}",
     "healthQuotaObserved": "Cuóta breathnaithe {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "An téarnamh is luaithe i gceann {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} ar fáil} two {# / {active, number} ar fáil} few {# / {active, number} ar fáil} many {# / {active, number} ar fáil} other {# / {active, number} ar fáil}}",
     "healthCd5": "5 huaire · Tréimhse feithimh",
-    "healthCdw": "Seachtainiúil · Tréimhse feithimh"
+    "healthCdw": "Seachtainiúil · Tréimhse feithimh",
+    "healthRecentSuccessBypass": "Ceadaíonn an ródú an cuntas seo mar d’éirigh le hiarratas le déanaí.",
+    "healthPurchasedBalanceBypass": "Is féidir an t-iarmhéid ceannaithe a úsáid tar éis don chuóta san áireamh ídiú.",
+    "healthCutoffAtRequest": "Seiceáiltear tairseacha cuóta fíor-ama nuair a dhéantar iarratas a ródú."
   },
   "modals": {
     "waitingAuth": "Ag fanacht le húdarú",

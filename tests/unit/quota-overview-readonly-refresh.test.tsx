@@ -41,13 +41,21 @@ function setup(cold: boolean, layout = "overview") {
       if (url === "/api/usage/provider-limits")
         return Response.json({ caches: cold ? {} : { probe: quota } });
       if (url === "/api/usage/probe") return Response.json(quota);
-      if (url === "/api/resilience")
+      if (url === "/api/usage/availability")
         return Response.json({
-          quotaPreflight: {
-            enabled: false,
-            defaultThresholdPercent: 2,
-            providerWindowDefaults: {},
-          },
+          generatedAt: new Date().toISOString(),
+          connections: [
+            {
+              id: "probe",
+              scopes: [],
+              account: {
+                usable: cold ? null : true,
+                blockers: [],
+                allowanceReasons: [],
+                fetchedAt,
+              },
+            },
+          ],
         });
       if (url === "/api/resilience/cooldowns")
         return Response.json({

@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Senaste uppdateringen misslyckades; visar föregående resultat",
     "healthPreviousFailure": "Senaste begäran misslyckades; väntetiden är slut",
     "healthAwaitingSync": "Återställningstiden har passerat; väntar på synkronisering",
-    "healthPolicyUnavailable": "Tröskelpolicy saknas; använder 0%",
+    "healthVerdictUnavailable": "Tillgänglighetskontrollen är inte tillgänglig; endast kvotnivåer visas",
     "healthSummaryFailed": "Kunde inte läsa driftöversikten; modellås kan saknas",
     "healthRuntimeObserved": "Status uppdaterad {time}",
     "healthQuotaObserved": "Kvot observerad {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Tidigaste återställning om {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} tillgängligt} other {# / {active, number} tillgängliga}}",
     "healthCd5": "5 timmar · Väntetid",
-    "healthCdw": "Varje vecka · Väntetid"
+    "healthCdw": "Varje vecka · Väntetid",
+    "healthRecentSuccessBypass": "Routningen tillåter kontot eftersom en begäran nyligen lyckades.",
+    "healthPurchasedBalanceBypass": "Köpt saldo kan användas när den inkluderade kvoten är slut.",
+    "healthCutoffAtRequest": "Kvotgränser i realtid kontrolleras när en begäran routas."
   },
   "modals": {
     "waitingAuth": "Väntar på auktorisering",

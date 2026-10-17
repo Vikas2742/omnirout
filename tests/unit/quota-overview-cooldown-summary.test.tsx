@@ -1,3 +1,4 @@
+import { healthyResponse } from "./quota-availability-fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { useAvailability } from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/useAvailability";
@@ -26,7 +27,7 @@ function setup(makeRow: () => any, generatedAt: () => any = () => iso(Date.now()
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
-      if (url === "/api/resilience") return Response.json({ quotaPreflight: policy });
+      if (url === "/api/usage/availability") return healthyResponse(["a"]);
       if (url === "/api/resilience/cooldowns")
         return Response.json({ generatedAt: generatedAt(), connections: [makeRow()] });
       throw Error("Unexpected " + url);

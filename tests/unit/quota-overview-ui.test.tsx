@@ -1,3 +1,4 @@
+import { availability, blocker, decision, scope } from "./quota-availability-fixtures";
 import React from "react";
 import "@testing-library/jest-dom/vitest";
 import { afterEach, expect, it, vi } from "vitest";
@@ -35,7 +36,26 @@ const accounts = Object.fromEntries(
             : [{ name: "weekly", remainingPercentage: 10 }],
       },
       {},
-      now
+      now,
+      {
+        availability: availability(
+          c.id,
+          decision(),
+          c.provider === "antigravity"
+            ? [
+                scope("gemini", ["gemini_session"]),
+                scope(
+                  "claude_gpt",
+                  ["claude_gpt_session"],
+                  decision(false, [
+                    blocker("claude_gpt_session", "2099-01-01T01:00:00Z", "fiveHour"),
+                  ])
+                ),
+              ]
+            : []
+        ),
+        availabilityObservedAt: now,
+      }
     ),
   ])
 );
@@ -211,7 +231,26 @@ it.each(["en", "zh-CN"])(
             ],
           },
           {},
-          now
+          now,
+          {
+            availability: availability(c.id, decision(), [
+              scope(
+                "gemini",
+                ["gemini_session"],
+                i
+                  ? decision(false, [blocker("gemini_session", "2099-01-01T01:00:00Z", "fiveHour")])
+                  : decision()
+              ),
+              scope(
+                "claude_gpt",
+                ["claude_gpt_weekly"],
+                i
+                  ? decision()
+                  : decision(false, [blocker("claude_gpt_weekly", "2099-01-03T00:00:00Z")])
+              ),
+            ]),
+            availabilityObservedAt: now,
+          }
         ),
       ])
     );
@@ -259,6 +298,19 @@ it.each(["en", "zh-CN"])(
           {},
           now,
           {
+            availability: availability(
+              c.id,
+              ["weekly", "session"].includes(c.id)
+                ? decision(false, [
+                    blocker(
+                      c.id,
+                      c.id === "weekly" ? "2099-01-03T00:00:00Z" : "2099-01-01T01:00:00Z",
+                      c.id === "weekly" ? "overall" : "fiveHour"
+                    ),
+                  ])
+                : decision()
+            ),
+            availabilityObservedAt: now,
             observedAt: "2099-01-01T00:00:00Z",
             cooldown: {
               id: c.id,

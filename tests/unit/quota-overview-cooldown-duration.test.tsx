@@ -1,3 +1,4 @@
+import { availability, healthyResponse } from "./quota-availability-fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { useAvailability } from "@/app/(dashboard)/dashboard/usage/components/ProviderLimits/useAvailability";
@@ -31,7 +32,13 @@ it("six-hour runtime evidence uses total duration, not ticking remaining time", 
     rateLimitedUntil: new Date(t0 + 6 * H).toISOString(),
   };
   checkStable((clock) =>
-    displayAccount(buildHealthAccount(connection, data, {}, clock, { policy }), clock)
+    displayAccount(
+      buildHealthAccount(connection, data, {}, clock, {
+        availability: availability(connection.id),
+        availabilityObservedAt: clock,
+      }),
+      clock
+    )
   );
 });
 it("projecting the identical built evidence also expires locally without reclassification", () => {
@@ -46,9 +53,12 @@ it("projecting the identical built evidence also expires locally without reclass
     data,
     {},
     t0,
-    { policy }
+    { availability: availability("synthetic"), availabilityObservedAt: t0 }
   );
-  checkStable((clock) => displayAccount(account, clock));
+  // Refresh only the independent server verdict; runtime evidence stays identical.
+  checkStable((clock) =>
+    displayAccount({ ...account, quotaAvailabilityValidUntil: clock + 90_000 }, clock)
+  );
 });
 it.each(["claude", "codex"])("30-minute runtime cooldown is cd5 even for %s", (provider) => {
   const account = buildHealthAccount(
@@ -75,7 +85,7 @@ it("component remembers first observation by connection id + until; new until re
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
-      if (url === "/api/resilience") return Response.json({ quotaPreflight: policy });
+      if (url === "/api/usage/availability") return healthyResponse(["no-start", "other"]);
       if (url === "/api/resilience/cooldowns") throw Error("synthetic unavailable summary");
       throw Error(`Unexpected request ${url}`);
     })
@@ -101,6 +111,9 @@ it("component remembers first observation by connection id + until; new until re
   for (const clock of clocks) {
     vi.setSystemTime(clock);
     rerender({ connections: [{ ...original }] });
+    await act(async () => {
+      await result.current.refreshAvailability();
+    });
     await flush();
     samples.push(displayAccount(result.current.accounts[original.id], clock));
   }

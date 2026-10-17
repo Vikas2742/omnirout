@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "ଶେଷ ଅଦ୍ୟତନ ବିଫଳ; ପୂର୍ବ ଫଳାଫଳ ଦେଖାଯାଉଛି",
     "healthPreviousFailure": "ଶେଷ ଅନୁରୋଧ ବିଫଳ; ଅପେକ୍ଷା ସମୟ ଶେଷ",
     "healthAwaitingSync": "ପୁନଃସେଟ୍ ସମୟ ଅତିକ୍ରମ କରିଛି; ସମନ୍ୱୟକୁ ଅପେକ୍ଷା",
-    "healthPolicyUnavailable": "ସୀମା ନୀତି ଉପଲବ୍ଧ ନାହିଁ; 0% ବ୍ୟବହାର ହେଉଛି",
+    "healthVerdictUnavailable": "ଉପଲବ୍ଧତା ଯାଞ୍ଚର ଫଳ ମିଳୁନାହିଁ; କେବଳ କୋଟା ସ୍ତର ଦେଖାଯାଉଛି",
     "healthSummaryFailed": "କାର୍ଯ୍ୟ ସାରାଂଶ ପଢ଼ିବା ବିଫଳ; ମଡେଲ୍ ଲକ୍ ତଥ୍ୟ ନଥାଇପାରେ",
     "healthRuntimeObserved": "କାର୍ଯ୍ୟ ସ୍ଥିତି ଅଦ୍ୟତନ {time}",
     "healthQuotaObserved": "କୋଟା ନିରୀକ୍ଷଣ {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "ସବୁଠୁ ଶୀଘ୍ର {duration} ପରେ ପୁନରୁଦ୍ଧାର",
     "healthRatio": "{available, plural, one {# / {active, number} ଉପଲବ୍ଧ} other {# / {active, number} ଉପଲବ୍ଧ}}",
     "healthCd5": "୫ ଘଣ୍ଟା · ଅପେକ୍ଷା ସମୟ",
-    "healthCdw": "ସାପ୍ତାହିକ · ଅପେକ୍ଷା ସମୟ"
+    "healthCdw": "ସାପ୍ତାହିକ · ଅପେକ୍ଷା ସମୟ",
+    "healthRecentSuccessBypass": "ନିକଟରେ ଏକ ଅନୁରୋଧ ସଫଳ ହୋଇଥିବାରୁ ରାଉଟିଂ ଏହି ଖାତାକୁ ଅନୁମତି ଦିଏ।",
+    "healthPurchasedBalanceBypass": "ଅନ୍ତର୍ଭୁକ୍ତ କୋଟା ସରିବା ପରେ କିଣାଯାଇଥିବା ବାଲାନ୍ସରେ ବ୍ୟବହାର ଜାରି ରହିପାରେ।",
+    "healthCutoffAtRequest": "ଅନୁରୋଧ ରାଉଟ୍ କରିବା ସମୟରେ ଲାଇଭ୍ କୋଟା ସୀମା ଯାଞ୍ଚ କରାଯାଏ।"
   },
   "modals": {
     "waitingAuth": "ଅନୁମୋଦନ ପାଇଁ ଅପେକ୍ଷାରତ",

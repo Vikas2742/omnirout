@@ -20,7 +20,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-function fixture(cooling = false, durationMs = 2000) {
+function fixture(cooling = false, durationMs = 2000, failQuota = false) {
   vi.useFakeTimers();
   vi.setSystemTime(fetchedAt);
   vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
@@ -32,14 +32,20 @@ function fixture(cooling = false, durationMs = 2000) {
       expect(init.method).toBe("GET");
       expect(init.cache).toBe("no-store");
       requests.push(input);
-      if (input === "/api/resilience")
+      if (input === "/api/usage/availability") {
+        if (fail && failQuota)
+          return Response.json({ error: "synthetic failure" }, { status: 503 });
         return Response.json({
-          quotaPreflight: {
-            enabled: false,
-            defaultThresholdPercent: 2,
-            providerWindowDefaults: {},
-          },
+          generatedAt: new Date().toISOString(),
+          connections: [
+            {
+              id: connection.id,
+              account: { usable: true, blockers: [], allowanceReasons: [], fetchedAt },
+              scopes: [],
+            },
+          ],
         });
+      }
       expect(input).toBe("/api/resilience/cooldowns");
       if (fail) return Response.json({ error: "synthetic failure" }, { status: 503 });
       return Response.json({
@@ -71,7 +77,7 @@ const advance = async (ms: number) =>
   act(async () => {
     await vi.advanceTimersByTimeAsync(ms);
   });
-it("ticks locally and polls only cooldown GET every 30 seconds; policy only on explicit refresh", async () => {
+it("ticks locally and polls both read-only summaries every 30 seconds", async () => {
   const f = fixture(true);
   const { result } = renderHook(() => useAvailability(connections, quotaData, errors));
   await advance(0);
@@ -79,18 +85,19 @@ it("ticks locally and polls only cooldown GET every 30 seconds; policy only on e
   expect(result.current.accounts[connection.id].recoverAt).toBe("2099-01-01T00:00:02.000Z");
   await advance(3000);
   expect(result.current.accounts[connection.id].status).toBe("ok");
-  expect(f.requests).toEqual(["/api/resilience/cooldowns", "/api/resilience"]);
+  expect(f.requests).toEqual(["/api/resilience/cooldowns", "/api/usage/availability"]);
   await advance(27_000);
   expect(f.requests).toEqual([
     "/api/resilience/cooldowns",
-    "/api/resilience",
+    "/api/usage/availability",
     "/api/resilience/cooldowns",
+    "/api/usage/availability",
   ]);
   await advance(300_000);
   expect(result.current.accounts[connection.id].status).toBe("ok");
-  expect(f.requests.filter((x) => x === "/api/resilience")).toHaveLength(1);
+  expect(f.requests.filter((x) => x === "/api/usage/availability")).toHaveLength(12);
 });
-it("keeps last successful summary for 90s, then falls back without losing green connection evidence", async () => {
+it("keeps successful cooldown summaries for 90s, then uses connection runtime evidence", async () => {
   const f = fixture();
   const { result } = renderHook(() => useAvailability(connections, quotaData, errors));
   await advance(0);
@@ -102,6 +109,16 @@ it("keeps last successful summary for 90s, then falls back without losing green 
   await advance(91_000);
   expect(result.current.summaryFailed).toBe(true);
   expect(result.current.accounts[connection.id].status).toBe("ok");
+});
+it("expires a failed server quota summary after 90s without inferring from meters", async () => {
+  const f = fixture(false, 2000, true);
+  const { result } = renderHook(() => useAvailability(connections, quotaData, errors));
+  await advance(0);
+  f.fail();
+  await advance(90_000);
+  expect(result.current.accounts[connection.id].status).toBe("ok");
+  await advance(1000);
+  expect(result.current.accounts[connection.id].status).toBe("empty");
 });
 it("a successful read within 90s of failure replaces the summary without resetting cooldown fill or kind", async () => {
   const f = fixture(true, 120_000);
@@ -137,7 +154,7 @@ it("a successful read within 90s of failure replaces the summary without resetti
   expect(result.current.summaryFailed).toBe(false);
   expect(displayAccount(result.current.accounts[connection.id], Date.now()).kind).toBe("cd5");
 });
-it("does not poll hidden pages; returning visible immediately reads cooldowns only", async () => {
+it("does not poll hidden pages; returning visible immediately reads both summaries", async () => {
   const f = fixture();
   renderHook(() => useAvailability(connections, quotaData, errors));
   await advance(0);
@@ -150,7 +167,8 @@ it("does not poll hidden pages; returning visible immediately reads cooldowns on
   });
   expect(f.requests).toEqual([
     "/api/resilience/cooldowns",
-    "/api/resilience",
+    "/api/usage/availability",
     "/api/resilience/cooldowns",
+    "/api/usage/availability",
   ]);
 });

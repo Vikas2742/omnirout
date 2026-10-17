@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Laatste verversing mislukt; vorig resultaat wordt getoond",
     "healthPreviousFailure": "Laatste verzoek mislukt; wachttijd verstreken",
     "healthAwaitingSync": "Resettijd verstreken; wachten op synchronisatie",
-    "healthPolicyUnavailable": "Drempelbeleid niet beschikbaar; 0% wordt gebruikt",
+    "healthVerdictUnavailable": "Beschikbaarheidscontrole niet beschikbaar; alleen quotaniveaus worden getoond",
     "healthSummaryFailed": "Statusoverzicht lezen mislukt; modelvergrendelingen ontbreken mogelijk",
     "healthRuntimeObserved": "Status bijgewerkt {time}",
     "healthQuotaObserved": "Quota waargenomen {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Eerste herstel over {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} beschikbaar} other {# / {active, number} beschikbaar}}",
     "healthCd5": "5 uur · Wachttijd",
-    "healthCdw": "Wekelijks · Wachttijd"
+    "healthCdw": "Wekelijks · Wachttijd",
+    "healthRecentSuccessBypass": "De routering staat dit account toe omdat een verzoek onlangs is geslaagd.",
+    "healthPurchasedBalanceBypass": "Met gekocht tegoed kunt u doorgaan nadat het inbegrepen quotum is verbruikt.",
+    "healthCutoffAtRequest": "Realtime quotumdrempels worden gecontroleerd bij het routeren van een verzoek."
   },
   "modals": {
     "waitingAuth": "Wachten op toestemming",

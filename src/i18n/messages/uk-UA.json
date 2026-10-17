@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Останнє оновлення не вдалося; показано попередній результат",
     "healthPreviousFailure": "Останній запит не вдався; очікування завершено",
     "healthAwaitingSync": "Час скидання минув; очікування синхронізації",
-    "healthPolicyUnavailable": "Політика порогу недоступна; використовується 0%",
+    "healthVerdictUnavailable": "Результат перевірки доступності недоступний; показано лише рівні квот",
     "healthSummaryFailed": "Не вдалося прочитати зведення стану; блокування моделей можуть бути відсутні",
     "healthRuntimeObserved": "Стан оновлено {time}",
     "healthQuotaObserved": "Квоту спостережено {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Найближче відновлення через {duration}",
     "healthRatio": "{available, plural, one {Доступний # / {active, number}} few {Доступні # / {active, number}} many {Доступні # / {active, number}} other {Доступно # / {active, number}}}",
     "healthCd5": "5 годин · Період очікування",
-    "healthCdw": "Щотижня · Період очікування"
+    "healthCdw": "Щотижня · Період очікування",
+    "healthRecentSuccessBypass": "Маршрутизація дозволяє цей обліковий запис, оскільки нещодавно запит був успішним.",
+    "healthPurchasedBalanceBypass": "Придбаний баланс дозволяє продовжити після вичерпання включеної квоти.",
+    "healthCutoffAtRequest": "Пороги квоти в реальному часі перевіряються під час маршрутизації запиту."
   },
   "modals": {
     "waitingAuth": "Очікування авторизації",

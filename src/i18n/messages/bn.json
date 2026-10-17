@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "সর্বশেষ হালনাগাদ ব্যর্থ; আগের ফল দেখানো হচ্ছে",
     "healthPreviousFailure": "শেষ অনুরোধ ব্যর্থ; অপেক্ষার সময় শেষ",
     "healthAwaitingSync": "রিসেটের সময় পেরিয়েছে; সমন্বয়ের অপেক্ষায়",
-    "healthPolicyUnavailable": "সীমা নীতি অনুপলব্ধ; 0% ব্যবহার করা হচ্ছে",
+    "healthVerdictUnavailable": "প্রাপ্যতা যাচাইয়ের ফল পাওয়া যাচ্ছে না; শুধু কোটার স্তর দেখানো হচ্ছে",
     "healthSummaryFailed": "পরিচালনার সারাংশ পড়া ব্যর্থ; মডেল লকের তথ্য অনুপস্থিত থাকতে পারে",
     "healthRuntimeObserved": "পরিচালনার অবস্থা হালনাগাদ {time}",
     "healthQuotaObserved": "কোটা পর্যবেক্ষিত {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "দ্রুততম পুনরুদ্ধার {duration} পরে",
     "healthRatio": "{available, plural, one {# / {active, number} উপলভ্য} other {# / {active, number} উপলভ্য}}",
     "healthCd5": "৫ ঘণ্টা · অপেক্ষার সময়",
-    "healthCdw": "সাপ্তাহিক · অপেক্ষার সময়"
+    "healthCdw": "সাপ্তাহিক · অপেক্ষার সময়",
+    "healthRecentSuccessBypass": "সম্প্রতি একটি অনুরোধ সফল হওয়ায় রাউটিং এই অ্যাকাউন্টকে অনুমতি দেয়।",
+    "healthPurchasedBalanceBypass": "অন্তর্ভুক্ত কোটা শেষ হলেও কেনা ব্যালেন্স দিয়ে ব্যবহার চালানো যায়।",
+    "healthCutoffAtRequest": "অনুরোধ রাউট করার সময় লাইভ কোটার সীমা পরীক্ষা করা হয়।"
   },
   "modals": {
     "waitingAuth": "অনুমোদনের জন্য অপেক্ষা করা হচ্ছে",

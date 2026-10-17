@@ -1,3 +1,4 @@
+import { availability, blocker, decision } from "./quota-availability-fixtures";
 import React from "react";
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
@@ -19,7 +20,6 @@ const connections = ["a", "b"].map((id) => ({
   isActive: true,
   testStatus: "active",
 }));
-const policy = { enabled: false, defaultThresholdPercent: 2, providerWindowDefaults: {} };
 const quotaData = Object.fromEntries(
   connections.map((c, i) => [
     c.id,
@@ -40,7 +40,13 @@ const quotaData = Object.fromEntries(
 const accounts = Object.fromEntries(
   connections.map((c) => [
     c.id,
-    buildHealthAccount(c, quotaData[c.id], {}, now.getTime(), { policy }),
+    buildHealthAccount(c, quotaData[c.id], {}, now.getTime(), {
+      availability: availability(
+        c.id,
+        c.id === "a" ? decision(false, [blocker("weekly")]) : decision()
+      ),
+      availabilityObservedAt: now.getTime(),
+    }),
   ])
 );
 afterEach(() => {

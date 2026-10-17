@@ -21,6 +21,11 @@ import {
   countDisplay,
 } from "../../src/app/(dashboard)/dashboard/usage/components/ProviderLimits/availabilityDisplay.ts";
 import { parseQuotaData } from "../../src/app/(dashboard)/dashboard/usage/components/ProviderLimits/quotaParsing.ts";
+import {
+  buildConnectionQuotaAvailability,
+  evaluateCachedQuotaAvailability,
+} from "../../src/lib/usage/availability.ts";
+import type { ProviderLimitsCacheEntry } from "../../src/lib/db/providerLimits.ts";
 import * as f from "./quota-overview-router-fixtures.ts";
 
 type Raw = NonNullable<HealthData["raw"]> & {
@@ -298,7 +303,28 @@ for (const fixture of table)
       { raw, quotas: parseQuotaData(fixture.provider, raw) },
       {},
       f.now,
-      { policy: f.policy }
+      {
+        availability: {
+          ...buildConnectionQuotaAvailability(
+            connection,
+            {
+              ...raw,
+              fetchedAt: new Date(f.now).toISOString(),
+            } as Partial<ProviderLimitsCacheEntry>,
+            f.policy
+          ),
+          account: evaluateCachedQuotaAvailability(
+            connection,
+            {
+              ...raw,
+              fetchedAt: new Date(f.now).toISOString(),
+            } as Partial<ProviderLimitsCacheEntry>,
+            f.policy,
+            fixture.model || "test-model"
+          ),
+        },
+        availabilityObservedAt: f.now,
+      }
     );
     const view = displayAccount(account, f.now);
     const router = await route(
@@ -354,8 +380,7 @@ for (const fixture of exceptions)
       );
       assert.equal(view.kind, state === "terminal" ? "act" : "cdw");
     });
-// #14359 is intentionally excluded: healthyUntil is server-only memory, not in
-// cooldown summary/provider APIs. Never pass connectionId to this pure-data contract.
+// Quota predicates include the connection's recent-success override when it is present.
 test("Codex code_review: generic evaluator has no request-specific review selector", async () => {
   const raw = f.codex(80, 80, 0);
   const view = displayAccount(
@@ -364,7 +389,14 @@ test("Codex code_review: generic evaluator has no request-specific review select
       { raw, quotas: parseQuotaData("codex", raw) },
       {},
       f.now,
-      { policy: f.policy }
+      {
+        availability: buildConnectionQuotaAvailability(
+          { id: "synthetic-review", provider: "codex", isActive: true },
+          { ...raw, fetchedAt: new Date(f.now).toISOString() } as Partial<ProviderLimitsCacheEntry>,
+          f.policy
+        ),
+        availabilityObservedAt: f.now,
+      }
     ),
     f.now
   );

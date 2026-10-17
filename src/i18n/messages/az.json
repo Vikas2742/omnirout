@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Son yeniləmə uğursuz oldu; əvvəlki nəticə göstərilir",
     "healthPreviousFailure": "Son sorğu uğursuz oldu; gözləmə müddəti bitdi",
     "healthAwaitingSync": "Sıfırlama vaxtı keçib; sinxronlaşdırma gözlənilir",
-    "healthPolicyUnavailable": "Hədd siyasəti əlçatan deyil; 0% istifadə olunur",
+    "healthVerdictUnavailable": "Əlçatanlıq yoxlamasının nəticəsi alınmır; yalnız kvota səviyyələri göstərilir",
     "healthSummaryFailed": "Vəziyyət xülasəsi oxunmadı; model kilidi məlumatları çatışmaya bilər",
     "healthRuntimeObserved": "Vəziyyət yeniləndi {time}",
     "healthQuotaObserved": "Kvota müşahidə edildi {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Ən tez bərpa {duration} sonra",
     "healthRatio": "{available, plural, one {# / {active, number} əlçatan} other {# / {active, number} əlçatan}}",
     "healthCd5": "5 saat · Gözləmə müddəti",
-    "healthCdw": "Həftəlik · Gözləmə müddəti"
+    "healthCdw": "Həftəlik · Gözləmə müddəti",
+    "healthRecentSuccessBypass": "Bu yaxınlarda sorğu uğurlu olduğu üçün yönləndirmə bu hesaba icazə verir.",
+    "healthPurchasedBalanceBypass": "Daxil edilmiş kvota bitdikdən sonra alınmış balansdan istifadə etmək olar.",
+    "healthCutoffAtRequest": "Real vaxt kvota hədləri sorğu yönləndirilərkən yoxlanılır."
   },
   "modals": {
     "waitingAuth": "Avtorizasiya gözlənilir",

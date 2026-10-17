@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Mmelite ikpeazụ dara; a na-egosi nsonaazụ gara aga",
     "healthPreviousFailure": "Arịrịọ ikpeazụ dara; oge ichere agwụla",
     "healthAwaitingSync": "Oge nrụgharị agafela; a na-eche mmekọrịta",
-    "healthPolicyUnavailable": "Iwu oke adịghị; a na-eji 0%",
+    "healthVerdictUnavailable": "Enweghị ike inweta nsonaazụ nyocha nnweta; a na-egosi naanị ọkwa oke ojiji",
     "healthSummaryFailed": "Agụghị nchịkọta ọnọdụ; ozi mkpọchi ụdị nwere ike ghara ịdị",
     "healthRuntimeObserved": "Emelitere ọnọdụ {time}",
     "healthQuotaObserved": "Ahụrụ oke {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Nlọghachi kacha nso mgbe {duration} gachara",
     "healthRatio": "{available, number} / {active, number} dị",
     "healthCd5": "Awa 5 · Oge nchere",
-    "healthCdw": "Kwa Izu · Oge nchere"
+    "healthCdw": "Kwa Izu · Oge nchere",
+    "healthRecentSuccessBypass": "Usoro ntụgharị na-ekwe akaụntụ a n'ihi na arịrịọ gara nke ọma n'oge na-adịbeghị anya.",
+    "healthPurchasedBalanceBypass": "Ego fọdụrụ a zụtara na-enye ohere ịga n'ihu mgbe oke etinyere gwụchara.",
+    "healthCutoffAtRequest": "A na-enyocha oke ojiji dị ugbu a mgbe a na-atụgharị arịrịọ."
   },
   "modals": {
     "waitingAuth": "Na-eche maka ikike",

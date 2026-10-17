@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "የመጨረሻው እድሳት አልተሳካም፤ የቀድሞው ውጤት ይታያል",
     "healthPreviousFailure": "የመጨረሻው ጥያቄ አልተሳካም፤ የጥበቃ ጊዜው አልቋል",
     "healthAwaitingSync": "የዳግም ማስጀመሪያ ጊዜ አልፏል፤ ማመሳሰልን በመጠባበቅ ላይ",
-    "healthPolicyUnavailable": "የገደብ ፖሊሲ አይገኝም፤ 0% ይጠቀማል",
+    "healthVerdictUnavailable": "የተገኝነት ማረጋገጫ ውጤት አይገኝም፤ የኮታ መጠኖች ብቻ ይታያሉ",
     "healthSummaryFailed": "የሁኔታ ማጠቃለያ ማንበብ አልተሳካም፤ የሞዴል መቆለፊያ መረጃ ሊጎድል ይችላል",
     "healthRuntimeObserved": "የሥራ ሁኔታ ተዘምኗል {time}",
     "healthQuotaObserved": "ኮታ ታይቷል {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "ቀዳሚ መመለሻ በ{duration} በኋላ",
     "healthRatio": "{available, plural, one {# / {active, number} ይገኛል} other {# / {active, number} ይገኛሉ}}",
     "healthCd5": "5 ሰዓት · የጥበቃ ጊዜ",
-    "healthCdw": "ሳምንታዊ · የጥበቃ ጊዜ"
+    "healthCdw": "ሳምንታዊ · የጥበቃ ጊዜ",
+    "healthRecentSuccessBypass": "በቅርቡ ጥያቄ ስለተሳካ ማዘዋወሪያው ይህን መለያ ይፈቅዳል።",
+    "healthPurchasedBalanceBypass": "የተካተተው ኮታ ካለቀ በኋላ በተገዛው ቀሪ ሂሳብ መጠቀም መቀጠል ይቻላል።",
+    "healthCutoffAtRequest": "የቀጥታ ኮታ ገደቦች ጥያቄን በማዘዋወር ጊዜ ይፈተሻሉ።"
   },
   "modals": {
     "waitingAuth": "ፈቃድ በመጠበቅ ላይ",

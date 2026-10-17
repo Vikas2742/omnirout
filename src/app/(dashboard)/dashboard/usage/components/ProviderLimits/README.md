@@ -1,61 +1,91 @@
 # Availability overview and router parity
 
-The overview projects existing cached usage and runtime evidence. It does not fetch
-provider usage, change routing policy, or clear runtime state.
+The overview reads GET `/api/usage/availability` and the cooldown summary. Both
+are management routes protected by the central proxy authentication pipeline.
+The availability endpoint reads memory, persisted quota snapshots and the
+ProviderLimits cache; it does not fetch provider usage, refresh tokens, test
+connections, write snapshots, or change routing policy.
 
 ## Quota decisions
 
-`quotaEligibility.ts` honors the same `_freetrial` alternative-budget grouping as
-`quotaPreflight.ts:groupQuotaWindowsByBase`. A group is usable if any member is
-above its own cutoff. The displayed effective member is the usable member with
-the most remaining quota; unrelated resources remain simultaneous constraints.
+`src/lib/usage/availability.ts:evaluateCachedQuotaAvailability` calls the routing
+limit-policy, exhaustion and cutoff functions. Snapshot hydration and expired
+reset advancement run in a private, cloned cache view, leaving routing's cache
+and recent-success state unchanged. Allowance reasons, blocking windows, scopes
+and observation times come from this server decision, not browser thresholds.
+Runtime cooldown, terminal and paused states still take precedence.
 
-The imported Claude extra-usage, Codex filtering, and Codex paid-credit helpers
-are client-safe leaves. Claude extra usage and Codex filtering have no imports;
-paid credits imports only the filtering leaf and the pure Codex scope config.
-They introduce no server, DB, credential, or network dependency into the client.
-Their local-quota exceptions never override cooldown, terminal, or paused states.
+The browser polls both summaries every 30 seconds while visible and on returning
+to visibility. Failed reads retain the previous successful quota verdict for up
+to 90 seconds. Missing or expired verdicts are unknown, never inferred from a
+quota meter. Cached quota percentages remain display-only.
 
-Bypassed meters retain their actual percentage in the tooltip. They do not drive
-availability or water level. No remaining local constraint means 100% (unrestricted
-by local quota, NOT a claim of refilled plan quota). Otherwise the tightest
-remaining constraint drives water level, including Spark when paid credits bypass
-only the non-Spark plan. An exhausted Spark meter can therefore coexist with a
-green, partial account and a 0% local water level. Bypass reasons are translated
-in all 67 catalogs with no ICU arguments.
+## Known limitations
 
-OpenRouter's positive-denominator credits meter is a real account constraint,
-not display-only credit metadata. Its free windows remain scoped to `:free`.
+Preflight verdicts are not cached: `quotaPreflight.ts:preflightQuota` fetches a
+QuotaInfo, evaluates it and returns the result to the current request. Individual
+fetchers may cache their live inputs, but there is no shared persisted verdict.
+The overview reconstructs generic QuotaInfo with `convertUsageToQuotaInfo` and
+Codex QuotaInfo with the same parser as its live fetcher. Other dedicated fetchers
+cannot be reconstructed exactly from ProviderLimits rows. When preflight is
+enabled, those decisions carry `cutoffEvaluated: false` and the tooltip explains
+that live thresholds are checked when routing a request. No cutoff outcome is
+guessed; ordinary cached exhaustion and local limit-policy checks still apply.
+No warning is needed when the routing preflight gate is disabled.
 
-## Contract and intentional exclusions
+The following provider IDs are derived from the startup `registerQuotaFetcher`
+registry (dedicated fetchers other than Codex):
 
-`tests/unit/quota-overview-router-parity.test.ts` compares real upstream usage
-builders/converters and `evaluateQuotaCutoff` with
-`parseQuotaData -> buildHealthAccount -> displayAccount`. Request scope is applied
-with existing router selectors. OpenRouter uses its actual cached request-scoped
-fetcher over synthetic responses. No endpoint is contacted. Fixtures use synthetic
-identities and the test runner's isolated DATA_DIR.
+- `agentrouter`
+- `bailian-coding-plan`
+- `context7`
+- `crof`
+- `deepseek`
+- `firecrawl`
+- `freemodel-dev`
+- `grok-cli`
+- `grok-web`
+- `jina`
+- `jina-ai`
+- `jina-reader`
+- `jina-search`
+- `kimi`
+- `llmgateway`
+- `lyceum`
+- `moonshot`
+- `opencode-go`
+- `opencode-zen`
+- `openrouter`
+- `qwen-cloud-token-plan`
+- `tavily`
+- `tavily-search`
+- `v0-vercel`
+- `xai-oauth`
+- `xao`
 
-Runtime cooldown and terminal classification are outside quota parity; precedence
-is tested separately and existing runtime tests remain unchanged. Missing data,
-failed reads, stale/reset-advanced snapshots and runtime clock freshness are not
-claims of identical router fail-open behavior; they retain the existing UI policy.
+Custom Moonshot node IDs/prefixes registered at startup inherit this limitation.
+The registry-driven cutoff contract tests enumerate the IDs without contacting
+providers. Dynamically resolved compatible-provider aggregator fetchers also
+require live input; they must not be inferred from unrelated usage rows.
 
-Known server-only difference (#14359): `isQuotaHealthy(connectionId)` reads
-`healthyUntil` in `src/domain/quotaCacheState.ts`. Source inspection found no
-export of this state in `/api/resilience/cooldowns`, cooldownManager's response,
-`/api/providers`, or the existing API routes. A summary status of `healthy` only
-means no terminal/cooldown/lockout, not this recent-success override. The contract
-therefore omits connectionId; no API or inferred success state was added.
+Codex code_review meters remain display-only for request eligibility: the routing
+selector distinguishes Spark from non-Spark, and the dedicated Codex parser
+omits code_review. Review-only refusal would require a routing contract that
+these selectors do not currently provide.
 
-Current code_review routing behavior: `buildCodexUsageQuotas` exposes review
-meters, but `getCodexQuotaWindowFilterForModel` distinguishes only Spark from
-non-Spark. Generic conversion/evaluation blocks both normal and review requests
-when review is exhausted; the dedicated Codex fetcher omits review and permits
-both when plan quota remains. A dedicated contract test covers these results and
-the green/partial overview projection. This difference is not model-pair parity:
-review-only refusal requires a request-specific router contract that the current
-selectors do not provide.
+Module initialization can attempt the same public Copilot/Codex version metadata
+probes as the existing provider-limits route. Synthetic tests intercept every
+fetch URL and reject all real networking, permitting only those metadata URLs
+in their recorded call list. These probes carry no account credentials.
+Cold module loading also reaches the existing reasoning-cache boot cleanup,
+which only deletes expired reasoning rows. The synthetic test mocks this write,
+allows at most one cold-import call, and requires zero calls during both GETs.
+Warm reads do not refresh providers, write DB rows or mutate routing's cache.
+
+Alternative-budget meters use the server's display-only window thresholds to
+select the usable budget. Allowance reasons can remove bypassed plan meters from
+the waterline while retaining independent Spark meters. None of these display
+calculations decide eligibility or capsule color.
 
 ## Provider order
 

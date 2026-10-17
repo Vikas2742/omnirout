@@ -9,7 +9,7 @@ import {
   type HealthCooldown,
   type HealthData,
 } from "./healthOverview";
-import type { AvailabilityPolicy } from "./availabilityPolicy";
+import type { QuotaAvailabilitySummary } from "@/lib/usage/availabilityTypes";
 import {
   hasTerminalStatus,
   parseRuntimeTimestamp,
@@ -50,7 +50,8 @@ export function useAvailability(
     observedAt?: string | number;
     receivedAt?: number;
   }>({ rows: {} });
-  const [policy, setPolicy] = useState<AvailabilityPolicy>();
+  const [availability, setAvailability] = useState<QuotaAvailabilitySummary>();
+  const quotaPending = useRef(false);
   const [now, setNow] = useState(() => Date.now());
   const pending = useRef(false);
   // Local to this mounted consumer, never persisted or shared across accounts.
@@ -91,28 +92,45 @@ export function useAvailability(
       setNow(Date.now());
     }
   }, []);
+  const refreshQuota = useCallback(async () => {
+    if (quotaPending.current) return;
+    quotaPending.current = true;
+    try {
+      const data = (await readSummary("/api/usage/availability")) as QuotaAvailabilitySummary;
+      if (
+        !Number.isFinite(parseRuntimeTimestamp(data.generatedAt)) ||
+        !Array.isArray(data.connections) ||
+        !data.connections.every(
+          (row) =>
+            typeof row.id === "string" &&
+            row.account &&
+            Array.isArray(row.scopes) &&
+            [row.account, ...row.scopes.map((s) => s.decision)].every(
+              (d) =>
+                d &&
+                (d.usable === null || typeof d.usable === "boolean") &&
+                Array.isArray(d.blockers) &&
+                Array.isArray(d.allowanceReasons)
+            )
+        )
+      )
+        throw new Error("Invalid quota availability summary");
+      setAvailability((previous) =>
+        !previous ||
+        parseRuntimeTimestamp(data.generatedAt) > parseRuntimeTimestamp(previous.generatedAt)
+          ? data
+          : previous
+      );
+    } catch {
+      // Preserve the last successful conclusion for 90 seconds; never infer from meters.
+    } finally {
+      quotaPending.current = false;
+      setNow(Date.now());
+    }
+  }, []);
   const refreshAvailability = useCallback(async () => {
-    await Promise.all([
-      refreshCooldowns(),
-      readSummary("/api/resilience")
-        .then((data) => {
-          const p = data.quotaPreflight;
-          if (
-            !p ||
-            typeof p.enabled !== "boolean" ||
-            !Number.isFinite(p.defaultThresholdPercent) ||
-            !p.providerWindowDefaults
-          )
-            throw new Error("Invalid quota policy");
-          setPolicy({
-            enabled: p.enabled,
-            defaultThresholdPercent: p.defaultThresholdPercent,
-            providerWindowDefaults: p.providerWindowDefaults,
-          });
-        })
-        .catch(() => setPolicy(undefined)),
-    ]);
-  }, [refreshCooldowns]);
+    await Promise.all([refreshCooldowns(), refreshQuota()]);
+  }, [refreshCooldowns, refreshQuota]);
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void refreshAvailability();
@@ -122,11 +140,11 @@ export function useAvailability(
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     const poll = window.setInterval(() => {
-      if (document.visibilityState === "visible") void refreshCooldowns();
+      if (document.visibilityState === "visible") void refreshAvailability();
     }, 30_000);
     const visible = () => {
       setNow(Date.now());
-      if (document.visibilityState === "visible") void refreshCooldowns();
+      if (document.visibilityState === "visible") void refreshAvailability();
     };
     document.addEventListener("visibilitychange", visible);
     return () => {
@@ -134,7 +152,7 @@ export function useAvailability(
       window.clearInterval(poll);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [refreshCooldowns]);
+  }, [refreshAvailability]);
   const summaryFailed =
     snapshot.receivedAt === undefined ||
     now - snapshot.receivedAt > SUMMARY_FRESHNESS_MS ||
@@ -179,7 +197,8 @@ export function useAvailability(
       Object.fromEntries(
         connections.map((connection) => {
           const evidence: AvailabilityEvidence = {
-            policy,
+            availability: availability?.connections.find((row) => row.id === connection.id),
+            availabilityObservedAt: availability?.generatedAt,
             cooldown: snapshot.rows[connection.id]?.cooldown,
             observedAt: snapshot.rows[connection.id]?.observedAt,
             summaryFailed,
@@ -196,7 +215,16 @@ export function useAvailability(
           ];
         })
       ),
-    [connections, quotaData, errors, policy, snapshot, now, summaryFailed, cooldownObservations]
+    [
+      connections,
+      quotaData,
+      errors,
+      availability,
+      snapshot,
+      now,
+      summaryFailed,
+      cooldownObservations,
+    ]
   );
   return { accounts, refreshAvailability, summaryFailed };
 }

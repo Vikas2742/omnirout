@@ -43,7 +43,7 @@ const keys = [
   "healthPreviousSnapshot",
   "healthPreviousFailure",
   "healthAwaitingSync",
-  "healthPolicyUnavailable",
+  "healthVerdictUnavailable",
   "healthSummaryFailed",
   "healthRuntimeObserved",
   "healthQuotaObserved",
@@ -52,6 +52,9 @@ const keys = [
   "healthDetailsHint",
   "healthFiveHour",
   "healthOverall",
+  "healthRecentSuccessBypass",
+  "healthPurchasedBalanceBypass",
+  "healthCutoffAtRequest",
 ];
 // Quantity-sensitive usage/common keys used by the availability overview.
 // active is only the ratio denominator; available controls agreement. Percentages,

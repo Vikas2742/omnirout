@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "รีเฟรชครั้งล่าสุดไม่สำเร็จ แสดงผลครั้งก่อน",
     "healthPreviousFailure": "คำขอล่าสุดล้มเหลว สิ้นสุดช่วงพักแล้ว",
     "healthAwaitingSync": "เลยเวลารีเซ็ตแล้ว รอการซิงค์ครั้งถัดไป",
-    "healthPolicyUnavailable": "อ่านนโยบายเกณฑ์ไม่ได้ ใช้ 0%",
+    "healthVerdictUnavailable": "อ่านผลตรวจสอบความพร้อมใช้งานไม่ได้ แสดงเฉพาะระดับโควตา",
     "healthSummaryFailed": "อ่านสรุปสถานะไม่สำเร็จ ข้อมูลการล็อกโมเดลอาจไม่ครบ",
     "healthRuntimeObserved": "อัปเดตสถานะ {time}",
     "healthQuotaObserved": "สังเกตโควตา {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "กลับมาใช้ได้เร็วสุดใน {duration}",
     "healthRatio": "ใช้ได้ {available, number} / {active, number}",
     "healthCd5": "5 ชั่วโมง · ระยะเวลารอ",
-    "healthCdw": "รายสัปดาห์ · ระยะเวลารอ"
+    "healthCdw": "รายสัปดาห์ · ระยะเวลารอ",
+    "healthRecentSuccessBypass": "ระบบกำหนดเส้นทางอนุญาตให้ใช้บัญชีนี้เพราะมีคำขอสำเร็จเมื่อไม่นานมานี้",
+    "healthPurchasedBalanceBypass": "ยอดคงเหลือที่ซื้อไว้ช่วยให้ใช้งานต่อได้หลังจากโควตาที่รวมไว้หมด",
+    "healthCutoffAtRequest": "ระบบจะตรวจสอบเกณฑ์โควตาปัจจุบันเมื่อกำหนดเส้นทางคำขอ"
   },
   "modals": {
     "waitingAuth": "รอการอนุญาต",

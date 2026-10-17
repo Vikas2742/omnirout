@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Lần làm mới gần nhất thất bại; hiển thị kết quả trước",
     "healthPreviousFailure": "Yêu cầu gần nhất thất bại; thời gian chờ đã kết thúc",
     "healthAwaitingSync": "Đã qua giờ đặt lại; đang chờ đồng bộ",
-    "healthPolicyUnavailable": "Không đọc được chính sách ngưỡng; dùng 0%",
+    "healthVerdictUnavailable": "Không lấy được kết quả kiểm tra khả dụng; chỉ hiển thị mức hạn ngạch",
     "healthSummaryFailed": "Đọc tóm tắt trạng thái thất bại; có thể thiếu thông tin khóa mô hình",
     "healthRuntimeObserved": "Trạng thái cập nhật {time}",
     "healthQuotaObserved": "Hạn mức được ghi nhận {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Khôi phục sớm nhất sau {duration}",
     "healthRatio": "{available, number} / {active, number} dùng được",
     "healthCd5": "5 giờ · Thời gian chờ",
-    "healthCdw": "Hàng tuần · Thời gian chờ"
+    "healthCdw": "Hàng tuần · Thời gian chờ",
+    "healthRecentSuccessBypass": "Bộ định tuyến cho phép tài khoản này vì một yêu cầu đã thành công gần đây.",
+    "healthPurchasedBalanceBypass": "Số dư đã mua cho phép tiếp tục sử dụng sau khi hết hạn mức đi kèm.",
+    "healthCutoffAtRequest": "Ngưỡng hạn mức trực tiếp được kiểm tra khi định tuyến yêu cầu."
   },
   "modals": {
     "waitingAuth": "Đang chờ ủy quyền",

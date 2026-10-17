@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Ostatnie odświeżenie nie powiodło się; wyświetlono poprzedni wynik",
     "healthPreviousFailure": "Ostatnie żądanie nie powiodło się; czas oczekiwania minął",
     "healthAwaitingSync": "Czas resetu minął; oczekiwanie na synchronizację",
-    "healthPolicyUnavailable": "Zasady progu niedostępne; użyto 0%",
+    "healthVerdictUnavailable": "Sprawdzenie dostępności jest niedostępne; wyświetlane są tylko poziomy limitów",
     "healthSummaryFailed": "Błąd odczytu podsumowania stanu; może brakować blokad modeli",
     "healthRuntimeObserved": "Stan zaktualizowano {time}",
     "healthQuotaObserved": "Limit zaobserwowano {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Najbliższe odblokowanie za {duration}",
     "healthRatio": "{available, plural, one {Dostępne # / {active, number}} few {Dostępne # / {active, number}} many {Dostępnych # / {active, number}} other {Dostępne # / {active, number}}}",
     "healthCd5": "5 godzin · Okres oczekiwania",
-    "healthCdw": "Tygodniowy · Okres oczekiwania"
+    "healthCdw": "Tygodniowy · Okres oczekiwania",
+    "healthRecentSuccessBypass": "Routing dopuszcza to konto, ponieważ niedawno żądanie zakończyło się powodzeniem.",
+    "healthPurchasedBalanceBypass": "Zakupione saldo pozwala korzystać dalej po wyczerpaniu wliczonego limitu.",
+    "healthCutoffAtRequest": "Progi limitów w czasie rzeczywistym są sprawdzane podczas routingu żądania."
   },
   "modals": {
     "waitingAuth": "Oczekiwanie na autoryzację",

@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Sabuntawa ta ƙarshe ta gaza; ana nuna sakamakon baya",
     "healthPreviousFailure": "Buƙata ta ƙarshe ta gaza; lokacin jira ya ƙare",
     "healthAwaitingSync": "Lokacin sake saiti ya wuce; ana jiran daidaitawa",
-    "healthPolicyUnavailable": "Babu manufar iyaka; ana amfani da 0%",
+    "healthVerdictUnavailable": "Ba a iya samun sakamakon binciken samuwa ba; matakan kason amfani kawai ake nunawa",
     "healthSummaryFailed": "An kasa karanta taƙaitaccen yanayi; bayanan kulle samfurori na iya ɓacewa",
     "healthRuntimeObserved": "An sabunta yanayi {time}",
     "healthQuotaObserved": "An lura da kaso {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Dawowa mafi kusa bayan {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} yana samuwa} other {# / {active, number} suna samuwa}}",
     "healthCd5": "Sa’o’i 5 · Lokacin jira",
-    "healthCdw": "Mako-mako · Lokacin jira"
+    "healthCdw": "Mako-mako · Lokacin jira",
+    "healthRecentSuccessBypass": "Tsarin tura buƙatu ya ba da damar wannan asusu domin wata buƙata ta yi nasara kwanan nan.",
+    "healthPurchasedBalanceBypass": "Za a iya ci gaba da amfani da ragowar kuɗin da aka saya bayan rabon da aka haɗa ya ƙare.",
+    "healthCutoffAtRequest": "Ana duba iyakokin rabo na yanzu yayin tura buƙata."
   },
   "modals": {
     "waitingAuth": "Ana Jiran Izini",

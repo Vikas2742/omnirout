@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "ការធ្វើបច្ចុប្បន្នភាពចុងក្រោយបរាជ័យ បង្ហាញលទ្ធផលមុន",
     "healthPreviousFailure": "សំណើចុងក្រោយបរាជ័យ រយៈពេលរង់ចាំបានបញ្ចប់",
     "healthAwaitingSync": "ហួសពេលកំណត់ឡើងវិញ រង់ចាំការធ្វើសមកាលកម្ម",
-    "healthPolicyUnavailable": "មិនមានគោលការណ៍កម្រិត ប្រើ 0%",
+    "healthVerdictUnavailable": "មិនអាចទទួលបានលទ្ធផលពិនិត្យភាពអាចប្រើបានទេ បង្ហាញតែកម្រិតកូតាប៉ុណ្ណោះ",
     "healthSummaryFailed": "អានសេចក្តីសង្ខេបប្រតិបត្តិការបរាជ័យ អាចខ្វះព័ត៌មានចាក់សោម៉ូដែល",
     "healthRuntimeObserved": "ស្ថានភាពបានធ្វើបច្ចុប្បន្នភាព {time}",
     "healthQuotaObserved": "កូតាបានសង្កេត {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "ស្ដារលឿនបំផុតក្រោយ {duration}",
     "healthRatio": "អាចប្រើបាន {available, number} / {active, number}",
     "healthCd5": "៥ ម៉ោង · រយៈពេលរង់ចាំ",
-    "healthCdw": "ប្រចាំសប្ដាហ៍ · រយៈពេលរង់ចាំ"
+    "healthCdw": "ប្រចាំសប្ដាហ៍ · រយៈពេលរង់ចាំ",
+    "healthRecentSuccessBypass": "ការបញ្ជូនអនុញ្ញាតឱ្យប្រើគណនីនេះ ព្រោះមានសំណើជោគជ័យថ្មីៗនេះ។",
+    "healthPurchasedBalanceBypass": "សមតុល្យដែលបានទិញអនុញ្ញាតឱ្យបន្តប្រើ បន្ទាប់ពីអស់កូតាដែលបានរួមបញ្ចូល។",
+    "healthCutoffAtRequest": "កម្រិតកូតាបច្ចុប្បន្នត្រូវបានពិនិត្យនៅពេលបញ្ជូនសំណើ។"
   },
   "modals": {
     "waitingAuth": "កំពុងរង់ចាំការផ្តល់សិទ្ធិ",

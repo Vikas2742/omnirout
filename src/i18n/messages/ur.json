@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "آخری تازہ کاری ناکام؛ پچھلا نتیجہ دکھایا جا رہا ہے",
     "healthPreviousFailure": "آخری درخواست ناکام؛ انتظار کا وقت ختم ہو گیا",
     "healthAwaitingSync": "ری سیٹ کا وقت گزر گیا؛ ہم وقت سازی کا انتظار",
-    "healthPolicyUnavailable": "حد کی پالیسی دستیاب نہیں؛ 0% استعمال ہو رہا ہے",
+    "healthVerdictUnavailable": "دستیابی کی جانچ کا نتیجہ نہیں مل رہا؛ صرف کوٹے کی سطحیں دکھائی جا رہی ہیں",
     "healthSummaryFailed": "عملی خلاصہ پڑھنے میں ناکامی؛ ماڈل لاک کی معلومات غائب ہو سکتی ہیں",
     "healthRuntimeObserved": "عملی حالت کی تازہ کاری {time}",
     "healthQuotaObserved": "کوٹے کا مشاہدہ {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "جلد ترین بحالی {duration} بعد",
     "healthRatio": "{available, plural, one {# / {active, number} دستیاب} other {# / {active, number} دستیاب}}",
     "healthCd5": "۵ گھنٹے · انتظار کی مدت",
-    "healthCdw": "ہفتہ وار · انتظار کی مدت"
+    "healthCdw": "ہفتہ وار · انتظار کی مدت",
+    "healthRecentSuccessBypass": "حال ہی میں ایک درخواست کامیاب ہونے کی وجہ سے روٹنگ اس اکاؤنٹ کو اجازت دیتی ہے۔",
+    "healthPurchasedBalanceBypass": "شامل کوٹا ختم ہونے کے بعد خریدے گئے بیلنس سے استعمال جاری رہ سکتا ہے۔",
+    "healthCutoffAtRequest": "لائیو کوٹا کی حدیں درخواست کو روٹ کرتے وقت جانچی جاتی ہیں۔"
   },
   "modals": {
     "waitingAuth": "اجازت کا انتظار ہے",

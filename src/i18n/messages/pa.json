@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "ਆਖਰੀ ਤਾਜ਼ਾਕਰਨ ਅਸਫਲ; ਪਿਛਲਾ ਨਤੀਜਾ ਦਿਖਾਇਆ ਜਾ ਰਿਹਾ ਹੈ",
     "healthPreviousFailure": "ਆਖਰੀ ਬੇਨਤੀ ਅਸਫਲ; ਉਡੀਕ ਦਾ ਸਮਾਂ ਮੁੱਕਿਆ",
     "healthAwaitingSync": "ਰੀਸੈੱਟ ਦਾ ਸਮਾਂ ਲੰਘ ਗਿਆ; ਸਮਕਾਲੀਕਰਨ ਦੀ ਉਡੀਕ",
-    "healthPolicyUnavailable": "ਹੱਦ ਦੀ ਨੀਤੀ ਉਪਲਬਧ ਨਹੀਂ; 0% ਵਰਤਿਆ ਜਾ ਰਿਹਾ ਹੈ",
+    "healthVerdictUnavailable": "ਉਪਲਬਧਤਾ ਜਾਂਚ ਦਾ ਨਤੀਜਾ ਨਹੀਂ ਮਿਲ ਰਿਹਾ; ਸਿਰਫ਼ ਕੋਟੇ ਦੇ ਪੱਧਰ ਦਿਖਾਏ ਜਾ ਰਹੇ ਹਨ",
     "healthSummaryFailed": "ਕਾਰਜਕਾਰੀ ਸਾਰ ਪੜ੍ਹਨ ਵਿੱਚ ਅਸਫਲ; ਮਾਡਲ ਲਾਕ ਦੀ ਜਾਣਕਾਰੀ ਗੁੰਮ ਹੋ ਸਕਦੀ ਹੈ",
     "healthRuntimeObserved": "ਕਾਰਜਕਾਰੀ ਹਾਲਤ ਅੱਪਡੇਟ {time}",
     "healthQuotaObserved": "ਕੋਟੇ ਦਾ ਨਿਰੀਖਣ {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "ਸਭ ਤੋਂ ਜਲਦੀ ਬਹਾਲੀ {duration} ਬਾਅਦ",
     "healthRatio": "{available, plural, one {# / {active, number} ਉਪਲਬਧ} other {# / {active, number} ਉਪਲਬਧ}}",
     "healthCd5": "੫ ਘੰਟੇ · ਉਡੀਕ ਦੀ ਮਿਆਦ",
-    "healthCdw": "ਹਫ਼ਤਾਵਾਰੀ · ਉਡੀਕ ਦੀ ਮਿਆਦ"
+    "healthCdw": "ਹਫ਼ਤਾਵਾਰੀ · ਉਡੀਕ ਦੀ ਮਿਆਦ",
+    "healthRecentSuccessBypass": "ਹਾਲ ਹੀ ਵਿੱਚ ਬੇਨਤੀ ਸਫਲ ਹੋਣ ਕਾਰਨ ਰਾਊਟਿੰਗ ਇਸ ਖਾਤੇ ਨੂੰ ਇਜਾਜ਼ਤ ਦਿੰਦੀ ਹੈ।",
+    "healthPurchasedBalanceBypass": "ਸ਼ਾਮਲ ਕੋਟਾ ਖਤਮ ਹੋਣ ਤੋਂ ਬਾਅਦ ਖਰੀਦੇ ਬਕਾਏ ਨਾਲ ਵਰਤੋਂ ਜਾਰੀ ਰਹਿ ਸਕਦੀ ਹੈ।",
+    "healthCutoffAtRequest": "ਲਾਈਵ ਕੋਟੇ ਦੀਆਂ ਹੱਦਾਂ ਬੇਨਤੀ ਰਾਊਟ ਕਰਨ ਵੇਲੇ ਜਾਂਚੀਆਂ ਜਾਂਦੀਆਂ ਹਨ।"
   },
   "modals": {
     "waitingAuth": "ਅਧਿਕਾਰ ਦੀ ਉਡੀਕ",

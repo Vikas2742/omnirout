@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Az utolsó frissítés sikertelen; az előző eredmény látható",
     "healthPreviousFailure": "Az utolsó kérés sikertelen; a várakozás lejárt",
     "healthAwaitingSync": "A visszaállítás ideje elmúlt; szinkronizálásra vár",
-    "healthPolicyUnavailable": "A küszöbszabály nem érhető el; 0% használata",
+    "healthVerdictUnavailable": "Az elérhetőség ellenőrzése nem érhető el; csak a kvótaszintek láthatók",
     "healthSummaryFailed": "Az állapotösszegzés beolvasása sikertelen; modellzárolások hiányozhatnak",
     "healthRuntimeObserved": "Állapot frissítve: {time}",
     "healthQuotaObserved": "Kvóta megfigyelve: {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Legkorábbi helyreállás: {duration} múlva",
     "healthRatio": "{available, plural, one {# / {active, number} elérhető} other {# / {active, number} elérhető}}",
     "healthCd5": "5 óra · Várakozási idő",
-    "healthCdw": "Heti · Várakozási idő"
+    "healthCdw": "Heti · Várakozási idő",
+    "healthRecentSuccessBypass": "Az útválasztás engedélyezi ezt a fiókot, mert nemrég sikeres volt egy kérés.",
+    "healthPurchasedBalanceBypass": "A megvásárolt egyenleg a foglalt keret kimerülése után is használható.",
+    "healthCutoffAtRequest": "A valós idejű kvótaküszöbök ellenőrzése a kérés útválasztásakor történik."
   },
   "modals": {
     "waitingAuth": "Várakozás az engedélyezésre",

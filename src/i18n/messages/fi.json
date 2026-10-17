@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Viimeisin päivitys epäonnistui; näytetään edellinen tulos",
     "healthPreviousFailure": "Viimeisin pyyntö epäonnistui; odotusaika päättyi",
     "healthAwaitingSync": "Nollausaika ohitettu; odotetaan synkronointia",
-    "healthPolicyUnavailable": "Kynnyskäytäntö ei ole saatavilla; käytetään arvoa 0%",
+    "healthVerdictUnavailable": "Saatavuustarkistusta ei voida tehdä; näytetään vain kiintiötasot",
     "healthSummaryFailed": "Tilayhteenvedon luku epäonnistui; mallilukituksia voi puuttua",
     "healthRuntimeObserved": "Tila päivitetty {time}",
     "healthQuotaObserved": "Kiintiö havaittu {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Aikaisin palautuminen: {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} käytettävissä} other {# / {active, number} käytettävissä}}",
     "healthCd5": "5 tuntia · Odotusaika",
-    "healthCdw": "Viikoittain · Odotusaika"
+    "healthCdw": "Viikoittain · Odotusaika",
+    "healthRecentSuccessBypass": "Reititys sallii tämän tilin, koska pyyntö onnistui äskettäin.",
+    "healthPurchasedBalanceBypass": "Ostettua saldoa voi käyttää sisältyvän kiintiön loputtua.",
+    "healthCutoffAtRequest": "Reaaliaikaiset kiintiörajat tarkistetaan pyyntöä reititettäessä."
   },
   "modals": {
     "waitingAuth": "Odotetaan valtuutusta",

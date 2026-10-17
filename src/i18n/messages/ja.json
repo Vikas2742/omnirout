@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "前回の更新に失敗したため、前の結果を表示",
     "healthPreviousFailure": "前回のリクエストは失敗しましたが、クールダウンは終了",
     "healthAwaitingSync": "リセット時刻経過、次の同期を待機中",
-    "healthPolicyUnavailable": "しきい値ポリシーを取得できないため、0%で判定",
+    "healthVerdictUnavailable": "可用性の判定を取得できないため、クォータ残量のみ表示しています",
     "healthSummaryFailed": "実行状態の概要を取得できません。モデルのロック情報が欠落する可能性があります",
     "healthRuntimeObserved": "実行状態の更新: {time}",
     "healthQuotaObserved": "クォータの観測: {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "最短 {duration} で復旧",
     "healthRatio": "{available, number} / {active, number} 利用可能",
     "healthCd5": "5時間 · 待機期間",
-    "healthCdw": "毎週 · 待機期間"
+    "healthCdw": "毎週 · 待機期間",
+    "healthRecentSuccessBypass": "最近リクエストが成功したため、このアカウントの利用が許可されています。",
+    "healthPurchasedBalanceBypass": "プラン内の利用枠を使い切っても、購入済み残高を利用できます。",
+    "healthCutoffAtRequest": "リアルタイムの利用枠のしきい値は、リクエストのルーティング時に確認されます。"
   },
   "modals": {
     "waitingAuth": "承認を待っています",

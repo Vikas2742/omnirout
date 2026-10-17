@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Uonyeshaji upya wa mwisho umeshindwa; inaonyesha matokeo ya awali",
     "healthPreviousFailure": "Ombi la mwisho limeshindwa; muda wa kusubiri umeisha",
     "healthAwaitingSync": "Muda wa kuweka upya umepita; inasubiri usawazishaji",
-    "healthPolicyUnavailable": "Sera ya kiwango haipatikani; inatumia 0%",
+    "healthVerdictUnavailable": "Matokeo ya ukaguzi wa upatikanaji hayapatikani; viwango vya mgao pekee vinaonyeshwa",
     "healthSummaryFailed": "Imeshindwa kusoma muhtasari wa hali; taarifa za kufungwa kwa modeli zinaweza kukosekana",
     "healthRuntimeObserved": "Hali imesasishwa {time}",
     "healthQuotaObserved": "Mgao umeangaliwa {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Marejesho ya mapema baada ya {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} inapatikana} other {# / {active, number} zinapatikana}}",
     "healthCd5": "Saa 5 · Muda wa kusubiri",
-    "healthCdw": "Kila Wiki · Muda wa kusubiri"
+    "healthCdw": "Kila Wiki · Muda wa kusubiri",
+    "healthRecentSuccessBypass": "Uelekezaji unaruhusu akaunti hii kwa sababu ombi limefaulu hivi karibuni.",
+    "healthPurchasedBalanceBypass": "Salio lililonunuliwa huruhusu matumizi kuendelea baada ya mgao uliojumuishwa kuisha.",
+    "healthCutoffAtRequest": "Viwango vya mgao wa moja kwa moja hukaguliwa wakati wa kuelekeza ombi."
   },
   "modals": {
     "waitingAuth": "Inasubiri Uidhinishaji",

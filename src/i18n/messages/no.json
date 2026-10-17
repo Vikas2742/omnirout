@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Siste oppdatering mislyktes; viser forrige resultat",
     "healthPreviousFailure": "Siste forespørsel mislyktes; ventetiden er over",
     "healthAwaitingSync": "Nullstillingstiden er passert; venter på synkronisering",
-    "healthPolicyUnavailable": "Terskelpolicy er utilgjengelig; bruker 0%",
+    "healthVerdictUnavailable": "Tilgjengelighetskontrollen er utilgjengelig; viser bare kvotenivåer",
     "healthSummaryFailed": "Kunne ikke lese driftsoversikten; modellåser kan mangle",
     "healthRuntimeObserved": "Status oppdatert {time}",
     "healthQuotaObserved": "Kvote observert {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Tidligste gjenoppretting om {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} tilgjengelig} other {# / {active, number} tilgjengelige}}",
     "healthCd5": "5 timer · Ventetid",
-    "healthCdw": "Ukentlig · Ventetid"
+    "healthCdw": "Ukentlig · Ventetid",
+    "healthRecentSuccessBypass": "Rutingen tillater kontoen fordi en forespørsel nylig lyktes.",
+    "healthPurchasedBalanceBypass": "Kjøpt saldo kan brukes når den inkluderte kvoten er brukt opp.",
+    "healthCutoffAtRequest": "Kvoteterskler i sanntid kontrolleres når en forespørsel rutes."
   },
   "modals": {
     "waitingAuth": "Venter på autorisasjon",

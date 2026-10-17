@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Paskutinis atnaujinimas nepavyko; rodomas ankstesnis rezultatas",
     "healthPreviousFailure": "Paskutinė užklausa nepavyko; laukimo laikas baigėsi",
     "healthAwaitingSync": "Atkūrimo laikas praėjo; laukiama sinchronizavimo",
-    "healthPolicyUnavailable": "Slenksčio politika nepasiekiama; naudojama 0%",
+    "healthVerdictUnavailable": "Prieinamumo patikra nepasiekiama; rodomi tik kvotų lygiai",
     "healthSummaryFailed": "Nepavyko nuskaityti būsenos suvestinės; gali trūkti modelių užraktų",
     "healthRuntimeObserved": "Būsena atnaujinta {time}",
     "healthQuotaObserved": "Kvota stebėta {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Anksčiausias atsistatymas po {duration}",
     "healthRatio": "{available, plural, one {Pasiekiama # / {active, number}} few {Pasiekiamos # / {active, number}} many {Pasiekiama # / {active, number}} other {Pasiekiama # / {active, number}}}",
     "healthCd5": "5 valandos · Laukimo laikotarpis",
-    "healthCdw": "Kas savaitę · Laukimo laikotarpis"
+    "healthCdw": "Kas savaitę · Laukimo laikotarpis",
+    "healthRecentSuccessBypass": "Maršruto parinkimas leidžia šią paskyrą, nes užklausa neseniai buvo sėkminga.",
+    "healthPurchasedBalanceBypass": "Įsigytas likutis leidžia tęsti naudojimą išnaudojus įtrauktą kvotą.",
+    "healthCutoffAtRequest": "Realaus laiko kvotos slenksčiai tikrinami parenkant užklausos maršrutą."
   },
   "modals": {
     "waitingAuth": "Laukiama autorizacijos",

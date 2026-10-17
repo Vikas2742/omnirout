@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Posledná aktualizácia zlyhala; zobrazuje sa predchádzajúci výsledok",
     "healthPreviousFailure": "Posledná požiadavka zlyhala; čakacia doba sa skončila",
     "healthAwaitingSync": "Čas obnovenia uplynul; čaká sa na synchronizáciu",
-    "healthPolicyUnavailable": "Pravidlá prahu nie sú dostupné; používa sa 0%",
+    "healthVerdictUnavailable": "Kontrola dostupnosti nie je k dispozícii; zobrazujú sa iba úrovne kvót",
     "healthSummaryFailed": "Čítanie súhrnu stavu zlyhalo; môžu chýbať zámky modelov",
     "healthRuntimeObserved": "Stav aktualizovaný {time}",
     "healthQuotaObserved": "Kvóta zaznamenaná {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Najbližšie obnovenie za {duration}",
     "healthRatio": "{available, plural, one {Dostupný # / {active, number}} few {Dostupné # / {active, number}} many {Dostupného # / {active, number}} other {Dostupných # / {active, number}}}",
     "healthCd5": "5 hodín · Obdobie čakania",
-    "healthCdw": "Týždenne · Obdobie čakania"
+    "healthCdw": "Týždenne · Obdobie čakania",
+    "healthRecentSuccessBypass": "Smerovanie povoľuje tento účet, pretože nedávna požiadavka uspela.",
+    "healthPurchasedBalanceBypass": "Zakúpený zostatok umožňuje pokračovať po vyčerpaní zahrnutej kvóty.",
+    "healthCutoffAtRequest": "Aktuálne prahové hodnoty kvóty sa kontrolujú pri smerovaní požiadavky."
   },
   "modals": {
     "waitingAuth": "Čaká sa na autorizáciu",

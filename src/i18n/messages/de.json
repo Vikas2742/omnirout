@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Letzte Aktualisierung fehlgeschlagen; vorheriges Ergebnis wird angezeigt",
     "healthPreviousFailure": "Letzte Anfrage fehlgeschlagen; Abklingzeit beendet",
     "healthAwaitingSync": "Rücksetzzeit verstrichen; warte auf Synchronisierung",
-    "healthPolicyUnavailable": "Schwellenwertrichtlinie nicht verfügbar; 0% wird verwendet",
+    "healthVerdictUnavailable": "Verfügbarkeitsprüfung nicht verfügbar; nur Kontingentanzeigen werden angezeigt",
     "healthSummaryFailed": "Statusübersicht konnte nicht gelesen werden; Modellsperren fehlen möglicherweise",
     "healthRuntimeObserved": "Betriebsstatus aktualisiert: {time}",
     "healthQuotaObserved": "Kontingent erfasst: {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Früheste Erholung in {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} verfügbar} other {# / {active, number} verfügbar}}",
     "healthCd5": "5 Stunden · Wartezeit",
-    "healthCdw": "Wöchentlich · Wartezeit"
+    "healthCdw": "Wöchentlich · Wartezeit",
+    "healthRecentSuccessBypass": "Das Routing lässt dieses Konto zu, weil kürzlich eine Anfrage erfolgreich war.",
+    "healthPurchasedBalanceBypass": "Nach Verbrauch des enthaltenen Kontingents kann gekauftes Guthaben weiter genutzt werden.",
+    "healthCutoffAtRequest": "Echtzeit-Kontingentschwellen werden beim Routing einer Anfrage geprüft."
   },
   "modals": {
     "waitingAuth": "Warten auf Autorisierung",

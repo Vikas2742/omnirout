@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "최근 새로고침 실패, 이전 결과 표시",
     "healthPreviousFailure": "마지막 요청 실패, 대기 시간 종료",
     "healthAwaitingSync": "초기화 시각 경과, 다음 동기화 대기 중",
-    "healthPolicyUnavailable": "임계값 정책을 읽지 못해 0%로 판단",
+    "healthVerdictUnavailable": "가용성 확인 결과를 가져올 수 없어 할당량 수준만 표시합니다",
     "healthSummaryFailed": "실행 상태 요약 읽기 실패, 모델 잠금 정보가 누락될 수 있음",
     "healthRuntimeObserved": "실행 상태 갱신 {time}",
     "healthQuotaObserved": "할당량 관측 {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "가장 빠른 복구: {duration} 후",
     "healthRatio": "{available, number} / {active, number} 사용 가능",
     "healthCd5": "5시간 · 대기 시간",
-    "healthCdw": "매주 · 대기 시간"
+    "healthCdw": "매주 · 대기 시간",
+    "healthRecentSuccessBypass": "최근 요청이 성공하여 라우터가 이 계정의 사용을 허용합니다.",
+    "healthPurchasedBalanceBypass": "포함된 할당량을 소진해도 구매한 잔액으로 계속 사용할 수 있습니다.",
+    "healthCutoffAtRequest": "실시간 할당량 임계값은 요청을 라우팅할 때 확인합니다."
   },
   "modals": {
     "waitingAuth": "승인을 기다리는 중",

@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "शेवटचे रिफ्रेश अयशस्वी; मागील निकाल दाखवत आहे",
     "healthPreviousFailure": "शेवटची विनंती अयशस्वी; प्रतीक्षा वेळ संपली",
     "healthAwaitingSync": "रीसेटची वेळ उलटली; समक्रमणाच्या प्रतीक्षेत",
-    "healthPolicyUnavailable": "मर्यादा धोरण उपलब्ध नाही; 0% वापरत आहे",
+    "healthVerdictUnavailable": "उपलब्धता तपासणीचा निकाल मिळत नाही; फक्त कोटा पातळी दाखवल्या जात आहेत",
     "healthSummaryFailed": "कार्यस्थितीचा सारांश वाचण्यात अयशस्वी; मॉडेल लॉकची माहिती नसू शकते",
     "healthRuntimeObserved": "कार्यस्थिती अद्ययावत {time}",
     "healthQuotaObserved": "कोट्याचे निरीक्षण {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "सर्वात लवकर पुनर्प्राप्ती {duration} नंतर",
     "healthRatio": "{available, plural, one {# / {active, number} उपलब्ध} other {# / {active, number} उपलब्ध}}",
     "healthCd5": "५ तास · प्रतीक्षा कालावधी",
-    "healthCdw": "साप्ताहिक · प्रतीक्षा कालावधी"
+    "healthCdw": "साप्ताहिक · प्रतीक्षा कालावधी",
+    "healthRecentSuccessBypass": "अलीकडे विनंती यशस्वी झाल्यामुळे राउटिंग या खात्याला परवानगी देते.",
+    "healthPurchasedBalanceBypass": "समाविष्ट कोटा संपल्यानंतर खरेदी केलेल्या शिल्लकीतून वापर सुरू ठेवता येतो.",
+    "healthCutoffAtRequest": "विनंती राउट करताना थेट कोट्याच्या मर्यादा तपासल्या जातात."
   },
   "modals": {
     "waitingAuth": "अधिकृततेची प्रतीक्षा करत आहे",

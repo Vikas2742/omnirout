@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Ultimo aggiornamento non riuscito; viene mostrato il risultato precedente",
     "healthPreviousFailure": "Ultima richiesta non riuscita; attesa terminata",
     "healthAwaitingSync": "Ora di ripristino trascorsa; in attesa di sincronizzazione",
-    "healthPolicyUnavailable": "Criterio di soglia non disponibile; si usa 0%",
+    "healthVerdictUnavailable": "Verifica della disponibilità non disponibile; vengono mostrati solo i livelli di quota",
     "healthSummaryFailed": "Lettura del riepilogo operativo non riuscita; potrebbero mancare blocchi dei modelli",
     "healthRuntimeObserved": "Stato aggiornato {time}",
     "healthQuotaObserved": "Quota osservata {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Primo ripristino tra {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} disponibile} many {# / {active, number} disponibili} other {# / {active, number} disponibili}}",
     "healthCd5": "5 ore · Periodo di attesa",
-    "healthCdw": "Settimanale · Periodo di attesa"
+    "healthCdw": "Settimanale · Periodo di attesa",
+    "healthRecentSuccessBypass": "Il routing consente questo account perché una richiesta è riuscita di recente.",
+    "healthPurchasedBalanceBypass": "Il saldo acquistato consente di continuare dopo aver esaurito la quota inclusa.",
+    "healthCutoffAtRequest": "Le soglie di quota in tempo reale vengono verificate durante il routing delle richieste."
   },
   "modals": {
     "waitingAuth": "In attesa di autorizzazione",

@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "చివరి నవీకరణ విఫలమైంది; మునుపటి ఫలితం చూపబడుతోంది",
     "healthPreviousFailure": "చివరి అభ్యర్థన విఫలమైంది; నిరీక్షణ ముగిసింది",
     "healthAwaitingSync": "రీసెట్ సమయం దాటింది; సమకాలీకరణ కోసం వేచి ఉంది",
-    "healthPolicyUnavailable": "పరిమితి విధానం అందుబాటులో లేదు; 0% ఉపయోగిస్తోంది",
+    "healthVerdictUnavailable": "అందుబాటు తనిఖీ ఫలితం లభించడం లేదు; కోటా స్థాయిలు మాత్రమే చూపబడుతున్నాయి",
     "healthSummaryFailed": "స్థితి సారాంశం చదవడం విఫలమైంది; మోడల్ లాక్ సమాచారం లేకపోవచ్చు",
     "healthRuntimeObserved": "స్థితి నవీకరించబడింది {time}",
     "healthQuotaObserved": "కోటా గమనించబడింది {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "అత్యంత త్వరగా {duration} తర్వాత పునరుద్ధరణ",
     "healthRatio": "{available, plural, one {# / {active, number} అందుబాటులో ఉన్నాయి} other {# / {active, number} అందుబాటులో ఉన్నాయి}}",
     "healthCd5": "5 గంటలు · వేచి ఉండే సమయం",
-    "healthCdw": "వారానికొకసారి · వేచి ఉండే సమయం"
+    "healthCdw": "వారానికొకసారి · వేచి ఉండే సమయం",
+    "healthRecentSuccessBypass": "ఇటీవల అభ్యర్థన విజయవంతమైనందున రూటింగ్ ఈ ఖాతాను అనుమతిస్తుంది.",
+    "healthPurchasedBalanceBypass": "చేర్చిన కోటా అయిపోయిన తర్వాత కొనుగోలు చేసిన బ్యాలెన్స్‌తో వినియోగం కొనసాగించవచ్చు.",
+    "healthCutoffAtRequest": "అభ్యర్థనను రూట్ చేసేటప్పుడు ప్రత్యక్ష కోటా పరిమితులను తనిఖీ చేస్తారు."
   },
   "modals": {
     "waitingAuth": "అనుమతి కోసం వేచి ఉంది",

@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  buildHealthAccount,
-  type HealthData,
-} from "../../src/app/(dashboard)/dashboard/usage/components/ProviderLimits/healthOverview.ts";
+import { buildFixtureHealthAccount as buildHealthAccount } from "./quota-overview-projection-fixtures.ts";
+import { type HealthData } from "../../src/app/(dashboard)/dashboard/usage/components/ProviderLimits/healthOverview.ts";
 import {
   displayAccount,
   displayPool,

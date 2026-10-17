@@ -77,9 +77,30 @@ function fixture(failCooldowns = false, malformed = false) {
     if (url === "/api/settings")
       return Response.json({ quotaVisibility: { claude: { hidden: ["weekly (7d)"] } } });
     if (url.startsWith("/api/provider-models?")) return Response.json({ models: [] });
-    if (url === "/api/resilience")
+    if (url === "/api/usage/availability")
       return Response.json({
-        quotaPreflight: { enabled: false, defaultThresholdPercent: 2, providerWindowDefaults: {} },
+        generatedAt: fetchedAt,
+        connections: connections.map((c) => ({
+          id: c.id,
+          scopes: [],
+          account: {
+            usable: c.id === "unknown" ? null : c.id !== "blocked",
+            blockers:
+              c.id === "blocked"
+                ? [
+                    {
+                      name: "weekly (7d)",
+                      kind: "overall",
+                      remainingPercent: 0,
+                      cutoffPercent: 0,
+                      resetAt: null,
+                    },
+                  ]
+                : [],
+            allowanceReasons: [],
+            fetchedAt,
+          },
+        })),
       });
     if (url === "/api/resilience/cooldowns") {
       if (failCooldowns) throw new Error("synthetic read failure");
@@ -132,7 +153,7 @@ it.each(["en", "zh-CN"])(
     await waitFor(() => expect(document.querySelectorAll("[data-availability]")).toHaveLength(5));
     const counters = () =>
       ["all", "ok", "cd5", "cdw", "act", "paused", "empty"].map((kind) => stat(kind).textContent);
-    expect(stat("ok").querySelector(".text-2xl")).toHaveTextContent("2");
+    await waitFor(() => expect(stat("ok").querySelector(".text-2xl")).toHaveTextContent("2"));
     await waitFor(() =>
       expect(stat("ok")).toHaveTextContent(locale === "en" ? "Includes 1" : "含 1")
     );
@@ -181,15 +202,20 @@ it("five-minute cache rereads use exactly the two cache GETs; hidden pages do no
   await act(async () => {
     await vi.advanceTimersByTimeAsync(299_000);
   });
-  expect(requests.filter((url) => url !== "/api/resilience/cooldowns")).toEqual([]);
+  expect(
+    requests.filter(
+      (url) => !["/api/resilience/cooldowns", "/api/usage/availability"].includes(url)
+    )
+  ).toEqual([]);
   requests.length = 0;
   await act(async () => {
     await vi.advanceTimersByTimeAsync(1000);
   });
-  expect(requests.filter((url) => url !== "/api/resilience/cooldowns")).toEqual([
-    "/api/providers/client",
-    "/api/usage/provider-limits",
-  ]);
+  expect(
+    requests.filter(
+      (url) => !["/api/resilience/cooldowns", "/api/usage/availability"].includes(url)
+    )
+  ).toEqual(["/api/providers/client", "/api/usage/provider-limits"]);
   vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
   requests.length = 0;
   await act(async () => {
@@ -204,7 +230,7 @@ it.each([false, true])(
     fixture(!malformed, malformed);
     const m = mount("en");
     await waitFor(() => expect(document.querySelectorAll("[data-availability]")).toHaveLength(5));
-    expect(document.querySelector('[data-availability="ok"]')).toBeTruthy();
+    await waitFor(() => expect(document.querySelector('[data-availability="ok"]')).toBeTruthy());
     expect(screen.getByRole("note")).toHaveTextContent(m.usage.healthSummaryFailed);
     expect(document.querySelector('[data-stat="ok"] .text-2xl')).toHaveTextContent("2");
   }

@@ -1,3 +1,4 @@
+import { healthyResponse } from "./quota-availability-fixtures";
 import React from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { act, cleanup, render, renderHook } from "@testing-library/react";
@@ -12,7 +13,6 @@ vi.mock("@/app/(dashboard)/dashboard/usage/components/ProviderLimits/QuotaCard",
 }));
 const t0 = Date.parse("2099-01-01T00:00:00Z");
 const iso = (n: number) => new Date(n).toISOString();
-const policy = { enabled: false, defaultThresholdPercent: 2, providerWindowDefaults: {} };
 const data = { a: { quotas: [{ name: "weekly", remainingPercentage: 80 }] } };
 const errors = {};
 const advance = (ms = 0) => act(async () => void (await vi.advanceTimersByTimeAsync(ms)));
@@ -37,7 +37,7 @@ it.each(["expired", "banned", "credits_exhausted"])(
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input) => {
-        if (String(input) === "/api/resilience") return Response.json({ quotaPreflight: policy });
+        if (String(input) === "/api/usage/availability") return healthyResponse(["a"]);
         expect(String(input)).toBe("/api/resilience/cooldowns");
         if (fail) return Response.json({}, { status: 503 });
         return Response.json({
@@ -90,7 +90,7 @@ it("a newer successful healthy summary recovers a terminal after failed polls", 
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input) => {
-      if (String(input) === "/api/resilience") return Response.json({ quotaPreflight: policy });
+      if (String(input) === "/api/usage/availability") return healthyResponse(["a"]);
       expect(String(input)).toBe("/api/resilience/cooldowns");
       if (mode === "failed") return Response.json({}, { status: 503 });
       return Response.json({
@@ -136,7 +136,7 @@ it.each(["older", "same-time", "missing-row"])(
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input) => {
-        if (String(input) === "/api/resilience") return Response.json({ quotaPreflight: policy });
+        if (String(input) === "/api/usage/availability") return healthyResponse(["a"]);
         expect(String(input)).toBe("/api/resilience/cooldowns");
         return Response.json({
           generatedAt: iso(
@@ -194,7 +194,7 @@ it("a later DB-only provider response preserves the live model-lock capsule", as
         return new Promise<Response>((resolve) => {
           deliver = resolve;
         });
-      if (url === "/api/resilience") return Response.json({ quotaPreflight: policy });
+      if (url === "/api/usage/availability") return healthyResponse(["a"]);
       if (url === "/api/resilience/cooldowns")
         return Response.json({
           generatedAt: iso(t0),

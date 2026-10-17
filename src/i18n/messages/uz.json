@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Oxirgi yangilash muvaffaqiyatsiz; oldingi natija ko‘rsatilmoqda",
     "healthPreviousFailure": "Oxirgi so‘rov muvaffaqiyatsiz; kutish muddati tugadi",
     "healthAwaitingSync": "Tiklash vaqti o‘tgan; sinxronlash kutilmoqda",
-    "healthPolicyUnavailable": "Chegara siyosati mavjud emas; 0% ishlatilmoqda",
+    "healthVerdictUnavailable": "Mavjudlik tekshiruvi natijasi olinmadi; faqat kvota darajalari ko‘rsatilmoqda",
     "healthSummaryFailed": "Holat xulosasi o‘qilmadi; model qulfi ma’lumotlari yetishmasligi mumkin",
     "healthRuntimeObserved": "Holat yangilandi {time}",
     "healthQuotaObserved": "Kvota kuzatildi {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Eng erta tiklanish {duration} dan keyin",
     "healthRatio": "{available, plural, one {# / {active, number} mavjud} other {# / {active, number} mavjud}}",
     "healthCd5": "5 soat · Kutish davri",
-    "healthCdw": "Haftalik · Kutish davri"
+    "healthCdw": "Haftalik · Kutish davri",
+    "healthRecentSuccessBypass": "Yaqinda so‘rov muvaffaqiyatli bo‘lgani uchun yo‘naltirish bu hisobga ruxsat beradi.",
+    "healthPurchasedBalanceBypass": "Kiritilgan kvota tugagach, sotib olingan balansdan foydalanish mumkin.",
+    "healthCutoffAtRequest": "Real vaqtdagi kvota chegaralari so‘rov yo‘naltirilayotganda tekshiriladi."
   },
   "modals": {
     "waitingAuth": "Avtorizatsiya kutilmoqda",

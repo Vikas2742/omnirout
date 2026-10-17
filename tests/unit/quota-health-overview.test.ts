@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { availabilityCutoff } from "../../src/app/(dashboard)/dashboard/usage/components/ProviderLimits/availabilityPolicy.ts";
+import { resolveMinRemainingPercent } from "../../src/sse/services/quotaPreflightPolicy.ts";
 import {
-  buildHealthAccount,
+  buildFixtureHealthAccount as buildHealthAccount,
+  type FixtureAvailabilityEvidence,
+} from "./quota-overview-projection-fixtures.ts";
+import { availability, decision } from "./quota-availability-fixtures.ts";
+import {
+  buildHealthAccount as buildServerHealthAccount,
   buildHealthGroups,
   normalizeHealthWindow,
   resolveQuotaLayout,
@@ -15,7 +20,7 @@ const fetchedAt = "2099-01-01T00:00:00Z";
 const now = Date.parse(fetchedAt);
 const connection = { id: "a", provider: "claude", email: "account@example.test", isActive: true };
 const policy = { enabled: false, defaultThresholdPercent: 2, providerWindowDefaults: {} };
-const evidence: AvailabilityEvidence = {
+const evidence: FixtureAvailabilityEvidence = {
   policy,
   observedAt: fetchedAt,
   cooldown: { id: "a", status: "healthy", testStatus: "active", lockouts: [] },
@@ -32,7 +37,7 @@ const data = (five = 80, weekly = 80): HealthData => ({
 const project = (
   d: HealthData | undefined = data(),
   c: HealthConnection = connection,
-  e: AvailabilityEvidence = evidence,
+  e: FixtureAvailabilityEvidence = evidence,
   clock = now
 ) => buildHealthAccount(c, d, {}, clock, e);
 const future = (ms: number) => new Date(now + ms).toISOString();
@@ -68,12 +73,60 @@ test("cutoff activation, exact overrides, provider defaults and missing policy f
   );
   assert.equal(project(data(10), connection, { ...evidence, policy: undefined }).status, "ok");
   assert.equal(project(data(0), connection, { ...evidence, policy: undefined }).status, "critical");
-  assert.ok(
-    project(data(), connection, { ...evidence, policy: undefined }).reasons.some(
-      (r) => r.type === "policyUnavailable"
-    )
-  );
-  assert.equal(availabilityCutoff(connection, "weekly"), null);
+});
+
+const verdictEvidence = (usable: boolean | null = true): AvailabilityEvidence => ({
+  observedAt: fetchedAt,
+  cooldown: evidence.cooldown,
+  availability: availability(connection.id, decision(usable)),
+  availabilityObservedAt: now,
+});
+const serverProject = (e: AvailabilityEvidence, c: HealthConnection = connection) =>
+  buildServerHealthAccount(c, data(), {}, now, e);
+
+test("missing availability verdict warns and shows only quota meters", () => {
+  const account = serverProject({ observedAt: fetchedAt, cooldown: evidence.cooldown });
+  assert.ok(account.reasons.some((r) => r.type === "verdictUnavailable"));
+  assert.equal(account.status, "empty");
+  assert.equal(account.cells.length, 2);
+});
+test("availability verdict older than 90 seconds warns and becomes empty", () => {
+  const account = serverProject({ ...verdictEvidence(), availabilityObservedAt: now - 90_001 });
+  assert.ok(account.reasons.some((r) => r.type === "verdictUnavailable"));
+  assert.equal(account.status, "empty");
+});
+test("valid availability verdict has no unavailable warning through 90 seconds", () => {
+  for (const age of [0, 90_000]) {
+    const account = serverProject({ ...verdictEvidence(), availabilityObservedAt: now - age });
+    assert.equal(
+      account.reasons.some((r) => r.type === "verdictUnavailable"),
+      false
+    );
+    assert.equal(account.status, "ok");
+  }
+});
+test("unknown account verdict warns even when freshly observed", () => {
+  const account = serverProject(verdictEvidence(null));
+  assert.ok(account.reasons.some((r) => r.type === "verdictUnavailable"));
+  assert.equal(account.status, "empty");
+});
+test("cooldown and terminal states outrank missing or expired availability verdicts", () => {
+  for (const e of [
+    {},
+    { ...verdictEvidence(), availabilityObservedAt: now - 90_001 },
+    verdictEvidence(null),
+  ]) {
+    for (const runtime of [
+      { rateLimitedUntil: future(1000) },
+      { testStatus: "banned" },
+      { testStatus: "expired" },
+      { testStatus: "credits_exhausted" },
+    ]) {
+      const account = serverProject({ ...e, cooldown: undefined }, { ...connection, ...runtime });
+      assert.ok(account.reasons.some((r) => r.type === "verdictUnavailable"));
+      assert.equal(account.status, "critical");
+    }
+  }
 });
 test("Codex cutoff aliases retain exact-key then base-key precedence", () => {
   const c = {
@@ -81,14 +134,19 @@ test("Codex cutoff aliases retain exact-key then base-key precedence", () => {
     provider: "codex",
     quotaWindowThresholds: { session: 12, weekly: 13 },
   };
-  assert.equal(availabilityCutoff(c, "gpt_5_3_codex_spark_session", policy), 12);
-  assert.equal(availabilityCutoff(c, "codex-spark-weekly", policy), 13);
-  assert.equal(availabilityCutoff(c, "unrelated", policy), 2);
+  assert.equal(resolveMinRemainingPercent("codex", c, policy, "gpt_5_3_codex_spark_session"), 12);
+  assert.equal(resolveMinRemainingPercent("codex", c, policy, "codex-spark-weekly"), 13);
+  assert.equal(resolveMinRemainingPercent("codex", c, policy, "unrelated"), 2);
   assert.equal(
-    availabilityCutoff(c, "gpt_5_3_codex_spark_session", {
-      ...policy,
-      providerWindowDefaults: { codex: { gpt_5_3_codex_spark_session: 3 } },
-    }),
+    resolveMinRemainingPercent(
+      "codex",
+      c,
+      {
+        ...policy,
+        providerWindowDefaults: { codex: { gpt_5_3_codex_spark_session: 3 } },
+      },
+      "gpt_5_3_codex_spark_session"
+    ),
     3
   );
 });

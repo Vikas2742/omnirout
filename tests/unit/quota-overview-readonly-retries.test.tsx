@@ -15,7 +15,7 @@ type Request = { url: string; method: string };
 // Local catalog reads from useVisibleQuotaData.ts use the provider-models route.
 const allowed = [
   "/api/resilience/cooldowns",
-  "/api/resilience",
+  "/api/usage/availability",
   "/api/usage/provider-limits",
   "/api/providers/client",
   "/api/providers/quota-windows",
@@ -77,13 +77,21 @@ function setup({ layout = "overview", cold = true, stale = false, deferred = fal
               resolveLive = resolve;
             })
           : Response.json(quota);
-      if (url === "/api/resilience")
+      if (url === "/api/usage/availability")
         return Response.json({
-          quotaPreflight: {
-            enabled: false,
-            defaultThresholdPercent: 2,
-            providerWindowDefaults: {},
-          },
+          generatedAt: new Date().toISOString(),
+          connections: [
+            {
+              id: "probe",
+              scopes: [],
+              account: {
+                usable: cold ? null : true,
+                blockers: [],
+                allowanceReasons: [],
+                fetchedAt: new Date().toISOString(),
+              },
+            },
+          ],
         });
       if (url === "/api/resilience/cooldowns")
         return Response.json({

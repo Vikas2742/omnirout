@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Viimane värskendus nurjus; kuvatakse eelmine tulemus",
     "healthPreviousFailure": "Viimane päring nurjus; ooteaeg lõppes",
     "healthAwaitingSync": "Lähtestusaeg on möödunud; oodatakse sünkroonimist",
-    "healthPolicyUnavailable": "Lävendireegel pole saadaval; kasutatakse 0%",
+    "healthVerdictUnavailable": "Saadavuse kontroll pole saadaval; kuvatakse ainult kvooditasemed",
     "healthSummaryFailed": "Oleku kokkuvõtte lugemine nurjus; mudelilukud võivad puududa",
     "healthRuntimeObserved": "Olek uuendatud {time}",
     "healthQuotaObserved": "Kvoot vaadeldud {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Varaseim taastumine {duration} pärast",
     "healthRatio": "{available, plural, one {# / {active, number} kasutatav} other {# / {active, number} kasutatavad}}",
     "healthCd5": "5 tundi · Ooteaeg",
-    "healthCdw": "Nädalane · Ooteaeg"
+    "healthCdw": "Nädalane · Ooteaeg",
+    "healthRecentSuccessBypass": "Marsruutimine lubab seda kontot, sest päring õnnestus hiljuti.",
+    "healthPurchasedBalanceBypass": "Ostetud saldo võimaldab jätkata pärast kaasatud kvoodi ammendumist.",
+    "healthCutoffAtRequest": "Reaalajas kvoodilävendeid kontrollitakse päringu marsruutimisel."
   },
   "modals": {
     "waitingAuth": "Autoriseerimise ootel",

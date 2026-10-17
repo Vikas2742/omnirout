@@ -1,3 +1,4 @@
+import { availability, blocker, decision } from "./quota-availability-fixtures";
 import React from "react";
 import "@testing-library/jest-dom/vitest";
 import { afterEach, expect, it, vi } from "vitest";
@@ -55,7 +56,18 @@ const data: HealthData = {
 };
 function project(c: HealthConnection, d = data) {
   return buildHealthAccount(c, d, {}, now, {
-    policy: { enabled: false, defaultThresholdPercent: 2, providerWindowDefaults: {} },
+    availability: availability(
+      c.id,
+      d.quotas?.length
+        ? decision(false, [
+            blocker(
+              d.quotas[d.quotas.length - 1].name,
+              d.quotas[d.quotas.length - 1].resetAt || null
+            ),
+          ])
+        : decision(null)
+    ),
+    availabilityObservedAt: now,
     observedAt: fetchedAt,
     cooldown: { id: c.id, status: "healthy", lockouts: [] },
   });

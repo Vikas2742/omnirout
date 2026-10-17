@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "ಕೊನೆಯ ನವೀಕರಣ ವಿಫಲವಾಗಿದೆ; ಹಿಂದಿನ ಫಲಿತಾಂಶ ತೋರಿಸಲಾಗುತ್ತಿದೆ",
     "healthPreviousFailure": "ಕೊನೆಯ ವಿನಂತಿ ವಿಫಲವಾಗಿದೆ; ಕಾಯುವ ಅವಧಿ ಮುಗಿದಿದೆ",
     "healthAwaitingSync": "ಮರುಹೊಂದಿಸುವ ಸಮಯ ಮೀರಿದೆ; ಸಿಂಕ್‌ಗಾಗಿ ಕಾಯುತ್ತಿದೆ",
-    "healthPolicyUnavailable": "ಮಿತಿ ನೀತಿ ಲಭ್ಯವಿಲ್ಲ; 0% ಬಳಸಲಾಗುತ್ತಿದೆ",
+    "healthVerdictUnavailable": "ಉಪಲಭ್ಯತೆ ಪರಿಶೀಲನೆಯ ಫಲಿತಾಂಶ ಸಿಗುತ್ತಿಲ್ಲ; ಕೋಟಾ ಮಟ್ಟಗಳನ್ನು ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತಿದೆ",
     "healthSummaryFailed": "ಸ್ಥಿತಿಯ ಸಾರಾಂಶ ಓದಲು ವಿಫಲವಾಗಿದೆ; ಮಾದರಿ ಲಾಕ್ ಮಾಹಿತಿ ಕಾಣೆಯಾಗಿರಬಹುದು",
     "healthRuntimeObserved": "ಸ್ಥಿತಿ ನವೀಕರಿಸಲಾಗಿದೆ {time}",
     "healthQuotaObserved": "ಕೋಟಾ ಗಮನಿಸಲಾಗಿದೆ {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "ಮೊದಲ ಮರುಲಭ್ಯತೆ {duration} ನಂತರ",
     "healthRatio": "{available, plural, one {# / {active, number} ಲಭ್ಯ} other {# / {active, number} ಲಭ್ಯ}}",
     "healthCd5": "5 ಗಂಟೆಗಳು · ಕಾಯುವ ಅವಧಿ",
-    "healthCdw": "ವಾರದ · ಕಾಯುವ ಅವಧಿ"
+    "healthCdw": "ವಾರದ · ಕಾಯುವ ಅವಧಿ",
+    "healthRecentSuccessBypass": "ಇತ್ತೀಚೆಗೆ ವಿನಂತಿ ಯಶಸ್ವಿಯಾದ ಕಾರಣ ರೌಟಿಂಗ್ ಈ ಖಾತೆಯನ್ನು ಅನುಮತಿಸುತ್ತದೆ.",
+    "healthPurchasedBalanceBypass": "ಒಳಗೊಂಡ ಕೋಟಾ ಮುಗಿದ ನಂತರ ಖರೀದಿಸಿದ ಉಳಿಕೆಯೊಂದಿಗೆ ಬಳಕೆ ಮುಂದುವರಿಸಬಹುದು.",
+    "healthCutoffAtRequest": "ವಿನಂತಿಯನ್ನು ರೌಟ್ ಮಾಡುವಾಗ ನೇರ ಕೋಟಾ ಮಿತಿಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ."
   },
   "modals": {
     "waitingAuth": "ದೃಢೀಕರಣಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ",

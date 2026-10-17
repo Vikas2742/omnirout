@@ -1,18 +1,9 @@
 import { resolveProviderAvailability, type ProviderAvailability } from "@/lib/providerAvailability";
 import { parseRuntimeTimestamp, runtimeCooldownEvidence } from "./runtimeCooldown";
 import type { CodexPaidCredits } from "@/lib/providers/codexPaidCredits";
-import {
-  effectiveQuotaAlternatives,
-  quotaBypass,
-  quotaPercentage,
-  type QuotaBypass,
-} from "./quotaEligibility";
+import { quotaPercentage, type QuotaBypass } from "./quotaEligibility";
+import type { ConnectionQuotaAvailability } from "@/lib/usage/availabilityTypes";
 export { runtimeCooldownUntil } from "./runtimeCooldown";
-import {
-  availabilityCutoff,
-  type AvailabilityPolicy,
-  type PolicyConnection,
-} from "./availabilityPolicy";
 
 // Retain persisted filter identifiers; every layout uses the same account projection.
 export type HealthStatus = "critical" | "alert" | "ok" | "paused" | "empty";
@@ -58,7 +49,15 @@ export interface HealthData {
     }>;
   };
 }
-export interface HealthConnection extends PolicyConnection {
+export interface HealthConnection {
+  provider: string;
+  quotaWindowThresholds?: Record<string, number> | null;
+  providerSpecificData?: {
+    quotaPreflightEnabled?: boolean;
+    blockExtraUsage?: boolean;
+    allowPaidCredits?: boolean;
+    limitPolicy?: { enabled?: boolean };
+  };
   id: string;
   name?: string;
   displayName?: string;
@@ -82,7 +81,8 @@ export interface HealthCooldown {
   lockouts: Array<{ model: string; remainingMs: number; reason: string }>;
 }
 export interface AvailabilityEvidence {
-  policy?: AvailabilityPolicy;
+  availability?: ConnectionQuotaAvailability;
+  availabilityObservedAt?: string | number;
   cooldown?: HealthCooldown;
   /** First local observation of this connection + cooldown-until pair. */
   cooldownObservedAt?: number;
@@ -99,10 +99,11 @@ export interface HealthReason {
     | "cooldown"
     | "quota"
     | "quotaBypass"
+    | "cutoffNotEvaluated"
     | "lockout"
     | "previousFailure"
     | "awaitingSync"
-    | "policyUnavailable"
+    | "verdictUnavailable"
     | "previousSnapshot"
     | "noQuota"
     | "quotaError"
@@ -131,6 +132,8 @@ export interface HealthCell {
   quotaIgnored?: boolean;
 }
 export interface HealthAccount {
+  quotaAvailability?: ConnectionQuotaAvailability;
+  quotaAvailabilityValidUntil?: number;
   runtimeAvailability?: ProviderAvailability;
   quotaPools?: Array<{ id: string; models?: string[] }>;
   connection: HealthConnection;
@@ -216,7 +219,35 @@ export function buildHealthAccount(
   const blocked: HealthReason[] = [];
   // Explicit groups describe independent pools; a scoped model never becomes an extra account.
   const groups = new Set((data?.raw?.quotaGroups || []).map((g) => g.id));
-  for (const q of effectiveQuotaAlternatives(quotas.values(), connection, evidence.policy)) {
+  // Every quota below is display-only; constraints come exclusively from the server.
+  const availabilityUntil = parseRuntimeTimestamp(evidence.availabilityObservedAt) + 90_000;
+  const availability = availabilityUntil >= now ? evidence.availability : undefined;
+  const decisions = availability
+    ? [
+        { scope: "account" as const, scopeId: undefined, decision: availability.account },
+        ...availability.scopes.map((s) => ({ scope: s.kind, scopeId: s.id, decision: s.decision })),
+      ]
+    : [];
+  for (const { scope, scopeId, decision } of decisions) {
+    if (decision.cutoffEvaluated === false && !reasons.some((r) => r.type === "cutoffNotEvaluated"))
+      reasons.push({ type: "cutoffNotEvaluated" });
+    if (decision.usable === false)
+      for (const blocker of decision.blockers)
+        blocked.push({
+          type: "quota",
+          scope,
+          scopeId,
+          window: blocker.name,
+          resetAt: blocker.resetAt,
+          percent: blocker.remainingPercent,
+          cutoff: blocker.cutoffPercent,
+        });
+    for (const bypass of decision.allowanceReasons) {
+      if (!reasons.some((r) => r.type === "quotaBypass" && r.bypass === bypass))
+        reasons.push({ type: "quotaBypass", bypass });
+    }
+  }
+  for (const q of quotas.values()) {
     if (
       q.isCredits ||
       q.isResetCredits ||
@@ -251,7 +282,7 @@ export function buildHealthAccount(
     const scope: HealthScope = q.quotaGroupId ? "group" : scopeId ? "scoped" : "account";
     if (scope === "group" && scopeId) groups.add(scopeId);
     const awaitingSync = !!q.staleAfterReset || Date.parse(q.resetAt || "") <= now;
-    const bypass = quotaBypass(connection, q.name, data?.raw?.paidCredits);
+    if (awaitingSync) reasons.push({ type: "awaitingSync", window: q.name });
     cells.push({
       name: q.name,
       displayName: q.displayName,
@@ -261,28 +292,19 @@ export function buildHealthAccount(
       scopeId: scopeId || undefined,
       window,
       awaitingSync,
-      ...(bypass ? { quotaIgnored: true } : {}),
+      // Meter selection only: allowance reasons never override the server's usable field.
+      quotaIgnored: decisions.some(({ decision }) =>
+        decision.allowanceReasons.some(
+          (reason) =>
+            reason === "extraUsage" ||
+            reason === "filteringDisabled" ||
+            (reason === "paidCredits" && scopeId !== "spark")
+        )
+      ),
     });
-    const constraint = {
-      scope,
-      scopeId: scopeId || undefined,
-      window: q.name,
-      percent,
-      resetAt: q.resetAt,
-    };
-    if (awaitingSync) {
-      reasons.push({ type: "awaitingSync", ...constraint });
-      continue;
-    }
-    const cutoff = availabilityCutoff(connection, q.name, evidence.policy) ?? 0;
-    if (percent <= cutoff + 1e-9) {
-      if (bypass) {
-        if (!reasons.some((r) => r.type === "quotaBypass" && r.bypass === bypass))
-          reasons.push({ type: "quotaBypass", bypass });
-      } else blocked.push({ type: "quota", ...constraint, cutoff });
-    }
   }
-  if (!evidence.policy) reasons.push({ type: "policyUnavailable" });
+  if (!availability || availability.account.usable === null)
+    reasons.push({ type: "verdictUnavailable" });
   if (cells.length && (data?.stale || data?.raw?._stale || evidence.error))
     reasons.push({ type: "previousSnapshot" });
   if (!cells.length)
@@ -351,10 +373,11 @@ export function buildHealthAccount(
     [...groups].every((g) => blocked.some((r) => r.scope === "group" && r.scopeId === g));
   let status: HealthStatus;
   if (connection.isActive === false) status = "paused";
-  else if (terminal || cooldown || blocked.some((r) => r.scope === "account") || allGroupsBlocked)
+  else if (terminal || cooldown || availability?.account.usable === false || allGroupsBlocked)
     status = "critical";
+  else if (!availability || availability.account.usable === null) status = "empty";
   else if (blocked.length || locks.length) status = "alert";
-  else if (!cells.length || !runtimeAvailable) status = "empty";
+  else if (!runtimeAvailable) status = "empty";
   else status = "ok";
   if (status === "paused") reasons.unshift({ type: "paused" });
   if (cooldown) reasons.unshift(cooldown);
@@ -380,8 +403,10 @@ export function buildHealthAccount(
     reasons,
     status,
     recoverAt,
-    partial: !row || !evidence.policy,
-    quotaObservedAt: data?.raw?.fetchedAt,
+    quotaAvailability: availability,
+    quotaAvailabilityValidUntil: availabilityUntil,
+    partial: !row || !availability,
+    quotaObservedAt: availability?.account.fetchedAt || undefined,
     runtimeObservedAt: row
       ? new Date(summaryTime).toISOString()
       : connection.runtimeObservedAt || connection.updatedAt,

@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Pēdējā atsvaidzināšana neizdevās; tiek rādīts iepriekšējais rezultāts",
     "healthPreviousFailure": "Pēdējais pieprasījums neizdevās; gaidīšanas laiks beidzies",
     "healthAwaitingSync": "Atiestatīšanas laiks pagājis; gaida sinhronizāciju",
-    "healthPolicyUnavailable": "Sliekšņa politika nav pieejama; tiek lietots 0%",
+    "healthVerdictUnavailable": "Pieejamības pārbaude nav pieejama; tiek rādīti tikai kvotu līmeņi",
     "healthSummaryFailed": "Neizdevās nolasīt stāvokļa kopsavilkumu; var trūkt modeļu bloķējumu",
     "healthRuntimeObserved": "Stāvoklis atjaunināts {time}",
     "healthQuotaObserved": "Kvota novērota {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Ātrākā atjaunošanās pēc {duration}",
     "healthRatio": "{available, plural, zero {Pieejami # / {active, number}} one {Pieejams # / {active, number}} other {Pieejami # / {active, number}}}",
     "healthCd5": "5 stundas · Nogaidīšanas periods",
-    "healthCdw": "Iknedēļas · Nogaidīšanas periods"
+    "healthCdw": "Iknedēļas · Nogaidīšanas periods",
+    "healthRecentSuccessBypass": "Maršrutēšana atļauj šo kontu, jo nesen pieprasījums bija veiksmīgs.",
+    "healthPurchasedBalanceBypass": "Iegādātais atlikums ļauj turpināt pēc iekļautās kvotas izsmelšanas.",
+    "healthCutoffAtRequest": "Reāllaika kvotas sliekšņi tiek pārbaudīti, maršrutējot pieprasījumu."
   },
   "modals": {
     "waitingAuth": "Tiek gaidīta autorizācija",

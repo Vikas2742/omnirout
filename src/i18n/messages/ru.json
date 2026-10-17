@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Последнее обновление не удалось; показан предыдущий результат",
     "healthPreviousFailure": "Последний запрос не удался; ожидание завершено",
     "healthAwaitingSync": "Время сброса прошло; ожидание синхронизации",
-    "healthPolicyUnavailable": "Политика порога недоступна; используется 0%",
+    "healthVerdictUnavailable": "Проверка доступности недоступна; показаны только уровни квот",
     "healthSummaryFailed": "Не удалось прочитать сводку состояния; блокировки моделей могут отсутствовать",
     "healthRuntimeObserved": "Состояние обновлено {time}",
     "healthQuotaObserved": "Квота получена {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Ближайшее восстановление через {duration}",
     "healthRatio": "{available, plural, one {Доступен # / {active, number}} few {Доступны # / {active, number}} many {Доступны # / {active, number}} other {Доступно # / {active, number}}}",
     "healthCd5": "5 часов · Период ожидания",
-    "healthCdw": "Еженедельно · Период ожидания"
+    "healthCdw": "Еженедельно · Период ожидания",
+    "healthRecentSuccessBypass": "Маршрутизация разрешает этот аккаунт, поскольку недавно запрос был успешным.",
+    "healthPurchasedBalanceBypass": "Купленный баланс позволяет продолжить после исчерпания включённой квоты.",
+    "healthCutoffAtRequest": "Пороги квоты в реальном времени проверяются при маршрутизации запроса."
   },
   "modals": {
     "waitingAuth": "Ожидание авторизации",

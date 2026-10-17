@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "L-aħħar aġġornament falla; qed jintwera r-riżultat preċedenti",
     "healthPreviousFailure": "L-aħħar talba falliet; il-ħin ta’ stennija spiċċa",
     "healthAwaitingSync": "Għadda l-ħin tar-risettjar; qed jistenna s-sinkronizzazzjoni",
-    "healthPolicyUnavailable": "Il-politika tal-limitu mhix disponibbli; qed jintuża 0%",
+    "healthVerdictUnavailable": "Ir-riżultat tal-verifika tad-disponibbiltà mhux disponibbli; jintwerew biss il-livelli tal-kwota",
     "healthSummaryFailed": "Il-qari tas-sommarju tal-istat falla; jista’ jkun hemm nuqqas ta’ tagħrif dwar serraturi tal-mudelli",
     "healthRuntimeObserved": "L-istat ġie aġġornat {time}",
     "healthQuotaObserved": "Il-kwota ġiet osservata {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "L-eqreb irkupru fi żmien {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} disponibbli} two {# / {active, number} disponibbli} few {# / {active, number} disponibbli} many {# / {active, number} disponibbli} other {# / {active, number} disponibbli}}",
     "healthCd5": "5 sigħat · Perjodu ta’ stennija",
-    "healthCdw": "Kull ġimgħa · Perjodu ta’ stennija"
+    "healthCdw": "Kull ġimgħa · Perjodu ta’ stennija",
+    "healthRecentSuccessBypass": "Ir-routing jippermetti dan il-kont għax talba rnexxiet dan l-aħħar.",
+    "healthPurchasedBalanceBypass": "Il-bilanċ mixtri jippermetti li tkompli wara li tintuża l-kwota inkluża kollha.",
+    "healthCutoffAtRequest": "Il-limiti tal-kwota f’ħin reali jiġu ċċekkjati meta talba tiġi rotta."
   },
   "modals": {
     "waitingAuth": "Stennija għall-Awtorizzazzjoni",

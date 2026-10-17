@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Posljednje osvježavanje nije uspjelo; prikazan je prethodni rezultat",
     "healthPreviousFailure": "Posljednji zahtjev nije uspio; vrijeme čekanja je završeno",
     "healthAwaitingSync": "Vrijeme resetovanja je prošlo; čeka se sinhronizacija",
-    "healthPolicyUnavailable": "Pravila praga nisu dostupna; koristi se 0%",
+    "healthVerdictUnavailable": "Provjera dostupnosti nije dostupna; prikazuju se samo nivoi kvote",
     "healthSummaryFailed": "Čitanje sažetka stanja nije uspjelo; zaključavanja modela mogu nedostajati",
     "healthRuntimeObserved": "Stanje ažurirano {time}",
     "healthQuotaObserved": "Kvota zabilježena {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Najraniji oporavak za {duration}",
     "healthRatio": "{available, plural, one {Dostupno # / {active, number}} few {Dostupno # / {active, number}} other {Dostupno # / {active, number}}}",
     "healthCd5": "5 sati · Period čekanja",
-    "healthCdw": "Nedeljno · Period čekanja"
+    "healthCdw": "Nedeljno · Period čekanja",
+    "healthRecentSuccessBypass": "Usmjeravanje dopušta ovaj račun jer je zahtjev nedavno uspio.",
+    "healthPurchasedBalanceBypass": "Kupljeni saldo omogućava nastavak nakon iscrpljenja uključene kvote.",
+    "healthCutoffAtRequest": "Pragovi kvote u stvarnom vremenu provjeravaju se pri usmjeravanju zahtjeva."
   },
   "modals": {
     "waitingAuth": "Čekanje autorizacije",

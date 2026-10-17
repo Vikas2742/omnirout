@@ -64,18 +64,24 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
           ? applicableModel(r.window || "", poolId, account)
           : r.scope !== "group" || r.scopeId === poolId))
   );
-  const blocked = reasons.filter((r) => r.type === "quota");
-  const accountBlocked = blocked.some((r) => r.scope === "account");
-  const ids = poolIds(account);
-  const allBlocked =
-    ids.length > 0 &&
-    ids.every((id) => blocked.some((r) => r.scope === "group" && r.scopeId === id));
-  const quotaBlocked = poolId ? blocked.some((r) => r.scope === "group") : allBlocked;
+  const server =
+    (account.quotaAvailabilityValidUntil ?? -Infinity) >= now
+      ? account.quotaAvailability
+      : undefined;
+  const decision = poolId
+    ? server?.scopes.find((s) => s.kind === "group" && s.id === poolId)?.decision
+    : server?.account;
+  const accountBlocked = decision?.usable === false;
+  const quotaBlocked = false;
   const terminal = reasons.some((r) => r.type === "terminal");
   const cooldown = reasons.filter((r) => r.type === "cooldown");
   let kind: DisplayKind = account.status === "paused" ? "paused" : terminal ? "act" : "ok";
-  const constraints = [
-    ...blocked.filter((r) => r.scope === "account" || (quotaBlocked && r.scope === "group")),
+  const constraints: HealthReason[] = [
+    ...(decision?.blockers || []).map((b) => ({
+      type: "quota" as const,
+      window: b.name,
+      resetAt: b.resetAt,
+    })),
     ...cooldown,
   ];
   let recoverAt: string | undefined;
@@ -84,7 +90,7 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
   if (kind === "ok" && (accountBlocked || quotaBlocked || cooldown.length)) {
     const classify = (r: HealthReason): "cd5" | "cdw" => {
       if (r.type === "quota") {
-        return account.cells.find((c) => c.name === r.window)?.window === "fiveHour"
+        return decision?.blockers.find((b) => b.name === r.window)?.kind === "fiveHour"
           ? "cd5"
           : "cdw";
       }
@@ -114,20 +120,33 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
     }
   }
   const partial =
-    kind === "ok" && (blocked.length > 0 || reasons.some((r) => r.type === "lockout"));
-  if (kind === "ok" && (!cells.length || reasons.some((r) => r.type === "noRuntime")) && !partial)
+    kind === "ok" &&
+    ((server?.scopes.some((s) => s.decision.usable !== true) ?? false) ||
+      reasons.some((r) => r.type === "lockout"));
+  if (kind === "ok" && (decision?.usable !== true || reasons.some((r) => r.type === "noRuntime")))
     kind = "empty";
+  // Water level is display-only, never an eligibility test.
   const locallyLimited = cells.filter((c) => !c.quotaIgnored);
   const bypassed = cells.some((c) => c.quotaIgnored);
-  // When plan limits are bypassed, retain any remaining scoped constraints
-  // (notably Spark); no remaining local constraint means full, not zero headroom.
   const waterCells =
     poolId || bypassed ? locallyLimited : locallyLimited.filter((c) => c.scope !== "scoped");
-  const remainingPct = waterCells.length
-    ? Math.min(...waterCells.map((c) => c.percent))
-    : bypassed
-      ? 100
-      : null;
+  // Alternative budgets share one meter; the server supplies each display threshold.
+  // This selection affects fill only, never kind, partial, reasons or eligibility.
+  const alternatives = new Map<string, typeof waterCells>();
+  for (const cell of waterCells) {
+    const base = cell.name.replace(/_freetrial$/, "");
+    const key = JSON.stringify([cell.scope, cell.scopeId, base]);
+    alternatives.set(key, [...(alternatives.get(key) || []), cell]);
+  }
+  const percentages = [...alternatives.values()].map(
+    (entries) =>
+      [...entries].sort((a, b) => {
+        const above = (c: typeof a) =>
+          Number(c.percent > (decision?.displayCutoffs?.[c.name] ?? 0) + 1e-9);
+        return above(b) - above(a) || b.percent - a.percent;
+      })[0].percent
+  );
+  const remainingPct = percentages.length ? Math.min(...percentages) : bypassed ? 100 : null;
   const fill =
     kind === "ok"
       ? remainingPct

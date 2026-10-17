@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "הרענון האחרון נכשל; התוצאה הקודמת מוצגת",
     "healthPreviousFailure": "הבקשה האחרונה נכשלה; זמן ההמתנה הסתיים",
     "healthAwaitingSync": "מועד האיפוס חלף; ממתין לסנכרון",
-    "healthPolicyUnavailable": "מדיניות הסף אינה זמינה; נעשה שימוש ב־0%",
+    "healthVerdictUnavailable": "תוצאת בדיקת הזמינות אינה זמינה; מוצגות רק רמות המכסה",
     "healthSummaryFailed": "קריאת סיכום הפעולה נכשלה; ייתכן שחסר מידע על נעילות מודלים",
     "healthRuntimeObserved": "מצב הפעולה עודכן {time}",
     "healthQuotaObserved": "המכסה נצפתה {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "החזרה הקרובה בעוד {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} זמין} two {# / {active, number} זמינים} other {# / {active, number} זמינים}}",
     "healthCd5": "5 שעות · זמן המתנה",
-    "healthCdw": "שבועי · זמן המתנה"
+    "healthCdw": "שבועי · זמן המתנה",
+    "healthRecentSuccessBypass": "הניתוב מאפשר שימוש בחשבון זה משום שבקשה הצליחה לאחרונה.",
+    "healthPurchasedBalanceBypass": "יתרה שנרכשה מאפשרת להמשיך לאחר ניצול המכסה הכלולה.",
+    "healthCutoffAtRequest": "ספי המכסה בזמן אמת נבדקים בעת ניתוב בקשה."
   },
   "modals": {
     "waitingAuth": "ממתין לאישור",

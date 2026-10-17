@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "છેલ્લું રિફ્રેશ નિષ્ફળ; અગાઉનું પરિણામ દર્શાવાય છે",
     "healthPreviousFailure": "છેલ્લી વિનંતી નિષ્ફળ; રાહનો સમય પૂરો",
     "healthAwaitingSync": "રીસેટનો સમય વીતી ગયો; સમન્વયની રાહમાં",
-    "healthPolicyUnavailable": "મર્યાદા નીતિ ઉપલબ્ધ નથી; 0% વપરાય છે",
+    "healthVerdictUnavailable": "ઉપલબ્ધતાની તપાસનું પરિણામ મળતું નથી; માત્ર ક્વોટાનું સ્તર બતાવાય છે",
     "healthSummaryFailed": "કાર્યસ્થિતિનો સાર વાંચવામાં નિષ્ફળતા; મોડેલ લૉકની માહિતી ખૂટી શકે છે",
     "healthRuntimeObserved": "કાર્યસ્થિતિ સુધારાઈ {time}",
     "healthQuotaObserved": "ક્વોટાનું અવલોકન {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "સૌથી વહેલી પુનઃપ્રાપ્તિ {duration} પછી",
     "healthRatio": "{available, plural, one {# / {active, number} ઉપલબ્ધ} other {# / {active, number} ઉપલબ્ધ}}",
     "healthCd5": "૫ કલાક · પ્રતીક્ષા સમય",
-    "healthCdw": "સાપ્તાહિક · પ્રતીક્ષા સમય"
+    "healthCdw": "સાપ્તાહિક · પ્રતીક્ષા સમય",
+    "healthRecentSuccessBypass": "તાજેતરમાં વિનંતી સફળ થઈ હોવાથી રાઉટિંગ આ ખાતાને મંજૂરી આપે છે.",
+    "healthPurchasedBalanceBypass": "સમાવિષ્ટ ક્વોટા પૂરો થયા પછી ખરીદેલી બાકી રકમથી ઉપયોગ ચાલુ રહી શકે છે.",
+    "healthCutoffAtRequest": "લાઇવ ક્વોટાની મર્યાદાઓ વિનંતીને રૂટ કરતી વખતે તપાસવામાં આવે છે."
   },
   "modals": {
     "waitingAuth": "અધિકૃતતાની રાહ જોઈ રહ્યું છે",

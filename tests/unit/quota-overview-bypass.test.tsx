@@ -1,3 +1,4 @@
+import { availability, decision } from "./quota-availability-fixtures";
 import React from "react";
 import fs from "node:fs";
 import path from "node:path";
@@ -48,7 +49,17 @@ for (const locale of ["en", "zh-CN"])
         {},
         now,
         {
-          policy: { enabled: true, defaultThresholdPercent: 2, providerWindowDefaults: {} },
+          availability: availability("synthetic", {
+            ...decision(),
+            allowanceReasons: [
+              row.key === "healthExtraUsageBypass"
+                ? "extraUsage"
+                : row.key === "healthPaidCreditsBypass"
+                  ? "paidCredits"
+                  : "filteringDisabled",
+            ],
+          }),
+          availabilityObservedAt: now,
         }
       );
       render(

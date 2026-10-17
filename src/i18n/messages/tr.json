@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Son yenileme başarısız; önceki sonuç gösteriliyor",
     "healthPreviousFailure": "Son istek başarısız; bekleme süresi bitti",
     "healthAwaitingSync": "Sıfırlama zamanı geçti; eşitleme bekleniyor",
-    "healthPolicyUnavailable": "Eşik ilkesi kullanılamıyor; 0% kullanılıyor",
+    "healthVerdictUnavailable": "Kullanılabilirlik denetimi sonucu alınamıyor; yalnızca kota seviyeleri gösteriliyor",
     "healthSummaryFailed": "Çalışma özeti okunamadı; model kilitleri eksik olabilir",
     "healthRuntimeObserved": "Durum güncellendi: {time}",
     "healthQuotaObserved": "Kota gözlemlendi: {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "En erken düzelme: {duration} sonra",
     "healthRatio": "{available, plural, one {# / {active, number} kullanılabilir} other {# / {active, number} kullanılabilir}}",
     "healthCd5": "5 saat · Bekleme süresi",
-    "healthCdw": "Haftalık · Bekleme süresi"
+    "healthCdw": "Haftalık · Bekleme süresi",
+    "healthRecentSuccessBypass": "Yakın zamanda bir istek başarılı olduğu için yönlendirme bu hesaba izin verir.",
+    "healthPurchasedBalanceBypass": "Dahil edilen kota tükendikten sonra satın alınan bakiye kullanılabilir.",
+    "healthCutoffAtRequest": "Canlı kota eşikleri, istek yönlendirilirken kontrol edilir."
   },
   "modals": {
     "waitingAuth": "Yetkilendirme bekleniyor",

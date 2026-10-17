@@ -33,8 +33,14 @@ export function useHealthText() {
             ? "healthExtraUsageBypass"
             : r.bypass === "paidCredits"
               ? "healthPaidCreditsBypass"
-              : "healthFilteringBypass"
+              : r.bypass === "recentSuccess"
+                ? "healthRecentSuccessBypass"
+                : r.bypass === "purchasedBalance"
+                  ? "healthPurchasedBalanceBypass"
+                  : "healthFilteringBypass"
         );
+      case "cutoffNotEvaluated":
+        return t("healthCutoffAtRequest");
       case "lockout":
         return `${t("modelLockouts")} · ${window} · ${relative(r.resetAt)}`;
       case "quotaError":
@@ -49,8 +55,8 @@ export function useHealthText() {
         return t("healthPreviousSnapshot");
       case "awaitingSync":
         return `${window} · ${t("healthAwaitingSync")}`;
-      case "policyUnavailable":
-        return t("healthPolicyUnavailable");
+      case "verdictUnavailable":
+        return t("healthVerdictUnavailable");
     }
   };
   const primary = (account: HealthAccount) => {

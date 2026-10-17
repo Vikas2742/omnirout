@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Poslední aktualizace selhala; zobrazuje se předchozí výsledek",
     "healthPreviousFailure": "Poslední požadavek selhal; čekací doba skončila",
     "healthAwaitingSync": "Čas obnovení uplynul; čeká se na synchronizaci",
-    "healthPolicyUnavailable": "Zásady prahu nejsou dostupné; používá se 0%",
+    "healthVerdictUnavailable": "Kontrola dostupnosti není k dispozici; zobrazují se pouze úrovně kvót",
     "healthSummaryFailed": "Čtení souhrnu stavu selhalo; mohou chybět zámky modelů",
     "healthRuntimeObserved": "Stav aktualizován {time}",
     "healthQuotaObserved": "Kvóta zaznamenána {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Nejbližší obnovení za {duration}",
     "healthRatio": "{available, plural, one {Dostupný # / {active, number}} few {Dostupné # / {active, number}} many {Dostupného # / {active, number}} other {Dostupných # / {active, number}}}",
     "healthCd5": "5 hodin · Doba čekání",
-    "healthCdw": "Týdně · Doba čekání"
+    "healthCdw": "Týdně · Doba čekání",
+    "healthRecentSuccessBypass": "Směrování povoluje tento účet, protože nedávný požadavek uspěl.",
+    "healthPurchasedBalanceBypass": "Zakoupený zůstatek umožňuje pokračovat po vyčerpání zahrnuté kvóty.",
+    "healthCutoffAtRequest": "Aktuální prahové hodnoty kvóty se kontrolují při směrování požadavku."
   },
   "modals": {
     "waitingAuth": "Očekávám Autorizaci",

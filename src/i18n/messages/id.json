@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Penyegaran terakhir gagal; menampilkan hasil sebelumnya",
     "healthPreviousFailure": "Permintaan terakhir gagal; masa tunggu berakhir",
     "healthAwaitingSync": "Waktu reset telah lewat; menunggu sinkronisasi",
-    "healthPolicyUnavailable": "Kebijakan ambang tidak tersedia; menggunakan 0%",
+    "healthVerdictUnavailable": "Hasil pemeriksaan ketersediaan tidak dapat diperoleh; hanya tingkat kuota yang ditampilkan",
     "healthSummaryFailed": "Gagal membaca ringkasan operasi; informasi kunci model mungkin tidak lengkap",
     "healthRuntimeObserved": "Status diperbarui {time}",
     "healthQuotaObserved": "Kuota diamati {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Pemulihan tercepat dalam {duration}",
     "healthRatio": "{available, number} / {active, number} tersedia",
     "healthCd5": "5 jam · Waktu tunggu",
-    "healthCdw": "Mingguan · Waktu tunggu"
+    "healthCdw": "Mingguan · Waktu tunggu",
+    "healthRecentSuccessBypass": "Perutean mengizinkan akun ini karena ada permintaan yang berhasil baru-baru ini.",
+    "healthPurchasedBalanceBypass": "Saldo yang dibeli memungkinkan penggunaan berlanjut setelah kuota bawaan habis.",
+    "healthCutoffAtRequest": "Ambang kuota langsung diperiksa saat merutekan permintaan."
   },
   "modals": {
     "waitingAuth": "Menunggu Otorisasi",

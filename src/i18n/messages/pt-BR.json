@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "A última atualização falhou; exibindo o resultado anterior",
     "healthPreviousFailure": "A última solicitação falhou; o tempo de espera terminou",
     "healthAwaitingSync": "O horário de redefinição passou; aguardando sincronização",
-    "healthPolicyUnavailable": "Política de limite indisponível; usando 0%",
+    "healthVerdictUnavailable": "Verificação de disponibilidade indisponível; mostrando apenas os níveis de cota",
     "healthSummaryFailed": "Falha ao ler o resumo operacional; bloqueios de modelos podem estar ausentes",
     "healthRuntimeObserved": "Estado atualizado {time}",
     "healthQuotaObserved": "Cota observada {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Primeira recuperação em {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} disponível} many {# / {active, number} disponíveis} other {# / {active, number} disponíveis}}",
     "healthCd5": "5 horas · Tempo de espera",
-    "healthCdw": "Semanal · Tempo de espera"
+    "healthCdw": "Semanal · Tempo de espera",
+    "healthRecentSuccessBypass": "O roteamento permite esta conta porque uma solicitação foi bem-sucedida recentemente.",
+    "healthPurchasedBalanceBypass": "O saldo comprado permite continuar após esgotar a cota incluída.",
+    "healthCutoffAtRequest": "Os limites de cota em tempo real são verificados ao rotear uma solicitação."
   },
   "modals": {
     "waitingAuth": "Aguardando Autorização",

@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Ìmúdójúìwọ̀n ìkẹyìn kùnà; àbájáde ìṣáájú ni a ń fihàn",
     "healthPreviousFailure": "Ìbéèrè ìkẹyìn kùnà; àkókò ìdúró ti parí",
     "healthAwaitingSync": "Àkókò àtúntò ti kọjá; a ń dúró de ìṣiṣẹ́pọ̀",
-    "healthPolicyUnavailable": "Ìlànà ààlà kò sí; a ń lo 0%",
+    "healthVerdictUnavailable": "Àbájáde àyẹ̀wò wíwà kò sí; ìwọ̀n ààlà lílo nìkan ni a ń fi hàn",
     "healthSummaryFailed": "Kíkà àkótán ipò kùnà; àlàyé títì àwòṣe lè sọnù",
     "healthRuntimeObserved": "A mú ipò dójú ìwọ̀n {time}",
     "healthQuotaObserved": "A ṣàkíyèsí ìpín {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Ìpadà tó súnmọ́ jù lẹ́yìn {duration}",
     "healthRatio": "{available, number} / {active, number} wà",
     "healthCd5": "Wákàtí 5 · Àkókò ìdúró",
-    "healthCdw": "Ọ̀sọ̀ọ̀sẹ̀ · Àkókò ìdúró"
+    "healthCdw": "Ọ̀sọ̀ọ̀sẹ̀ · Àkókò ìdúró",
+    "healthRecentSuccessBypass": "Ìdarí ìbéèrè gba àkọọ́lẹ̀ yìí láyè nítorí ìbéèrè kan ṣàṣeyọrí láìpẹ́.",
+    "healthPurchasedBalanceBypass": "Owó tó ṣẹ́ kù nínú èyí tí a rà jẹ́ kí lílò máa bá a lọ lẹ́yìn tí ìpín tó wà nínú ètò bá tán.",
+    "healthCutoffAtRequest": "A máa ń ṣàyẹ̀wò ààlà ìpín ti àkókò gidi nígbà dídarí ìbéèrè."
   },
   "modals": {
     "waitingAuth": "Ń dúró de Àṣẹ",

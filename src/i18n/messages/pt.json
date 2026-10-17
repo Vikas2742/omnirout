@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "A última atualização falhou; a mostrar o resultado anterior",
     "healthPreviousFailure": "O último pedido falhou; o período de espera terminou",
     "healthAwaitingSync": "A hora de reposição passou; a aguardar sincronização",
-    "healthPolicyUnavailable": "Política de limiar indisponível; a usar 0%",
+    "healthVerdictUnavailable": "Verificação de disponibilidade indisponível; são apresentados apenas os níveis de quota",
     "healthSummaryFailed": "Falha ao ler o resumo operacional; podem faltar bloqueios de modelos",
     "healthRuntimeObserved": "Estado atualizado {time}",
     "healthQuotaObserved": "Quota observada {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Primeira recuperação dentro de {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} disponível} many {# / {active, number} disponíveis} other {# / {active, number} disponíveis}}",
     "healthCd5": "5 horas · Tempo de espera",
-    "healthCdw": "Semanal · Tempo de espera"
+    "healthCdw": "Semanal · Tempo de espera",
+    "healthRecentSuccessBypass": "O encaminhamento permite esta conta porque um pedido foi bem-sucedido recentemente.",
+    "healthPurchasedBalanceBypass": "O saldo comprado permite continuar após esgotar a quota incluída.",
+    "healthCutoffAtRequest": "Os limiares de quota em tempo real são verificados ao encaminhar um pedido."
   },
   "modals": {
     "waitingAuth": "Aguardando autorização",

@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "آخرین تازه‌سازی ناموفق بود؛ نتیجه قبلی نمایش داده می‌شود",
     "healthPreviousFailure": "آخرین درخواست ناموفق بود؛ زمان انتظار تمام شده است",
     "healthAwaitingSync": "زمان بازنشانی گذشته؛ در انتظار همگام‌سازی",
-    "healthPolicyUnavailable": "سیاست آستانه در دسترس نیست؛ از 0% استفاده می‌شود",
+    "healthVerdictUnavailable": "نتیجهٔ بررسی دسترس‌پذیری موجود نیست؛ فقط میزان سهمیه نمایش داده می‌شود",
     "healthSummaryFailed": "خواندن خلاصه اجرا ناموفق بود؛ ممکن است قفل‌های مدل موجود نباشند",
     "healthRuntimeObserved": "وضعیت اجرا به‌روز شد: {time}",
     "healthQuotaObserved": "سهمیه مشاهده شد: {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "نخستین بازیابی پس از {duration}",
     "healthRatio": "{available, plural, one {# / {active, number} در دسترس} other {# / {active, number} در دسترس}}",
     "healthCd5": "۵ ساعت · زمان انتظار",
-    "healthCdw": "هفتگی · زمان انتظار"
+    "healthCdw": "هفتگی · زمان انتظار",
+    "healthRecentSuccessBypass": "مسیریابی این حساب را مجاز می‌داند چون درخواستی اخیراً موفق بوده است.",
+    "healthPurchasedBalanceBypass": "پس از اتمام سهمیهٔ موجود، می‌توان از موجودی خریداری‌شده استفاده کرد.",
+    "healthCutoffAtRequest": "آستانه‌های سهمیهٔ زنده هنگام مسیریابی درخواست بررسی می‌شوند."
   },
   "modals": {
     "waitingAuth": "در انتظار تأیید مجوز",

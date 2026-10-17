@@ -10271,7 +10271,7 @@
     "healthPreviousSnapshot": "Muat semula terakhir gagal; memaparkan hasil sebelumnya",
     "healthPreviousFailure": "Permintaan terakhir gagal; tempoh menunggu tamat",
     "healthAwaitingSync": "Masa tetapan semula telah berlalu; menunggu penyegerakan",
-    "healthPolicyUnavailable": "Dasar ambang tidak tersedia; menggunakan 0%",
+    "healthVerdictUnavailable": "Semakan ketersediaan tidak dapat diperoleh; hanya paras kuota dipaparkan",
     "healthSummaryFailed": "Gagal membaca ringkasan operasi; maklumat kunci model mungkin tiada",
     "healthRuntimeObserved": "Status dikemas kini {time}",
     "healthQuotaObserved": "Kuota diperhatikan {time}",
@@ -10299,7 +10299,10 @@
     "healthFastest": "Pemulihan terawal dalam {duration}",
     "healthRatio": "{available, number} / {active, number} tersedia",
     "healthCd5": "5 jam · Tempoh menunggu",
-    "healthCdw": "Mingguan · Tempoh menunggu"
+    "healthCdw": "Mingguan · Tempoh menunggu",
+    "healthRecentSuccessBypass": "Penghalaan membenarkan akaun ini kerana permintaan berjaya baru-baru ini.",
+    "healthPurchasedBalanceBypass": "Baki yang dibeli membolehkan penggunaan diteruskan selepas kuota yang disertakan habis.",
+    "healthCutoffAtRequest": "Ambang kuota langsung diperiksa semasa menghalakan permintaan."
   },
   "modals": {
     "waitingAuth": "Menunggu Keizinan",
