@@ -220,6 +220,8 @@ test("legacy OpenRouter modality order and duplicates do not invalidate on disco
   assert.ok(incoming);
   const legacy = {
     ...incoming,
+    // The persisted capability reader normalizes absent efforts to null.
+    reasoning_efforts: null,
     modalities_input: '["text","image","text"]',
     modalities_output: '["text","audio","audio"]',
   };
