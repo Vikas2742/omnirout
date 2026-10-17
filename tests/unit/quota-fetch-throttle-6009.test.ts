@@ -43,6 +43,17 @@ test("#16948 zero-valued clocks still enforce spacing on the second acquisition"
   assert.equal(clock.now(), 500);
 });
 
+test("#16948 reopens spacing window after idle time, then throttles a new burst", async () => {
+  const clock = new FakeClock();
+  const throttle = new MinIntervalThrottle({ minIntervalMs: 300, jitterMs: 0, clock });
+  await throttle.acquire(); // first fetch at t=1000
+  clock.t = 5000; // no requests for four seconds
+  await throttle.acquire(); // first fetch after idle is immediate
+  await throttle.acquire(); // following fetch must still wait 300ms
+  assert.deepEqual(clock.slept, [300]);
+  assert.equal(clock.now(), 5300);
+});
+
 test("#6009 minIntervalMs=0 disables throttling (no sleeps)", async () => {
   const clock = new FakeClock();
   const throttle = new MinIntervalThrottle({ minIntervalMs: 0, jitterMs: 0, clock });
