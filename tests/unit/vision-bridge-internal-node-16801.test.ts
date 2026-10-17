@@ -160,11 +160,12 @@ test("#16801: raw provider-relative model IDs containing slashes retain their ex
     getSettings: async () => ({ visionBridgeEnabled: true, visionBridgeModel: "openai/gpt-4o" }),
     callVisionModel: async () => { describes++; throw new Error("must not describe an all-vision combo"); },
   } });
+  const originalPayload = JSON.stringify(payload);
   const result = await guardrail.preCall(payload, {});
   assert.equal(result.block, false);
   assert.equal(result.modifiedPayload, undefined);
   assert.equal(describes, 0);
-  assert.equal(payload.messages[0].content[1].image_url.url, image);
+  assert.equal(JSON.stringify(payload), originalPayload, "raw image payload must remain unchanged");
 });
 
 test("#16801: only an owned synced vision verdict permits a raw namespaced ID", async () => {
