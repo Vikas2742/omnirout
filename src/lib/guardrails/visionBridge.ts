@@ -12,6 +12,7 @@ import { BaseGuardrail, type GuardrailContext, type GuardrailResult } from "./ba
 import { getSettings as defaultGetSettings } from "@/lib/db/settings";
 import { getResolvedModelCapabilities } from "@/lib/modelCapabilities";
 import { getProviderNodePrefixSync } from "@/lib/db/providers/nodePrefix";
+import { isCompatibleProviderConnectionId } from "@/shared/utils/compatibleProviderId";
 import { getExactCustomModelVisionOverride } from "@/lib/db/models/customVisionOverride";
 import { getModelCompatVisionOverride } from "@/lib/db/models/compat";
 import { getSyncedAvailableModelVision } from "@/lib/db/models/syncedAvailableModelVision";
@@ -59,7 +60,7 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
   // A slash is ambiguous here: "edge/acme-model" may use this node's public
   // routing prefix, another node's prefix, OR be the raw upstream model id
   // "vendor/model". Do not mistake every slash for a foreign node (#16801).
-  const isInternalNode = provider?.startsWith("openai-compatible-") === true;
+  const isInternalNode = isCompatibleProviderConnectionId(provider);
   const slash = targetModel.indexOf("/");
   const routingPrefix = isInternalNode ? getProviderNodePrefixSync(provider!) : null;
   const suppliedPrefix = slash > 0 ? targetModel.slice(0, slash) : null;
