@@ -378,6 +378,19 @@ export class QoderExecutor extends BaseExecutor {
       throw abortError;
     }
 
+    if (run.busy) {
+      return {
+        response: createQoderErrorResponse({
+          status: 503,
+          message: sanitizeErrorMessage(run.error || "qodercli is busy"),
+          code: "qodercli_busy",
+        }),
+        url,
+        headers: {},
+        transformedBody: body,
+      };
+    }
+
     if (run.error && /enoent|not found|no such file|spawn/i.test(run.error)) {
       return {
         response: createQoderErrorResponse({
