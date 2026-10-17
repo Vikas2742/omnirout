@@ -997,11 +997,18 @@ export function getModelIsHidden(
   ) {
     return true;
   }
-  const m = getCustomModelRow(providerId, modelId);
-  const co = readCompatList(providerId).find((e) => e.id === modelId);
-  // A hidden record in either inventory must not be resurrected by an
-  // independently re-synced row with isHidden:false.
-  return Boolean(m?.isHidden) || isOverrideHiddenForModality(co, modality);
+  const compat = readCompatList(providerId);
+  const explicitlyHidden = (id: string) =>
+    Boolean(getCustomModelRow(providerId, id)?.isHidden) ||
+    isOverrideHiddenForModality(compat.find((entry) => entry.id === id), modality);
+  if (explicitlyHidden(modelId)) return true;
+  if (modality === "chat") {
+    // Generated tier aliases inherit the base's hidden state even when no
+    // provider allowlist is enabled.
+    const tier = modelId.match(/-(?:none|low|medium|high|xhigh|max)$/);
+    if (tier && explicitlyHidden(modelId.slice(0, -tier[0].length))) return true;
+  }
+  return false;
 }
 
 /**
