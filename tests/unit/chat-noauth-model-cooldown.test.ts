@@ -160,7 +160,7 @@ test("a combo skips a locked no-auth member at once, without waiting, and serves
   let noAuthCalls = 0;
   let keyedCalls = 0;
   globalThis.fetch = async (url) => {
-    if (String(url).includes("unturf.com")) {
+    if (new URL(String(url)).hostname === "hermes.ai.unturf.com") {
       noAuthCalls += 1;
       return new Response("{}", { status: 502 });
     }

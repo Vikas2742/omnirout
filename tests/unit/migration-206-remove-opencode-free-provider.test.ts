@@ -7,7 +7,7 @@ import path from "node:path";
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-opencode-free-retirement-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
 const originalEncryptionKey = process.env.STORAGE_ENCRYPTION_KEY;
-process.env.STORAGE_ENCRYPTION_KEY = "migration-208-isolated-test-key";
+process.env.STORAGE_ENCRYPTION_KEY = "migration-206-isolated-test-key";
 
 const core = await import("../../src/lib/db/core.ts");
 
@@ -18,14 +18,14 @@ test.after(() => {
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
-test("migration 208 removes stale OpenCode Free provider state, keeps opencode-zen, and is idempotent", () => {
+test("migration 206 removes stale OpenCode Free provider state, keeps opencode-zen, and is idempotent", () => {
   const db = core.getDbInstance();
 
   const applied = db
-    .prepare("SELECT version FROM _omniroute_migrations WHERE version = 208")
+    .prepare("SELECT version FROM _omniroute_migrations WHERE version = 206")
     .get() as { version: number } | undefined;
 
-  assert.ok(applied, "migration 208 must be recorded as applied");
+  assert.ok(applied, "migration 206 must be recorded as applied");
 
   for (const provider of ["opencode", "oc"]) {
     db.prepare(
@@ -157,7 +157,7 @@ test("migration 208 removes stale OpenCode Free provider state, keeps opencode-z
   ) as Record<string, unknown>[];
 
   const sql = fs.readFileSync(
-    path.join(process.cwd(), "src/lib/db/migrations/208_remove_opencode_free_provider.sql"),
+    path.join(process.cwd(), "src/lib/db/migrations/206_remove_opencode_free_provider.sql"),
     "utf8"
   );
 
@@ -283,13 +283,13 @@ test("migration 208 removes stale OpenCode Free provider state, keeps opencode-z
   );
 });
 
-test("migration 208 preserves encrypted tokens and nested credentials through real provider reads", async () => {
+test("migration 206 preserves encrypted tokens and nested credentials through real provider reads", async () => {
   const { encryptConnectionFields } = await import("../../src/lib/db/encryption.ts");
   const connections = await import("../../src/lib/db/providers.ts");
   const { OpencodeExecutor } = await import("../../open-sse/executors/opencode.ts");
   const db = core.getDbInstance();
   const sql = fs.readFileSync(
-    path.join(process.cwd(), "src/lib/db/migrations/208_remove_opencode_free_provider.sql"),
+    path.join(process.cwd(), "src/lib/db/migrations/206_remove_opencode_free_provider.sql"),
     "utf8"
   );
   const fixtures = ["opencode", "oc"].map((provider) => {

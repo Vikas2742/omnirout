@@ -1,4 +1,4 @@
--- 208_remove_opencode_free_provider.sql
+-- 206_remove_opencode_free_provider.sql
 -- The keyless "OpenCode Free" provider (id `opencode`, alias `oc`) was removed
 -- from OmniRoute (see docs/reference/REMOVED_PROVIDERS.md). Clean up any
 -- locally stored configuration for it. Keyed connections are moved to the paid
