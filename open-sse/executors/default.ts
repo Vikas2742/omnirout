@@ -780,9 +780,16 @@ export class DefaultExecutor extends BaseExecutor {
   // `text` is an object missing `text.format` with a 400 missing_required_parameter.
   // The Responses API default for that field is { type: "text" }, so default it
   // for openai-compatible "responses" providers before forwarding upstream.
-  defaultResponsesTextFormat<T>(body: T): T {
+  // The type is resolved with the same anchored helper buildUrl uses, never a
+  // substring match: node IDs can carry an operator-chosen suffix (a chat node
+  // `openai-compatible-chat-my-responses` must stay chat).
+  defaultResponsesTextFormat<T>(
+    body: T,
+    credentials?: { providerSpecificData?: Record<string, unknown> | null } | null
+  ): T {
     if (!this.provider?.startsWith?.("openai-compatible-")) return body;
-    if (!this.provider.includes("responses")) return body;
+    const psd = credentials?.providerSpecificData ?? null;
+    if (getOpenAICompatibleType(this.provider, psd) !== "responses") return body;
     if (!body || typeof body !== "object" || Array.isArray(body)) return body;
     const record = body as Record<string, unknown>;
     const text = record.text;
@@ -818,7 +825,7 @@ export class DefaultExecutor extends BaseExecutor {
     }
 
     withDefaults = this.applyJsonSchemaFallback(withDefaults);
-    withDefaults = this.defaultResponsesTextFormat(withDefaults);
+    withDefaults = this.defaultResponsesTextFormat(withDefaults, credentials);
     if (this.provider === "perplexity-agent") {
       withDefaults = defaultPerplexityAgentMaxOutputTokens(withDefaults);
     }
