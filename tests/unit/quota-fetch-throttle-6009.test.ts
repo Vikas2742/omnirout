@@ -34,6 +34,15 @@ test("#6009 spaces concurrent fetch starts by at least minIntervalMs", async () 
   assert.equal(clock.now(), 1750);
 });
 
+test("#16948 zero-valued clocks still enforce spacing on the second acquisition", async () => {
+  const clock = new FakeClock();
+  clock.t = 0;
+  const throttle = new MinIntervalThrottle({ minIntervalMs: 250, jitterMs: 0, clock });
+  await Promise.all([throttle.acquire(), throttle.acquire(), throttle.acquire()]);
+  assert.deepEqual(clock.slept, [250, 250]);
+  assert.equal(clock.now(), 500);
+});
+
 test("#6009 minIntervalMs=0 disables throttling (no sleeps)", async () => {
   const clock = new FakeClock();
   const throttle = new MinIntervalThrottle({ minIntervalMs: 0, jitterMs: 0, clock });
