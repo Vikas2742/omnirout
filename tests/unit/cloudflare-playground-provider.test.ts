@@ -321,6 +321,33 @@ test("#16460 Cloudflare text-only bridge detects image content without rejecting
   );
 });
 
+test("#16460 deeply nested image wrappers fail closed instead of being silently lost", async () => {
+  let image: unknown = { type: "input_image", image_url: "https://example.com/image.png" };
+  for (let depth = 0; depth < 18; depth++) image = { content: image };
+  const messages = [{ role: "user", content: image }];
+  assert.equal(hasUnsupportedCfImageParts(messages), true);
+  let created = 0;
+  const executor = new CloudflarePlaygroundExecutor((chatId) => {
+    created++;
+    return new FakeTransport(buildSuccessFrames(chatId));
+  });
+  const result = await executor.execute(
+    executeArgs({ model: "zai-org/glm-4.7-flash", messages }, false)
+  );
+  assert.equal(result.response.status, 400);
+  assert.equal(created, 0);
+
+  // Deep text remains valid: only nonterminal structures above the limit
+  // are rejected, avoiding accidental substring-based image detection.
+  let textOnly: unknown = "plain text, image_url is a literal string";
+  for (let depth = 0; depth < 18; depth++) textOnly = { content: textOnly };
+  assert.equal(hasUnsupportedCfImageParts([{ role: "user", content: textOnly }]), false);
+
+  const cyclic: { content?: unknown } = {};
+  cyclic.content = cyclic;
+  assert.equal(hasUnsupportedCfImageParts(cyclic), true);
+});
+
 test("#16460 nested tool-output images are rejected before starting Playwright", async () => {
   const nestedImageInputs = [
     [

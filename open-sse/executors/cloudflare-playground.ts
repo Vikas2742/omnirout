@@ -231,10 +231,12 @@ export function hasUnsupportedCfImageParts(messages: unknown): boolean {
   // Chat Completions uses message.content parts, while Responses also nests
   // multimodal parts inside function_call_output.output and content wrappers.
   // Scan only known payload envelopes, not arbitrary metadata or string text.
-  // The depth cap prevents malformed or cyclic client objects from recursing
-  // indefinitely before the HTTP boundary serializes them.
+  // Fail CLOSED once the nesting limit is exceeded: returning false here
+  // allowed a deeply wrapped image to bypass validation, then get silently
+  // stripped by this text-only transport. Terminal strings remain text-safe.
+  // This also bounds recursion on cyclic/non-JSON internal inputs.
   function containsImage(value: unknown, depth: number): boolean {
-    if (depth > 12) return false;
+    if (depth > 12) return value !== null && typeof value === "object";
     if (Array.isArray(value)) return value.some((part) => containsImage(part, depth + 1));
     if (isUnsupportedCfImagePart(value)) return true;
     if (!value || typeof value !== "object") return false;
