@@ -51,3 +51,17 @@ export function isAdmittedByModelVisibilityAllowlist(
   const match = modelId.match(/-(?:none|low|medium|high|xhigh|max)$/);
   return Boolean(match && allowed.has(modelId.slice(0, -match[0].length)));
 }
+
+/** Same-tab event and cross-tab storage revision used by both combo pickers. */
+export const MODEL_VISIBILITY_EVENT = "omniroute:model-visibility-changed";
+export const MODEL_VISIBILITY_REVISION_KEY = "omniroute:model-visibility-revision";
+
+export function broadcastModelVisibilityChange(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(MODEL_VISIBILITY_REVISION_KEY, String(Date.now()));
+  } catch {
+    // Private mode / disabled storage: same-tab listeners still refresh.
+  }
+  window.dispatchEvent(new Event(MODEL_VISIBILITY_EVENT));
+}
