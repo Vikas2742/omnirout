@@ -245,3 +245,30 @@ test("#16801: Anthropic-compatible/CC nodes keep owned and rejected vision evide
     "even a true public vision verdict from another compatible node must not bless this node"
   );
 });
+
+test("#16801: same public model leaf from a foreign node must not authorize image passthrough", async () => {
+  const owner = "openai-compatible-chat-16801-own-ghost";
+  const foreign = "openai-compatible-chat-16801-foreign-ghost";
+  await providers.createProviderNode({
+    id: owner, type: "openai-compatible", prefix: "my16801",
+    name: "Unconfigured local model", apiType: "chat", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  await providers.createProviderNode({
+    id: foreign, type: "openai-compatible", prefix: "foreign16801x",
+    name: "Other owner's model", apiType: "chat", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  await models.addCustomModel(
+    foreign, "ghost-vision-16801", "Other node's vision-capable model",
+    "manual", "chat-completions", ["chat"], undefined, {}, true
+  );
+  await combos.createCombo({
+    name: "ghost-owner-16801", strategy: "priority",
+    models: [{ kind: "model", providerId: owner, model: "my16801/ghost-vision-16801", weight: 1 }],
+  });
+  assert.equal(
+    getExactCustomModelVisionOverride(owner, "ghost-vision-16801"),
+    null,
+    "the source node has no explicit vision evidence for this model"
+  );
+  assert.equal(await getComboVisionBridgeDecision("ghost-owner-16801"), "no-vision");
+});
