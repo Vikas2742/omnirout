@@ -228,27 +228,31 @@ function isUnsupportedCfImagePart(value: unknown): boolean {
 }
 
 export function hasUnsupportedCfImageParts(messages: unknown): boolean {
-  // Chat Completions uses message.content parts, while Responses also nests
-  // multimodal parts inside function_call_output.output and content wrappers.
-  // Scan only known payload envelopes, not arbitrary metadata or string text.
-  // Fail CLOSED once the nesting limit is exceeded: returning false here
-  // allowed a deeply wrapped image to bypass validation, then get silently
-  // stripped by this text-only transport. Terminal strings remain text-safe.
-  // This also bounds recursion on cyclic/non-JSON internal inputs.
-  function containsImage(value: unknown, depth: number): boolean {
-    if (depth > 12) return value !== null && typeof value === "object";
-    if (Array.isArray(value)) return value.some((part) => containsImage(part, depth + 1));
+  // Scan only known message/content/output/input envelopes. An iterative walk
+  // catches deeply nested image parts without recursion overflow, while a
+  // bounded budget and repeat-reference guard fail closed for malformed input.
+  // Well-formed deeply nested TEXT is still safe and is not falsely rejected.
+  const pending: unknown[] = [messages];
+  const visited = new WeakSet<object>();
+  const maxNodes = 2048;
+  let scanned = 0;
+  while (pending.length > 0) {
+    const value = pending.pop();
+    if (!value || typeof value !== "object") continue;
+    if (visited.has(value)) return true; // cycle or non-JSON repeated reference
+    visited.add(value);
+    if (++scanned > maxNodes) return true;
+    if (Array.isArray(value)) {
+      if (value.length > maxNodes) return true;
+      for (const part of value) pending.push(part);
+      continue;
+    }
     if (isUnsupportedCfImagePart(value)) return true;
-    if (!value || typeof value !== "object") return false;
     const record = value as Record<string, unknown>;
     if (Array.isArray(record.images) && record.images.length > 0) return true;
-    return (
-      containsImage(record.content, depth + 1) ||
-      containsImage(record.output, depth + 1) ||
-      containsImage(record.input, depth + 1)
-    );
+    pending.push(record.content, record.output, record.input);
   }
-  return containsImage(messages, 0);
+  return false;
 }
 
 /**
