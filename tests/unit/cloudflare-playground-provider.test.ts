@@ -311,6 +311,46 @@ test("#16460 Cloudflare text-only bridge detects image content without rejecting
   );
 });
 
+test("#16460 nested tool-output images are rejected before starting Playwright", async () => {
+  const nestedImageInputs = [
+    [
+      {
+        type: "function_call_output",
+        call_id: "call_1",
+        output: [{ type: "input_image", image_url: "https://example.com/screenshot.png" }],
+      },
+    ],
+    [
+      {
+        role: "tool",
+        content: [
+          { type: "output", content: [{ type: "image", source: { data: "cG5n" } }] },
+        ],
+      },
+    ],
+  ];
+  for (const input of nestedImageInputs) {
+    assert.equal(hasUnsupportedCfImageParts(input), true);
+    let created = 0;
+    const executor = new CloudflarePlaygroundExecutor((chatId) => {
+      created++;
+      return new FakeTransport(buildSuccessFrames(chatId));
+    });
+    const result = await executor.execute(
+      executeArgs({ model: "zai-org/glm-4.7-flash", input }, false)
+    );
+    assert.equal(result.response.status, 400);
+    assert.equal(created, 0);
+  }
+  assert.equal(
+    hasUnsupportedCfImageParts([
+      { type: "function_call_output", call_id: "call_2", output: "image_url: just text" },
+    ]),
+    false,
+    "Textual tool output is not an image"
+  );
+});
+
 test("#16460 direct Responses image parts are rejected before creating a transport", async () => {
   for (const input of [
     [{ type: "input_image", image_url: "https://example.com/a.png" }],
