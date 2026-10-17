@@ -297,3 +297,37 @@ test("POST /api/combos/duplicate error responses do not contain stack traces", a
 
   assert.ok(!JSON.stringify(body).includes("at "), "error response must not leak stack traces");
 });
+
+test("POST /api/combos/duplicate sanitizes 500 error messages and does not leak internal stack traces", async () => {
+  await settingsDb.updateSettings({ requireLogin: false });
+
+  // Force a 500 condition by closing the underlying SQLite connection
+  try {
+    const db = (core as Record<string, any>).getDbInstance?.() ?? (core as Record<string, any>).db;
+    if (db && typeof db.close === "function") {
+      db.close();
+    }
+  } catch {
+    // best-effort
+  }
+
+  const req = makePostRequest("http://localhost/api/combos/duplicate", {
+    name: "auto/best-coding",
+  });
+  const res = await duplicateRoute.POST(req as never);
+  const body = await res.json();
+
+  // Restore DB instance for subsequent tests/cleanup
+  core.resetDbInstance();
+
+  assert.equal(res.status, 500, `Expected 500 status on internal error, got ${res.status}`);
+
+  const rawMessage =
+    typeof body?.error === "object" && body?.error !== null
+      ? (body.error.message ?? "")
+      : String(body?.error ?? body?.details ?? "");
+
+  assert.ok(!rawMessage.includes("at /"), `Error message must not contain stack frame 'at /': ${rawMessage}`);
+  assert.ok(!rawMessage.includes("SQLITE_CONSTRAINT"), `Error message must not leak SQLite internal error: ${rawMessage}`);
+  assert.ok(!JSON.stringify(body).includes("at /"), "Full response body must not contain stack traces");
+});
