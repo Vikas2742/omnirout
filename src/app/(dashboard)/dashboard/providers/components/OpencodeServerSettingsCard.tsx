@@ -28,7 +28,7 @@ interface OpencodeServerSettings {
  * bin path matters on installs where the CLI is not on PATH (e.g. the bun global
  * install keeps the real executable inside the package).
  */
-export function OpencodeServerConnectionPanel() {
+export default function OpencodeServerSettingsCard() {
   const t = useTranslations("embeddedServices");
   const [settings, setSettings] = useState<OpencodeServerSettings>({
     opencode_server_url: DEFAULT_URL,
