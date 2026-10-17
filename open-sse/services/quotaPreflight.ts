@@ -136,6 +136,10 @@ export function registerQuotaFetcher(provider: string, fetcher: QuotaFetcher): v
   quotaFetcherRegistry.set(provider, fetcher);
 }
 
+export function getRegisteredQuotaFetchers(): ReadonlyMap<string, QuotaFetcher> {
+  return new Map(quotaFetcherRegistry);
+}
+
 export function getQuotaFetcher(provider: string): QuotaFetcher | undefined {
   return quotaFetcherRegistry.get(provider) || quotaFetcherRegistry.get(provider.toLowerCase());
 }
