@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const dataDir = mkdtempSync(join(tmpdir(), "omniroute-16801-"));
+const originalDataDir = process.env.DATA_DIR;
 process.env.DATA_DIR = dataDir;
 const providers = await import("../../src/lib/db/providers.ts");
 const models = await import("../../src/lib/db/models.ts");
@@ -17,6 +18,8 @@ const { getComboVisionBridgeDecision, VisionBridgeGuardrail } = await import("..
 test.after(() => {
   core.resetDbInstance();
   rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  if (originalDataDir === undefined) delete process.env.DATA_DIR;
+  else process.env.DATA_DIR = originalDataDir;
 });
 
 test("#16801: public prefix with internal compatible node preserves native vision images", async () => {
@@ -199,5 +202,45 @@ test("#16801: only an owned synced vision verdict permits a raw namespaced ID", 
   assert.equal(
     await getComboVisionBridgeDecision("foreign-synced-raw-path-16801"), "no-vision",
     "a different node with the same raw vendor ID cannot inherit another node's synced verdict"
+  );
+});
+
+test("#16801: Anthropic-compatible/CC nodes keep owned and rejected vision evidence separate", async () => {
+  const owner = "anthropic-compatible-cc-16801-owner";
+  const other = "anthropic-compatible-cc-16801-other";
+  await providers.createProviderNode({
+    id: owner, type: "anthropic-compatible", prefix: "ccown16801",
+    name: "Anthropic vision node", apiType: "messages", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  await providers.createProviderNode({
+    id: other, type: "anthropic-compatible", prefix: "ccother16801",
+    name: "Anthropic foreign node", apiType: "messages", baseUrl: "http://127.0.0.1:9/v1",
+  });
+  await models.addCustomModel(
+    owner, "studio/path-vision-16801", "Owned nested vision model",
+    "manual", "chat-completions", ["chat"], undefined, {}, true
+  );
+  await models.addCustomModel(
+    owner, "studio/path-text-16801", "Explicitly non-vision",
+    "manual", "chat-completions", ["chat"], undefined, {}, false
+  );
+  await combos.createCombo({
+    name: "cc-owned-vision-16801", strategy: "priority",
+    models: [{ kind: "model", providerId: owner, model: "studio/path-vision-16801", weight: 1 }],
+  });
+  await combos.createCombo({
+    name: "cc-owned-blind-16801", strategy: "priority",
+    models: [{ kind: "model", providerId: owner, model: "studio/path-text-16801", weight: 1 }],
+  });
+  await combos.createCombo({
+    name: "cc-other-vision-16801", strategy: "priority",
+    models: [{ kind: "model", providerId: other, model: "ccown16801/studio/path-vision-16801", weight: 1 }],
+  });
+
+  assert.equal(await getComboVisionBridgeDecision("cc-owned-vision-16801"), "skip");
+  assert.equal(await getComboVisionBridgeDecision("cc-owned-blind-16801"), "no-vision");
+  assert.equal(
+    await getComboVisionBridgeDecision("cc-other-vision-16801"), "no-vision",
+    "even a true public vision verdict from another compatible node must not bless this node"
   );
 });
