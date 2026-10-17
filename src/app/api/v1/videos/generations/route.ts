@@ -12,6 +12,12 @@ import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import * as log from "@/sse/utils/logger";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import {
+  createComboTargetKeyGate,
+  isKeyScopeBlockedCredentials,
+  keyScopeBlockedResponse,
+  resolveKeyConnectionScope,
+} from "@/sse/services/keyConnectionScope";
+import {
   isAllRateLimitedCredentials,
   rateLimitedProviderResponse,
 } from "@/app/api/v1/_shared/rateLimit";
@@ -65,8 +71,14 @@ async function postHandler(request, context) {
   // Enforce API key policies (model restrictions + budget limits)
   const policy = await enforceApiKeyPolicy(request, body.model);
   if (policy.rejection) return policy.rejection;
+  // GHSA-3w2r: credential selection (direct and per combo target) stays inside
+  // the key's connection scope, the same scope chat applies.
+  const scope = await resolveKeyConnectionScope(policy.apiKeyInfo);
+  if (scope.rejection) return scope.rejection;
+  // Respect the authenticated API key's credential scope before checking model capabilities.
   const endpointMismatch = await getRequestedModelEndpointMismatch(body.model, "videos");
   if (endpointMismatch) return errorResponse(HTTP_STATUS.BAD_REQUEST, endpointMismatch);
+  const { allowedConnections } = scope;
 
   // Detect a combo name and divert to full video combo execution, mirroring
   // the images route. Checks before the provider lookup — and before the
@@ -79,7 +91,20 @@ async function postHandler(request, context) {
     const combo = await getComboByName(body.model);
     if (combo) {
       const { executeVideoCombo } = await import("@omniroute/open-sse/services/videoCombo");
-      return executeVideoCombo(body.model, body, { request, policy }, startTime, log);
+      return executeVideoCombo(
+        body.model,
+        body,
+        {
+          request,
+          policy,
+          keyScope: {
+            allowedConnections,
+            isTargetAllowed: createComboTargetKeyGate(policy, body.model),
+          },
+        },
+        startTime,
+        log
+      );
     }
   }
 
@@ -108,13 +133,18 @@ async function postHandler(request, context) {
   let credentials = null;
   if (providerConfig && providerConfig.authType !== "none") {
     credentials = await getProviderCredentialsWithQuotaPreflight(
-      resolveVideoCredentialProvider(provider)
+      resolveVideoCredentialProvider(provider),
+      null,
+      allowedConnections
     );
     if (!credentials) {
       return errorResponse(
         HTTP_STATUS.BAD_REQUEST,
         `No credentials for video provider: ${provider}`
       );
+    }
+    if (isKeyScopeBlockedCredentials(credentials)) {
+      return keyScopeBlockedResponse(provider, credentials);
     }
     if (isAllRateLimitedCredentials(credentials)) {
       return rateLimitedProviderResponse(provider, credentials);
@@ -123,7 +153,7 @@ async function postHandler(request, context) {
     credentials = await getProviderCredentialsWithQuotaPreflight(
       provider,
       null,
-      null,
+      allowedConnections,
       requestedModel
     );
     if (!credentials) {
@@ -132,11 +162,16 @@ async function postHandler(request, context) {
         `No credentials for custom video provider: ${provider}`
       );
     }
+    if (isKeyScopeBlockedCredentials(credentials)) {
+      return keyScopeBlockedResponse(provider, credentials);
+    }
     if (isAllRateLimitedCredentials(credentials)) {
       return rateLimitedProviderResponse(provider, credentials);
     }
   } else if (providerConfig?.authType === "none") {
-    credentials = await resolveLocalOverrideCredentials(provider);
+    const local = await resolveLocalOverrideCredentials(provider, allowedConnections);
+    if (local.rejection) return local.rejection;
+    credentials = local.credentials;
   }
 
   const result: MediaGenerationResultLike = await handleVideoGeneration({
