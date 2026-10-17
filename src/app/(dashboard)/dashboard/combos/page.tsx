@@ -91,6 +91,7 @@ import { modelFamily } from "@/lib/combos/invariants";
 import { resolveProviderAlias } from "@omniroute/open-sse/services/providerAlias.ts";
 import { resolveServerErrorMessage } from "@/lib/api/serverErrorMessage";
 import { useTranslations } from "next-intl";
+import { subscribeModelVisibilityChanges } from "@/shared/utils/modelVisibility";
 
 const ModelSelectModal = dynamic(() => import("@/shared/components/ModelSelectModal"), {
   ssr: false,
@@ -2543,18 +2544,10 @@ function ComboFormModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    const refresh = () => { void fetchModalData(); };
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === "omniroute:model-visibility-revision") refresh();
-    };
-    window.addEventListener("omniroute:model-visibility-changed", refresh);
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("focus", refresh);
+    const unsubscribe = subscribeModelVisibilityChanges(() => { void fetchModalData(); });
     return () => {
       ++builderFetchRevisionRef.current;
-      window.removeEventListener("omniroute:model-visibility-changed", refresh);
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focus", refresh);
+      unsubscribe();
     };
     // Visibility updates are received through events, not a render dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
