@@ -38,6 +38,41 @@ test(
 );
 
 test(
+  "image combos skip out-of-scope credentials but stop after a submitted rejection",
+  { timeout: 2000 },
+  async () => {
+    const targets = [{ modelStr: "blocked" }, { modelStr: "allowed" }];
+    const dispatched: string[] = [];
+    const scoped = await runImageComboTargets(targets, {
+      resolveProvider: () => ({ provider: "fixture", model: "fixture-model" }),
+      resolveCredentials: async (_provider, target) =>
+        target.modelStr === "blocked"
+          ? { blockedByKeyPolicy: true }
+          : { connectionId: "fixture-allowed" },
+      dispatch: async ({ target }) => {
+        dispatched.push(target.modelStr);
+        return { success: true, data: { data: [] } };
+      },
+    });
+    assert.equal(scoped.outcome, "success");
+    assert.equal(scoped.fallbackCount, 1);
+    assert.deepEqual(dispatched, ["allowed"]);
+
+    dispatched.length = 0;
+    const submitted = await runImageComboTargets(targets, {
+      resolveProvider: () => ({ provider: "fixture", model: "fixture-model" }),
+      resolveCredentials: async () => ({ connectionId: "fixture-allowed" }),
+      dispatch: async ({ target }) => {
+        dispatched.push(target.modelStr);
+        return { success: false, status: 403, error: "fixture rejection" };
+      },
+    });
+    assert.equal(submitted.outcome, "terminal");
+    assert.deepEqual(dispatched, ["blocked"]);
+  }
+);
+
+test(
   "explicit terminal image failure does not rotate the selected account",
   { timeout: 2000 },
   async () => {

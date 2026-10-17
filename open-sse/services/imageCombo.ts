@@ -16,6 +16,11 @@ import {
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
+import {
+  isKeyScopeBlockedCredentials,
+  scopeComboTargetsForKey,
+  type ComboKeyScope,
+} from "@omniroute/open-sse/services/comboKeyScope.ts";
 import { handleImageGeneration } from "@omniroute/open-sse/handlers/imageGeneration.ts";
 import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
@@ -136,14 +141,11 @@ export async function runImageComboTargets<T extends ImageComboTarget>(
       continue;
     }
 
-    if (typeof credentials === "object" && "blockedByKeyPolicy" in credentials) {
-      return {
-        outcome: "terminal",
-        provider,
-        status: 403,
-        error: "Image connection is not allowed by API key policy",
-        fallbackCount,
-      };
+    // A scoped-out target cannot dispatch; other admitted combo targets remain eligible.
+    if (isKeyScopeBlockedCredentials(credentials)) {
+      lastError = { status: 403, error: `[${provider}] No connection allowed for this API key` };
+      fallbackCount += 1;
+      continue;
     }
     if (typeof credentials === "object" && "allExpired" in credentials) {
       return {
@@ -194,6 +196,48 @@ export async function runImageComboTargets<T extends ImageComboTarget>(
 }
 
 /**
+ * Steps 1–2 of {@link executeImageCombo}: the combo's images-capable targets the
+ * caller key may use, with the key's connection scope — or the error response.
+ */
+async function resolveImageComboTargets(comboName: string, keyScope: ComboKeyScope | undefined) {
+  const combo = await getComboByName(comboName);
+  if (!combo) {
+    // Model name is not a combo; the caller should handle this as a direct model
+    return { response: errorResponse(HTTP_STATUS.BAD_REQUEST, `Combo not found: ${comboName}`) };
+  }
+
+  const allCombos = await getCombos();
+  const targets = resolveComboTargets(combo as never, allCombos as never);
+  if (!targets || targets.length === 0) {
+    return {
+      response: errorResponse(
+        HTTP_STATUS.BAD_REQUEST,
+        `Combo "${comboName}" has no usable targets`
+      ),
+    };
+  }
+
+  // Images-capable targets, then those the caller key's model policy admits.
+  const capableTargets = targets.filter((t) => {
+    if (!t.modelStr) return false;
+    const entry = getImageModelEntry(t.modelStr);
+    return entry !== null;
+  });
+  const scoped = await scopeComboTargetsForKey(capableTargets, keyScope, comboName);
+  if (scoped.rejection) return { response: scoped.rejection };
+
+  if (scoped.targets.length === 0) {
+    return {
+      response: errorResponse(
+        HTTP_STATUS.BAD_REQUEST,
+        `No images-capable targets in combo "${comboName}"`
+      ),
+    };
+  }
+  return { targets: scoped.targets, allowedConnections: scoped.allowedConnections };
+}
+
+/**
  * Execute a full combo strategy for an image generation request.
  *
  * 1. Resolve combo targets via resolveComboTargets.
@@ -208,36 +252,23 @@ export async function executeImageCombo(
   auth: {
     request: Request;
     policy: { apiKeyInfo?: { id?: string; name?: string; allowedConnections?: string[] } | null };
+    /** Resolved connection/quota scope and per-target model policy from the route. */
+    keyScope?: ComboKeyScope;
   },
   startTime: number,
   log: typeof logger
 ): Promise<Response> {
-  // 1. Resolve combo targets
-  const combo = await getComboByName(comboName);
-  if (!combo) {
-    // Model name is not a combo; the caller should handle this as a direct model
-    return errorResponse(HTTP_STATUS.BAD_REQUEST, `Combo not found: ${comboName}`);
-  }
-
-  const allCombos = await getCombos();
-  const targets = resolveComboTargets(combo as never, allCombos as never);
-  if (!targets || targets.length === 0) {
-    return errorResponse(HTTP_STATUS.BAD_REQUEST, `Combo "${comboName}" has no usable targets`);
-  }
-
-  // 2. Filter to images-capable targets
-  const imageTargets = targets.filter((t) => {
-    if (!t.modelStr) return false;
-    const entry = getImageModelEntry(t.modelStr);
-    return entry !== null;
-  });
-
-  if (imageTargets.length === 0) {
-    return errorResponse(
-      HTTP_STATUS.BAD_REQUEST,
-      `No images-capable targets in combo "${comboName}"`
-    );
-  }
+  // 1–2. Resolve combo targets, filtered to images-capable ones the key may use
+  const resolved = await resolveImageComboTargets(
+    comboName,
+    auth.keyScope ?? {
+      allowedConnections: auth.policy.apiKeyInfo?.allowedConnections?.length
+        ? auth.policy.apiKeyInfo.allowedConnections
+        : null,
+    }
+  );
+  if ("response" in resolved) return resolved.response;
+  const { targets: imageTargets, allowedConnections } = resolved;
 
   // 3. Iterate targets in priority order (first healthy target wins).
   //    The skip / terminal classification lives in the shared runImageComboTargets
@@ -246,14 +277,7 @@ export async function executeImageCombo(
   const run = await runImageComboTargets(imageTargets, {
     resolveProvider: (target) => parseImageModel(target.modelStr),
     resolveCredentials: (provider, target) =>
-      getProviderCredentialsWithQuotaPreflight(
-        provider,
-        null,
-        auth.policy.apiKeyInfo?.allowedConnections?.length
-          ? auth.policy.apiKeyInfo.allowedConnections
-          : null,
-        target.modelStr
-      ),
+      getProviderCredentialsWithQuotaPreflight(provider, null, allowedConnections, target.modelStr),
     dispatch: (context) =>
       runImageRequestWithAccounting(
         {

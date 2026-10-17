@@ -131,6 +131,7 @@ export async function handleMuseEditRequest(
     provider: params.parsed.provider,
     requestedModel: params.resolvedModel,
     credentials: selection.credentials,
+    allowedConnections: params.allowedConnections,
     selectNextCredentials: async (provider, model, excluded) => {
       const next = await getProviderCredentialsWithQuotaPreflight(
         provider,
