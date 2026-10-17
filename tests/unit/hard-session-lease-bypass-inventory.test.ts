@@ -262,6 +262,9 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // read, not connection selection or dispatch, class C like its siblings (3 -> 4).
     "src/lib/tokenHealthCheck.ts": 4,
     "src/lib/tokenHealthCheckCopilot.ts": 1,
+    // Selective provider-account transfer: one read of every connection to build the
+    // catalog, the export selection and the import match set. Read-only state, no dispatch.
+    "src/lib/transfer/providerTransfer.ts": 1,
     "src/lib/usage/callLogs.ts": 1,
     "src/lib/usage/codexResetCredits.ts": 1,
     "src/lib/usage/comboScoringInspector.ts": 1,
@@ -436,6 +439,7 @@ test("managed request surfaces are fenced centrally or rejected before independe
     "src/lib/api/modelTestRunner.ts",
     "src/lib/modelValidation/runner.ts",
     "src/lib/services/quotaAutoPing.ts",
+    "src/lib/services/quotaAutoPingManual.ts",
     "src/lib/usage/codexResetCredits.ts",
     "src/lib/usage/glmResetCards.ts",
     "src/lib/usage/grokResetCredits.ts",
