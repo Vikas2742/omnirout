@@ -23,26 +23,25 @@ Provayderi **mobil operator** kimi düşünün. Zəng etmək üçün mobil opera
 
 ### Veb kukisi provayderləri
 
-Ümumi quraşdırma təlimatları, məhdudiyyətlər, problemlərin aradan qaldırılması və provayderə xas autentifikasiya təlimatları üçün **[WEB-COOKIE-GUIDE.md](./WEB-COOKIE-GUIDE.md)** sənədinə baxın.
+Ümumi quraşdırma təlimatları, məhdudiyyətlər, problemlərin aradan qaldırılması və provayderə xas autentifikasiya üzrə göstərişlər üçün **[WEB-COOKIE-GUIDE.md](./WEB-COOKIE-GUIDE.md)** sənədinə baxın.
 ---
 
 ## Sürətli başlanğıc: İlk provayderinizi qoşun
 
 ### İlk işə salınma zamanı pulsuz provayderlərin istəyə bağlı quraşdırılması
 
-İlk işə salınma sehrbazı ayrıca **Pulsuz provayderləri quraşdırın** kartını təklif edir. O, cari
-uyğun siyahını OmniRoute-un autentifikasiya tələb etməyən provayder reyestrindən əldə edir, sonra isə təsdiqləməzdən əvvəl hər bir
-provayderi nəzərdən keçirməyə və seçimdən çıxarmağa imkan verir. OmniRoute provayderin xəbərdarlıq bildirişini və onun saytına keçidi göstərir
-ki, əvvəlcə üçüncü tərəfin şərtlərini, məxfilik siyasətini, əlçatanlığını və sürət məhdudiyyətlərini nəzərdən keçirə biləsiniz.
+İlk işə salınma sehrbazı açıq şəkildə **Pulsuz provayderləri quraşdırın** kartını təklif edir. O, cari
+uyğun siyahını OmniRoute-un autentifikasiya tələb etməyən provayder reyestrindən əldə edir və təsdiqləməzdən əvvəl hər bir
+provayderi nəzərdən keçirməyə və seçimi ləğv etməyə imkan verir. OmniRoute əvvəlcədən üçüncü tərəfin şərtlərini, məxfilik siyasətini, əlçatanlığını və sorğu limitlərini nəzərdən keçirə bilməyiniz üçün provayderin xəbərdarlıq bildirişini və saytına keçidi göstərir.
 
-Bu əməliyyat istəyə bağlıdır: sehrbazın tamamlanması heç vaxt gizli şəkildə pulsuz provayder bağlantıları yaratmır.
-O, yalnız hələ mövcud olmayan provayderləri yaradır, mövcud fərdiləşdirilmiş bağlantılara
-toxunmur və yaradılmış, artıq konfiqurasiya edilmiş və uğursuz olan provayderləri ayrıca bildirir. Qismən nəticədən sonra
-yalnız uğursuz olanları təhlükəsiz şəkildə yenidən sınaya bilərsiniz.
+Bu əməliyyat istəyə bağlıdır: sehrbazın tamamlanması heç vaxt səssizcə pulsuz provayder bağlantıları yaratmır.
+O, yalnız hələ mövcud olmayan provayderləri yaradır, fərdiləşdirilmiş mövcud bağlantılara
+toxunmur və yaradılmış, artıq konfiqurasiya edilmiş və uğursuz olmuş provayderlər barədə ayrı-ayrılıqda məlumat verir. Qismən nəticədən sonra yalnız uğursuz olanları
+təhlükəsiz şəkildə yenidən sınaya bilərsiniz.
 
-### Variant A: Pulsuz provayder (Kredit kartı tələb olunmur)
+### A variantı: Pulsuz provayder (kredit kartı tələb olunmur)
 
-1. İdarəetmə panelini `http://localhost:20128` ünvanında açın
+1. `http://localhost:20128` ünvanında idarəetmə panelini açın
 2. **Provayderlər** → **Provayder əlavə edin** bölməsinə keçin
 3. Bu pulsuz provayderlərdən birini seçin:
    - **Kiro AI** — Pulsuz Claude modelləri (autentifikasiya tələb olunmur)
@@ -52,39 +51,39 @@ yalnız uğursuz olanları təhlükəsiz şəkildə yenidən sınaya bilərsiniz
    - **MLX Gemma 26B** — Lokal Apple Silicon modeli (~38.5 token/san., ~15.9GB RAM)
    - **MLX Qwen 3.8 27B** — Lokal Apple Silicon modeli (~9.1 token/san., ~13.1GB RAM)
 4. **Qoşulun** düyməsinə klikləyin
-5. Hazırdır! İndi pulsuz AI girişiniz var.
+5. Hazırdır! İndi pulsuz süni intellektə çıxışınız var.
 
-### Variant B: API açarı provayderi (Ödənişli)
+### B variantı: API açarı provayderi (ödənişli)
 
-1. Provayderin veb-saytından API açarı əldə edin:
+1. Provayderin saytından API açarı əldə edin:
    - **OpenAI**: https://platform.openai.com/api-keys
    - **Anthropic**: https://console.anthropic.com/
    - **Google**: https://aistudio.google.com/apikey
    - **DeepSeek**: https://platform.deepseek.com/
    - **Groq**: https://console.groq.com/
-2. İdarəetmə panelini `http://localhost:20128` ünvanında açın
+2. `http://localhost:20128` ünvanında idarəetmə panelini açın
 3. **Provayderlər** → **Provayder əlavə edin** bölməsinə keçin
 4. Provayderinizi seçin
 5. API açarınızı daxil edin
 6. **Qoşulun** düyməsinə klikləyin
-7. Hazırdır! İndi həmin provayderin modellərinə girişiniz var.
+7. Hazırdır! İndi həmin provayderin modellərinə çıxışınız var.
 
-### Variant C: OAuth provayderi (Abunəlik)
+### C variantı: OAuth provayderi (abunəlik)
 
-1. İdarəetmə panelini `http://localhost:20128` ünvanında açın
+1. `http://localhost:20128` ünvanında idarəetmə panelini açın
 2. **Provayderlər** → **Provayder əlavə edin** bölməsinə keçin
 3. Provayderinizi seçin (məsələn, Claude Code, GitHub Copilot)
 4. **OAuth ilə qoşulun** düyməsinə klikləyin
 5. Hesabınızla daxil olun
-6. Hazırdır! İndi abunəliyinizə daxil olan modellərə girişiniz var.
+6. Hazırdır! İndi abunəliyinizə daxil olan modellərə çıxışınız var.
 
-### Variant D: Lokal MLX modelləri (Apple Silicon)
+### D variantı: Lokal MLX modelləri (Apple Silicon)
 
-Birləşdirilmiş yaddaşa malik Apple Silicon Mac-lər üçün OmniRoute, `mlx-lm.server` vasitəsilə işləyən lokal MLX modellərinə adi OpenAI-uyğun lokal provayderlər kimi qoşulmağı dəstəkləyir.
+Vahid yaddaşa malik Apple Silicon Mac kompüterləri üçün OmniRoute, `mlx-lm.server` vasitəsilə işləyən lokal MLX modellərinə adi OpenAI-uyğun lokal provayderlər kimi qoşulmanı dəstəkləyir.
 
 #### İlkin tələblər
 
-- 24GB və ya daha çox birləşdirilmiş yaddaşa malik **Apple Silicon Mac** (M1/M2/M3/M4) tövsiyə olunur
+- 24GB+ vahid yaddaşa malik **Apple Silicon Mac** (M1/M2/M3/M4) tövsiyə olunur
 - **uv** paket meneceri: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - **mlx-lm**: `uv pip install mlx-lm`
 
@@ -93,10 +92,10 @@ Birləşdirilmiş yaddaşa malik Apple Silicon Mac-lər üçün OmniRoute, `mlx-
 1. **Asılılıqları quraşdırın**:
 
    ```bash
-   # Əgər uv hələ quraşdırılmayıbsa, onu quraşdırın
+   # uv hələ quraşdırılmayıbsa, onu quraşdırın
    curl -LsSf https://astral.sh/uv/install.sh | sh
 
-   # mlx-lm paketini quraşdırın
+   # mlx-lm-i quraşdırın
    uv pip install mlx-lm
    ```
 
@@ -128,14 +127,14 @@ Birləşdirilmiş yaddaşa malik Apple Silicon Mac-lər üçün OmniRoute, `mlx-
 
 #### Yaddaşın idarə edilməsi
 
-**Vacibdir**: 24GB birləşdirilmiş yaddaşla eyni anda yalnız **bir böyük MLX modeli işləyə bilər**.
+**Vacibdir**: 24GB vahid yaddaşla eyni anda yalnız **bir böyük MLX modeli işləyə bilər**.
 
-- Gemma 26B: ~15.9GB maksimum yaddaş
-- Qwen 3.8 27B: ~13.1GB maksimum yaddaş
+- Gemma 26B: ~15.9GB pik yaddaş
+- Qwen 3.8 27B: ~13.1GB pik yaddaş
 
 Bunu əl ilə idarə etməlisiniz:
 
-- Eyni anda yalnız bir MLX serverini işlədin və ya
+- Eyni anda yalnız bir MLX serveri işlədin və ya
 - Hər ikisini ayrı-ayrı maşınlarda işlədin və ya
 - Digərini başlatmazdan əvvəl birini dayandırın
 
@@ -143,7 +142,7 @@ OmniRoute MLX server proseslərini avtomatik idarə etmir — o, yalnız sorğul
 
 #### Alət çağırışı dəstəyi
 
-Hər iki model OpenAI-uyğun alət çağırışını dəstəkləyir. Aşağıdakılarla sınaqdan keçirin:
+Hər iki model OpenAI-uyğun alət çağırışını dəstəkləyir. Bununla sınaqdan keçirin:
 
 ```bash
 curl -X POST http://localhost:20128/v1/chat/completions \
@@ -151,7 +150,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mlx-gemma/gemma-4-26b",
-    "messages": [{"role": "user", "content": "2+2 neçə edir? Kalkulyator alətindən istifadə edin."}],
+    "messages": [{"role": "user", "content": "2+2 neçə edir? Kalkulyator alətindən istifadə et."}],
     "tools": [{"type": "function", "function": {"name": "calculator", "description": "Hesabla", "parameters": {"type": "object", "properties": {"expression": {"type": "string"}}, "required": ["expression"]}}}]
   }'
 ```
@@ -161,9 +160,9 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | Problem                  | Həll                                                                                             |
 | ------------------------ | ------------------------------------------------------------------------------------------------ |
 | Server işə düşmür        | `uv run mlx_lm.server --help` əmrini yoxlayın və model ID-lərini təsdiqləyin                     |
-| Yaddaş kifayət etmir     | Yalnız bir modelin işlədiyinə əmin olun; digər tətbiqləri bağlayın; Activity Monitor-u yoxlayın  |
-| Bağlantı rədd edilir     | Serverin düzgün portda (11435/11436) işlədiyini yoxlayın                                         |
-| Cavablar ləngdir         | İlk sorğu modeli yaddaşa yükləyir (~30-60s); sonrakı sorğular sürətli olur                       |
+| Yaddaş çatışmazlığı      | Yalnız bir modelin işlədiyinə əmin olun; digər tətbiqləri bağlayın; Activity Monitor-u yoxlayın  |
+| Qoşulmadan imtina edilir | Serverin düzgün portda (11435/11436) işlədiyini yoxlayın                                         |
+| Cavablar yavaşdır        | İlk sorğu modeli yaddaşa yükləyir (~30-60s); sonrakı sorğular sürətli olur                       |
 | Alət çağırışı uğursuzdur | Modelin alətləri dəstəklədiyinə əmin olun; tərcümə xətaları üçün OmniRoute jurnallarını yoxlayın |
 
 ---
@@ -181,7 +180,7 @@ Bu provayderlər kredit kartı tələb etmədən **pulsuz giriş** təklif edir:
 | **NVIDIA NIM**    | ~40 RPM                  | 129 model                                | API açarı tələb olunur        |
 | **Cerebras**      | Qeydiyyat üçün $5 kredit | GLM 4.7, GPT-OSS 120B                    | API açarı + kart              |
 
-**Məsləhət**: Avtomatik ehtiyat provayderə keçid sayəsində **limitsiz pulsuz süni intellektdən** istifadə etmək üçün bir neçə pulsuz provayderi qoşun!
+**İpucu**: Avtomatik ehtiyat keçidi ilə **limitsiz pulsuz süni intellekt** əldə etmək üçün bir neçə pulsuz provayderə qoşulun!
 
 ---
 
@@ -236,9 +235,9 @@ Provayderiniz artıq qoşulub. Ondan `model: "auto"` ilə istifadə edə və ya 
 
 ## Bir Neçə Provayderdən İstifadə
 
-OmniRoute **bir neçə provayderlə** ən yaxşı şəkildə işləyir. Bu, sizə aşağıdakı üstünlükləri verir:
+OmniRoute **bir neçə provayderlə** ən yaxşı şəkildə işləyir. Bu, sizə aşağıdakı imkanları verir:
 
-- **Avtomatik ehtiyat keçidi** — Bir provayder uğursuz olarsa, OmniRoute növbətisini sınayır
+- **Avtomatik ehtiyat keçid** — Bir provayder uğursuz olarsa, OmniRoute növbəti provayderi sınayır
 - **Xərc optimallaşdırması** — OmniRoute hər sorğu üçün ən ucuz provayderi seçir
 - **Sürət optimallaşdırması** — OmniRoute hər sorğu üçün ən sürətli provayderi seçir
 - **Keyfiyyət optimallaşdırması** — OmniRoute hər tapşırıq üçün ən yaxşı provayderi seçir
@@ -251,7 +250,7 @@ OmniRoute **bir neçə provayderlə** ən yaxşı şəkildə işləyir. Bu, siz�
 2. **Bir sürətli provayder** (Groq, Cerebras) — Sürətli cavablar üçün
 3. **Bir yüksək keyfiyyətli provayder** (OpenAI, Anthropic, Google) — Mürəkkəb tapşırıqlar üçün
 
-Daha sonra `model: "auto"` istifadə edin və OmniRoute hər sorğu üçün ən uyğun provayderi avtomatik seçəcək.
+Sonra `model: "auto"` parametrindən istifadə edin və OmniRoute hər sorğu üçün ən uyğun provayderi avtomatik seçəcək.
 
 ---
 
@@ -329,31 +328,31 @@ və konfiqurasiya edilə bilən taym-aut ayrıca təkmilləşdirmələrdir; bu d
 
 ---
 
-## Tez-tez Verilən Suallar
+## Tez-tez verilən suallar
 
 ### "OmniRoute-dan istifadə etmək üçün ödəniş etməliyəm?"
 
-**Xeyr!** OmniRoute pulsuz və açıq mənbəlidir. Heç bir ödəniş etmədən pulsuz provayderlərdən (Kiro, Pollinations) istifadə edə bilərsiniz. Yalnız ödənişli provayderlərdən istifadə etməyi seçsəniz, ödəniş edəcəksiniz.
+**Xeyr!** OmniRoute pulsuz və açıq mənbəlidir. Heç bir ödəniş etmədən pulsuz provayderlərdən (Kiro, Pollinations) istifadə edə bilərsiniz. Yalnız ödənişli provayderlərdən istifadə etməyi seçsəniz, ödəniş edirsiniz.
 
 ### "Hansı provayderlə başlamalıyam?"
 
-**Kiro AI** ilə başlayın — pulsuzdur, API açarı tələb etmir və sizə Claude modellərinə giriş imkanı verir. Sonra ehtiyacınıza uyğun olaraq daha çox provayder əlavə edin.
+**Kiro AI** ilə başlayın — o, pulsuzdur, API açarı tələb etmir və Claude modellərinə giriş imkanı verir. Sonra ehtiyacınıza uyğun olaraq daha çox provayder əlavə edin.
 
 ### "Eyni anda bir neçə provayderdən istifadə edə bilərəm?"
 
-**Bəli!** OmniRoute-un əsas məqsədi məhz budur. Bir neçə provayderi qoşun və OmniRoute-un hər sorğu üçün ən yaxşısını seçməsi üçün `model: "auto"` istifadə edin.
+**Bəli!** OmniRoute-un əsas məqsədi məhz budur. Bir neçə provayder qoşun və OmniRoute-un hər sorğu üçün ən uyğun olanı seçməsi üçün `model: "auto"` parametrindən istifadə edin.
 
 ### "Provayderlərdən biri işləməsə nə baş verər?"
 
-OmniRoute uğursuz provayderləri avtomatik olaraq ötürür və növbəti provayderi sınayır. Heç nə etməyinizə ehtiyac yoxdur.
+OmniRoute işləməyən provayderləri avtomatik olaraq ötürür və növbəti provayderi sınayır. Sizin heç nə etməyinizə ehtiyac yoxdur.
 
-### "Provayderlə əlaqəni necə kəsə bilərəm?"
+### "Provayder bağlantısını necə kəsə bilərəm?"
 
-Provayderlər bölməsinə keçin → provayderə klikləyin → **Əlaqəni kəs** düyməsinə klikləyin.
+Providers bölməsinə keçin → provayderin üzərinə klikləyin → **Disconnect** düyməsinə klikləyin.
 
 ### "Mövcud API açarlarımdan istifadə edə bilərəm?"
 
-**Bəli!** OpenAI, Anthropic, Google və s. üçün artıq API açarlarınız varsa, onlardan OmniRoute-da istifadə edə bilərsiniz. Provayderi qoşarkən onları sadəcə yapışdırın.
+**Bəli!** OpenAI, Anthropic, Google və s. üçün artıq API açarlarınız varsa, onlardan OmniRoute-da istifadə edə bilərsiniz. Provayderə qoşularkən sadəcə onları daxil edin.
 
 ---
 
