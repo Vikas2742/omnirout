@@ -226,6 +226,23 @@ en instans, hvor login er deaktiveret, og svarer med `403` på API-nøgler uanse
 og `admin`) samt på `oma_`-adgangstokens. Udstedelse af synkroniseringstokens (`POST /api/sync/tokens`) bruger den
 samme hjælpefunktion samt den betroede interne tjenestetoken via loopback.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Bootstrap ved ny installation er begrænset til loopback — baseret på den faktiske peer, ikke `Host`
 
 Når der ikke er konfigureret nogen administrationsadgangskode (og ingen `INITIAL_PASSWORD`), holder `isAuthRequired()` i

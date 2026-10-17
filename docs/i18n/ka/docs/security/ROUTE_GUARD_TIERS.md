@@ -220,6 +220,23 @@ Obsidian REST API ტოკენს ინახავს. GHSA-62vw-მ მხ
 და `admin`) და `oma_` წვდომის ტოკენებს პასუხობს `403`-ით. სინქრონიზაციის ტოკენის გაცემა (`POST /api/sync/tokens`) იყენებს
 იმავე დამხმარე ფუნქციას და დამატებით — სანდო loopback შიდა სერვისის ტოკენს.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### ახალი ინსტალაციის საწყისი კონფიგურაცია მხოლოდ loopback-ითაა ხელმისაწვდომი — რეალური მეზობელი კვანძის მიხედვით და არა `Host`-ის
 
 როდესაც მართვის პაროლი კონფიგურირებული არ არის (და არც `INITIAL_PASSWORD` არსებობს), `isAuthRequired()`

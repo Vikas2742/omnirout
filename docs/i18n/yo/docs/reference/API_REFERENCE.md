@@ -1105,6 +1105,13 @@ curl -X PATCH "$OMNIROUTE_URL/api/keys/$KEY_ID" \
 gbogbo credential tí a ti tọ́jú fúnni, nítorí náà wọ́n nílò session dashboard tàbí CLI àdúgbò (tàbí kí login
 má ṣiṣẹ́). Àwọn API key ti scope èyíkéyìí àti àwọn access token `oma_` máa gba `403`.
 
+`/api/db-backups/export`, `/api/db-backups/exportAll` and `/api/settings/export-json` hand out
+every stored credential, so they require the dashboard session or the local CLI (or login
+disabled). API keys of any scope and `oma_` access tokens get `403`. The restores hold the same
+boundary: `POST /api/db-backups/import` (`dryRun=true` included), `POST /api/db-backups` (restore
+by id) and `POST /api/settings/import-json` replace the live database or settings, so a machine
+credential gets `403` there too; `omniroute sync import` sends the local CLI credential.
+
 ### Cloud Sync
 
 | Endpoint               | Ọ̀nà       | Àpèjúwe             |

@@ -219,6 +219,23 @@ instancu s onemogućenom prijavom, a odgovara sa `403` na API ključeve bilo koj
 i `admin`) te na `oma_` pristupne tokene. Izdavanje tokena za sinhronizaciju (`POST /api/sync/tokens`) koristi
 isti pomoćni program, uz pouzdani token interne usluge na povratnoj petlji.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Početno postavljanje nove instalacije ograničeno je na povratnu petlju — prema stvarnom ravnopravnom učesniku, a ne prema `Host`
 
 Kada nije konfigurirana lozinka za upravljanje (i nema `INITIAL_PASSWORD`), `isAuthRequired()` u

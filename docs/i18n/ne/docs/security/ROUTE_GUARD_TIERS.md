@@ -160,6 +160,23 @@ Tunnel, Tailscale, Ngrok) पछाडि चलाउनुहुन्छ भ�
 र `admin` सहित) तथा `oma_` एक्सेस टोकनहरूलाई `403` जवाफ दिन्छ। सिंक टोकन जारी गर्ने प्रक्रिया (`POST /api/sync/tokens`) ले
 यही हेल्परका साथै विश्वसनीय लुपब्याक आन्तरिक-सेवा टोकन प्रयोग गर्छ।
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### नयाँ-इन्स्टल बुटस्ट्र्याप लुपब्याकमा मात्र सीमित हुन्छ — `Host` होइन, वास्तविक पियरका आधारमा
 
 कुनै व्यवस्थापन पासवर्ड कन्फिगर नगरिएको अवस्थामा (र `INITIAL_PASSWORD` पनि नभएको अवस्थामा),

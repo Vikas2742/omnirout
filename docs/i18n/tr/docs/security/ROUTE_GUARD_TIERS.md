@@ -206,6 +206,23 @@ veri dizininin içinde bulunan veya veri dizinini içeren bir kasayı reddeder.
 
 Yukarıdaki katman yalnızca _herhangi bir_ kimlik bilgisinin gerekli olup olmadığına karar verir. Saklanan kimlik bilgilerini indiren rotalar, işleyicide ikinci bir denetim uygular: `GET /api/settings/export-json` (şifresi çözülmüş sağlayıcı bağlantıları ve ham API anahtarları), `GET /api/db-backups/export` (SQLite dosyası) ve `GET /api/db-backups/exportAll` (tam arşiv), `requireOperatorCredential()` işlevini (`src/lib/api/operatorCredential.ts`) çağırır. Bu işlev bir dashboard oturumunu, yerel CLI öznesini veya oturum açmanın devre dışı bırakıldığı bir örneği kabul eder; kapsamı ne olursa olsun (`manage` ve `admin` dâhil) API anahtarlarına ve `oma_` erişim belirteçlerine `403` yanıtı verir. Senkronizasyon belirteci oluşturma (`POST /api/sync/tokens`) aynı yardımcı işlevi ve buna ek olarak güvenilir geri döngü dahili hizmet belirtecini kullanır.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Yeni kurulum önyüklemesi yalnızca geri döngüyle sınırlıdır — `Host` ile değil, gerçek eşle belirlenir
 
 Yapılandırılmış bir yönetim parolası olmadığında (ve `INITIAL_PASSWORD` bulunmadığında), `src/shared/utils/apiAuth.ts` içindeki `isAuthRequired()`, anonim önyüklemeyi **yalnızca geri döngü eşleri için** açık tutar. Geri döngü durumu, güvenilir eş sinyallerinden şu sırayla belirlenir: belirteçle damgalanmış gerçek TCP eşi (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, politikanın gördüğü), işlem hattının kendi `AUTHZ_HEADER_PEER_LOCALITY` kararı (rota işleyicilerinin gördüğü; yalnızca `OMNIROUTE_PEER_STAMP_TOKEN` ayarlıyken güvenilir) veya doğrudan çağrı yapanlar için gerçek soket eşi. `Host` / `nextUrl.hostname` değerlerine hiçbir zaman başvurulmaz ve ilk parola yazma işlemi (`POST /api/settings/require-login`), her ağ eşine açık olmak yerine aynı kısıtlamaya tabidir (GHSA-7pq4-8pvv-rx7r). `managementPolicy`, kendi `peerContext` kararını açıkça aşağıya iletir; böylece ORIGINAL (ayıklama öncesi) isteğin üstbilgileri bu kararı hiçbir zaman belirlemez.

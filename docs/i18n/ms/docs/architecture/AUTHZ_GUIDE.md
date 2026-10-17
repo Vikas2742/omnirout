@@ -101,6 +101,16 @@ ditambah:
 
 Beberapa tindakan `MANAGEMENT` adalah **untuk operator sahaja**: kunci `manage` sahaja tidak mencukupi. Mengeksport bukti kelayakan yang disimpan (`GET /api/settings/export-json`, `GET /api/db-backups/export`, `GET /api/db-backups/exportAll`), mengeluarkan token penyegerakan (`POST /api/sync/tokens`) dan menjana token akses CLI `admin` (`POST /api/cli/tokens`) memerlukan sesi papan pemuka, subjek CLI tempatan atau log masuk dinyahdayakan; kunci API dengan sebarang skop dan token akses `oma_` akan menerima `403`. Semakan tersebut terletak dalam `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` / `requireOperatorCredential()`).
 
+A few `MANAGEMENT` actions are **operator-only**: a `manage` key is not enough. Exporting stored
+credentials (`GET /api/settings/export-json`, `GET /api/db-backups/export`,
+`GET /api/db-backups/exportAll`), restoring a backup over the live data
+(`POST /api/db-backups/import` including `dryRun=true`, `POST /api/db-backups` restore by id,
+`POST /api/settings/import-json`), issuing a sync token (`POST /api/sync/tokens`) and minting an
+`admin` CLI access token (`POST /api/cli/tokens`) require a dashboard session, the local CLI
+subject, or login disabled; API keys of any scope and `oma_` access tokens get `403`. The check
+lives in `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` /
+`requireOperatorCredential()`).
+
 ## Saluran Pemprosesan
 
 ```

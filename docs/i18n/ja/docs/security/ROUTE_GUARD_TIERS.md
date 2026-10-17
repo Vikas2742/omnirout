@@ -180,6 +180,23 @@ Basic 認証情報をレスポンスに含めます。`DELETE` はその認証�
 
 上記の階層では、_何らかの_認証情報が必要かどうかだけを決定します。保存済みの認証情報をダウンロードするルートでは、ハンドラー内でさらに2段階目のチェックが行われます。`GET /api/settings/export-json`（復号されたプロバイダー接続情報と未加工の API キー）、`GET /api/db-backups/export`（SQLite ファイル）、および `GET /api/db-backups/exportAll`（完全なアーカイブ）は、`requireOperatorCredential()`（`src/lib/api/operatorCredential.ts`）を呼び出します。これは、ダッシュボードセッション、ローカル CLI サブジェクト、またはログインが無効化されているインスタンスを受け入れますが、あらゆるスコープ（`manage` および `admin` を含む）の API キーと、`oma_` アクセストークンに対しては `403` を返します。同期トークンの発行（`POST /api/sync/tokens`）では、同じヘルパーに加えて、信頼されたループバック内部サービストークンを使用します。
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### 新規インストール時のブートストラップはループバック限定 — `Host` ではなく実際のピアに基づく
 
 管理パスワードが設定されておらず（かつ `INITIAL_PASSWORD` もない）場合、`src/shared/utils/apiAuth.ts` の `isAuthRequired()` は、匿名ブートストラップを**ループバックピアに対してのみ**開放したままにします。ループバックかどうかは、信頼されたピアシグナルから次の優先順で判定されます。トークンによって記録された実際の TCP ピア（`PEER_IP_HEADER` + `VIA_PROXY_HEADER`、ポリシーから見える情報）、パイプライン自身の `AUTHZ_HEADER_PEER_LOCALITY` 判定結果（ルートハンドラーから見える情報で、`OMNIROUTE_PEER_STAMP_TOKEN` が設定されている間のみ信頼される）、または直接呼び出すクライアントの場合は実際のソケットピアです。`Host` / `nextUrl.hostname` は一切参照されません。また、最初のパスワード設定（`POST /api/settings/require-login`）にも同じ制約が適用され、すべてのネットワークピアに開放されることはありません（GHSA-7pq4-8pvv-rx7r）。`managementPolicy` は自身の `peerContext` 判定結果を明示的に下流へ渡すため、ORIGINAL（除去処理前）リクエストのヘッダーによって判定されることはありません。

@@ -207,6 +207,23 @@ Obsidian REST API token。GHSA-62vw 仅掩盖了 `GET` 的密码泄露；凭据�
 
 上面的层级仅决定是否需要_某种_凭据。下载已存储凭据的路由会在处理程序中执行第二次检查：`GET /api/settings/export-json`（已解密的提供者连接和原始 API 密钥）、`GET /api/db-backups/export`（SQLite 文件）以及 `GET /api/db-backups/exportAll`（完整归档）会调用 `requireOperatorCredential()`（`src/lib/api/operatorCredential.ts`）。它接受仪表板会话、本地 CLI 主体，或已禁用登录的实例；对于任何作用域的 API 密钥（包括 `manage` 和 `admin`）以及 `oma_` 访问令牌，均返回 `403`。同步令牌签发（`POST /api/sync/tokens`）使用相同的辅助函数，此外还接受受信任的回环内部服务令牌。
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### 全新安装的引导仅限回环访问——依据真实对等端，而非 `Host`
 
 在未配置管理密码（且没有 `INITIAL_PASSWORD`）的情况下，`src/shared/utils/apiAuth.ts` 中的 `isAuthRequired()` **仅对回环对等端**保持匿名引导开放。是否为回环会按以下顺序根据受信任的对等端信号判定：令牌标记的真实 TCP 对等端（`PEER_IP_HEADER` + `VIA_PROXY_HEADER`，即策略所看到的内容）、管道自身的 `AUTHZ_HEADER_PEER_LOCALITY` 判定结果（即路由处理程序所看到的内容，仅在设置了 `OMNIROUTE_PEER_STAMP_TOKEN` 时受信任），或直接调用方的真实套接字对等端。绝不会参考 `Host` / `nextUrl.hostname`，首次密码写入（`POST /api/settings/require-login`）也受相同约束，而不是对每个网络对等端开放（GHSA-7pq4-8pvv-rx7r）。`managementPolicy` 会显式向下传递其自身的 `peerContext` 判定结果，因此原始（剥离前）请求的标头绝不会决定该结果。

@@ -1099,6 +1099,13 @@ curl -X PATCH "$OMNIROUTE_URL/api/keys/$KEY_ID" \
 ព័ត៌មានសម្ងាត់ដែលបានរក្សាទុកទាំងអស់ ដូច្នេះពួកវាតម្រូវឱ្យមានសម័យផ្ទាំងគ្រប់គ្រង ឬ CLI មូលដ្ឋាន (ឬបានបិទ
 ការចូលប្រើ)។ សោ API នៃវិសាលភាពណាមួយ និងថូខឹនចូលប្រើ `oma_` នឹងទទួលបាន `403`។
 
+`/api/db-backups/export`, `/api/db-backups/exportAll` and `/api/settings/export-json` hand out
+every stored credential, so they require the dashboard session or the local CLI (or login
+disabled). API keys of any scope and `oma_` access tokens get `403`. The restores hold the same
+boundary: `POST /api/db-backups/import` (`dryRun=true` included), `POST /api/db-backups` (restore
+by id) and `POST /api/settings/import-json` replace the live database or settings, so a machine
+credential gets `403` there too; `omniroute sync import` sends the local CLI credential.
+
 ### ការធ្វើសមកាលកម្មលើក្លោដ
 
 | ចំណុចបញ្ចប់            | វិធីសាស្ត្រ | សេចក្ដីពិពណ៌នា                    |

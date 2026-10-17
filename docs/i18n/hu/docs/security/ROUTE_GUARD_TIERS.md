@@ -208,6 +208,23 @@ elutasítja az olyan vaultot, amely maga az adatkönyvtár, azon belül találha
 
 A fenti szint csak azt dönti el, hogy szükség van-e _valamilyen_ hitelesítő adatra. A tárolt hitelesítő adatokat letöltő útvonalak egy második ellenőrzést is végeznek a kezelőben: a `GET /api/settings/export-json` (visszafejtett szolgáltatói kapcsolatok és nyers API-kulcsok), a `GET /api/db-backups/export` (az SQLite-fájl) és a `GET /api/db-backups/exportAll` (a teljes archívum) meghívja a `requireOperatorCredential()` függvényt (`src/lib/api/operatorCredential.ts`). Ez elfogad egy irányítópult-munkamenetet, a helyi CLI-alanyt vagy egy olyan példányt, amelyen a bejelentkezés le van tiltva, és `403` választ ad bármilyen hatókörű API-kulcsra (beleértve a `manage` és az `admin` hatókört is), valamint az `oma_` hozzáférési tokenekre. A szinkronizálási tokenek kibocsátása (`POST /api/sync/tokens`) ugyanezt a segédfüggvényt használja, kiegészítve a megbízható visszacsatolási belsőszolgáltatás-token támogatásával.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### A friss telepítés kezdeti beállítása kizárólag visszacsatolási kapcsolaton érhető el — a tényleges partner, nem a `Host` alapján
 
 Ha nincs beállítva kezelési jelszó (és nincs `INITIAL_PASSWORD`), a `src/shared/utils/apiAuth.ts` fájlban található `isAuthRequired()` a névtelen kezdeti beállítást **csak visszacsatolási partnerek számára** hagyja nyitva. A visszacsatolási kapcsolat meghatározása a megbízható partnerjelzések alapján, a következő sorrendben történik: a tokennel megjelölt tényleges TCP-partner (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, amelyet a házirend lát), a folyamat saját `AUTHZ_HEADER_PEER_LOCALITY` döntése (amelyet az útvonalkezelők látnak, és amely csak addig megbízható, amíg az `OMNIROUTE_PEER_STAMP_TOKEN` be van állítva), vagy közvetlen hívók esetén a tényleges socketpartner. A `Host` / `nextUrl.hostname` értékét a rendszer soha nem veszi figyelembe, és az első jelszó beírására szolgáló műveletre (`POST /api/settings/require-login`) ugyanez a korlátozás vonatkozik, vagyis az nem érhető el minden hálózati partner számára (GHSA-7pq4-8pvv-rx7r). A `managementPolicy` kifejezetten továbbadja a saját `peerContext` döntését, így azt soha nem az EREDETI (eltávolítás előtti) kérés fejlécei határozzák meg.

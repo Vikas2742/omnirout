@@ -189,6 +189,23 @@ Obsidian REST API token。GHSA-62vw 僅遮蔽了 `GET` 密碼洩露；認證簽�
 與 `admin`）以及 `oma_` 存取權杖皆回應 `403`。同步權杖核發（`POST /api/sync/tokens`）使用
 相同的輔助函式，並額外接受受信任的回送內部服務權杖。
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### 全新安裝的啟動程序僅限回送連線——依據真實對等端，而非 `Host`
 
 若未設定管理密碼（且沒有 `INITIAL_PASSWORD`），

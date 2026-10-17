@@ -196,6 +196,23 @@ GHSA-62vw ने केवल `GET` पासवर्ड प्रकटीक�
 
 ऊपर वाला टियर केवल यह तय करता है कि _किसी_ क्रेडेंशियल की आवश्यकता है या नहीं। संग्रहीत क्रेडेंशियल डाउनलोड करने वाले रूट हैंडलर में दूसरी जाँच जोड़ते हैं: `GET /api/settings/export-json` (डिक्रिप्ट किए गए प्रोवाइडर कनेक्शन और अपरिष्कृत API कुंजियाँ), `GET /api/db-backups/export` (SQLite फ़ाइल) और `GET /api/db-backups/exportAll` (पूरा आर्काइव) `requireOperatorCredential()` (`src/lib/api/operatorCredential.ts`) को कॉल करते हैं। यह डैशबोर्ड सेशन, स्थानीय CLI सब्जेक्ट या लॉगिन अक्षम किए गए इंस्टेंस को स्वीकार करता है, और किसी भी स्कोप की API कुंजियों (`manage` और `admin` सहित) तथा `oma_` एक्सेस टोकन के लिए `403` लौटाता है। सिंक टोकन जारी करने की प्रक्रिया (`POST /api/sync/tokens`) इसी हेल्पर के साथ विश्वसनीय लूपबैक आंतरिक-सेवा टोकन का उपयोग करती है।
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### नई इंस्टॉलेशन का बूटस्ट्रैप केवल लूपबैक के लिए है — वास्तविक पीयर के आधार पर, `Host` के आधार पर नहीं
 
 जब कोई प्रबंधन पासवर्ड कॉन्फ़िगर नहीं होता (और कोई `INITIAL_PASSWORD` नहीं होता), तब `src/shared/utils/apiAuth.ts` में `isAuthRequired()` अनाम बूटस्ट्रैप को **केवल लूपबैक पीयर के लिए** खुला रखता है। लूपबैक का निर्धारण निम्नलिखित विश्वसनीय पीयर संकेतों से इसी क्रम में किया जाता है: टोकन द्वारा चिह्नित वास्तविक TCP पीयर (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, जिसे पॉलिसी देखती है), पाइपलाइन का अपना `AUTHZ_HEADER_PEER_LOCALITY` निर्णय (जिसे रूट हैंडलर देखते हैं और जिस पर केवल `OMNIROUTE_PEER_STAMP_TOKEN` सेट होने के दौरान भरोसा किया जाता है), या सीधे कॉल करने वालों के लिए वास्तविक सॉकेट पीयर। `Host` / `nextUrl.hostname` पर कभी विचार नहीं किया जाता, और पहला पासवर्ड लिखने की क्रिया (`POST /api/settings/require-login`) भी हर नेटवर्क पीयर के लिए खुली होने के बजाय इसी प्रतिबंध के अधीन है (GHSA-7pq4-8pvv-rx7r)। `managementPolicy` अपना `peerContext` निर्णय स्पष्ट रूप से आगे भेजता है, इसलिए मूल (स्ट्रिप किए जाने से पहले वाली) रिक्वेस्ट के हेडर कभी भी इसका निर्णय नहीं करते।

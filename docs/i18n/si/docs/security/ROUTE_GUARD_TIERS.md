@@ -193,6 +193,23 @@ data directory එකම වන, එය තුළ පිහිටන, හෝ එ
 
 ඉහත ස්තරය තීරණය කරන්නේ _යම්_ අක්තපත්රයක් අවශ්යද යන්න පමණි. ගබඩා කළ අක්තපත්ර බාගත කරන මාර්ග, හසුරුවනය තුළ දෙවන පරීක්ෂාවක් එක් කරයි: `GET /api/settings/export-json` (විකේතනය කළ සැපයුම්කරු සම්බන්ධතා සහ අමු API යතුරු), `GET /api/db-backups/export` (SQLite ගොනුව) සහ `GET /api/db-backups/exportAll` (සම්පූර්ණ සංරක්ෂිතය) විසින් `requireOperatorCredential()` (`src/lib/api/operatorCredential.ts`) ඇමතුම් කරයි. එය ඩෑෂ්බෝඩ් සැසියක්, දේශීය CLI subject එකක්, හෝ පිවිසීම අක්රිය කර ඇති instance එකක් පිළිගන්නා අතර, ඕනෑම scope එකක (`manage` සහ `admin` ඇතුළුව) API යතුරු සහ `oma_` ප්රවේශ ටෝකන සඳහා `403` ප්රතිචාර දෙයි. සමමුහුර්තකරණ ටෝකන නිකුත් කිරීම (`POST /api/sync/tokens`) ද විශ්වාසදායක loopback අභ්යන්තර-සේවා ටෝකනයට අමතරව එම helper එකම භාවිත කරයි.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### නව ස්ථාපන bootstrap එක සැබෑ peer අනුව loopback සඳහා පමණි — `Host` අනුව නොවේ
 
 කළමනාකරණ මුරපදයක් වින්යාස කර නොමැති විට (සහ `INITIAL_PASSWORD` නොමැති විට), `src/shared/utils/apiAuth.ts` හි `isAuthRequired()` විසින් නිර්නාමික bootstrap ප්රවේශය විවෘතව තබන්නේ **loopback peers සඳහා පමණි**. පහත විශ්වාසදායක peer සංඥා අනුපිළිවෙළින් භාවිත කර loopback බව තීරණය කෙරේ: ටෝකනය මඟින් සලකුණු කළ සැබෑ TCP peer එක (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, ප්රතිපත්තිය දකින දෙය), pipeline එකේම `AUTHZ_HEADER_PEER_LOCALITY` තීන්දුව (route handlers දකින දෙය, `OMNIROUTE_PEER_STAMP_TOKEN` සකසා ඇති අතරතුර පමණක් විශ්වාස කෙරේ), හෝ සෘජු ඇමතුම්කරුවන් සඳහා සැබෑ socket peer එක. `Host` / `nextUrl.hostname` කිසිවිටෙක සලකා බලන්නේ නැති අතර, පළමු මුරපදය ලිවීම (`POST /api/settings/require-login`) සෑම ජාල peer එකකටම විවෘත කිරීම වෙනුවට එම සීමාවටම යටත් වේ (GHSA-7pq4-8pvv-rx7r). `managementPolicy` විසින් එහිම `peerContext` තීන්දුව පැහැදිලිව පහළට යවයි; එබැවින් ORIGINAL (ඉවත් කිරීමට පෙර) ඉල්ලීමේ headers කිසිවිටෙක එය තීරණය නොකරයි.

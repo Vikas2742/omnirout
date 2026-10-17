@@ -51,7 +51,7 @@ odjeljke Mapa repozitorija i Referentna dokumentacija u nastavku.
 
 ## Kratak pregled projekta
 
-**OmniRoute** — objedinjeni AI proxy/usmjerivač. Jedna krajnja tačka, 372 LLM pružaoca usluga, automatski rezervni odabir.
+**OmniRoute** — objedinjeni AI proxy/usmjerivač. Jedna krajnja tačka, 374 LLM pružaoca usluga, automatski rezervni odabir.
 
 | Sloj           | Lokacija                | Svrha                                                                                                                                                                               |
 | -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

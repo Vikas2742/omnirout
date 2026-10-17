@@ -195,6 +195,23 @@ directory ہو، اس کے اندر واقع ہو، یا اسے اپنے اند�
 
 اوپر والا درجہ صرف یہ طے کرتا ہے کہ آیا _کوئی_ اسناد درکار ہیں۔ ذخیرہ شدہ اسناد ڈاؤن لوڈ کرنے والے روٹس ہینڈلر میں ایک دوسری جانچ شامل کرتے ہیں: `GET /api/settings/export-json` (ڈی کرپٹ شدہ پرووائیڈر کنکشنز اور خام API کلیدیں)، `GET /api/db-backups/export` (SQLite فائل) اور `GET /api/db-backups/exportAll` (مکمل آرکائیو) `requireOperatorCredential()` کو کال کرتے ہیں (`src/lib/api/operatorCredential.ts`)۔ یہ ڈیش بورڈ سیشن، مقامی CLI سبجیکٹ، یا لاگ اِن غیر فعال رکھنے والی انسٹینس کو قبول کرتا ہے، اور کسی بھی اسکوپ کی API کلیدوں (بشمول `manage` اور `admin`) اور `oma_` رسائی ٹوکنز کو `403` جواب دیتا ہے۔ سنک ٹوکن کا اجرا (`POST /api/sync/tokens`) اسی ہیلپر کے ساتھ قابلِ اعتماد لوپ بیک اندرونی سروس ٹوکن بھی استعمال کرتا ہے۔
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### تازہ انسٹالیشن کا بوٹسٹریپ صرف لوپ بیک تک محدود ہے — حقیقی پیئر کے ذریعے، نہ کہ `Host`
 
 جب کوئی مینجمنٹ پاس ورڈ کنفیگر نہ ہو (اور `INITIAL_PASSWORD` بھی نہ ہو)، تو `src/shared/utils/apiAuth.ts` میں `isAuthRequired()` گمنام بوٹسٹریپ کو **صرف لوپ بیک پیئرز کے لیے** کھلا رکھتا ہے۔ لوپ بیک کا تعین قابلِ اعتماد پیئر سگنلز سے اس ترتیب میں کیا جاتا ہے: ٹوکن سے مہر شدہ حقیقی TCP پیئر (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`، جسے پالیسی دیکھتی ہے)، پائپ لائن کا اپنا `AUTHZ_HEADER_PEER_LOCALITY` فیصلہ (جسے روٹ ہینڈلرز دیکھتے ہیں، اور جو صرف `OMNIROUTE_PEER_STAMP_TOKEN` سیٹ ہونے کے دوران قابلِ اعتماد ہوتا ہے)، یا براہِ راست کالرز کے لیے حقیقی ساکٹ پیئر۔ `Host` / `nextUrl.hostname` سے کبھی رجوع نہیں کیا جاتا، اور پہلے پاس ورڈ کا اندراج (`POST /api/settings/require-login`) بھی اسی پابندی کے تحت ہے، بجائے اس کے کہ ہر نیٹ ورک پیئر کے لیے کھلا ہو (GHSA-7pq4-8pvv-rx7r)۔ `managementPolicy` اپنے `peerContext` فیصلے کو واضح طور پر آگے منتقل کرتی ہے، اس لیے ORIGINAL (اسٹرپ کیے جانے سے پہلے کی) درخواست کے ہیڈرز کبھی اس کا فیصلہ نہیں کرتے۔

@@ -160,6 +160,23 @@ route-গুলোকে সুরক্ষিত রাখে — যে reques
 ও `admin`-সহ) এবং `oma_` অ্যাক্সেস টোকেনকে `403` উত্তর দেয়। সিঙ্ক টোকেন ইস্যু করা (`POST /api/sync/tokens`) একই
 হেল্পার এবং অতিরিক্তভাবে বিশ্বস্ত লুপব্যাক অভ্যন্তরীণ-সেবা টোকেন ব্যবহার করে।
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### নতুন ইনস্টলের বুটস্ট্র্যাপ শুধু লুপব্যাকের জন্য — প্রকৃত পিয়ার দ্বারা, `Host` দ্বারা নয়
 
 কোনো ব্যবস্থাপনা পাসওয়ার্ড কনফিগার করা না থাকলে (এবং `INITIAL_PASSWORD` না থাকলে),
