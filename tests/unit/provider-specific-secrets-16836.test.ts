@@ -114,6 +114,17 @@ test("#16836 all existing audit-redacted console secrets are encrypted", () => {
     "ollamaCloudUsageCookie",
     "ollamaCloudCookie",
     "usageCookie",
+    "accessToken",
+    "refreshToken",
+    "idToken",
+    "apiKey",
+    "secretAccessKey",
+    "awsSecretAccessKey",
+    "sessionToken",
+    "awsSessionToken",
+    "openCodeGoAuthCookie",
+    "opencodeGoAuthCookie",
+    "authCookie",
   ] as const;
   const metadata: Record<string, string> = { workspaceId: "ws-visible" };
   for (const field of sensitiveFields) metadata[field] = `test-secret-${field}`;

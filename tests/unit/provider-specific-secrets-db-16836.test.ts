@@ -219,3 +219,83 @@ test("#16836 Ollama Cloud quota cookies survive encrypted SQLite CRUD", async ()
     assert.equal((lazy.providerSpecificData as Record<string, unknown>)[field], plaintext);
   }
 });
+
+test("#16836 nested access/session credentials remain opaque on disk", async () => {
+  const secrets = {
+    accessToken: "secret-accessToken-16836",
+    refreshToken: "secret-refreshToken-16836",
+    idToken: "secret-idToken-16836",
+    apiKey: "secret-apiKey-16836",
+    secretAccessKey: "secret-secretAccessKey-16836",
+    awsSecretAccessKey: "secret-awsSecretAccessKey-16836",
+    sessionToken: "secret-sessionToken-16836",
+    awsSessionToken: "secret-awsSessionToken-16836",
+    openCodeGoAuthCookie: "secret-openCodeGoAuthCookie-16836",
+    opencodeGoAuthCookie: "secret-opencodeGoAuthCookie-16836",
+    authCookie: "secret-authCookie-16836",
+  };
+  const connection = await connections.createProviderConnection({
+    provider: "agentrouter",
+    authType: "apikey",
+    apiKey: "sk-nested-credentials-16836",
+    name: "Nested credential metadata",
+    providerSpecificData: {
+      ...secrets,
+      workspaceId: "visible-workspace-16836",
+      chatgptUserId: "visible-user-16836",
+    },
+  });
+  const id = String(connection?.id || "");
+  assert.ok(id);
+
+  const stored = readStoredProviderMetadata(id);
+  for (const [field, plaintext] of Object.entries(secrets)) {
+    assert.match(String(stored[field]), /^enc:v1:/, field);
+    assert.ok(!JSON.stringify(stored).includes(plaintext), field);
+  }
+  assert.equal(stored.workspaceId, "visible-workspace-16836");
+  assert.equal(stored.chatgptUserId, "visible-user-16836");
+
+  const loaded = await connections.getProviderConnectionById(id);
+  const updated = await connections.updateProviderConnection(id, { name: "Renamed nested secrets" });
+  const lazy = (await connections.getProviderConnections({ provider: "agentrouter" })).find(
+    (entry) => entry.id === id
+  );
+  assert.ok(lazy);
+  for (const [field, plaintext] of Object.entries(secrets)) {
+    assert.equal((loaded?.providerSpecificData as Record<string, unknown>)[field], plaintext);
+    assert.equal((updated?.providerSpecificData as Record<string, unknown>)[field], plaintext);
+    assert.equal((lazy.providerSpecificData as Record<string, unknown>)[field], plaintext);
+    assert.equal(readStoredProviderMetadata(id)[field], stored[field]);
+  }
+});
+
+test("#16836 imported authCookie sessions still deduplicate after encryption", async () => {
+  const cookie = "hyperagent-auth-cookie-16836";
+  const first = await connections.createProviderConnection({
+    provider: "hyperagent",
+    authType: "cookie",
+    name: "Original HyperAgent session",
+    providerSpecificData: { authCookie: cookie },
+  });
+  const firstId = String(first?.id || "");
+  assert.ok(firstId);
+  assert.match(String(readStoredProviderMetadata(firstId).authCookie), /^enc:v1:/);
+
+  const same = await connections.createProviderConnection({
+    provider: "hyperagent",
+    authType: "cookie",
+    name: "Renamed imported HyperAgent session",
+    providerSpecificData: { authCookie: cookie },
+  });
+  assert.equal(same?.id, firstId, "same cookie must reuse the existing connection");
+
+  const second = await connections.createProviderConnection({
+    provider: "hyperagent",
+    authType: "cookie",
+    name: "Different HyperAgent session",
+    providerSpecificData: { authCookie: "different-hyperagent-auth-cookie-16836" },
+  });
+  assert.ok(second?.id);
+  assert.notEqual(second?.id, firstId, "different sessions must stay isolated");
+});

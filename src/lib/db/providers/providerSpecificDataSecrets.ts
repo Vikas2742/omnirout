@@ -24,6 +24,21 @@ export const PROVIDER_SPECIFIC_SECRET_FIELDS = [
   "ollamaCloudUsageCookie",
   "ollamaCloudCookie",
   "usageCookie",
+  // Some connectors store a second credential or session token inside the
+  // metadata object. These fields are already redacted from dashboard/audit
+  // responses, but without declaring them here their SQLite values leak in
+  // plaintext. Keep non-secret IDs (workspaceId/chatgptUserId) queryable.
+  "accessToken",
+  "refreshToken",
+  "idToken",
+  "apiKey",
+  "secretAccessKey",
+  "awsSecretAccessKey",
+  "sessionToken",
+  "awsSessionToken",
+  "openCodeGoAuthCookie",
+  "opencodeGoAuthCookie",
+  "authCookie",
 ] as const;
 
 /** Return a fresh object only if a recognized secret field actually changes. */
