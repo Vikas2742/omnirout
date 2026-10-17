@@ -111,6 +111,7 @@
 | `/api/settings/import-json`               | पूर्ण सेटिंग्स ब्लब को बदलता है                                    |
 | `/api/providers/health-autopilot/actions` | ऑटोपायलट सुधार क्रियाएं निष्पादित करता है                          |
 | `/api/settings/obsidian`                  | किसी भी वॉल्ट रूट के लिए पुन: प्रयोज्य WebDAV क्रेडेंशियल बनाता है |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                       |
 
 **उल्लंघन पर प्रतिक्रिया:** `401 Authentication required`
 

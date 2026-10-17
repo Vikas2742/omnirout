@@ -111,6 +111,7 @@ Bu marşrutlar dağıdıcı və ya geri dönməzdir. Onları "şifrəsiz" quraş
 | `/api/settings/import-json`               | Tam tənzimləmələr blobunu əvəz edir                                                 |
 | `/api/providers/health-autopilot/actions` | Avtopilot bərpa hərəkətlərini icra edir                                             |
 | `/api/settings/obsidian`                  | İstənilən vault kökü üçün təkrar istifadə edilə bilən WebDAV etimadnamələri yaradır |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                        |
 
 **Pozuntu zamanı cavab:** `401 Authentication required`
 

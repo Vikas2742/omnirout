@@ -177,6 +177,7 @@ serverio procesą.
 | `/api/settings/import-json`               | Pakeičia visą nuostatų objektą                                                            |
 | `/api/providers/health-autopilot/actions` | Vykdo automatinio valdymo taisomuosius veiksmus                                           |
 | `/api/settings/obsidian`                  | Sukuria pakartotinai naudojamus WebDAV prisijungimo duomenis bet kokiai saugyklos šakniai |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                              |
 
 **Atsakas pažeidimo atveju:** `401 Authentication required`
 

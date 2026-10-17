@@ -173,6 +173,7 @@ spawnను చేరుకోలేదు. ఆపరేటర్కు ఇం�
 | `/api/settings/import-json`               | పూర్తి సెట్టింగ్ల బ్లాబ్ను భర్తీ చేస్తుంది                                |
 | `/api/providers/health-autopilot/actions` | ఆటోపైలట్ పరిష్కార చర్యలను అమలు చేస్తుంది                                  |
 | `/api/settings/obsidian`                  | ఏ వాల్ట్ రూట్కైనా మళ్లీ ఉపయోగించగల WebDAV క్రెడెన్షియల్లను జారీ చేస్తుంది |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                              |
 
 **ఉల్లంఘనపై ప్రతిస్పందన:** `401 Authentication required`
 

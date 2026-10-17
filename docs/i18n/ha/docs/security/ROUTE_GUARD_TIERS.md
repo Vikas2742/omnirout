@@ -135,6 +135,7 @@ tsarin sabar.
 | `/api/settings/import-json`               | Yana maye gurbin cikakken blob na saituna                             |
 | `/api/providers/health-autopilot/actions` | Yana aiwatar da ayyukan gyaran autopilot                              |
 | `/api/settings/obsidian`                  | Yana ƙirƙira creds na WebDAV masu sake amfani don kowane tushen vault |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                          |
 
 **Martani akan keta doka:** `401 Authentication required`
 

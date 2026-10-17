@@ -171,6 +171,7 @@ routeଗୁଡ଼ିକୁ ସୁରକ୍ଷିତ ରଖେ — ଯେଉଁ �
 | `/api/settings/import-json`               | ସମ୍ପୂର୍ଣ୍ଣ ସେଟିଂସ୍ ବ୍ଲବ୍କୁ ପ୍ରତିସ୍ଥାପନ କରେ                         |
 | `/api/providers/health-autopilot/actions` | ଅଟୋପାଇଲଟ୍ ପ୍ରତିକାରମୂଳକ କାର୍ଯ୍ୟଗୁଡ଼ିକ ସମ୍ପାଦନ କରେ                   |
 | `/api/settings/obsidian`                  | ଯେକୌଣସି vault root ପାଇଁ ପୁନଃବ୍ୟବହାରଯୋଗ୍ୟ WebDAV ପରିଚୟପତ୍ର ଜାରି କରେ |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                       |
 
 **ଉଲ୍ଲଂଘନ ହେଲେ ପ୍ରତିକ୍ରିୟା:** `401 Authentication required`
 

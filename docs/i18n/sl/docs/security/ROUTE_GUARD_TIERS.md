@@ -177,6 +177,7 @@ strežniški proces.
 | `/api/settings/import-json`               | Zamenja celoten sklop nastavitev                                              |
 | `/api/providers/health-autopilot/actions` | Izvede dejanja samodejnega odpravljanja težav                                 |
 | `/api/settings/obsidian`                  | Ustvari poverilnice WebDAV za večkratno uporabo za kateri koli koren trezorja |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                  |
 
 **Odziv ob kršitvi:** `401 Authentication required`
 

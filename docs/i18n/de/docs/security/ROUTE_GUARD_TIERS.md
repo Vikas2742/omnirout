@@ -139,6 +139,7 @@ Serverprozess beenden.
 | `/api/settings/import-json`               | Ersetzt den vollständigen Einstellungs-Blob                                 |
 | `/api/providers/health-autopilot/actions` | Führt Autopilot-Korrekturmaßnahmen aus                                      |
 | `/api/settings/obsidian`                  | Erstellt wiederverwendbare WebDAV-Anmeldeinformationen für jedes Vault-Root |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                |
 
 **Antwort bei Verletzung:** `401 Authentifizierung erforderlich`
 

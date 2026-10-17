@@ -158,6 +158,7 @@ Tunnel, Tailscale, Ngrok) പിന്നിൽ പ്രവർത്തിപ�
 | `/api/settings/import-json`               | സമ്പൂർണ settings blob മാറ്റിസ്ഥാപിക്കുന്നു                               |
 | `/api/providers/health-autopilot/actions` | autopilot പരിഹാര നടപടികൾ നടപ്പിലാക്കുന്നു                                |
 | `/api/settings/obsidian`                  | ഏത് vault root-നും പുനരുപയോഗിക്കാവുന്ന WebDAV credentials സൃഷ്ടിക്കുന്നു |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                             |
 
 **ലംഘനത്തിനുള്ള പ്രതികരണം:** `401 Authentication required`
 

@@ -129,6 +129,7 @@ Ove su rute destruktivne ili nepovratne. Dopuštanje istih u instalaciji "bez lo
 | `/api/settings/import-json`               | Zamjenjuje cijeli blob postavki                                                |
 | `/api/providers/health-autopilot/actions` | Izvršava radnje sanacije autopilota                                            |
 | `/api/settings/obsidian`                  | Stvara WebDAV vjerodajnice za višekratnu upotrebu za bilo koji korijen trezora |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                   |
 
 **Odgovor na kršenje:** `401 Authentication required`
 

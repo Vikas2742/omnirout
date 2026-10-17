@@ -121,6 +121,7 @@ API ключ с обхват `manage` (вижте [Изключение за о�
 | `/api/settings/import-json`               | Заменя пълния обект с настройки                                                    |
 | `/api/providers/health-autopilot/actions` | Изпълнява действия за коригиране на автопилот                                      |
 | `/api/settings/obsidian`                  | Създава многократно използваеми WebDAV данни за достъп за всеки корен на хранилище |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                       |
 
 **Отговор при нарушение:** `401 Authentication required`
 

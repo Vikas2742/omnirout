@@ -176,6 +176,7 @@ ukončiť proces servera.
 | `/api/settings/import-json`               | Nahradí celý blok nastavení                                               |
 | `/api/providers/health-autopilot/actions` | Vykoná nápravné akcie autopilota                                          |
 | `/api/settings/obsidian`                  | Vytvorí opakovane použiteľné poverenia WebDAV pre ľubovoľný koreň trezora |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                              |
 
 **Odpoveď pri porušení:** `401 Authentication required`
 

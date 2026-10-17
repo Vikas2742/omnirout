@@ -173,6 +173,7 @@ serverprocessen.
 | `/api/settings/import-json`               | Ersätter hela inställningsobjektet                                     |
 | `/api/providers/health-autopilot/actions` | Utför autopilotens korrigeringsåtgärder                                |
 | `/api/settings/obsidian`                  | Utfärdar återanvändbara WebDAV-inloggningsuppgifter för valfri valvrot |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                           |
 
 **Svar vid överträdelse:** `401 Authentication required`
 

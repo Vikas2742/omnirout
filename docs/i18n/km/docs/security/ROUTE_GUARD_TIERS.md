@@ -167,6 +167,7 @@ server បាន។
 | `/api/settings/import-json`               | ជំនួសប្លុកការកំណត់ទាំងមូល                                             |
 | `/api/providers/health-autopilot/actions` | ប្រតិបត្តិសកម្មភាពជួសជុលរបស់ autopilot                                |
 | `/api/settings/obsidian`                  | បង្កើតព័ត៌មានសម្គាល់ WebDAV ដែលអាចប្រើឡើងវិញបាន សម្រាប់ឫស vault ណាមួយ |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                          |
 
 **ការឆ្លើយតបនៅពេលមានការបំពាន៖** `401 Authentication required`
 

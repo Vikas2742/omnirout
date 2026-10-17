@@ -157,6 +157,7 @@ Tunnel, Tailscale, Ngrok) પાછળ ચલાવો છો, તો પણ લ
 | `/api/settings/import-json`               | સંપૂર્ણ સેટિંગ્સ બ્લૉબને બદલે છે                                  |
 | `/api/providers/health-autopilot/actions` | ઑટોપાઇલટ સુધારાત્મક ક્રિયાઓ ચલાવે છે                              |
 | `/api/settings/obsidian`                  | કોઈપણ વૉલ્ટ રૂટ માટે ફરી વાપરી શકાય તેવા WebDAV ઓળખપત્રો બનાવે છે |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                      |
 
 **ઉલ્લંઘન પર પ્રતિભાવ:** `401 Authentication required`
 

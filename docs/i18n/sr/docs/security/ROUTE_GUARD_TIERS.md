@@ -172,6 +172,7 @@ Tunnel, Tailscale, Ngrok), провера повратне петље и даљ�
 | `/api/settings/import-json`               | Замењује цео скуп подешавања                                           |
 | `/api/providers/health-autopilot/actions` | Извршава корективне радње аутопилота                                   |
 | `/api/settings/obsidian`                  | Издаје поново употребљиве WebDAV акредитиве за било који корен трезора |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                           |
 
 **Одговор при кршењу:** `401 Authentication required`
 

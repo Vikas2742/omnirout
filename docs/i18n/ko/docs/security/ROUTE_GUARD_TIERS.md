@@ -156,6 +156,7 @@ Tunnel, Tailscale, Ngrok) 뒤에서 실행하더라도 루프백 검사는 위�
 | `/api/settings/import-json`               | 전체 설정 블롭을 교체함                                  |
 | `/api/providers/health-autopilot/actions` | 자동 복구 조치를 실행함                                  |
 | `/api/settings/obsidian`                  | 모든 볼트 루트에 재사용 가능한 WebDAV 자격 증명을 발급함 |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens             |
 
 **위반 시 응답:** `401 Authentication required`
 

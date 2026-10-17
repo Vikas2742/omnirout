@@ -166,6 +166,7 @@ Disse ruter er destruktive eller irreversible. At tillade dem i en "ingen-adgang
 | `/api/settings/import-json`               | Erstatter hele indstillingsblobben                                           |
 | `/api/providers/health-autopilot/actions` | Udfører autopilot-afhjælpningshandlinger                                     |
 | `/api/settings/obsidian`                  | Opretter genanvendelige WebDAV-legitimationsoplysninger for enhver vault-rod |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                 |
 
 **Svar ved overtrædelse:** `401 Authentication required`
 

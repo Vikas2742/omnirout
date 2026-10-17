@@ -127,6 +127,7 @@
 | `/api/settings/import-json`               | کل بلوک تنظیمات را جایگزین میکند                                         |
 | `/api/providers/health-autopilot/actions` | اقدامات اصلاحی خلبان خودکار را اجرا میکند                                |
 | `/api/settings/obsidian`                  | اعتبارنامههای WebDAV قابل استفاده مجدد را برای هر ریشه vault ایجاد میکند |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                             |
 
 **پاسخ در صورت نقض:** `401 Authentication required`
 

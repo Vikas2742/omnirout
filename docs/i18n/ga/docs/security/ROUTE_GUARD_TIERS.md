@@ -149,6 +149,7 @@ Tá na bealaí seo millteach nó dochúlaithe. Dá gceadófaí iad i suiteáil "
 | `/api/settings/import-json`               | Cuireann sé an blob socruithe iomlán in ionad                           |
 | `/api/providers/health-autopilot/actions` | Forghníomhaíonn sé gníomhartha leigheasacha uathphíolóta                |
 | `/api/settings/obsidian`                  | Cruthaíonn sé dintiúir WebDAV in-athúsáidte d'aon fhréamh cruinneacháin |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                            |
 
 **Freagra ar shárú:** `401 Authentication required`
 

@@ -170,6 +170,7 @@ mchakato wa seva.
 | `/api/settings/import-json`               | Hubadilisha mkusanyiko kamili wa mipangilio                                       |
 | `/api/providers/health-autopilot/actions` | Hutekeleza vitendo vya kurekebisha vya autopilot                                  |
 | `/api/settings/obsidian`                  | Hutoa vitambulisho vya WebDAV vinavyoweza kutumika tena kwa mzizi wowote wa vault |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                      |
 
 **Jibu ukiukaji unapotokea:** `401 Authentication required`
 

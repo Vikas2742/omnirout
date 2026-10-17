@@ -171,6 +171,7 @@ spawn सम्म पुग्न सक्दैन। Operator का दु�
 | `/api/settings/import-json`               | पूर्ण सेटिङ्स ब्लब प्रतिस्थापन गर्छ                                    |
 | `/api/providers/health-autopilot/actions` | autopilot सुधारात्मक कार्यहरू कार्यान्वयन गर्छ                         |
 | `/api/settings/obsidian`                  | कुनै पनि vault root का लागि पुनःप्रयोगयोग्य WebDAV प्रमाणहरू जारी गर्छ |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                           |
 
 **उल्लङ्घनमा प्रतिक्रिया:** `401 Authentication required`
 

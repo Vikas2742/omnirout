@@ -127,6 +127,7 @@ Nämä reitit ovat tuhoisia tai peruuttamattomia. Niiden salliminen "ei-salasana
 | `/api/settings/import-json`               | Korvaa koko asetustiedoston                                             |
 | `/api/providers/health-autopilot/actions` | Suorittaa autopilotin korjaustoimenpiteitä                              |
 | `/api/settings/obsidian`                  | Luo uudelleenkäytettäviä WebDAV-tunnuksia mille tahansa holvin juurelle |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                            |
 
 **Vastaus rikkomuksesta:** `401 Authentication required`
 

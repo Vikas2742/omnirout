@@ -148,6 +148,7 @@
 | `/api/settings/import-json`               | يستبدل كتلة الإعدادات الكاملة                                |
 | `/api/providers/health-autopilot/actions` | ينفذ إجراءات معالجة الطيار الآلي                             |
 | `/api/settings/obsidian`                  | يصدر بيانات اعتماد WebDAV قابلة لإعادة الاستخدام لأي جذر قبو |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                 |
 
 **الاستجابة عند الانتهاك:** `401 Authentication required`
 

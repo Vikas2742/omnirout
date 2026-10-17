@@ -111,6 +111,7 @@ OmniRoute-এর সব ম্যানেজমেন্ট API রুটকে
 | `/api/settings/import-json`               | সম্পূর্ণ সেটিংস ব্লব প্রতিস্থাপন করে                              |
 | `/api/providers/health-autopilot/actions` | অটোপাইলট প্রতিকারমূলক ক্রিয়া সম্পাদন করে                         |
 | `/api/settings/obsidian`                  | যেকোনো ভল্ট রুটের জন্য পুনরায় ব্যবহারযোগ্য WebDAV ক্রেড তৈরি করে |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                      |
 
 **লঙ্ঘনের প্রতিক্রিয়া:** `401 Authentication required`
 

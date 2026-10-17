@@ -127,6 +127,7 @@ Ces routes sont destructrices ou irréversibles. Les autoriser dans une installa
 | `/api/settings/import-json`               | Remplace le blob de paramètres complet                                      |
 | `/api/providers/health-autopilot/actions` | Exécute les actions de remédiation de l'autopilote                          |
 | `/api/settings/obsidian`                  | Crée des identifiants WebDAV réutilisables pour toute racine de coffre-fort |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                |
 
 **Réponse en cas de violation :** `401 Authentification requise`
 

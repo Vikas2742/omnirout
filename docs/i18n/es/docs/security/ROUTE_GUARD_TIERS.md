@@ -129,6 +129,7 @@ Estas rutas son destructivas o irreversibles. Permitirlas en una instalación "s
 | `/api/settings/import-json`               | Reemplaza el blob completo de configuración                            |
 | `/api/providers/health-autopilot/actions` | Ejecuta acciones de remediación de piloto automático                   |
 | `/api/settings/obsidian`                  | Genera credenciales WebDAV reutilizables para cualquier raíz de bóveda |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                           |
 
 **Respuesta en caso de violación:** `401 Authentication required`
 

@@ -175,6 +175,7 @@ usoro server ahụ.
 | `/api/settings/import-json`               | Na-eji blob ntọala zuru ezu dochie nke dị ugbu a                   |
 | `/api/providers/health-autopilot/actions` | Na-eme omume mmezi autopilot                                       |
 | `/api/settings/obsidian`                  | Na-emepụta nzere WebDAV a pụrụ iji ọzọ maka mgbọrọgwụ vault ọ bụla |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                       |
 
 **Nzaghachi mgbe e mebiri iwu:** `401 Authentication required`
 

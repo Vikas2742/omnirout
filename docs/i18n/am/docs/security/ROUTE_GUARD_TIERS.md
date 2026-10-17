@@ -111,6 +111,7 @@ OmniRouteን ከኋላ ተገላቢጦሽ ፕሮክሲ ወይም ዋሻ (nginx, 
 | `/api/settings/import-json`               | ሙሉውን የቅንብሮች ብሎብ ይተካዋል                                    |
 | `/api/providers/health-autopilot/actions` | የአውቶፓይለት የማስተካከያ እርምጃዎችን ይፈጽማል                           |
 | `/api/settings/obsidian`                  | ለማንኛውም ቮልት ስር ዳግም ጥቅም ላይ ሊውሉ የሚችሉ የWebDAV ምስክርነቶችን ይፈጥራል |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens             |
 
 **ጥሰት ሲከሰት የሚሰጥ ምላሽ:** `401 Authentication required`
 

@@ -118,6 +118,7 @@ serveriprotsessi tappa.
 | `/api/settings/import-json`               | Asendab täieliku seadete ploki                                       |
 | `/api/providers/health-autopilot/actions` | Käivitab autopiloodi parandusmeetmed                                 |
 | `/api/settings/obsidian`                  | Loob korduvkasutatavad WebDAV mandaadid mis tahes hoidla juure jaoks |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                         |
 
 **Vastus rikkumise korral:** `401 Authentication required`
 

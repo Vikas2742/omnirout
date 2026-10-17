@@ -177,6 +177,7 @@ patayin ang proseso ng server.
 | `/api/settings/import-json`               | Pinapalitan ang buong settings blob                             |
 | `/api/providers/health-autopilot/actions` | Nagsasagawa ng mga aksyon sa remediation ng autopilot           |
 | `/api/settings/obsidian`                  | Gumagawa ng reusable na WebDAV creds para sa anumang vault root |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                    |
 
 **Tugon kapag may paglabag:** `401 Authentication required`
 

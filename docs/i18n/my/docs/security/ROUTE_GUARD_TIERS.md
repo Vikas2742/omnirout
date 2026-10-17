@@ -159,6 +159,7 @@ server process ကို ရပ်ပစ်နိုင်ခြင်းကိ�
 | `/api/settings/import-json`               | settings blob အပြည့်အစုံကို အစားထိုးသည်                                                  |
 | `/api/providers/health-autopilot/actions` | autopilot ပြန်လည်ကုစားရေး လုပ်ဆောင်ချက်များကို လုပ်ဆောင်သည်                              |
 | `/api/settings/obsidian`                  | မည်သည့် vault root အတွက်မဆို ပြန်လည်အသုံးပြုနိုင်သော WebDAV အထောက်အထားများကို ထုတ်ပေးသည် |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                             |
 
 **ချိုးဖောက်မှုအတွက် တုံ့ပြန်ချက်:** `401 Authentication required`
 

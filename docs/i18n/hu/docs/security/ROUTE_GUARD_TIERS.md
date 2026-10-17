@@ -171,6 +171,7 @@ Ezek az útvonalak destruktívak vagy visszafordíthatatlanok. Ha engedélyezzü
 | `/api/settings/import-json`               | Felülírja a teljes beállítási blobot                                          |
 | `/api/providers/health-autopilot/actions` | Végrehajtja az autopilot helyreállítási műveleteket                           |
 | `/api/settings/obsidian`                  | Újrafelhasználható WebDAV hitelesítő adatokat generál bármely tárológyökérhez |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                  |
 
 **Válasz megsértés esetén:** `401 Authentication required`
 

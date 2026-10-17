@@ -165,6 +165,7 @@ Rute-rute ini bersifat merusak atau tidak dapat dibatalkan. Mengizinkannya dalam
 | `/api/settings/import-json`               | Mengganti blob pengaturan lengkap                                               |
 | `/api/providers/health-autopilot/actions` | Mengeksekusi tindakan remediasi autopilot                                       |
 | `/api/settings/obsidian`                  | Mencetak kredensial WebDAV yang dapat digunakan kembali untuk setiap root vault |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                    |
 
 **Respons atas pelanggaran:** `401 Authentication required`
 

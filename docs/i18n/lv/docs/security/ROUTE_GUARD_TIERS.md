@@ -172,6 +172,7 @@ procesu.
 | `/api/settings/import-json`               | Aizstāj visu iestatījumu kopumu                                                    |
 | `/api/providers/health-autopilot/actions` | Izpilda autopilota koriģējošās darbības                                            |
 | `/api/settings/obsidian`                  | Izveido atkārtoti lietojamus WebDAV akreditācijas datus jebkurai glabātuves saknei |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                       |
 
 **Atbilde pārkāpuma gadījumā:** `401 Authentication required`
 

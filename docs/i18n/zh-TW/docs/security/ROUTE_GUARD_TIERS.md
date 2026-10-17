@@ -147,6 +147,7 @@ Tunnel、Tailscale、Ngrok）後方執行 OmniRoute，回送位址檢查仍會�
 | `/api/settings/import-json`               | 取代完整設定資料                               |
 | `/api/providers/health-autopilot/actions` | 執行自動駕駛修復動作                           |
 | `/api/settings/obsidian`                  | 為任何儲存庫根目錄簽發可重複使用的 WebDAV 憑證 |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens   |
 
 **違規時的回應：** `401 Authentication required`
 

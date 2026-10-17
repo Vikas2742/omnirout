@@ -129,6 +129,7 @@
 | `/api/settings/import-json`               | Αντικαθιστά ολόκληρο το blob ρυθμίσεων                                                     |
 | `/api/providers/health-autopilot/actions` | Εκτελεί ενέργειες αποκατάστασης αυτόματου πιλότου                                          |
 | `/api/settings/obsidian`                  | Δημιουργεί επαναχρησιμοποιήσιμα διαπιστευτήρια WebDAV για οποιαδήποτε ρίζα θησαυροφυλακίου |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                               |
 
 **Απόκριση σε παραβίαση:** `401 Απαιτείται έλεγχος ταυτότητας`
 

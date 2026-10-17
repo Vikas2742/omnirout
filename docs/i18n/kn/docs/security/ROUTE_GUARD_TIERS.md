@@ -160,6 +160,7 @@ server process ಅನ್ನು ಕೊನೆಗೊಳಿಸಬಹುದು.
 | `/api/settings/import-json`               | ಸಂಪೂರ್ಣ settings blob ಅನ್ನು ಬದಲಾಯಿಸುತ್ತದೆ                              |
 | `/api/providers/health-autopilot/actions` | autopilot ಪರಿಹಾರ ಕ್ರಮಗಳನ್ನು ಕಾರ್ಯಗತಗೊಳಿಸುತ್ತದೆ                         |
 | `/api/settings/obsidian`                  | ಯಾವುದೇ vault root ಗಾಗಿ ಮರುಬಳಕೆ ಮಾಡಬಹುದಾದ WebDAV credentials ರಚಿಸುತ್ತದೆ |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                           |
 
 **ಉಲ್ಲಂಘನೆಯಾಗುವಾಗ ಪ್ರತಿಕ್ರಿಯೆ:** `401 Authentication required`
 

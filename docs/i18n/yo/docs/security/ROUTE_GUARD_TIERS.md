@@ -167,6 +167,7 @@ process server dúró.
 | `/api/settings/import-json`               | Ó rọ́pò gbogbo blob àwọn settings                         |
 | `/api/providers/health-autopilot/actions` | Ó ṣiṣẹ́ àwọn ìgbésẹ̀ àtúnṣe autopilot                      |
 | `/api/settings/obsidian`                  | Ó dá creds WebDAV tí a lè tún lò fún root vault èyíkéyìí |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens             |
 
 **Ìdáhùn nígbà ìrúfin:** `401 Authentication required`
 

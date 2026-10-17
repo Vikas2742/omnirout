@@ -178,6 +178,7 @@ Tunnel, Tailscale, Ngrok), ლუპბექის შემოწმება 
 | `/api/settings/import-json`               | პარამეტრების სრული ბლობის ჩანაცვლება                                 |
 | `/api/providers/health-autopilot/actions` | ავტოპილოტის გამოსასწორებელი მოქმედებების შესრულება                   |
 | `/api/settings/obsidian`                  | ნებისმიერი საცავის root-ისთვის მრავალჯერად WebDAV მონაცემებს გასცემს |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                         |
 
 **პასუხი დარღვევისას:** `401 Authentication required`
 

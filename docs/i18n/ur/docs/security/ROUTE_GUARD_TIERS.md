@@ -148,6 +148,7 @@ Tunnel، Tailscale، Ngrok) کے پیچھے چلاتے ہیں تو لوپ بیک
 | `/api/settings/import-json`               | مکمل ترتیباتی blob کو تبدیل کر دیتا ہے                                   |
 | `/api/providers/health-autopilot/actions` | autopilot کے اصلاحی اقدامات انجام دیتا ہے                                |
 | `/api/settings/obsidian`                  | کسی بھی vault root کے لیے دوبارہ قابلِ استعمال WebDAV اسناد جاری کرتا ہے |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                             |
 
 **خلاف ورزی پر جواب:** `401 Authentication required`
 

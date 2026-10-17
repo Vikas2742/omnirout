@@ -111,6 +111,7 @@
 | `/api/settings/import-json`               | 替换完整设置数据                               |
 | `/api/providers/health-autopilot/actions` | 执行自动驾驶修复操作                           |
 | `/api/settings/obsidian`                  | 为任意保险库根目录签发可重复使用的 WebDAV 凭据 |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens   |
 
 **违规响应：** `401 Authentication required`
 

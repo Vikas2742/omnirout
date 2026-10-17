@@ -174,6 +174,7 @@ processo do servidor.
 | `/api/settings/import-json`               | Substitui o blob completo de configurações                         |
 | `/api/providers/health-autopilot/actions` | Executa ações de correção do piloto automático                     |
 | `/api/settings/obsidian`                  | Emite credenciais WebDAV reutilizáveis para qualquer raiz de cofre |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                       |
 
 **Resposta em caso de violação:** `401 Authentication required`
 

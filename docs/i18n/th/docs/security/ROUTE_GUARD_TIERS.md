@@ -132,6 +132,7 @@ local-only
 | `/api/settings/import-json`               | แทนที่บล็อบการตั้งค่าทั้งหมด                           |
 | `/api/providers/health-autopilot/actions` | ดำเนินการแก้ไขอัตโนมัติของ autopilot                   |
 | `/api/settings/obsidian`                  | ออกข้อมูลรับรอง WebDAV ที่ใช้ซ้ำได้สำหรับราก vault ใดๆ |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens           |
 
 **การตอบกลับเมื่อละเมิด:** `401 Authentication required`
 

@@ -169,6 +169,7 @@ Tyto cesty jsou destruktivní nebo nevratné. Povolení v instalaci „bez hesla
 | `/api/settings/import-json`               | Nahrazuje celý blob nastavení                                           |
 | `/api/providers/health-autopilot/actions` | Provádí nápravné akce autopilota                                        |
 | `/api/settings/obsidian`                  | Vytváří opakovaně použitelné WebDAV pověření pro jakýkoli kořen trezoru |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                            |
 
 **Odpověď při porušení:** `401 Authentication required`
 

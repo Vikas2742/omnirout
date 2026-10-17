@@ -170,6 +170,7 @@ serverprosessen.
 | `/api/settings/import-json`               | Erstatter hele innstillingsobjektet                                |
 | `/api/providers/health-autopilot/actions` | Utfører utbedringshandlinger for autopiloten                       |
 | `/api/settings/obsidian`                  | Utsteder gjenbrukbar WebDAV-legitimasjon for en vilkårlig hvelvrot |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                       |
 
 **Svar ved brudd:** `401 Authentication required`
 

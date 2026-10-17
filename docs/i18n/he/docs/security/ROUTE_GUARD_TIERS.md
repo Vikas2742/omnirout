@@ -113,6 +113,7 @@
 | `/api/settings/import-json`               | מחליף את כל בלוק ההגדרות                         |
 | `/api/providers/health-autopilot/actions` | מבצע פעולות תיקון אוטומטיות                      |
 | `/api/settings/obsidian`                  | יוצר אישורי WebDAV לשימוש חוזר עבור כל שורש כספת |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens     |
 
 **תגובה על הפרה:** `401 Authentication required`
 

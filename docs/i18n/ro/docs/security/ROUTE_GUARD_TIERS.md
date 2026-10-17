@@ -173,6 +173,7 @@ serverului.
 | `/api/settings/import-json`               | Înlocuiește întregul blob de setări                                  |
 | `/api/providers/health-autopilot/actions` | Execută acțiuni de remediere ale pilotului automat                   |
 | `/api/settings/obsidian`                  | Emite credențiale WebDAV reutilizabile pentru orice rădăcină de seif |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                         |
 
 **Răspuns în caz de încălcare:** `401 Authentication required`
 

@@ -153,6 +153,7 @@ Tunnel, Tailscale, Ngrok) ਦੇ ਪਿੱਛੇ ਚਲਾਉਂਦੇ ਹੋ, �
 | `/api/settings/import-json`               | ਪੂਰੇ ਸੈਟਿੰਗਜ਼ ਬਲੌਬ ਨੂੰ ਬਦਲਦਾ ਹੈ                                |
 | `/api/providers/health-autopilot/actions` | ਆਟੋਪਾਇਲਟ ਸੁਧਾਰਾਤਮਕ ਕਾਰਵਾਈਆਂ ਚਲਾਉਂਦਾ ਹੈ                         |
 | `/api/settings/obsidian`                  | ਕਿਸੇ ਵੀ vault ਰੂਟ ਲਈ ਮੁੜ ਵਰਤਣਯੋਗ WebDAV ਪ੍ਰਮਾਣ-ਪੱਤਰ ਬਣਾਉਂਦਾ ਹੈ |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                   |
 
 **ਉਲੰਘਣਾ ਉੱਤੇ ਜਵਾਬ:** `401 Authentication required`
 

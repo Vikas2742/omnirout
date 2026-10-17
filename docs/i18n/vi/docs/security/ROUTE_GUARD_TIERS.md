@@ -174,6 +174,7 @@ hoặc chấm dứt tiến trình máy chủ.
 | `/api/settings/import-json`               | Thay thế toàn bộ khối cài đặt                                                  |
 | `/api/providers/health-autopilot/actions` | Thực thi các hành động khắc phục tự động                                       |
 | `/api/settings/obsidian`                  | Cấp thông tin xác thực WebDAV có thể tái sử dụng cho mọi thư mục gốc của vault |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                   |
 
 **Phản hồi khi vi phạm:** `401 Authentication required`
 

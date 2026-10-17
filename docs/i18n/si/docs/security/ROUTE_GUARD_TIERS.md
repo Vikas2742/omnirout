@@ -154,6 +154,7 @@ Tunnel, Tailscale, Ngrok) පිටුපස ධාවනය කරන්නේ 
 | `/api/settings/import-json`               | සම්පූර්ණ සැකසුම් දත්ත එකතුව ප්රතිස්ථාපනය කරයි                         |
 | `/api/providers/health-autopilot/actions` | autopilot ප්රතිකර්ම ක්රියාමාර්ග ක්රියාත්මක කරයි                       |
 | `/api/settings/obsidian`                  | ඕනෑම vault මූලයක් සඳහා නැවත භාවිත කළ හැකි WebDAV අක්තපත්ර නිකුත් කරයි |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                          |
 
 **උල්ලංඝනයකදී ප්රතිචාරය:** `401 Authentication required`
 

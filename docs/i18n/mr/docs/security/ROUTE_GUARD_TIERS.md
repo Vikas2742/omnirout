@@ -161,6 +161,7 @@ Tunnel, Tailscale, Ngrok) मागे चालवत असल्यास, �
 | `/api/settings/import-json`               | संपूर्ण सेटिंग्ज ब्लॉब बदलतो                                                   |
 | `/api/providers/health-autopilot/actions` | ऑटोपायलट सुधारात्मक कृती कार्यान्वित करतो                                      |
 | `/api/settings/obsidian`                  | कोणत्याही व्हॉल्ट रूटसाठी पुन्हा वापरता येणारी WebDAV क्रेडेन्शियल्स जारी करतो |
+| `/api/relay/tokens`                       | Mints, lists, edits and revokes relay tokens                                   |
 
 **उल्लंघन झाल्यास प्रतिसाद:** `401 Authentication required`
 
