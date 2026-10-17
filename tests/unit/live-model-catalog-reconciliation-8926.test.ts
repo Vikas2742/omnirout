@@ -236,9 +236,11 @@ test("#16929: batched /v1/models source honors same-id operator endpoints", asyn
   assert.ok(original, "synced row must be visible before operator override");
 
   const { updateCustomModel } = await import("../../src/lib/db/models.ts");
-  await updateCustomModel(PROVIDER, LIVE_MODEL, {
+  const savedOverride = await updateCustomModel(PROVIDER, LIVE_MODEL, {
     supportedEndpoints: ["embeddings"],
-  });
+  }, { createIfMissing: true });
+  assert.equal(savedOverride?.source, "endpoint-override",
+    "a synced-only model needs an explicit virtual endpoint override");
   const [withOverride] = (await getAllActiveSyncedModels())[PROVIDER] || [];
   assert.deepEqual(withOverride.supportedEndpoints, ["embeddings"]);
   assert.equal(withOverride.endpointCapabilitySource, "operator");
