@@ -22,7 +22,12 @@ vi.mock("@/lib/db/core", async () => ({
   ...(await import("@/lib/db/caseMapping")),
   isCloud: false,
   isBuildPhase: false,
-  DATA_DIR: process.env.DATA_DIR || `${process.cwd()}/.local-validation/synthetic`,
+  DATA_DIR:
+    process.env.DATA_DIR ||
+    (await import("node:path")).join(
+      (await import("node:os")).tmpdir(),
+      "omniroute-availability-test"
+    ),
   getDbInstance: vi.fn(() => ({
     prepare: (sql: string) => {
       if (!/^\s*SELECT\b/i.test(sql)) guard.blocked(`DB write: ${sql}`)();
