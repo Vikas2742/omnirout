@@ -71,7 +71,7 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
       suppliedPrefix === provider)
   );
 
-  if (isInternalNode && slash > 0 && !isOwnPrefixedModel) {
+  if (internalProvider && slash > 0 && !isOwnPrefixedModel) {
     // Do not use the public-model fallback here: a foreign node's metadata
     // could turn a non-vision internal target into a false positive. An exact,
     // positive verdict owned by THIS provider is the only safe exception for
