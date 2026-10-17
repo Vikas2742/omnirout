@@ -16,6 +16,13 @@ export type QoderCliRunResult = {
   busy?: boolean;
 };
 
+export function buildQoderCliEnv(token: string | null | undefined): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...getLookupEnv() };
+  const trimmed = String(token || "").trim();
+  if (trimmed) env.QODER_PERSONAL_ACCESS_TOKEN = trimmed;
+  return env;
+}
+
 export type SpawnQoderCliOptions = {
   args: string[];
   token?: string | null;
@@ -101,9 +108,7 @@ async function spawnQoderCliUnlimited(options: SpawnQoderCliOptions): Promise<Qo
   // whether it needs a shell, then spawn with the cliRuntime-enriched env (PATH +
   // PATHEXT + APPDATA) so the npm `.cmd` wrapper under %APPDATA%\npm is found.
   const { command, useShell } = await resolveQoderCliInvocation(options.command);
-  const env: NodeJS.ProcessEnv = { ...getLookupEnv() };
-  const token = String(options.token || "").trim();
-  if (token) env.QODER_PERSONAL_ACCESS_TOKEN = token;
+  const env = buildQoderCliEnv(options.token);
 
   return new Promise<QoderCliRunResult>((resolve) => {
     let stdout = "";

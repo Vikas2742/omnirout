@@ -9,9 +9,12 @@
  */
 import { spawn } from "child_process";
 import crypto from "crypto";
-import { getLookupEnv } from "@/shared/services/cliRuntime";
 import { resolveQoderCliInvocation } from "./qoderCliResolve";
-import { killQoderCliProcessTree, type QoderCliRunResult } from "./qoderCliSpawn";
+import {
+  buildQoderCliEnv,
+  killQoderCliProcessTree,
+  type QoderCliRunResult,
+} from "./qoderCliSpawn";
 
 const ACP_PROTOCOL_VERSION = 1;
 const DEFAULT_PROMPT_TIMEOUT_MS = 120_000;
@@ -112,9 +115,7 @@ class QoderAcpProcess {
 
   private async spawnAndInitialize(): Promise<void> {
     const { command, useShell } = await resolveQoderCliInvocation(this.options.command);
-    const env: NodeJS.ProcessEnv = { ...getLookupEnv() };
-    const token = String(this.options.token || "").trim();
-    if (token) env.QODER_PERSONAL_ACCESS_TOKEN = token;
+    const env = buildQoderCliEnv(this.options.token);
 
     // `--tools ""` applies to every ACP session the process creates: OmniRoute only
     // wants plain LM replies, never file-system access or command execution.
