@@ -28,7 +28,7 @@ import {
   isKeyScopeBlockedCredentials,
   scopeComboTargetsForKey,
   type ComboKeyScope,
-} from "@/sse/services/keyConnectionScope";
+} from "@omniroute/open-sse/services/comboKeyScope.ts";
 import { handleVideoGeneration } from "@omniroute/open-sse/handlers/videoGeneration.ts";
 import {
   isMediaGenerationFailure,

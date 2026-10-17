@@ -26,7 +26,7 @@ import {
   isKeyScopeBlockedCredentials,
   keylessProviderRejection,
   type ComboKeyScope,
-} from "@/sse/services/keyConnectionScope";
+} from "@omniroute/open-sse/services/comboKeyScope.ts";
 import { handleAudioSpeech } from "@omniroute/open-sse/handlers/audioSpeech.ts";
 import { attachOmniRouteMetaToResponse } from "@/domain/omnirouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";

@@ -20,7 +20,7 @@ import {
   isKeyScopeBlockedCredentials,
   scopeComboTargetsForKey,
   type ComboKeyScope,
-} from "@/sse/services/keyConnectionScope";
+} from "@omniroute/open-sse/services/comboKeyScope.ts";
 import { handleImageGeneration } from "@omniroute/open-sse/handlers/imageGeneration.ts";
 import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
