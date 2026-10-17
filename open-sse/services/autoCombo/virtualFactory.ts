@@ -32,7 +32,8 @@ import { readBreakerStates, snapshotHealthFactor, type BreakerState } from "./sn
 import { resolveVirtualCost } from "../providerCostData";
 import type { AutoVariant } from "./autoPrefix";
 import { buildFamilyCandidateFilter, type ModelFamily } from "./modelFamily";
-import { getHiddenModelsByProvider, getModelVisibilityAllowlists } from "@/models";
+import { getHiddenModelsByProvider } from "@/models";
+import { getModelVisibilityAllowlists } from "@/lib/db/models/visibilityAllowlist";
 import {
   isAdmittedByModelVisibilityAllowlist,
   isHiddenByModelVisibilityList,
