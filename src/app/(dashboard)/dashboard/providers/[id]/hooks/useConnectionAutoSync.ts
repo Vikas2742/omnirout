@@ -45,6 +45,7 @@ export function useConnectionAutoSync(
               : connection
           )
         );
+        let immediateSyncFailed = false;
         if (newlyEnabled) {
           try {
             const sync = await fetch(`/api/providers/${connectionId}/sync-models`, {
@@ -55,12 +56,15 @@ export function useConnectionAutoSync(
             await refresh();
           } catch (syncError) {
             console.error("Immediate connection model sync failed:", syncError);
+            immediateSyncFailed = true;
             notify.error(t("autoSyncImmediateFailed"));
           }
         }
-        notify[enabled ? "success" : "info"](
-          enabled ? t("autoSyncEnabled") : t("autoSyncDisabled")
-        );
+        if (!immediateSyncFailed) {
+          notify[enabled ? "success" : "info"](
+            enabled ? t("autoSyncEnabled") : t("autoSyncDisabled")
+          );
+        }
       } catch (error) {
         console.error("Error toggling connection auto-sync:", error);
         notify.error(t("autoSyncToggleFailed"));
