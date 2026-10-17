@@ -437,12 +437,34 @@ export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedA
         // Dispatch (getActiveSyncedCatalog) unions registry dispatch-tagged
         // rows into discovery; listing must agree, or model pickers fed by
         // enumeration surfaces cannot see a model dispatch will accept.
+        const syncedRows = unionRegistryDispatchModels(
+          providerId,
+          collectModelsForConnections(modelsByConnection, connectionIds)
+        );
+        // The batched /v1/models listing must read the same operator endpoint
+        // overrides as getActiveSyncedCatalog() (dispatch). Otherwise a model
+        // edited from chat to embeddings disappears from dispatch but keeps
+        // advertising chat in the public catalog. Overlay ONLY same-id rows:
+        // entirely new operator models are still handled by the custom loop.
+        const overrides = (await getCustomModels(providerId)) as Array<{
+          id?: string;
+          supportedEndpoints?: string[];
+          endpointCapabilitySource?: string;
+        }>;
+        const endpointsById = new Map(
+          overrides.filter((row) =>
+            row?.endpointCapabilitySource === "operator" &&
+            typeof row.id === "string" &&
+            Array.isArray(row.supportedEndpoints) &&
+            row.supportedEndpoints.length > 0
+          ).map((row) => [row.id!, row.supportedEndpoints!])
+        );
         const models = enrichCursorCatalog(
           providerId,
-          unionRegistryDispatchModels(
-            providerId,
-            collectModelsForConnections(modelsByConnection, connectionIds)
-          )
+          syncedRows.map((row) => endpointsById.has(row.id)
+            ? { ...row, supportedEndpoints: endpointsById.get(row.id)!,
+                endpointCapabilitySource: "operator" as const }
+            : row)
         );
 
         if (models.length > 0) {
