@@ -269,7 +269,12 @@ export function classifyCfBrowserStartFailure(error: unknown): {
         "or use an OmniRoute browser-enabled deployment.",
     };
   }
-  return { status: 502, message: `Cloudflare Playground browser session failed: ${message}` };
+  // Raw browser startup messages may contain local paths, proxy credentials,
+  // or environment values. Never return them to a client (HR #12).
+  return {
+    status: 502,
+    message: "Cloudflare Playground browser session failed. Check server logs for details.",
+  };
 }
 
 // ── Transport ────────────────────────────────────────────────────────────────
