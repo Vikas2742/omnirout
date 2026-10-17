@@ -176,3 +176,46 @@ test("#16836 cookie-session dedup compares plaintext despite encrypted metadata"
     assert.notEqual(distinct?.id, first.id, `${provider}: distinct sessions must not merge`);
   }
 });
+
+test("#16836 Ollama Cloud quota cookies survive encrypted SQLite CRUD", async () => {
+  const secrets = {
+    ollamaUsageCookie: "legacy-ollama-cookie-16836",
+    ollamaCloudUsageCookie: "primary-ollama-cookie-16836",
+    ollamaCloudCookie: "cloud-ollama-cookie-16836",
+    usageCookie: "alternate-ollama-cookie-16836",
+  };
+  const created = await connections.createProviderConnection({
+    provider: "ollama-cloud",
+    authType: "apikey",
+    apiKey: "sk-ollama-16836",
+    name: "Ollama quota cookie",
+    providerSpecificData: { ...secrets, workspaceId: "visible-workspace" },
+  });
+  const id = String(created?.id || "");
+  assert.ok(id);
+  const stored = readStoredProviderMetadata(id);
+  for (const [field, plaintext] of Object.entries(secrets)) {
+    assert.match(String(stored[field]), /^enc:v1:/, field);
+    assert.ok(!JSON.stringify(stored).includes(plaintext), field);
+  }
+  assert.equal(stored.workspaceId, "visible-workspace");
+
+  const loaded = await connections.getProviderConnectionById(id);
+  for (const [field, plaintext] of Object.entries(secrets)) {
+    assert.equal((loaded?.providerSpecificData as Record<string, unknown>)[field], plaintext);
+  }
+  const updated = await connections.updateProviderConnection(id, {
+    name: "Ollama quota cookie updated",
+  });
+  for (const [field, plaintext] of Object.entries(secrets)) {
+    assert.equal((updated?.providerSpecificData as Record<string, unknown>)[field], plaintext);
+    assert.equal(readStoredProviderMetadata(id)[field], stored[field]);
+  }
+  const lazy = (await connections.getProviderConnections({ provider: "ollama-cloud" })).find(
+    (item) => item.id === id
+  );
+  assert.ok(lazy);
+  for (const [field, plaintext] of Object.entries(secrets)) {
+    assert.equal((lazy.providerSpecificData as Record<string, unknown>)[field], plaintext);
+  }
+});

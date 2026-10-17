@@ -110,6 +110,10 @@ test("#16836 all existing audit-redacted console secrets are encrypted", () => {
     "qwenCloudSecToken",
     "volcConsoleCookie",
     "volcCsrfToken",
+    "ollamaUsageCookie",
+    "ollamaCloudUsageCookie",
+    "ollamaCloudCookie",
+    "usageCookie",
   ] as const;
   const metadata: Record<string, string> = { workspaceId: "ws-visible" };
   for (const field of sensitiveFields) metadata[field] = `test-secret-${field}`;

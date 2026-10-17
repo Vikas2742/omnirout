@@ -17,6 +17,13 @@ export const PROVIDER_SPECIFIC_SECRET_FIELDS = [
   "qwenCloudSecToken",
   "volcConsoleCookie",
   "volcCsrfToken",
+  // Ollama Cloud's optional quota-scraping session credentials are the same
+  // class of browser cookie as the Qwen/Volcengine console credentials above.
+  // Only encrypt credential fields; workspace/identity JSON stays queryable.
+  "ollamaUsageCookie",
+  "ollamaCloudUsageCookie",
+  "ollamaCloudCookie",
+  "usageCookie",
 ] as const;
 
 /** Return a fresh object only if a recognized secret field actually changes. */
