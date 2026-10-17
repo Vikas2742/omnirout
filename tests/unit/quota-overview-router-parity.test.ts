@@ -112,7 +112,7 @@ for (const [base, trial] of [
   [0, 80],
 ])
   table.push({
-    name: `r3 Kiro alternatives ${base}/${trial}`,
+    name: `Kiro alternatives ${base}/${trial}`,
     provider: "kiro",
     raw: () => f.kiro(base, trial),
     permitted: true,
@@ -136,7 +136,7 @@ const extra = { ...f.claude(0), extraUsage: { is_enabled: true, utilization: 10 
 const paid = { has_credits: true, balance: "50" };
 const exceptions: Fixture[] = [
   {
-    name: "r3 Claude extra usage",
+    name: "Claude extra usage",
     provider: "claude",
     raw: () => extra,
     psd: { blockExtraUsage: false },
@@ -145,7 +145,7 @@ const exceptions: Fixture[] = [
     bypass: "extraUsage",
   },
   {
-    name: "r3 Codex filtering disabled",
+    name: "Codex filtering disabled",
     provider: "codex",
     raw: () => f.codex(0),
     psd: { quotaPreflightEnabled: false, limitPolicy: { enabled: false } },
@@ -154,7 +154,7 @@ const exceptions: Fixture[] = [
     bypass: "filteringDisabled",
   },
   {
-    name: "r3 Codex paid credits",
+    name: "Codex paid credits",
     provider: "codex",
     raw: () => f.codex(0, null, 80, paid),
     psd: { allowPaidCredits: true },
@@ -356,7 +356,7 @@ for (const fixture of exceptions)
     });
 // #14359 is intentionally excluded: healthyUntil is server-only memory, not in
 // cooldown summary/provider APIs. Never pass connectionId to this pure-data contract.
-test("Codex code_review: frozen generic evaluator has no request-specific review selector", async () => {
+test("Codex code_review: generic evaluator has no request-specific review selector", async () => {
   const raw = f.codex(80, 80, 0);
   const view = displayAccount(
     buildHealthAccount(

@@ -48,15 +48,14 @@ export of this state in `/api/resilience/cooldowns`, cooldownManager's response,
 means no terminal/cooldown/lockout, not this recent-success override. The contract
 therefore omits connectionId; no API or inferred success state was added.
 
-Known frozen-router limitation for code_review: `buildCodexUsageQuotas` exposes
-review meters, but `getCodexQuotaWindowFilterForModel` distinguishes only Spark
-from non-Spark. Generic conversion/evaluation blocks both normal and review
-requests when review is exhausted; the dedicated Codex fetcher omits review and
-permits both when plan quota remains. A dedicated contract test pins these actual
-results and the existing green/partial overview projection. This is NOT counted
-as successful model-pair parity. Implementing the requested review-only refusal
-requires a router-side contract absent from the frozen baseline, outside this
-change's writable scope. No test-only review selector was invented.
+Current code_review routing behavior: `buildCodexUsageQuotas` exposes review
+meters, but `getCodexQuotaWindowFilterForModel` distinguishes only Spark from
+non-Spark. Generic conversion/evaluation blocks both normal and review requests
+when review is exhausted; the dedicated Codex fetcher omits review and permits
+both when plan quota remains. A dedicated contract test covers these results and
+the green/partial overview projection. This difference is not model-pair parity:
+review-only refusal requires a request-specific router contract that the current
+selectors do not provide.
 
 ## Provider order
 
@@ -65,11 +64,3 @@ Successful storage operations persist order; inaccessible storage or failed writ
 retain the shared session order across Full, overview and later mounts. A failed
 write cannot reread old storage over the new order. Storage events synchronize
 cross-tab changes. Reset updates every subscriber even without storage.
-
-## Existing-test assertion audit, r10 supplement
-
-Against r9 HEAD c4c3dfb398992cdca8d13db606857e92d9c91b69, this round changes no
-existing test file or existing assertion. All new assertions live in new r10 test
-files. Thus this round adds no changes to assertions in tests that existed at the
-frozen baseline 1591cd55e0c2b4195cb41ea9e1967d3eb8f56d5e; earlier rounds' audit
-remains unchanged. No assertions were weakened to accommodate the implementation.

@@ -12,7 +12,7 @@ vi.mock("@/app/(dashboard)/dashboard/usage/components/ProviderLimits/QuotaCard",
 }));
 const t0 = Date.parse("2099-01-01T00:00:00Z");
 type Request = { url: string; method: string };
-// Additional baseline local catalog read: useVisibleQuotaData.ts -> provider-models route.
+// Local catalog reads from useVisibleQuotaData.ts use the provider-models route.
 const allowed = [
   "/api/resilience/cooldowns",
   "/api/resilience",

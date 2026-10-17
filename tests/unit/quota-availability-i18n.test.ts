@@ -53,7 +53,7 @@ const keys = [
   "healthFiveHour",
   "healthOverall",
 ];
-// Inventory of quantity-sensitive usage/common keys added since the frozen PR base.
+// Quantity-sensitive usage/common keys used by the availability overview.
 // active is only the ratio denominator; available controls agreement. Percentages,
 // remaining quota, timestamps and durations arrive already localized by useHealthText.
 const quantityKeys = {
