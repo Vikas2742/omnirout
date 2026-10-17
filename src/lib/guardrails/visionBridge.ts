@@ -95,7 +95,7 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
   }
 
   const caps = getResolvedModelCapabilities({ provider, model: targetModel });
-  return "non-vision";
+  return caps.supportsVision === true ? "vision" : "non-vision";
 }
 
 /// Recursively resolve a `combo-ref` step to its real leaf models' vision
