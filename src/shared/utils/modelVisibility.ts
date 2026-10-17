@@ -76,3 +76,22 @@ export function isHiddenByModelVisibilityList(
   const tier = modelId.match(/-(?:none|low|medium|high|xhigh|max)$/);
   return Boolean(tier && hidden.has(modelId.slice(0, -tier[0].length)));
 }
+
+/**
+ * Listen for visibility writes in the current dashboard, in another tab, or
+ * before returning focus to an open picker. Call the unsubscribe on unmount.
+ */
+export function subscribeModelVisibilityChanges(refresh: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === MODEL_VISIBILITY_REVISION_KEY) refresh();
+  };
+  window.addEventListener(MODEL_VISIBILITY_EVENT, refresh);
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("focus", refresh);
+  return () => {
+    window.removeEventListener(MODEL_VISIBILITY_EVENT, refresh);
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener("focus", refresh);
+  };
+}
