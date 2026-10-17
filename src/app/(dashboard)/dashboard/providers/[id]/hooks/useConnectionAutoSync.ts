@@ -15,7 +15,8 @@ export function useConnectionAutoSync(
   connections: ConnectionRowConnection[],
   setConnections: Dispatch<SetStateAction<ConnectionRowConnection[]>>,
   notify: NotificationStore,
-  t: ProviderMessageTranslator
+  t: ProviderMessageTranslator,
+  refresh: () => Promise<void> = async () => {}
 ) {
   return useCallback(
     async (connectionId: string, enabled: boolean) => {
@@ -43,6 +44,19 @@ export function useConnectionAutoSync(
               : connection
           )
         );
+        if (enabled) {
+          try {
+            const sync = await fetch(`/api/providers/${connectionId}/sync-models`, {
+              method: "POST",
+              signal: AbortSignal.timeout(60_000),
+            });
+            if (!sync.ok) throw new Error(`HTTP ${sync.status}`);
+            await refresh();
+          } catch (syncError) {
+            console.error("Immediate connection model sync failed:", syncError);
+            notify.error(t("autoSyncImmediateFailed"));
+          }
+        }
         notify[enabled ? "success" : "info"](
           enabled ? t("autoSyncEnabled") : t("autoSyncDisabled")
         );
@@ -51,6 +65,6 @@ export function useConnectionAutoSync(
         notify.error(t("autoSyncToggleFailed"));
       }
     },
-    [notify, setConnections, t, connections]
+    [notify, setConnections, t, connections, refresh]
   );
 }
