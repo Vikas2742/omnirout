@@ -7,6 +7,8 @@
 import { isRetiredGitHubCopilotModelId } from "@omniroute/open-sse/config/providers/registry/github/retiredModels.ts";
 
 import { getDbInstance } from "./core";
+import { isAdmittedByModelVisibilityAllowlist } from "@/shared/utils/modelVisibility";
+import { getModelVisibilityAllowlist } from "./models/visibilityAllowlist";
 import { isSyncedAtFresh } from "./models/syncedCatalogFreshness";
 import { getProviderConnectionsCount, touchConnectionSyncedModelsAt } from "./providers";
 import { type JsonRecord, getKeyValue } from "./models/shared";
@@ -58,6 +60,11 @@ export {
   unmarkManagedModelAlias,
 } from "./models/aliases";
 export { getMitmAlias, setMitmAliasAll } from "./models/mitmAlias";
+export {
+  getModelVisibilityAllowlist,
+  getModelVisibilityAllowlists,
+  setModelVisibilityAllowlist,
+} from "./models/visibilityAllowlist";
 export type { SyncedAvailableModel } from "./models/synced";
 export {
   getCustomModelVisionOverride,
@@ -982,12 +989,19 @@ export function getModelIsHidden(
   modelId: string,
   modality: string = "chat"
 ): boolean {
-  const m = getCustomModelRow(providerId, modelId);
-  if (m && Object.prototype.hasOwnProperty.call(m, "isHidden")) {
-    return Boolean(m.isHidden);
+  // The optional provider allowlist is fail-closed for newly discovered IDs.
+  // No remapping of provider-relative IDs is performed (including vendor/model).
+  if (
+    modality === "chat" &&
+    !isAdmittedByModelVisibilityAllowlist(modelId, getModelVisibilityAllowlist(providerId))
+  ) {
+    return true;
   }
+  const m = getCustomModelRow(providerId, modelId);
   const co = readCompatList(providerId).find((e) => e.id === modelId);
-  return isOverrideHiddenForModality(co, modality);
+  // A hidden record in either inventory must not be resurrected by an
+  // independently re-synced row with isHidden:false.
+  return Boolean(m?.isHidden) || isOverrideHiddenForModality(co, modality);
 }
 
 /**
@@ -1040,7 +1054,7 @@ export function getHiddenModelsByProvider(modality: string = "chat"): Map<string
             visibility = new Map<string, boolean>();
             visibilityByProvider.set(row.key, visibility);
           }
-          visibility.set(modelId, isHidden);
+          visibility.set(modelId, isHidden || visibility.get(modelId) === true);
         }
       } catch {
         // Skip malformed entries
