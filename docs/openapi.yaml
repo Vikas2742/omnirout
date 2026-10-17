@@ -11784,6 +11784,7 @@ paths:
       tags:
         - Relay
       summary: "GET relay › tokens"
+      x-always-protected: true
       responses:
         "200":
           description: OK
@@ -11791,6 +11792,7 @@ paths:
       tags:
         - Relay
       summary: "POST relay › tokens"
+      x-always-protected: true
       responses:
         "200":
           description: OK
@@ -11799,6 +11801,7 @@ paths:
       tags:
         - Relay
       summary: "DELETE relay › tokens › <id>"
+      x-always-protected: true
       responses:
         "200":
           description: OK
@@ -11806,6 +11809,7 @@ paths:
       tags:
         - Relay
       summary: "GET relay › tokens › <id>"
+      x-always-protected: true
       responses:
         "200":
           description: OK
@@ -11813,6 +11817,7 @@ paths:
       tags:
         - Relay
       summary: "PATCH relay › tokens › <id>"
+      x-always-protected: true
       responses:
         "200":
           description: OK
