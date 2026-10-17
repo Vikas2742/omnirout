@@ -1,4 +1,5 @@
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
+import { getRequestedModelEndpointMismatch } from "@/lib/providerModels/modelEndpointGuard";
 import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import * as log from "@/sse/utils/logger";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
@@ -67,6 +68,8 @@ async function postHandler(request, context) {
   // Enforce API key policies (model restrictions + budget limits)
   const policy = await enforceApiKeyPolicy(request, body.model);
   if (policy.rejection) return policy.rejection;
+  const endpointMismatch = await getRequestedModelEndpointMismatch(body.model, "embeddings");
+  if (endpointMismatch) return errorResponse(HTTP_STATUS.BAD_REQUEST, endpointMismatch);
 
   // Extract API key info for logging
   const apiKeyMeta = policy.apiKeyInfo;
