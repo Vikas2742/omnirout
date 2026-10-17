@@ -10280,6 +10280,7 @@
     "healthAction": "ត្រូវការសកម្មភាព",
     "healthTitle": "ភាពអាចប្រើបាននៃគណនី",
     "healthDrag": "អូសដើម្បីរៀបលំដាប់អ្នកផ្តល់សេវា",
+    "healthDragPosition": "{provider}, {count, plural, other {ទីតាំង {position, number} ក្នុងចំណោម #}}",
     "healthResetOrder": "ស្ដារលំដាប់លំនាំដើម",
     "healthPool": "ក្រុម {name}",
     "healthOtherPool": "គណនីដូចគ្នា · {pool}: {status} (នៅសល់ {remaining})",

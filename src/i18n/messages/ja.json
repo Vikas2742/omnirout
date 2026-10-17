@@ -10280,6 +10280,7 @@
     "healthAction": "対処が必要",
     "healthTitle": "アカウントの利用可否",
     "healthDrag": "ドラッグしてプロバイダーを並べ替え",
+    "healthDragPosition": "{provider}, {count, plural, other {全 # 件中 {position, number} 番目}}",
     "healthResetOrder": "既定の順序に戻す",
     "healthPool": "{name} プール",
     "healthOtherPool": "同じアカウントの {pool}：{status}（残り {remaining}）",

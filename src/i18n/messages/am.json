@@ -10280,6 +10280,7 @@
     "healthAction": "እርምጃ ያስፈልጋል",
     "healthTitle": "የመለያዎች ተደራሽነት",
     "healthDrag": "የአቅራቢዎችን ቅደም ተከተል ለመቀየር ይጎትቱ",
+    "healthDragPosition": "{provider}, {count, plural, one {ከ# ውስጥ ቦታ {position, number}} other {ከ# ውስጥ ቦታ {position, number}}}",
     "healthResetOrder": "ነባሪውን ቅደም ተከተል መልስ",
     "healthPool": "የ{name} ቡድን",
     "healthOtherPool": "ተመሳሳይ መለያ · {pool}፦ {status} (ቀሪ {remaining})",

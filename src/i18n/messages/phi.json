@@ -10280,6 +10280,7 @@
     "healthAction": "Kailangang kumilos",
     "healthTitle": "Pagiging magagamit ng mga account",
     "healthDrag": "I-drag upang ayusin ang mga provider",
+    "healthDragPosition": "{provider}, {count, plural, one {puwesto {position, number} sa #} other {puwesto {position, number} sa #}}",
     "healthResetOrder": "Ibalik ang paunang ayos",
     "healthPool": "Pangkat na {name}",
     "healthOtherPool": "Parehong account · {pool}: {status} ({remaining} natitira)",

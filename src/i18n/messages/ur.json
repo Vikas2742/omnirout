@@ -10280,6 +10280,7 @@
     "healthAction": "کارروائی درکار",
     "healthTitle": "اکاؤنٹس کی دستیابی",
     "healthDrag": "فراہم کنندگان کی ترتیب بدلنے کے لیے کھینچیں",
+    "healthDragPosition": "{provider}, {count, plural, one {# میں سے مقام {position, number}} other {# میں سے مقام {position, number}}}",
     "healthResetOrder": "طے شدہ ترتیب بحال کریں",
     "healthPool": "{name} پول",
     "healthOtherPool": "اسی اکاؤنٹ کا {pool}: {status} (باقی {remaining})",

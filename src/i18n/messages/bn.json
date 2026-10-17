@@ -10280,6 +10280,7 @@
     "healthAction": "পদক্ষেপ প্রয়োজন",
     "healthTitle": "অ্যাকাউন্টের উপলভ্যতা",
     "healthDrag": "প্রদানকারীর ক্রম বদলাতে টানুন",
+    "healthDragPosition": "{provider}, {count, plural, one {# এর মধ্যে {position, number} নম্বর অবস্থান} other {# এর মধ্যে {position, number} নম্বর অবস্থান}}",
     "healthResetOrder": "পূর্বনির্ধারিত ক্রম ফেরান",
     "healthPool": "{name} পুল",
     "healthOtherPool": "একই অ্যাকাউন্টের {pool}: {status} ({remaining} বাকি)",

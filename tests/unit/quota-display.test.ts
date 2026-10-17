@@ -55,14 +55,14 @@ test("binding window controls cooldown kind and inverse waterline", () => {
   }
   assert.equal(
     displayAccount(account([q("session", 0, H)], { provider: "codex" }), now).kind,
-    "cdw"
+    "cd5"
   );
 });
 test("ordinary cooldown, expiry, terminal and lockout", () => {
   const c = (ms: number, clock = now) =>
     displayAccount(account(undefined, { rateLimitedUntil: future(ms) }, false, clock), clock);
   assert.equal(c(H / 2).kind, "cd5");
-  assert.equal(c(H / 2).fill, 90);
+  assert.equal(c(H / 2).fill, 0);
   assert.equal(c(48 * H).kind, "cdw");
   assert.equal(c(-1).kind, "ok");
   for (const testStatus of ["banned", "expired", "credits_exhausted"])

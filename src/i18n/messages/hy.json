@@ -10280,6 +10280,7 @@
     "healthAction": "Պահանջվում է գործողություն",
     "healthTitle": "Հաշիվների հասանելիություն",
     "healthDrag": "Քաշեք մատակարարների հերթը փոխելու համար",
+    "healthDragPosition": "{provider}, {count, plural, one {դիրք {position, number}՝ #-ից} other {դիրք {position, number}՝ #-ից}}",
     "healthResetOrder": "Վերականգնել լռելյայն հերթը",
     "healthPool": "{name} խումբ",
     "healthOtherPool": "Նույն հաշիվը · {pool}՝ {status} (մնացել է {remaining})",

@@ -10280,6 +10280,7 @@
     "healthAction": "നടപടി ആവശ്യമാണ്",
     "healthTitle": "അക്കൗണ്ടുകളുടെ ലഭ്യത",
     "healthDrag": "ദാതാക്കളുടെ ക്രമം മാറ്റാൻ വലിക്കുക",
+    "healthDragPosition": "{provider}, {count, plural, one {# ൽ {position, number} ആം സ്ഥാനം} other {# ൽ {position, number} ആം സ്ഥാനം}}",
     "healthResetOrder": "സ്ഥിരസ്ഥിതി ക്രമം പുനഃസ്ഥാപിക്കുക",
     "healthPool": "{name} പൂൾ",
     "healthOtherPool": "അതേ അക്കൗണ്ടിലെ {pool}: {status} ({remaining} ബാക്കി)",

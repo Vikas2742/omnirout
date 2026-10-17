@@ -10280,6 +10280,7 @@
     "healthAction": "Cần xử lý",
     "healthTitle": "Khả năng sử dụng tài khoản",
     "healthDrag": "Kéo để sắp xếp nhà cung cấp",
+    "healthDragPosition": "{provider}, {count, plural, other {vị trí {position, number} trên #}}",
     "healthResetOrder": "Khôi phục thứ tự mặc định",
     "healthPool": "Nhóm {name}",
     "healthOtherPool": "Cùng tài khoản · {pool}: {status} (còn {remaining})",

@@ -10280,6 +10280,7 @@
     "healthAction": "Vyžaduje zásah",
     "healthTitle": "Dostupnost účtů",
     "healthDrag": "Přetažením změnit pořadí poskytovatelů",
+    "healthDragPosition": "{provider}, {count, plural, one {pozice {position, number} z #} few {pozice {position, number} z #} many {pozice {position, number} z #} other {pozice {position, number} z #}}",
     "healthResetOrder": "Obnovit výchozí pořadí",
     "healthPool": "Fond {name}",
     "healthOtherPool": "Stejný účet · {pool}: {status} (zbývá {remaining})",

@@ -10280,6 +10280,7 @@
     "healthAction": "نیازمند اقدام",
     "healthTitle": "دسترس‌پذیری حساب‌ها",
     "healthDrag": "برای تغییر ترتیب ارائه‌دهندگان بکشید",
+    "healthDragPosition": "{provider}, {count, plural, one {جایگاه {position, number} از #} other {جایگاه {position, number} از #}}",
     "healthResetOrder": "بازگردانی ترتیب پیش‌فرض",
     "healthPool": "مخزن {name}",
     "healthOtherPool": "همان حساب · {pool}: {status} (مانده {remaining})",

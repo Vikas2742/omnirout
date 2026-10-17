@@ -10280,6 +10280,7 @@
     "healthAction": "ਕਾਰਵਾਈ ਲੋੜੀਂਦੀ",
     "healthTitle": "ਖਾਤਿਆਂ ਦੀ ਉਪਲਬਧਤਾ",
     "healthDrag": "ਪ੍ਰਦਾਤਾਵਾਂ ਦਾ ਕ੍ਰਮ ਬਦਲਣ ਲਈ ਖਿੱਚੋ",
+    "healthDragPosition": "{provider}, {count, plural, one {# ਵਿੱਚੋਂ ਸਥਾਨ {position, number}} other {# ਵਿੱਚੋਂ ਸਥਾਨ {position, number}}}",
     "healthResetOrder": "ਮੂਲ ਕ੍ਰਮ ਬਹਾਲ ਕਰੋ",
     "healthPool": "{name} ਪੂਲ",
     "healthOtherPool": "ਉਸੇ ਖਾਤੇ ਦਾ {pool}: {status} ({remaining} ਬਾਕੀ)",

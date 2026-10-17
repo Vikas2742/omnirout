@@ -10280,6 +10280,7 @@
     "healthAction": "Vajab sekkumist",
     "healthTitle": "Kontode saadavus",
     "healthDrag": "Lohista pakkujate järjestamiseks",
+    "healthDragPosition": "{provider}, {count, plural, one {asukoht {position, number} / #} other {asukoht {position, number} / #}}",
     "healthResetOrder": "Taasta vaikejärjestus",
     "healthPool": "{name} kogum",
     "healthOtherPool": "Sama konto · {pool}: {status} ({remaining} alles)",

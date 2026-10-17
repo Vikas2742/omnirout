@@ -72,6 +72,8 @@ export interface HealthCooldown {
 export interface AvailabilityEvidence {
   policy?: AvailabilityPolicy;
   cooldown?: HealthCooldown;
+  /** First local observation of this connection + cooldown-until pair. */
+  cooldownObservedAt?: number;
   observedAt?: string;
   error?: string | null;
 }
@@ -96,6 +98,8 @@ export interface HealthReason {
   percent?: number;
   cutoff?: number;
   resetAt?: string | null;
+  /** Fixed total runtime cooldown duration; never recomputed from the ticking clock. */
+  durationMs?: number;
   terminal?: string;
   error?: string;
 }
@@ -147,6 +151,12 @@ export function normalizeHealthWindow(
   const duration = Date.parse(quota.resetAt || "") - Date.parse(fetchedAt || "");
   return named === "fiveHour" && duration > 5 * 3_600_000 + 60_000 ? "overall" : named;
 }
+// Provider contract, not a model-name blacklist: usage/kimi.ts emits code_* rolling
+// account windows; services/moonshotQuotaFetcher.ts routes on those same windows.
+const ACCOUNT_WINDOW_PREFIXES: Record<string, string> = {
+  "kimi-coding": "code_",
+  moonshot: "code_",
+};
 function scopeKey(name: string): string {
   return name
     .toLowerCase()
@@ -178,6 +188,16 @@ export function aggregateAvailability(statuses: HealthStatus[]): HealthStatus {
   if (active.every((s) => s === "ok")) return "ok";
   if (active.some((s) => s === "critical" || s === "alert")) return "alert";
   return "empty";
+}
+/** The same absolute runtime deadline is used by capture and projection. */
+export function runtimeCooldownUntil(connection: HealthConnection, evidence: AvailabilityEvidence) {
+  const row = evidence.cooldown;
+  const summaryTime = Date.parse(evidence.observedAt || "") || 0;
+  return Math.max(
+    Date.parse(connection.rateLimitedUntil || "") || 0,
+    Date.parse(row?.rateLimitedUntil || "") || 0,
+    summaryTime && row?.cooldownRemainingMs > 0 ? summaryTime + row.cooldownRemainingMs : 0
+  );
 }
 /** Availability ignores ALL display hiding. Raw values also prevent reset-adjusted display 100% from fabricating a recovery. */
 export function buildHealthAccount(
@@ -213,7 +233,9 @@ export function buildHealthAccount(
     const percent = percentage(q);
     if (percent === null) continue;
     const window = normalizeHealthWindow(q, data?.raw?.fetchedAt);
-    const scopeId = q.quotaGroupId || scopeKey(q.name);
+    const prefix = ACCOUNT_WINDOW_PREFIXES[connection.provider];
+    const accountWindow = prefix && q.name.startsWith(prefix);
+    const scopeId = q.quotaGroupId || (accountWindow ? "" : scopeKey(q.name));
     const scope: HealthScope = q.quotaGroupId ? "group" : scopeId ? "scoped" : "account";
     if (scope === "group") groups.add(scopeId);
     const awaitingSync = !!q.staleAfterReset || Date.parse(q.resetAt || "") <= now;
@@ -273,13 +295,18 @@ export function buildHealthAccount(
   )
     ? { type: "terminal" as const, terminal: testStatus }
     : null;
-  const until = Math.max(
-    Date.parse(connection.rateLimitedUntil || "") || 0,
-    Date.parse(row?.rateLimitedUntil || "") || 0,
-    summaryTime && row?.cooldownRemainingMs > 0 ? summaryTime + row.cooldownRemainingMs : 0
-  );
+  const until = runtimeCooldownUntil(connection, evidence);
+  const errorAt = Date.parse(connection.lastErrorAt || "");
+  const startedAt =
+    Number.isFinite(errorAt) && errorAt < until ? errorAt : (evidence.cooldownObservedAt ?? now);
   const cooldown: HealthReason | null =
-    until > now ? { type: "cooldown", resetAt: new Date(until).toISOString() } : null;
+    until > now
+      ? {
+          type: "cooldown",
+          resetAt: new Date(until).toISOString(),
+          durationMs: Math.max(1, until - startedAt),
+        }
+      : null;
   if (testStatus === "unavailable" && !cooldown) reasons.push({ type: "previousFailure" });
   const locks: HealthReason[] = (row?.lockouts || []).flatMap((l) => {
     const end = summaryTime + l.remainingMs;

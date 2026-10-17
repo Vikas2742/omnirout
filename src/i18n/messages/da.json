@@ -10280,6 +10280,7 @@
     "healthAction": "Handling påkrævet",
     "healthTitle": "Kontotilgængelighed",
     "healthDrag": "Træk for at sortere udbydere",
+    "healthDragPosition": "{provider}, {count, plural, one {placering {position, number} af #} other {placering {position, number} af #}}",
     "healthResetOrder": "Gendan standardrækkefølge",
     "healthPool": "{name}-pulje",
     "healthOtherPool": "Samme konto · {pool}: {status} ({remaining} tilbage)",

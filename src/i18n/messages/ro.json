@@ -10280,6 +10280,7 @@
     "healthAction": "Necesită intervenție",
     "healthTitle": "Disponibilitatea conturilor",
     "healthDrag": "Trage pentru a reordona furnizorii",
+    "healthDragPosition": "{provider}, {count, plural, one {poziția {position, number} din #} few {poziția {position, number} din #} other {poziția {position, number} din #}}",
     "healthResetOrder": "Restabilește ordinea implicită",
     "healthPool": "Grup {name}",
     "healthOtherPool": "Același cont · {pool}: {status} ({remaining} rămas)",

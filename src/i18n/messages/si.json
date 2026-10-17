@@ -10280,6 +10280,7 @@
     "healthAction": "ක්‍රියාමාර්ගයක් අවශ්‍යයි",
     "healthTitle": "ගිණුම් ලබාගත හැකි බව",
     "healthDrag": "සපයන්නන්ගේ අනුපිළිවෙළ වෙනස් කිරීමට අදින්න",
+    "healthDragPosition": "{provider}, {count, plural, one {# අතරින් {position, number} වන ස්ථානය} other {# අතරින් {position, number} වන ස්ථානය}}",
     "healthResetOrder": "පෙරනිමි අනුපිළිවෙළ යළි පිහිටුවන්න",
     "healthPool": "{name} සමූහය",
     "healthOtherPool": "එකම ගිණුමේ {pool}: {status} ({remaining} ඉතිරියි)",

@@ -10280,6 +10280,7 @@
     "healthAction": "Nepieciešama rīcība",
     "healthTitle": "Kontu pieejamība",
     "healthDrag": "Velciet, lai pārkārtotu pakalpojumu sniedzējus",
+    "healthDragPosition": "{provider}, {count, plural, zero {pozīcija {position, number} no #} one {pozīcija {position, number} no #} other {pozīcija {position, number} no #}}",
     "healthResetOrder": "Atjaunot noklusējuma secību",
     "healthPool": "{name} kopa",
     "healthOtherPool": "Tas pats konts · {pool}: {status} (atlicis {remaining})",

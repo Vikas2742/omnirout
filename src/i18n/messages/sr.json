@@ -10280,6 +10280,7 @@
     "healthAction": "Потребна радња",
     "healthTitle": "Доступност налога",
     "healthDrag": "Превуците за промену редоследа добављача",
+    "healthDragPosition": "{provider}, {count, plural, one {позиција {position, number} од #} few {позиција {position, number} од #} other {позиција {position, number} од #}}",
     "healthResetOrder": "Врати подразумевани редослед",
     "healthPool": "Група {name}",
     "healthOtherPool": "Исти налог · {pool}: {status} (преостало {remaining})",

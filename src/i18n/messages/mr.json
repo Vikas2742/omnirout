@@ -10280,6 +10280,7 @@
     "healthAction": "कृती आवश्यक",
     "healthTitle": "खात्यांची उपलब्धता",
     "healthDrag": "प्रदात्यांचा क्रम बदलण्यासाठी ओढा",
+    "healthDragPosition": "{provider}, {count, plural, one {# पैकी स्थान {position, number}} other {# पैकी स्थान {position, number}}}",
     "healthResetOrder": "मूलभूत क्रम पुनर्स्थापित करा",
     "healthPool": "{name} पूल",
     "healthOtherPool": "त्याच खात्यातील {pool}: {status} ({remaining} शिल्लक)",

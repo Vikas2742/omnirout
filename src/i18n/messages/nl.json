@@ -10280,6 +10280,7 @@
     "healthAction": "Actie vereist",
     "healthTitle": "Accountbeschikbaarheid",
     "healthDrag": "Sleep om providers te ordenen",
+    "healthDragPosition": "{provider}, {count, plural, one {positie {position, number} van #} other {positie {position, number} van #}}",
     "healthResetOrder": "Standaardvolgorde herstellen",
     "healthPool": "{name}-pool",
     "healthOtherPool": "Zelfde account · {pool}: {status} ({remaining} over)",

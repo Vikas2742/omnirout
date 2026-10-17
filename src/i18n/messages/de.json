@@ -10280,6 +10280,7 @@
     "healthAction": "Aktion erforderlich",
     "healthTitle": "Kontoverfügbarkeit",
     "healthDrag": "Ziehen, um Anbieter neu anzuordnen",
+    "healthDragPosition": "{provider}, {count, plural, one {Position {position, number} von #} other {Position {position, number} von #}}",
     "healthResetOrder": "Standardreihenfolge wiederherstellen",
     "healthPool": "{name}-Pool",
     "healthOtherPool": "Dasselbe Konto · {pool}: {status} ({remaining} übrig)",

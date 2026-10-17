@@ -10280,6 +10280,7 @@
     "healthAction": "Toimia tarvitaan",
     "healthTitle": "Tilien saatavuus",
     "healthDrag": "Järjestä tarjoajat vetämällä",
+    "healthDragPosition": "{provider}, {count, plural, one {sijainti {position, number} / #} other {sijainti {position, number} / #}}",
     "healthResetOrder": "Palauta oletusjärjestys",
     "healthPool": "{name}-pooli",
     "healthOtherPool": "Sama tili · {pool}: {status} ({remaining} jäljellä)",

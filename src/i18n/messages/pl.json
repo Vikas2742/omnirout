@@ -10280,6 +10280,7 @@
     "healthAction": "Wymaga działania",
     "healthTitle": "Dostępność kont",
     "healthDrag": "Przeciągnij, aby zmienić kolejność dostawców",
+    "healthDragPosition": "{provider}, {count, plural, one {pozycja {position, number} z #} few {pozycja {position, number} z #} many {pozycja {position, number} z #} other {pozycja {position, number} z #}}",
     "healthResetOrder": "Przywróć domyślną kolejność",
     "healthPool": "Pula {name}",
     "healthOtherPool": "To samo konto · {pool}: {status} (pozostało {remaining})",

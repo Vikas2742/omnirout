@@ -10280,6 +10280,7 @@
     "healthAction": "需要處理",
     "healthTitle": "帳號可用性",
     "healthDrag": "拖曳以重新排列提供者",
+    "healthDragPosition": "{provider}, {count, plural, other {第 {position, number} / # 位}}",
     "healthResetOrder": "恢復預設順序",
     "healthPool": "{name} 池",
     "healthOtherPool": "同一帳號的{pool}：{status}（剩餘 {remaining}）",

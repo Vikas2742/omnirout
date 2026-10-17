@@ -10280,6 +10280,7 @@
     "healthAction": "Potrebna radnja",
     "healthTitle": "Dostupnost računa",
     "healthDrag": "Povucite za promjenu redoslijeda pružalaca",
+    "healthDragPosition": "{provider}, {count, plural, one {pozicija {position, number} od #} few {pozicija {position, number} od #} other {pozicija {position, number} od #}}",
     "healthResetOrder": "Vrati zadani redoslijed",
     "healthPool": "Grupa {name}",
     "healthOtherPool": "Isti račun · {pool}: {status} (preostalo {remaining})",

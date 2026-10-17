@@ -10280,6 +10280,7 @@
     "healthAction": "Vyžaduje zásah",
     "healthTitle": "Dostupnosť účtov",
     "healthDrag": "Potiahnutím zmeniť poradie poskytovateľov",
+    "healthDragPosition": "{provider}, {count, plural, one {pozícia {position, number} z #} few {pozícia {position, number} z #} many {pozícia {position, number} z #} other {pozícia {position, number} z #}}",
     "healthResetOrder": "Obnoviť predvolené poradie",
     "healthPool": "Fond {name}",
     "healthOtherPool": "Rovnaký účet · {pool}: {status} (zostáva {remaining})",

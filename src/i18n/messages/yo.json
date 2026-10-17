@@ -10280,6 +10280,7 @@
     "healthAction": "Ó nílò ìgbésẹ̀",
     "healthTitle": "Wíwà àwọn àkọọ́lẹ̀",
     "healthDrag": "Fà láti tún àwọn olùpèsè tò",
+    "healthDragPosition": "{provider}, {count, plural, other {ipò {position, number} nínú #}}",
     "healthResetOrder": "Dá ètò àiyipada padà",
     "healthPool": "Ẹgbẹ́ {name}",
     "healthOtherPool": "Àkọọ́lẹ̀ kan náà · {pool}: {status} ({remaining} ló kù)",

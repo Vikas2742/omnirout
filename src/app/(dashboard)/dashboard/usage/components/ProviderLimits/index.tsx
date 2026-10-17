@@ -472,13 +472,13 @@ export default function ProviderLimits({
   }, [autoRefreshIntervalMs]);
 
   useEffect(() => {
-    if (autoRefreshIntervalMs <= 0) return;
+    if (layoutMode === "overview" || autoRefreshIntervalMs <= 0) return;
     if (document.visibilityState !== "visible") return;
     if (refreshingAllRef.current) return;
     if (autoRefreshClock - lastRefreshAllAtRef.current >= autoRefreshIntervalMs) {
       void refreshAll();
     }
-  }, [autoRefreshClock, autoRefreshIntervalMs, refreshAll]);
+  }, [layoutMode, autoRefreshClock, autoRefreshIntervalMs, refreshAll]);
 
   useEffect(() => {
     const init = async () => {
@@ -679,6 +679,7 @@ export default function ProviderLimits({
   // per page open so it never loops on the quotaData it writes.
   const autoLiveFetchedRef = useRef(false);
   useEffect(() => {
+    if (layoutMode === "overview") return;
     if (initialLoading || autoLiveFetchedRef.current || visibleConnections.length === 0) return;
     autoLiveFetchedRef.current = true;
     for (const conn of visibleConnections) {
@@ -687,7 +688,7 @@ export default function ProviderLimits({
         void fetchQuota(conn.id, conn.provider, { force: true }).catch(() => {});
       }
     }
-  }, [initialLoading, visibleConnections, quotaData, fetchQuota]);
+  }, [layoutMode, initialLoading, visibleConnections, quotaData, fetchQuota]);
 
   const handleSetPurchaseFilter = useCallback((value: PurchaseTypeKey) => {
     setPurchaseTypeFilter(value);

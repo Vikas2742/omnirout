@@ -10280,6 +10280,7 @@
     "healthAction": "Perlu tindakan",
     "healthTitle": "Ketersediaan akun",
     "healthDrag": "Seret untuk mengurutkan penyedia",
+    "healthDragPosition": "{provider}, {count, plural, other {posisi {position, number} dari #}}",
     "healthResetOrder": "Pulihkan urutan bawaan",
     "healthPool": "Kumpulan {name}",
     "healthOtherPool": "Akun yang sama · {pool}: {status} (tersisa {remaining})",

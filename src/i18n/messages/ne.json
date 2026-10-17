@@ -10280,6 +10280,7 @@
     "healthAction": "कारबाही आवश्यक",
     "healthTitle": "खाताहरूको उपलब्धता",
     "healthDrag": "प्रदायकको क्रम बदल्न तान्नुहोस्",
+    "healthDragPosition": "{provider}, {count, plural, one {# मध्ये स्थान {position, number}} other {# मध्ये स्थान {position, number}}}",
     "healthResetOrder": "पूर्वनिर्धारित क्रम पुनःस्थापित गर्नुहोस्",
     "healthPool": "{name} समूह",
     "healthOtherPool": "उही खाताको {pool}: {status} ({remaining} बाँकी)",

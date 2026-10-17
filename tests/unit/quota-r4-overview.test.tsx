@@ -291,6 +291,30 @@ it.each(["en", "zh-CN"])(
     );
   }
 );
+it.each(["en", "zh-CN"])(
+  "drag live region announces provider and destination (%s)",
+  async (locale) => {
+    geometry();
+    mount(locale);
+    const row = document.querySelector<HTMLElement>("[data-provider]")!;
+    const label = row.querySelector("h3")!.textContent!;
+    const handle = row.querySelector<HTMLButtonElement>("[data-drag-handle]")!;
+    const expected = (position: number) =>
+      locale === "en" ? `${label}, position ${position} of 3` : `${label}, 第 ${position} / 3 位`;
+    handle.focus();
+    fireEvent.keyDown(handle, { key: " ", code: "Space" });
+    await waitFor(() =>
+      expect(document.querySelector('[role="status"]')).toHaveTextContent(expected(1))
+    );
+    fireEvent.keyDown(document, { key: "ArrowDown", code: "ArrowDown" });
+    await waitFor(() =>
+      expect(document.querySelector('[role="status"]')).toHaveTextContent(expected(2))
+    );
+    fireEvent.keyDown(document, { key: " ", code: "Space" });
+    await waitFor(() => expect(handle).not.toHaveAttribute("aria-pressed", "true"));
+    expect(document.querySelector('[role="status"]')).toHaveTextContent(expected(2));
+  }
+);
 it("Escape cancels a keyboard drag without persisting", async () => {
   geometry();
   mount("en");

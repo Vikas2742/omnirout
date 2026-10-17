@@ -10280,6 +10280,7 @@
     "healthAction": "조치 필요",
     "healthTitle": "계정 사용 가능 여부",
     "healthDrag": "드래그하여 제공업체 순서 변경",
+    "healthDragPosition": "{provider}, {count, plural, other {전체 #개 중 {position, number}번째 위치}}",
     "healthResetOrder": "기본 순서 복원",
     "healthPool": "{name} 풀",
     "healthOtherPool": "같은 계정의 {pool}: {status} (잔여 {remaining})",

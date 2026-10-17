@@ -57,10 +57,11 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
     : account.cells;
   const reasons = account.reasons.filter(
     (r) =>
-      !poolId ||
-      (r.type === "lockout" || r.scope === "scoped"
-        ? applicableModel(r.window || "", poolId, account)
-        : r.scope !== "group" || r.scopeId === poolId)
+      (r.type !== "cooldown" || Date.parse(r.resetAt || "") > now) &&
+      (!poolId ||
+        (r.type === "lockout" || r.scope === "scoped"
+          ? applicableModel(r.window || "", poolId, account)
+          : r.scope !== "group" || r.scopeId === poolId))
   );
   const blocked = reasons.filter((r) => r.type === "quota");
   const accountBlocked = blocked.some((r) => r.scope === "account");
@@ -78,14 +79,15 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
   ];
   let recoverAt: string | undefined;
   let waitMs: number | null = null;
+  let waitDuration = WEEK;
   if (kind === "ok" && (accountBlocked || quotaBlocked || cooldown.length)) {
     const classify = (r: HealthReason): "cd5" | "cdw" => {
-      if (account.connection.provider === "codex") return "cdw";
-      if (r.type === "quota")
+      if (r.type === "quota") {
         return account.cells.find((c) => c.name === r.window)?.window === "fiveHour"
           ? "cd5"
           : "cdw";
-      return Date.parse(r.resetAt || "") - now <= FIVE_HOURS ? "cd5" : "cdw";
+      }
+      return r.durationMs <= FIVE_HOURS ? "cd5" : "cdw";
     };
     const unknown = constraints.filter((r) => !Number.isFinite(Date.parse(r.resetAt || "")));
     // An unknown constraint cannot promise a recovery; unknown long windows outrank short ones.
@@ -95,6 +97,12 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
         Number(classify(b) === "cdw") - Number(classify(a) === "cdw")
     )[0];
     kind = latest ? classify(latest) : "cdw";
+    waitDuration =
+      latest?.type === "cooldown" && latest.durationMs > 0
+        ? latest.durationMs
+        : kind === "cd5"
+          ? FIVE_HOURS
+          : WEEK;
     if (!unknown.length && latest) {
       recoverAt = latest.resetAt || undefined;
       waitMs = Math.max(0, Date.parse(recoverAt!) - now);
@@ -112,7 +120,7 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
       : kind === "cd5" || kind === "cdw"
         ? waitMs === null
           ? 0
-          : Math.max(0, Math.min(100, (1 - waitMs / (kind === "cd5" ? FIVE_HOURS : WEEK)) * 100))
+          : Math.max(0, Math.min(100, (1 - waitMs / waitDuration) * 100))
         : null;
   return {
     ...account,

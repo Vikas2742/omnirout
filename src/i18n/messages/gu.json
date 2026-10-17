@@ -10280,6 +10280,7 @@
     "healthAction": "પગલાં જરૂરી",
     "healthTitle": "ખાતાંની ઉપલબ્ધતા",
     "healthDrag": "પ્રદાતાનો ક્રમ બદલવા ખેંચો",
+    "healthDragPosition": "{provider}, {count, plural, one {# માંથી સ્થાન {position, number}} other {# માંથી સ્થાન {position, number}}}",
     "healthResetOrder": "મૂળભૂત ક્રમ પુનઃસ્થાપિત કરો",
     "healthPool": "{name} પૂલ",
     "healthOtherPool": "એ જ ખાતાનું {pool}: {status} ({remaining} બાકી)",

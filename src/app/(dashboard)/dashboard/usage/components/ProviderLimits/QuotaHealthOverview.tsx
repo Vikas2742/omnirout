@@ -168,7 +168,7 @@ export default function QuotaHealthOverview({
             {t("healthSummaryFailed")}
           </p>
         )}
-        <ProviderSortContext ids={order} onReorder={reorder}>
+        <ProviderSortContext ids={order} labels={providerLabels} onReorder={reorder}>
           {groups.map((group) => {
             const list = group.accounts.map((a) => displayAccount(a, now));
             const ids = [...new Set(group.accounts.flatMap(poolIds))].sort();

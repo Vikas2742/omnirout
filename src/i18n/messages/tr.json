@@ -10280,6 +10280,7 @@
     "healthAction": "İşlem gerekli",
     "healthTitle": "Hesap kullanılabilirliği",
     "healthDrag": "Sağlayıcı sırasını değiştirmek için sürükleyin",
+    "healthDragPosition": "{provider}, {count, plural, one {# içinde {position, number}. sıra} other {# içinde {position, number}. sıra}}",
     "healthResetOrder": "Varsayılan sırayı geri yükle",
     "healthPool": "{name} havuzu",
     "healthOtherPool": "Aynı hesap · {pool}: {status} ({remaining} kaldı)",

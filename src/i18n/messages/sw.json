@@ -10280,6 +10280,7 @@
     "healthAction": "Hatua inahitajika",
     "healthTitle": "Upatikanaji wa akaunti",
     "healthDrag": "Buruta kupanga watoa huduma",
+    "healthDragPosition": "{provider}, {count, plural, one {nafasi ya {position, number} kati ya #} other {nafasi ya {position, number} kati ya #}}",
     "healthResetOrder": "Rejesha mpangilio chaguomsingi",
     "healthPool": "Kundi la {name}",
     "healthOtherPool": "Akaunti ileile · {pool}: {status} (imebaki {remaining})",

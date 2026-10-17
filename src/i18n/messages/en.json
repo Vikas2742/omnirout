@@ -10280,6 +10280,7 @@
     "healthAction": "Needs attention",
     "healthTitle": "Account availability",
     "healthDrag": "Drag to reorder providers",
+    "healthDragPosition": "{provider}, {count, plural, one {position {position, number} of #} other {position {position, number} of #}}",
     "healthResetOrder": "Restore default order",
     "healthPool": "{name} pool",
     "healthOtherPool": "Same account · {pool}: {status} ({remaining} remaining)",

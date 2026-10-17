@@ -10280,6 +10280,7 @@
     "healthAction": "Потрібна дія",
     "healthTitle": "Доступність облікових записів",
     "healthDrag": "Перетягніть для зміни порядку провайдерів",
+    "healthDragPosition": "{provider}, {count, plural, one {позиція {position, number} із #} few {позиція {position, number} із #} many {позиція {position, number} із #} other {позиція {position, number} із #}}",
     "healthResetOrder": "Відновити типовий порядок",
     "healthPool": "Пул {name}",
     "healthOtherPool": "Той самий обліковий запис · {pool}: {status} (залишилось {remaining})",

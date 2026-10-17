@@ -10280,6 +10280,7 @@
     "healthAction": "ဆောင်ရွက်ရန်လိုအပ်",
     "healthTitle": "အကောင့်ရရှိနိုင်မှု",
     "healthDrag": "ဝန်ဆောင်မှုပေးသူအစီအစဉ်ကို ပြောင်းရန် ဆွဲပါ",
+    "healthDragPosition": "{provider}, {count, plural, other {# အနက် အနေအထား {position, number}}}",
     "healthResetOrder": "မူလအစီအစဉ် ပြန်ထားရန်",
     "healthPool": "{name} အုပ်စု",
     "healthOtherPool": "အကောင့်တူ · {pool}: {status} (ကျန် {remaining})",

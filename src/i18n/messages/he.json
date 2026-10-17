@@ -10280,6 +10280,7 @@
     "healthAction": "נדרשת פעולה",
     "healthTitle": "זמינות חשבונות",
     "healthDrag": "גרירה לשינוי סדר הספקים",
+    "healthDragPosition": "{provider}, {count, plural, one {מיקום {position, number} מתוך #} two {מיקום {position, number} מתוך #} other {מיקום {position, number} מתוך #}}",
     "healthResetOrder": "שחזור סדר ברירת המחדל",
     "healthPool": "מאגר {name}",
     "healthOtherPool": "אותו חשבון · {pool}: {status} (נותרו {remaining})",

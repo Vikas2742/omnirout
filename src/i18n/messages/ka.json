@@ -10280,6 +10280,7 @@
     "healthAction": "საჭიროა მოქმედება",
     "healthTitle": "ანგარიშების ხელმისაწვდომობა",
     "healthDrag": "გადაათრიეთ მომწოდებლების გადასალაგებლად",
+    "healthDragPosition": "{provider}, {count, plural, one {პოზიცია {position, number} / #} other {პოზიცია {position, number} / #}}",
     "healthResetOrder": "ნაგულისხმევი რიგის აღდგენა",
     "healthPool": "{name} ჯგუფი",
     "healthOtherPool": "იგივე ანგარიში · {pool}: {status} (დარჩა {remaining})",

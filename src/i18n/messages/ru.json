@@ -10280,6 +10280,7 @@
     "healthAction": "Требуется действие",
     "healthTitle": "Доступность аккаунтов",
     "healthDrag": "Перетащите для изменения порядка провайдеров",
+    "healthDragPosition": "{provider}, {count, plural, one {позиция {position, number} из #} few {позиция {position, number} из #} many {позиция {position, number} из #} other {позиция {position, number} из #}}",
     "healthResetOrder": "Восстановить порядок по умолчанию",
     "healthPool": "Пул {name}",
     "healthOtherPool": "Тот же аккаунт · {pool}: {status} (осталось {remaining})",

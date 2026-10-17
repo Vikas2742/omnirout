@@ -10280,6 +10280,7 @@
     "healthAction": "Amal talab qilinadi",
     "healthTitle": "Hisoblar mavjudligi",
     "healthDrag": "Provayderlar tartibini o‘zgartirish uchun sudrang",
+    "healthDragPosition": "{provider}, {count, plural, one {# ichida {position, number}-o‘rin} other {# ichida {position, number}-o‘rin}}",
     "healthResetOrder": "Standart tartibni tiklash",
     "healthPool": "{name} guruhi",
     "healthOtherPool": "Bir xil hisob · {pool}: {status} ({remaining} qolgan)",

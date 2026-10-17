@@ -10280,6 +10280,7 @@
     "healthAction": "Müdaxilə tələb olunur",
     "healthTitle": "Hesabların əlçatanlığı",
     "healthDrag": "Təchizatçıların sırasını dəyişmək üçün sürükləyin",
+    "healthDragPosition": "{provider}, {count, plural, one {# içində {position, number}-ci mövqe} other {# içində {position, number}-ci mövqe}}",
     "healthResetOrder": "Standart sıranı bərpa et",
     "healthPool": "{name} hovuzu",
     "healthOtherPool": "Eyni hesab · {pool}: {status} ({remaining} qalıb)",

@@ -13,6 +13,7 @@ const keys = [
   "healthAction",
   "healthTitle",
   "healthDrag",
+  "healthDragPosition",
   "healthResetOrder",
   "healthPool",
   "healthOtherPool",

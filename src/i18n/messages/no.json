@@ -10280,6 +10280,7 @@
     "healthAction": "Handling kreves",
     "healthTitle": "Kontotilgjengelighet",
     "healthDrag": "Dra for å sortere leverandører",
+    "healthDragPosition": "{provider}, {count, plural, one {plassering {position, number} av #} other {plassering {position, number} av #}}",
     "healthResetOrder": "Gjenopprett standardrekkefølge",
     "healthPool": "{name}-gruppe",
     "healthOtherPool": "Samme konto · {pool}: {status} ({remaining} igjen)",

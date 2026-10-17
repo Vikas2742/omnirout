@@ -10280,6 +10280,7 @@
     "healthAction": "Achọrọ ihe omume",
     "healthTitle": "Nnweta akaụntụ",
     "healthDrag": "Dọrọ iji hazie ndị na-eweta ọrụ",
+    "healthDragPosition": "{provider}, {count, plural, other {ọnọdụ {position, number} n'ime #}}",
     "healthResetOrder": "Weghachite usoro ndabara",
     "healthPool": "Otu {name}",
     "healthOtherPool": "Otu akaụntụ ahụ · {pool}: {status} ({remaining} fọdụrụ)",

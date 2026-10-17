@@ -10280,6 +10280,7 @@
     "healthAction": "ต้องดำเนินการ",
     "healthTitle": "ความพร้อมใช้งานของบัญชี",
     "healthDrag": "ลากเพื่อจัดลำดับผู้ให้บริการ",
+    "healthDragPosition": "{provider}, {count, plural, other {ตำแหน่งที่ {position, number} จาก #}}",
     "healthResetOrder": "คืนค่าลำดับเริ่มต้น",
     "healthPool": "กลุ่ม {name}",
     "healthOtherPool": "บัญชีเดียวกัน · {pool}: {status} (เหลือ {remaining})",

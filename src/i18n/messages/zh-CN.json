@@ -10280,6 +10280,7 @@
     "healthAction": "需要处理",
     "healthTitle": "账号可用性",
     "healthDrag": "拖动调整渠道顺序",
+    "healthDragPosition": "{provider}, {count, plural, other {第 {position, number} / # 位}}",
     "healthResetOrder": "恢复默认顺序",
     "healthPool": "{name} 池",
     "healthOtherPool": "同一个号的{pool}：{status}（剩 {remaining}）",

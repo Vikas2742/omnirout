@@ -10280,6 +10280,7 @@
     "healthAction": "Ana bukatar mataki",
     "healthTitle": "Samuwar asusu",
     "healthDrag": "Ja don sake tsara masu samarwa",
+    "healthDragPosition": "{provider}, {count, plural, one {matsayi na {position, number} cikin #} other {matsayi na {position, number} cikin #}}",
     "healthResetOrder": "Mayar da tsarin asali",
     "healthPool": "Rukunin {name}",
     "healthOtherPool": "Asusu ɗaya · {pool}: {status} ({remaining} ya rage)",

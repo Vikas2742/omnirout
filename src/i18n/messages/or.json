@@ -10280,6 +10280,7 @@
     "healthAction": "ପଦକ୍ଷେପ ଆବଶ୍ୟକ",
     "healthTitle": "ଖାତାର ଉପଲବ୍ଧତା",
     "healthDrag": "ପ୍ରଦାନକାରୀଙ୍କ କ୍ରମ ବଦଳାଇବାକୁ ଟାଣନ୍ତୁ",
+    "healthDragPosition": "{provider}, {count, plural, one {# ମଧ୍ୟରୁ ସ୍ଥାନ {position, number}} other {# ମଧ୍ୟରୁ ସ୍ଥାନ {position, number}}}",
     "healthResetOrder": "ପୂର୍ବନିର୍ଦ୍ଧାରିତ କ୍ରମ ଫେରାନ୍ତୁ",
     "healthPool": "{name} ପୁଲ୍",
     "healthOtherPool": "ସମାନ ଖାତାର {pool}: {status} ({remaining} ବାକି)",

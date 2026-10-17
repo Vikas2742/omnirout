@@ -10280,6 +10280,7 @@
     "healthAction": "Potreben je ukrep",
     "healthTitle": "Razpoložljivost računov",
     "healthDrag": "Povlecite za spremembo vrstnega reda ponudnikov",
+    "healthDragPosition": "{provider}, {count, plural, one {položaj {position, number} od #} two {položaj {position, number} od #} few {položaj {position, number} od #} other {položaj {position, number} od #}}",
     "healthResetOrder": "Obnovi privzeti vrstni red",
     "healthPool": "Skupina {name}",
     "healthOtherPool": "Isti račun · {pool}: {status} (preostalo {remaining})",

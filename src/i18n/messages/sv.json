@@ -10280,6 +10280,7 @@
     "healthAction": "Åtgärd krävs",
     "healthTitle": "Kontotillgänglighet",
     "healthDrag": "Dra för att ordna leverantörer",
+    "healthDragPosition": "{provider}, {count, plural, one {position {position, number} av #} other {position {position, number} av #}}",
     "healthResetOrder": "Återställ standardordning",
     "healthPool": "{name}-pool",
     "healthOtherPool": "Samma konto · {pool}: {status} ({remaining} kvar)",

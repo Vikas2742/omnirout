@@ -10280,6 +10280,7 @@
     "healthAction": "Необходима е намеса",
     "healthTitle": "Достъпност на акаунтите",
     "healthDrag": "Плъзнете за подреждане на доставчиците",
+    "healthDragPosition": "{provider}, {count, plural, one {позиция {position, number} от #} other {позиция {position, number} от #}}",
     "healthResetOrder": "Възстановяване на стандартния ред",
     "healthPool": "Пул {name}",
     "healthOtherPool": "Същият акаунт · {pool}: {status} (остават {remaining})",

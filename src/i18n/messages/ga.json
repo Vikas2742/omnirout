@@ -10280,6 +10280,7 @@
     "healthAction": "Gníomh de dhíth",
     "healthTitle": "Infhaighteacht cuntas",
     "healthDrag": "Tarraing chun soláthraithe a athordú",
+    "healthDragPosition": "{provider}, {count, plural, one {suíomh {position, number} as #} two {suíomh {position, number} as #} few {suíomh {position, number} as #} many {suíomh {position, number} as #} other {suíomh {position, number} as #}}",
     "healthResetOrder": "Athchóirigh an t-ord réamhshocraithe",
     "healthPool": "Linn {name}",
     "healthOtherPool": "An cuntas céanna · {pool}: {status} ({remaining} fágtha)",

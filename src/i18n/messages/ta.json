@@ -10280,6 +10280,7 @@
     "healthAction": "நடவடிக்கை தேவை",
     "healthTitle": "கணக்குகளின் கிடைப்புநிலை",
     "healthDrag": "வழங்குநர் வரிசையை மாற்ற இழுக்கவும்",
+    "healthDragPosition": "{provider}, {count, plural, one {# இல் {position, number} ஆம் இடம்} other {# இல் {position, number} ஆம் இடம்}}",
     "healthResetOrder": "இயல்பு வரிசையை மீட்டமை",
     "healthPool": "{name} தொகுப்பு",
     "healthOtherPool": "அதே கணக்கின் {pool}: {status} ({remaining} மீதம்)",

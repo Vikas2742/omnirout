@@ -10280,6 +10280,7 @@
     "healthAction": "ಕ್ರಮ ಅಗತ್ಯ",
     "healthTitle": "ಖಾತೆಗಳ ಲಭ್ಯತೆ",
     "healthDrag": "ಪೂರೈಕೆದಾರರ ಕ್ರಮ ಬದಲಿಸಲು ಎಳೆಯಿರಿ",
+    "healthDragPosition": "{provider}, {count, plural, one {# ರಲ್ಲಿ {position, number} ನೇ ಸ್ಥಾನ} other {# ರಲ್ಲಿ {position, number} ನೇ ಸ್ಥಾನ}}",
     "healthResetOrder": "ಪೂರ್ವನಿಯೋಜಿತ ಕ್ರಮ ಮರುಸ್ಥಾಪಿಸಿ",
     "healthPool": "{name} ಪೂಲ್",
     "healthOtherPool": "ಅದೇ ಖಾತೆಯ {pool}: {status} ({remaining} ಉಳಿದಿದೆ)",

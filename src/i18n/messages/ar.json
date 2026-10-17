@@ -10280,6 +10280,7 @@
     "healthAction": "يتطلب إجراءً",
     "healthTitle": "توفر الحسابات",
     "healthDrag": "اسحب لتغيير ترتيب المزوّدين",
+    "healthDragPosition": "{provider}, {count, plural, zero {الموضع {position, number} من #} one {الموضع {position, number} من #} two {الموضع {position, number} من #} few {الموضع {position, number} من #} many {الموضع {position, number} من #} other {الموضع {position, number} من #}}",
     "healthResetOrder": "استعادة الترتيب الافتراضي",
     "healthPool": "مجموعة {name}",
     "healthOtherPool": "الحساب نفسه · {pool}: {status} (المتبقي {remaining})",

@@ -10280,6 +10280,7 @@
     "healthAction": "చర్య అవసరం",
     "healthTitle": "ఖాతాల లభ్యత",
     "healthDrag": "ప్రదాతల క్రమం మార్చడానికి లాగండి",
+    "healthDragPosition": "{provider}, {count, plural, one {# లో {position, number} వ స్థానం} other {# లో {position, number} వ స్థానం}}",
     "healthResetOrder": "డిఫాల్ట్ క్రమాన్ని పునరుద్ధరించు",
     "healthPool": "{name} పూల్",
     "healthOtherPool": "అదే ఖాతాలోని {pool}: {status} ({remaining} మిగిలింది)",

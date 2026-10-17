@@ -20,10 +20,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { useTranslations } from "next-intl";
 export function ProviderSortContext({
   ids,
+  labels,
   onReorder,
   children,
 }: {
   ids: string[];
+  labels: Record<string, string>;
   onReorder: (ids: string[]) => void;
   children: ReactNode;
 }) {
@@ -39,6 +41,12 @@ export function ProviderSortContext({
       to = ids.indexOf(String(over.id));
     if (from >= 0 && to >= 0) onReorder(arrayMove(ids, from, to));
   };
+  const announce = (provider: string, target = provider) =>
+    t("healthDragPosition", {
+      provider: labels[provider] || provider,
+      position: Math.max(0, ids.indexOf(target)) + 1,
+      count: ids.length,
+    });
   return (
     <DndContext
       id={id}
@@ -49,10 +57,12 @@ export function ProviderSortContext({
           draggable: `${t("healthDrag")}: ␣ → ↑ ↓ → ␣; ${t("cancel")} (⎋)`,
         },
         announcements: {
-          onDragStart: () => t("healthDrag"),
-          onDragOver: () => t("healthDrag"),
-          onDragEnd: () => t("healthTitle"),
-          onDragCancel: () => t("healthTitle"),
+          onDragStart: ({ active }) => announce(String(active.id)),
+          onDragOver: ({ active, over }) =>
+            announce(String(active.id), String(over?.id ?? active.id)),
+          onDragEnd: ({ active, over }) =>
+            announce(String(active.id), String(over?.id ?? active.id)),
+          onDragCancel: ({ active }) => announce(String(active.id)),
         },
       }}
       onDragEnd={finish}

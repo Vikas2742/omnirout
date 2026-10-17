@@ -10280,6 +10280,7 @@
     "healthAction": "Requer atenção",
     "healthTitle": "Disponibilidade das contas",
     "healthDrag": "Arrastar para reordenar fornecedores",
+    "healthDragPosition": "{provider}, {count, plural, one {posição {position, number} de #} many {posição {position, number} de #} other {posição {position, number} de #}}",
     "healthResetOrder": "Restaurar a ordem predefinida",
     "healthPool": "Grupo {name}",
     "healthOtherPool": "Mesma conta · {pool}: {status} ({remaining} restante)",

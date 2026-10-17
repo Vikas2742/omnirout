@@ -10280,6 +10280,7 @@
     "healthAction": "Απαιτείται ενέργεια",
     "healthTitle": "Διαθεσιμότητα λογαριασμών",
     "healthDrag": "Σύρετε για αναδιάταξη παρόχων",
+    "healthDragPosition": "{provider}, {count, plural, one {θέση {position, number} από #} other {θέση {position, number} από #}}",
     "healthResetOrder": "Επαναφορά προεπιλεγμένης σειράς",
     "healthPool": "Ομάδα {name}",
     "healthOtherPool": "Ίδιος λογαριασμός · {pool}: {status} ({remaining} απομένει)",

@@ -10280,6 +10280,7 @@
     "healthAction": "Reikia veiksmų",
     "healthTitle": "Paskyrų prieinamumas",
     "healthDrag": "Vilkite tiekėjų tvarkai keisti",
+    "healthDragPosition": "{provider}, {count, plural, one {pozicija {position, number} iš #} few {pozicija {position, number} iš #} many {pozicija {position, number} iš #} other {pozicija {position, number} iš #}}",
     "healthResetOrder": "Atkurti numatytąją tvarką",
     "healthPool": "{name} telkinys",
     "healthOtherPool": "Ta pati paskyra · {pool}: {status} (liko {remaining})",
