@@ -1,0 +1,1 @@
+- **fix(providers):** Classify Gemini `generateContent` transcription and TTS models as `audio-transcriptions` and `audio-speech`, instead of incorrectly advertising them as chat-compatible. Chat and image models retain their prior behavior (refs [#16929](https://github.com/diegosouzapw/OmniRoute/issues/16929)) — thanks @fabioKoruja00
