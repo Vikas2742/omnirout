@@ -1,0 +1,261 @@
+import { evaluateQuotaLimitPolicy, resolveQuotaLimitPolicy } from "@/sse/services/quotaLimitPolicy";
+import {
+  shouldApplyQuotaCutoff,
+  resolveMinRemainingPercent,
+  type QuotaPreflightPolicy,
+} from "@/sse/services/quotaPreflightPolicy";
+import {
+  getQuotaCache,
+  getQuotaSnapshotFetchedAt,
+  getQuotaWindowStatus,
+  isQuotaExhaustedForRequest,
+  hydrateCodexQuotaCacheForRequest,
+  normalizeConnectionQuotas,
+  normalizeQuotas,
+  isExhausted,
+  earliestResetAt,
+  capParkWindow,
+} from "@/domain/quotaCache";
+import { getRequestQuotaCacheState, withQuotaCacheReadView } from "@/domain/quotaCacheReadView";
+import { isQuotaHealthy } from "@/domain/quotaCacheState";
+import { toProviderConnection } from "@/lib/db/providers/lazyConnectionView";
+import type { ProviderLimitsCacheEntry } from "@/lib/db/providerLimits";
+import { isClaudeExtraUsageAllowed } from "@/lib/providers/claudeExtraUsage";
+import { isCodexQuotaFilteringDisabled } from "@/lib/providers/codexQuotaFiltering";
+import { hasCodexPaidCredits, isCodexPaidCreditsEnabled } from "@/lib/providers/codexPaidCredits";
+import { hasOllamaPurchasedCredits } from "@omniroute/open-sse/services/ollamaPurchasedCredits.ts";
+import { evaluateQuotaCutoff } from "@omniroute/open-sse/services/quotaPreflight.ts";
+import {
+  omitCodexDisplayOnlyQuotas,
+  toCodexScopedQuotaWindowName,
+} from "@omniroute/open-sse/config/codexQuotaScopes.ts";
+import { formatQuotaWindowLabel } from "@omniroute/open-sse/services/quotaWindowLabel.ts";
+import { availabilityScopes } from "./availabilityScopes";
+import { canEvaluateCachedCutoff, convertCachedUsageToQuotaInfo } from "./cachedQuotaConversion";
+import type {
+  ConnectionQuotaAvailability,
+  QuotaAvailabilityDecision,
+  QuotaAvailabilityWindow,
+  QuotaAllowanceReason,
+} from "./availabilityTypes";
+
+type Usage = Partial<ProviderLimitsCacheEntry>;
+function timestamp(value: number | string | null | undefined): string | null {
+  const date = new Date(value ?? NaN);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+/** Seed only a private read view, using precisely the routing cache's normalizers. */
+function seedReadView(id: string, provider: string, usage: Usage) {
+  if (getQuotaCache(id) || !usage.quotas) return;
+  const fetchedAt = Date.parse(usage.fetchedAt || "");
+  if (!Number.isFinite(fetchedAt)) return;
+  const raw = provider === "codex" ? omitCodexDisplayOnlyQuotas(usage.quotas) : usage.quotas;
+  const quotas = normalizeConnectionQuotas(raw, provider);
+  const exhausted = isExhausted(quotas);
+  getRequestQuotaCacheState().cache.set(id, {
+    connectionId: id,
+    provider,
+    quotas,
+    modelQuotas: normalizeQuotas(usage.modelQuotas || {}),
+    fetchedAt,
+    exhausted,
+    nextResetAt: exhausted ? capParkWindow(earliestResetAt(quotas), fetchedAt) : null,
+  });
+}
+
+function blockingWindow(
+  name: string,
+  resetAt: string | null,
+  usage: Usage,
+  remainingPercent?: number,
+  cutoffPercent?: number
+): QuotaAvailabilityWindow {
+  const raw = (usage.quotas?.[name] || usage.modelQuotas?.[name] || {}) as {
+    displayName?: string;
+    windowSeconds?: number;
+  };
+  const label = formatQuotaWindowLabel({ key: name, ...raw });
+  return {
+    name,
+    resetAt,
+    kind:
+      raw.windowSeconds && raw.windowSeconds > 0
+        ? raw.windowSeconds <= 5 * 3600
+          ? "fiveHour"
+          : "overall"
+        : /week|month|7d|overall/i.test(label)
+          ? "overall"
+          : /session|5h|five.hour|code_5h/i.test(label)
+            ? "fiveHour"
+            : "overall",
+    ...(remainingPercent !== undefined ? { remainingPercent } : {}),
+    ...(cutoffPercent !== undefined ? { cutoffPercent } : {}),
+  };
+}
+function allowances(
+  id: string,
+  provider: string,
+  psd: unknown,
+  usage: Usage,
+  model: string | null
+): QuotaAllowanceReason[] {
+  const reasons: QuotaAllowanceReason[] = [];
+  if (isClaudeExtraUsageAllowed(provider, psd)) reasons.push("extraUsage");
+  if (isCodexQuotaFilteringDisabled(provider, psd)) reasons.push("filteringDisabled");
+  if (isCodexPaidCreditsEnabled(provider, psd, model) && hasCodexPaidCredits(usage.paidCredits))
+    reasons.push("paidCredits");
+  if (hasOllamaPurchasedCredits(usage, provider)) reasons.push("purchasedBalance");
+  if (isQuotaHealthy(id)) reasons.push("recentSuccess");
+  return reasons;
+}
+
+/** Actual routing predicates, evaluated over a private cache view. No fetcher is consulted. */
+export function evaluateCachedQuotaAvailability(
+  input: unknown,
+  persistedUsage: Usage | undefined,
+  policy: QuotaPreflightPolicy,
+  requestedModel: string | null = null
+): QuotaAvailabilityDecision {
+  return withQuotaCacheReadView(() => {
+    const connection = toProviderConnection(input);
+    const { id, provider, providerSpecificData } = connection;
+    // The same snapshot hydration as selection, before falling back to ProviderLimits.
+    getQuotaSnapshotFetchedAt(id);
+    seedReadView(id, provider, persistedUsage || {});
+    hydrateCodexQuotaCacheForRequest(connection, requestedModel);
+    const cached = getQuotaCache(id);
+    const usage: Usage =
+      persistedUsage ||
+      (cached
+        ? {
+            quotas: cached.quotas,
+            modelQuotas: cached.modelQuotas,
+            fetchedAt: timestamp(cached.fetchedAt)!,
+          }
+        : {});
+    const limitPolicy = evaluateQuotaLimitPolicy(provider, connection, requestedModel);
+    const exhausted = isQuotaExhaustedForRequest(
+      id,
+      provider,
+      requestedModel,
+      providerSpecificData
+    );
+    const cutoffEnabled = shouldApplyQuotaCutoff(provider, connection, policy, requestedModel);
+    const cutoffEvaluated = !cutoffEnabled || canEvaluateCachedCutoff(provider, connection);
+    const quota =
+      cutoffEnabled && cutoffEvaluated
+        ? convertCachedUsageToQuotaInfo(provider, usage, requestedModel)
+        : null;
+    const cutoff =
+      cutoffEnabled && cutoffEvaluated
+        ? evaluateQuotaCutoff(
+            quota,
+            {
+              resolveMinRemainingPercent: (name) =>
+                resolveMinRemainingPercent(provider, connection, policy, name),
+            },
+            { provider, requestedModel, providerSpecificData, connectionId: id }
+          )
+        : { proceed: true };
+    const blockers: QuotaAvailabilityWindow[] = [];
+    if (limitPolicy.blocked) {
+      const local = resolveQuotaLimitPolicy(provider, providerSpecificData);
+      for (const key of local.windows) {
+        const name = provider === "codex" ? toCodexScopedQuotaWindowName(key, requestedModel) : key;
+        const status = getQuotaWindowStatus(id, name, local.thresholdPercent);
+        if (status?.reachedThreshold)
+          blockers.push(
+            blockingWindow(
+              name,
+              status.resetAt,
+              usage,
+              status.remainingPercentage,
+              100 - local.thresholdPercent
+            )
+          );
+      }
+    }
+    if (!cutoff.proceed)
+      blockers.push(
+        blockingWindow(
+          cutoff.windowName || "quota",
+          cutoff.resetAt ?? null,
+          usage,
+          cutoff.quotaPercent === undefined ? undefined : (1 - cutoff.quotaPercent) * 100,
+          resolveMinRemainingPercent(provider, connection, policy, cutoff.windowName ?? null)
+        )
+      );
+    // These rows explain an already-made domain decision; they never decide eligibility.
+    if (exhausted && !blockers.length) {
+      const windows = { ...cached?.quotas, ...cached?.modelQuotas };
+      for (const [name, q] of Object.entries(windows)) {
+        if (q.remainingPercentage <= 0 && q.fractionReported !== false)
+          blockers.push(blockingWindow(name, q.resetAt, usage, q.remainingPercentage, 0));
+      }
+      if (!blockers.length)
+        blockers.push(blockingWindow("quota", cached?.nextResetAt ?? null, usage));
+    }
+    const observed = timestamp(usage.fetchedAt) || timestamp(cached?.fetchedAt);
+    const blocked = limitPolicy.blocked || exhausted || !cutoff.proceed;
+    return {
+      usable: blocked ? false : observed ? true : null,
+      blockers,
+      allowanceReasons: blocked
+        ? []
+        : allowances(id, provider, providerSpecificData, usage, requestedModel),
+      fetchedAt: observed,
+      displayCutoffs: Object.fromEntries(
+        Object.keys(usage.quotas || {}).map((name) => [
+          name,
+          cutoffEnabled ? resolveMinRemainingPercent(provider, connection, policy, name) : 0,
+        ])
+      ),
+      ...(cutoffEnabled ? { cutoffEvaluated } : {}),
+    };
+  });
+}
+
+export function buildConnectionQuotaAvailability(
+  input: unknown,
+  usage: Usage | undefined,
+  policy: QuotaPreflightPolicy
+): ConnectionQuotaAvailability {
+  const connection = toProviderConnection(input);
+  const cachedUsage = withQuotaCacheReadView(() => {
+    getQuotaSnapshotFetchedAt(connection.id);
+    const cached = getQuotaCache(connection.id);
+    return (
+      usage ||
+      (cached
+        ? {
+            quotas: cached.quotas,
+            modelQuotas: cached.modelQuotas,
+            fetchedAt: timestamp(cached.fetchedAt)!,
+          }
+        : {})
+    );
+  });
+  return {
+    id: connection.id,
+    account: evaluateCachedQuotaAvailability(input, usage, policy),
+    scopes: availabilityScopes(connection.provider, cachedUsage).map((scope) => ({
+      ...scope,
+      // Routing has no review-specific selector; keep this observed display scope unknown.
+      decision:
+        scope.id === "code_review" &&
+        connection.provider === "codex" &&
+        scope.windows.some((name) => {
+          const q = normalizeQuotas(cachedUsage.quotas || {})[name];
+          return q && q.fractionReported !== false && q.remainingPercentage <= 0;
+        })
+          ? {
+              usable: null,
+              blockers: [],
+              allowanceReasons: [],
+              fetchedAt: cachedUsage.fetchedAt || null,
+            }
+          : evaluateCachedQuotaAvailability(input, usage, policy, scope.model),
+    })),
+  };
+}
