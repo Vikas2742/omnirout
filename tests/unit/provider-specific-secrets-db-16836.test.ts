@@ -299,3 +299,34 @@ test("#16836 imported authCookie sessions still deduplicate after encryption", a
   assert.ok(second?.id);
   assert.notEqual(second?.id, firstId, "different sessions must stay isolated");
 });
+
+test("#16836 does not conflate different cookie sessions with the same base URL", async () => {
+  for (const [provider, field] of [
+    ["qwen-cloud-token-plan", "qwenCloudCookie"],
+    ["volcengine-coding-plan", "volcConsoleCookie"],
+  ] as const) {
+    const baseUrl = "https://shared-console.example.test";
+    const makeSession = (cookie: string, name: string) =>
+      connections.createProviderConnection({
+        provider,
+        authType: "cookie",
+        name,
+        providerSpecificData: { baseUrl, [field]: cookie },
+      });
+
+    const first = await makeSession("account-one-cookie", "Account one");
+    const second = await makeSession("account-two-cookie", "Account two");
+    assert.ok(first?.id && second?.id, provider);
+    assert.notEqual(first.id, second.id, `${provider}: distinct cookies must never merge`);
+
+    const storedFirst = readStoredProviderMetadata(String(first.id));
+    const storedSecond = readStoredProviderMetadata(String(second.id));
+    assert.match(String(storedFirst[field]), /^enc:v1:/);
+    assert.match(String(storedSecond[field]), /^enc:v1:/);
+    assert.equal(storedFirst.baseUrl, baseUrl);
+    assert.equal(storedSecond.baseUrl, baseUrl);
+
+    const repeated = await makeSession("account-two-cookie", "Renamed second account");
+    assert.equal(repeated?.id, second.id, `${provider}: matching cookie should reuse its row`);
+  }
+});
