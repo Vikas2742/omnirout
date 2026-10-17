@@ -57,6 +57,19 @@ test("#16977 synced hidden base never generates visible effort variants", async 
     assert.ok(after.includes(id), `unrelated visible model disappeared: ${id}`);
   }
 
+  // Replacing the synced catalog with the same model identity must not
+  // resurrect the hidden base or its tiers.
+  await models.replaceSyncedAvailableModelsForConnection("huggingface", connection.id, [
+    { id: hiddenBase, name: "Updated hidden reasoner",
+      supportedThinkingEfforts: ["low", "medium", "high"], supportedEndpoints: ["chat"] },
+    { id: visibleBase, name: "Updated visible reasoner",
+      supportedThinkingEfforts: ["low", "medium"], supportedEndpoints: ["chat"] },
+  ]);
+  const resynced = await getIds();
+  assert.ok(!resynced.includes(hiddenBase));
+  assert.ok(!resynced.includes(`${hiddenBase}-high`));
+  assert.ok(resynced.includes(`${visibleBase}-medium`));
+
   // An explicitly hidden variant of a visible base also stays hidden.
   models.mergeModelCompatOverride("huggingface", `${visibleBase}-medium`, { isHidden: true });
   const withHiddenVariant = await getIds();
