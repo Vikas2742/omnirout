@@ -65,3 +65,14 @@ export function broadcastModelVisibilityChange(): void {
   }
   window.dispatchEvent(new Event(MODEL_VISIBILITY_EVENT));
 }
+
+/** An explicit base-model hide also suppresses its known generated effort tiers. */
+export function isHiddenByModelVisibilityList(
+  modelId: string,
+  hidden: ReadonlySet<string> | null | undefined
+): boolean {
+  if (!hidden) return false;
+  if (hidden.has(modelId)) return true;
+  const tier = modelId.match(/-(?:none|low|medium|high|xhigh|max)$/);
+  return Boolean(tier && hidden.has(modelId.slice(0, -tier[0].length)));
+}
