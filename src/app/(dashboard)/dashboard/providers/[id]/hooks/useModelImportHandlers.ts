@@ -485,7 +485,26 @@ export function useModelImportHandlers({
           })
         )
       );
+      // Only newly enabled connections need an immediate sync; existing
+      // enabled accounts remain on their scheduler cadence.
+      const syncIds = newValue
+        ? activeWithId.filter((conn, index) =>
+            conn.providerSpecificData?.autoSync !== true &&
+            results[index].status === "fulfilled" && results[index].value.ok
+          ).map((conn) => conn.id!)
+        : [];
+      const syncResults = await Promise.allSettled(syncIds.map(async (id) => {
+        const response = await fetch(`/api/providers/${id}/sync-models`, {
+          method: "POST",
+          signal: AbortSignal.timeout(60_000),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      }));
       await fetchConnections();
+      if (syncIds.length > 0) await fetchProviderModelMeta();
+      if (syncResults.some((r) => r.status === "rejected")) {
+        notify.warning(t("autoSyncImmediatePartialFailure"));
+      }
       const fulfilled = results.filter((r) => r.status === "fulfilled" && r.value.ok).length;
       if (fulfilled === results.length) {
         notify[newValue ? "success" : "info"](
