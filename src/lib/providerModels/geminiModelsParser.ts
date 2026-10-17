@@ -12,6 +12,8 @@
  * Imagen and Veo via long-running methods on the same endpoint:
  *   - id contains "veo"    → ensure "videos"
  *   - id contains "imagen" → force "images" (never "videos")
+ *   - Gemini *-tts[-preview] via generateContent → "audio-speech"
+ *   - Gemini *-transcribe via generateContent  → "audio-transcriptions"
  *
  * Note: `gemini-*-image` models (e.g. gemini-3-pro-image) generate images via the
  * regular `generateContent` path, so they stay "chat" (image output is a chat
@@ -77,6 +79,20 @@ export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
       if (lowerId.includes("imagen")) {
         endpoints.delete("videos");
         endpoints.add("images");
+      }
+
+      // Google serves specialized speech/transcription models through
+      // generateContent too. They do NOT support Chat Completions: importing
+      // them as "chat" makes the router try an incompatible endpoint (#16929).
+      // Only override the method-derived chat tag, preserving any other
+      // explicitly advertised endpoint. Image-capable Gemini chat models
+      // intentionally remain chat-selectable.
+      if (methods.includes("generateContent") && /-transcribe(?:-|$)/.test(lowerId)) {
+        endpoints.delete("chat");
+        endpoints.add("audio-transcriptions");
+      } else if (methods.includes("generateContent") && /-tts(?:-|$)/.test(lowerId)) {
+        endpoints.delete("chat");
+        endpoints.add("audio-speech");
       }
 
       if (
