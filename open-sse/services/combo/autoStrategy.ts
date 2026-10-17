@@ -50,7 +50,10 @@ import {
   getHiddenModelsByProvider,
   getModelVisibilityAllowlists,
 } from "../../../src/lib/db/models";
-import { isAdmittedByModelVisibilityAllowlist } from "../../../src/shared/utils/modelVisibility";
+import {
+  isAdmittedByModelVisibilityAllowlist,
+  isHiddenByModelVisibilityList,
+} from "../../../src/shared/utils/modelVisibility";
 import { getProviderModels } from "../../config/providerModels.ts";
 import {
   getConnectionRoutingTags,
@@ -552,7 +555,8 @@ export async function expandAutoComboCandidatePool(
       const hiddenModels = hiddenModelsMap.get(providerId);
       const admitted = visibilityAllowlists.get(providerId);
       const isVisible = (id: string) =>
-        !hiddenModels?.has(id) && isAdmittedByModelVisibilityAllowlist(id, admitted);
+        !isHiddenByModelVisibilityList(id, hiddenModels) &&
+        isAdmittedByModelVisibilityAllowlist(id, admitted);
       const userVisibleIds = new Set<string>();
       for (const m of syncedModels) if (m.id && isVisible(m.id)) userVisibleIds.add(m.id);
       for (const m of chatCustomModels)
