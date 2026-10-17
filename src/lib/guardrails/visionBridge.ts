@@ -60,9 +60,10 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
   // A slash is ambiguous here: "edge/acme-model" may use this node's public
   // routing prefix, another node's prefix, OR be the raw upstream model id
   // "vendor/model". Do not mistake every slash for a foreign node (#16801).
-  const isInternalNode = isCompatibleProviderConnectionId(provider);
+  const internalProvider =
+    provider && isCompatibleProviderConnectionId(provider) ? provider : null;
   const slash = targetModel.indexOf("/");
-  const routingPrefix = isInternalNode ? getProviderNodePrefixSync(provider!) : null;
+  const routingPrefix = internalProvider ? getProviderNodePrefixSync(internalProvider) : null;
   const suppliedPrefix = slash > 0 ? targetModel.slice(0, slash) : null;
   const isOwnPrefixedModel = Boolean(
     suppliedPrefix &&
@@ -75,11 +76,11 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
     // could turn a non-vision internal target into a false positive. An exact,
     // positive verdict owned by THIS provider is the only safe exception for
     // a legitimate raw vendor/model ID. Explicit negatives remain authoritative.
-    const custom = getExactCustomModelVisionOverride(provider!, targetModel);
+    const custom = getExactCustomModelVisionOverride(internalProvider, targetModel);
     if (custom !== null) return custom ? "vision" : "non-vision";
-    const compat = getModelCompatVisionOverride(provider!, [targetModel]);
+    const compat = getModelCompatVisionOverride(internalProvider, [targetModel]);
     if (compat !== null) return compat ? "vision" : "non-vision";
-    return getSyncedAvailableModelVision(provider!, targetModel) === true
+    return getSyncedAvailableModelVision(internalProvider, targetModel) === true
       ? "vision"
       : "non-vision";
   }
@@ -91,7 +92,7 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
   // to the direct-request resolver. Never override an explicit false.
   if (
     caps.supportsVision === null &&
-    isInternalNode &&
+    internalProvider &&
     isOwnPrefixedModel &&
     getResolvedModelCapabilities(targetModel).supportsVision === true
   ) {
