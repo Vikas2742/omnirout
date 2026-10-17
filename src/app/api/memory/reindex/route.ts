@@ -49,18 +49,13 @@ export async function POST(request: Request) {
   const { force } = validation.data;
 
   try {
-    if (force) {
-      markAllMemoriesNeedReindex();
-    }
-
+    // Queue resets must be guarded by the same single-flight lock as the
+    // worker. Otherwise POST {force:true} while running reflags already
+    // processed rows even though start() correctly refuses a second worker.
+    // Keep the pending count in the response and preserve the empty-queue
+    // {started:true} behavior for an idle worker.
+    const started = reindexDrain.start(force ? markAllMemoriesNeedReindex : undefined);
     const pending = getReindexPending();
-
-    // Register a single background worker before replying. It drains multiple
-    // batches until empty, stalled by failing embeds, or the bounded work cap.
-    // Repeated clicks share that worker rather than racing SQLite/vector writes.
-    // Preserve the existing { started: true } response when the queue is empty.
-    // The worker exits immediately without scheduling any embedding work.
-    const started = reindexDrain.start();
     return NextResponse.json({ started, pending });
   } catch (err: unknown) {
     const message = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));

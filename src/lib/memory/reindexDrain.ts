@@ -67,8 +67,13 @@ export function createReindexDrainController(
   let active: Promise<ReindexDrainResult> | null = null;
 
   return {
-    start(): boolean {
+    start(onStart?: () => void): boolean {
       if (active) return false;
+      // A forced reindex must mark rows before scheduling any worker, but must
+      // never mark them again when another request finds the worker running.
+      // This is synchronous: no request can interleave between the guard,
+      // mutation and registering the in-flight Promise.
+      onStart?.();
       const scheduled = new Promise<void>((resolve, reject) => {
         try {
           (deps.schedule ?? setImmediate)(resolve);
