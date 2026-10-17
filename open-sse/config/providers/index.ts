@@ -161,6 +161,7 @@ import { devin_desktopProvider } from "./registry/devin-desktop/index.ts";
 import { zcodeProvider } from "./registry/zcode/index.ts";
 import { zed_hostedProvider } from "./registry/zed-hosted/index.ts";
 import { nanogptProvider } from "./registry/nanogpt/index.ts";
+import { nanProvider } from "./registry/nan/index.ts";
 import { apmixProvider } from "./registry/apmix/index.ts";
 import { scalewayProvider } from "./registry/scaleway/index.ts";
 import { agentrouterProvider } from "./registry/agentrouter/index.ts";
@@ -226,6 +227,7 @@ import { tokenrouterProvider } from "./registry/tokenrouter/index.ts";
 import { token_kioskProvider } from "./registry/token-kiosk/index.ts";
 import { grok_cliProvider } from "./registry/grok-cli/index.ts";
 import { codebuddy_cnProvider } from "./registry/codebuddy-cn/index.ts";
+import { codebuddy_intlProvider } from "./registry/codebuddy-intl/index.ts";
 import { pioneerProvider } from "./registry/pioneer/index.ts";
 import { zenmux_freeProvider } from "./registry/zenmux-free/index.ts";
 import { tinycmsProvider } from "./registry/tinycms/index.ts";
@@ -286,6 +288,7 @@ import { seekaiProvider } from "./registry/seekai/index.ts";
 import { tokenmarketProvider } from "./registry/tokenmarket/index.ts";
 import { twinmindProvider } from "./registry/twinmind/index.ts";
 import { syntxProvider } from "./registry/syntx/index.ts";
+import { daoxeProvider } from "./registry/daoxe/index.ts";
 
 export const REGISTRY: Record<string, RegistryEntry> = {
   aimlapi: aimlapiProvider,
@@ -447,6 +450,7 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   zcode: zcodeProvider,
   "zed-hosted": zed_hostedProvider,
   nanogpt: nanogptProvider,
+  nan: nanProvider,
   apmix: apmixProvider,
   scaleway: scalewayProvider,
   agentrouter: agentrouterProvider,
@@ -515,6 +519,7 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   "token-kiosk": token_kioskProvider,
   "grok-cli": grok_cliProvider,
   "codebuddy-cn": codebuddy_cnProvider,
+  "codebuddy-intl": codebuddy_intlProvider,
   pioneer: pioneerProvider,
   "zenmux-free": zenmux_freeProvider,
   "tinycms-web": tinycmsProvider,
@@ -576,4 +581,5 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   tokenmarket: tokenmarketProvider,
   twinmind: twinmindProvider,
   syntx: syntxProvider,
+  daoxe: daoxeProvider,
 };

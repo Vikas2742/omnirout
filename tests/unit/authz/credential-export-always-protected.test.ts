@@ -72,11 +72,24 @@ const HARD_GATED_INVENTORY: ReadonlyArray<{ path: string; why: string }> = [
     path: "/api/settings/obsidian",
     why: "POST stores the Obsidian Local REST API token; same credential surface as its /webdav child (GHSA-7pq4-8pvv-rx7r)",
   },
+  // ── Reported in GHSA-qxg2-rm3h-4cxp ──────────────────────────────────────
+  // GET spreads every provider_connections row verbatim — the lazy-decrypt
+  // proxy hands out apiKey / accessToken / refreshToken / idToken in plaintext
+  // — and the route makes no auth call of its own.
+  {
+    path: "/api/providers/client",
+    why: "returns every connection's decrypted apiKey/accessToken/refreshToken/idToken (GHSA-qxg2-rm3h-4cxp)",
+  },
   // ── Already fixed; pinned so a refactor cannot silently drop them ────────
   { path: "/api/db-backups/export", why: "GHSA-mghq-58h3-qcqj" },
   { path: "/api/db-backups/exportAll", why: "GHSA-mghq-58h3-qcqj" },
   { path: "/api/settings/export-json", why: "GHSA-v7g9-7f55-5g46" },
   { path: "/api/settings/import-json", why: "GHSA-v7g9-7f55-5g46" },
+  {
+    path: "/api/settings/transfer/export",
+    why: "returns the selected accounts' credentials (passphrase-sealed)",
+  },
+  { path: "/api/settings/transfer/import", why: "writes provider connections and credentials" },
   { path: "/api/settings/database", why: "irreversible database replace" },
   { path: "/api/shutdown", why: "stops the server" },
   // ── Hard-gated by the LOCAL_ONLY tier instead ────────────────────────────
@@ -106,6 +119,7 @@ test("the trailing-slash spelling is gated too", () => {
     "/api/providers/abc/codex-auth/export/",
     "/api/logs/export/",
     "/api/cli-tools/codex-profiles/",
+    "/api/providers/client/",
   ]) {
     assert.ok(isAlwaysProtectedPath(path) || isLocalOnlyPath(path), path);
   }

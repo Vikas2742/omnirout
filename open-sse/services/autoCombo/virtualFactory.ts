@@ -1,3 +1,4 @@
+import { EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS } from "./emulatedNoAuthAllowlist";
 import { AutoComboConfig } from "./engine";
 import { MODE_PACKS } from "./modePacks";
 import { DEFAULT_WEIGHTS, reliabilityFactor, ScoringWeights } from "./scoring";
@@ -36,6 +37,7 @@ import { getSyncedAvailableModelsByConnection, getCustomModels } from "@/lib/db/
 import { filterPaidOnlyCandidatesWithDiagnosis } from "./paidModelFilter";
 import { filterLockoutCandidates, warnPoolDrop } from "./modelLockoutFilter";
 import { filterModelExposureCandidates } from "./modelExposureFilter";
+import { failClosedAutoConfig } from "./failClosedPool";
 import {
   filterSubscriptionOnlyCandidates,
   orderPoolByRung,
@@ -346,29 +348,16 @@ function hasUsableConnectionCredential(conn: VirtualFactoryConn): boolean {
 
 const SYNTHETIC_NOAUTH_CONNECTION_ID = RESILIENCE_NOAUTH_CONNECTION_ID;
 
-// Allowlist of no-auth providers permitted to enter the `auto`/`auto-*`
-// candidate pool. `opencode` is verified on public HTTP egress; `devin-cli-agentic`
-// is a local CLI backend whose credentials are provided by the isolated Devin CLI
-// home and is admitted only once that login is confirmed (noAuthAutoRoutingReadiness.ts).
-// Others (duckduckgo-web: rate-limited; aihorde: rejects anonymous access) remain out
-// of auto-routing until verified. Re-add an id here to include it in every auto/* pool.
-//
-// Scope (operator decision 2026-07-24, refs #8183/#6453/#7032): this allowlist
-// targets public-HTTP-egress reliability for the category/tier and flat-variant
-// `auto/*` pools (auto/best-free, auto/coding:fast, ...). It does NOT apply to
-// `auto/<family>` pools (auto/glm, auto/zai, ...) — a family combo is an
-// identity selector ("whatever genuinely serves GLM"), not a reliability-curated
-// pool, so it admits any no-auth backend that genuinely serves the family (e.g.
-// auggie, a local CLI subprocess with zero HTTP egress, belongs in auto/glm
-// regardless of this list). See the `bypassAllowlist` param below.
-const AUTO_COMBO_NOAUTH_ALLOWLIST = new Set<string>(["opencode", "devin-cli-agentic"]);
-
+// No-auth providers must opt into prompt-emulated tool calling before entering
+// reliability-curated auto/* pools. Local CLI providers additionally need a
+// successful readiness probe before they are admitted; direct provider/model
+// routing remains unaffected.
 function isChatAutoComboNoAuthProvider(
   providerDef: NoAuthProviderDefinition,
   bypassAllowlist: boolean
 ): boolean {
   if (providerDef.noAuth !== true) return false;
-  if (!bypassAllowlist && !AUTO_COMBO_NOAUTH_ALLOWLIST.has(providerDef.id)) return false;
+  if (!bypassAllowlist && !EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS.has(providerDef.id)) return false;
   if (!bypassAllowlist && !isNoAuthProviderReadyForAutoRouting(providerDef.id)) return false;
   if (!Array.isArray(providerDef.serviceKinds) || providerDef.serviceKinds.length === 0)
     return true;
@@ -975,7 +964,6 @@ export async function createVirtualAutoComboFromPrepared(
     candidatePool.length = 0;
     candidatePool.push(...overrideFilteredPool);
   }
-
   if (candidatePool.length === 0) {
     log.warn("AUTO", "No connected providers with valid credentials for virtual auto-combo");
     const emptyPool: string[] = [];
@@ -984,6 +972,7 @@ export async function createVirtualAutoComboFromPrepared(
       weights: { ...DEFAULT_WEIGHTS },
       explorationRate: 0.05,
       routerStrategy: "lkgp",
+      ...failClosedAutoConfig(spec),
     };
     return {
       id: `virtual-auto-${variant || "default"}`,
@@ -1089,7 +1078,6 @@ export async function createVirtualAutoComboFromPrepared(
       );
     }
   }
-
   let weights: ScoringWeights = { ...DEFAULT_WEIGHTS };
   let explorationRate = 0.05; // Default exploration rate
   let routerStrategy = "lkgp"; // All auto variants use LKGP
@@ -1167,8 +1155,8 @@ export async function createVirtualAutoComboFromPrepared(
     weights,
     explorationRate,
     routerStrategy,
+    ...failClosedAutoConfig(spec),
   };
-
   // Chaos mode fans out to the top-N most stable models in parallel. Panel size
   // is capped to keep a single IDE request from fanning out to dozens of providers;
   // operators can override via env var OMNIROUTE_CHAOS_MAX_PANEL (default 5).

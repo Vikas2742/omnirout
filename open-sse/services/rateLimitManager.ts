@@ -20,7 +20,6 @@ import {
   type RequestCapSettings,
 } from "./rateLimitManager/requestCap.ts";
 import { getAntigravityQuotaFamily } from "./antigravityQuotaFamily.ts";
-import { getProviderCategory } from "../config/providerRegistry.ts";
 import { getCodexRateLimitKey } from "../executors/codex.ts";
 import { awaitProviderDefaultSlot, setProviderQuotaOverrides } from "./providerDefaultRateLimit.ts";
 import {
@@ -35,6 +34,7 @@ import {
   toPlainHeaders,
 } from "./rateLimitManager/headers";
 import { checkQueueAdmission } from "./rateLimitManager/admission";
+import { isConnectionAutoProtected } from "./rateLimitManager/autoProtection";
 import { buildOverrideUpdates, loadOverrideMap } from "./rateLimitManager/overrideUpdates";
 import {
   markLocalRateLimitError,
@@ -149,21 +149,6 @@ let watchdogInterval: ReturnType<typeof setInterval> | null = null;
 type LimiterFactory = (options: Bottleneck.ConstructorOptions) => Bottleneck;
 const defaultLimiterFactory: LimiterFactory = (options) => new Bottleneck(options);
 let limiterFactory: LimiterFactory = defaultLimiterFactory;
-
-/**
- * Env-var override for the auto-enable safety net. Highest priority — wins
- * over the persisted dashboard setting. Use to disable in an incident without
- * needing dashboard access.
- *   RATE_LIMIT_AUTO_ENABLE=false  → never auto-enable
- *   RATE_LIMIT_AUTO_ENABLE=true   → force on regardless of dashboard
- *   (unset)                        → use dashboard setting
- */
-function isAutoEnableActive(settings: RequestQueueSettings): boolean {
-  const env = process.env.RATE_LIMIT_AUTO_ENABLE?.trim().toLowerCase();
-  if (env === "false" || env === "0" || env === "off") return false;
-  if (env === "true" || env === "1" || env === "on") return true;
-  return settings.autoEnableApiKeyProviders;
-}
 
 // Sentinels for "no rate limit" / effectively infinite capacity. The reservoir
 // value uses Number.MAX_SAFE_INTEGER so the bucket can never realistically be
@@ -341,9 +326,7 @@ function reconcileEnabledConnections(
     }
 
     if (
-      isAutoEnableActive(requestQueueSettings) &&
-      getProviderCategory(provider) === "apikey" &&
-      isActive
+      isConnectionAutoProtected({ provider, isActive, rateLimitProtection }, requestQueueSettings)
     ) {
       nextEnabledConnections.add(connectionId);
       autoCount++;
@@ -796,6 +779,7 @@ export async function withRateLimit(
   // would kill a 300ms execution that correctly left the queue immediately).
   const wrappedFn = () => {
     if (queueTimedOut) return Promise.reject(queueTimeoutErr);
+    if (signal?.aborted) return Promise.reject(signal.reason);
     if (delayId) {
       clearTimeout(delayId);
       delayId = null;
@@ -810,8 +794,9 @@ export async function withRateLimit(
   const scheduled = limiter.schedule(scheduleOpts, boundFn as unknown as () => Promise<unknown>);
   scheduled.catch(() => {});
   // If timeoutPromise or the abort wins while the job is still QUEUED,
-  // abandonQueuedJob() removes it (see queuedJobCancel.ts); a job already past
-  // QUEUED is kept from calling fn by wrappedFn's queueTimedOut guard.
+  // abandonQueuedJob() removes it (see queuedJobCancel.ts). A job already past
+  // QUEUED (with capacity free, Bottleneck dispatches before that removal runs)
+  // is kept from calling fn by wrappedFn's guards; the race already settled.
 
   try {
     if (signal) {

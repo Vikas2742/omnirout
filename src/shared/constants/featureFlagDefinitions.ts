@@ -874,6 +874,30 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     requiresRestart: false,
     warningLevel: "caution",
   },
+  {
+    key: "COMBO_AUTO_PRUNE_STALE_STEPS",
+    label: "Auto-Prune Stale Combo Steps",
+    description:
+      "After a successful model sync against an authoritative live catalog, remove combo steps pinned to models the catalog no longer lists, with one audit entry per removed step. Never prunes on a failed, degraded or free-only sync, and never empties a combo. Off by default: stale steps are only flagged.",
+    descriptionI18nKey: "featureFlagComboAutoPruneStaleStepsDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
+    key: "KIRO_TOOL_CALL_REPAIR_ENABLED",
+    label: "Kiro Tool Call Repair",
+    description:
+      "When a streaming Kiro response emits a malformed tool_call wrapper (missing input.name or input.arguments) before any visible output, suppress it and re-send the request once with a corrective instruction instead of ending the turn with invalid_kiro_tool_call. The retry costs one extra Kiro request; a second failure ends the turn with kiro_tool_call_repair_retry_failed. On by default. Set to false to fail the turn on the first malformed wrapper.",
+    descriptionI18nKey: "featureFlagKiroToolCallRepairEnabledDescription",
+    category: "runtime",
+    defaultValue: "true",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "info",
+  },
 
   // ──────────────── CLI (5) ────────────────
   {

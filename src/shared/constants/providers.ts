@@ -47,6 +47,7 @@ export function supportsApiKeyOnFreeProvider(providerId: unknown): boolean {
 const DUAL_AUTH_PROVIDER_IDS = new Set([
   "clinepass",
   "codebuddy-cn",
+  "codebuddy-intl",
   "xai",
   "muse-code",
   "cline",
@@ -161,6 +162,7 @@ export const AGGREGATOR_PROVIDER_IDS = new Set([
   "logfare",
   "seekai",
   "tokenmarket",
+  "daoxe",
 ]);
 
 export const ENTERPRISE_CLOUD_PROVIDER_IDS = new Set([
