@@ -33,7 +33,10 @@ import { resolveVirtualCost } from "../providerCostData";
 import type { AutoVariant } from "./autoPrefix";
 import { buildFamilyCandidateFilter, type ModelFamily } from "./modelFamily";
 import { getHiddenModelsByProvider, getModelVisibilityAllowlists } from "@/models";
-import { isAdmittedByModelVisibilityAllowlist } from "@/shared/utils/modelVisibility";
+import {
+  isAdmittedByModelVisibilityAllowlist,
+  isHiddenByModelVisibilityList,
+} from "@/shared/utils/modelVisibility";
 import { getSyncedAvailableModelsByConnection, getCustomModels } from "@/lib/db/models";
 import { filterPaidOnlyCandidatesWithDiagnosis } from "./paidModelFilter";
 import { filterLockoutCandidates, warnPoolDrop } from "./modelLockoutFilter";
@@ -441,7 +444,7 @@ function getNoAuthCandidates(
       const modelId = typeof model?.id === "string" && model.id.trim().length > 0 ? model.id : null;
       if (!modelId) continue;
       if (isModelExcludedByConnection(modelId, providerSpecificData)) continue;
-      if (hiddenModels.has(modelId) ||
+      if (isHiddenByModelVisibilityList(modelId, hiddenModels) ||
           !isAdmittedByModelVisibilityAllowlist(modelId, admitted)) continue;
       candidates.push({
         provider: providerId,
@@ -629,7 +632,8 @@ export async function prepareVirtualAutoComboInputs(
     const hiddenModels = hiddenModelsMap.get(providerId);
     const admitted = visibilityAllowlists.get(providerId);
     const isVisible = (id: string) =>
-      !hiddenModels?.has(id) && isAdmittedByModelVisibilityAllowlist(id, admitted);
+      !isHiddenByModelVisibilityList(id, hiddenModels) &&
+      isAdmittedByModelVisibilityAllowlist(id, admitted);
 
     // #auto-pool-visible-only: build the credentialed pool from the models the user
     // actually has available (synced + custom non-hidden) when any exist, falling
