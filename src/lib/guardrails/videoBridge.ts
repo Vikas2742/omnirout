@@ -28,6 +28,7 @@ import {
   type VideoAnalysisContext,
 } from "./videoBridgePipeline";
 import { getSharedVideoResultCacheFor } from "./videoBridgeResultCache";
+import { appendVideoFallbackTranscripts } from "./videoBridgeFallbackTranscript";
 import { type VisionModelConfig } from "./visionBridgeHelpers";
 import { getBestVisionModel } from "./visionBridgeRouter";
 import { createVideoSttAdapter, type VideoSttAdapterDependencies } from "./videoBridgeSttAdapter";
@@ -262,6 +263,7 @@ export class VideoBridgeGuardrail extends BaseGuardrail {
 
     const startedAt = Date.now();
     const descriptions: Array<string | null> = [];
+    const fallbackParts: VideoPart[] = [];
     let totalFramesRequested = 0;
     let totalFramesExtracted = 0;
     let totalFramesUsed = 0;
@@ -306,6 +308,7 @@ export class VideoBridgeGuardrail extends BaseGuardrail {
       }
       if (result.status === "failed") {
         failures += 1;
+        fallbackParts.push(part);
         descriptions.push(
           capabilities.supportsVideo === false
             ? `[Video ${index + 1}]: (unavailable — video could not be described)`
@@ -347,6 +350,7 @@ export class VideoBridgeGuardrail extends BaseGuardrail {
     }
 
     for (let index = attemptedParts.length; index < parts.length; index++) {
+      fallbackParts.push(parts[index]);
       descriptions.push(
         capabilities.supportsVideo === false
           ? `[Video ${index + 1}]: (not processed because the per-request video limit was reached)`
@@ -356,15 +360,16 @@ export class VideoBridgeGuardrail extends BaseGuardrail {
 
     const videosProcessed = attemptedParts.length - failures;
     const videosReplaced = descriptions.filter((description) => description !== null).length;
-    if (videosReplaced === 0) {
-      return rawTranscriptObserved
-        ? { block: false, meta: { videoBridgeObserved: true } }
-        : { block: false };
-    }
+    if (videosReplaced === 0 && !rawTranscriptObserved) return { block: false };
+
+    const modifiedPayload = replaceVideoParts(body, parts, descriptions);
+    logRedactionEntries.push(
+      ...appendVideoFallbackTranscripts(modifiedPayload, fallbackParts, context.log)
+    );
 
     return {
       block: false,
-      modifiedPayload: replaceVideoParts(body, parts, descriptions),
+      modifiedPayload,
       meta: {
         analysisMode: analysis.analysisMode,
         analysisModeRequested: analysis.requestedAnalysisMode,

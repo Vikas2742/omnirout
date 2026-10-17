@@ -26,11 +26,8 @@ import {
   type WebFetchProviderId,
 } from "@omniroute/open-sse/handlers/webFetch.ts";
 import * as log from "@/sse/utils/logger";
-import {
-  extractApiKey,
-  isValidApiKey,
-  getProviderCredentialsWithQuotaPreflight,
-} from "@/sse/services/auth";
+import { getProviderCredentialsWithQuotaPreflight } from "@/sse/services/auth";
+import { resolveClientApiKey } from "@/sse/services/clientApiKeyResolver";
 import { enforceApiKeyPolicyWithScope } from "@/app/api/v1/_shared/keyScopedRoute";
 import {
   keyAdmitsKeylessProviders,
@@ -305,11 +302,11 @@ export async function POST(request: Request) {
   // Optional auth check — when REQUIRE_API_KEY=false, ignore presented
   // invalid keys so anonymous access works the same as all other client
   // APIs (#7785).
-  const apiKeyRaw = extractApiKey(request);
+  const { apiKey: apiKeyRaw, valid: apiKeyValid } = await resolveClientApiKey(request);
   if (isRequireApiKeyEnabled() && !apiKeyRaw) {
     return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Authentication required");
   }
-  if (isRequireApiKeyEnabled() && apiKeyRaw && !(await isValidApiKey(apiKeyRaw))) {
+  if (isRequireApiKeyEnabled() && apiKeyRaw && !apiKeyValid) {
     return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Invalid API key");
   }
 

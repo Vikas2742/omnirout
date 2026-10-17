@@ -148,7 +148,7 @@ function waitForVideoBridgePromise<T>(promise: Promise<T>, signal: AbortSignal):
 // silently undefined, which would read as "no transcript" / mark
 // `videoBridgeObserved: false` for a video that does carry one.
 const VIDEO_BRIDGE_RESULT_CACHE_VERSION = "v6";
-const VIDEO_BRIDGE_RESULT_CACHE_POLICY = "sampling-then-dedup-v2";
+const VIDEO_BRIDGE_RESULT_CACHE_POLICY = "sampling-then-dedup-v3-client-transcript";
 const VIDEO_BRIDGE_RESULT_CACHE_KEY_KIND = "video-result-v4";
 const VIDEO_BRIDGE_DOWNLOAD_FLIGHT_VERSION = "v1";
 
@@ -259,7 +259,10 @@ function createVideoResultCacheIdentity(
   return {
     analysisMode: analysis.analysisMode,
     cacheVersion: VIDEO_BRIDGE_RESULT_CACHE_VERSION,
-    dedupCandidateFrameCount: resolveVideoDedupCandidateFrameCount(runtime.frameCount),
+    dedupCandidateFrameCount: resolveVideoDedupCandidateFrameCount(
+      runtime.frameCount,
+      runtime.samplingPolicy
+    ),
     dedupPolicyVersion: VIDEO_DEDUP_POLICY_VERSION,
     dedupThreshold: VIDEO_DEDUP_THRESHOLD,
     extractorVersion: VIDEO_BRIDGE_RESULT_CACHE_VERSION,

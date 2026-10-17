@@ -25,6 +25,7 @@ import { handleImageGeneration } from "@omniroute/open-sse/handlers/imageGenerat
 import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { calculateModalCost } from "@/lib/usage/costCalculator";
+import { runImageRequestWithAccounting } from "@/lib/usage/imageRequestAccounting";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
 import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
@@ -258,13 +259,25 @@ export async function executeImageCombo(
     resolveProvider: (target) => parseImageModel(target.modelStr),
     resolveCredentials: (provider) =>
       getProviderCredentialsWithQuotaPreflight(provider, null, allowedConnections),
-    dispatch: async ({ target, credentials }) =>
-      (await handleImageGeneration({
-        body: { ...body, model: target.modelStr },
-        credentials,
-        log,
-        signal: auth.request?.signal || null,
-      })) as ImageGenerationResult,
+    dispatch: async ({ target, provider, model, credentials }) =>
+      (await runImageRequestWithAccounting(
+        {
+          endpoint: "/v1/images/generations",
+          provider,
+          model,
+          apiKeyInfo: auth.policy?.apiKeyInfo,
+          credentials,
+          startTime,
+          comboStrategy: "priority",
+        },
+        () =>
+          handleImageGeneration({
+            body: { ...body, model: target.modelStr },
+            credentials,
+            log,
+            signal: auth.request?.signal || null,
+          })
+      )) as ImageGenerationResult,
     onSuccess: async (credentials) => {
       await clearRecoveredProviderState(credentials as never);
     },
