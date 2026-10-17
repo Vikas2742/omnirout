@@ -48,6 +48,7 @@ export interface CompatibleModelsSectionProps {
   syncedCatalogAuthoritative?: boolean;
   customModels?: CompatModelRow[];
   fallbackModels?: CompatModelRow[];
+  endpointAdapters?: Record<string, "available" | "unavailable" | "unknown">;
   allowImport: boolean;
   description: string;
   inputLabel: string;
@@ -117,6 +118,7 @@ export default function CompatibleModelsSection({
   syncedCatalogAuthoritative = false,
   customModels = [],
   fallbackModels = [],
+  endpointAdapters = {},
   description,
   inputLabel,
   inputPlaceholder,
@@ -572,6 +574,7 @@ export default function CompatibleModelsSection({
                         discoveredEndpoints: discovered?.supportedEndpoints,
                         resettable: Boolean(discovered && selected?.endpointCapabilitySource === "operator"),
                         onChanged: onModelsChanged,
+                        adapterStatuses: endpointAdapters,
                       };
                     })()}
                     fullModel={fullModel}

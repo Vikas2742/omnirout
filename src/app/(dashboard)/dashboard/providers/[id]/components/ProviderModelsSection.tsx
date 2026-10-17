@@ -273,6 +273,7 @@ export default function ProviderModelsSection({
           syncedCatalogAuthoritative={syncedCatalogAuthoritative}
           customModels={modelMeta.customModels}
           fallbackModels={compatibleFallbackModels}
+          endpointAdapters={modelMeta.endpointAdapters}
           description={description}
           inputLabel={inputLabel}
           inputPlaceholder={inputPlaceholder}
@@ -354,6 +355,7 @@ export default function ProviderModelsSection({
           syncedCatalogAuthoritative={syncedCatalogAuthoritative}
           availableModels={syncedAvailableModels}
           customModels={modelMeta.customModels}
+          endpointAdapters={modelMeta.endpointAdapters}
           description={passthroughDescription}
           inputLabel={passthroughInputLabel}
           inputPlaceholder={passthroughInputPlaceholder}
@@ -513,6 +515,7 @@ export default function ProviderModelsSection({
                   discoveredEndpoints: discovered?.supportedEndpoints,
                   resettable: Boolean(discovered && operator?.endpointCapabilitySource === "operator"),
                   onChanged: fetchProviderModelMeta,
+                  adapterStatuses: modelMeta.endpointAdapters,
                 };
               })()}
               fullModel={`${providerDisplayAlias}/${model.id}`}

@@ -54,6 +54,7 @@ export interface PassthroughModelsSectionProps {
   availableModels?: CompatModelRow[];
   syncedCatalogAuthoritative?: boolean;
   customModels?: CompatModelRow[];
+  endpointAdapters?: Record<string, "available" | "unavailable" | "unknown">;
   description: string;
   inputLabel: string;
   inputPlaceholder: string;
@@ -101,6 +102,7 @@ export default function PassthroughModelsSection({
   availableModels = [],
   syncedCatalogAuthoritative = false,
   customModels = [],
+  endpointAdapters = {},
   description,
   inputLabel,
   inputPlaceholder,
@@ -463,6 +465,7 @@ export default function PassthroughModelsSection({
                     discoveredEndpoints: discovered?.supportedEndpoints,
                     resettable: Boolean(discovered && selected?.endpointCapabilitySource === "operator"),
                     onChanged: onModelsChanged,
+                    adapterStatuses: endpointAdapters,
                   };
                 })()}
                 alias={alias}

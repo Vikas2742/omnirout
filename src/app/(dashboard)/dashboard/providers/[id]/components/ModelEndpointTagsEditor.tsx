@@ -12,6 +12,7 @@ export interface ModelEndpointEditorInfo {
   supportedEndpoints?: readonly string[];
   endpointCapabilitySource?: string;
   discoveredEndpoints?: readonly string[];
+  adapterStatuses?: Record<string, "available" | "unavailable" | "unknown">;
   resettable?: boolean;
   onChanged?: () => void | Promise<void>;
 }
@@ -21,7 +22,7 @@ interface Props extends ModelEndpointEditorInfo {
   t: (key: string, values?: Record<string, unknown>) => string;
 }
 export default function ModelEndpointTagsEditor({
-  provider, modelId, supportedEndpoints, endpointCapabilitySource, resettable = false, onChanged, t,
+  provider, modelId, supportedEndpoints, endpointCapabilitySource, adapterStatuses = {}, resettable = false, onChanged, t,
 }: Props) {
   const effective = supportedEndpoints?.length ? normalizeModelSupportedEndpoints(supportedEndpoints) : ["chat"];
   const [editing, setEditing] = useState(false);
@@ -70,7 +71,13 @@ export default function ModelEndpointTagsEditor({
     <span className="inline-flex max-w-full flex-wrap items-center gap-1 text-[10px]"
       data-testid="model-endpoint-capabilities">
       {effective.map((endpoint) => (
-        <span key={endpoint} className="rounded bg-primary/10 px-1 py-0.5 text-primary">{endpoint}</span>
+        <span key={endpoint} title={adapterStatuses[endpoint] === "unavailable"
+          ? t("endpointCapabilitiesNoAdapter") : undefined}
+          className={adapterStatuses[endpoint] === "unavailable"
+            ? "rounded bg-red-500/15 px-1 py-0.5 text-red-500"
+            : "rounded bg-primary/10 px-1 py-0.5 text-primary"}>
+          {endpoint}{adapterStatuses[endpoint] === "unavailable" ? " ⚠" : ""}
+        </span>
       ))}
       <span className="text-text-muted" title={t("supportedEndpointsLabel")}>{provenance}</span>
       <button type="button" onClick={beginEdit} disabled={saving}

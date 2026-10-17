@@ -6216,6 +6216,7 @@
     "endpointCapabilitiesSave": "Save endpoints",
     "endpointCapabilitiesSaveFailed": "Failed to update model endpoints",
     "endpointCapabilitiesResetFailed": "Failed to reset model endpoints",
+    "endpointCapabilitiesNoAdapter": "No provider adapter for this endpoint",
     "tagGroupHint": "Tag Group Hint",
     "tagGroupLabel": "Tag Group Label",
     "tagGroupPlaceholder": "Tag Group Placeholder",
