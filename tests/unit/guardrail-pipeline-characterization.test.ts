@@ -300,10 +300,7 @@ test("security invariant: middleware block mode rejects caller disable headers (
     disabledGuardrails: ["prompt-injection"],
     metadata: { disabledGuardrails: ["prompt-injection"] },
   };
-  for (const header of [
-    "x-omniroute-disabled-guardrails",
-    "x-disabled-guardrails",
-  ]) {
+  for (const header of ["x-omniroute-disabled-guardrails", "x-disabled-guardrails"]) {
     const headers = new Headers({
       "content-type": "application/json",
       [header]: "prompt-injection",
@@ -318,6 +315,20 @@ test("security invariant: middleware block mode rejects caller disable headers (
     const data = (await response.json()) as { error: { code: string } };
     assert.equal(data.error.code, "SECURITY_001", header);
   }
+
+  // A normal request remains allowed; the wrapper must not become an
+  // unconditional 400 while defending against caller-controlled bypasses.
+  const clean = new Request("http://localhost/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-omniroute-disabled-guardrails": "prompt-injection",
+    },
+    body: JSON.stringify({ messages: [{ role: "user", content: "Hello" }] }),
+  });
+  const allowed = await wrapped(clean);
+  assert.equal(allowed.status, 200);
+  assert.equal(await allowed.text(), "upstream reached");
 });
 
 // ─── 2. Fail-open ────────────────────────────────────────────────────────────
