@@ -45,7 +45,9 @@ export function ProviderSortContext({
       sensors={sensors}
       collisionDetection={closestCenter}
       accessibility={{
-        screenReaderInstructions: { draggable: `${t("healthDrag")}: ␣ → ↑ ↓ → ␣; Esc` },
+        screenReaderInstructions: {
+          draggable: `${t("healthDrag")}: ␣ → ↑ ↓ → ␣; ${t("cancel")} (⎋)`,
+        },
         announcements: {
           onDragStart: () => t("healthDrag"),
           onDragOver: () => t("healthDrag"),

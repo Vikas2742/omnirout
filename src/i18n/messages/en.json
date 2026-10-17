@@ -10285,7 +10285,7 @@
     "healthOtherPool": "Same account · {pool}: {status} ({remaining} remaining)",
     "healthIncluded": "Includes {count, plural, one {# partially restricted account} other {# partially restricted accounts}}",
     "healthBannerUnavailable": "{count, plural, one {# account temporarily unavailable} other {# accounts temporarily unavailable}}",
-    "healthBannerAvailable": "{count, plural, one {All # account available} other {All # accounts available}}",
+    "healthBannerAvailable": "{count, plural, one {# account available} other {All # accounts available}}",
     "healthLegendOk": "Solid = remaining quota; translucent = used.",
     "healthLegendCooldown": "{window} quota exhausted. Solid = time already waited; translucent = time left.",
     "healthLegendAction": "Authorization expired or account banned; waiting will not fix it.",
@@ -10293,7 +10293,7 @@
     "healthWaited": "Waited {percent}",
     "healthWait": "Wait {duration} ({time} recovery)",
     "healthFastest": "Soonest recovery in {duration}",
-    "healthRatio": "{available, number} / {active, number} available",
+    "healthRatio": "{available, plural, one {# / {active, number} available} other {# / {active, number} available}}",
     "healthCd5": "5h cooldown",
     "healthCdw": "Weekly cooldown"
   },

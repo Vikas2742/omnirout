@@ -52,6 +52,55 @@ const keys = [
   "healthFiveHour",
   "healthOverall",
 ];
+// Inventory of quantity-sensitive usage/common keys added since the frozen PR base.
+// active is only the ratio denominator; available controls agreement. Percentages,
+// remaining quota, timestamps and durations arrive already localized by useHealthText.
+const quantityKeys = {
+  healthIncluded: "count",
+  healthBannerUnavailable: "count",
+  healthBannerAvailable: "count",
+  healthRatio: "available",
+} as const;
+
+for (const [locale, catalog] of Object.entries(catalogs)) {
+  for (const [key, argument] of Object.entries(quantityKeys)) {
+    test(`${locale}.usage.${key} covers every cardinal plural category`, () => {
+      const categories = new Intl.PluralRules(locale).resolvedOptions().pluralCategories;
+      const message = new IntlMessageFormat(catalog.usage[key], locale);
+      if (categories.length === 1) return;
+      const plural = message
+        .getAst()
+        .find((element) => element.type === 6 && element.value === argument);
+      assert.ok(plural && plural.type === 6, `${locale}.${key} needs ${argument}, plural`);
+      assert.equal(plural.pluralType, "cardinal");
+      for (const category of categories) {
+        assert.ok(plural.options[category], `${locale}.${key} missing ${category}`);
+      }
+      assert.ok(plural.options.other, `${locale}.${key} missing other`);
+    });
+  }
+}
+
+for (const locale of ["de", "fr", "ru", "ar", "pl"]) {
+  for (const [key, argument] of Object.entries(quantityKeys)) {
+    test(`${locale}.usage.${key} formats 1, 2 and 5 with localized agreement`, () => {
+      const message = new IntlMessageFormat(catalogs[locale].usage[key], locale);
+      const results = [1, 2, 5].map((count) =>
+        message.format({ count, available: count, active: 9 })
+      );
+      assert.ok(new Set(results).size > 1, `${locale}.${key}: ${results.join(" | ")}`);
+      // Numbers alone must not make a broken, single-form translation pass.
+      if (argument === "count") {
+        const forms = results.map((result) => String(result).replace(/\p{N}+/gu, "#"));
+        assert.ok(
+          new Set(forms).size > 1,
+          `${locale}.${key} never changes agreement for ${argument}`
+        );
+      }
+    });
+  }
+}
+
 const obsolete = ["healthObservationUnavailable", "statCritical", "statAlert", "statHealthy"];
 function flatten(node: Record<string, unknown>, prefix = ""): Record<string, string> {
   return Object.fromEntries(

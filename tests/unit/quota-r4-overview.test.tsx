@@ -72,6 +72,11 @@ it.each(["en", "zh-CN"])(
   (locale) => {
     const m = locale === "en" ? en : zh;
     mount(locale);
+    const handle = document.querySelector<HTMLButtonElement>("[data-drag-handle]")!;
+    const instructions = document.getElementById(handle.getAttribute("aria-describedby")!);
+    expect(instructions).toHaveTextContent(
+      `${m.usage.healthDrag}: ␣ → ↑ ↓ → ␣; ${m.usage.cancel} (⎋)`
+    );
     const units = document.querySelectorAll<HTMLButtonElement>("[data-availability]");
     expect(units).toHaveLength(4);
     expect(units[0]).toHaveClass("w-[9px]", "h-[32px]", "rounded-full", "overflow-hidden");
