@@ -1102,6 +1102,9 @@ export async function touchConnectionSyncedModelsAt(id: string): Promise<void> {
     updatedAt: now,
     id,
   });
+  // The dashboard reads connection timestamps from the 5s row cache.
+  // Keep the new stamp visible without rebuilding the model catalog.
+  invalidateDbCache("connections", id, { skipModelCatalog: true });
 }
 
 /**
