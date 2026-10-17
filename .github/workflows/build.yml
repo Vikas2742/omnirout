@@ -50,9 +50,9 @@ jobs:
         run: |
           npm run build:release
         env:
-          # The shared CI build uses webpack after Turbopack OOMs on the 47 GB
-          # VPS (#16169). Use the same measured path here: webpack succeeded
-          # with a 10 GB V8 heap; the 7 GB hosted runner still needs swap.
+          # Hosted artifact builds run with less memory than the opt-in 64 GB
+          # CI build slot. Keep Webpack here without overriding the latter's
+          # separately measured Turbopack policy (#16169).
           NODE_OPTIONS: "--max-old-space-size=10240"
           OMNIROUTE_BUILD_MEMORY_MB: "10240"
           OMNIROUTE_USE_TURBOPACK: "0"
