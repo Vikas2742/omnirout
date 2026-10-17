@@ -14,8 +14,8 @@
  *
  * So every CI step that compiles the app runs webpack (`OMNIROUTE_USE_TURBOPACK: "0"`,
  * the escape hatch documented in docs/reference/ENVIRONMENT.md): the four nightly
- * `build:cli` steps and the ci.yml `Build` job, whose self-hosted branch used to opt into
- * Turbopack. Flip a step back to "1" only with a measurement showing it fits.
+ * `build:cli` steps, the ci.yml `Build` job, and the manually dispatched hosted
+ * artifact build. Flip a step back to "1" only with a measurement showing it fits.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -66,4 +66,16 @@ test("the ci.yml Build job no longer opts into Turbopack on the self-hosted runn
   const [build] = buildSteps("ci.yml", /^npm run build$/m);
   assert.ok(build, "ci.yml build job runs `npm run build`");
   assert.equal(String(build.step.env?.OMNIROUTE_USE_TURBOPACK), "0");
+});
+
+test("the manual hosted artifact build avoids Turbopack's OOM footprint (#16169)", () => {
+  const builds = buildSteps("build.yml", /npm run build:release/);
+  assert.equal(builds.length, 1, "manual artifact workflow must have exactly one release build");
+
+  const env = builds[0].step.env;
+  assert.equal(String(env?.OMNIROUTE_USE_TURBOPACK), "0");
+  // Webpack needed a 10 GB V8 heap on the measured release tree; the wrapper
+  // uses NODE_OPTIONS first, so require it to match the advertised build override.
+  assert.equal(String(env?.NODE_OPTIONS), "--max-old-space-size=10240");
+  assert.equal(String(env?.OMNIROUTE_BUILD_MEMORY_MB), "10240");
 });
