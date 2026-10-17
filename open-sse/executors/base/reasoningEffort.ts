@@ -92,6 +92,15 @@ export function isOpencodeGoProvider(provider: string): boolean {
   );
 }
 
+export function isSenseNovaDeepSeekV4Flash(provider: string, model: string | undefined): boolean {
+  const modelStr = (model || "").toLowerCase();
+  const isDeepSeekV4Flash =
+    /(?:^|\/)deepseek-v4-flash(?:$|-)/.test(modelStr) && !modelStr.includes("vision");
+  if (!isDeepSeekV4Flash) return false;
+  if (provider === "sensenova" || provider === "snova") return true;
+  return /(?:^|\/)snova(?:\/|$)/.test(modelStr);
+}
+
 type ReasoningSanitizeLog = {
   info?: (tag: string, msg: string) => void;
 };
@@ -557,6 +566,17 @@ export function sanitizeReasoningEffortForProvider(
     return writeEffortValue(b, "low", c);
   }
 
+  if (
+    isSenseNovaDeepSeekV4Flash(provider, modelStr) &&
+    (effortStr === "xhigh" || effortStr === "max")
+  ) {
+    log?.info?.(
+      "REASONING_SANITIZE",
+      `${provider}/${modelStr}: clamped reasoning_effort ${effortStr} to high (SenseNova DeepSeek V4 Flash ceiling)`
+    );
+    return writeEffortValue(b, "high", c);
+  }
+
   // Providers and model families whose top reasoning tier is `max` natively
   // (or whose gateways expect `max` rather than OmniRoute's internal `xhigh`):
   //   - Ollama Cloud (`ollama-cloud` / `ollamacloud`)
@@ -579,7 +599,17 @@ export function sanitizeReasoningEffortForProvider(
       isOpencodeGoProvider(provider) ||
       MAX_TIER_REASONING_MODEL_PATTERN.test(modelStr));
 
-  if (isMaxTierTarget && effortStr === "xhigh") {
+  // When OmniRoute has already learned this provider+model's accepted set and
+  // it lacks `max` (e.g. a custom OpenAI-compatible host serving deepseek-v4-*
+  // with a {..., high, xhigh} menu), the static rewrite would 400 forever:
+  // skip it and let the learned set decide (port of decolua/9router#3939).
+  const maxTierLearnedSet =
+    isMaxTierTarget && effortStr === "xhigh" ? getLearnedReasoningEffort(provider, modelStr) : null;
+  const learnedRejectsMax =
+    maxTierLearnedSet !== null && maxTierLearnedSet.size > 0 && !maxTierLearnedSet.has("max");
+  if (learnedRejectsMax && maxTierLearnedSet.has("xhigh")) return body;
+
+  if (isMaxTierTarget && effortStr === "xhigh" && !learnedRejectsMax) {
     log?.info?.(
       "REASONING_SANITIZE",
       `${provider}/${modelStr}: normalized reasoning_effort xhigh → max`

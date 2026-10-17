@@ -3,6 +3,7 @@
  * implementation; the only change is that closed-over request state arrives
  * through deps.
  */
+import { markEmptyTurnExecution, inheritEmptyTurnPolicy } from "../../utils/emptyTurnPolicy.ts";
 
 import type { BaseExecutor } from "../../executors/base.ts";
 import type { AgentGoalPolicy } from "../../utils/agentGoalPolicy.ts";
@@ -11,6 +12,7 @@ import { getExecutionConnectionId } from "./executionCredentials.ts";
 import {
   resolveAccountSemaphoreKey,
   resolveAccountSemaphoreMaxConcurrency,
+  resolveModelSemaphore,
 } from "./executorHelpers.ts";
 import {
   materializeDeduplicatedExecutionResult,
@@ -30,11 +32,16 @@ import {
   readCodexTurnStateHeader,
 } from "../../config/codexTurnState.ts";
 import { HTTP_STATUS, STREAM_RECOVERY } from "../../config/constants.ts";
+import { parseRetryAfterMs } from "../../services/apiKeyRotator.ts";
 import { createRecoverableStream, makeContinuationBody } from "../../services/streamRecovery.ts";
 import { persistCodexChildQuotaResponse } from "../../services/codexAccount/index.ts";
 import { invalidateCodexQuotaCache } from "../../services/codexQuotaFetcher.ts";
 import { invalidateGenericQuotaCacheOnStatus } from "../../services/genericQuotaFetcher.ts";
-import { withRateLimit, resolveRequestQueueMaxWaitMs } from "../../services/rateLimitManager.ts";
+import {
+  isRateLimitEnabled,
+  withRateLimit,
+  resolveRequestQueueMaxWaitMs,
+} from "../../services/rateLimitManager.ts";
 import { acquireMany as acquireConcurrencyGates } from "../../services/accountSemaphore.ts";
 import { rethrowAdmissionError, remainingQueueBudgetMs } from "./queueBudget.ts";
 import { deduplicate } from "../../services/requestDedup.ts";
@@ -125,7 +132,8 @@ export type ExecuteProviderRequestDeps = {
     status: number,
     creds: Record<string, unknown> | null | undefined,
     transport?: string,
-    failureDetail?: string
+    failureDetail?: string,
+    retryAfterMs?: number | null
   ) => void;
   requestedModel: string;
   resilienceSettings: ResilienceSettings;
@@ -239,8 +247,18 @@ export async function executeProviderRequest(
           const execCreds = getExecutionCredentials();
           const executionConnectionId = getExecutionConnectionId(execCreds);
           const attemptConnectionId = executionConnectionId || connectionId;
-          const accountSemaphoreMaxConcurrency = resolveAccountSemaphoreMaxConcurrency(execCreds);
+          const accountSemaphoreMaxConcurrency = resolveAccountSemaphoreMaxConcurrency(
+            execCreds,
+            typeof attemptConnectionId === "string" && isRateLimitEnabled(attemptConnectionId)
+          );
           const accountSemaphoreKey = resolveAccountSemaphoreKey({
+            provider,
+            model: modelToCall,
+            connectionId: attemptConnectionId,
+            credentials: execCreds,
+          });
+          // Opt-in per-model ceiling; joins the composite gate below.
+          const modelGate = resolveModelSemaphore({
             provider,
             model: modelToCall,
             connectionId: attemptConnectionId,
@@ -254,6 +272,8 @@ export async function executeProviderRequest(
           trace("pre_semaphore", {
             semaphoreKey: accountSemaphoreKey,
             max: accountSemaphoreMaxConcurrency,
+            modelSemaphoreKey: modelGate.key,
+            modelMax: modelGate.maxConcurrency,
           });
           if (accountSemaphoreKey && accountSemaphoreMaxConcurrency != null) {
             updatePendingScope(pendingScope, {
@@ -279,6 +299,10 @@ export async function executeProviderRequest(
               {
                 key: accountSemaphoreKey || "",
                 maxConcurrency: accountSemaphoreKey ? accountSemaphoreMaxConcurrency : null,
+              },
+              {
+                key: modelGate.key || "",
+                maxConcurrency: modelGate.key ? modelGate.maxConcurrency : null,
               },
             ],
             {
@@ -342,6 +366,7 @@ export async function executeProviderRequest(
               }
             );
             const res = normalizeExecutorResult(rawExecutorResult);
+            res.response = markEmptyTurnExecution(res.response, res.url, execCreds);
             trace("post_executor", { status: res?.response?.status });
 
             // When a payload override rewrote body.model (custom-model alias →
@@ -405,7 +430,8 @@ export async function executeProviderRequest(
               stream &&
               (res.response.ok ||
                 res.response.status === HTTP_STATUS.UNAUTHORIZED ||
-                res.response.status === HTTP_STATUS.FORBIDDEN) &&
+                res.response.status === HTTP_STATUS.FORBIDDEN ||
+                res.response.status === HTTP_STATUS.RATE_LIMITED) &&
               executionConnectionId &&
               !(await shouldIsolateProbeFailures())
             ) {
@@ -415,7 +441,15 @@ export async function executeProviderRequest(
                     .clone()
                     .text()
                     .catch(() => "");
-              recordKeyHealthStatus(res.response.status, execCreds, res.transport, failureDetail);
+              recordKeyHealthStatus(
+                res.response.status,
+                execCreds,
+                res.transport,
+                failureDetail,
+                res.response.status === HTTP_STATUS.RATE_LIMITED
+                  ? parseRetryAfterMs(res.response.headers.get("retry-after"))
+                  : null
+              );
             }
 
             if (isModelScope() && res.response.status === 429 && attempts < maxAttempts - 1) {
@@ -588,11 +622,14 @@ export async function executeProviderRequest(
               return {
                 ...res,
                 _executionCredentials: execCreds,
-                response: new Response(clientBody, {
-                  status: res.response.status,
-                  statusText: res.response.statusText,
-                  headers: new Headers(normalizeHeaders(res.response.headers)),
-                }),
+                response: inheritEmptyTurnPolicy(
+                  res.response,
+                  new Response(clientBody, {
+                    status: res.response.status,
+                    statusText: res.response.statusText,
+                    headers: new Headers(normalizeHeaders(res.response.headers)),
+                  })
+                ),
               };
             }
 
@@ -650,7 +687,10 @@ export async function executeProviderRequest(
           status,
           rawResult._executionCredentials,
           rawResult.transport,
-          status >= 400 ? payload : ""
+          status >= 400 ? payload : "",
+          status === HTTP_STATUS.RATE_LIMITED
+            ? parseRetryAfterMs(responseHeaders.get("retry-after"))
+            : null
         );
       }
       releaseRawResultAccountSemaphore();
@@ -658,7 +698,10 @@ export async function executeProviderRequest(
 
       return {
         ...rawResult,
-        response: new Response(payload, { status, statusText, headers: responseHeaders }),
+        response: inheritEmptyTurnPolicy(
+          rawResult.response,
+          new Response(payload, { status, statusText, headers: responseHeaders })
+        ),
         _dedupSnapshot: {
           status,
           statusText,

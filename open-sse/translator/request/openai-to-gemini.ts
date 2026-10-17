@@ -17,6 +17,7 @@ import {
   getDefaultThinkingBudget,
 } from "../../../src/lib/modelCapabilities.ts";
 import { getModelSpec } from "../../../src/shared/constants/modelSpecs.ts";
+import { gemini38ThinkingConfig, isGemini38Model } from "../../services/thinkingBudget.ts";
 
 import {
   DEFAULT_SAFETY_SETTINGS,
@@ -27,6 +28,11 @@ import {
   cleanJSONSchemaForAntigravity,
 } from "../helpers/geminiHelper.ts";
 import { buildGeminiTools, sanitizeGeminiToolName } from "../helpers/geminiToolsSanitizer.ts";
+import { createSchemaBudget } from "../helpers/schemaBudget.ts";
+import {
+  isGeminiTrailingModelTurnRejectingModel,
+  stripTrailingGeminiModelTurns,
+} from "../helpers/geminiTrailingModelTurn.ts";
 import {
   normalizeGeminiToolCallIds,
   validateChronologicalToolCallIds,
@@ -236,8 +242,13 @@ function openaiToGeminiBase(
   if (body.top_k !== undefined) {
     result.generationConfig.topK = body.top_k;
   }
-  if (body.stop !== undefined) {
-    result.generationConfig.stopSequences = Array.isArray(body.stop) ? body.stop : [body.stop];
+  // `stop: null` is how many OpenAI-compatible clients serialize "no stop"; wrapping it
+  // would send `stopSequences: [null]`, which Gemini rejects with a 400.
+  const stopSequences = (Array.isArray(body.stop) ? body.stop : [body.stop]).filter(
+    (value) => typeof value === "string" && value !== ""
+  );
+  if (stopSequences.length > 0) {
+    result.generationConfig.stopSequences = stopSequences;
   }
   const maxOutputTokens = capMaxOutputTokens(
     model,
@@ -288,7 +299,9 @@ function openaiToGeminiBase(
       // only include thinkingBudget when no explicit level was supplied.
       result.generationConfig.thinkingConfig = explicitThinkingLevel
         ? { includeThoughts: budget !== 0 }
-        : buildGeminiThinkingConfig(model, budget, budget !== 0);
+        : isGemini38Model(model)
+          ? gemini38ThinkingConfig(model, budget, body)
+          : buildGeminiThinkingConfig(model, budget, budget !== 0);
     }
     // 2. Claude format: thinking (type: enabled, budget_tokens)
     // Use an explicit numeric check (not truthy) so an explicit `budget_tokens: 0` — the
@@ -310,7 +323,9 @@ function openaiToGeminiBase(
       if (cappedBudget > 0 || getModelSpec(model)?.thinkingBudgetCap !== 0) {
         result.generationConfig.thinkingConfig = explicitThinkingLevel
           ? { includeThoughts: cappedBudget !== 0 }
-          : buildGeminiThinkingConfig(model, cappedBudget, cappedBudget !== 0);
+          : isGemini38Model(model)
+            ? gemini38ThinkingConfig(model, cappedBudget, body)
+            : buildGeminiThinkingConfig(model, cappedBudget, cappedBudget !== 0);
       }
     }
   }
@@ -358,7 +373,9 @@ function openaiToGeminiBase(
       }
       result.generationConfig.thinkingConfig = explicitThinkingLevel
         ? { includeThoughts: true }
-        : { thinkingBudget: defaultBudget, includeThoughts: true };
+        : isGemini38Model(model)
+          ? gemini38ThinkingConfig(model, defaultBudget, body)
+          : { thinkingBudget: defaultBudget, includeThoughts: true };
     }
   }
 
@@ -662,14 +679,22 @@ function openaiToGeminiBase(
   // Guard the one alternation violation the merge above cannot reach: history
   // that opens with a functionCall-bearing turn instead of a user turn.
   result.contents = ensureHistoryDoesNotOpenWithFunctionCall(result.contents);
+  // Gemini 3.x rejects a request ending on a model turn (prefill or an unanswered
+  // tool call) — 9router#4345. Gated so models that accept prefill are untouched.
+  if (isGeminiTrailingModelTurnRejectingModel(model)) {
+    result.contents = stripTrailingGeminiModelTurns(result.contents);
+  }
   // Signatures must be resolved using client IDs before assigning unique wire IDs (#15312).
   result.contents = normalizeGeminiToolCallIds(result.contents);
 
   // Convert tools
   const bodyTools = body.tools as Array<Record<string, unknown>> | undefined;
+  // One `$ref` expansion budget for every schema of this request (tools + response).
+  const schemaBudget = createSchemaBudget();
   const geminiTools = buildGeminiTools(bodyTools, {
     ...toolNameOptions,
     toolNameMap,
+    schemaBudget,
   });
 
   // Support for Google Search grounding if requested via 'google_search' tool
@@ -709,6 +734,8 @@ function openaiToGeminiBase(
         // parameters (geminiToolsSanitizer) keep the default flattening.
         result.generationConfig.responseSchema = cleanJSONSchemaForAntigravity(schema, {
           preserveNullable: true,
+          budget: schemaBudget,
+          location: "response_format",
         });
       }
     } else if (responseFormat.type === "json_object") {

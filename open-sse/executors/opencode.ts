@@ -52,13 +52,13 @@ import {
   noteResponseServed,
 } from "./opencodeAccountHealth.ts";
 import {
-  isOpencodeFreeTierRefusal,
   isOpencodeGeoBlocked,
   proxyKeyOf,
   poolReselectKeyOf,
   isOpencodeUserBlocked,
 } from "./opencodeGeoBlock.ts";
 import {
+  FREE_TIER_INFERENCE_BASE_URL,
   attemptFor,
   isGatedFreeTierRequest,
   isPremiumOpencodeModel,
@@ -68,7 +68,7 @@ import {
   surfaceFromBaseUrl,
 } from "./opencodeFreeTierContract.ts";
 import {
-  applyMuseSparkMinOutputTokens,
+  applyOpencodeOutputBudgetFloors,
   createMuseSparkStreamFinishNormalizer,
   isResponsesTerminalLine,
   normalizeMuseSparkFinishReason,
@@ -76,9 +76,11 @@ import {
 import { currentRequestContext, runInRequestContext } from "./opencodeRequestContext.ts";
 import {
   handleLoopFreeTierRefusal,
+  isOwnToolsRetryableRefusal,
   retryFreeTierRefusalWithObservedTools,
 } from "./opencodeFreeTierRetry.ts";
 import { withRequestShapeRetry } from "./opencodeRequestShape.ts";
+import { trimOversizedToolEnums } from "./opencodeEnumTrim.ts";
 
 // Re-exported: the free-model catalog moved to the contract module (it decides whether the
 // contract applies), and existing importers keep resolving it from the executor.
@@ -114,6 +116,7 @@ import {
   parkWaitMs,
   readPoolStrainMarker,
   runParkAndReplay,
+  setAsideParkWaitMs,
 } from "./opencodeParkResume.ts";
 
 /**
@@ -484,11 +487,11 @@ export class OpencodeExecutor extends BaseExecutor {
               const normalized = normalizer(line);
               controller.enqueue(encoder.encode(normalized + "\n"));
               if (isResponsesTerminalLine(line)) {
-                // OpenCode Zen sends a ping after response.completed and may keep
-                // the HTTP connection alive. The Responses terminal event is
-                // authoritative; do not let those post-completion pings hold Chat Completions open.
+                // OpenCode Zen may ping after response.completed and hold the socket.
+                // Close on that terminal event so Chat Completions is not held open.
                 closed = true;
                 void reader.cancel().catch(() => undefined);
+                controller.enqueue(encoder.encode("\n"));
                 controller.close();
                 return;
               }
@@ -566,9 +569,9 @@ export class OpencodeExecutor extends BaseExecutor {
       // muse-spark reasoning models consume the entire output budget on hidden
       // server-side reasoning; small caller budgets come back as empty-message
       // 200s ("Provider returned empty content"). Raise tiny budgets to the
-      // floor before dispatch (see MUSE_SPARK_MIN_OUTPUT_TOKENS).
+      // floor before dispatch (see applyOpencodeOutputBudgetFloors).
       if (input.body && typeof input.body === "object" && !Array.isArray(input.body)) {
-        applyMuseSparkMinOutputTokens(
+        applyOpencodeOutputBudgetFloors(
           String(input.model ?? ""),
           input.body as Record<string, unknown>
         );
@@ -918,7 +921,7 @@ export class OpencodeExecutor extends BaseExecutor {
               stalled: headersWait.spent,
               cooldown: markCooldown,
               markDirect: () => (directTried = true),
-              slow: { account, enabled: skipRecentlyFailed, read: readAppliedKey },
+              slow: { account, enabled: skipRecentlyFailed, egress: appliedEgress },
             }); // same settle as the stall arm
             log?.warn?.(
               "OPENCODE",
@@ -926,7 +929,7 @@ export class OpencodeExecutor extends BaseExecutor {
             );
             continue;
           }
-          result = outcome.result;
+          result = appliedEgress.noteServed(account, outcome.result, waitMs, skipRecentlyFailed);
         } catch (err) {
           if (headersWait.policy.windowMs > 0 && input.signal?.aborted)
             egressPacing.throwPacedError(egressRelease, err); // client abort never rotates, slot released
@@ -1025,7 +1028,8 @@ export class OpencodeExecutor extends BaseExecutor {
             }
             if (!parked && isOpencodeParkAndResumeEnabled()) {
               const marker = await readPoolStrainMarker();
-              if (burstStreak >= BURST_PARK_THRESHOLD || marker.fresh) {
+              const setAsideWaitMs = setAsideParkWaitMs(accounts.map((a) => keyOfMember(a)));
+              if (burstStreak >= BURST_PARK_THRESHOLD || marker.fresh || setAsideWaitMs !== null) {
                 parked = true;
                 log?.warn?.(
                   "OPENCODE",
@@ -1043,7 +1047,10 @@ export class OpencodeExecutor extends BaseExecutor {
                     replayKeyOfMember: keyOfMember,
                   },
                   input,
-                  parkWaitMs(marker.fresh ? marker.ttlLeftMs : null),
+                  Math.min(
+                    setAsideWaitMs ?? Number.POSITIVE_INFINITY,
+                    parkWaitMs(marker.fresh ? marker.ttlLeftMs : null)
+                  ),
                   result,
                   log,
                   cid
@@ -1168,7 +1175,7 @@ export class OpencodeExecutor extends BaseExecutor {
             // Free-tier refusal: upstream rejected the REQUEST (client identity or
             // request shape), not this account. Handled in opencodeFreeTierRetry.ts
             // (one bounded retry with observed tools appended, then unchanged return).
-            if (bodyText !== null && isOpencodeFreeTierRefusal(status, bodyText)) {
+            if (bodyText !== null && isOwnToolsRetryableRefusal(status, bodyText)) {
               noteFreeTierOutcome(attemptFor(input.body), {
                 ok: false,
                 status,
@@ -1278,7 +1285,10 @@ export class OpencodeExecutor extends BaseExecutor {
     void urlIndex;
     void credentials;
 
-    const base = this.config.baseUrl;
+    const base =
+      Boolean(model) && isGatedFreeTierRequest(this._surface(), this.provider, model)
+        ? FREE_TIER_INFERENCE_BASE_URL
+        : this.config.baseUrl;
     switch (this._requestFormat) {
       case "claude":
         return `${base}/messages`;
@@ -1360,6 +1370,7 @@ export class OpencodeExecutor extends BaseExecutor {
         cliDefaults,
         keepAgentUserAgent: this._surface() === "go" && !gatedScope, // #15311
         sessionBody: projectOpencodeSessionBody(body),
+        reencodeSession: gatedScope,
       });
     }
 
@@ -1367,8 +1378,6 @@ export class OpencodeExecutor extends BaseExecutor {
     // produced is exactly what the upstream now refuses, and the canonical session it used
     // to overwrite is accepted on that surface (measured 2026-09-17, 200 on
     // muse-spark-1.3-contributor-free via /v1/responses).
-
-    void model;
 
     return headers;
   }
@@ -1411,7 +1420,7 @@ export class OpencodeExecutor extends BaseExecutor {
       "You must respond with valid JSON that strictly follows " +
       "this JSON schema:\\n```json\\n" +
       schemaJson +
-      "\\n```\\nRespond ONLY with the JSON object, no other text.";
+      "\\n```\\nRespond ONLY with the JSON object, no other text and no markdown code fences.";
 
     const messages: Array<Record<string, unknown>> = Array.isArray(record.messages)
       ? (record.messages as Array<Record<string, unknown>>).map((message) => ({ ...message }))
@@ -1465,6 +1474,18 @@ export class OpencodeExecutor extends BaseExecutor {
       body
     );
     modifiedBody = prepared.body;
+    // OpenCode's upstream 400s a request when a single enum property carries
+    // more than 250 values or 15000 combined characters (VSCode-shaped caller
+    // tools hit this). Cap oversized enums on every surface before dispatch —
+    // covers caller tools and contract-borrowed declarations alike.
+    if (
+      modifiedBody &&
+      typeof modifiedBody === "object" &&
+      !Array.isArray(modifiedBody) &&
+      Array.isArray((modifiedBody as Record<string, unknown>).tools)
+    ) {
+      trimOversizedToolEnums((modifiedBody as Record<string, unknown>).tools);
+    }
     // 9router#1442: OpenCode upstreams (e.g. kimi-k2.6 via opencode-go) return
     // 400 "Extra inputs are not permitted, field: 'client_metadata'" — an
     // OpenAI-Codex/Claude-CLI passthrough field with no equivalent here. The

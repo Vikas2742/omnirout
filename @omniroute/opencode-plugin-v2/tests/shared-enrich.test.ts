@@ -4,6 +4,7 @@ import {
   applyEnrichment,
   buildCanonicalToAliasMap,
   canonicalDedupSet,
+  countFreeTierMatch,
   lookupEnrichment,
   type OmniRouteEnrichmentMap,
 } from "../src/shared/enrich.js";
@@ -98,5 +99,28 @@ describe("lookupEnrichment bare-id fallback (#14966)", () => {
     ]);
     const hit = lookupEnrichment("ih/kimi-k3", direct, new Map(), "ih");
     assert.equal(hit?.providerDisplayName, "InferHub");
+  });
+});
+
+describe("countFreeTierMatch", () => {
+  it("counts free-tier lines the served ids reach", () => {
+    const overlay: OmniRouteEnrichmentMap = new Map([
+      ["m1", { freeType: "keyless" as const }],
+      ["other", { freeType: "keyless" as const }],
+    ]);
+    const match = countFreeTierMatch(["m1"], overlay, new Map());
+    assert.deepEqual(match, { total: 2, matched: 1, unmatched: 1 });
+  });
+
+  it("resolves matches through the alias fallback chain", () => {
+    const overlay: OmniRouteEnrichmentMap = new Map([
+      ["cc/model-x", { freeType: "keyless" as const }],
+      ["other", { freeType: "keyless" as const }],
+    ]);
+    const canonicalToAlias = buildCanonicalToAliasMap(
+      new Map([["cc/model-x", { providerAlias: "cc", providerCanonical: "claude" }]])
+    );
+    const match = countFreeTierMatch(["claude/model-x"], overlay, canonicalToAlias);
+    assert.deepEqual(match, { total: 2, matched: 1, unmatched: 1 });
   });
 });

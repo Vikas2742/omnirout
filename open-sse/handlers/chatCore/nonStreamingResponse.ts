@@ -42,6 +42,7 @@ export {
 };
 
 import { HTTP_STATUS } from "../../config/constants.ts";
+import { buildMalformedResponseDiagnostic } from "../../utils/responseShapeDiagnostic.ts";
 
 import { lockModel } from "../../services/accountFallback.ts";
 
@@ -58,7 +59,12 @@ import { writeTerminalStatus } from "@/shared/utils/terminalStatus";
 import { MEMORY_BUILTIN_TOOL_NAMES } from "@/lib/skills/memoryBuiltins";
 
 import { storeSemanticCacheResponse } from "../chatCore/semanticCacheStore.ts";
+import {
+  isAntigravityProvider,
+  toAntigravityDiagnosticPayload,
+} from "../../executors/antigravityUpstreamError.ts";
 import { routingFinishReason } from "../chatCore/routingFinishReason.ts";
+import { hasTrustedEmptyTurn, inheritEmptyTurnPolicy } from "../../utils/emptyTurnPolicy.ts";
 import { getProviderCredentials } from "@/sse/services/auth";
 import { extractFacts } from "@/lib/memory/extraction";
 // The leaf body is unchanged from the barrel, so its closed-over values keep
@@ -140,6 +146,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
     provider,
     providerHeaders: _providerHeaders,
     providerRequestCapture,
+    reportSignatureFailure,
     providerResponse: _providerResponse,
     reasoningReplayHistory: _reasoningReplayHistory,
     recordChatCallCost,
@@ -311,6 +318,8 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
         },
         sendProviderAttempt: (modelToCall, allowDedup) =>
           executeProviderRequest(modelToCall, allowDedup),
+        getLastOutboundBody: () => providerRequestCapture.latest()?.body,
+        onSignatureFailure: reportSignatureFailure,
       });
     };
 
@@ -378,13 +387,24 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
         reqLogger.logTargetRequest(captured.url, captured.headers, captured.body);
       }
       reqLogger.logError(new Error(err.error || "Provider request failed"), finalBody);
-      const isNetworkThrow = Boolean(err.originalError);
-      if (err.response && !isNetworkThrow) {
+      const isNetworkThrow = Boolean(err.originalError) && errUpstreamBody == null;
+      // #3229: Antigravity terminal failures are diagnosed from the bounded projection, never
+      // from the upstream payload — see isAntigravityProvider in antigravityUpstreamError.ts.
+      const isAgyProvider = isAntigravityProvider(provider);
+      const agyDiagnostic = toAntigravityDiagnosticPayload(legResult.upstreamDiagnostic);
+      const persistedProviderErrorBody = isAgyProvider
+        ? agyDiagnostic
+        : isNetworkThrow
+          ? undefined
+          : errUpstreamBody;
+      if (isAgyProvider) {
+        reqLogger.logProviderDiagnostic(agyDiagnostic);
+      } else if (err.response && !isNetworkThrow) {
         reqLogger.logProviderResponse(
           err.status,
           err.response.statusText || "Error",
           err.response.headers,
-          err.response
+          persistedProviderErrorBody
         );
       }
       appendRequestLog({
@@ -397,7 +417,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
         status: err.status,
         error: err.error || "Provider request failed",
         providerRequest: finalBody || translatedBody,
-        providerResponse: isNetworkThrow ? undefined : err.response,
+        providerResponse: persistedProviderErrorBody,
         // On a client abort the client already disconnected before we got here, so this
         // body is what we WOULD have sent, not what was delivered. The dashboard reads
         // `clientResponse` as "what the client received", so logging it misleads —
@@ -809,8 +829,17 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
     // this check runs after translation + sanitization + tool-call execution to catch
     // cases where a provider returns a structurally valid raw body that translates into
     // choices:[] or output:[] with no usable content (Responses API shape included).
-    const malformedTranslatedReason = detectMalformedNonStream(translatedResponse, provider);
+    const malformedTranslatedReason = detectMalformedNonStream(
+      translatedResponse,
+      provider,
+      hasTrustedEmptyTurn(providerResponse)
+    );
     if (malformedTranslatedReason) {
+      const malformedDiagnostic = buildMalformedResponseDiagnostic(
+        malformedTranslatedReason,
+        responseBody,
+        translatedResponse
+      );
       const totalLatency = Date.now() - startTime;
       const rawBytes = (() => {
         try {
@@ -852,6 +881,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
         : sanitizedMalformedResponse;
       persistAttemptLogs({
         status: HTTP_STATUS.BAD_GATEWAY,
+        error: malformedDiagnostic,
         tokens: usage,
         responseBody: sanitizedMalformedResponse,
         providerRequest: finalBody || translatedBody,
@@ -925,7 +955,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
     // ── Phase 9.2: Save for idempotency ──
     // Reuse the key resolved by checkIdempotencyCache() above (single derivation per
     // request). (#3821-review LEDGER-6)
-    saveIdempotency(idempotencyKey, translatedResponse, 200);
+    await saveIdempotency(idempotencyKey, translatedResponse, 200);
     reqLogger.logConvertedResponse(translatedResponse);
     persistAttemptLogs({
       status: 200,
@@ -1040,11 +1070,14 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
     return {
       response: {
         success: true,
-        response: maybeWrapForcedNonStreamingResponsesJson({
-          clientRequestedResponsesStream,
-          body: translatedResponse,
-          headers: responseHeaders,
-        }),
+        response: inheritEmptyTurnPolicy(
+          providerResponse,
+          maybeWrapForcedNonStreamingResponsesJson({
+            clientRequestedResponsesStream,
+            body: translatedResponse,
+            headers: responseHeaders,
+          })
+        ),
       },
       carry: {
         translatedBody,
