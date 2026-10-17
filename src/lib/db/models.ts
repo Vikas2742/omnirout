@@ -8,7 +8,7 @@ import { isRetiredGitHubCopilotModelId } from "@omniroute/open-sse/config/provid
 
 import { getDbInstance } from "./core";
 import { isAdmittedByModelVisibilityAllowlist } from "@/shared/utils/modelVisibility";
-import { getModelVisibilityAllowlist } from "./models/visibilityAllowlist";
+import { getModelVisibilityAllowlist, setModelVisibilityAllowlist } from "./models/visibilityAllowlist";
 import { isSyncedAtFresh } from "./models/syncedCatalogFreshness";
 import { getProviderConnectionsCount, touchConnectionSyncedModelsAt } from "./providers";
 import { type JsonRecord, getKeyValue } from "./models/shared";
@@ -1090,13 +1090,22 @@ export function setModelIsHidden(
   hidden: boolean,
   modality?: string
 ): void {
+  const currentAllowlist = modality === undefined || modality === "chat"
+    ? getModelVisibilityAllowlist(providerId)
+    : null;
+  if (currentAllowlist !== null) {
+    const updated = new Set(currentAllowlist);
+    if (hidden) updated.delete(modelId);
+    else updated.add(modelId);
+    setModelVisibilityAllowlist(providerId, [...updated]);
+  }
   const customRow = getCustomModelRow(providerId, modelId);
   if (customRow) {
-    if (hidden) {
-      updateCustomModel(providerId, modelId, { isHidden: true });
-    } else if (Object.prototype.hasOwnProperty.call(customRow, "isHidden")) {
-      updateCustomModel(providerId, modelId, { isHidden: false });
+    if (hidden || Object.prototype.hasOwnProperty.call(customRow, "isHidden")) {
+      updateCustomModel(providerId, modelId, { isHidden: hidden });
     }
+    // Hides/unhides must survive a transition between custom and synced rows.
+    mergeModelCompatOverride(providerId, modelId, { isHidden: hidden, modality });
     return;
   }
 
