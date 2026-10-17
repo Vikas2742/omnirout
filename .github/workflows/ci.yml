@@ -141,7 +141,18 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - run: npm run check:cycles:ratchet
-      - run: npm run check:boundary:ratchet
+      # open-sse → src edge ceiling (metrics.boundaryOpenSseToSrc). On PRs it is base-relative
+      # like check:file-size (#8522): max(ceiling, edges on the PR base), so drift other merges
+      # added after the seed does not red an innocent PR. push → main stays absolute.
+      - name: Boundary ratchet (open-sse → src)
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "${PR_BASE_SHA:-}" ]; then
+            npm run check:boundary:ratchet -- --base-ref "$PR_BASE_SHA"
+          else
+            npm run check:boundary:ratchet
+          fi
       - run: npm run check:route-validation:t06
       - run: npm run check:any-budget:t11
       - run: npm run check:provider-consistency
