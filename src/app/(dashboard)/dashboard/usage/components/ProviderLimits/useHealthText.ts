@@ -3,6 +3,7 @@
 import { useFormatter, useNow, useTranslations } from "next-intl";
 import type { HealthAccount, HealthCell, HealthReason } from "./healthOverview";
 import { formatQuotaLabel } from "./utils";
+import { parseRuntimeTimestamp } from "./runtimeCooldown";
 
 /** Presentation only: the projection carries facts, never human-readable reason strings. */
 export function useHealthText() {
@@ -11,8 +12,8 @@ export function useHealthText() {
   const format = useFormatter();
   const now = useNow({ updateInterval: 1000 });
   const relative = (value?: string) =>
-    value && Number.isFinite(Date.parse(value))
-      ? format.relativeTime(new Date(value), now)
+    value && Number.isFinite(parseRuntimeTimestamp(value))
+      ? format.relativeTime(new Date(parseRuntimeTimestamp(value)), now)
       : t("tierUnknown");
   const reason = (r: HealthReason, account?: HealthAccount): string => {
     const cell = account?.cells.find((c) => c.name === r.window);
@@ -75,7 +76,7 @@ export function useHealthText() {
     return cell.scope === "scoped" ? `${cell.scopeId} · ${label}` : label;
   };
   const recovery = (value: string) => {
-    const minutes = Math.max(0, Math.ceil((Date.parse(value) - now.getTime()) / 60_000));
+    const minutes = Math.max(0, Math.ceil((parseRuntimeTimestamp(value) - now.getTime()) / 60_000));
     if (minutes === 0) return relative(value);
     const days = Math.floor(minutes / (24 * 60));
     const hours = Math.floor(minutes / 60) % 24;

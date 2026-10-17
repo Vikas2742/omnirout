@@ -86,7 +86,7 @@ it("ticks locally and polls only cooldown GET every 30 seconds; policy only on e
   expect(result.current.accounts[connection.id].status).toBe("ok");
   expect(f.requests.filter((x) => x === "/api/resilience")).toHaveLength(1);
 });
-it("keeps last successful summary for 90s, then falls back without losing green connection evidence", async () => {
+it("failed summary immediately falls back without losing green connection evidence", async () => {
   const f = fixture();
   const { result } = renderHook(() => useAvailability(connections, quotaData, errors));
   await advance(0);
@@ -94,7 +94,7 @@ it("keeps last successful summary for 90s, then falls back without losing green 
   await act(async () => {
     await result.current.refreshAvailability();
   });
-  expect(result.current.summaryFailed).toBe(false);
+  expect(result.current.summaryFailed).toBe(true);
   await advance(91_000);
   expect(result.current.summaryFailed).toBe(true);
   expect(result.current.accounts[connection.id].status).toBe("ok");

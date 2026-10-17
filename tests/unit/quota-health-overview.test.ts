@@ -111,16 +111,16 @@ test("newer runtime testStatus wins rather than a permanent union of terminal hi
   );
   assert.equal(
     project(data(), { ...connection, testStatus: "banned", updatedAt: future(1000) }).status,
-    "critical"
+    "ok"
   );
 });
-test("cooldown maximum includes connection, summary and generatedAt-anchored remaining time", () => {
+test("fresh summary explicit deadline wins; remaining time is only a fallback", () => {
   const e = {
     ...evidence,
     cooldown: { ...evidence.cooldown!, rateLimitedUntil: future(3000), cooldownRemainingMs: 2000 },
   };
   const c = { ...connection, rateLimitedUntil: future(4000) };
-  assert.equal(project(data(), c, e).recoverAt, future(4000));
+  assert.equal(project(data(), c, e).recoverAt, future(3000));
   assert.equal(project(data(), c, e, now + 5000).status, "ok");
   const remaining = { ...evidence, cooldown: { ...evidence.cooldown!, cooldownRemainingMs: 2000 } };
   assert.equal(project(data(), connection, remaining).recoverAt, future(2000));
@@ -158,7 +158,7 @@ test("active lockouts restrict and expire locally", () => {
 });
 test("Claude scoped sonnet is partial, account-wide weekly is critical, one account row", () => {
   const d = data();
-  d.quotas!.push(quota("weekly sonnet (7d)", 0));
+  d.quotas!.push(quota("weekly sonnet (7d)", 0, { modelScoped: true }));
   const a = project(d);
   assert.equal(a.status, "alert");
   assert.equal(a.reasons.find((r) => r.type === "quota")?.scope, "scoped");
@@ -166,14 +166,14 @@ test("Claude scoped sonnet is partial, account-wide weekly is critical, one acco
   d.quotas!.push(quota("overall", 0));
   assert.equal(project(d).status, "critical");
 });
-test("GLM 5 Hours Quota is account-wide, mcp_monthly and model zero are scoped", () => {
+test("GLM and unmarked model-looking names remain account-wide without routing proof", () => {
   assert.equal(
     project({ quotas: [quota("5 Hours Quota", 0)] }, { ...connection, provider: "glm" }).status,
     "critical"
   );
   for (const name of ["mcp_monthly", "claude-sonnet-4"]) {
     const a = project({ quotas: [quota(name, 0)] });
-    assert.equal(a.status, "alert");
+    assert.equal(a.status, "critical");
   }
 });
 const agyData = (first = 0, second = 80): HealthData => ({

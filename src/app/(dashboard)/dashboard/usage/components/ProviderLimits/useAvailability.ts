@@ -4,13 +4,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchWithTimeout } from "@/shared/utils/fetchTimeout";
 import {
   buildHealthAccount,
-  runtimeCooldownUntil,
   type AvailabilityEvidence,
   type HealthConnection,
   type HealthCooldown,
   type HealthData,
 } from "./healthOverview";
 import type { AvailabilityPolicy } from "./availabilityPolicy";
+import {
+  parseRuntimeTimestamp,
+  runtimeCooldownEvidence,
+  sameCooldown,
+  SUMMARY_FRESHNESS_MS,
+  type CooldownObservation,
+} from "./runtimeCooldown";
 
 async function readSummary(path: string) {
   const response = await fetchWithTimeout(path, {
@@ -40,15 +46,16 @@ export function useAvailability(
 ) {
   const [snapshot, setSnapshot] = useState<{
     rows: Record<string, HealthCooldown>;
-    observedAt?: string;
+    observedAt?: string | number;
     receivedAt?: number;
+    failed?: boolean;
   }>({ rows: {} });
   const [policy, setPolicy] = useState<AvailabilityPolicy>();
   const [now, setNow] = useState(() => Date.now());
   const pending = useRef(false);
   // Local to this mounted consumer, never persisted or shared across accounts.
   const [cooldownObservations, setCooldownObservations] = useState(
-    () => new Map<string, { until: number; observedAt: number }>()
+    () => new Map<string, CooldownObservation>()
   );
   const refreshCooldowns = useCallback(async () => {
     if (pending.current) return;
@@ -58,7 +65,7 @@ export function useAvailability(
       if (
         !Array.isArray(data.connections) ||
         !data.connections.every(validCooldown) ||
-        !Number.isFinite(Date.parse(data.generatedAt))
+        !Number.isFinite(parseRuntimeTimestamp(data.generatedAt))
       )
         throw new Error("Invalid cooldown summary");
       setSnapshot({
@@ -67,7 +74,8 @@ export function useAvailability(
         receivedAt: Date.now(),
       });
     } catch {
-      // Preserve the last successful observation until the 90-second fallback horizon.
+      // Keep the snapshot for diagnostics, but failed reads must use connection evidence.
+      setSnapshot((previous) => ({ ...previous, failed: true }));
     } finally {
       pending.current = false;
       setNow(Date.now());
@@ -118,9 +126,10 @@ export function useAvailability(
     };
   }, [refreshCooldowns]);
   const summaryFailed =
+    snapshot.failed === true ||
     snapshot.receivedAt === undefined ||
-    now - snapshot.receivedAt > 90_000 ||
-    now - Date.parse(snapshot.observedAt || "") > 90_000;
+    now - snapshot.receivedAt > SUMMARY_FRESHNESS_MS ||
+    now - parseRuntimeTimestamp(snapshot.observedAt) > SUMMARY_FRESHNESS_MS;
   useEffect(() => {
     const observedAt = Date.now();
     // Capture evidence at effect time, then publish on the next task (like the
@@ -128,15 +137,24 @@ export function useAvailability(
     const timer = window.setTimeout(() => {
       setNow(observedAt);
       setCooldownObservations((previous) => {
-        const next = new Map<string, { until: number; observedAt: number }>();
+        const next = new Map<string, CooldownObservation>();
         for (const connection of connections) {
-          const until = runtimeCooldownUntil(connection, {
-            cooldown: summaryFailed ? undefined : snapshot.rows[connection.id],
-            observedAt: summaryFailed ? undefined : snapshot.observedAt,
-          });
+          const cooldown = runtimeCooldownEvidence(
+            connection,
+            {
+              cooldown: summaryFailed ? undefined : snapshot.rows[connection.id],
+              observedAt: summaryFailed ? undefined : snapshot.observedAt,
+            },
+            observedAt
+          );
           const old = previous.get(connection.id);
-          if (old?.until === until) next.set(connection.id, old);
-          else if (until > observedAt) next.set(connection.id, { until, observedAt });
+          if (sameCooldown(old, cooldown)) next.set(connection.id, old!);
+          else if (cooldown.until > observedAt)
+            next.set(connection.id, {
+              until: cooldown.until,
+              derived: cooldown.derived,
+              observedAt,
+            });
         }
         return next.size === previous.size &&
           [...next].every(([id, value]) => previous.get(id) === value)
@@ -157,8 +175,10 @@ export function useAvailability(
             error: errors[connection.id],
           };
           const observation = cooldownObservations.get(connection.id);
-          if (observation?.until === runtimeCooldownUntil(connection, evidence))
-            evidence.cooldownObservedAt = observation.observedAt;
+          if (sameCooldown(observation, runtimeCooldownEvidence(connection, evidence, now))) {
+            evidence.cooldownObservedAt = observation!.observedAt;
+            evidence.cooldownDeadline = observation!.until;
+          }
           return [
             connection.id,
             buildHealthAccount(connection, quotaData[connection.id], {}, now, evidence),

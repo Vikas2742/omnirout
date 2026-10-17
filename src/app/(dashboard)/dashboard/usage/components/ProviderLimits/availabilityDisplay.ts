@@ -1,4 +1,5 @@
 import type { HealthAccount, HealthReason, HealthStatus } from "./healthOverview";
+import { parseRuntimeTimestamp } from "./runtimeCooldown";
 
 export type DisplayKind = "ok" | "cd5" | "cdw" | "act" | "paused" | "empty";
 export type DisplayFilter = DisplayKind | "all" | "critical" | "alert";
@@ -57,7 +58,7 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
     : account.cells;
   const reasons = account.reasons.filter(
     (r) =>
-      (r.type !== "cooldown" || Date.parse(r.resetAt || "") > now) &&
+      (r.type !== "cooldown" || parseRuntimeTimestamp(r.resetAt || "") > now) &&
       (!poolId ||
         (r.type === "lockout" || r.scope === "scoped"
           ? applicableModel(r.window || "", poolId, account)
@@ -89,11 +90,15 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
       }
       return r.durationMs <= FIVE_HOURS ? "cd5" : "cdw";
     };
-    const unknown = constraints.filter((r) => !Number.isFinite(Date.parse(r.resetAt || "")));
+    const unknown = constraints.filter(
+      (r) => !Number.isFinite(parseRuntimeTimestamp(r.resetAt || ""))
+    );
     // An unknown constraint cannot promise a recovery; unknown long windows outrank short ones.
     const latest = [...constraints].sort(
       (a, b) =>
-        (unknown.length ? 0 : Date.parse(b.resetAt!) - Date.parse(a.resetAt!)) ||
+        (unknown.length
+          ? 0
+          : parseRuntimeTimestamp(b.resetAt!) - parseRuntimeTimestamp(a.resetAt!)) ||
         Number(classify(b) === "cdw") - Number(classify(a) === "cdw")
     )[0];
     kind = latest ? classify(latest) : "cdw";
@@ -105,7 +110,7 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
           : WEEK;
     if (!unknown.length && latest) {
       recoverAt = latest.resetAt || undefined;
-      waitMs = Math.max(0, Date.parse(recoverAt!) - now);
+      waitMs = Math.max(0, parseRuntimeTimestamp(recoverAt!) - now);
     }
   }
   const partial =

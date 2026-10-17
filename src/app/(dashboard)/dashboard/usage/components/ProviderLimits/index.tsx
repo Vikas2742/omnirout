@@ -39,6 +39,7 @@ import {
 } from "./availabilityDisplay";
 import { useAvailability } from "./useAvailability";
 import { useCachedQuotaPolling } from "./useCachedQuotaPolling";
+import { useAutomaticQuotaRequests } from "./useAutomaticQuotaRequests";
 import CodexResetCreditsModal from "./CodexResetCreditsModal";
 import { useVisibleQuotaData } from "./useVisibleQuotaData";
 import { useCodexResetCreditRedemption } from "./useCodexResetCreditRedemption";
@@ -201,6 +202,7 @@ export default function ProviderLimits({
     return readLimitsPreference(LS_PROVIDER_FILTER);
   });
   const { layoutMode, selectLayout } = useQuotaLayout();
+  const { canRequestLive, scheduleLiveRetry } = useAutomaticQuotaRequests(layoutMode);
 
   const lastFetchTimeRef = useRef<Record<string, number>>({});
   const staleProbeRef = useRef<Record<string, number>>({});
@@ -344,7 +346,12 @@ export default function ProviderLimits({
   useCachedQuotaPolling(fetchConnections, fetchCachedProviderLimits, applyCachedQuotaState);
 
   const fetchQuota = useCallback(
-    async (connectionId: string, provider: string, options: { force?: boolean } = {}) => {
+    async (
+      connectionId: string,
+      provider: string,
+      options: { force?: boolean; automatic?: boolean } = {}
+    ) => {
+      if (options.automatic && !canRequestLive()) return;
       const force = options?.force === true;
       const now = Date.now();
       const lastFetch = lastFetchTimeRef.current[connectionId] || 0;
@@ -381,13 +388,13 @@ export default function ProviderLimits({
         const parsedQuotas = parseQuotaData(provider, data);
 
         const hasStaleAfterReset = parsedQuotas.some((q: any) => q?.staleAfterReset === true);
-        if (hasStaleAfterReset) {
+        if (hasStaleAfterReset && canRequestLive()) {
           const lastProbeAt = staleProbeRef.current[connectionId] || 0;
           if (Date.now() - lastProbeAt >= MIN_FETCH_INTERVAL_MS) {
             staleProbeRef.current[connectionId] = Date.now();
-            setTimeout(() => {
-              fetchQuota(connectionId, provider, { force: true }).catch(() => {});
-            }, 5000);
+            scheduleLiveRetry(() => {
+              fetchQuota(connectionId, provider, { force: true, automatic: true }).catch(() => {});
+            });
           }
         }
 
@@ -414,7 +421,7 @@ export default function ProviderLimits({
         setLoading((prev) => ({ ...prev, [connectionId]: false }));
       }
     },
-    []
+    [canRequestLive, scheduleLiveRetry]
   );
 
   const refreshProvider = useCallback(
@@ -426,32 +433,36 @@ export default function ProviderLimits({
   );
 
   const refreshingAllRef = useRef(false);
-  const refreshAll = useCallback(async () => {
-    if (refreshingAllRef.current) return;
-    refreshingAllRef.current = true;
-    const now = Date.now();
-    lastRefreshAllAtRef.current = now;
-    setAutoRefreshClock(now);
-    setRefreshingAll(true);
-    try {
-      const response = await fetch("/api/usage/provider-limits", { method: "POST" });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMsg = errorData.error || response.statusText;
-        throw new Error(errorMsg);
-      }
+  const refreshAll = useCallback(
+    async (automatic = false) => {
+      if (automatic && !canRequestLive()) return;
+      if (refreshingAllRef.current) return;
+      refreshingAllRef.current = true;
+      const now = Date.now();
+      lastRefreshAllAtRef.current = now;
+      setAutoRefreshClock(now);
+      setRefreshingAll(true);
+      try {
+        const response = await fetch("/api/usage/provider-limits", { method: "POST" });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMsg = errorData.error || response.statusText;
+          throw new Error(errorMsg);
+        }
 
-      const data = await response.json();
-      const [connectionList] = await Promise.all([fetchConnections(), refreshAvailability()]);
-      applyCachedQuotaState(connectionList, data.caches || {});
-      setErrors(data.errors || {});
-    } catch (error) {
-      console.error("Error refreshing all:", error);
-    } finally {
-      refreshingAllRef.current = false;
-      setRefreshingAll(false);
-    }
-  }, [applyCachedQuotaState, fetchConnections, refreshAvailability]);
+        const data = await response.json();
+        const [connectionList] = await Promise.all([fetchConnections(), refreshAvailability()]);
+        applyCachedQuotaState(connectionList, data.caches || {});
+        setErrors(data.errors || {});
+      } catch (error) {
+        console.error("Error refreshing all:", error);
+      } finally {
+        refreshingAllRef.current = false;
+        setRefreshingAll(false);
+      }
+    },
+    [applyCachedQuotaState, fetchConnections, refreshAvailability, canRequestLive]
+  );
 
   useEffect(() => {
     if (autoRefreshIntervalMs <= 0) return;
@@ -476,7 +487,7 @@ export default function ProviderLimits({
     if (document.visibilityState !== "visible") return;
     if (refreshingAllRef.current) return;
     if (autoRefreshClock - lastRefreshAllAtRef.current >= autoRefreshIntervalMs) {
-      void refreshAll();
+      void refreshAll(true);
     }
   }, [layoutMode, autoRefreshClock, autoRefreshIntervalMs, refreshAll]);
 
@@ -685,7 +696,7 @@ export default function ProviderLimits({
     for (const conn of visibleConnections) {
       const cached = quotaData[conn.id];
       if (shouldAutoRefreshQuota(conn.provider, cached)) {
-        void fetchQuota(conn.id, conn.provider, { force: true }).catch(() => {});
+        void fetchQuota(conn.id, conn.provider, { force: true, automatic: true }).catch(() => {});
       }
     }
   }, [layoutMode, initialLoading, visibleConnections, quotaData, fetchQuota]);
@@ -799,7 +810,7 @@ export default function ProviderLimits({
         <div className="flex items-center gap-2">
           <QuotaLayoutPicker value={layoutMode} onChange={selectLayout} />
           <button
-            onClick={refreshAll}
+            onClick={() => void refreshAll()}
             disabled={refreshingAll}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-bg-subtle border border-border text-text-main text-[13px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             title={

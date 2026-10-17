@@ -1,4 +1,6 @@
 import { resolveProviderAvailability, type ProviderAvailability } from "@/lib/providerAvailability";
+import { parseRuntimeTimestamp, runtimeCooldownEvidence } from "./runtimeCooldown";
+export { runtimeCooldownUntil } from "./runtimeCooldown";
 import {
   availabilityCutoff,
   type AvailabilityPolicy,
@@ -26,6 +28,7 @@ export interface HealthQuota {
   isCredits?: boolean;
   isResetCredits?: boolean;
   modelKey?: string;
+  modelScoped?: boolean;
   window?: string;
   windowSeconds?: number;
   quotaGroupId?: string;
@@ -54,8 +57,8 @@ export interface HealthConnection extends PolicyConnection {
   email?: string;
   isActive?: boolean;
   testStatus?: string | null;
-  rateLimitedUntil?: string | null;
-  lastErrorAt?: string | null;
+  rateLimitedUntil?: string | number | null;
+  lastErrorAt?: string | number | null;
   lastErrorType?: string | null;
   updatedAt?: string;
   runtimeObservedAt?: string;
@@ -64,7 +67,8 @@ export interface HealthCooldown {
   id: string;
   status: string;
   testStatus?: string | null;
-  rateLimitedUntil?: string | null;
+  rateLimitedUntil?: string | number | null;
+  lastErrorAt?: string | number | null;
   cooldownRemainingMs?: number;
   lastErrorType?: string | null;
   lockouts: Array<{ model: string; remainingMs: number; reason: string }>;
@@ -74,7 +78,9 @@ export interface AvailabilityEvidence {
   cooldown?: HealthCooldown;
   /** First local observation of this connection + cooldown-until pair. */
   cooldownObservedAt?: number;
-  observedAt?: string;
+  cooldownDeadline?: number;
+  summaryFailed?: boolean;
+  observedAt?: string | number;
   error?: string | null;
 }
 export type HealthScope = "account" | "group" | "scoped";
@@ -151,24 +157,18 @@ export function normalizeHealthWindow(
   const duration = Date.parse(quota.resetAt || "") - Date.parse(fetchedAt || "");
   return named === "fiveHour" && duration > 5 * 3_600_000 + 60_000 ? "overall" : named;
 }
-// Provider contract, not a model-name blacklist: usage/kimi.ts emits code_* rolling
-// account windows; services/moonshotQuotaFetcher.ts routes on those same windows.
-const ACCOUNT_WINDOW_PREFIXES: Record<string, string> = {
-  "kimi-coding": "code_",
-  moonshot: "code_",
+// Explicit frontend scope contracts only; all unproven names are account-wide.
+// src/domain/quotaCache.ts:isCodexQuotaExhausted uses the model filter in
+// open-sse/config/codexQuotaScopes.ts; usage keys come from services/codexUsageQuotas.ts.
+// Display-only reserve windows are excluded below, as in quotaCache.ts:setQuotaCache.
+const CODEX_SCOPED_WINDOWS: Record<string, string> = {
+  gpt_5_3_codex_spark_session: "spark",
+  gpt_5_3_codex_spark_weekly: "spark",
+  "codex-spark": "spark",
+  "codex-spark-weekly": "spark",
+  code_review: "code_review",
+  code_review_weekly: "code_review",
 };
-function scopeKey(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(
-      /five[_\s-]?hours?|seven[_\s-]?days?|session|weekly|monthly|overall|total|\b5\s*hours?\b|(?:^|[_\s(-])(?:5h|7d)(?=$|[_\s)-])/g,
-      " "
-    )
-    .replace(/\b(?:quotas?|limits?|usage|window)\b/g, " ")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
 function percentage(q: HealthQuota): number | null {
   if (q.unlimited) return 100;
   if (typeof q.remainingPercentage === "number" && Number.isFinite(q.remainingPercentage))
@@ -188,16 +188,6 @@ export function aggregateAvailability(statuses: HealthStatus[]): HealthStatus {
   if (active.every((s) => s === "ok")) return "ok";
   if (active.some((s) => s === "critical" || s === "alert")) return "alert";
   return "empty";
-}
-/** The same absolute runtime deadline is used by capture and projection. */
-export function runtimeCooldownUntil(connection: HealthConnection, evidence: AvailabilityEvidence) {
-  const row = evidence.cooldown;
-  const summaryTime = Date.parse(evidence.observedAt || "") || 0;
-  return Math.max(
-    Date.parse(connection.rateLimitedUntil || "") || 0,
-    Date.parse(row?.rateLimitedUntil || "") || 0,
-    summaryTime && row?.cooldownRemainingMs > 0 ? summaryTime + row.cooldownRemainingMs : 0
-  );
 }
 /** Availability ignores ALL display hiding. Raw values also prevent reset-adjusted display 100% from fabricating a recovery. */
 export function buildHealthAccount(
@@ -226,6 +216,8 @@ export function buildHealthAccount(
     if (
       q.isCredits ||
       q.isResetCredits ||
+      // quotaCache.ts:setQuotaCache omits these display-only Codex reserve windows.
+      (connection.provider === "codex" && ["reserve_session", "reserve_weekly"].includes(q.name)) ||
       q.fractionReported === false ||
       /^(credits|extra_usage|banked_reset_credits)$/.test(q.name)
     )
@@ -233,9 +225,23 @@ export function buildHealthAccount(
     const percent = percentage(q);
     if (percent === null) continue;
     const window = normalizeHealthWindow(q, data?.raw?.fetchedAt);
-    const prefix = ACCOUNT_WINDOW_PREFIXES[connection.provider];
-    const accountWindow = prefix && q.name.startsWith(prefix);
-    const scopeId = q.quotaGroupId || (accountWindow ? "" : scopeKey(q.name));
+    // usage/antigravity.ts and antigravityWeeklyQuota.ts identify independent pools.
+    // Claude provenance is marked by parseClaude from usage/claudeQuota.ts:modelQuotas.
+    // AGY exact-model windows: services/antigravityQuotaFamily.ts:selectAntigravityQuotaWindowNames
+    // is used by src/domain/quotaCache.ts:isAntigravityQuotaExhausted. modelKey comes from parseAntigravity.
+    // OpenRouter: services/openrouterQuotaFetcher.ts:checkFreeWindowExhausted and
+    // executors/base.ts recordFreeWindowAttempt only apply these counters to :free models.
+    const scopeId =
+      q.quotaGroupId ||
+      (connection.provider === "claude" && q.modelScoped === true
+        ? q.name
+        : ["antigravity", "agy"].includes(connection.provider) && q.modelKey
+          ? q.modelKey
+          : connection.provider === "openrouter" && ["free_daily", "free_rpm"].includes(q.name)
+            ? ":free"
+            : connection.provider === "codex" && Object.hasOwn(CODEX_SCOPED_WINDOWS, q.name)
+              ? CODEX_SCOPED_WINDOWS[q.name]
+              : undefined);
     const scope: HealthScope = q.quotaGroupId ? "group" : scopeId ? "scoped" : "account";
     if (scope === "group") groups.add(scopeId);
     const awaitingSync = !!q.staleAfterReset || Date.parse(q.resetAt || "") <= now;
@@ -270,14 +276,13 @@ export function buildHealthAccount(
     reasons.push(
       evidence.error ? { type: "quotaError", error: evidence.error } : { type: "noQuota" }
     );
-  const row = evidence.cooldown;
-  const connectionTime =
-    Date.parse(connection.runtimeObservedAt || connection.updatedAt || "") || 0;
-  const summaryTime = Date.parse(evidence.observedAt || "") || 0;
-  // Summary captures testStatus at generatedAt; absent fields do not erase connection evidence.
-  const useSummary =
-    row?.testStatus != null && (connection.testStatus == null || summaryTime >= connectionTime);
-  const testStatus = (useSummary ? row.testStatus : connection.testStatus)?.trim().toLowerCase();
+  const {
+    row,
+    runtime,
+    summaryTime,
+    until: reportedUntil,
+  } = runtimeCooldownEvidence(connection, evidence, now);
+  const testStatus = runtime.testStatus?.trim().toLowerCase();
   const runtimeAvailable =
     !!row ||
     [connection.isActive, connection.testStatus, connection.rateLimitedUntil].some(
@@ -286,8 +291,16 @@ export function buildHealthAccount(
   if (!runtimeAvailable) reasons.push({ type: "noRuntime" });
   // Pause is a separate display state. Let the upstream classifier own terminal
   // membership and freshness; STALE_TERMINAL still needs attention, never a timer.
+  const until = evidence.cooldownDeadline ?? reportedUntil;
+  const errorAt = parseRuntimeTimestamp(runtime.lastErrorAt);
   const runtimeAvailability = resolveProviderAvailability(
-    { ...connection, isActive: true, testStatus },
+    {
+      isActive: true,
+      testStatus,
+      lastErrorType: runtime.lastErrorType,
+      rateLimitedUntil: Number.isFinite(until) ? String(until) : null,
+      lastErrorAt: Number.isFinite(errorAt) ? String(errorAt) : null,
+    },
     now
   );
   const terminal = ["AUTH_EXPIRED", "QUOTA_EXHAUSTED", "DISABLED", "STALE_TERMINAL"].includes(
@@ -295,8 +308,6 @@ export function buildHealthAccount(
   )
     ? { type: "terminal" as const, terminal: testStatus }
     : null;
-  const until = runtimeCooldownUntil(connection, evidence);
-  const errorAt = Date.parse(connection.lastErrorAt || "");
   const startedAt =
     Number.isFinite(errorAt) && errorAt < until ? errorAt : (evidence.cooldownObservedAt ?? now);
   const cooldown: HealthReason | null =
@@ -357,10 +368,9 @@ export function buildHealthAccount(
     recoverAt,
     partial: !row || !evidence.policy,
     quotaObservedAt: data?.raw?.fetchedAt,
-    runtimeObservedAt:
-      row && summaryTime >= connectionTime
-        ? evidence.observedAt
-        : connection.runtimeObservedAt || connection.updatedAt,
+    runtimeObservedAt: row
+      ? new Date(summaryTime).toISOString()
+      : connection.runtimeObservedAt || connection.updatedAt,
   };
 }
 /** Provider-only groups, exactly one row per account; no family or window buckets. */

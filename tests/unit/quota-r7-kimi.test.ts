@@ -57,6 +57,7 @@ test("real Claude scoped weekly quota and model lockout remain partial, not acco
           { name: "weekly", remainingPercentage: 80 },
           {
             name: "claude_sonnet_weekly",
+            modelScoped: true,
             displayName: "Sonnet · 7d",
             windowSeconds: 604800,
             remainingPercentage: 0,

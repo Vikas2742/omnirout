@@ -33,6 +33,7 @@ function account(
     cooldown: {
       id: "a",
       status: "healthy",
+      ...extra,
       lockouts: locks ? [{ model: "claude-sonnet", remainingMs: H, reason: "429" }] : [],
     },
   });
