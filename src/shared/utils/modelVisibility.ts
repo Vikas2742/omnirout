@@ -30,3 +30,24 @@ export function isHiddenForModality(
   if (scoped !== undefined) return Boolean(scoped);
   return Boolean(flags?.isHidden);
 }
+
+
+/**
+ * #16977: an opt-in, chat-only provider allowlist keeps newly synchronized
+ * model IDs hidden until explicitly admitted. Null means legacy visibility;
+ * an empty Set intentionally hides every model. Never canonicalize vendor IDs
+ * or strip slash-separated model namespaces.
+ *
+ * Only the documented reasoning-effort suffixes inherit base admission, so
+ * "vendor/model-high" can appear when "vendor/model" is explicitly allowed.
+ * Exact tier entries may also be admitted individually.
+ */
+export function isAdmittedByModelVisibilityAllowlist(
+  modelId: string,
+  allowed: ReadonlySet<string> | null | undefined
+): boolean {
+  if (allowed == null) return true;
+  if (allowed.has(modelId)) return true;
+  const match = modelId.match(/-(?:none|low|medium|high|xhigh|max)$/);
+  return Boolean(match && allowed.has(modelId.slice(0, -match[0].length)));
+}
