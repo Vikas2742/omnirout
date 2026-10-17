@@ -11,6 +11,7 @@ import {
 } from "../../src/lib/db/providers/lazyConnectionView.ts";
 import { summarizeProviderConnectionForAudit } from "../../src/lib/compliance/providerAudit.ts";
 import { sanitizeProviderSpecificDataForResponse } from "../../src/lib/providers/requestDefaults.ts";
+import { webSessionCredentialKey } from "../../src/lib/db/webSessionDedup.ts";
 
 const originalKey = process.env.STORAGE_ENCRYPTION_KEY;
 test.before(() => {
@@ -300,4 +301,20 @@ test("#16836 audit redaction cannot drift from dashboard redaction", () => {
     workspaceId: "visible-workspace",
     browserCdpEndpoint: "configured",
   });
+});
+
+test("#16836 session identity must prefer known cookies over unrelated metadata", () => {
+  for (const credentialField of [
+    "qwenCloudCookie",
+    "volcConsoleCookie",
+    "alibabaConsoleCookie",
+    "xiaomiMimoConsoleCookie",
+    "ollamaCloudCookie",
+  ] as const) {
+    const baseUrl = "https://same-provider.example.test";
+    const a = { baseUrl, workspaceId: "same-workspace", [credentialField]: "cookie-account-a" };
+    const b = { baseUrl, workspaceId: "same-workspace", [credentialField]: "cookie-account-b" };
+    assert.equal(webSessionCredentialKey(a), "cookie-account-a", credentialField);
+    assert.equal(webSessionCredentialKey(b), "cookie-account-b", credentialField);
+  }
 });
