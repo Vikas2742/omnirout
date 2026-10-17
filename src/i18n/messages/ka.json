@@ -6567,7 +6567,8 @@
       "codex": "დააკავშირეთ OpenAI Codex არსებული OAuth პროცესით.",
       "qwen": "დააკავშირეთ Qwen Code არსებული OAuth პროცესით.",
       "github-models": "შექმენით GitHub PAT 'models: read' წვდომის სფეროთი მისამართზე github.com/settings/tokens",
-      "apmix": "დააკავშირეთ Apmix API გასაღებით apmix.ai/dashboard-დან — ერთი გამოწერა, მრავალი მოდელი."
+      "apmix": "დააკავშირეთ Apmix API გასაღებით apmix.ai/dashboard-დან — ერთი გამოწერა, მრავალი მოდელი.",
+      "opencode-server": "Route requests through the opencode CLI local server, which uses your opencode account and free models."
     },
     "passthroughModelsDescription": "{provider} იღებს პროვაიდერის ნატიურ მოდელის ID-ებს. შემოიტანეთ ისინი /models განყოფილებიდან ან მარშრუტიზაციისთვის დაამატეთ მორგებული ID-ები.",
     "bedrockModelsDescription": "Amazon Bedrock-ის მოდელები შეზღუდულია AWS-ის რეგიონის მიხედვით. შემოიტანეთ ისინი /models განყოფილებიდან ან დაამატეთ არჩეულ რეგიონში ჩართული Bedrock მოდელების ID-ები.",
@@ -9317,7 +9318,13 @@
     "mappingInvalidJson": "არასწორი JSON.",
     "mappingMustBeObject": "შესაბამისობა უნდა იყოს JSON ობიექტი და არა მასივი ან პრიმიტიული მნიშვნელობა.",
     "mappingValueMustBeString": "„{key}“ გასაღების მნიშვნელობა სტრიქონი უნდა იყოს.",
-    "save": "შენახვა"
+    "save": "შენახვა",
+    "opencodeServerConnection": "OpenCode CLI Server",
+    "opencodeServerConnectionDescription": "Address of the opencode CLI headless server (opencode serve) and the CLI binary OmniRoute launches when it is not already running. Leave empty to auto-detect.",
+    "opencodeServerUrl": "Server URL",
+    "opencodeServerUrlHint": "Base address of the opencode server. Default http://127.0.0.1:4096.",
+    "opencodeServerBin": "CLI binary path",
+    "opencodeServerBinHint": "Absolute path to the opencode executable when it is not on PATH. Empty = auto-detect (bun global install, npm shim, PATH)."
   },
   "contextCaveman": {
     "title": "Caveman Engine",

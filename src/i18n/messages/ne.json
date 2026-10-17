@@ -6567,7 +6567,8 @@
       "codex": "विद्यमान OAuth प्रवाहमार्फत OpenAI Codex जडान गर्नुहोस्।",
       "qwen": "विद्यमान OAuth प्रवाहमार्फत Qwen Code जडान गर्नुहोस्।",
       "github-models": "github.com/settings/tokens मा 'models: read' स्कोपसहित GitHub PAT सिर्जना गर्नुहोस्",
-      "apmix": "apmix.ai/dashboard बाट API किसहित Apmix जोड्नुहोस् — एउटा सदस्यता, धेरै मोडेलहरू।"
+      "apmix": "apmix.ai/dashboard बाट API किसहित Apmix जोड्नुहोस् — एउटा सदस्यता, धेरै मोडेलहरू।",
+      "opencode-server": "Route requests through the opencode CLI local server, which uses your opencode account and free models."
     },
     "passthroughModelsDescription": "{provider} ले प्रदायक-मूल मोडेल ID हरू स्वीकार गर्छ। /models बाट आयात गर्नुहोस् वा राउटिङका लागि अनुकूलन ID हरू थप्नुहोस्।",
     "bedrockModelsDescription": "Amazon Bedrock मोडेलहरू AWS क्षेत्रअनुसार सीमित हुन्छन्। /models बाट आयात गर्नुहोस् वा चयन गरिएको क्षेत्रमा सक्षम गरिएका Bedrock मोडेल ID हरू थप्नुहोस्।",
@@ -9317,7 +9318,13 @@
     "mappingInvalidJson": "अमान्य JSON।",
     "mappingMustBeObject": "म्यापिङ JSON अब्जेक्ट हुनुपर्छ, एरे वा प्रिमिटिभ मान होइन।",
     "mappingValueMustBeString": "“{key}” कुञ्जीको मान स्ट्रिङ हुनुपर्छ।",
-    "save": "सुरक्षित गर्नुहोस्"
+    "save": "सुरक्षित गर्नुहोस्",
+    "opencodeServerConnection": "OpenCode CLI Server",
+    "opencodeServerConnectionDescription": "Address of the opencode CLI headless server (opencode serve) and the CLI binary OmniRoute launches when it is not already running. Leave empty to auto-detect.",
+    "opencodeServerUrl": "Server URL",
+    "opencodeServerUrlHint": "Base address of the opencode server. Default http://127.0.0.1:4096.",
+    "opencodeServerBin": "CLI binary path",
+    "opencodeServerBinHint": "Absolute path to the opencode executable when it is not on PATH. Empty = auto-detect (bun global install, npm shim, PATH)."
   },
   "contextCaveman": {
     "title": "Caveman Engine",

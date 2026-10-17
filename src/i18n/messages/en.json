@@ -6567,7 +6567,8 @@
       "kiro": "Free tier: 50 credits/month (~25K–100K tokens). ⚠️ Kiro ToS prohibits third-party proxy/harness use.",
       "codex": "Connect OpenAI Codex with the existing OAuth flow.",
       "qwen": "Connect Qwen Code with the existing OAuth flow.",
-      "github-models": "Create a GitHub PAT with 'models: read' scope at github.com/settings/tokens"
+      "github-models": "Create a GitHub PAT with 'models: read' scope at github.com/settings/tokens",
+      "opencode-server": "Route requests through the opencode CLI local server, which uses your opencode account and free models."
     },
     "passthroughModelsDescription": "{provider} accepts provider-native model IDs. Import from /models or add custom IDs for routing.",
     "bedrockModelsDescription": "Amazon Bedrock models are scoped by AWS region. Import from /models or add Bedrock model IDs enabled in the selected region.",
@@ -9317,7 +9318,13 @@
     "mappingInvalidJson": "Invalid JSON.",
     "mappingMustBeObject": "The mapping must be a JSON object, not an array or primitive value.",
     "mappingValueMustBeString": "The value for key “{key}” must be a string.",
-    "save": "Save"
+    "save": "Save",
+    "opencodeServerConnection": "OpenCode CLI Server",
+    "opencodeServerConnectionDescription": "Address of the opencode CLI headless server (opencode serve) and the CLI binary OmniRoute launches when it is not already running. Leave empty to auto-detect.",
+    "opencodeServerUrl": "Server URL",
+    "opencodeServerUrlHint": "Base address of the opencode server. Default http://127.0.0.1:4096.",
+    "opencodeServerBin": "CLI binary path",
+    "opencodeServerBinHint": "Absolute path to the opencode executable when it is not on PATH. Empty = auto-detect (bun global install, npm shim, PATH)."
   },
   "contextCaveman": {
     "title": "Caveman Engine",

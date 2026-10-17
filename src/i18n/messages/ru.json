@@ -6560,7 +6560,8 @@
       "codex": "Подключите OpenAI Codex с помощью существующего процесса OAuth.",
       "qwen": "Подключите Qwen Code с помощью существующего процесса OAuth.",
       "github-models": "Создайте GitHub PAT с областью доступа 'models: read' на github.com/settings/tokens",
-      "apmix": "Подключите Apmix с API-ключом от apmix.ai/dashboard — одна подписка, много моделей."
+      "apmix": "Подключите Apmix с API-ключом от apmix.ai/dashboard — одна подписка, много моделей.",
+      "opencode-server": "Route requests through the opencode CLI local server, which uses your opencode account and free models."
     },
     "passthroughModelsDescription": "{provider} принимает собственные идентификаторы моделей поставщика. Импортируйте из /models или добавляйте собственные идентификаторы для маршрутизации.",
     "bedrockModelsDescription": "Модели Amazon Bedrock охватываются регионом AWS. Импортируйте из /models или добавьте идентификаторы моделей Bedrock, включенные в выбранном регионе.",
@@ -9317,7 +9318,13 @@
     "mappingInvalidJson": "Некорректный JSON.",
     "mappingMustBeObject": "Сопоставление должно быть JSON-объектом, а не массивом или примитивным значением.",
     "mappingValueMustBeString": "Значение для ключа “{key}” должно быть строкой.",
-    "save": "Сохранить"
+    "save": "Сохранить",
+    "opencodeServerConnection": "OpenCode CLI Server",
+    "opencodeServerConnectionDescription": "Address of the opencode CLI headless server (opencode serve) and the CLI binary OmniRoute launches when it is not already running. Leave empty to auto-detect.",
+    "opencodeServerUrl": "Server URL",
+    "opencodeServerUrlHint": "Base address of the opencode server. Default http://127.0.0.1:4096.",
+    "opencodeServerBin": "CLI binary path",
+    "opencodeServerBinHint": "Absolute path to the opencode executable when it is not on PATH. Empty = auto-detect (bun global install, npm shim, PATH)."
   },
   "contextCaveman": {
     "title": "Caveman Engine",

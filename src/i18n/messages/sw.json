@@ -6560,7 +6560,8 @@
       "codex": "Unganisha OpenAI Codex na mtiririko uliopo wa OAuth.",
       "qwen": "Unganisha Qwen Code na mtiririko uliopo wa OAuth.",
       "github-models": "Unda PAT ya GitHub yenye upeo wa 'models: read' kwenye github.com/settings/tokens",
-      "apmix": "Unganisha Apmix kwa funguo ya API kutoka apmix.ai/dashboard — usajili mmoja, modeli nyingi."
+      "apmix": "Unganisha Apmix kwa funguo ya API kutoka apmix.ai/dashboard — usajili mmoja, modeli nyingi.",
+      "opencode-server": "Route requests through the opencode CLI local server, which uses your opencode account and free models."
     },
     "passthroughModelsDescription": "{provider} inakubali vitambulisho vya asili vya mtoa huduma. Ingiza kutoka /miundo au ongeza vitambulisho maalum vya kuelekeza.",
     "bedrockModelsDescription": "Mitindo ya Amazon Bedrock inatolewa na eneo la AWS. Ingiza kutoka /miundo au ongeza vitambulisho vya muundo wa Bedrock vilivyowezeshwa katika eneo lililochaguliwa.",
@@ -9317,7 +9318,13 @@
     "mappingInvalidJson": "JSON si sahihi.",
     "mappingMustBeObject": "Ulinganishaji lazima uwe kitu cha JSON, si safu au thamani ya kimsingi.",
     "mappingValueMustBeString": "Thamani ya ufunguo “{key}” lazima iwe string.",
-    "save": "Hifadhi"
+    "save": "Hifadhi",
+    "opencodeServerConnection": "OpenCode CLI Server",
+    "opencodeServerConnectionDescription": "Address of the opencode CLI headless server (opencode serve) and the CLI binary OmniRoute launches when it is not already running. Leave empty to auto-detect.",
+    "opencodeServerUrl": "Server URL",
+    "opencodeServerUrlHint": "Base address of the opencode server. Default http://127.0.0.1:4096.",
+    "opencodeServerBin": "CLI binary path",
+    "opencodeServerBinHint": "Absolute path to the opencode executable when it is not on PATH. Empty = auto-detect (bun global install, npm shim, PATH)."
   },
   "contextCaveman": {
     "title": "Caveman Engine",

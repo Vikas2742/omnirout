@@ -202,6 +202,7 @@ import { v0_vercelProvider } from "./registry/v0-vercel/index.ts";
 import { opencode_zenProvider } from "./registry/opencode/zen/index.ts";
 import { opencode_goProvider } from "./registry/opencode/go/index.ts";
 import { opencodeProvider } from "./registry/opencode/index.ts";
+import { opencode_serverProvider } from "./registry/opencode-server/index.ts";
 import { dahlProvider } from "./registry/dahl/index.ts";
 import { maritalkProvider } from "./registry/maritalk/index.ts";
 import { basetenProvider } from "./registry/baseten/index.ts";
@@ -490,6 +491,7 @@ export const REGISTRY: Record<string, RegistryEntry> = {
   "opencode-zen": opencode_zenProvider,
   "opencode-go": opencode_goProvider,
   opencode: opencodeProvider,
+  "opencode-server": opencode_serverProvider,
   dahl: dahlProvider,
   maritalk: maritalkProvider,
   baseten: basetenProvider,

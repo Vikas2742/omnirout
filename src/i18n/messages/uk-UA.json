@@ -6560,7 +6560,8 @@
       "codex": "Підключіть OpenAI Codex за допомогою наявного процесу OAuth.",
       "qwen": "Підключіть Qwen Code за допомогою наявного процесу OAuth.",
       "github-models": "Створіть GitHub PAT з областю видимості 'models: read' на github.com/settings/tokens",
-      "apmix": "Підключіть Apmix із API-ключем від apmix.ai/dashboard — одна підписка, багато моделей."
+      "apmix": "Підключіть Apmix із API-ключем від apmix.ai/dashboard — одна підписка, багато моделей.",
+      "opencode-server": "Route requests through the opencode CLI local server, which uses your opencode account and free models."
     },
     "passthroughModelsDescription": "{provider} приймає власні ідентифікатори моделі постачальника. Імпортуйте з /models або додайте власні ідентифікатори для маршрутизації.",
     "bedrockModelsDescription": "Моделі Amazon Bedrock залежать від регіону AWS. Імпортуйте з /models або додайте ідентифікатори моделі Bedrock, активовані у вибраному регіоні.",
@@ -9317,7 +9318,13 @@
     "mappingInvalidJson": "Некоректний JSON.",
     "mappingMustBeObject": "Співставлення має бути об'єктом JSON, а не масивом чи примітивним значенням.",
     "mappingValueMustBeString": "Значення для ключа “{key}” має бути рядком.",
-    "save": "Зберегти"
+    "save": "Зберегти",
+    "opencodeServerConnection": "OpenCode CLI Server",
+    "opencodeServerConnectionDescription": "Address of the opencode CLI headless server (opencode serve) and the CLI binary OmniRoute launches when it is not already running. Leave empty to auto-detect.",
+    "opencodeServerUrl": "Server URL",
+    "opencodeServerUrlHint": "Base address of the opencode server. Default http://127.0.0.1:4096.",
+    "opencodeServerBin": "CLI binary path",
+    "opencodeServerBinHint": "Absolute path to the opencode executable when it is not on PATH. Empty = auto-detect (bun global install, npm shim, PATH)."
   },
   "contextCaveman": {
     "title": "Caveman Engine",
