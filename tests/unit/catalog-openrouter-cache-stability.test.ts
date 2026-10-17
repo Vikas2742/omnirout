@@ -208,3 +208,31 @@ test("OpenRouter modality permutations and duplicates preserve catalog generatio
     previousVersion = changedVersion;
   }
 });
+
+test("legacy OpenRouter modality order and duplicates do not invalidate on discovery", () => {
+  const modelId = "fixture/legacy-modality-sets";
+  const incoming = openRouterCapabilityEntry(
+    { id: modelId },
+    ["image", "text"],
+    ["audio", "text"],
+    {}
+  );
+  assert.ok(incoming);
+  const legacy = {
+    ...incoming,
+    modalities_input: '["text","image","text"]',
+    modalities_output: '["text","audio","audio"]',
+  };
+  upsertSyncedCapabilities("openrouter", { [modelId]: legacy });
+  const before = getModelCatalogCacheVersion();
+
+  upsertSyncedCapabilities("openrouter", { [modelId]: incoming });
+  assert.equal(getModelCatalogCacheVersion(), before, "equivalent legacy sets must not invalidate");
+  assert.deepEqual(getSyncedCapabilities("openrouter").openrouter[modelId], legacy);
+
+  upsertSyncedCapabilities("openrouter", {
+    [modelId]: { ...incoming, limit_context: 16384 },
+  });
+  assert.notEqual(getModelCatalogCacheVersion(), before, "other semantic changes still invalidate");
+  assert.equal(getSyncedCapabilities("openrouter").openrouter[modelId].limit_context, 16384);
+});
