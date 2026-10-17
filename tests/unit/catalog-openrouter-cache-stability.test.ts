@@ -22,6 +22,8 @@ const { upsertSyncedCapabilities, getSyncedCapabilities } =
   await import("../../src/lib/modelsDevSync.ts");
 const { getModelCatalogCacheVersion } = await import("../../src/lib/db/readCache.ts");
 const { aiHordeImageCatalog } = await import("../../open-sse/services/aihordeImageCatalog.ts");
+const { openRouterCapabilityEntry } =
+  await import("../../src/app/api/v1/models/catalogOpenrouter.ts");
 
 test.after(() => {
   core.resetDbInstance();
@@ -165,4 +167,44 @@ test("capability upserts invalidate only for real changes, including nullable fi
     getSyncedCapabilities("other-fixture-provider")["other-fixture-provider"].retained,
     empty
   );
+});
+
+test("OpenRouter modality permutations and duplicates preserve catalog generation", () => {
+  const modelId = "fixture/modality-sets";
+  function discover(input: string[], output: string[]) {
+    const entry = openRouterCapabilityEntry({ id: modelId }, input, output, {});
+    assert.ok(entry);
+    upsertSyncedCapabilities("openrouter", { [modelId]: entry });
+  }
+
+  discover(["text", "image"], ["text", "audio"]);
+  const originalVersion = getModelCatalogCacheVersion();
+  const original = getSyncedCapabilities("openrouter").openrouter[modelId];
+
+  for (const { input, output } of [
+    { input: ["image", "text"], output: ["text", "audio"] },
+    { input: ["text", "image"], output: ["audio", "text"] },
+    { input: ["image", "text", "image"], output: ["audio", "audio", "text"] },
+  ]) {
+    discover(input, output);
+    assert.equal(
+      getModelCatalogCacheVersion(),
+      originalVersion,
+      "equal modality sets must not invalidate the catalog"
+    );
+    assert.deepEqual(getSyncedCapabilities("openrouter").openrouter[modelId], original);
+  }
+
+  let previousVersion = originalVersion;
+  for (const { input, output } of [
+    { input: ["image", "text", "video"], output: ["audio", "text"] },
+    { input: ["text", "video"], output: ["audio", "text"] },
+    { input: ["text", "video"], output: ["audio", "text", "image"] },
+    { input: ["text", "video"], output: ["text", "image"] },
+  ]) {
+    discover(input, output);
+    const changedVersion = getModelCatalogCacheVersion();
+    assert.notEqual(changedVersion, previousVersion, "effective modality changes must invalidate");
+    previousVersion = changedVersion;
+  }
 });
