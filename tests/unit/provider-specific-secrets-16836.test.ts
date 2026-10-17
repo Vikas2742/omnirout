@@ -55,6 +55,23 @@ test("#16836 protects consoleApiKey but preserves SQLite-queryable metadata", ()
   );
 });
 
+test("#16836 keeps the exact connection shape when providerSpecificData is absent", () => {
+  // No metadata column: an explicit undefined property breaks deepStrictEqual
+  // and callers that distinguish missing fields from present-but-empty fields.
+  const original = {
+    apiKey: "shape-secret",
+    accessToken: "shape-access",
+    refreshToken: "shape-refresh",
+    idToken: "shape-id",
+    untouched: "keep-me",
+  };
+  const stored = encryptConnectionFields({ ...original });
+  assert.equal(Object.hasOwn(stored, "providerSpecificData"), false);
+  const restored = decryptConnectionFields(stored);
+  assert.deepEqual(restored, original);
+  assert.equal(Object.hasOwn(restored, "providerSpecificData"), false);
+});
+
 test("#16836 lazy views expose plaintext while the row and JSON stay protected at rest", () => {
   const stored = encryptConnectionFields({
     id: "conn-lazy",
@@ -157,7 +174,7 @@ test("#16836 invalid nested ciphertext sets the existing credential recovery fla
   const encrypted = metadata.consoleApiKey;
   assert.equal(looksEncrypted(encrypted), true);
   metadata.consoleApiKey = encrypted.slice(0, -1) + (encrypted.endsWith("0") ? "1" : "0");
-  const restored = decryptConnectionFields(row);
+  const restored: NonNullable<ReturnType<typeof decryptConnectionFields>> = decryptConnectionFields(row);
   assert.equal(restored.credentialDecryptFailed, true);
   assert.equal(
     (restored.providerSpecificData as Record<string, unknown>).consoleApiKey,
