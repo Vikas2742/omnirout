@@ -32,7 +32,8 @@ import { readBreakerStates, snapshotHealthFactor, type BreakerState } from "./sn
 import { resolveVirtualCost } from "../providerCostData";
 import type { AutoVariant } from "./autoPrefix";
 import { buildFamilyCandidateFilter, type ModelFamily } from "./modelFamily";
-import { getHiddenModelsByProvider } from "@/models";
+import { getHiddenModelsByProvider, getModelVisibilityAllowlists } from "@/models";
+import { isAdmittedByModelVisibilityAllowlist } from "@/shared/utils/modelVisibility";
 import { getSyncedAvailableModelsByConnection, getCustomModels } from "@/lib/db/models";
 import { filterPaidOnlyCandidatesWithDiagnosis } from "./paidModelFilter";
 import { filterLockoutCandidates, warnPoolDrop } from "./modelLockoutFilter";
@@ -364,6 +365,7 @@ function getNoAuthCandidates(
   disabledNoAuthProviders: Set<string>,
   noAuthProviderSpecificData: Map<string, Record<string, unknown> | null | undefined>,
   hiddenModelsMap: Map<string, Set<string>>,
+  visibilityAllowlists: ReadonlyMap<string, ReadonlySet<string>>,
   bypassAllowlist: boolean
 ): VirtualAutoComboCandidate[] {
   const registry = getProviderRegistry();
@@ -427,6 +429,9 @@ function getNoAuthCandidates(
       resolveProviderAlias(routingPrefix),
     ];
     const hiddenModels = new Set<string>();
+    const admitted = hiddenLookupIds.flatMap((id) => id && visibilityAllowlists.has(id)
+      ? [visibilityAllowlists.get(id)!]
+      : [])[0] ?? null;
     for (const id of hiddenLookupIds) {
       if (!id) continue;
       for (const modelId of hiddenModelsMap.get(id) ?? []) hiddenModels.add(modelId);
@@ -436,7 +441,8 @@ function getNoAuthCandidates(
       const modelId = typeof model?.id === "string" && model.id.trim().length > 0 ? model.id : null;
       if (!modelId) continue;
       if (isModelExcludedByConnection(modelId, providerSpecificData)) continue;
-      if (hiddenModels?.has(modelId)) continue;
+      if (hiddenModels.has(modelId) ||
+          !isAdmittedByModelVisibilityAllowlist(modelId, admitted)) continue;
       candidates.push({
         provider: providerId,
         connectionId: SYNTHETIC_NOAUTH_CONNECTION_ID,
@@ -582,6 +588,7 @@ export async function prepareVirtualAutoComboInputs(
       !isRuntimeRetiredProviderId(connection.provider)
   );
   const hiddenModelsMap = getHiddenModelsByProvider();
+  const visibilityAllowlists = getModelVisibilityAllowlists();
   // #7622: a no-auth provider's own provider_connections row (#6557) can carry
   // `providerSpecificData.excludedModels` regardless of its isActive state (the
   // dispatch-time enforcement in auth.ts does not gate on isActive either), so
@@ -620,6 +627,9 @@ export async function prepareVirtualAutoComboInputs(
       .map((conn) => (typeof conn.defaultModel === "string" ? conn.defaultModel.trim() : ""))
       .filter(Boolean);
     const hiddenModels = hiddenModelsMap.get(providerId);
+    const admitted = visibilityAllowlists.get(providerId);
+    const isVisible = (id: string) =>
+      !hiddenModels?.has(id) && isAdmittedByModelVisibilityAllowlist(id, admitted);
 
     // #auto-pool-visible-only: build the credentialed pool from the models the user
     // actually has available (synced + custom non-hidden) when any exist, falling
@@ -644,13 +654,13 @@ export async function prepareVirtualAutoComboInputs(
     const nonChatIds = new Set<string>();
     for (const models of Object.values(syncedByConnection)) {
       for (const m of models) {
-        if (!m.id || hiddenModels?.has(m.id)) continue;
+        if (!m.id || !isVisible(m.id)) continue;
         userVisibleIds.add(m.id);
         if (isDeclaredNonChatModel(m)) nonChatIds.add(m.id);
       }
     }
     for (const m of customModels) {
-      if (!m.id || hiddenModels?.has(m.id)) continue;
+      if (!m.id || !isVisible(m.id)) continue;
       userVisibleIds.add(m.id);
       if (isDeclaredNonChatModel(m)) nonChatIds.add(m.id);
     }
@@ -667,7 +677,7 @@ export async function prepareVirtualAutoComboInputs(
         candidateModelsSinceYield = 0;
         await yieldVirtualAutoPreparationTurn();
       }
-      if (hiddenModels?.has(modelId)) continue;
+      if (!isVisible(modelId)) continue;
       if (nonChatIds.has(modelId)) continue;
 
       const allowedConnectionIds = providerConnections
@@ -716,6 +726,7 @@ export async function prepareVirtualAutoComboInputs(
         disabledNoAuthProviders,
         noAuthProviderSpecificData,
         hiddenModelsMap,
+        visibilityAllowlists,
         bypassNoAuthAllowlist
       ),
     ];
