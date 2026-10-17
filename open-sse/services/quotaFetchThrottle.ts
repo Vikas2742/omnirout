@@ -47,7 +47,7 @@ export class MinIntervalThrottle {
   private readonly jitterMs: number;
   private readonly clock: ThrottleClock;
   private readonly rand: () => number;
-  private lastStart = 0;
+  private lastStart: number | null = null;
   private chain: Promise<void> = Promise.resolve();
 
   constructor(options: MinIntervalThrottleOptions) {
@@ -69,7 +69,7 @@ export class MinIntervalThrottle {
       // The chain is single-file here, so this read cannot race another acquire.
       const now = this.clock.now();
       const startAt =
-        this.lastStart === 0 ? now : this.lastStart + this.minIntervalMs + this.nextJitter();
+        this.lastStart === null ? now : this.lastStart + this.minIntervalMs + this.nextJitter();
       this.lastStart = startAt;
       const wait = startAt - now;
       if (wait > 0) await this.clock.sleep(wait);
