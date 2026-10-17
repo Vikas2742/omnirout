@@ -13,6 +13,7 @@ import {
   updateCustomModel,
   getModelCompatOverrides,
   mergeModelCompatOverride,
+  resetModelEndpointOverride,
   getHiddenModelsByProvider,
   type ModelCompatPatch,
 } from "@/lib/db/models";
@@ -514,6 +515,7 @@ export async function DELETE(request) {
     const provider = searchParams.get("provider");
     const modelId = searchParams.get("model");
     const resetOverride = searchParams.get("resetOverride") === "true";
+    const resetEndpoints = searchParams.get("resetEndpoints") === "true";
 
     if (!provider) {
       return Response.json(
@@ -551,6 +553,12 @@ export async function DELETE(request) {
         },
         { status: 400 }
       );
+    }
+
+    if (resetEndpoints) {
+      const restored = await resetModelEndpointOverride(provider, modelId);
+      if (!restored) return Response.json({ error: { message: "No endpoint override to reset", type: "not_found" } }, { status: 404 });
+      return Response.json({ restored: true, resetEndpoints: true });
     }
 
     // Resetting a user-owned overlay must never delete the same-id synced base.

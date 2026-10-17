@@ -45,7 +45,7 @@ export interface ProviderModelsSectionProps {
   allowModelImport: boolean;
 
   // Models data
-  models: Array<{ id: string; name?: string; source?: string }>;
+  models: Array<{ id: string; name?: string; source?: string; supportedEndpoints?: string[]; endpointCapabilitySource?: string }>;
   modelMeta: { customModels: any[]; modelCompatOverrides?: any[] };
   modelAliases: Record<string, string>;
   syncedAvailableModels: any[];
@@ -375,6 +375,7 @@ export default function ProviderModelsSection({
           bulkTogglePending={bulkVisibilityAction !== null}
           togglingModelId={togglingModelId}
           onTestModel={onTestModel}
+          onModelsChanged={fetchProviderModelMeta}
           modelTestStatus={modelTestStatus}
           onModelTestStatusChange={onModelTestStatusChange}
           testingModelId={testingModelId}
@@ -503,6 +504,17 @@ export default function ProviderModelsSection({
             <ModelRow
               key={model.id}
               model={model}
+              endpointInfo={(() => {
+                const discovered = syncedAvailableModels.find((row) => row.id === model.id);
+                const operator = modelMeta.customModels.find((row) => row.id === model.id);
+                return {
+                  supportedEndpoints: operator?.supportedEndpoints ?? model.supportedEndpoints ?? discovered?.supportedEndpoints,
+                  endpointCapabilitySource: operator?.endpointCapabilitySource ?? model.endpointCapabilitySource ?? discovered?.endpointCapabilitySource,
+                  discoveredEndpoints: discovered?.supportedEndpoints,
+                  resettable: Boolean(discovered && operator?.endpointCapabilitySource === "operator"),
+                  onChanged: fetchProviderModelMeta,
+                };
+              })()}
               fullModel={`${providerDisplayAlias}/${model.id}`}
               provider={providerId}
               alias={aliasByModelId[model.id]}

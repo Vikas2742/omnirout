@@ -786,7 +786,9 @@ export async function updateCustomModel(
     models.push({
       id: modelId,
       name: modelId,
-      source: "manual",
+      source: Object.keys(updates).length === 1 && "supportedEndpoints" in updates
+        ? "endpoint-override"
+        : "manual",
       apiFormat: "chat-completions",
       supportedEndpoints: ["chat"],
     });
@@ -874,6 +876,44 @@ export async function updateCustomModel(
 
   finishModelCatalogWriteWithBackup();
   return next;
+}
+
+/**
+ * Reset ONLY endpoint tags to the latest discovered catalog. This deliberately
+ * preserves visibility, aliases, output limits and other operator settings.
+ * The row created solely for endpoint editing is removed entirely.
+ */
+export async function resetModelEndpointOverride(
+  providerId: string,
+  modelId: string
+): Promise<boolean> {
+  const db = getDbInstance();
+  const rows = await getCustomModels(providerId);
+  if (!Array.isArray(rows)) return false;
+  const index = rows.findIndex((row) => row.id === modelId);
+  if (index < 0 || rows[index].endpointCapabilitySource !== "operator") return false;
+  const discovered = (await getSyncedAvailableModels(providerId)).find((m) => m.id === modelId);
+  if (!discovered) return false;
+
+  if (rows[index].source === "endpoint-override") {
+    rows.splice(index, 1);
+  } else {
+    rows[index] = {
+      ...rows[index],
+      supportedEndpoints: discovered.supportedEndpoints || ["chat"],
+      endpointCapabilitySource: discovered.endpointCapabilitySource || "defaulted",
+    };
+  }
+  if (rows.length === 0) {
+    db.prepare("DELETE FROM key_value WHERE namespace = 'customModels' AND key = ?").run(providerId);
+  } else {
+    db.prepare(
+      "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('customModels', ?, ?)"
+    ).run(providerId, JSON.stringify(rows));
+  }
+  finishModelCatalogWriteWithBackup();
+  notifyQuotaCombosForProvider(providerId);
+  return true;
 }
 
 /** Single custom model row from key_value customModels, or null */
