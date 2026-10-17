@@ -27,7 +27,8 @@ export function getModelVisibilityAllowlist(providerId: string): ReadonlySet<str
   const row = getDbInstance()
     .prepare("SELECT value FROM key_value WHERE namespace = ? AND key = ?")
     .get(NAMESPACE, providerId);
-  return decode(getKeyValue(row).value);
+  if (!row) return null; // absence alone disables the opt-in policy
+  return decode(getKeyValue(row).value) ?? new Set(); // corrupt row must fail closed
 }
 
 export function getModelVisibilityAllowlists(): Map<string, ReadonlySet<string>> {
@@ -39,7 +40,7 @@ export function getModelVisibilityAllowlists(): Map<string, ReadonlySet<string>>
     const { key, value } = getKeyValue(row);
     if (!key) continue;
     const decoded = decode(value);
-    if (decoded !== null) all.set(key, decoded);
+    all.set(key, decoded ?? new Set()); // invalid stored policy never widens visibility
   }
   return all;
 }
