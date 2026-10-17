@@ -1603,7 +1603,7 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
   // Demon Route: OpenAI-compatible, key-gated account model discovery.
   demonroute: {
     id: "demonroute",
-    serviceKinds: ["llm"],
+    serviceKinds: ["llm", "embedding"],
     alias: "demonroute",
     name: "Demon Route",
     icon: "hub",
