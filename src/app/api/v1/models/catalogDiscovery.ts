@@ -77,10 +77,11 @@ export async function getFilteredCatalogResponse(
   loadCatalog: CatalogLoader
 ): Promise<Response> {
   const parsed = parseCatalogDiscoveryQuery(new URL(request.url).searchParams);
-  if (!parsed.ok) return catalogBadRequest(parsed.message);
+  // `=== false`, not `!ok`: without strictNullChecks only the literal comparison narrows.
+  if (parsed.ok === false) return catalogBadRequest(parsed.message);
 
   const loaded = await loadCatalogRows(request, loadCatalog);
-  if (!loaded.ok) return loaded.response;
+  if (loaded.ok === false) return loaded.response;
 
   const page = parseCatalogPage(request);
   const paged = applyCatalogPage(filterCatalogModels(loaded.rows, parsed.value), page);
@@ -100,7 +101,7 @@ export async function queryCatalogResponse(
   loadCatalog: CatalogLoader
 ): Promise<Response> {
   const loaded = await loadCatalogRows(request, loadCatalog);
-  if (!loaded.ok) return loaded.response;
+  if (loaded.ok === false) return loaded.response;
 
   const data = filterCatalogModels(loaded.rows, filters)
     .slice()
