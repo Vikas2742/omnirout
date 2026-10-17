@@ -51,6 +51,16 @@ test("#16977 allowlist is opt-in, persistent, exact and fail-closed for new sync
   assert.equal(models.getModelIsHidden(p, renamed), false);
 });
 
+test("#16977 corrupt persisted allowlist fails closed instead of exposing new models", () => {
+  const provider = "corrupt-policy-provider";
+  core.getDbInstance().prepare(
+    "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES (?, ?, ?)"
+  ).run("chatModelVisibilityAllowlist", provider, "{invalid");
+  assert.equal(models.getModelVisibilityAllowlist(provider)?.size, 0);
+  assert.equal(models.getModelIsHidden(provider, "vendor/new"), true);
+  assert.equal(models.getModelVisibilityAllowlists().get(provider)?.size, 0);
+});
+
 test("#16977 explicit hides win across custom and compat inventories, including tiers", async () => {
   const p = "huggingface";
   const base = "vendor/hidden-reasoner-16977";
