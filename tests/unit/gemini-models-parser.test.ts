@@ -158,3 +158,22 @@ test("#16929 audio-only Gemini imports are never chat selectable", () => {
   const selectable = models.filter((model) => isChatSelectableModel("gemini", model)).map((m) => m.id);
   assert.deepEqual(selectable, ["gemini-3-pro-image"]);
 });
+
+test("#16929 marks Gemini generateContent TTS and transcription as non-chat", () => {
+  const models = parseGeminiModelsList({
+    models: [
+      { name: "models/gemini-3.5-transcribe", supportedGenerationMethods: ["generateContent", "countTokens"] },
+      { name: "models/gemini-3.8-flash-tts", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.1-flash-tts-preview", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.1-flash-image", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.8-flash", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.5-transcribe", supportedGenerationMethods: ["embedContent", "generateContent"] },
+    ],
+  });
+  assert.deepEqual(models[0].supportedEndpoints, ["audio-transcriptions"]);
+  assert.deepEqual(models[1].supportedEndpoints, ["audio-speech"]);
+  assert.deepEqual(models[2].supportedEndpoints, ["audio-speech"]);
+  assert.deepEqual(models[3].supportedEndpoints, ["chat"]);
+  assert.deepEqual(models[4].supportedEndpoints, ["chat"]);
+  assert.deepEqual(models[5].supportedEndpoints, ["embeddings", "audio-transcriptions"]);
+});
