@@ -1,0 +1,383 @@
+import { resolveProviderAvailability, type ProviderAvailability } from "@/lib/providerAvailability";
+import {
+  availabilityCutoff,
+  type AvailabilityPolicy,
+  type PolicyConnection,
+} from "./availabilityPolicy";
+
+// Retain persisted filter identifiers; every layout uses the same account projection.
+export type HealthStatus = "critical" | "alert" | "ok" | "paused" | "empty";
+export type QuotaLayout = "overview" | "full" | "compact";
+export const AVAILABILITY_LABELS = {
+  critical: "usage.healthUnavailable",
+  alert: "usage.healthRestricted",
+  ok: "usage.healthAvailable",
+  empty: "usage.tierUnknown",
+  paused: "common.paused",
+} as const;
+export interface HealthQuota {
+  name: string;
+  displayName?: string;
+  used?: number;
+  total?: number;
+  remainingPercentage?: number;
+  resetAt?: string | null;
+  unlimited?: boolean;
+  isCredits?: boolean;
+  isResetCredits?: boolean;
+  modelKey?: string;
+  window?: string;
+  windowSeconds?: number;
+  quotaGroupId?: string;
+  staleAfterReset?: boolean;
+  fractionReported?: boolean;
+}
+export interface HealthData {
+  quotas?: HealthQuota[];
+  stale?: unknown;
+  raw?: {
+    fetchedAt?: string;
+    _stale?: boolean;
+    quotas?: Record<string, Partial<HealthQuota>>;
+    quotaGroups?: Array<{
+      id: string;
+      displayName?: string;
+      models?: string[];
+      windows?: Record<string, Partial<HealthQuota>>;
+    }>;
+  };
+}
+export interface HealthConnection extends PolicyConnection {
+  id: string;
+  name?: string;
+  displayName?: string;
+  email?: string;
+  isActive?: boolean;
+  testStatus?: string | null;
+  rateLimitedUntil?: string | null;
+  lastErrorAt?: string | null;
+  lastErrorType?: string | null;
+  updatedAt?: string;
+  runtimeObservedAt?: string;
+}
+export interface HealthCooldown {
+  id: string;
+  status: string;
+  testStatus?: string | null;
+  rateLimitedUntil?: string | null;
+  cooldownRemainingMs?: number;
+  lastErrorType?: string | null;
+  lockouts: Array<{ model: string; remainingMs: number; reason: string }>;
+}
+export interface AvailabilityEvidence {
+  policy?: AvailabilityPolicy;
+  cooldown?: HealthCooldown;
+  observedAt?: string;
+  error?: string | null;
+}
+export type HealthScope = "account" | "group" | "scoped";
+export interface HealthReason {
+  type:
+    | "paused"
+    | "terminal"
+    | "cooldown"
+    | "quota"
+    | "lockout"
+    | "previousFailure"
+    | "awaitingSync"
+    | "policyUnavailable"
+    | "previousSnapshot"
+    | "noQuota"
+    | "quotaError"
+    | "noRuntime";
+  scope?: HealthScope;
+  scopeId?: string;
+  window?: string;
+  percent?: number;
+  cutoff?: number;
+  resetAt?: string | null;
+  terminal?: string;
+  error?: string;
+}
+export interface HealthCell {
+  name: string;
+  displayName?: string;
+  percent: number;
+  resetAt: string | null;
+  scope: HealthScope;
+  scopeId?: string;
+  window: "fiveHour" | "overall" | null;
+  awaitingSync: boolean;
+}
+export interface HealthAccount {
+  runtimeAvailability?: ProviderAvailability;
+  quotaPools?: Array<{ id: string; models?: string[] }>;
+  connection: HealthConnection;
+  cells: HealthCell[];
+  reasons: HealthReason[];
+  status: HealthStatus;
+  partial: boolean;
+  recoverAt?: string;
+  quotaObservedAt?: string;
+  runtimeObservedAt?: string;
+}
+const RANK = { critical: 0, alert: 1, ok: 2, paused: 3, empty: 4 };
+export function resolveQuotaLayout(saved: string | null): QuotaLayout {
+  return saved === "full" || saved === "compact" ? saved : "overview";
+}
+function textWindow(value: string): "fiveHour" | "overall" | null {
+  if (/week|month|overall|total|7\s*d\b|seven[_\s-]?day/i.test(value)) return "overall";
+  if (/session|five[_\s-]?hour|5\s*(?:h\b|hours?)/i.test(value)) return "fiveHour";
+  return null;
+}
+/** Display labels/durations outrank legacy keys: Codex's `session` can actually be Weekly.
+ * Time-to-reset only disproves a short window; a weekly window near reset is NOT a 5h window.
+ * Use the fixed capture time, never the ticking UI clock, to keep topology stable on refresh.
+ */
+export function normalizeHealthWindow(
+  quota: HealthQuota,
+  fetchedAt?: string
+): "fiveHour" | "overall" | null {
+  if (quota.windowSeconds > 0) return quota.windowSeconds <= 5 * 3600 ? "fiveHour" : "overall";
+  const display = textWindow(quota.displayName || "");
+  if (display) return display;
+  const explicit = textWindow(quota.window || "");
+  if (explicit) return explicit;
+  const named = textWindow(quota.name);
+  const duration = Date.parse(quota.resetAt || "") - Date.parse(fetchedAt || "");
+  return named === "fiveHour" && duration > 5 * 3_600_000 + 60_000 ? "overall" : named;
+}
+function scopeKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(
+      /five[_\s-]?hours?|seven[_\s-]?days?|session|weekly|monthly|overall|total|\b5\s*hours?\b|(?:^|[_\s(-])(?:5h|7d)(?=$|[_\s)-])/g,
+      " "
+    )
+    .replace(/\b(?:quotas?|limits?|usage|window)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+function percentage(q: HealthQuota): number | null {
+  if (q.unlimited) return 100;
+  if (typeof q.remainingPercentage === "number" && Number.isFinite(q.remainingPercentage))
+    return Math.max(0, Math.min(100, q.remainingPercentage));
+  if (Number.isFinite(q.total) && q.total > 0 && Number.isFinite(q.used))
+    return Math.max(0, Math.min(100, (1 - q.used / q.total) * 100));
+  return null;
+}
+/** All blocked is red, mixed usable/blocked is yellow, incomplete evidence is never green.
+ * Paused accounts have their own count and never contribute to the available count.
+ */
+export function aggregateAvailability(statuses: HealthStatus[]): HealthStatus {
+  if (statuses.length && statuses.every((s) => s === "paused")) return "paused";
+  const active = statuses.filter((s) => s !== "paused");
+  if (!active.length || active.every((s) => s === "empty")) return "empty";
+  if (active.every((s) => s === "critical")) return "critical";
+  if (active.every((s) => s === "ok")) return "ok";
+  if (active.some((s) => s === "critical" || s === "alert")) return "alert";
+  return "empty";
+}
+/** Availability ignores ALL display hiding. Raw values also prevent reset-adjusted display 100% from fabricating a recovery. */
+export function buildHealthAccount(
+  connection: HealthConnection,
+  data: HealthData | undefined,
+  _visibility: Record<string, { hidden?: string[] }> = {},
+  now = Date.now(),
+  evidence: AvailabilityEvidence = {}
+): HealthAccount {
+  const quotas = new Map<string, HealthQuota>();
+  for (const q of data?.quotas || []) quotas.set(q.name, q);
+  for (const [name, q] of Object.entries(data?.raw?.quotas || {}))
+    quotas.set(name, { ...quotas.get(name), ...q, name });
+  for (const g of data?.raw?.quotaGroups || []) {
+    for (const [window, q] of Object.entries(g.windows || {})) {
+      const name = `${g.id}_${window}`;
+      quotas.set(name, { ...quotas.get(name), ...q, name, window, quotaGroupId: g.id });
+    }
+  }
+  const cells: HealthCell[] = [];
+  const reasons: HealthReason[] = [];
+  const blocked: HealthReason[] = [];
+  // Explicit groups describe independent pools; a scoped model never becomes an extra account.
+  const groups = new Set((data?.raw?.quotaGroups || []).map((g) => g.id));
+  for (const q of quotas.values()) {
+    if (
+      q.isCredits ||
+      q.isResetCredits ||
+      q.fractionReported === false ||
+      /^(credits|extra_usage|banked_reset_credits)$/.test(q.name)
+    )
+      continue;
+    const percent = percentage(q);
+    if (percent === null) continue;
+    const window = normalizeHealthWindow(q, data?.raw?.fetchedAt);
+    const scopeId = q.quotaGroupId || scopeKey(q.name);
+    const scope: HealthScope = q.quotaGroupId ? "group" : scopeId ? "scoped" : "account";
+    if (scope === "group") groups.add(scopeId);
+    const awaitingSync = !!q.staleAfterReset || Date.parse(q.resetAt || "") <= now;
+    cells.push({
+      name: q.name,
+      displayName: q.displayName,
+      percent,
+      resetAt: q.resetAt || null,
+      scope,
+      scopeId: scopeId || undefined,
+      window,
+      awaitingSync,
+    });
+    const constraint = {
+      scope,
+      scopeId: scopeId || undefined,
+      window: q.name,
+      percent,
+      resetAt: q.resetAt,
+    };
+    if (awaitingSync) {
+      reasons.push({ type: "awaitingSync", ...constraint });
+      continue;
+    }
+    const cutoff = availabilityCutoff(connection, q.name, evidence.policy) ?? 0;
+    if (percent <= cutoff + 1e-9) blocked.push({ type: "quota", ...constraint, cutoff });
+  }
+  if (!evidence.policy) reasons.push({ type: "policyUnavailable" });
+  if (cells.length && (data?.stale || data?.raw?._stale || evidence.error))
+    reasons.push({ type: "previousSnapshot" });
+  if (!cells.length)
+    reasons.push(
+      evidence.error ? { type: "quotaError", error: evidence.error } : { type: "noQuota" }
+    );
+  const row = evidence.cooldown;
+  const connectionTime =
+    Date.parse(connection.runtimeObservedAt || connection.updatedAt || "") || 0;
+  const summaryTime = Date.parse(evidence.observedAt || "") || 0;
+  // Summary captures testStatus at generatedAt; absent fields do not erase connection evidence.
+  const useSummary =
+    row?.testStatus != null && (connection.testStatus == null || summaryTime >= connectionTime);
+  const testStatus = (useSummary ? row.testStatus : connection.testStatus)?.trim().toLowerCase();
+  const runtimeAvailable =
+    !!row ||
+    [connection.isActive, connection.testStatus, connection.rateLimitedUntil].some(
+      (v) => v !== undefined
+    );
+  if (!runtimeAvailable) reasons.push({ type: "noRuntime" });
+  // Pause is a separate display state. Let the upstream classifier own terminal
+  // membership and freshness; STALE_TERMINAL still needs attention, never a timer.
+  const runtimeAvailability = resolveProviderAvailability(
+    { ...connection, isActive: true, testStatus },
+    now
+  );
+  const terminal = ["AUTH_EXPIRED", "QUOTA_EXHAUSTED", "DISABLED", "STALE_TERMINAL"].includes(
+    runtimeAvailability.state
+  )
+    ? { type: "terminal" as const, terminal: testStatus }
+    : null;
+  const until = Math.max(
+    Date.parse(connection.rateLimitedUntil || "") || 0,
+    Date.parse(row?.rateLimitedUntil || "") || 0,
+    summaryTime && row?.cooldownRemainingMs > 0 ? summaryTime + row.cooldownRemainingMs : 0
+  );
+  const cooldown: HealthReason | null =
+    until > now ? { type: "cooldown", resetAt: new Date(until).toISOString() } : null;
+  if (testStatus === "unavailable" && !cooldown) reasons.push({ type: "previousFailure" });
+  const locks: HealthReason[] = (row?.lockouts || []).flatMap((l) => {
+    const end = summaryTime + l.remainingMs;
+    return summaryTime && end > now
+      ? [
+          {
+            type: "lockout" as const,
+            scope: "scoped" as const,
+            window: l.model,
+            resetAt: new Date(end).toISOString(),
+          },
+        ]
+      : [];
+  });
+  const allGroupsBlocked =
+    groups.size > 0 &&
+    [...groups].every((g) => blocked.some((r) => r.scope === "group" && r.scopeId === g));
+  let status: HealthStatus;
+  if (connection.isActive === false) status = "paused";
+  else if (terminal || cooldown || blocked.some((r) => r.scope === "account") || allGroupsBlocked)
+    status = "critical";
+  else if (blocked.length || locks.length) status = "alert";
+  else if (!cells.length || !runtimeAvailable) status = "empty";
+  else status = "ok";
+  if (status === "paused") reasons.unshift({ type: "paused" });
+  if (cooldown) reasons.unshift(cooldown);
+  if (terminal) reasons.unshift(terminal);
+  reasons.push(...blocked, ...locks);
+  const constraints = [
+    ...blocked,
+    ...locks,
+    ...(cooldown ? [cooldown] : []),
+    ...(terminal ? [terminal] : []),
+  ];
+  const times = constraints.map((r) => Date.parse("resetAt" in r ? r.resetAt || "" : ""));
+  const recoverAt =
+    ["critical", "alert"].includes(status) && times.length && times.every((t) => t > now)
+      ? new Date(Math.max(...times)).toISOString()
+      : undefined;
+  return {
+    runtimeAvailability:
+      connection.isActive === false ? { state: "DISABLED" } : runtimeAvailability,
+    quotaPools: data?.raw?.quotaGroups?.map(({ id, models }) => ({ id, models })),
+    connection,
+    cells,
+    reasons,
+    status,
+    recoverAt,
+    partial: !row || !evidence.policy,
+    quotaObservedAt: data?.raw?.fetchedAt,
+    runtimeObservedAt:
+      row && summaryTime >= connectionTime
+        ? evidence.observedAt
+        : connection.runtimeObservedAt || connection.updatedAt,
+  };
+}
+/** Provider-only groups, exactly one row per account; no family or window buckets. */
+export function buildHealthGroups(
+  accounts: HealthAccount[],
+  providerOrder: string[] | Record<string, number> = {}
+) {
+  const providers = new Map<string, HealthAccount[]>();
+  for (const a of accounts)
+    providers.set(a.connection.provider, [...(providers.get(a.connection.provider) || []), a]);
+  const rank = (id: string) => {
+    const n = Array.isArray(providerOrder) ? providerOrder.indexOf(id) : providerOrder[id];
+    return n === undefined || n < 0 ? Infinity : n;
+  };
+  return [...providers]
+    .sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b))
+    .map(([provider, list]) => {
+      const counts: Record<HealthStatus, number> = {
+        critical: 0,
+        alert: 0,
+        ok: 0,
+        paused: 0,
+        empty: 0,
+      };
+      const sorted = [...list].sort(
+        (a, b) =>
+          RANK[a.status] - RANK[b.status] ||
+          (
+            a.connection.name ||
+            a.connection.displayName ||
+            a.connection.email ||
+            a.connection.id
+          ).localeCompare(
+            b.connection.name || b.connection.displayName || b.connection.email || b.connection.id
+          ) ||
+          a.connection.id.localeCompare(b.connection.id)
+      );
+      for (const a of sorted) counts[a.status]++;
+      return {
+        provider,
+        total: list.length,
+        counts,
+        status: aggregateAvailability(list.map((a) => a.status)),
+        accounts: sorted,
+      };
+    });
+}

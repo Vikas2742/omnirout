@@ -1,0 +1,1 @@
+- **feat(dashboard):** Add an account-availability quota overview with per-pool capsule rows, cooldown recovery, account details, and browser-persisted provider reordering across layouts. (#0000 — thanks @xiaoyaner0201)
