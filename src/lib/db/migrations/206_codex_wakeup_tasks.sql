@@ -1,4 +1,4 @@
--- Migration 208: codex_wakeup_tasks + codex_wakeup_runs
+-- Migration 206: codex_wakeup_tasks + codex_wakeup_runs
 --
 -- Scheduled Codex account wakeups (Settings → AI → Codex Quota Auto-Ping → Scheduled
 -- wakeups). A task pings 1–20 Codex OAuth accounts so their quota window starts at a
