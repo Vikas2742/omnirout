@@ -498,7 +498,7 @@ export default function ProviderDetailPageClient() {
 
   // Phase 1e: compat-state derivations
   const compat = useModelCompatState(modelMeta.customModels, modelMeta.modelCompatOverrides);
-  const { customMap } = compat;
+  const { customMap, isModelHidden } = compat;
   const effectiveModelNormalize = compat.effectiveModelNormalize;
   const effectiveModelPreserveDeveloper = compat.effectiveModelPreserveDeveloper;
   const visibilityAllowlist = useMemo(
@@ -509,9 +509,9 @@ export default function ProviderDetailPageClient() {
   );
   const effectiveModelHidden = useCallback(
     (id: string) =>
-      compat.isModelHidden(id) ||
+      isModelHidden(id) ||
       !isAdmittedByModelVisibilityAllowlist(id, visibilityAllowlist),
-    [compat.isModelHidden, visibilityAllowlist]
+    [isModelHidden, visibilityAllowlist]
   );
   const getUpstreamHeadersRecordForModel = compat.getUpstreamHeadersRecord;
 
