@@ -156,6 +156,7 @@ export async function addCustomModel(
     dimensions?: number;
     supportedInputTypes?: string[];
     modelType?: "chat" | "embedding" | "image" | "rerank";
+    endpointCapabilitySource?: "declared" | "inferred" | "defaulted" | "operator";
   }
 ) {
   const db = getDbInstance();
@@ -174,6 +175,7 @@ export async function addCustomModel(
     source,
     apiFormat,
     supportedEndpoints,
+    endpointCapabilitySource: extraMeta?.endpointCapabilitySource || (source === "manual" ? "operator" : "defaulted"),
     ...(targetFormat ? { targetFormat } : {}),
     ...(tokenLimits.inputTokenLimit != null
       ? { inputTokenLimit: tokenLimits.inputTokenLimit }
@@ -256,7 +258,12 @@ export async function replaceCustomModels(
       name: m.name || m.id,
       source: m.source || "auto-sync",
       apiFormat: m.apiFormat || (prev as any)?.apiFormat || "chat-completions",
-      supportedEndpoints: m.supportedEndpoints || (prev as any)?.supportedEndpoints || ["chat"],
+      supportedEndpoints: (prev as any)?.endpointCapabilitySource === "operator"
+        ? (prev as any).supportedEndpoints
+        : m.supportedEndpoints || (prev as any)?.supportedEndpoints || ["chat"],
+      endpointCapabilitySource: (prev as any)?.endpointCapabilitySource === "operator"
+        ? "operator"
+        : (m as any).endpointCapabilitySource || (prev as any)?.endpointCapabilitySource || "defaulted",
       // #2905: preserve a per-model targetFormat override (new value wins, else prev).
       ...(m.targetFormat
         ? { targetFormat: m.targetFormat }
@@ -822,6 +829,9 @@ export async function updateCustomModel(
   // id-based heuristic in getCustomVisionCapabilityFields().
   applyTriStateBooleanOverride(next, updates, "supportsVision");
   applyTriStateBooleanOverride(next, updates, "isFree");
+  if (updates.supportedEndpoints !== undefined) {
+    next.endpointCapabilitySource = "operator";
+  }
   if (updates.compatByProtocol !== undefined) {
     if (mergedCompat && compatByProtocolHasEntries(mergedCompat)) {
       next.compatByProtocol = mergedCompat;

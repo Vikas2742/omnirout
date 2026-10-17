@@ -165,6 +165,7 @@ export async function POST(request) {
       source,
       apiFormat,
       supportedEndpoints,
+      endpointCapabilitySource,
       targetFormat,
       // #1294: persist the per-model token limits set in the add-model form.
       max_input_tokens: maxInputTokens,
@@ -198,6 +199,7 @@ export async function POST(request) {
         ...(typeof dimensions === "number" && dimensions > 0 ? { dimensions } : {}),
         ...(Array.isArray(supportedInputTypes) ? { supportedInputTypes } : {}),
         ...(typeof modelType === "string" ? { modelType } : {}),
+        ...(endpointCapabilitySource ? { endpointCapabilitySource } : {}),
       }
     );
     return Response.json({ model });

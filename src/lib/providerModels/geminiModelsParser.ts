@@ -48,6 +48,7 @@ export interface GeminiDiscoveryModel {
   id: string;
   name: string;
   supportedEndpoints: string[];
+  endpointCapabilitySource: "declared" | "inferred" | "defaulted";
   inputTokenLimit?: number;
   outputTokenLimit?: number;
   description?: string;
@@ -70,13 +71,16 @@ export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
 
       const id = ((m.name as string) || (m.id as string) || "").replace(/^models\//, "");
       const lowerId = id.toLowerCase();
+      let inferredById = false;
 
       // Google exposes Imagen (image) and Veo (video) via long-running methods; the
       // method alone can't always distinguish them, so refine by model id.
       if (lowerId.includes("veo")) {
+        inferredById = true;
         endpoints.add("videos");
       }
       if (lowerId.includes("imagen")) {
+        inferredById = true;
         endpoints.delete("videos");
         endpoints.add("images");
       }
@@ -88,9 +92,11 @@ export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
       // explicitly advertised endpoint. Image-capable Gemini chat models
       // intentionally remain chat-selectable.
       if (methods.includes("generateContent") && /-transcribe(?:-|$)/.test(lowerId)) {
+        inferredById = true;
         endpoints.delete("chat");
         endpoints.add("audio-transcriptions");
       } else if (methods.includes("generateContent") && /-tts(?:-|$)/.test(lowerId)) {
+        inferredById = true;
         endpoints.delete("chat");
         endpoints.add("audio-speech");
       }
@@ -109,6 +115,11 @@ export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
         id,
         name: (m.displayName as string) || id,
         supportedEndpoints: [...endpoints],
+        endpointCapabilitySource: inferredById
+          ? "inferred"
+          : methods.some((method) => ["embedContent", "predict", "predictLongRunning"].includes(method))
+            ? "declared"
+            : "defaulted",
         ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),
         ...(typeof m.outputTokenLimit === "number" ? { outputTokenLimit: m.outputTokenLimit } : {}),
         ...(typeof m.description === "string" ? { description: m.description } : {}),
