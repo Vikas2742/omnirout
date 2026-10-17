@@ -448,24 +448,26 @@ export default function ProviderModelsSection({
     );
   }
 
-  const importButton = allowModelImport ? (
-    <div className="flex items-center gap-2 mb-4">
-      <Button
-        size="sm"
-        variant="secondary"
-        icon="download"
-        onClick={handleImportModels}
-        disabled={!canImportModels || importingModels}
-      >
-        {importingModels ? t("importingModels") : t("importFromModels")}
-      </Button>
+  const importButton = (
+    <div className="flex flex-wrap items-center gap-2 mb-4">
+      {allowModelImport && (
+        <Button
+          size="sm"
+          variant="secondary"
+          icon="download"
+          onClick={handleImportModels}
+          disabled={!canImportModels || importingModels}
+        >
+          {importingModels ? t("importingModels") : t("importFromModels")}
+        </Button>
+      )}
       {modelDiscoveryControls}
       {visibilityPolicyButton}
-      {!canImportModels && (
+      {allowModelImport && !canImportModels && (
         <span className="text-xs text-text-muted">{t("addConnectionToImport")}</span>
       )}
     </div>
-  ) : null;
+  );
 
   if (models.length === 0) {
     return (
