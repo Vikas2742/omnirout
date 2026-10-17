@@ -3,7 +3,7 @@ import { FORMATS } from "../formats.ts";
 import { CLAUDE_OAUTH_TOOL_PREFIX } from "../request/openai-to-claude.ts";
 import { hasToolCallShim, applyToolCallShimToBuffer } from "../helpers/toolCallShim.ts";
 import { appendToolCallArgumentDelta } from "../../utils/toolCallArguments.ts";
-import { isAbortFinishReason } from "../../utils/finishReason.ts";
+import { openAIFinishReasonToClaudeStopReason } from "../../utils/finishReason.ts";
 import {
   isInternalReasoningPlaceholder,
   stripInternalReasoningPlaceholder,
@@ -16,6 +16,12 @@ import {
   createDirectivePreambleStripper,
   createSystemPreambleStripper,
 } from "../../utils/directivePreambleStripper.ts";
+import {
+  containsOrMayEndWithThinkOpenTag,
+  flushThinkBuffer,
+  initThinkState,
+  processStreamingThinkDelta,
+} from "../../utils/thinkTagParser.ts";
 
 function normalizeToolName(name: string): string {
   return REVERSE_MAP[name] ?? name;
@@ -172,6 +178,71 @@ function extractXmlInvokeBlocks(
   return { cleaned, toolCalls };
 }
 
+// Read the reasoning an upstream sends in a dedicated field: reasoning_content
+// (GLM, DeepSeek, ...), the `reasoning` alias, or reasoning_details[]
+// (StepFun/OpenRouter).
+function readNativeReasoning(delta): unknown {
+  let reasoning = delta?.reasoning_content || delta?.reasoning;
+  if (!reasoning && Array.isArray(delta?.reasoning_details)) {
+    const parts: string[] = [];
+    for (const detail of delta.reasoning_details) {
+      if (detail && typeof detail === "object") {
+        const text = detail.text || detail.content;
+        if (typeof text === "string" && text) parts.push(text);
+      }
+    }
+    if (parts.length > 0) reasoning = parts.join("");
+  }
+  return reasoning;
+}
+
+// Split reasoning that an OpenAI-compatible upstream inlines in `content` as
+// <think>...</think> (DeepSeek-R1 mirrors, QwQ, K3, MiniMax-M3 on OpenAI-format
+// tiers) so it reaches a Claude client as a thinking block instead of raw markup
+// inside a text block. Gated per route by shouldParseTextualReasoningTags (via
+// initThinkState): parsing every provider's content would corrupt legitimate
+// replies that mention a literal <think>. The parser is streaming-safe — a tag
+// split across chunks is held back until it can be decided — so whatever it
+// still holds is flushed when the finish chunk arrives. Returns null when the
+// route is not allowlisted or no tag has been seen, leaving content untouched.
+function splitInlineThinkContent(
+  content: unknown,
+  state,
+  model: unknown,
+  finishing: boolean
+): { content: string; reasoning: string } | null {
+  if (!state.thinkState) {
+    if (typeof content !== "string" || !content) return null;
+    state.thinkState = initThinkState(
+      true,
+      state.provider,
+      typeof model === "string" ? model : undefined
+    );
+  }
+  const ctx = state.thinkState;
+  if (!ctx.enabled) return null;
+
+  let nextContent = "";
+  let reasoning = "";
+  if (typeof content === "string" && content) {
+    if (ctx.active || containsOrMayEndWithThinkOpenTag(content)) {
+      ctx.active = true;
+      const { reasoningDelta, contentDelta } = processStreamingThinkDelta(content, ctx);
+      reasoning += reasoningDelta || "";
+      nextContent += contentDelta || "";
+    } else {
+      nextContent = content;
+    }
+  }
+  if (finishing && ctx.active) {
+    const { reasoningDelta, contentDelta } = flushThinkBuffer(ctx);
+    reasoning += reasoningDelta || "";
+    nextContent += contentDelta || "";
+  }
+  if (!ctx.active) return null;
+  return { content: nextContent, reasoning };
+}
+
 // Helper: stop thinking block if started
 function stopThinkingBlock(state, results) {
   if (!state.thinkingBlockStarted) return;
@@ -249,6 +320,12 @@ function readUsageCounters(usage) {
     cacheCreateTokens: firstNumber(
       promptDetails?.cache_creation_tokens ?? inputDetails?.cache_creation_tokens
     ),
+    writeInPrompt: (promptDetails ?? inputDetails)?.cache_creation_in_prompt !== false,
+    reasoningTokens: firstNumber(
+      usage.completion_tokens_details?.reasoning_tokens ??
+        usage.output_tokens_details?.reasoning_tokens ??
+        usage.reasoning_tokens
+    ),
   };
 }
 
@@ -256,13 +333,20 @@ function readUsageCounters(usage) {
 // usage-only chunks that carry `choices: []` (#11817).
 function trackUsageFromChunk(chunk, state) {
   if (!chunk.usage || typeof chunk.usage !== "object") return;
-  const { promptTokens, outputTokens, cacheReadTokens, cacheCreateTokens } = readUsageCounters(
-    chunk.usage
-  );
+  const {
+    promptTokens,
+    outputTokens,
+    cacheReadTokens,
+    cacheCreateTokens,
+    writeInPrompt,
+    reasoningTokens,
+  } = readUsageCounters(chunk.usage);
 
-  // input_tokens = prompt_tokens - cached_tokens - cache_creation_tokens
-  // Because OpenAI's prompt_tokens includes all prompt-side tokens
-  const inputTokens = promptTokens - cacheReadTokens - cacheCreateTokens;
+  // #2215 reports cache creation outside prompt_tokens.
+  const inputTokens = Math.max(
+    0,
+    promptTokens - cacheReadTokens - (writeInPrompt ? cacheCreateTokens : 0)
+  );
 
   state.usage = {
     input_tokens: inputTokens,
@@ -279,8 +363,22 @@ function trackUsageFromChunk(chunk, state) {
     state.usage.cache_creation_input_tokens = cacheCreateTokens;
   }
 
-  // Note: completion_tokens_details.reasoning_tokens is already included in output_tokens
-  // No need to add separately as Claude expects total output_tokens
+  // Reasoning is already included in output_tokens — never add it on top. Keep the
+  // count on the shared state so streaming usage accounting (tokens_reasoning) does
+  // not lose it on this pivot; message_delta strips it from the client payload.
+  if (reasoningTokens > 0) {
+    state.usage.reasoning_tokens = reasoningTokens;
+  }
+}
+
+// Client-facing Claude usage: the accounting-only reasoning_tokens is not part of
+// the Anthropic usage shape.
+function toClaudeClientUsage(usage) {
+  if (!usage) return { input_tokens: 0, output_tokens: 0 };
+  if (usage.reasoning_tokens === undefined) return usage;
+  const clientUsage = { ...usage };
+  delete clientUsage.reasoning_tokens;
+  return clientUsage;
 }
 
 // Convert OpenAI stream chunk to Claude format
@@ -349,18 +447,24 @@ export function openaiToClaudeResponse(chunk, state) {
     });
   }
 
+  // Inline <think>...</think> in content (allowlisted textual-reasoning routes
+  // only). Runs first so the extracted reasoning flows through the thinking
+  // branch below — same requestedThinking gate and _reasoningAccum — and the
+  // directive/system-preamble strippers only ever see the visible answer.
+  const inlineThink = splitInlineThinkContent(
+    delta?.content,
+    state,
+    chunk?.model || state.model,
+    Boolean(choice.finish_reason) && !state.claudeFinishEmitted
+  );
+  const content = inlineThink ? inlineThink.content : delta?.content;
+
   // Handle reasoning_content (thinking) - GLM, DeepSeek, etc.
   // Also supports 'reasoning' field alias and reasoning_details[] (StepFun/OpenRouter)
-  let reasoningContent = delta?.reasoning_content || delta?.reasoning;
-  if (!reasoningContent && Array.isArray(delta?.reasoning_details)) {
-    const parts: string[] = [];
-    for (const detail of delta.reasoning_details) {
-      if (detail && typeof detail === "object") {
-        const text = detail.text || detail.content;
-        if (typeof text === "string" && text) parts.push(text);
-      }
-    }
-    if (parts.length > 0) reasoningContent = parts.join("");
+  let reasoningContent = readNativeReasoning(delta);
+  if (inlineThink?.reasoning) {
+    reasoningContent =
+      (typeof reasoningContent === "string" ? reasoningContent : "") + inlineThink.reasoning;
   }
   const hasReasoning =
     typeof reasoningContent === "string" &&
@@ -405,12 +509,31 @@ export function openaiToClaudeResponse(chunk, state) {
     state._reasoningAccum = (state._reasoningAccum || "") + reasoningContent;
   }
 
+  // Refusal text is literal output, never input for XML/DSML tool-call shims.
+  if (typeof delta?.refusal === "string" && delta.refusal) {
+    if (!state.textBlockStarted) {
+      state.textBlockIndex = state.nextBlockIndex++;
+      state.textBlockStarted = true;
+      state.textBlockClosed = false;
+      results.push({
+        type: "content_block_start",
+        index: state.textBlockIndex,
+        content_block: { type: "text", text: "" },
+      });
+    }
+    results.push({
+      type: "content_block_delta",
+      index: state.textBlockIndex,
+      delta: { type: "text_delta", text: delta.refusal },
+    });
+  }
+
   // Handle regular content — strip the internal reasoning placeholder if
   // the model echoed it through ordinary content (#8081). Only the content
   // block emission is skipped when nothing meaningful remains; the chunk
   // may still carry tool_calls / finish_reason below, which must still run.
-  if (delta?.content) {
-    const strippedContent = stripInternalReasoningPlaceholder(delta.content);
+  if (content) {
+    const strippedContent = stripInternalReasoningPlaceholder(content);
     if (strippedContent) {
       // #reasoning-bilingual response side: DeepSeek-V4 and similar models echo the
       // OMNIROUTE_SYSTEM_INSTRUCTION_APPEND directive (appended to the system tail by
@@ -661,9 +784,15 @@ export function openaiToClaudeResponse(chunk, state) {
     // dropped the held text silently — for a single-chunk response whose block
     // never closes, that is the ENTIRE answer replaced by an empty message.
     // Release whatever is still held before the terminal blocks are emitted.
+    // The same goes for an unclosed <invoke>/<tool_call> tag and the DSML holdback:
+    // no further chunk can complete them, so they were prose and must reach the client.
     const flushedPreamble =
       (state._directiveStripper?.flush?.() ?? "") +
-      (state._systemPreambleStripper?.flush?.() ?? "");
+      (state._systemPreambleStripper?.flush?.() ?? "") +
+      (state._xmlInvokeBuffer ?? "") +
+      (state._dsmlHoldback ?? "");
+    state._xmlInvokeBuffer = "";
+    state._dsmlHoldback = undefined;
     if (flushedPreamble) {
       if (!state.textBlockStarted || state.textBlockClosed) {
         state.textBlockIndex = state.nextBlockIndex++;
@@ -728,8 +857,9 @@ export function openaiToClaudeResponse(chunk, state) {
       }
 
       // For shimmed tools, emit one corrective input_json_delta with the
-      // fully patched JSON before closing the block.
-      if (toolInfo.shimmed) {
+      // fully patched JSON before closing the block. A refusal must not release
+      // the buffered arguments: the block is closed empty instead.
+      if (toolInfo.shimmed && choice.finish_reason !== "content_filter") {
         const patched = applyToolCallShimToBuffer(toolInfo.name, toolInfo.argBuffer || "");
         results.push({
           type: "content_block_delta",
@@ -775,39 +905,16 @@ export function openaiToClaudeResponse(chunk, state) {
     state.finishReason = overrideFinishReason;
 
     // Use tracked usage (will be estimated in stream.js if not valid)
-    const finalUsage = state.usage || { input_tokens: 0, output_tokens: 0 };
+    const finalUsage = toClaudeClientUsage(state.usage);
     results.push({
       type: "message_delta",
-      delta: { stop_reason: convertFinishReason(overrideFinishReason) },
+      delta: { stop_reason: openAIFinishReasonToClaudeStopReason(overrideFinishReason) },
       usage: finalUsage,
     });
     results.push({ type: "message_stop" });
   }
 
   return results.length > 0 ? results : null;
-}
-
-// Convert OpenAI finish_reason to Claude stop_reason
-function convertFinishReason(reason) {
-  switch (reason) {
-    case "stop":
-      return "end_turn";
-    case "length":
-      return "max_tokens";
-    case "tool_calls":
-      return "tool_use";
-    default:
-      // Gemini/Antigravity abort reasons (e.g. MALFORMED_FUNCTION_CALL,
-      // UNEXPECTED_TOOL_CALL — see isAbortFinishReason) reach here unrecognized
-      // after the OpenAI hub normalization. Collapsing them to a clean
-      // "end_turn" presents an aborted tool call to the client as a successful
-      // completion (9router#2462 sub-bug #2). Surface them as "tool_use" —
-      // the same non-clean-stop signal already used for real tool_calls above —
-      // so the client does not treat the turn as done. Genuinely unknown future
-      // reasons still fall back to "end_turn" so a benign new value does not
-      // start misreporting every Gemini-family turn as an unfinished tool call.
-      return isAbortFinishReason(reason) ? "tool_use" : "end_turn";
-  }
 }
 
 // Register

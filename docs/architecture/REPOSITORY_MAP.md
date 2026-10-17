@@ -206,7 +206,7 @@ src/
 | `cacheLayer.ts`, `idempotencyLayer.ts`   | Request caching + idempotency                                                                                                                                                                                                                                                                                           |
 | (~30 more top-level files)               | Specialized helpers (logEnv, modelsDevSync, piiSanitizer, etc.)                                                                                                                                                                                                                                                         |
 
-### `src/lib/db/` — Database (136 modules + 193 migrations)
+### `src/lib/db/` — Database (137 modules + 193 migrations)
 
 | Subdir                    | Purpose                                                                                                                                                                    |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -241,7 +241,7 @@ src/
 
 | Module                           | Purpose                                                                |
 | -------------------------------- | ---------------------------------------------------------------------- |
-| `constants/providers.ts`         | **355 providers** with Zod validation (source of truth)                |
+| `constants/providers.ts`         | **372 providers** with Zod validation (source of truth)                |
 | `constants/cliTools.ts`          | External CLI tool registry                                             |
 | `constants/routingStrategies.ts` | **19 routing strategies** with priorities                              |
 | `constants/publicApiRoutes.ts`   | Routes that require Bearer (vs management) auth                        |
@@ -398,7 +398,7 @@ open-sse/
 | `CLI-TOOLS.md`              | External CLI integrations + Internal OmniRoute CLI                                    |
 | `I18N.md`                   | i18n architecture, adding a language, 42 locales                                      |
 | `UNINSTALL.md`              | Clean uninstall steps                                                                 |
-| `PROVIDER_REFERENCE.md`     | **Auto-generated** catalog of 355 providers (regen: `npm run gen:provider-reference`) |
+| `PROVIDER_REFERENCE.md`     | **Auto-generated** catalog of 372 providers (regen: `npm run gen:provider-reference`) |
 
 ### Subsystem deep-dives
 

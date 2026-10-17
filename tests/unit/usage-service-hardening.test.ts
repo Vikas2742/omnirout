@@ -74,9 +74,9 @@ test("usage service covers GitHub free-plan parsing, auth denial and unsupported
   assert.equal(calls[0].headers.Authorization, "token gho-free");
   // #10952 re-based the Copilot wire identity on the live-captured CLI 1.0.88
   // (copilot-developer-cli integration id; API version 2026-08-01).
-  assert.equal(calls[0].headers["User-Agent"], "GitHubCopilotChat/1.0.88");
-  assert.equal(calls[0].headers["Editor-Version"], "copilot/1.0.88");
-  assert.equal(calls[0].headers["Editor-Plugin-Version"], "copilot-chat/1.0.88");
+  assert.equal(calls[0].headers["User-Agent"], "GitHubCopilotChat/1.0.91");
+  assert.equal(calls[0].headers["Editor-Version"], "copilot/1.0.91");
+  assert.equal(calls[0].headers["Editor-Plugin-Version"], "copilot-chat/1.0.91");
   assert.equal(calls[0].headers["X-GitHub-Api-Version"], "2026-08-01");
 
   globalThis.fetch = async () => new Response("forbidden", { status: 403 });
@@ -221,7 +221,7 @@ test("usage service covers Antigravity quota parsing, exclusions and forbidden a
     loadCodeAssistCall?.url,
     `${ANTIGRAVITY_BOOTSTRAP_BASE_URLS[0]}/v1internal:loadCodeAssist`
   );
-  assert.match(loadCodeAssistCall?.init.headers["User-Agent"], /^antigravity\/ide\/2\.1\.1 /);
+  assert.match(loadCodeAssistCall?.init.headers["User-Agent"], /^antigravity\/ide\/2\.5\.5 /);
   assert.equal(loadCodeAssistCall?.init.headers["X-Goog-Api-Client"], undefined);
   assert.equal(loadCodeAssistCall?.init.headers["Client-Metadata"], undefined);
   assert.deepEqual(
@@ -534,7 +534,7 @@ test("usage service covers Claude OAuth success, legacy fallback and permissions
 
   globalThis.fetch = async (url) => {
     if (String(url).includes("/api/oauth/usage")) {
-      return new Response("fallback", { status: 500 });
+      return new Response("fallback", { status: 404 }); // only 404/405 -> legacy fallback
     }
     if (String(url).endsWith("/v1/settings")) {
       return new Response(
@@ -562,7 +562,7 @@ test("usage service covers Claude OAuth success, legacy fallback and permissions
 
   globalThis.fetch = async (url) => {
     if (String(url).includes("/api/oauth/usage")) {
-      return new Response("fallback", { status: 500 });
+      return new Response("fallback", { status: 404 });
     }
     return new Response("denied", { status: 403 });
   };
@@ -596,7 +596,7 @@ test("usage service covers Claude default-plan fallback, legacy org denial and f
 
   globalThis.fetch = async (url) => {
     if (String(url).includes("/api/oauth/usage")) {
-      return new Response("fallback", { status: 500 });
+      return new Response("fallback", { status: 404 });
     }
     if (String(url).endsWith("/v1/settings")) {
       return new Response(

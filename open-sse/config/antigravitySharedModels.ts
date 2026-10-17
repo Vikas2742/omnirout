@@ -5,11 +5,15 @@
 // explicit add/remove delta in its own file (currently both deltas are empty).
 
 export const ANTIGRAVITY_SHARED_MODELS = Object.freeze([
+  // liveCatalogIds (#15659): a tiered-only account's live catalog lists `gemini-<ver>-flash-tiered`
+  // and none of the -high/-medium/-low ids, so without this the authoritative live-catalog check
+  // refuses every tier display id. The tier ids stay routable through the `-tiered` upstream id.
   // Gemini 3.7 Flash tiers. The live endpoint selects High by default and advertises
   // all three ids to both the IDE 2.5.5 and CLI 1.1.x clients.
   {
     id: "gemini-3.7-flash-high",
     name: "Gemini 3.7 Flash (High)",
+    liveCatalogIds: ["gemini-3.7-flash-tiered"],
     contextLength: 1048576,
     maxOutputTokens: 65536,
     supportsReasoning: true,
@@ -19,6 +23,7 @@ export const ANTIGRAVITY_SHARED_MODELS = Object.freeze([
   {
     id: "gemini-3.7-flash-medium",
     name: "Gemini 3.7 Flash (Medium)",
+    liveCatalogIds: ["gemini-3.7-flash-tiered"],
     contextLength: 1048576,
     maxOutputTokens: 65536,
     supportsReasoning: true,
@@ -28,6 +33,7 @@ export const ANTIGRAVITY_SHARED_MODELS = Object.freeze([
   {
     id: "gemini-3.7-flash-low",
     name: "Gemini 3.7 Flash (Low)",
+    liveCatalogIds: ["gemini-3.7-flash-tiered"],
     contextLength: 1048576,
     maxOutputTokens: 65536,
     supportsReasoning: true,
@@ -48,6 +54,7 @@ export const ANTIGRAVITY_SHARED_MODELS = Object.freeze([
   {
     id: "gemini-3.8-flash-high",
     name: "Gemini 3.8 Flash (High)",
+    liveCatalogIds: ["gemini-3.8-flash-tiered"],
     contextLength: 1048576,
     maxOutputTokens: 65536,
     supportsReasoning: true,
@@ -57,6 +64,7 @@ export const ANTIGRAVITY_SHARED_MODELS = Object.freeze([
   {
     id: "gemini-3.8-flash-medium",
     name: "Gemini 3.8 Flash (Medium)",
+    liveCatalogIds: ["gemini-3.8-flash-tiered"],
     contextLength: 1048576,
     maxOutputTokens: 65536,
     supportsReasoning: true,
@@ -66,6 +74,7 @@ export const ANTIGRAVITY_SHARED_MODELS = Object.freeze([
   {
     id: "gemini-3.8-flash-low",
     name: "Gemini 3.8 Flash (Low)",
+    liveCatalogIds: ["gemini-3.8-flash-tiered"],
     contextLength: 1048576,
     maxOutputTokens: 65536,
     supportsReasoning: true,
@@ -127,6 +136,89 @@ export const ANTIGRAVITY_SHARED_MODELS = Object.freeze([
     contextLength: 131072,
     maxOutputTokens: 32768,
     supportsReasoning: true,
+    toolCalling: true,
+  },
+  // Gemini 4 Argon tiers (advertised by live `:fetchAvailableModels` on CLI 1.3.4+)
+  {
+    id: "gemini-4-argon-high",
+    name: "Gemini 4 Argon (High)",
+    contextLength: 1048576,
+    maxOutputTokens: 65535,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  {
+    id: "gemini-4-argon-medium",
+    name: "Gemini 4 Argon (Medium)",
+    contextLength: 1048576,
+    maxOutputTokens: 65535,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  {
+    id: "gemini-4-argon-low",
+    name: "Gemini 4 Argon (Low)",
+    contextLength: 1048576,
+    maxOutputTokens: 65535,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  // Claude 5.5 tiers (advertised by live `:fetchAvailableModels` on CLI 1.3.4+)
+  {
+    id: "claude-opus-5-5-high",
+    name: "Claude Opus 5.5 (High)",
+    contextLength: 1048576,
+    maxOutputTokens: 65536,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  {
+    id: "claude-opus-5-5-medium",
+    name: "Claude Opus 5.5 (Medium)",
+    contextLength: 1048576,
+    maxOutputTokens: 65536,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  {
+    id: "claude-opus-5-5-low",
+    name: "Claude Opus 5.5 (Low)",
+    contextLength: 1048576,
+    maxOutputTokens: 65536,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  {
+    id: "claude-sonnet-5-5-high",
+    name: "Claude Sonnet 5.5 (High)",
+    contextLength: 1048576,
+    maxOutputTokens: 65536,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  {
+    id: "claude-sonnet-5-5-medium",
+    name: "Claude Sonnet 5.5 (Medium)",
+    contextLength: 1048576,
+    maxOutputTokens: 65536,
+    supportsReasoning: true,
+    supportsVision: true,
+    toolCalling: true,
+  },
+  {
+    id: "claude-sonnet-5-5-low",
+    name: "Claude Sonnet 5.5 (Low)",
+    contextLength: 1048576,
+    maxOutputTokens: 65536,
+    supportsReasoning: true,
+    supportsVision: true,
     toolCalling: true,
   },
 ]);

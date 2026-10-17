@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { prepareConnectionModelTest } from "@/lib/providerModels/prepareConnectionModelTest";
 import { POST as postChatCompletion } from "@/app/api/v1/chat/completions/route";
 import { POST as postAudioTranscription } from "@/app/api/v1/audio/transcriptions/route";
 import { handleValidatedEmbeddingRequestBody } from "@/app/api/v1/embeddings/route";
@@ -23,19 +24,31 @@ import { looksLikeQuotaExhausted } from "@/shared/utils/classify429";
 import { getTrustedLocalRateLimitError } from "@omniroute/open-sse/services/rateLimitManager/errors";
 import { runAsProbe } from "@/shared/utils/probeOrigin";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
+import { resolveSelfLoopBearer } from "@/shared/middleware/chatAdmissionIdentity";
 
 const INTERNAL_ORIGIN = "http://omniroute.internal";
 export const DEFAULT_MODEL_TEST_TIMEOUT_MS = 30_000;
+const CHATGPT_WEB_CLEAN_ROOM_PROVIDER_ID = "chatgpt-web";
 const DOLA_PRO_TEST_TIMEOUT_MS = 90_000;
 const DOUBAO_WEB_PROVIDER_ID = "doubao-web";
 const ZAI_WEB_PROVIDER_ID = "zai-web";
 const ZAI_WEB_TEST_TIMEOUT_MS = 60_000;
+const XIAOMI_MIMO_TOKEN_PLAN_PROVIDER_ID = "xiaomi-mimo-token-plan";
+const XIAOMI_MIMO_TOKEN_PLAN_TEST_TIMEOUT_MS = 60_000;
 const SLOW_WEB_TEST_MODELS = new Set(["dola-pro"]);
 const STREAMING_CHAT_TEST_MAX_TOKENS = 64;
 // Responses calls the same budget `max_output_tokens`; `max_tokens` is silently
 // ignored on that endpoint, which would let a reasoning model spend the whole
 // default budget before emitting any visible text.
 const RESPONSES_TEST_MAX_OUTPUT_TOKENS = 256;
+
+export function shouldSkipWebSessionModelTest(providerId: unknown): boolean {
+  return (
+    requiresWebSessionCredential(providerId) &&
+    (typeof providerId !== "string" ||
+      providerId.trim().toLowerCase() !== CHATGPT_WEB_CLEAN_ROOM_PROVIDER_ID)
+  );
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -124,6 +137,10 @@ export function resolveModelTestTimeoutMs(
     return Math.max(requestedTimeoutMs, ZAI_WEB_TEST_TIMEOUT_MS);
   }
 
+  if (normalizedProviderId === XIAOMI_MIMO_TOKEN_PLAN_PROVIDER_ID) {
+    return Math.max(requestedTimeoutMs, XIAOMI_MIMO_TOKEN_PLAN_TEST_TIMEOUT_MS);
+  }
+
   return requestedTimeoutMs;
 }
 
@@ -168,6 +185,13 @@ export function buildInternalChatRequest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      // In-process call: it never passes the authz proxy, and the /v1 handlers authenticate
+      // on their own (#16403). Present the per-process self-loop bearer so the test keeps
+      // working under REQUIRE_API_KEY=true for callers without a dashboard cookie.
+      Authorization: `Bearer ${resolveSelfLoopBearer()}`,
+      // The bearer gives the request a memory owner; a connection test must not receive
+      // injected memory/skills or feed memory extraction (same opt-out as #13139).
+      "x-omniroute-no-memory": "true",
       // Reuse the existing strict-mode internal bypass for live health checks.
       "X-Internal-Test": "combo-health-check",
       "X-OmniRoute-No-Cache": "true",
@@ -191,6 +215,9 @@ export function buildInternalResponsesRequest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      // Same in-process authentication and memory opt-out as buildInternalChatRequest.
+      Authorization: `Bearer ${resolveSelfLoopBearer()}`,
+      "x-omniroute-no-memory": "true",
       "X-Internal-Test": "combo-health-check",
       "X-OmniRoute-No-Cache": "true",
       "X-OmniRoute-Compression": "off",
@@ -271,17 +298,25 @@ export function detectTestKind(modelStr: string, customModel: any, nodeApiType?:
   // "All AI backends exhausted for chat".
   const nodeType = typeof nodeApiType === "string" ? nodeApiType : "";
   const lowerModel = modelStr.toLowerCase();
+  // Only the model's own endpoint metadata counts as an explicit chat signal. The node
+  // apiType / apiFormat are fallbacks and must not override per-model detection or the
+  // name heuristics below (an embedding model can live on a chat-typed node).
+  const isExplicitChat =
+    supportedEndpoints.includes("chat") || supportedEndpoints.includes("responses");
   const isAudioTranscription =
-    apiFormat === "audio-transcriptions" ||
-    nodeType === "audio-transcriptions" ||
-    supportedEndpoints.includes("audio-transcriptions");
+    !isExplicitChat &&
+    (apiFormat === "audio-transcriptions" ||
+      nodeType === "audio-transcriptions" ||
+      supportedEndpoints.includes("audio-transcriptions"));
   const isRerank =
+    !isExplicitChat &&
     !isAudioTranscription &&
     (apiFormat === "rerank" ||
       nodeType === "rerank" ||
       supportedEndpoints.includes("rerank") ||
       lowerModel.includes("rerank"));
   const isEmbedding =
+    !isExplicitChat &&
     !isAudioTranscription &&
     !isRerank &&
     (apiFormat === "embeddings" ||
@@ -354,6 +389,8 @@ export interface RunSingleModelTestOptions {
   connectionId?: string;
   timeoutMs?: number;
   streamChat?: boolean;
+  /** A manual connection message; only supported for chat models. */
+  prompt?: string;
 }
 
 export interface SingleModelTestResult {
@@ -477,7 +514,7 @@ export async function runSingleModelTest(
   if (!fullModelStr.includes("/")) {
     fullModelStr = `${providerId}/${modelId}`;
   }
-  if (requiresWebSessionCredential(providerId)) {
+  if (shouldSkipWebSessionModelTest(providerId)) {
     return {
       modelId: fullModelStr,
       status: "error",
@@ -489,6 +526,16 @@ export async function runSingleModelTest(
     };
   }
   const effectiveTimeoutMs = resolveModelTestTimeoutMs(providerId, fullModelStr, timeoutMs);
+
+  const catalogError = await prepareConnectionModelTest(providerId, connectionId, fullModelStr);
+  if (catalogError)
+    return {
+      modelId: fullModelStr,
+      status: "error",
+      latencyMs: 0,
+      httpStatus: catalogError.status,
+      error: catalogError.message,
+    };
 
   const startTime = Date.now();
   const [customModel, nodeApiType] = await Promise.all([
@@ -511,6 +558,16 @@ export async function runSingleModelTest(
       httpStatus: 422,
       error:
         "Skipped: non-chat generation model (images/music/video) — use the corresponding generation endpoint instead",
+    };
+  }
+
+  if (options.prompt !== undefined && (isEmbedding || isRerank || isAudioTranscription)) {
+    return {
+      modelId: fullModelStr,
+      status: "error",
+      latencyMs: Date.now() - startTime,
+      httpStatus: 400,
+      error: "Test messages require a chat model",
     };
   }
 
@@ -543,6 +600,10 @@ export async function runSingleModelTest(
             stream: !isEmbedding && streamChat,
             maxTokens: !isEmbedding && streamChat ? STREAMING_CHAT_TEST_MAX_TOKENS : undefined,
           });
+
+  if (options.prompt !== undefined && "messages" in testBody) {
+    testBody.messages = [{ role: "user", content: options.prompt }];
+  }
 
   // Per-model AbortController. We track whether the timeout fired so we can
   // distinguish "rate-limit queue aborted" (withRateLimit threw AbortError
