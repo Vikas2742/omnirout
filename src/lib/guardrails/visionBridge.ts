@@ -53,6 +53,16 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
       : typeof s.provider === "string"
         ? s.provider
         : null;
+  // A combo's internal node identity is authoritative. If the requested
+  // public prefix belongs to a different node, even a positive public
+  // capability must not bless the internal node (or bypass the Vision Bridge).
+  if (
+    provider?.startsWith("openai-compatible-") &&
+    targetModel.includes("/") &&
+    getProviderNodePrefixSync(provider) !== targetModel.split("/", 1)[0]
+  ) {
+    return "non-vision";
+  }
   const caps = getResolvedModelCapabilities({ provider, model: targetModel });
   if (caps.supportsVision === true) return "vision";
 
