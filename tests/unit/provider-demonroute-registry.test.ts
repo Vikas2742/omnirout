@@ -18,6 +18,9 @@ test("#16979 Demon Route is available on the API-key provider dashboard", () => 
   assert.equal(entry.alias, "demonroute");
   assert.equal(entry.website, "https://demonroute.com");
   assert.equal(entry.passthroughModels, true);
+  assert.ok(entry.serviceKinds.includes("llm"));
+  assert.ok(entry.serviceKinds.includes("embedding"));
+  // Free-lane access requires an account deposit; it is not an unconditional free tier.
   assert.notEqual(entry.hasFree, true);
   assert.match(entry.apiHint, /api\.demonroute\.com\/v1/);
 });
@@ -90,4 +93,57 @@ test("#16979 model passthrough keeps exact nested upstream IDs in request payloa
   assert.equal(input.model, model);
   assert.equal(executor.buildUrl(model, true), CHAT_URL);
   assert.equal(executor.buildUrl(model, false), CHAT_URL);
+});
+
+test("#16979 dashboard model import uses the authenticated live OpenAI-style path", async () => {
+  const { isNamedOpenAIStyleProvider } =
+    await import("../../src/app/api/providers/[id]/models/discovery/providerSets.ts");
+  const { buildNamedOpenAiStyleHeaders } =
+    await import("../../src/app/api/providers/[id]/models/discovery/helpers.ts");
+  const { normalizeOpenAiLikeModelsResponse } =
+    await import("../../src/app/api/providers/[id]/models/discovery/normalizers.ts");
+  const { deriveConfigFromRegistryModelsUrl } =
+    await import("../../src/app/api/providers/[id]/models/discoveryConfig.ts");
+  const { assembleProviderModelsHeaders } =
+    await import("../../src/app/api/providers/[id]/models/discovery/providerModelsConfig.ts");
+
+  assert.equal(isNamedOpenAIStyleProvider("demonroute"), true);
+  const headers = buildNamedOpenAiStyleHeaders("demonroute", "fake-unit-test-key");
+  assert.equal(headers.Authorization, "Bearer fake-unit-test-key");
+  assert.equal(buildNamedOpenAiStyleHeaders("demonroute", null).Authorization, undefined);
+
+  // The same registry URL remains usable by the ordinary discovery-config fallback.
+  const config = deriveConfigFromRegistryModelsUrl("demonroute");
+  assert.ok(config);
+  assert.equal(config.url, MODELS_URL);
+  assert.equal(config.method, "GET");
+  assert.equal(assembleProviderModelsHeaders(config, "fake-unit-test-key").Authorization,
+    "Bearer fake-unit-test-key");
+
+  const model = "huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated";
+  const normalized = normalizeOpenAiLikeModelsResponse({
+    object: "list",
+    data: [
+      { id: model, object: "model", owned_by: "huihui-ai" },
+      { id: "TheDrummer/Cydonia-24B-v4.3", name: "Cydonia", owned_by: "TheDrummer" },
+      { object: "model", name: "" },
+    ],
+  }, "demonroute");
+  assert.deepEqual(normalized, [
+    { id: model, name: model, owned_by: "huihui-ai" },
+    { id: "TheDrummer/Cydonia-24B-v4.3", name: "Cydonia", owned_by: "TheDrummer" },
+  ]);
+  assert.deepEqual(config.parseResponse({ data: [{ id: model }] }), [{ id: model }]);
+});
+
+test("#16979 executor sends Bearer auth and has independent stream/nonstream URL policy", () => {
+  const executor = new DefaultExecutor("demonroute");
+  const credentials = { apiKey: "fake-unit-test-key" };
+  const headersStream = executor.buildHeaders(credentials, true);
+  const headersJson = executor.buildHeaders(credentials, false);
+  assert.equal(headersStream.Authorization, "Bearer fake-unit-test-key");
+  assert.equal(headersJson.Authorization, "Bearer fake-unit-test-key");
+  assert.equal(executor.getTimeoutMs(), 120_000);
+  assert.equal(executor.buildUrl("vendor/deep/model", true), CHAT_URL);
+  assert.equal(executor.buildUrl("vendor/deep/model", false), CHAT_URL);
 });
