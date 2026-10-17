@@ -228,18 +228,25 @@ function isUnsupportedCfImagePart(value: unknown): boolean {
 }
 
 export function hasUnsupportedCfImageParts(messages: unknown): boolean {
-  // Chat Completions sends an array of role messages. Responses may supply
-  // one message object or direct input_image parts. Reject them all before
-  // allocating a browser, rather than silently sending text-only content.
-  const items = Array.isArray(messages) ? messages : [messages];
-  return items.some((message: unknown) => {
-    if (isUnsupportedCfImagePart(message)) return true;
-    if (!message || typeof message !== "object" || Array.isArray(message)) return false;
-    const record = message as Record<string, unknown>;
+  // Chat Completions uses message.content parts, while Responses also nests
+  // multimodal parts inside function_call_output.output and content wrappers.
+  // Scan only known payload envelopes, not arbitrary metadata or string text.
+  // The depth cap prevents malformed or cyclic client objects from recursing
+  // indefinitely before the HTTP boundary serializes them.
+  function containsImage(value: unknown, depth: number): boolean {
+    if (depth > 12) return false;
+    if (Array.isArray(value)) return value.some((part) => containsImage(part, depth + 1));
+    if (isUnsupportedCfImagePart(value)) return true;
+    if (!value || typeof value !== "object") return false;
+    const record = value as Record<string, unknown>;
     if (Array.isArray(record.images) && record.images.length > 0) return true;
-    if (Array.isArray(record.content)) return record.content.some(isUnsupportedCfImagePart);
-    return isUnsupportedCfImagePart(record.content);
-  });
+    return (
+      containsImage(record.content, depth + 1) ||
+      containsImage(record.output, depth + 1) ||
+      containsImage(record.input, depth + 1)
+    );
+  }
+  return containsImage(messages, 0);
 }
 
 /**
