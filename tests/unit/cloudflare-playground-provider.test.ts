@@ -337,11 +337,16 @@ test("#16460 deeply nested image wrappers fail closed instead of being silently 
   assert.equal(result.response.status, 400);
   assert.equal(created, 0);
 
-  // Deep text remains valid: only nonterminal structures above the limit
-  // are rejected, avoiding accidental substring-based image detection.
+  // Depth alone is not an error: legitimate text stays valid even after
+  // many wrappers, while image payloads remain detectable regardless of depth.
   let textOnly: unknown = "plain text, image_url is a literal string";
   for (let depth = 0; depth < 18; depth++) textOnly = { content: textOnly };
   assert.equal(hasUnsupportedCfImageParts([{ role: "user", content: textOnly }]), false);
+
+  // Extremely broad JSON-like bodies are rejected conservatively rather than
+  // scanning an unbounded number of objects on the request hot path.
+  const oversized = Array.from({ length: 2050 }, () => ({ type: "text", text: "x" }));
+  assert.equal(hasUnsupportedCfImageParts(oversized), true);
 
   const cyclic: { content?: unknown } = {};
   cyclic.content = cyclic;
