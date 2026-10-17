@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { parseGeminiModelsList } from "../../src/lib/providerModels/geminiModelsParser";
+import { isChatSelectableModel } from "../../open-sse/services/modelEndpointPolicy.ts";
 
 // A representative slice of the live generativelanguage v1beta/models response.
 const SAMPLE = {
@@ -144,4 +145,16 @@ test("#16929 respects actual supported methods and preserves non-chat endpoint t
     "Specialized models must retain unrelated advertised endpoints"
   );
   assert.equal(parsed.some((model) => model.id === "gemini-transcribe-live"), false);
+});
+
+test("#16929 audio-only Gemini imports are never chat selectable", () => {
+  const models = parseGeminiModelsList({
+    models: [
+      { name: "models/gemini-3.5-transcribe", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3.1-flash-tts-preview", supportedGenerationMethods: ["generateContent"] },
+      { name: "models/gemini-3-pro-image", supportedGenerationMethods: ["generateContent"] },
+    ],
+  });
+  const selectable = models.filter((model) => isChatSelectableModel("gemini", model)).map((m) => m.id);
+  assert.deepEqual(selectable, ["gemini-3-pro-image"]);
 });
