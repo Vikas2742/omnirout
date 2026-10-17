@@ -10,6 +10,7 @@ import { getEmbeddingProvider } from "@omniroute/open-sse/config/embeddingRegist
 import { getRerankProvider } from "@omniroute/open-sse/config/rerankRegistry";
 import { getImageProvider } from "@omniroute/open-sse/config/imageRegistry";
 import { getVideoProvider } from "@omniroute/open-sse/config/videoRegistry";
+import { getMusicProvider } from "@omniroute/open-sse/config/musicRegistry";
 import { getSpeechProvider, getTranscriptionProvider } from "@omniroute/open-sse/config/audioRegistry";
 
 export type EndpointAdapterStatus = "available" | "unavailable" | "unknown";
@@ -28,6 +29,7 @@ export function getRegisteredEndpointAdapterStatuses(provider: string): Endpoint
     images: status(Boolean(getImageProvider(provider))),
     "images-generations": status(Boolean(getImageProvider(provider))),
     videos: status(Boolean(getVideoProvider(provider))),
+    music: status(Boolean(getMusicProvider(provider)), hasChatRegistry),
     "audio-speech": status(Boolean(getSpeechProvider(provider)), audioMissing),
     "audio-transcriptions": status(Boolean(getTranscriptionProvider(provider)), audioMissing),
   };

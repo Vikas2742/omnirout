@@ -29,11 +29,12 @@ test("#16929: Gemini generic generateContent stays defaulted while specialty IDs
     { name: "models/gemini-3.8-flash", supportedGenerationMethods: ["generateContent"] },
     { name: "models/gemini-3.5-transcribe", supportedGenerationMethods: ["generateContent"] },
     { name: "models/gemini-3.8-flash-tts", supportedGenerationMethods: ["generateContent"] },
+    { name: "models/lyria-realtime-exp", supportedGenerationMethods: ["generateContent"] },
     { name: "models/text-embedding-004", supportedGenerationMethods: ["embedContent"] },
   ] });
   assert.deepEqual(models.map((m) => m.endpointCapabilitySource),
-    ["defaulted", "inferred", "inferred", "declared"]);
+    ["defaulted", "inferred", "inferred", "inferred", "declared"]);
   assert.deepEqual(models.map((m) => m.supportedEndpoints),
-    [["chat"], ["audio-transcriptions"], ["audio-speech"], ["embeddings"]]);
+    [["chat"], ["audio-transcriptions"], ["audio-speech"], ["music"], ["embeddings"]]);
   assert.equal(normalizeDiscoveredModels(models, "gemini")[1].endpointCapabilitySource, "inferred");
 });

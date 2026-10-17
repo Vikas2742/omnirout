@@ -5,7 +5,7 @@ import { normalizeModelSupportedEndpoints, type ModelSupportedEndpoint } from "@
 
 const OPTIONS: ModelSupportedEndpoint[] = [
   "chat", "responses", "embeddings", "rerank",
-  "images", "videos", "audio-speech", "audio-transcriptions",
+  "images", "videos", "audio-speech", "audio-transcriptions", "music",
 ];
 
 export interface ModelEndpointEditorInfo {

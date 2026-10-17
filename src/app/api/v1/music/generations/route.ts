@@ -1,3 +1,4 @@
+import { getRequestedModelEndpointMismatch } from "@/lib/providerModels/modelEndpointGuard";
 import { handleMusicGeneration } from "@omniroute/open-sse/handlers/musicGeneration.ts";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
 import {
@@ -71,6 +72,8 @@ async function postHandler(request, context) {
   // Enforce API key policies (model restrictions + budget limits)
   const policy = await enforceApiKeyPolicy(request, body.model);
   if (policy.rejection) return policy.rejection;
+  const mismatch = await getRequestedModelEndpointMismatch(body.model, "music");
+  if (mismatch) return errorResponse(HTTP_STATUS.BAD_REQUEST, mismatch);
 
   // Parse model to get provider
   const { provider } = parseMusicModel(body.model);

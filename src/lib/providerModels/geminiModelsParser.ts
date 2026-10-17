@@ -85,6 +85,15 @@ export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
         endpoints.add("images");
       }
 
+      // Lyria generates music, not chat responses, even when advertised via
+      // generateContent. A matching Vertex music adapter exists, but AI Studio
+      // must remain visibly unsupported until it has its own adapter.
+      if (lowerId.startsWith("lyria-") && methods.includes("generateContent")) {
+        inferredById = true;
+        endpoints.delete("chat");
+        endpoints.add("music");
+      }
+
       // Google serves specialized speech/transcription models through
       // generateContent too. They do NOT support Chat Completions: importing
       // them as "chat" makes the router try an incompatible endpoint (#16929).

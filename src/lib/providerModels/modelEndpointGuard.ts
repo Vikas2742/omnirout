@@ -10,7 +10,7 @@ import { getComboByName } from "@/lib/db/combos";
 import { normalizeModelSupportedEndpoints } from "@/shared/constants/modelSupportedEndpoints";
 
 export type RequestedEndpoint =
-  | "chat" | "embeddings" | "rerank" | "images" | "videos"
+  | "chat" | "embeddings" | "rerank" | "images" | "videos" | "music"
   | "audio-speech" | "audio-transcriptions";
 
 type TaggedModel = {
@@ -25,6 +25,7 @@ const ENDPOINT_ROUTE: Record<string, string> = {
   images: "/v1/images/generations",
   "images-generations": "/v1/images/generations",
   videos: "/v1/videos/generations",
+  music: "/v1/music/generations",
   "audio-speech": "/v1/audio/speech",
   "audio-transcriptions": "/v1/audio/transcriptions",
 };
@@ -54,7 +55,8 @@ export function getModelEndpointMismatchMessage(
       requested === "audio-speech" ? "audio/speech" :
       requested === "audio-transcriptions" ? "audio/transcriptions" :
       requested === "images" ? "images/generations" :
-      requested === "videos" ? "videos/generations" : requested) +
+      requested === "videos" ? "videos/generations" :
+      requested === "music" ? "music/generations" : requested) +
     ". Use " + (alternatives.length ? alternatives.join(" or ") : "a supported endpoint") +
     " instead.";
 }
