@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK conciso (文言)",
         "description": "Estilo ultraconciso de chino clásico (disponible solo para chino)."
+      },
+      "antislop-ui": {
+        "label": "Filtro antislop de UI",
+        "description": "Visuales con propósito comprobado: sin degradados genéricos, layouts de plantilla ni controles muertos."
+      },
+      "antislop-copy": {
+        "label": "Filtro antislop de textos y personas",
+        "description": "Textos honestos y reglas para personas: sin rastros de IA, contraste WCAG AA, teclado, estados, adaptación móvil."
       }
     },
     "resilienceWaitForCooldown": "Esperar a que se enfríe",
@@ -14511,7 +14519,10 @@
     "importing": "Importando...",
     "apiKeyPlaceholder": "Pega tu clave API de {providerLabel}...",
     "apiKeyStoredDescription": "Almacenado encriptado como un credencial portador de larga duración. No hay flujo de actualización.",
-    "apiKeyRegionDescription": "Región de AWS para la clave (predeterminado: us-east-1)",
+    "apiKeyRegionAuto": "Detección automática (recomendado)",
+    "apiKeyRegionUsEast1": "EE. UU. Este (Norte de Virginia)",
+    "apiKeyRegionEuCentral1": "Europa (Fráncfort)",
+    "apiKeyRegionAutoDescription": "La detección automática prueba primero EE. UU. Este, luego Europa (Fráncfort), y guarda la región donde funciona la clave.",
     "validating": "Validando...",
     "validateAndSaveApiKey": "Validar y Guardar la Clave API",
     "errorAutoDetect": "No se pudo detectar automáticamente el token",

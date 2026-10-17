@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "Sažeti CJK (文言)",
         "description": "Ultra-sažeti stil klasičnog kineskog jezika (dostupan samo za kineski)."
+      },
+      "antislop-ui": {
+        "label": "Antislop filter za korisnički interfejs",
+        "description": "Vizuali proverene svrhe: bez generičkih gradijenata, šablonskih rasporeda ili mrtvih kontrola."
+      },
+      "antislop-copy": {
+        "label": "Antislop filter za tekst i ljude",
+        "description": "Iskren tekst i pravila za ljude: bez tragova veštačke inteligencije, WCAG AA kontrast, tastatura, stanja, mobilno prelamanje."
       }
     },
     "resilienceWaitForCooldown": "Sačekaj period hlađenja",
@@ -14511,7 +14519,10 @@
     "importing": "Увоз у току...",
     "apiKeyPlaceholder": "Налепите свој {providerLabel} API кључ...",
     "apiKeyStoredDescription": "Чува се шифровано као дуготрајни bearer акредитив. Не постоји механизам за обновљавање.",
-    "apiKeyRegionDescription": "AWS регион за кључ (подразумевано: us-east-1)",
+    "apiKeyRegionAuto": "Аутоматско откривање (препоручено)",
+    "apiKeyRegionUsEast1": "САД Исток (Северна Вирџинија)",
+    "apiKeyRegionEuCentral1": "Европа (Франкфурт)",
+    "apiKeyRegionAutoDescription": "Аутоматско откривање прво покушава САД Исток, затим Европу (Франкфурт), и чува регион у коме кључ ради.",
     "validating": "Провера исправности...",
     "validateAndSaveApiKey": "Провери и сачувај API кључ",
     "errorAutoDetect": "Токен није могуће аутоматски открити",

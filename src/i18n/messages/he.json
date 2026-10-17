@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK תמציתי (文言)",
         "description": "סגנון סיני קלאסי אולטרה-תמציתי (זמין עבור סינית בלבד)."
+      },
+      "antislop-ui": {
+        "label": "מסנן Antislop לממשק",
+        "description": "רכיבים חזותיים שעברו מבחן מטרה: בלי מעברי צבע גנריים, פריסות תבנית או פקדים מתים."
+      },
+      "antislop-copy": {
+        "label": "מסנן Antislop לטקסט ולאנשים",
+        "description": "טקסט כן וכללים לאנשים: בלי סימני AI, ניגודיות WCAG AA, מקלדת, מצבים, התאמה לנייד."
       }
     },
     "resilienceWaitForCooldown": "המתן ל-Cooldown",
@@ -14511,7 +14519,10 @@
     "importing": "מייבא...",
     "apiKeyPlaceholder": "הדבק את מפתח ה-API של {providerLabel} שלך...",
     "apiKeyStoredDescription": "מאוחסן מוצפן כקרדנציה נושאת ארוכת טווח. אין זרימת רענון.",
-    "apiKeyRegionDescription": "אזור AWS עבור המפתח (ברירת מחדל: us-east-1)",
+    "apiKeyRegionAuto": "זיהוי אוטומטי (מומלץ)",
+    "apiKeyRegionUsEast1": "מזרח ארה״ב (צפון וירג׳יניה)",
+    "apiKeyRegionEuCentral1": "אירופה (פרנקפורט)",
+    "apiKeyRegionAutoDescription": "הזיהוי האוטומטי מנסה קודם את מזרח ארה״ב, אחר כך את אירופה (פרנקפורט), ושומר את האזור שבו המפתח עובד.",
     "validating": "מאמת...",
     "validateAndSaveApiKey": "אמת ושמור את מפתח ה-API",
     "errorAutoDetect": "לא ניתן לזהות אוטומטית את הטוקן",

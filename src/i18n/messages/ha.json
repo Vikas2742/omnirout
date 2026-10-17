@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "Taƙaitaccen CJK (文言)",
         "description": "Salon Sinanci na gargajiya mai matuƙar taƙaitawa (yana samuwa ga Sinanci kawai)."
+      },
+      "antislop-ui": {
+        "label": "Matatar Antislop ta UI",
+        "description": "Hotuna da aka gwada manufarsu: babu gradient na gama-gari, tsarin samfuri ko maɓallan da ba sa aiki."
+      },
+      "antislop-copy": {
+        "label": "Matatar Antislop ta rubutu da mutane",
+        "description": "Rubutu na gaskiya da ƙa'idoji don mutane: babu alamun AI, bambancin launi na WCAG AA, madannai, yanayi, sake tsarawa a wayar hannu."
       }
     },
     "resilienceWaitForCooldown": "Jira Lokacin Hucewa",
@@ -14511,7 +14519,10 @@
     "importing": "Ana shigo da shi...",
     "apiKeyPlaceholder": "Manna maɓallin API na {providerLabel}...",
     "apiKeyStoredDescription": "An adana shi cikin ɓoyayyen tsari a matsayin shaidar bearer mai dogon wa'adin aiki. Babu tsarin sabunta shi.",
-    "apiKeyRegionDescription": "Yankin AWS na maɓallin (tsoho: us-east-1)",
+    "apiKeyRegionAuto": "Gano kai tsaye (an ba da shawara)",
+    "apiKeyRegionUsEast1": "Gabashin Amurka (Arewacin Virginia)",
+    "apiKeyRegionEuCentral1": "Turai (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Gano kai tsaye yana gwada Gabashin Amurka da farko, sannan Turai (Frankfurt), kuma yana adana yankin da maɓallin ke aiki.",
     "validating": "Ana tantancewa...",
     "validateAndSaveApiKey": "Tantance kuma Ajiye Maɓallin API",
     "errorAutoDetect": "Ba a iya gano token ta atomatik ba",

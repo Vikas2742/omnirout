@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK Ringkas (文言)",
         "description": "Gaya ultra-ringkas Bahasa Cina Klasik (hanya tersedia untuk bahasa Cina)."
+      },
+      "antislop-ui": {
+        "label": "Penapis UI Antislop",
+        "description": "Visual yang diuji tujuannya: tiada gradien generik, susun atur templat atau kawalan mati."
+      },
+      "antislop-copy": {
+        "label": "Penapis teks dan manusia Antislop",
+        "description": "Teks jujur serta peraturan untuk manusia: tiada tanda AI, kontras WCAG AA, papan kekunci, keadaan, aliran semula mudah alih."
       }
     },
     "resilienceWaitForCooldown": "Tunggu Cooldown",
@@ -14511,7 +14519,10 @@
     "importing": "Mengimport...",
     "apiKeyPlaceholder": "Tampal kunci API {providerLabel} anda...",
     "apiKeyStoredDescription": "Disimpan secara terenkripsi sebagai kelayakan pembawa yang tahan lama. Tiada aliran penyegaran.",
-    "apiKeyRegionDescription": "Wilayah AWS untuk kunci (lalai: us-east-1)",
+    "apiKeyRegionAuto": "Kesan automatik (disyorkan)",
+    "apiKeyRegionUsEast1": "AS Timur (Virginia Utara)",
+    "apiKeyRegionEuCentral1": "Eropah (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Pengesanan automatik mencuba AS Timur dahulu, kemudian Eropah (Frankfurt), dan menyimpan rantau tempat kunci berfungsi.",
     "validating": "Mengesahkan...",
     "validateAndSaveApiKey": "Sahkan dan Simpan Kunci API",
     "errorAutoDetect": "Tidak dapat mengesan token secara automatik",

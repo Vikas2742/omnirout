@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "ਸੰਖੇਪ CJK (文言)",
         "description": "ਕਲਾਸੀਕਲ ਚੀਨੀ ਦੀ ਅਤਿ-ਸੰਖੇਪ ਸ਼ੈਲੀ (ਕੇਵਲ ਚੀਨੀ ਲਈ ਉਪਲਬਧ)।"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI ਫਿਲਟਰ",
+        "description": "ਮਕਸਦ-ਪਰਖੇ ਵਿਜ਼ੁਅਲ: ਕੋਈ ਆਮ ਗ੍ਰੇਡੀਐਂਟ, ਟੈਂਪਲੇਟ ਲੇਆਉਟ ਜਾਂ ਬੇਕਾਰ ਕੰਟਰੋਲ ਨਹੀਂ।"
+      },
+      "antislop-copy": {
+        "label": "Antislop ਲਿਖਤ ਅਤੇ ਮਨੁੱਖੀ ਫਿਲਟਰ",
+        "description": "ਇਮਾਨਦਾਰ ਲਿਖਤ ਅਤੇ ਲੋਕਾਂ ਲਈ ਨਿਯਮ: AI ਦੀ ਛਾਪ ਨਹੀਂ, WCAG AA ਕੰਟ੍ਰਾਸਟ, ਕੀਬੋਰਡ, ਸਥਿਤੀਆਂ, ਮੋਬਾਈਲ ਰੀਫਲੋ।"
       }
     },
     "resilienceWaitForCooldown": "ਕੂਲਡਾਊਨ ਦੀ ਉਡੀਕ ਕਰੋ",
@@ -14511,7 +14519,10 @@
     "importing": "ਆਯਾਤ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
     "apiKeyPlaceholder": "ਆਪਣੀ {providerLabel} API ਕੁੰਜੀ ਪੇਸਟ ਕਰੋ...",
     "apiKeyStoredDescription": "ਲੰਬੀ ਮਿਆਦ ਵਾਲੇ ਬੇਅਰਰ ਕ੍ਰੈਡੈਂਸ਼ਲ ਵਜੋਂ ਇਨਕ੍ਰਿਪਟ ਕਰਕੇ ਸਟੋਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ। ਕੋਈ ਰਿਫ੍ਰੈਸ਼ ਪ੍ਰਕਿਰਿਆ ਨਹੀਂ ਹੈ।",
-    "apiKeyRegionDescription": "ਕੁੰਜੀ ਲਈ AWS ਖੇਤਰ (ਡਿਫੌਲਟ: us-east-1)",
+    "apiKeyRegionAuto": "ਆਪਣੇ ਆਪ ਪਤਾ ਲਗਾਓ (ਸਿਫ਼ਾਰਸ਼ੀ)",
+    "apiKeyRegionUsEast1": "ਯੂਐਸ ਈਸਟ (ਉੱਤਰੀ ਵਰਜੀਨੀਆ)",
+    "apiKeyRegionEuCentral1": "ਯੂਰਪ (ਫ੍ਰੈਂਕਫਰਟ)",
+    "apiKeyRegionAutoDescription": "ਆਟੋ-ਖੋਜ ਪਹਿਲਾਂ ਯੂਐਸ ਈਸਟ, ਫਿਰ ਯੂਰਪ (ਫ੍ਰੈਂਕਫਰਟ) ਅਜ਼ਮਾਉਂਦੀ ਹੈ ਅਤੇ ਉਹ ਖੇਤਰ ਸੰਭਾਲਦੀ ਹੈ ਜਿੱਥੇ ਕੁੰਜੀ ਕੰਮ ਕਰਦੀ ਹੈ।",
     "validating": "ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
     "validateAndSaveApiKey": "API ਕੁੰਜੀ ਪ੍ਰਮਾਣਿਤ ਕਰੋ ਅਤੇ ਸੰਭਾਲੋ",
     "errorAutoDetect": "ਟੋਕਨ ਦਾ ਆਪਣੇ ਆਪ ਪਤਾ ਨਹੀਂ ਲਗਾਇਆ ਜਾ ਸਕਿਆ",

@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "Kortfattad CJK (文言)",
         "description": "Klassisk kinesisk ultrakortfattad stil (endast tillgänglig för kinesiska)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI-filter",
+        "description": "Syftestestade visuella element: inga generiska övertoningar, mallayouter eller döda kontroller."
+      },
+      "antislop-copy": {
+        "label": "Antislop text- och människofilter",
+        "description": "Ärlig text och regler för människor: inga AI-tecken, WCAG AA-kontrast, tangentbord, tillstånd, mobil omflödning."
       }
     },
     "resilienceWaitForCooldown": "Vänta på nedkylning",
@@ -14511,7 +14519,10 @@
     "importing": "Importerar...",
     "apiKeyPlaceholder": "Klistra in din {providerLabel} API-nyckel...",
     "apiKeyStoredDescription": "Lagrad krypterad som en långlivad bärartoken. Det finns ingen uppdateringsflöde.",
-    "apiKeyRegionDescription": "AWS-region för nyckeln (standard: us-east-1)",
+    "apiKeyRegionAuto": "Identifiera automatiskt (rekommenderas)",
+    "apiKeyRegionUsEast1": "USA Öst (N. Virginia)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automatisk identifiering provar först USA Öst, sedan Europa (Frankfurt), och sparar regionen där nyckeln fungerar.",
     "validating": "Validerar...",
     "validateAndSaveApiKey": "Validera och Spara API-nyckel",
     "errorAutoDetect": "Kunde inte automatiskt upptäcka token",

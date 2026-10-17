@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "Tiivis CJK (文言)",
         "description": "Klassisen kiinan ultra-tiivis tyyli (saatavilla vain kiinaksi)."
+      },
+      "antislop-ui": {
+        "label": "Antislop-käyttöliittymäsuodatin",
+        "description": "Tarkoituksensa läpäisseet visuaalit: ei geneerisiä liukuvärejä, mallipohjaisia asetteluja tai kuolleita ohjaimia."
+      },
+      "antislop-copy": {
+        "label": "Antislop-teksti- ja ihmissuodatin",
+        "description": "Rehellinen teksti ja säännöt ihmisille: ei tekoälyn tunnusmerkkejä, WCAG AA -kontrasti, näppäimistö, tilat, mobiilin uudelleenasettelu."
       }
     },
     "resilienceWaitForCooldown": "Odota jäähdytystä",
@@ -14511,7 +14519,10 @@
     "importing": "Tuodaan...",
     "apiKeyPlaceholder": "Liitä {providerLabel} API-avain...",
     "apiKeyStoredDescription": "Tallennettu salattuna pitkäaikaisena käyttöoikeustodistuksena. Uudistamisprosessia ei ole.",
-    "apiKeyRegionDescription": "AWS-alue avaimelle (oletus: us-east-1)",
+    "apiKeyRegionAuto": "Automaattinen tunnistus (suositeltu)",
+    "apiKeyRegionUsEast1": "USA itä (Pohjois-Virginia)",
+    "apiKeyRegionEuCentral1": "Eurooppa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automaattinen tunnistus kokeilee ensin USA itä -aluetta, sitten Eurooppaa (Frankfurt), ja tallentaa alueen, jolla avain toimii.",
     "validating": "Vahvistetaan...",
     "validateAndSaveApiKey": "Vahvista ja Tallenna API-avain",
     "errorAutoDetect": "Ei voitu automaattisesti tunnistaa tokenia",

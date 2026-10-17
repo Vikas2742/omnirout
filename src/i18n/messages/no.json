@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "Kortfattet CJK (文言)",
         "description": "Klassisk-kinesisk ultrakortfattet stil (kun tilgjengelig for kinesisk)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI-filter",
+        "description": "Formålstestede visuelle elementer: ingen generiske gradienter, malbaserte oppsett eller døde kontroller."
+      },
+      "antislop-copy": {
+        "label": "Antislop tekst- og menneskefilter",
+        "description": "Ærlig tekst og regler for mennesker: ingen KI-tegn, WCAG AA-kontrast, tastatur, tilstander, mobil omflyt."
       }
     },
     "resilienceWaitForCooldown": "Vent på nedkjøling",
@@ -14511,7 +14519,10 @@
     "importing": "Importerer...",
     "apiKeyPlaceholder": "Lim inn din {providerLabel} API-nøkkel...",
     "apiKeyStoredDescription": "Lagrert kryptert som en langvarig bærerlegitimasjon. Det er ingen oppdateringsflyt.",
-    "apiKeyRegionDescription": "AWS-region for nøkkelen (standard: us-east-1)",
+    "apiKeyRegionAuto": "Automatisk gjenkjenning (anbefalt)",
+    "apiKeyRegionUsEast1": "USA Øst (Nord-Virginia)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automatisk gjenkjenning prøver først USA Øst, deretter Europa (Frankfurt), og lagrer regionen der nøkkelen fungerer.",
     "validating": "Validerer...",
     "validateAndSaveApiKey": "Valider og Lagre API-nøkkel",
     "errorAutoDetect": "Kunne ikke automatisk oppdage token",

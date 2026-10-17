@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK súc tích (文言)",
         "description": "Văn phong Hán cổ cực kỳ súc tích (chỉ khả dụng với tiếng Trung)."
+      },
+      "antislop-ui": {
+        "label": "Bộ lọc UI Antislop",
+        "description": "Hình ảnh đã qua kiểm tra mục đích: không gradient chung chung, bố cục template hay điều khiển chết."
+      },
+      "antislop-copy": {
+        "label": "Bộ lọc văn bản và con người Antislop",
+        "description": "Văn bản trung thực cùng quy tắc vì con người: không dấu vết AI, tương phản WCAG AA, bàn phím, trạng thái, sắp xếp lại trên di động."
       }
     },
     "resilienceWaitForCooldown": "Chờ thời gian hồi",
@@ -14511,7 +14519,10 @@
     "importing": "Đang nhập...",
     "apiKeyPlaceholder": "Dán khóa API {providerLabel} của bạn...",
     "apiKeyStoredDescription": "Được lưu trữ dưới dạng thông tin xác thực bearer dài hạn và mã hóa. Không có luồng refresh.",
-    "apiKeyRegionDescription": "Khu vực AWS cho khóa (mặc định: us-east-1)",
+    "apiKeyRegionAuto": "Tự động phát hiện (khuyến nghị)",
+    "apiKeyRegionUsEast1": "Miền Đông Hoa Kỳ (Bắc Virginia)",
+    "apiKeyRegionEuCentral1": "Châu Âu (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Tự động phát hiện sẽ thử Miền Đông Hoa Kỳ trước, sau đó Châu Âu (Frankfurt), và lưu khu vực mà khóa hoạt động.",
     "validating": "Đang xác thực...",
     "validateAndSaveApiKey": "Xác thực và lưu khóa API",
     "errorAutoDetect": "Không thể tự động phát hiện token",

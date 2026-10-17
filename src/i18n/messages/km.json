@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK ខ្លីខ្លឹម (文言)",
         "description": "រចនាប័ទ្មភាសាចិនបុរាណខ្លីបំផុត (មានសម្រាប់តែភាសាចិន)។"
+      },
+      "antislop-ui": {
+        "label": "តម្រង UI Antislop",
+        "description": "រូបភាពដែលបានសាកល្បងគោលបំណង៖ គ្មាន gradient ទូទៅ ប្លង់គំរូ ឬវត្ថុបញ្ជាដែលមិនដំណើរការ។"
+      },
+      "antislop-copy": {
+        "label": "តម្រងអត្ថបទ និងមនុស្ស Antislop",
+        "description": "អត្ថបទស្មោះត្រង់ និងច្បាប់សម្រាប់មនុស្ស៖ គ្មានស្លាកស្នាម AI កម្រិតពន្លឺប្រៀបធៀប WCAG AA ក្ដារចុច ស្ថានភាព ការរៀបចំឡើងវិញលើទូរសព្ទ។"
       }
     },
     "resilienceWaitForCooldown": "រង់ចាំរយៈពេលសម្រាក",
@@ -14511,7 +14519,10 @@
     "importing": "កំពុងនាំចូល...",
     "apiKeyPlaceholder": "បិទភ្ជាប់ {providerLabel} API key របស់អ្នក...",
     "apiKeyStoredDescription": "ត្រូវបានរក្សាទុកដោយអ៊ិនគ្រីបជាលិខិតសម្គាល់អត្តសញ្ញាណប្រភេទ bearer ដែលមានសុពលភាពរយៈពេលវែង។ មិនមានដំណើរការ refresh ទេ។",
-    "apiKeyRegionDescription": "តំបន់ AWS សម្រាប់សោ (លំនាំដើម៖ us-east-1)",
+    "apiKeyRegionAuto": "រកឃើញដោយស្វ័យប្រវត្តិ (ណែនាំ)",
+    "apiKeyRegionUsEast1": "សហរដ្ឋអាមេរិកខាងកើត (វឺជីនៀខាងជើង)",
+    "apiKeyRegionEuCentral1": "អឺរ៉ុប (ហ្វ្រែងហ្វួត)",
+    "apiKeyRegionAutoDescription": "ការរកឃើញដោយស្វ័យប្រវត្តិសាកល្បងសហរដ្ឋអាមេរិកខាងកើតមុន បន្ទាប់មកអឺរ៉ុប (ហ្វ្រែងហ្វួត) ហើយរក្សាទុកតំបន់ដែលកូនសោដំណើរការ។",
     "validating": "កំពុងផ្ទៀងផ្ទាត់...",
     "validateAndSaveApiKey": "ផ្ទៀងផ្ទាត់ និងរក្សាទុក API Key",
     "errorAutoDetect": "មិនអាចរកឃើញ token ដោយស្វ័យប្រវត្តិបានទេ",

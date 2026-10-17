@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "संक्षिप्त CJK (文言)",
         "description": "शास्त्रीय-चीनी अति-संक्षिप्त शैली (केवल चीनी भाषा के लिए उपलब्ध)।"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI फ़िल्टर",
+        "description": "उद्देश्य-परखे विज़ुअल: कोई सामान्य ग्रेडिएंट, टेम्पलेट लेआउट या बेकार कंट्रोल नहीं।"
+      },
+      "antislop-copy": {
+        "label": "Antislop कॉपी और मानव फ़िल्टर",
+        "description": "ईमानदार कॉपी और लोगों के लिए नियम: AI की छाप नहीं, WCAG AA कंट्रास्ट, कीबोर्ड, स्टेट, मोबाइल रीफ़्लो।"
       }
     },
     "resilienceWaitForCooldown": "ठंडा होने की प्रतीक्षा करें",
@@ -14511,7 +14519,10 @@
     "importing": "आयात कर रहा है...",
     "apiKeyPlaceholder": "अपने {providerLabel} एपीआई कुंजी चिपकाएँ...",
     "apiKeyStoredDescription": "लंबे समय तक चलने वाले बियरर क्रेडेंशियल के रूप में संग्रहीत एन्क्रिप्टेड। कोई रिफ्रेश फ्लो नहीं है।",
-    "apiKeyRegionDescription": "कुंजी के लिए AWS क्षेत्र (डिफ़ॉल्ट: us-east-1)",
+    "apiKeyRegionAuto": "स्वतः पता लगाएँ (अनुशंसित)",
+    "apiKeyRegionUsEast1": "यूएस ईस्ट (उत्तरी वर्जीनिया)",
+    "apiKeyRegionEuCentral1": "यूरोप (फ्रैंकफर्ट)",
+    "apiKeyRegionAutoDescription": "स्वतः पहचान पहले यूएस ईस्ट, फिर यूरोप (फ्रैंकफर्ट) आज़माती है और वह क्षेत्र सहेजती है जहाँ कुंजी काम करती है।",
     "validating": "मान्यकरण हो रहा है...",
     "validateAndSaveApiKey": "API कुंजी मान्य करें और सहेजें",
     "errorAutoDetect": "टोकन का स्वचालित पता नहीं लगाया जा सका",

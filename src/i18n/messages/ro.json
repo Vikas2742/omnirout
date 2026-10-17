@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK concis (文言)",
         "description": "Stil ultra-concis în chineza clasică (disponibil doar pentru chineză)."
+      },
+      "antislop-ui": {
+        "label": "Filtru Antislop pentru UI",
+        "description": "Elemente vizuale cu scop verificat: fără degradeuri generice, layouturi șablon sau controale moarte."
+      },
+      "antislop-copy": {
+        "label": "Filtru Antislop pentru text și oameni",
+        "description": "Text onest plus reguli pentru oameni: fără urme de AI, contrast WCAG AA, tastatură, stări, rearanjare pe mobil."
       }
     },
     "resilienceWaitForCooldown": "Așteptați răcirea",
@@ -14511,7 +14519,10 @@
     "importing": "Importare...",
     "apiKeyPlaceholder": "Lipește cheia ta API {providerLabel}...",
     "apiKeyStoredDescription": "Stocat criptat ca un credential de tip bearer cu o durată lungă de viață. Nu există un flux de reîmprospătare.",
-    "apiKeyRegionDescription": "Regiunea AWS pentru cheie (implicit: us-east-1)",
+    "apiKeyRegionAuto": "Detectare automată (recomandat)",
+    "apiKeyRegionUsEast1": "SUA Est (Virginia de Nord)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Detectarea automată încearcă mai întâi SUA Est, apoi Europa (Frankfurt), și salvează regiunea în care funcționează cheia.",
     "validating": "Validare...",
     "validateAndSaveApiKey": "Validează și Salvează Cheia API",
     "errorAutoDetect": "Nu s-a putut detecta automat tokenul",

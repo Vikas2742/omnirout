@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "Terse CJK (文言)",
         "description": "Classical-Chinese ultra-terse style (available only for Chinese)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI filter",
+        "description": "Purpose-tested visuals: no generic gradients, template layouts or dead controls."
+      },
+      "antislop-copy": {
+        "label": "Antislop copy and human filter",
+        "description": "Honest copy plus people rules: no AI tells, WCAG AA contrast, keyboard, states, mobile reflow."
       }
     },
     "resilienceWaitForCooldown": "Wait for Cooldown",
@@ -14511,7 +14519,10 @@
     "importing": "Importing...",
     "apiKeyPlaceholder": "Paste your {providerLabel} API key...",
     "apiKeyStoredDescription": "Stored encrypted as a long-lived bearer credential. There is no refresh flow.",
-    "apiKeyRegionDescription": "AWS region for the key (default: us-east-1)",
+    "apiKeyRegionAuto": "Auto-detect (recommended)",
+    "apiKeyRegionUsEast1": "US East (N. Virginia)",
+    "apiKeyRegionEuCentral1": "Europe (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Auto-detect tries US East first, then Europe (Frankfurt), and saves the region where the key works.",
     "validating": "Validating...",
     "validateAndSaveApiKey": "Validate and Save API Key",
     "errorAutoDetect": "Could not auto-detect token",

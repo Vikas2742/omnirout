@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "සංක්ෂිප්ත CJK (文言)",
         "description": "සම්භාව්ය චීන අතිසංක්ෂිප්ත ශෛලිය (චීන භාෂාව සඳහා පමණක් ලබා ගත හැක)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI පෙරහන",
+        "description": "අරමුණ පරීක්ෂා කළ දෘශ්‍ය: සාමාන්‍ය ග්‍රේඩියන්ට්, සැකිලි පිරිසැලසුම් හෝ ක්‍රියා නොකරන පාලන නැත."
+      },
+      "antislop-copy": {
+        "label": "Antislop පෙළ සහ මානව පෙරහන",
+        "description": "අවංක පෙළ සහ මිනිසුන් සඳහා නීති: AI ලකුණු නැත, WCAG AA වෙනස, යතුරුපුවරුව, තත්ත්වයන්, ජංගම නැවත සැකසීම."
       }
     },
     "resilienceWaitForCooldown": "Cooldown සඳහා රැඳී සිටින්න",
@@ -14511,7 +14519,10 @@
     "importing": "ආයාත කරමින්...",
     "apiKeyPlaceholder": "ඔබේ {providerLabel} API යතුර අලවන්න...",
     "apiKeyStoredDescription": "දිගුකාලීන බෙයරර් අක්තපත්රයක් ලෙස සංකේතනය කර ගබඩා කෙරේ. නැවුම් කිරීමේ ප්රවාහයක් නොමැත.",
-    "apiKeyRegionDescription": "යතුර සඳහා AWS කලාපය (පෙරනිමිය: us-east-1)",
+    "apiKeyRegionAuto": "ස්වයංක්‍රීයව හඳුනාගන්න (නිර්දේශිත)",
+    "apiKeyRegionUsEast1": "එක්සත් ජනපද නැගෙනහිර (උතුරු වර්ජිනියා)",
+    "apiKeyRegionEuCentral1": "යුරෝපය (ෆ්‍රෑන්ක්ෆර්ට්)",
+    "apiKeyRegionAutoDescription": "ස්වයංක්‍රීය හඳුනාගැනීම මුලින් එක්සත් ජනපද නැගෙනහිර, පසුව යුරෝපය (ෆ්‍රෑන්ක්ෆර්ට්) උත්සාහ කර යතුර ක්‍රියා කරන කලාපය සුරකියි.",
     "validating": "වලංගුභාවය පරීක්ෂා කරමින්...",
     "validateAndSaveApiKey": "API යතුර වලංගු කර සුරකින්න",
     "errorAutoDetect": "ටෝකනය ස්වයංක්රීයව හඳුනාගත නොහැකි විය",

@@ -8247,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK مقتضب (文言)",
         "description": "أسلوب صيني كلاسيكي فائق الاقتضاب (متاح للغة الصينية فقط)."
+      },
+      "antislop-ui": {
+        "label": "مرشّح Antislop للواجهة",
+        "description": "عناصر بصرية مختبرة الغرض: لا تدرجات لونية عامة ولا تخطيطات قوالب ولا عناصر تحكم معطّلة."
+      },
+      "antislop-copy": {
+        "label": "مرشّح Antislop للنصوص والإنسان",
+        "description": "نصوص صادقة مع قواعد للبشر: بلا علامات الذكاء الاصطناعي، تباين WCAG AA، لوحة المفاتيح، الحالات، إعادة التدفق على الجوال."
       }
     },
     "resilienceWaitForCooldown": "انتظر فترة التهدئة",
@@ -14511,7 +14519,10 @@
     "importing": "جارٍ الاستيراد...",
     "apiKeyPlaceholder": "الصق مفتاح API الخاص بك {providerLabel}...",
     "apiKeyStoredDescription": "تم تخزينه مشفراً كاعتماد حاملي طويل الأمد. لا يوجد تدفق تحديث.",
-    "apiKeyRegionDescription": "منطقة AWS للمفتاح (افتراضي: us-east-1)",
+    "apiKeyRegionAuto": "اكتشاف تلقائي (موصى به)",
+    "apiKeyRegionUsEast1": "شرق الولايات المتحدة (فيرجينيا الشمالية)",
+    "apiKeyRegionEuCentral1": "أوروبا (فرانكفورت)",
+    "apiKeyRegionAutoDescription": "يجرّب الاكتشاف التلقائي شرق الولايات المتحدة أولاً، ثم أوروبا (فرانكفورت)، ويحفظ المنطقة التي يعمل فيها المفتاح.",
     "validating": "جارٍ التحقق...",
     "validateAndSaveApiKey": "تحقق من مفتاح API واحفظه",
     "errorAutoDetect": "تعذر الكشف التلقائي عن الرمز",
