@@ -95,9 +95,12 @@ supplemented:
   refusal is audited as `settings.update_failed` with `reason: OPERATOR_REQUIRED`
   (`requireOperatorCredential()` in `src/lib/api/operatorCredential.ts`).
   Ordinary settings (theme, display preferences) stay writable for a `manage` key
-  or an `admin` access token. Every `/api/settings` mutation also needs the `admin`
-  access-token scope (`ADMIN_MUTATION_PREFIXES` in `src/server/authz/accessScopes.ts`);
-  `GET /api/settings` stays `read`.
+  or an `admin` access token. Every mutation of `/api/settings` itself (and of
+  `/api/settings/require-login`) also needs the `admin` access-token scope
+  (`ADMIN_MUTATION_EXACT_PATHS` in `src/server/authz/accessScopes.ts`, exact-path
+  match); `GET` stays `read`, and the other `/api/settings/*` sub-routes (proxies,
+  combo defaults, model aliases, compression, purges…) keep the method-inferred
+  `write` scope.
 - `POST /api/settings/import-json` skips that re-auth, so it drops every key in
   `IMPORT_STRIPPED_SETTINGS_KEYS` (same file) before writing: the password and
   `currentPassword`, every `SECURITY_IMPACTING_SETTINGS_KEYS` entry, and the

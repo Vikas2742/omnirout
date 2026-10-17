@@ -39,6 +39,7 @@ const compliance = await import("../../src/lib/compliance/index.ts");
 const settingsRoute = await import("../../src/app/api/settings/route.ts");
 const importJsonRoute = await import("../../src/app/api/settings/import-json/route.ts");
 const { inferRequiredScope } = await import("../../src/server/authz/accessScopes.ts");
+const { requireManagementAuth } = await import("../../src/lib/api/requireManagementAuth.ts");
 const securitySettings = await import("../../src/shared/constants/securityImpactingSettings.ts");
 
 const ROUTE_URL = "http://localhost:20128/api/settings";
@@ -129,6 +130,45 @@ test("settings mutations require the admin access-token scope; reads and lookali
   assert.equal(inferRequiredScope("GET", "/api/settings"), "read");
   assert.equal(inferRequiredScope("GET", "/api/settings/require-login"), "read");
   assert.equal(inferRequiredScope("PATCH", "/api/settings-other"), "write");
+});
+
+test("only the exact settings routes are admin — other /api/settings/* sub-routes keep write", () => {
+  for (const method of ["PATCH", "PUT", "POST", "DELETE"]) {
+    assert.equal(inferRequiredScope(method, "/api/settings/"), "admin", method);
+    for (const subRoute of [
+      "/api/settings/proxies",
+      "/api/settings/proxies/abc123",
+      "/api/settings/combo-defaults",
+      "/api/settings/model-aliases",
+      "/api/settings/compression",
+      "/api/settings/purge-request-history",
+      "/api/settings/require-login/extra",
+    ]) {
+      assert.equal(inferRequiredScope(method, subRoute), "write", `${method} ${subRoute}`);
+    }
+  }
+});
+
+test("a write oma_ token passes the management gate on /api/settings/proxies but not on /api/settings", async () => {
+  const bearer = { authorization: `Bearer ${writeToken.secret}` };
+  const proxies = await requireManagementAuth(
+    new Request("http://localhost:20128/api/settings/proxies", {
+      method: "PATCH",
+      headers: { "content-type": "application/json", ...bearer },
+      body: "{}",
+    })
+  );
+  assert.equal(proxies, null, "write token must still mutate an ordinary settings sub-route");
+
+  const settings = await requireManagementAuth(
+    new Request(ROUTE_URL, {
+      method: "PATCH",
+      headers: { "content-type": "application/json", ...bearer },
+      body: "{}",
+    })
+  );
+  assert.ok(settings, "write token must be refused on PATCH /api/settings");
+  assert.equal(settings.status, 403, await settings.text());
 });
 
 // ─── B3: corsOrigins / bruteForceProtection are re-auth gated and import-stripped ─────
