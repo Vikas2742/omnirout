@@ -446,11 +446,18 @@ export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedA
         // edited from chat to embeddings disappears from dispatch but keeps
         // advertising chat in the public catalog. Overlay ONLY same-id rows:
         // entirely new operator models are still handled by the custom loop.
-        const overrides = (await getCustomModels(providerId)) as Array<{
+        let overrides: Array<{
           id?: string;
           supportedEndpoints?: string[];
           endpointCapabilitySource?: string;
-        }>;
+        }> = [];
+        try {
+          const candidates = await getCustomModels(providerId);
+          if (Array.isArray(candidates)) overrides = candidates;
+        } catch {
+          // An unavailable custom overlay must not empty the entire live model
+          // catalog: keep the raw synced entries just as dispatch does.
+        }
         const endpointsById = new Map(
           overrides.filter((row) =>
             row?.endpointCapabilitySource === "operator" &&
