@@ -296,6 +296,12 @@ function normalizeConnectionQuotas(rawQuotas: Record<string, unknown>, provider:
 
 // ─── Public API ─────────────────────────────────────────────────────────────
 
+/** Every quota observation must participate in the recovery refresh lifecycle. */
+function cacheQuotaObservation(connectionId: string, entry: QuotaCacheEntry): void {
+  getState().cache.set(connectionId, entry);
+  startBackgroundRefresh();
+}
+
 export function __clearForTests() {
   getState().cache.clear();
 }
@@ -416,7 +422,7 @@ export function hydrateCodexQuotaCacheForRequest(
   }
   entry.exhausted = isExhausted(entry.quotas);
   if (exhaustedResetAt) entry.nextResetAt = capParkWindow(exhaustedResetAt, Date.now());
-  cache.set(connection.id, entry);
+  cacheQuotaObservation(connection.id, entry);
 }
 
 function isCodexQuotaExhausted(
@@ -746,7 +752,7 @@ export function setQuotaCache(
     // #14359 — cap the park; keep the prior deadline while the streak continues (monitor rewrites must not extend it).
     nextResetAt: exhausted ? preserveParkDeadline(earliestResetAt(quotas), prior) : null,
   };
-  getState().cache.set(connectionId, entry);
+  cacheQuotaObservation(connectionId, entry);
 
   if (entry && rawQuotas) {
     for (const [windowKey, quotaInfo] of Object.entries(rawQuotas)) {
@@ -882,7 +888,7 @@ function hydrateQuotaCacheFromSnapshots(connectionId: string): QuotaCacheEntry |
     nextResetAt: exhausted ? capParkWindow(earliestResetAt(quotas), fetchedAt || Date.now()) : null,
     windowDurationMs,
   };
-  cache.set(connectionId, entry);
+  cacheQuotaObservation(connectionId, entry);
   return entry;
 }
 
@@ -954,7 +960,10 @@ export function getQuotaWindowStatus(
     // #10095 — a window whose fraction upstream never reported is "unknown",
     // not "0% remaining"; never let it reach the exhaustion threshold.
     reachedThreshold:
-      windowExpired || window.fractionReported === false
+      windowExpired ||
+      advancedWindowResetAt(entry, now) !== null ||
+      now - entry.fetchedAt >= EXHAUSTED_MAX_PARK_MS ||
+      window.fractionReported === false
         ? false
         : remainingPercentage <= 0
           ? true
@@ -1052,7 +1061,7 @@ export function getQuotaSnapshotFetchedAt(connectionId: string): number | null {
 export function markAccountExhaustedFrom429(connectionId: string, provider: string) {
   // #14359 — a real upstream 429 is authoritative: drop any healthy override.
   unmarkQuotaHealthy(connectionId);
-  getState().cache.set(connectionId, {
+  cacheQuotaObservation(connectionId, {
     connectionId,
     provider,
     quotas: {},
