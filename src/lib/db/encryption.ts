@@ -48,6 +48,8 @@ export interface ConnectionFields {
   accessToken?: string | null;
   refreshToken?: string | null;
   idToken?: string | null;
+  providerSpecificData?: unknown;
+  credentialDecryptFailed?: boolean;
   [key: string]: unknown;
 }
 
@@ -453,7 +455,7 @@ export function decryptConnectionFields<T extends ConnectionFields | null | unde
     accessToken,
     refreshToken,
     idToken,
-    providerSpecificData,
+    ...(row.providerSpecificData !== undefined ? { providerSpecificData } : {}),
     ...(credentialDecryptFailed ? { credentialDecryptFailed: true } : {}),
   };
 }
