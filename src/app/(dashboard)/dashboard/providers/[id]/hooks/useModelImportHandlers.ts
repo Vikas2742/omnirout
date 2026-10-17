@@ -488,10 +488,11 @@ export function useModelImportHandlers({
       // Only newly enabled connections need an immediate sync; existing
       // enabled accounts remain on their scheduler cadence.
       const syncIds = newValue
-        ? activeWithId.filter((conn, index) =>
-            conn.providerSpecificData?.autoSync !== true &&
-            results[index].status === "fulfilled" && results[index].value.ok
-          ).map((conn) => conn.id!)
+        ? activeWithId.filter((conn, index) => {
+            const result = results[index];
+            return conn.providerSpecificData?.autoSync !== true &&
+              result.status === "fulfilled" && result.value.ok;
+          }).map((conn) => conn.id!)
         : [];
       const syncResults = await Promise.allSettled(syncIds.map(async (id) => {
         const response = await fetch(`/api/providers/${id}/sync-models`, {
