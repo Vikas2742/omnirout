@@ -272,3 +272,16 @@ test("#16801: same public model leaf from a foreign node must not authorize imag
   );
   assert.equal(await getComboVisionBridgeDecision("ghost-owner-16801"), "no-vision");
 });
+
+test("#16801: builtin providers keep their original capability verdict", async () => {
+  assert.equal(getResolvedModelCapabilities("openai/gpt-4o").supportsVision, true);
+  await combos.createCombo({
+    name: "builtin-vision-control-16801", strategy: "priority",
+    models: [{ kind: "model", providerId: "openai", model: "openai/gpt-4o", weight: 1 }],
+  });
+  assert.equal(
+    await getComboVisionBridgeDecision("builtin-vision-control-16801"),
+    "skip",
+    "internal-node ownership checks must not alter built-in provider behavior"
+  );
+});
