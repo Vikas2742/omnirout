@@ -75,6 +75,11 @@ const REASONING_UNSUPPORTED_PATTERNS = [
   "dall-e",
   "flux-",
   "stable-diffusion",
+  // Non-reasoning Llama chat ids (#3258) dropped from the Groq static catalog when Groq retired
+  // them for free/developer tiers — enterprise keys and live discovery can still reach them, and
+  // Groq returns HTTP 400 if reasoning_effort is forwarded.
+  "llama-3.3-70b-versatile",
+  "llama-4-scout-17b-16e-instruct",
 ];
 
 /** Catalog/API surface types that are not chat completions. */
@@ -334,12 +339,14 @@ function stripKnownEffortSuffix(modelId: string): string | null {
 }
 
 function getStaticSpec(modelId: string | null, rawModel: string | null): ModelSpec | undefined {
+  // The routing provider is already resolved. Remaining path segments belong to
+  // the upstream model and must not import another provider's leaf capabilities.
   if (modelId) {
-    const byCanonical = getModelSpec(modelId);
+    const byCanonical = getModelSpec(modelId, { stripNamespace: false });
     if (byCanonical) return byCanonical;
   }
   if (rawModel && rawModel !== modelId) {
-    return getModelSpec(rawModel);
+    return getModelSpec(rawModel, { stripNamespace: false });
   }
   return undefined;
 }
@@ -393,7 +400,7 @@ function getStaticSpecCanonicalModelId(modelId: string | null, rawModel: string 
     (candidate): candidate is string => typeof candidate === "string" && candidate.length > 0
   );
   for (const candidate of candidates) {
-    const hit = findModelSpecIdByExactOrAlias(candidate);
+    const hit = findModelSpecIdByExactOrAlias(candidate, { stripNamespace: false });
     if (hit) return hit;
   }
   return null;

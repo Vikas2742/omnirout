@@ -11,6 +11,10 @@ export const opencodeProvider: RegistryEntry = {
   authHeader: "Authorization",
   authPrefix: "Bearer",
   passthroughModels: true,
+  toolCalling: "emulated",
+  // #15540: the keyless Free tier serves every model below even when the account row
+  // (apiKey "public") only syncs a subset, so a partial discovery must not reject them.
+  liveCatalogAuthoritative: false,
   defaultContextLength: 200000,
   // Upstream 400s "name must be at most 64 characters" on chat-completions tools.
   toolNameMaxLength: 64,
