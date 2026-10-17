@@ -1,0 +1,1 @@
+- **feat(providers):** Add Demon Route as an OpenAI-compatible API-key gateway with account-scoped model discovery and slash-qualified model passthrough (refs [#16979](https://github.com/diegosouzapw/OmniRoute/issues/16979)) — thanks @fabioKoruja00
