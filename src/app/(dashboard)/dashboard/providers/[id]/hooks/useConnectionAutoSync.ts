@@ -22,6 +22,7 @@ export function useConnectionAutoSync(
     async (connectionId: string, enabled: boolean) => {
       try {
         const existingPsd = connections.find((c) => c.id === connectionId)?.providerSpecificData;
+        const newlyEnabled = enabled && existingPsd?.autoSync !== true;
         const response = await fetch(`/api/providers/${connectionId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -44,7 +45,7 @@ export function useConnectionAutoSync(
               : connection
           )
         );
-        if (enabled) {
+        if (newlyEnabled) {
           try {
             const sync = await fetch(`/api/providers/${connectionId}/sync-models`, {
               method: "POST",
