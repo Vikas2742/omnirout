@@ -213,7 +213,6 @@ function editAccounting(
   return { ...base, endpoint: "/v1/images/edits", provider, model, credentials, comboStrategy };
 }
 
-
 async function handleSyntxEditRequest(params: {
   parsed: ReturnType<typeof parseImageModel>;
   providerConfig: NonNullable<ReturnType<typeof getImageProvider>>;
@@ -987,8 +986,13 @@ async function postHandler(request: Request, _context?: unknown) {
     );
   }
 
-  // Antigravity Gemini Image-to-Image editing support
-  if (providerConfig?.format === "gemini-image" || parsed.provider === "antigravity") {
+  // Antigravity Gemini Image-to-Image editing support; Muse Image (muse-code) edits ride
+  // the same handleImageGeneration path, which posts imageBytes to Meta's /images/edits.
+  if (
+    providerConfig?.format === "gemini-image" ||
+    providerConfig?.format === "muse-image" ||
+    parsed.provider === "antigravity"
+  ) {
     const credentials = await getProviderCredentialsWithQuotaPreflight(
       parsed.provider,
       null,
@@ -1023,6 +1027,8 @@ async function postHandler(request: Request, _context?: unknown) {
       provider: parsed.provider,
       requestedModel: resolvedModel,
       credentials,
+      // GHSA-3w2r: account fallback stays inside the key's connection scope.
+      allowedConnections,
       execute: (creds) =>
         handleImageGeneration({
           body: {
