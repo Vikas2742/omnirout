@@ -783,15 +783,20 @@ export async function updateCustomModel(
     // llama.cpp connection's auto-discovered embedding model had no way to be
     // marked "supports embeddings" because it had never been explicitly
     // imported as a custom model first.
-    models.push({
-      id: modelId,
-      name: modelId,
-      source: Object.keys(updates).length === 1 && "supportedEndpoints" in updates
-        ? "endpoint-override"
-        : "manual",
-      apiFormat: "chat-completions",
-      supportedEndpoints: ["chat"],
-    });
+    // Endpoint-only edits are virtual overlays, not manually declared chat
+    // models. Do not persist guessed name/apiFormat fields: doing so would
+    // overwrite the real synced metadata when catalog rows are merged.
+    if (Object.keys(updates).length === 1 && "supportedEndpoints" in updates) {
+      models.push({ id: modelId, source: "endpoint-override" });
+    } else {
+      models.push({
+        id: modelId,
+        name: modelId,
+        source: "manual",
+        apiFormat: "chat-completions",
+        supportedEndpoints: ["chat"],
+      });
+    }
     index = models.length - 1;
   }
 

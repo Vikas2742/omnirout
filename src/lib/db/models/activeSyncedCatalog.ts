@@ -160,8 +160,15 @@ async function unionCustomModels(
   models: SyncedAvailableModel[]
 ): Promise<SyncedAvailableModel[]> {
   let customRows: SyncedAvailableModel[] = [];
+  const endpointOnlyIds = new Set<string>();
   try {
-    customRows = normalizeSyncedAvailableModels(await getCustomModels(providerId), providerId);
+    const rawCustom = await getCustomModels(providerId);
+    for (const row of Array.isArray(rawCustom) ? rawCustom : []) {
+      if (row?.source === "endpoint-override" && typeof row.id === "string") {
+        endpointOnlyIds.add(row.id);
+      }
+    }
+    customRows = normalizeSyncedAvailableModels(rawCustom, providerId);
   } catch {
     // Fail open: a customModels read/parse miss must not empty the synced catalog.
     return models;
@@ -175,6 +182,18 @@ async function unionCustomModels(
   for (const model of customRows) {
     if (!model?.id) continue;
     const existing = merged.get(model.id);
+    if (endpointOnlyIds.has(model.id)) {
+      // A custom row created only to edit endpoint tags must never replace a
+      // discovered name, protocol or token limit with synthesized defaults.
+      if (existing && Array.isArray(model.supportedEndpoints)) {
+        merged.set(model.id, {
+          ...existing,
+          supportedEndpoints: model.supportedEndpoints,
+          endpointCapabilitySource: "operator",
+        });
+      }
+      continue;
+    }
     if (!existing) {
       merged.set(model.id, model);
       continue;

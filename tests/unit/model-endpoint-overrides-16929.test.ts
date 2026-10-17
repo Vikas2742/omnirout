@@ -22,7 +22,7 @@ test.after(() => {
 
 test("#16929: a virtual endpoint override resets without deleting discovered model", async () => {
   await models.replaceSyncedAvailableModelsForConnection("deepseek", "connection-1", [
-    { id: "model-stt", name: "Speech", supportedEndpoints: ["audio-transcriptions"],
+    { id: "model-stt", name: "Speech", apiFormat: "audio-transcriptions", supportedEndpoints: ["audio-transcriptions"],
       endpointCapabilitySource: "declared" },
   ]);
   const edited = await models.updateCustomModel("deepseek", "model-stt", {
@@ -30,6 +30,12 @@ test("#16929: a virtual endpoint override resets without deleting discovered mod
   });
   assert.equal(edited?.source, "endpoint-override");
   assert.equal(edited?.endpointCapabilitySource, "operator");
+  const { getActiveSyncedCatalog } = await import("../../src/lib/db/models/activeSyncedCatalog.ts");
+  const active = await getActiveSyncedCatalog("deepseek");
+  const observed = active.models.find((row) => row.id === "model-stt");
+  assert.equal(observed?.name, "Speech");
+  assert.equal(observed?.apiFormat, "audio-transcriptions");
+  assert.deepEqual(observed?.supportedEndpoints, ["chat"]);
   await models.replaceSyncedAvailableModelsForConnection("deepseek", "connection-1", [
     { id: "model-stt", name: "New upstream name", supportedEndpoints: ["audio-transcriptions"],
       endpointCapabilitySource: "declared" },
