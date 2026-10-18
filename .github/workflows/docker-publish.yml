@@ -49,11 +49,11 @@ permissions:
 jobs:
   prepare:
     name: Resolve Docker release metadata
-    # Publishing targets the upstream owner's Docker Hub/GHCR namespaces and
-    # requires secrets that are not inherited by forks. Skip fork runs entirely.
+    # Keep the explicit upstream scheduled-run guard on every job, including
+    # publish jobs that currently exclude schedule entirely.
     if: >-
-      github.repository == 'diegosouzapw/OmniRoute' &&
-      github.event_name != 'schedule'
+      github.event_name != 'schedule' &&
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -144,9 +144,8 @@ jobs:
     name: Preflight — amd64 runner availability
     needs: prepare
     if: >-
-      github.repository == 'diegosouzapw/OmniRoute' &&
-      github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true' &&
-      vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true'
+      github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true' && vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' &&
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -181,10 +180,10 @@ jobs:
     # runner-preflight is SKIPPED when USE_VPS_RUNNER is off; a plain `if:` would
     # inherit the implicit success() check and skip the whole build with it.
     if: >-
-      !cancelled() && github.repository == 'diegosouzapw/OmniRoute' &&
-      github.event_name != 'schedule' &&
+      !cancelled() && github.event_name != 'schedule' &&
       needs.prepare.result == 'success' && needs.prepare.outputs.skip != 'true' &&
-      (needs.runner-preflight.result == 'success' || needs.runner-preflight.result == 'skipped')
+      (needs.runner-preflight.result == 'success' || needs.runner-preflight.result == 'skipped') &&
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     # amd64: the .113 omni-build pool (31 GB / 32 cores, ONE listener since
     # #12048). Hosted ubuntu-24.04 is ~7 GB and dies ResourceExhausted (#11976).
     # Falls back to hosted when USE_VPS_RUNNER is off. arm64: no ARM box — stay
@@ -249,6 +248,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Heap for the webpack build inside BuildKit: 12288 MB on every build-args block below.
+      # Validated on the hosted runners (16 GB) by the publishes of 2026-10-16/17 — runs
+      # 38904652365, 38907575198 and 39010473398, amd64 and arm64 green (27-55 min). It stays
+      # at or above build.yml's native webpack floor (10240 MB), never below it
+      # (tests/unit/docker-publish-build-heap-14325.test.ts).
       - name: Build and push platform image by digest
         id: build
         uses: docker/build-push-action@v7
@@ -415,8 +419,8 @@ jobs:
       - prepare
       - build
     if: >-
-      github.repository == 'diegosouzapw/OmniRoute' &&
-      github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true'
+      github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true' &&
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -691,9 +695,9 @@ jobs:
   runner-alert:
     name: omni-build runner offline alert
     if: >-
-      github.repository == 'diegosouzapw/OmniRoute' &&
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
-      vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true'
+      vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' &&
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
