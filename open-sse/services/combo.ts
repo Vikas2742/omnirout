@@ -20,11 +20,11 @@ import {
 } from "./comboConfig.ts";
 
 import { getHiddenModelsByProvider } from "@/models";
-import { getModelVisibilityAllowlists } from "@/lib/db/models/visibilityAllowlist";
 import {
+  getModelVisibilityAllowlists,
   isAdmittedByModelVisibilityAllowlist,
   isHiddenByModelVisibilityList,
-} from "@/shared/utils/modelVisibility";
+} from "@/models";
 import { getHiddenChatModels } from "../../src/lib/hiddenChatModels";
 
 import { evaluateQuotaCutoff, getQuotaFetcher, type QuotaInfo } from "./quotaPreflight.ts";
