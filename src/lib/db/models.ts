@@ -65,6 +65,8 @@ export {
   getModelVisibilityAllowlists,
   setModelVisibilityAllowlist,
 } from "./models/visibilityAllowlist";
+// Reuse the canonical visibility policy through the established models boundary.
+export { isAdmittedByModelVisibilityAllowlist, isHiddenByModelVisibilityList } from "@/shared/utils/modelVisibility";
 export type { SyncedAvailableModel } from "./models/synced";
 export {
   getCustomModelVisionOverride,
