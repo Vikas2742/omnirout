@@ -2,6 +2,15 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CodeBuddyCnExecutor } from "../../open-sse/executors/codebuddy-cn.ts";
 
+// The inlining is opt-in (CODEBUDDY_CN_INLINE_REASONING, default off): these cases run
+// with the flag on; the default-off case below clears it.
+const ORIGINAL_INLINE_FLAG = process.env.CODEBUDDY_CN_INLINE_REASONING;
+process.env.CODEBUDDY_CN_INLINE_REASONING = "true";
+test.after(() => {
+  if (ORIGINAL_INLINE_FLAG === undefined) delete process.env.CODEBUDDY_CN_INLINE_REASONING;
+  else process.env.CODEBUDDY_CN_INLINE_REASONING = ORIGINAL_INLINE_FLAG;
+});
+
 function makeBody() {
   return {
     messages: [
@@ -140,4 +149,22 @@ test("issue #13632: no-op for non-assistant roles", () => {
   };
 
   assert.equal(out.messages[0].content, "hi");
+});
+
+test("issue #13632: default off — without CODEBUDDY_CN_INLINE_REASONING the request is unchanged", () => {
+  const previous = process.env.CODEBUDDY_CN_INLINE_REASONING;
+  delete process.env.CODEBUDDY_CN_INLINE_REASONING;
+  try {
+    const exec = new CodeBuddyCnExecutor();
+    const out = exec.transformRequest("deepseek-v4-flash", makeBody(), true, {}) as {
+      messages: Array<Record<string, unknown>>;
+    };
+    assert.equal(out.messages[1].content, "The answer is 4.");
+    assert.equal(
+      out.messages[1].reasoning_content,
+      "The user is asking a simple arithmetic question. 2+2=4."
+    );
+  } finally {
+    process.env.CODEBUDDY_CN_INLINE_REASONING = previous;
+  }
 });

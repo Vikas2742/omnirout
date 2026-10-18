@@ -1271,6 +1271,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "CODEBUDDY_CN_INLINE_REASONING",
+    label: "CodeBuddy CN: Inline Reasoning Replay",
+    description:
+      "For codebuddy-cn thinking models (the DeepSeek-V4 / Kimi-K2 families that need reasoning replay), inline each replayed assistant reasoning_content as a visible <thought> block at the front of the message content, so it survives a gateway that drops the reasoning_content field (#13632). Off by default: codebuddy-cn requests are sent unchanged; the reasoning_content field itself is always kept.",
+    descriptionI18nKey: "featureFlagCodebuddyCnInlineReasoningDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
     key: "CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED",
     label: "Credential Health: Retest Auto-Disabled Connections",
     description:
