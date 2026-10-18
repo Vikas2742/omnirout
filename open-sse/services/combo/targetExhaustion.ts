@@ -32,7 +32,7 @@ import {
   containsModelUnavailableMessage,
   isCloudflareFingerprintRejection,
 } from "../errorClassifier.ts";
-import { isLocalModelPolicyResponse } from "../../../src/shared/utils/resolvedModelAccess.ts";
+import { isLocalModelPolicyResponse } from "../resolvedModelAccess.ts";
 // #10334 — connection-scope predicate shared with the persistence layer
 // (markAccountUnavailable) so the same-request combo skip and the persisted
 // connection cooldown agree on exactly which fallbackResult shapes qualify.
@@ -46,6 +46,7 @@ import { getCachedClaudeQuotaScopeDecision } from "@/domain/quotaCache";
 import { resolveProviderId } from "@/shared/constants/providers";
 import { LOCAL_MODEL_COOLDOWN_HEADER } from "../../utils/localCooldownHeader.ts";
 import { isExplicitModelCapacityFailure } from "../accountFallback/perModelFailureScope.ts";
+import { isModelScopedAccessDenial } from "../accountFallback/modelScopedAccessDenial.ts";
 import type { ComboLogger, ResolvedComboTarget } from "./types.ts";
 
 // Connection-level failure statuses: the provider connection itself is likely bad (upstream
@@ -72,15 +73,15 @@ function isEmptyContentFailure(status: number, errorText: string): boolean {
 }
 
 /**
- * 2026-10-08 (live auto/best-coding interruption): streamReadiness rewrites an upstream
- * stream that dies before any non-ping event into a synthetic 502 "Stream ended before
- * producing a non-ping SSE event" (upstream diagnostic appended after ": "). The
- * connection to the gateway was HEALTHY - it answered and opened the stream - only this
- * MODEL's backend failed (live case: "[503] Upstream error from Nvidia: Service
- * temporarily overloaded" on nemotron-3-ultra-free). Same verdict as the #5085
- * empty-content 502 above: a model-level transient. Connection-level exhaustion here
- * would skip every sibling target on the shared connection and fail the whole combo at
- * attempt 1. Matched on the streamReadiness structured code/type or its exact wording.
+ * #14313: streamReadiness rewrites an upstream stream that dies before any non-ping event
+ * into a synthetic 502 "Stream ended before producing a non-ping SSE event" (code
+ * STREAM_EARLY_EOF / type stream_early_eof, upstream diagnostic appended after ": "). The
+ * connection was HEALTHY - it answered and opened the stream - only this MODEL's backend
+ * failed (live case: "[503] Upstream error from Nvidia: Service temporarily overloaded").
+ * Same verdict as the #5085 empty-content 502 above: a model-level transient.
+ * Connection-level exhaustion here would skip every sibling target on the same connection
+ * and fail the whole combo at its first attempt. Matched on the streamReadiness structured
+ * code/type or its exact wording.
  */
 function isStreamEarlyEofFailure(
   status: number,
@@ -341,6 +342,9 @@ export function applyComboTargetExhaustion(
       .join(" ")
   );
   const quotaMisclassifiedAsAuth = isQuotaOrCreditsError(errorText, structuredError);
+  if (isModelScopedAccessDenial(provider, result.status, errorText, structuredError)) {
+    return { ...derived, providerExhausted: false };
+  }
   if (
     AUTH_LEVEL_ERROR_STATUSES.includes(result.status) &&
     // Cloudflare 1010 is a 403-ONLY fingerprint rejection. A 401 that merely happens to
@@ -348,13 +352,13 @@ export function applyComboTargetExhaustion(
     // auth-level exhaustion — only a 403 carrying the Cloudflare fingerprint signal does.
     !(result.status === 403 && (fingerprintToken || fingerprintText)) &&
     !quotaMisclassifiedAsAuth &&
-    // #14313 (2026-10-08 live): a request-scoped failure refuses the REQUEST SHAPE,
-    // never the credentials - every sibling account AND model gets the same verdict
-    // (OpenCode free-tier refusal "FreeTierError" / "free tier can only be used from
-    // within OpenCode", invalid_request_error, context_length_exceeded, local
-    // rate-limit). Marking auth-level exhaustion here poisoned the shared noauth
-    // connection on one contributor-free 403 and skipped every remaining opencode
-    // target of the request (and, via the free-tier skip, the next one too).
+    // #14313: a request-scoped failure refuses the REQUEST SHAPE, never the credentials -
+    // every sibling account AND model would get the same verdict (invalid_request_error,
+    // context_length_exceeded, an upstream free-tier shape refusal, a local rate-limit).
+    // The connection-level and provider-quota branches below already exclude these
+    // (`requestScopedFailure || isRequestScopedUpstreamFailure`); without the same guard
+    // here a request-scoped 401/403 marked the connection exhausted and skipped every
+    // remaining same-connection target of the request.
     !opts.requestScopedFailure &&
     !isRequestScopedUpstreamFailure(structuredError) &&
     provider &&
@@ -379,13 +383,12 @@ export function applyComboTargetExhaustion(
     ) {
       return { ...derived, providerExhausted: false };
     }
-    // 2026-10-08 (live auto/best-coding interruption): a 401/403 whose body names the
-    // MODEL as unsupported ("Model deepseek-v4-flash-free is not supported" - upstream
-    // free-tier rotation, classified MODEL_NOT_FOUND by errorClassifier #7268) is
-    // model-scoped, not a bad credential: the same connection keeps serving its sibling
-    // models. chatCore already locks the model (120s), which is the retry protection -
-    // marking the shared connection here instead skipped EVERY remaining target via
-    // #1731v2 and failed the whole combo at attempt 1/5 with "All models failed".
+    // #14313: a 401/403 whose body names the MODEL as unsupported ("Model X is not
+    // supported" - upstream model rotation, classified MODEL_NOT_FOUND by errorClassifier
+    // #7268) is model-scoped, not a bad credential: the same connection keeps serving its
+    // sibling models. chatCore already locks the model, which is the retry protection -
+    // marking the connection here instead skipped EVERY remaining target on it via
+    // #1731v2 and failed the whole combo at its first attempt with "All models failed".
     if (
       containsModelUnavailableMessage(
         [opts.errorText, opts.structuredError?.message].filter(Boolean).join(" ")
@@ -624,7 +627,7 @@ function markConnectionLevelExhaustion(
     // connection-level. Don't exhaust the provider; let the remaining legs (incl. same-provider)
     // be tried in-request.
     isEmptyContentFailure(result.status, errorText) ||
-    // 2026-10-08: the synthetic early-EOF 502 is the same shape - the connection answered and
+    // #14313: the synthetic early-EOF 502 is the same shape - the connection answered and
     // opened the stream, only this MODEL's backend failed before emitting an event.
     isStreamEarlyEofFailure(result.status, errorText, structuredError) ||
     // Per-model-quota providers (gemini, github, passthrough, compatible) multiplex models

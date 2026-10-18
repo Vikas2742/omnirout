@@ -7,6 +7,7 @@ import {
   isOAuthInvalidToken,
 } from "./accountFallback.ts";
 import { isSubscriptionQuotaText } from "./quotaTextCooldowns.ts";
+import { isModelScopedAccessDenial } from "./accountFallback/modelScopedAccessDenial.ts";
 import { getProviderCategory, getRegistryEntry } from "../config/providerRegistry.ts";
 
 // Terminal stop signals where an empty content payload is still a legitimate,
@@ -30,10 +31,11 @@ const NORMAL_STOP_CLAUDE_STOP = new Set(["end_turn"]);
 
 export function isEmptyContentResponse(
   responseBody: unknown,
-  opts?: { provider?: string | null }
+  opts?: { provider?: string | null; trustedEmptyTurn?: boolean }
 ): boolean {
   const trustedEmptyStop =
-    typeof opts?.provider === "string" && TRUSTED_EMPTY_STOP_PROVIDERS.has(opts.provider);
+    opts?.trustedEmptyTurn === true ||
+    (typeof opts?.provider === "string" && TRUSTED_EMPTY_STOP_PROVIDERS.has(opts.provider));
   if (!responseBody || typeof responseBody !== "object") return false;
 
   const body = responseBody as Record<string, unknown>;
@@ -79,7 +81,11 @@ export function isEmptyContentResponse(
     // failure. Only flag empty content when no such terminal stop_reason is present.
     const stopReason = typeof body.stop_reason === "string" ? body.stop_reason : "";
     // #14160: same exemption for the Claude wire shape on trusted first-party APIs.
-    if (trustedEmptyStop && NORMAL_STOP_CLAUDE_STOP.has(stopReason)) return false;
+    if (
+      (trustedEmptyStop && NORMAL_STOP_CLAUDE_STOP.has(stopReason)) ||
+      (opts?.trustedEmptyTurn === true && stopReason === "stop_sequence")
+    )
+      return false;
     return !LEGIT_EMPTY_CLAUDE_STOP.has(stopReason);
   }
 
@@ -433,6 +439,10 @@ export function classifyProviderError(
     return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
   }
 
+  if (isModelScopedAccessDenial(provider, statusCode, responseBody)) {
+    return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
+  }
+
   if (statusCode === 401) {
     if (oauthInvalid) {
       return PROVIDER_ERROR_TYPES.OAUTH_INVALID_TOKEN;
@@ -450,22 +460,6 @@ export function classifyProviderError(
     return accountDeactivated
       ? PROVIDER_ERROR_TYPES.ACCOUNT_DEACTIVATED
       : PROVIDER_ERROR_TYPES.UNAUTHORIZED;
-  }
-
-  // #8681 (2026-10-08 live): the opencode executor refuses premium models on a
-  // keyless connection LOCALLY with a synthetic 402 (code premium_model_requires_key)
-  // before any upstream call. The model needs a key this connection does not have —
-  // a per-model capability failure, NEVER a connection/billing signal. Classifying
-  // it QUOTA_EXHAUSTED made chatCore's quota branch mark the shared noauth
-  // connection credits_exhausted, poisoning big-pickle/nemotron siblings for the
-  // whole TTL and surfacing "No active credentials for provider: opencode".
-  // MODEL_NOT_FOUND keeps it model-scoped: chatCore locks only this model.
-  if (
-    statusCode === 402 &&
-    isOpencodeFreeTierProvider(provider) &&
-    /requires an opencode api key/i.test(bodyStr)
-  ) {
-    return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
   }
 
   if (statusCode === 402) return PROVIDER_ERROR_TYPES.QUOTA_EXHAUSTED;
