@@ -502,7 +502,10 @@ many callers may be queued at once.
 is pacing: the limiter empties its reservoir for that long and queued calls
 dispatch when it refills. A wait longer than `maxWaitMs` is not something the
 queue can sit out — Gemini answers an exhausted daily quota with
-`retryDelay: "86399s"`. When such a wait comes from a typed Google `RetryInfo`
+`retryDelay: "86399s"`. The relayed `Retry-After` on the rebuilt 429 (#16528)
+already makes the fallback engine lock the model for that window, but pausing
+the limiter for it too would still stall any call that reaches the key early
+(after a resilience reset, for instance) for the whole `maxWaitMs`. When such a wait comes from a typed Google `RetryInfo`
 detail (the `google_rpc_retry_info` provenance) and the key's limiter is
 already scoped to the model (see `getLimiterKey`), the 429 becomes a model
 lockout on that connection instead (`lockModelForLongBodyRetry` in

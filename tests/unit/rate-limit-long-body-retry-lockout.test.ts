@@ -243,6 +243,41 @@ test("the failure path's own short lockout after the 429 (the 3 s base in #16442
   assert.ok(lock.remainingMs > 1_100_000, `the lockout shrank to ${lock.remainingMs}ms`);
 });
 
+test("with #16528's RetryInfo relay in place, the key's queue still must not freeze behind the lockout", async () => {
+  // #16528 (on the tip) relays the details-only RetryInfo window onto the rebuilt
+  // 429 so the fallback engine locks the model for it. That fixed the lockout,
+  // not the limiter: chatCore still hands the same body to updateFromResponseBody,
+  // which emptied the per-model reservoir for the whole day. Once the lockout is
+  // gone before the window (the resilience reset clears model lockouts, not
+  // limiters) every call on the key sat out the full queue budget and failed as
+  // a local 503.
+  const errorModule = await import("../../open-sse/utils/error.ts");
+  const body = gemini429Body("86399s");
+  const parsed = await errorModule.parseUpstreamError(
+    new Response(body, { status: 429 }),
+    "gemini"
+  );
+  const relayed = errorModule.createErrorResult(429, parsed.message, parsed.retryAfterMs);
+  assert.equal(relayed.response.headers.get("Retry-After"), "86399", "#16528 relay present");
+
+  const conn = "conn-long-retry-after-16528";
+  await warm("gemini", conn, MODEL);
+  record429("gemini", conn, MODEL, body);
+  accountFallback.clearAllModelLockouts(); // POST /api/resilience/reset
+
+  const started = Date.now();
+  const result = await rateLimitManager.withRateLimit(
+    "gemini",
+    conn,
+    MODEL,
+    async () => "served",
+    null,
+    BUDGET_MS
+  );
+  assert.equal(result, "served");
+  assert.ok(Date.now() - started < AT_ONCE_MS, `queue held the call ${Date.now() - started}ms`);
+});
+
 test("guard: a short body pause inside the queue budget still holds the call and then serves it", async () => {
   const conn = "conn-long-retry-short";
   await warm("gemini", conn, MODEL);
