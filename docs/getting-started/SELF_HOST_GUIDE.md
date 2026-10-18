@@ -327,17 +327,25 @@ an unprivileged user, which can cause `EACCES` on the first write.
 
 Two ways to fix it, without changing the documented default:
 
-- **`chown` the host dir** to the container's uid so the bind mount is
-  writable (check the image's Dockerfile for the exact uid, typically the
-  `node` user).
+- **`chown` the host dir** to the container's user so the bind mount is
+  writable. The image runs as the `node` user (UID/GID 1000):
+  `sudo chown -R 1000:1000 ./data`.
 - **Opt into a Docker-managed named volume** instead of the bind mount: in
-  `docker-compose.selfhost.yml`, swap the `- ./data:/app/data` line for the
-  commented `- omniroute-data:/app/data` alternative right below it. Note
-  that this changes where your data lives — `bin/snapshot-data.sh` and
-  `bin/restore-data.sh` read/write `./data` on the host directly, so they
-  will not see a named volume's contents unless you back it up separately
-  (e.g. `docker run --rm -v omniroute-data:/data -v "$PWD":/backup alpine
-  tar czf /backup/omniroute-data.tar.gz -C /data .`).
+  `docker-compose.selfhost.yml`, comment out the `- ./data:/app/data` line
+  and uncomment the `- omniroute-data:/app/data` alternative right below it,
+  plus the `omniroute-data:` entry under the top-level `volumes:`. Note that
+  this changes where your data lives:
+  - a new named volume starts **empty** — on an existing install, copy
+    `./data` into it first, or OmniRoute will boot as a fresh instance;
+  - `bin/snapshot-data.sh` and `bin/restore-data.sh` read/write `./data` on
+    the host directly, so they will not see a named volume's contents unless
+    you back it up separately, for example:
+
+    ```bash
+    docker run --rm -v omniroute-data:/data -v "$PWD":/backup alpine \
+      tar czf /backup/omniroute-data.tar.gz -C /data .
+    ```
+
 </details>
 
 <details>
