@@ -489,11 +489,16 @@ export function useModelImportHandlers({
       // Only newly enabled connections need an immediate sync; existing
       // enabled accounts remain on their scheduler cadence.
       const syncIds = newValue
-        ? activeWithId.filter((conn, index) => {
-            const result = results[index];
-            return conn.providerSpecificData?.autoSync !== true &&
-              result.status === "fulfilled" && result.value.ok;
-          }).map((conn) => conn.id!)
+        ? activeWithId
+            .filter((conn, index) => {
+              const result = results[index];
+              return (
+                conn.providerSpecificData?.autoSync !== true &&
+                result.status === "fulfilled" &&
+                result.value.ok
+              );
+            })
+            .map((conn) => conn.id!)
         : [];
       // A provider may have many accounts sharing one upstream/IP. Fan out
       // the setting writes as before, but cap *live* discovery calls at two
@@ -516,8 +521,13 @@ export function useModelImportHandlers({
       } else if (fulfilled === 0) {
         notify.error(t("autoSyncToggleFailed"));
       } else {
-        notify.warning(t(syncFailed && fulfilled === results.length
-          ? "autoSyncImmediatePartialFailure" : "autoSyncPartialFailure"));
+        notify.warning(
+          t(
+            syncFailed && fulfilled === results.length
+              ? "autoSyncImmediatePartialFailure"
+              : "autoSyncPartialFailure"
+          )
+        );
       }
     } catch (error) {
       console.error("Error toggling auto-sync:", error);

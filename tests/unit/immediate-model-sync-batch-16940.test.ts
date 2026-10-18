@@ -11,9 +11,9 @@ test("#16940: bulk Auto-Sync caps concurrent upstream model-list calls", async (
     active.add(id);
     started.push(id);
     peak = Math.max(peak, active.size);
-    await new Promise<void>((resolve, reject) => release.set(id, (error) =>
-      error ? reject(error) : resolve()
-    )).finally(() => active.delete(id));
+    await new Promise<void>((resolve, reject) =>
+      release.set(id, (error) => (error ? reject(error) : resolve()))
+    ).finally(() => active.delete(id));
   });
   const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
   await tick();
@@ -28,13 +28,19 @@ test("#16940: bulk Auto-Sync caps concurrent upstream model-list calls", async (
   release.get("d")!();
   const result = await run;
   assert.equal(peak, 2);
-  assert.deepEqual(result.map((row) => row.status), [
-    "fulfilled", "rejected", "fulfilled", "fulfilled",
-  ]);
+  assert.deepEqual(
+    result.map((row) => row.status),
+    ["fulfilled", "rejected", "fulfilled", "fulfilled"]
+  );
 });
 test("#16940: empty and invalid batches do not trigger any discovery calls", async () => {
   let invoked = 0;
-  assert.deepEqual(await settleBoundedSyncRequests([], async () => { invoked++; }), []);
+  assert.deepEqual(
+    await settleBoundedSyncRequests([], async () => {
+      invoked++;
+    }),
+    []
+  );
   assert.equal(invoked, 0);
   await assert.rejects(
     settleBoundedSyncRequests(["a"], async () => {}, 0),
@@ -44,12 +50,17 @@ test("#16940: empty and invalid batches do not trigger any discovery calls", asy
 
 test("#16940: single-worker sync preserves input order after a failed provider", async () => {
   const visited: string[] = [];
-  const results = await settleBoundedSyncRequests(["first", "broken", "last"], async (id) => {
-    visited.push(id);
-    if (id === "broken") throw new Error("upstream unavailable");
-  }, 1);
+  const results = await settleBoundedSyncRequests(
+    ["first", "broken", "last"],
+    async (id) => {
+      visited.push(id);
+      if (id === "broken") throw new Error("upstream unavailable");
+    },
+    1
+  );
   assert.deepEqual(visited, ["first", "broken", "last"]);
-  assert.deepEqual(results.map((result) => result.status), [
-    "fulfilled", "rejected", "fulfilled",
-  ]);
+  assert.deepEqual(
+    results.map((result) => result.status),
+    ["fulfilled", "rejected", "fulfilled"]
+  );
 });

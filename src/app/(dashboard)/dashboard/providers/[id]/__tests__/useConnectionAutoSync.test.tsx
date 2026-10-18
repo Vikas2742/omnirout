@@ -89,7 +89,11 @@ describe("useConnectionAutoSync", () => {
         }),
       })
     );
-    expect(fetchMock).toHaveBeenNthCalledWith(2, "/api/providers/conn-1/sync-models", expect.objectContaining({ method: "POST" }));
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/providers/conn-1/sync-models",
+      expect.objectContaining({ method: "POST" })
+    );
     expect(h.refresh).toHaveBeenCalledTimes(1);
     expect(notify.success).toHaveBeenCalled();
   });
@@ -152,7 +156,9 @@ describe("useConnectionAutoSync", () => {
     const h = renderHandler([{ id: "conn-1", providerSpecificData: { autoSync: true } }]);
     const mock = vi.mocked(fetch);
     mock.mockResolvedValue({ ok: true } as Response);
-    await act(async () => { await h.get().handler("conn-1", true); });
+    await act(async () => {
+      await h.get().handler("conn-1", true);
+    });
     expect(mock).toHaveBeenCalledTimes(1);
     expect(h.refresh).not.toHaveBeenCalled();
   });
@@ -162,7 +168,9 @@ describe("useConnectionAutoSync", () => {
     const mock = vi.mocked(fetch);
     mock.mockResolvedValueOnce({ ok: true } as Response);
     mock.mockResolvedValueOnce({ ok: false, status: 502 } as Response);
-    await act(async () => { await h.get().handler("conn-1", true); });
+    await act(async () => {
+      await h.get().handler("conn-1", true);
+    });
     expect(h.get().connections[0].providerSpecificData?.autoSync).toBe(true);
     expect(notify.error).toHaveBeenCalledWith("autoSyncImmediateFailed");
   });

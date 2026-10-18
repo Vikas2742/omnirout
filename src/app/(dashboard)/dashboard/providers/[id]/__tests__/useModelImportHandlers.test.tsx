@@ -144,7 +144,9 @@ describe("useModelImportHandlers — master autoSync", () => {
       "/api/providers/conn-b",
       expect.objectContaining({ method: "PUT" })
     );
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/sync-models"))).toHaveLength(2);
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/sync-models"))
+    ).toHaveLength(2);
     expect(fetchConnections).toHaveBeenCalled();
   });
 
@@ -198,7 +200,9 @@ describe("useModelImportHandlers — master autoSync", () => {
     const secondBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
     expect(firstBody.providerSpecificData).toEqual({ autoSync: true });
     expect(secondBody.providerSpecificData).toEqual({ autoSync: true });
-    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/sync-models"))).toHaveLength(1);
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/sync-models"))
+    ).toHaveLength(1);
     expect(notify.success).toHaveBeenCalled();
   });
 

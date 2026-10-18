@@ -25,8 +25,6 @@ export async function settleBoundedSyncRequests(
       }
     }
   };
-  await Promise.all(Array.from(
-    { length: Math.min(maxConcurrent, ids.length) }, () => worker()
-  ));
+  await Promise.all(Array.from({ length: Math.min(maxConcurrent, ids.length) }, () => worker()));
   return results;
 }

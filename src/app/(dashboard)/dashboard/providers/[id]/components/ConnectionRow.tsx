@@ -299,17 +299,24 @@ export default function ConnectionRow({
   }, []);
   const lastSync = connection.syncedModelsAt ? Date.parse(connection.syncedModelsAt) : NaN;
   const validSync = Number.isFinite(lastSync) && lastSync > 0;
-  const ageMinutes = validSync && syncClock !== null
-    ? Math.max(0, Math.floor((syncClock - lastSync) / 60_000))
-    : null;
-  const ageUnit = ageMinutes === null ? null
-    : ageMinutes < 60 ? "minute"
-      : ageMinutes < 1440 ? "hour" : "day";
-  const ageValue = ageMinutes === null ? 0
-    : ageUnit === "minute" ? ageMinutes
-      : ageUnit === "hour" ? Math.floor(ageMinutes / 60) : Math.floor(ageMinutes / 1440);
-  const syncAgeLabel = ageUnit === null ? null
-    : new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-ageValue, ageUnit);
+  const ageMinutes =
+    validSync && syncClock !== null
+      ? Math.max(0, Math.floor((syncClock - lastSync) / 60_000))
+      : null;
+  const ageUnit =
+    ageMinutes === null ? null : ageMinutes < 60 ? "minute" : ageMinutes < 1440 ? "hour" : "day";
+  const ageValue =
+    ageMinutes === null
+      ? 0
+      : ageUnit === "minute"
+        ? ageMinutes
+        : ageUnit === "hour"
+          ? Math.floor(ageMinutes / 60)
+          : Math.floor(ageMinutes / 1440);
+  const syncAgeLabel =
+    ageUnit === null
+      ? null
+      : new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-ageValue, ageUnit);
 
   return (
     <div
@@ -459,7 +466,9 @@ export default function ConnectionRow({
                 </button>
                 <span
                   className="text-xs text-text-muted"
-                  title={validSync ? new Date(lastSync).toLocaleString(locale) : t("autoSyncNeverSynced")}
+                  title={
+                    validSync ? new Date(lastSync).toLocaleString(locale) : t("autoSyncNeverSynced")
+                  }
                   data-testid="connection-last-model-sync"
                 >
                   {validSync && syncAgeLabel
