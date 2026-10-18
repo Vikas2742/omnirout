@@ -59,7 +59,7 @@ const {
 // (#17003, lets Claude OAuth drop the redact-thinking beta for summarized thinking,
 // default off) to 87.
 // CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED (#15917, default off) takes it to 88.
-const EXPECTED_FEATURE_FLAG_COUNT = 88;
+const EXPECTED_FEATURE_FLAG_COUNT = 92;
 // NATIVE_CODEX_REACTIVE_COMPACTION_ENABLED (#16632, default off) to 88.
 // COOLDOWN_RETRY_SKIP_REFUSALS_ENABLED (#16305, default off) takes it to 88.
 // default off) to 87; QUOTA_WINDOW_BOUNDED_PARK
