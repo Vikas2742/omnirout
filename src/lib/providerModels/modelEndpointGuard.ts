@@ -30,6 +30,16 @@ const ENDPOINT_ROUTE: Record<string, string> = {
   "audio-transcriptions": "/v1/audio/transcriptions",
 };
 
+function supportsRequestedEndpoint(supported: string[], requested: RequestedEndpoint): boolean {
+  if (requested === "chat") return supported.includes("chat") || supported.includes("responses");
+  if (requested === "images") return supported.includes("images") || supported.includes("images-generations");
+  return supported.includes(requested);
+}
+
+function requestedEndpointRoute(requested: RequestedEndpoint): string {
+  return ENDPOINT_ROUTE[requested] || "/v1/" + requested;
+}
+
 export function getModelEndpointMismatchMessage(
   fullModelId: string,
   model: TaggedModel | null | undefined,
@@ -42,21 +52,11 @@ export function getModelEndpointMismatchMessage(
     return null;
   }
   const supported = normalizeModelSupportedEndpoints(model.supportedEndpoints);
-  if (requested === "chat"
-    ? supported.includes("chat") || supported.includes("responses")
-    : supported.includes(requested) || (requested === "images" && supported.includes("images-generations"))) {
-    return null;
-  }
+  if (supportsRequestedEndpoint(supported, requested)) return null;
   const alternatives = [...new Set(supported
     .map((endpoint) => ENDPOINT_ROUTE[endpoint])
     .filter((path): path is string => Boolean(path)))];
-  return "Model '" + fullModelId + "' does not serve /v1/" +
-    (requested === "chat" ? "chat/completions" :
-      requested === "audio-speech" ? "audio/speech" :
-      requested === "audio-transcriptions" ? "audio/transcriptions" :
-      requested === "images" ? "images/generations" :
-      requested === "videos" ? "videos/generations" :
-      requested === "music" ? "music/generations" : requested) +
+  return "Model '" + fullModelId + "' does not serve " + requestedEndpointRoute(requested) +
     ". Use " + (alternatives.length ? alternatives.join(" or ") : "a supported endpoint") +
     " instead.";
 }
