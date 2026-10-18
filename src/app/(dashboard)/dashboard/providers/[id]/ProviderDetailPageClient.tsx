@@ -59,6 +59,7 @@ import CustomModelsSection from "./components/CustomModelsSection";
 import ConnectionsListPanel from "./components/ConnectionsListPanel";
 import CoolingConnectionsPanel from "./components/CoolingConnectionsPanel";
 import ConnectionsHeaderToolbar from "./components/ConnectionsHeaderToolbar";
+import { ConnectionPinTip } from "./components/ConnectionIdChip";
 import VolcengineConnectModal from "./components/VolcengineConnectModal";
 import ProviderAccountRoutingCard from "../../settings/components/ProviderAccountRoutingCard";
 import ZedImportCard from "./components/ZedImportCard";
@@ -368,7 +369,10 @@ export default function ProviderDetailPageClient() {
     connections,
     setConnections,
     notify,
-    t
+    t,
+    async () => {
+      await Promise.all([fetchConnections(), fetchProviderModelMeta()]);
+    }
   );
 
   // ── model-related effects (loading gate) ────────────────────────────────
@@ -653,6 +657,10 @@ export default function ProviderDetailPageClient() {
             loadCodexSettings={loadCodexSettings}
             onSetProxyTarget={setProxyTarget}
             handleDistributeProxies={handleDistributeProxies}
+            onAccountProxiesReset={async () => {
+              await fetchConnections();
+              await refreshProxyState();
+            }}
             handleBatchTestAll={handleBatchTestAll}
             gateConnectionFlow={gateConnectionFlow}
             openApiKeyAddFlow={openApiKeyAddFlow}
@@ -693,6 +701,7 @@ export default function ProviderDetailPageClient() {
             />
           ) : (
             <>
+              <ConnectionPinTip />
               <CoolingConnectionsPanel
                 connections={connections}
                 onClearCooldown={handleClearCooldown}
