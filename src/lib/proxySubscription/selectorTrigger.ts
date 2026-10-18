@@ -489,8 +489,8 @@ function selectorEntryKind(raw: unknown, selector: string): ProxyRefusalKind | n
   }
 }
 
-/** Read the stored kind from the extended select row, with a legacy-column
- * fallback for old DBs. Never throws. */
+/** Read the stored kind from the select row: the per-selector entry first,
+ * then the subscription-wide summary column. Never throws. */
 function kindFromExtendedRow(
   row:
     { selector_last_switch_kind?: unknown; selector_last_switch_by_selector?: unknown } | undefined,
@@ -500,13 +500,6 @@ function kindFromExtendedRow(
     const kept = selectorEntryKind(row?.selector_last_switch_by_selector, selector);
     if (kept !== null) return kept;
   }
-  return asRefusalKind(row?.selector_last_switch_kind);
-}
-
-/** Read the stored kind from the legacy summary column. Never throws. */
-function kindFromLegacyRow(
-  row: { selector_last_switch_kind?: unknown } | undefined
-): ProxyRefusalKind | null {
   return asRefusalKind(row?.selector_last_switch_kind);
 }
 
@@ -530,15 +523,7 @@ function lastPersistedSwitchKind(
       | undefined;
     return kindFromExtendedRow(row, selector);
   } catch {
-    try {
-      const db = getDbInstance();
-      const row = db
-        .prepare("SELECT selector_last_switch_kind FROM proxy_subscriptions WHERE id = ?")
-        .get(subscriptionId) as { selector_last_switch_kind?: unknown } | undefined;
-      return kindFromLegacyRow(row);
-    } catch {
-      return null;
-    }
+    return null;
   }
 }
 
