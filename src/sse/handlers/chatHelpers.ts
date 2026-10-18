@@ -12,6 +12,7 @@ import {
 import { maybeReactivateAfterExplicitProbe } from "../services/explicitInactiveProbe";
 import { connectionHasExtraKeys } from "@omniroute/open-sse/services/apiKeyRotator.ts";
 import { clearRequestRejectedStreak } from "@omniroute/open-sse/services/requestRejectedStreak.ts";
+import { clearAntigravityVerificationUrl } from "@omniroute/open-sse/handlers/chatCore/antigravityVerificationState.ts";
 import { createBuiltinAutoCombo } from "@omniroute/open-sse/services/autoCombo/builtinCatalog.ts";
 import * as log from "../utils/logger";
 import { updateProviderCredentials } from "../services/tokenRefresh";
@@ -452,6 +453,7 @@ export async function executeChatWithBreaker({
   videoBridgeLog = undefined,
   fallbackAttempts = undefined,
   forcedConnectionId = null,
+  allowedConnections = null,
   // optional resume flag from a rehydrated previous_response_id —
   // forwarded to handleChatCore, which notes it under the attempt store.
   previousResponseResumed = undefined,
@@ -529,6 +531,7 @@ export async function executeChatWithBreaker({
             previousResponseResumed,
             fallbackAttempts,
             forcedConnectionId,
+            allowedConnections,
             skipResourcePressureGuard: true,
             onCredentialsRefreshed: async (newCreds: any) => {
               await updateProviderCredentials(credentials.connectionId, {
@@ -549,6 +552,11 @@ export async function executeChatWithBreaker({
               // Only a real success ends the per-request refusal streak (#12859).
               if (credentials.connectionId) clearRequestRejectedStreak(credentials.connectionId);
               await clearAccountError(credentials.connectionId, credentials);
+              await clearAntigravityVerificationUrl(
+                provider,
+                credentials.connectionId,
+                credentials.providerSpecificData
+              );
               await maybeReactivateAfterExplicitProbe({
                 connectionId: credentials.connectionId,
                 reactivatedFromInactive: credentials.reactivatedFromInactive,

@@ -19,6 +19,12 @@
  *
  * Paid models on the same host are not gated (one without tools answers 401), so the
  * request contract applies to free-tier models only.
+ *
+ * Measured again on 2026-10-14: the free tier moved to https://opencode.ai/inference/v1
+ * (the base the client now takes from the models.dev catalog), and the very same request
+ * body is refused 403 on /zen/v1. On the new base the tools condition also narrows: a
+ * declared `read` or `bash` needs a non-empty parameter schema, while an empty schema on
+ * a name outside the quartet still passes.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -26,9 +32,11 @@ import {
   _setOpencodeFreeModelsForTests,
   applyFreeTierRequestContract,
   configuredPlaceholderToolNames,
+  DEFAULT_PLACEHOLDER_TOOL_NAME,
   isPremiumOpencodeModel,
   mergeClientToolsWithObserved,
   noteFreeTierOutcome,
+  placeholderToolParameters,
   prepareFreeTierRequest,
   isGatedFreeTierRequest,
   requiresFreeTierRequestContract,
@@ -117,7 +125,7 @@ test("chat completions: the contract adds streaming and a placeholder tool, and 
   const tools = body.tools as Array<{ type: string; function: { name: string } }>;
   assert.equal(tools.length, 1);
   assert.equal(tools[0].type, "function");
-  assert.equal(tools[0].function.name, "_noop");
+  assert.equal(tools[0].function.name, DEFAULT_PLACEHOLDER_TOOL_NAME);
   // The upstream answers 400 `only "auto" is supported for tool_choice` (measured
   // 2026-09-18 on the Chat Completions surface), so none is imposed here either.
   assert.equal("tool_choice" in body, false);
@@ -134,9 +142,36 @@ test("the placeholder carries the names it is given, one entry each", () => {
     tools.map((t) => t.function.name),
     ["glob", "grep", "read"]
   );
-  // Names only: an empty parameter object, so a borrowed name is a list entry rather than
-  // a tool the model could usefully call.
-  assert.deepEqual(tools[0].function.parameters, { type: "object", properties: {} });
+  // Injected quartet members carry the minimal schema the gate accepts: since 2026-10-14 a
+  // declared `read` with `properties: {}` turns the request into a 403 on /inference/v1.
+  assert.deepEqual(tools[0].function.parameters, {
+    type: "object",
+    properties: { pattern: { type: "string" } },
+    required: ["pattern"],
+  });
+  assert.deepEqual(tools[2].function.parameters, {
+    type: "object",
+    properties: { filePath: { type: "string" } },
+    required: ["filePath"],
+  });
+});
+
+test("placeholderToolParameters: quartet members get a minimal schema, others stay empty", () => {
+  // Measured 2026-10-14 on /inference/v1: `read` + `bash` with `properties: {}` is refused
+  // 403, the same pair with `{command}` on `bash` passes, and a request with no
+  // property-bearing `read` is refused — while an empty schema on a name outside the
+  // quartet (`webfetch`, `_noop`) still passes.
+  assert.deepEqual(placeholderToolParameters("bash"), {
+    type: "object",
+    properties: { command: { type: "string" } },
+    required: ["command"],
+  });
+  for (const name of ["bash", "glob", "grep", "read"]) {
+    const schema = placeholderToolParameters(name) as { properties: Record<string, unknown> };
+    assert.ok(Object.keys(schema.properties).length > 0, name);
+  }
+  assert.deepEqual(placeholderToolParameters("_noop"), { type: "object", properties: {} });
+  assert.deepEqual(placeholderToolParameters("webfetch"), { type: "object", properties: {} });
 });
 
 test("responses: several placeholder names keep the flat shape and no tool_choice", () => {
@@ -173,7 +208,7 @@ test("responses: the placeholder tool is flat and tool_choice stays absent", () 
   const tools = body.tools as Array<{ type: string; name: string }>;
   assert.equal(tools.length, 1);
   assert.equal(tools[0].type, "function");
-  assert.equal(tools[0].name, "_noop");
+  assert.equal(tools[0].name, DEFAULT_PLACEHOLDER_TOOL_NAME);
   assert.equal("tool_choice" in body, false);
 });
 
@@ -188,7 +223,7 @@ test("client-supplied tools are never replaced, required placeholders are append
   const tools = body.tools as Array<{ type: string; function?: { name: string } }>;
   assert.equal(tools.length, 2);
   assert.equal(tools[0].function?.name, "search");
-  assert.equal(tools[1].function?.name, "_noop");
+  assert.equal(tools[1].function?.name, DEFAULT_PLACEHOLDER_TOOL_NAME);
   assert.equal("tool_choice" in body, false);
   assert.equal(body.stream, true);
 });
@@ -196,7 +231,10 @@ test("client-supplied tools are never replaced, required placeholders are append
 test("when client-supplied tools already include placeholder tools, nothing extra is added", () => {
   const clientTools = [
     { type: "function", function: { name: "search", parameters: { type: "object" } } },
-    { type: "function", function: { name: "_noop", parameters: { type: "object" } } },
+    {
+      type: "function",
+      function: { name: DEFAULT_PLACEHOLDER_TOOL_NAME, parameters: { type: "object" } },
+    },
   ];
   const body = applyFreeTierRequestContract(
     { ...CHAT_BODY(), tools: clientTools },
@@ -513,7 +551,7 @@ test("a gated request repairs a stale configured user-agent, a non-gated one kee
 });
 
 test("responses: two conversations on the same model get different session ids", () => {
-  const executor = new OpencodeExecutor("opencode");
+  const executor = new OpencodeExecutor("opencode-zen");
   executor._requestFormat = "openai-responses";
   const sessionFor = (text: string) =>
     executor.buildHeaders(null, true, null, "muse-spark-1.3-contributor-free", undefined, {
@@ -583,7 +621,7 @@ test("with nothing observed and nothing configured, the built-in placeholder is 
   const tools = (body as Record<string, unknown>).tools as Array<{ function: { name: string } }>;
   assert.deepEqual(
     tools.map((t) => t.function.name),
-    ["_noop"]
+    [DEFAULT_PLACEHOLDER_TOOL_NAME]
   );
   // Nothing was borrowed, so a refusal here must not be charged against the store.
   assert.equal(attempt?.borrowed, false);
@@ -895,8 +933,32 @@ test("mergeClientToolsWithObserved: keeps client tools first and appends missing
     tools.map((t) => t.function.name),
     ["glob", "read", "edit"]
   );
-  // Appended entries are list entries, not callable tools.
+  // Appended entries are list entries, not callable tools; `edit` is outside the quartet,
+  // so it keeps the empty schema.
   assert.deepEqual(tools[2].function.parameters, { type: "object", properties: {} });
+});
+
+test("mergeClientToolsWithObserved: an appended quartet member carries a non-empty schema [free-tier-observed-tools]", () => {
+  _resetToolObservationForTests();
+  const body = {
+    ...CHAT_BODY(),
+    tools: [{ type: "function", function: { name: "Read", parameters: { type: "object" } } }],
+  };
+  const merged = mergeClientToolsWithObserved(body, "openai", "opencode", "big-pickle", undefined, [
+    "bash",
+  ]);
+  const tools = (merged as Record<string, unknown>).tools as Array<{
+    function: { name: string; parameters: object };
+  }>;
+  assert.deepEqual(
+    tools.map((t) => t.function.name),
+    ["Read", "bash"]
+  );
+  assert.deepEqual(tools[1].function.parameters, {
+    type: "object",
+    properties: { command: { type: "string" } },
+    required: ["command"],
+  });
 });
 
 test("mergeClientToolsWithObserved: leaves the body untouched when nothing observed [free-tier-observed-tools]", () => {
