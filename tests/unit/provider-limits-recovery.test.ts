@@ -790,6 +790,9 @@ test("#17043: the actual quota-cache observation unlocks the weekly Claude 429 a
     fallback.lockModel(
       "claude", id, "claude-haiku-5-5", RateLimitReason.SERVER_ERROR, 120_000
     );
+    fallback.lockModel(
+      "claude", id, "claude-opus-5-5", RateLimitReason.QUOTA_EXHAUSTED, 120_000
+    );
     assert.equal(fallback.isModelLocked("claude", id, "claude-sonnet-5"), true);
     assert.equal(fallback.isModelLocked("claude", id, "claude-haiku-5-5"), true);
 
@@ -799,11 +802,30 @@ test("#17043: the actual quota-cache observation unlocks the weekly Claude 429 a
         session: { remainingPercentage: 98, resetAt: sessionReset },
         weekly: { remainingPercentage: 93, resetAt: weeklyReset },
       },
+      modelQuotas: {
+        "weekly opus (7d)": {
+          remainingPercentage: 0,
+          resetAt: weeklyReset,
+          claudeQuota: {
+            kind: "weekly_scoped",
+            active: true,
+            severity: "critical",
+            scopeKey: "model:claude-opus-5-5",
+            modelId: "claude-opus-5-5",
+            modelDisplayName: null,
+          },
+        },
+      },
     });
     assert.equal(result.rateLimitedUntil, null);
     assert.equal(result.testStatus, "active");
     assert.equal((await providersDb.getProviderConnectionById(id)).rateLimitedUntil, null);
     assert.equal(fallback.isModelLocked("claude", id, "claude-sonnet-5"), false);
+    assert.equal(
+      fallback.isModelLocked("claude", id, "claude-opus-5-5"),
+      true,
+      "account-wide reset cannot clear an exhausted model-specific weekly lock"
+    );
     assert.equal(
       fallback.isModelLocked("claude", id, "claude-haiku-5-5"),
       true,
