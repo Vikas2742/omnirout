@@ -489,3 +489,21 @@ export function isDbHealthcheckStartupDeferredEnabled(): boolean {
     return false;
   }
 }
+
+/**
+ * Resolved-capability scoring inputs on the auto/* request path (#16419). Opt-in:
+ * off keeps capabilities resolved on demand, so they never reach the snapshot
+ * weights and candidate weights stay identical to the pre-flag behavior.
+ * Fail closed: an unreadable flag store keeps the pre-flag behavior (disabled).
+ */
+export function isAutoRequestResolvedCapabilitiesEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("AUTO_REQUEST_RESOLVED_CAPABILITIES");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve AUTO_REQUEST_RESOLVED_CAPABILITIES, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
