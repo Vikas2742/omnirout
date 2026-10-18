@@ -134,18 +134,13 @@ test("CrofAI false or absent reasoning_effort adds no reasoning metadata", () =>
 });
 
 test("reasoning_effort boolean remains provider-scoped", () => {
-  const rows = normalizeDiscoveredModels(
-    [{ id: "other-provider-model", reasoning_effort: true, custom_reasoning: true }],
-    "other-provider"
-  );
   assert.deepEqual(
-    rows.map(({ id, name, source }) => ({ id, name, source })),
+    normalizeDiscoveredModels(
+      [{ id: "other-provider-model", reasoning_effort: true, custom_reasoning: true }],
+      "other-provider"
+    ),
     [{ id: "other-provider-model", name: "other-provider-model", source: "imported" }]
   );
-  assert.equal(rows[0].endpointCapabilitySource, "defaulted",
-    "endpoint provenance is independent of provider-specific reasoning");
-  assert.equal(rows[0].supportsThinking, undefined);
-  assert.equal("supportedThinkingEfforts" in rows[0], false);
 });
 
 test("explicit effort tiers take precedence over the CrofAI boolean fallback", () => {
