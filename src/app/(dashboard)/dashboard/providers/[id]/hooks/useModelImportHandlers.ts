@@ -75,6 +75,18 @@ export interface UseModelImportHandlersReturn {
   handleToggleAutoFetchModels: () => Promise<void>;
 }
 
+/** Only successfully enabled connections need an immediate upstream discovery. */
+function newlyEnabledAutoSyncIds(
+  connections: UseModelImportHandlersParams["connections"],
+  results: PromiseSettledResult<Response>[]
+): string[] {
+  return connections.flatMap((connection, index) => {
+    const result = results[index];
+    if (connection.providerSpecificData?.autoSync === true || !connection.id) return [];
+    return result?.status === "fulfilled" && result.value.ok ? [connection.id] : [];
+  });
+}
+
 // ──── hook ───────────────────────────────────────────────────────────────────
 
 export function useModelImportHandlers({
@@ -488,13 +500,7 @@ export function useModelImportHandlers({
       );
       // Only newly enabled connections need an immediate sync; existing
       // enabled accounts remain on their scheduler cadence.
-      const syncIds = newValue
-        ? activeWithId.filter((conn, index) => {
-            const result = results[index];
-            return conn.providerSpecificData?.autoSync !== true &&
-              result.status === "fulfilled" && result.value.ok;
-          }).map((conn) => conn.id!)
-        : [];
+      const syncIds = newValue ? newlyEnabledAutoSyncIds(activeWithId, results) : [];
       // A provider may have many accounts sharing one upstream/IP. Fan out
       // the setting writes as before, but cap *live* discovery calls at two
       // to avoid a burst that can trigger shared upstream rate limits.
