@@ -89,7 +89,6 @@ test.after(async () => {
 const ALLOWED_NOAUTH_PROVIDERS = [
   "cloudflare-playground",
   "duckduckgo-web",
-  "opencode",
   "uncloseai",
 ];
 // Keyless providers that never opted in — must stay out of every auto/* pool.
