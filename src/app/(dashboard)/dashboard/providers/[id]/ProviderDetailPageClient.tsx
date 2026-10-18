@@ -373,7 +373,10 @@ export default function ProviderDetailPageClient() {
     connections,
     setConnections,
     notify,
-    t
+    t,
+    async () => {
+      await Promise.all([fetchConnections(), fetchProviderModelMeta()]);
+    }
   );
 
   // ── model-related effects (loading gate) ────────────────────────────────
@@ -658,6 +661,10 @@ export default function ProviderDetailPageClient() {
             loadCodexSettings={loadCodexSettings}
             onSetProxyTarget={setProxyTarget}
             handleDistributeProxies={handleDistributeProxies}
+            onAccountProxiesReset={async () => {
+              await fetchConnections();
+              await refreshProxyState();
+            }}
             handleBatchTestAll={handleBatchTestAll}
             gateConnectionFlow={gateConnectionFlow}
             openApiKeyAddFlow={openApiKeyAddFlow}
