@@ -102,107 +102,140 @@ export async function runWithQoderCliSlot(
   }
 }
 
+function failedQoderCliRun(error: string): QoderCliRunResult {
+  return { ok: false, code: null, stdout: "", stderr: "", timedOut: false, error };
+}
+
 async function spawnQoderCliUnlimited(options: SpawnQoderCliOptions): Promise<QoderCliRunResult> {
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   // #6263: resolve the real qodercli command (absolute .cmd/.exe on Windows) and
   // whether it needs a shell, then spawn with the cliRuntime-enriched env (PATH +
   // PATHEXT + APPDATA) so the npm `.cmd` wrapper under %APPDATA%\npm is found.
   const { command, useShell } = await resolveQoderCliInvocation(options.command);
-  const env = buildQoderCliEnv(options.token);
 
+  let child: ReturnType<typeof spawn>;
+  try {
+    child = spawn(command, options.args, {
+      env: buildQoderCliEnv(options.token),
+      cwd: options.cwd || undefined,
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+      detached: process.platform !== "win32",
+      ...(useShell ? { shell: true } : {}),
+    });
+  } catch (err) {
+    return failedQoderCliRun((err as Error).message);
+  }
+  return collectQoderCliRun(child, options);
+}
+
+/** Kill the child on timeout or abort; `stop()` detaches both triggers. */
+function guardQoderCliChild(
+  child: ReturnType<typeof spawn>,
+  signal: AbortSignal | null | undefined,
+  timeoutMs: number
+): { timedOut: () => boolean; stop: () => void } {
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    killQoderCliProcessTree(child);
+  }, timeoutMs);
+  timer.unref?.();
+
+  const onAbort = () => killQoderCliProcessTree(child);
+  if (signal?.aborted) onAbort();
+  else signal?.addEventListener("abort", onAbort, { once: true });
+
+  return {
+    timedOut: () => timedOut,
+    stop: () => {
+      clearTimeout(timer);
+      signal?.removeEventListener?.("abort", onAbort);
+    },
+  };
+}
+
+/** qodercli itself has exited; reap anything it left behind in its group. */
+function reapQoderCliProcessGroup(child: ReturnType<typeof spawn>): void {
+  if (process.platform === "win32" || !child.pid) return;
+  try {
+    process.kill(-child.pid, "SIGKILL");
+  } catch {
+    /* group already empty */
+  }
+}
+
+function captureQoderCliOutput(child: ReturnType<typeof spawn>): {
+  stdout: () => string;
+  stderr: () => string;
+} {
+  let stdout = "";
+  let stderr = "";
+  // If qodercli exits or closes stdin before we finish writing the prompt, the
+  // write/end can emit an ASYNC EPIPE/EINVAL on the stream (not caught by the
+  // surrounding try/catch). Without a listener that becomes an unhandled 'error'
+  // event that crashes the whole process — attach no-op handlers.
+  for (const stream of [child.stdin, child.stdout, child.stderr]) stream?.on("error", () => {});
+  // Decode with a stateful UTF-8 reader so a multi-byte character (e.g. Chinese,
+  // common in Qoder output) split across two chunks is not corrupted — Buffer
+  // per-chunk toString() would mangle the boundary bytes.
+  child.stdout?.setEncoding("utf8");
+  child.stderr?.setEncoding("utf8");
+  child.stdout?.on("data", (chunk: string) => {
+    stdout += chunk;
+  });
+  child.stderr?.on("data", (chunk: string) => {
+    stderr += chunk;
+  });
+  return { stdout: () => stdout, stderr: () => stderr };
+}
+
+function writeQoderCliStdin(child: ReturnType<typeof spawn>, input: string | null | undefined) {
+  try {
+    if (input != null) child.stdin?.write(input);
+    child.stdin?.end();
+  } catch {
+    /* stdin closed early — the child will surface its own error */
+  }
+}
+
+function collectQoderCliRun(
+  child: ReturnType<typeof spawn>,
+  options: SpawnQoderCliOptions
+): Promise<QoderCliRunResult> {
   return new Promise<QoderCliRunResult>((resolve) => {
-    let stdout = "";
-    let stderr = "";
     let settled = false;
-    let timedOut = false;
+    const guard = guardQoderCliChild(
+      child,
+      options.signal,
+      options.timeoutMs ?? DEFAULT_TIMEOUT_MS
+    );
+    const output = captureQoderCliOutput(child);
 
-    let child: ReturnType<typeof spawn>;
-    try {
-      child = spawn(command, options.args, {
-        env,
-        cwd: options.cwd || undefined,
-        stdio: ["pipe", "pipe", "pipe"],
-        windowsHide: true,
-        detached: process.platform !== "win32",
-        ...(useShell ? { shell: true } : {}),
-      });
-    } catch (err) {
-      resolve({
-        ok: false,
-        code: null,
-        stdout: "",
-        stderr: "",
-        timedOut: false,
-        error: (err as Error).message,
-      });
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      timedOut = true;
-      killQoderCliProcessTree(child);
-    }, timeoutMs);
-    timer.unref?.();
-
-    const onAbort = () => killQoderCliProcessTree(child);
-    if (options.signal) {
-      if (options.signal.aborted) onAbort();
-      else options.signal.addEventListener("abort", onAbort, { once: true });
-    }
-
-    const finish = (result: QoderCliRunResult) => {
+    const finish = (result: Omit<QoderCliRunResult, "stdout" | "stderr" | "timedOut">) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
-      options.signal?.removeEventListener?.("abort", onAbort);
-      // qodercli itself has exited; reap anything it left behind in its group.
-      if (process.platform !== "win32" && child.pid) {
-        try {
-          process.kill(-child.pid, "SIGKILL");
-        } catch {
-          /* group already empty */
-        }
-      }
-      resolve(result);
+      guard.stop();
+      reapQoderCliProcessGroup(child);
+      resolve({
+        ...result,
+        stdout: output.stdout(),
+        stderr: output.stderr(),
+        timedOut: guard.timedOut(),
+      });
     };
 
     child.on("error", (err: Error) => {
-      finish({ ok: false, code: null, stdout, stderr, timedOut, error: err.message });
-    });
-    // If qodercli exits or closes stdin before we finish writing the prompt, the
-    // write/end below can emit an ASYNC EPIPE/EINVAL on the stream (not caught by
-    // the surrounding try/catch). Without a listener that becomes an unhandled
-    // 'error' event that crashes the whole process — attach no-op handlers.
-    child.stdin?.on("error", () => {});
-    child.stdout?.on("error", () => {});
-    child.stderr?.on("error", () => {});
-    // Decode with a stateful UTF-8 reader so a multi-byte character (e.g. Chinese,
-    // common in Qoder output) split across two chunks is not corrupted — Buffer
-    // per-chunk toString() would mangle the boundary bytes.
-    child.stdout?.setEncoding("utf8");
-    child.stderr?.setEncoding("utf8");
-    child.stdout?.on("data", (chunk: string) => {
-      stdout += chunk;
-    });
-    child.stderr?.on("data", (chunk: string) => {
-      stderr += chunk;
+      finish({ ok: false, code: null, error: err.message });
     });
     child.on("close", (code: number | null) => {
+      const timedOut = guard.timedOut();
       finish({
         ok: code === 0 && !timedOut,
         code,
-        stdout,
-        stderr,
-        timedOut,
         error: timedOut ? "qodercli timed out" : null,
       });
     });
 
-    try {
-      if (options.stdin != null) child.stdin?.write(options.stdin);
-      child.stdin?.end();
-    } catch {
-      /* stdin closed early — the child will surface its own error */
-    }
+    writeQoderCliStdin(child, options.stdin);
   });
 }

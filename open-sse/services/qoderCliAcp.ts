@@ -10,11 +10,7 @@
 import { spawn } from "child_process";
 import crypto from "crypto";
 import { resolveQoderCliInvocation } from "./qoderCliResolve";
-import {
-  buildQoderCliEnv,
-  killQoderCliProcessTree,
-  type QoderCliRunResult,
-} from "./qoderCliSpawn";
+import { buildQoderCliEnv, killQoderCliProcessTree, type QoderCliRunResult } from "./qoderCliSpawn";
 
 const ACP_PROTOCOL_VERSION = 1;
 const DEFAULT_PROMPT_TIMEOUT_MS = 120_000;
@@ -343,16 +339,145 @@ function extractChunkText(update: JsonRecord): string {
   return content.type === "text" && typeof content.text === "string" ? content.text : "";
 }
 
-/**
- * Run one chat turn as a fresh ACP session on the shared qodercli process. The
- * result mimics a `--print --output-format json` run so the executor parses both
- * transports the same way.
- */
+function readSessionModels(session: JsonRecord): {
+  available: QoderAcpModel[];
+  currentModelId: string;
+} {
+  const models = asRecord(session.models);
+  const available = (Array.isArray(models.availableModels) ? models.availableModels : [])
+    .map((model) => asRecord(model))
+    .filter((model) => typeof model.modelId === "string")
+    .map((model) => ({
+      modelId: String(model.modelId),
+      name: typeof model.name === "string" ? model.name : undefined,
+    }));
+  return { available, currentModelId: String(models.currentModelId || "") };
+}
+
+/** Mimics a `--print --output-format json` run so the executor parses both transports alike. */
+function buildAcpTurnResult(text: string, stopReason: string): QoderCliRunResult {
+  const isError = !text || (stopReason !== "end_turn" && stopReason !== "max_tokens");
+  const envelope = {
+    type: "result",
+    subtype: isError ? "error" : "success",
+    is_error: isError,
+    result: isError
+      ? text || `qodercli returned no reply (stopReason: ${stopReason || "unknown"})`
+      : text,
+  };
+  return {
+    ok: true,
+    code: 0,
+    stdout: JSON.stringify(envelope),
+    stderr: "",
+    timedOut: false,
+    error: null,
+  };
+}
+
+class AcpTurn {
+  sessionId = "";
+  text = "";
+  timedOut = false;
+  readonly aborted: Promise<never>;
+  private rejectOnAbort: (error: Error) => void = () => {};
+  private unlisten: () => void = () => {};
+  private readonly onAbort = () => {
+    this.cancel();
+    this.rejectOnAbort(abortError());
+  };
+
+  constructor(
+    private readonly agent: QoderAcpProcess,
+    private readonly options: QoderAcpPromptOptions
+  ) {
+    this.aborted = new Promise<never>((_, reject) => {
+      this.rejectOnAbort = reject;
+    });
+    this.aborted.catch(() => {});
+    options.signal?.addEventListener("abort", this.onAbort, { once: true });
+  }
+
+  cancel(): void {
+    if (this.sessionId) this.agent.notify("session/cancel", { sessionId: this.sessionId });
+  }
+
+  private throwIfAborted(): void {
+    if (this.options.signal?.aborted) throw abortError();
+  }
+
+  private raceAbort(request: Promise<JsonRecord>): Promise<JsonRecord> {
+    return Promise.race([request, this.aborted]);
+  }
+
+  async run(): Promise<QoderCliRunResult> {
+    const { agent, options } = this;
+    // Not raced against abort: a session created after the abort must still be deleted.
+    const session = await agent.request(
+      "session/new",
+      { cwd: options.cwd, mcpServers: [] },
+      SESSION_SETUP_TIMEOUT_MS
+    );
+    this.sessionId = String(session.sessionId || "");
+    if (!this.sessionId) return failure("qodercli ACP session/new returned no sessionId");
+    const sessionId = this.sessionId;
+    this.throwIfAborted();
+    this.unlisten = agent.listen(sessionId, (update) => {
+      this.text += extractChunkText(update);
+    });
+
+    const { available, currentModelId } = readSessionModels(session);
+    const modelId = options.pickModelId?.(available, currentModelId) ?? null;
+    if (modelId && modelId !== currentModelId) {
+      await this.raceAbort(
+        agent.request("session/set_model", { sessionId, modelId }, SESSION_SETUP_TIMEOUT_MS)
+      );
+    }
+    this.throwIfAborted();
+
+    const result = await this.raceAbort(
+      agent.request(
+        "session/prompt",
+        { sessionId, prompt: [{ type: "text", text: options.prompt }] },
+        options.timeoutMs ?? DEFAULT_PROMPT_TIMEOUT_MS
+      )
+    );
+    this.throwIfAborted();
+    return buildAcpTurnResult(this.text, String(result.stopReason || ""));
+  }
+
+  fail(err: unknown): QoderCliRunResult {
+    const error = err as Error;
+    if (error.name === "AbortError" || this.options.signal?.aborted) return failure("Aborted");
+    if (error.name === "TimeoutError") {
+      this.timedOut = true;
+      this.cancel();
+    }
+    return failure(error.message, {
+      timedOut: this.timedOut,
+      error: this.timedOut ? "qodercli timed out" : error.message,
+    });
+  }
+
+  async close(): Promise<void> {
+    this.options.signal?.removeEventListener?.("abort", this.onAbort);
+    this.unlisten();
+    if (!this.sessionId) return;
+    // `session/delete` closes the live session and drops its transcript from disk.
+    const deleted = await this.agent
+      .request("session/delete", { sessionId: this.sessionId }, SESSION_CLEANUP_TIMEOUT_MS)
+      .then(() => true)
+      .catch(() => false);
+    // A process that ignored both the prompt deadline and the cleanup is wedged.
+    if (!deleted && this.timedOut) this.agent.dispose("qodercli ACP process unresponsive");
+  }
+}
+
+/** Run one chat turn as a fresh ACP session on the shared qodercli process. */
 export async function runQoderAcpPrompt(
   options: QoderAcpPromptOptions
 ): Promise<QoderCliRunResult> {
-  const { signal } = options;
-  if (signal?.aborted) return failure("Aborted");
+  if (options.signal?.aborted) return failure("Aborted");
 
   let agent: QoderAcpProcess;
   try {
@@ -366,107 +491,13 @@ export async function runQoderAcpPrompt(
   }
 
   agent.beginSession();
-  let sessionId = "";
-  let unlisten: () => void = () => {};
-  let text = "";
-  let timedOut = false;
-  let rejectOnAbort: (error: Error) => void = () => {};
-  const aborted = new Promise<never>((_, reject) => {
-    rejectOnAbort = reject;
-  });
-  aborted.catch(() => {});
-  const cancelSession = () => {
-    if (sessionId) agent.notify("session/cancel", { sessionId });
-  };
-  const onAbort = () => {
-    cancelSession();
-    rejectOnAbort(abortError());
-  };
-  signal?.addEventListener("abort", onAbort, { once: true });
-
+  const turn = new AcpTurn(agent, options);
   try {
-    // Not raced against abort: a session created after the abort must still be deleted.
-    const session = await agent.request(
-      "session/new",
-      { cwd: options.cwd, mcpServers: [] },
-      SESSION_SETUP_TIMEOUT_MS
-    );
-    sessionId = String(session.sessionId || "");
-    if (!sessionId) return failure("qodercli ACP session/new returned no sessionId");
-    if (signal?.aborted) throw abortError();
-    unlisten = agent.listen(sessionId, (update) => {
-      text += extractChunkText(update);
-    });
-
-    const models = asRecord(session.models);
-    const available = (Array.isArray(models.availableModels) ? models.availableModels : [])
-      .map((model) => asRecord(model))
-      .filter((model) => typeof model.modelId === "string")
-      .map((model) => ({
-        modelId: String(model.modelId),
-        name: typeof model.name === "string" ? model.name : undefined,
-      }));
-    const currentModelId = String(models.currentModelId || "");
-    const modelId = options.pickModelId?.(available, currentModelId) ?? null;
-    if (modelId && modelId !== currentModelId) {
-      await Promise.race([
-        agent.request("session/set_model", { sessionId, modelId }, SESSION_SETUP_TIMEOUT_MS),
-        aborted,
-      ]);
-    }
-    if (signal?.aborted) throw abortError();
-
-    const result = await Promise.race([
-      agent.request(
-        "session/prompt",
-        { sessionId, prompt: [{ type: "text", text: options.prompt }] },
-        options.timeoutMs ?? DEFAULT_PROMPT_TIMEOUT_MS
-      ),
-      aborted,
-    ]);
-    if (signal?.aborted) throw abortError();
-
-    const stopReason = String(result.stopReason || "");
-    const isError = !text || (stopReason !== "end_turn" && stopReason !== "max_tokens");
-    const envelope = {
-      type: "result",
-      subtype: isError ? "error" : "success",
-      is_error: isError,
-      result: isError
-        ? text || `qodercli returned no reply (stopReason: ${stopReason || "unknown"})`
-        : text,
-    };
-    return {
-      ok: true,
-      code: 0,
-      stdout: JSON.stringify(envelope),
-      stderr: "",
-      timedOut: false,
-      error: null,
-    };
+    return await turn.run();
   } catch (err) {
-    const error = err as Error;
-    if (error.name === "AbortError" || signal?.aborted) return failure("Aborted");
-    if (error.name === "TimeoutError") {
-      timedOut = true;
-      cancelSession();
-    }
-    return failure(error.message, {
-      timedOut,
-      error: timedOut ? "qodercli timed out" : error.message,
-    });
+    return turn.fail(err);
   } finally {
-    signal?.removeEventListener?.("abort", onAbort);
-    unlisten();
-    if (sessionId) {
-      // `session/delete` closes the live session and drops its transcript from disk.
-      const deleted = await agent
-        .request("session/delete", { sessionId }, SESSION_CLEANUP_TIMEOUT_MS)
-        .then(() => true)
-        .catch(() => false);
-      // A process that ignored both the prompt deadline and the cleanup is wedged.
-      if (!deleted && timedOut) agent.dispose("qodercli ACP process unresponsive");
-    }
+    await turn.close();
     agent.endSession();
   }
 }
