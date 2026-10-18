@@ -1,7 +1,7 @@
 import { getHiddenModelsByProvider } from "../../../src/lib/db/models";
 import { parseModel } from "../model.ts";
 import { createHiddenModelLookup } from "../../../src/lib/hiddenModelLookup";
-import { getModelVisibilityAllowlists } from "../../../src/lib/db/models/visibilityAllowlist";
+import { getModelVisibilityAllowlists } from "../../../src/lib/db/models";
 import type { HiddenModelsByProvider } from "./types.ts";
 
 // Snapshots are readonly and scoped to an invocation; WeakMap adds no TTL or stale DB cache.
