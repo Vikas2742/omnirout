@@ -13241,6 +13241,7 @@ paths:
       tags:
         - Sync
       summary: "GET sync › tokens"
+      x-always-protected: true
       responses:
         "200":
           description: OK
@@ -13248,6 +13249,7 @@ paths:
       tags:
         - Sync
       summary: "POST sync › tokens"
+      x-always-protected: true
       responses:
         "200":
           description: OK
@@ -13256,6 +13258,7 @@ paths:
       tags:
         - Sync
       summary: "DELETE sync › tokens › <id>"
+      x-always-protected: true
       responses:
         "200":
           description: OK

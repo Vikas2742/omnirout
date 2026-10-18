@@ -242,20 +242,30 @@ export function resolveBuiltinAutoMaterialization(
   return { variant: undefined, spec: { family: spec.family } };
 }
 
+/**
+ * `includeResolvedCapabilities` defaults to true (the /v1/models catalog caller).
+ * The request path (chatHelpers.ts) passes false unless the operator opts in:
+ * resolved capabilities feed the snapshot weights, so they change scoring.
+ */
 export async function prepareBuiltinAutoComboInputs(
-  resolutionSnapshot?: ModelCapabilityResolutionSnapshot
+  resolutionSnapshot?: ModelCapabilityResolutionSnapshot,
+  options: { includeResolvedCapabilities?: boolean } = {}
 ): Promise<PreparedVirtualAutoComboInputs> {
   const { prepareVirtualAutoComboInputs } = await import("./virtualFactory.ts");
   return prepareVirtualAutoComboInputs({
-    includeResolvedCapabilities: true,
+    includeResolvedCapabilities: options.includeResolvedCapabilities ?? true,
     resolutionSnapshot,
   });
 }
 
+/** Prepared inputs, or a loader that is only called when a combo is materialized. */
+export type BuiltinAutoComboPreparedSource =
+  PreparedVirtualAutoComboInputs | (() => Promise<PreparedVirtualAutoComboInputs>);
+
 export async function createBuiltinAutoCombo(
   modelStr: string,
   suffix: string,
-  prepared?: PreparedVirtualAutoComboInputs
+  prepared?: BuiltinAutoComboPreparedSource
 ) {
   const materialization = resolveBuiltinAutoMaterialization(modelStr, suffix);
   if (!materialization) {
@@ -264,8 +274,14 @@ export async function createBuiltinAutoCombo(
   const { createVirtualAutoCombo, createVirtualAutoComboFromPrepared } =
     await import("./virtualFactory.ts");
   const { variant, spec } = materialization;
-  const virtualCombo = prepared
-    ? await createVirtualAutoComboFromPrepared(prepared, variant, spec)
+  // #16419: `prepared` may be a lazy loader shared across the auto request path.
+  const inputs = !prepared
+    ? undefined
+    : typeof prepared === "function"
+      ? await prepared()
+      : prepared;
+  const virtualCombo = inputs
+    ? await createVirtualAutoComboFromPrepared(inputs, variant, spec)
     : await createVirtualAutoCombo(variant, spec);
   virtualCombo.name = modelStr;
   virtualCombo.id = modelStr;
