@@ -13,6 +13,7 @@ import {
   mapProviderId,
   fetchModelsDev,
 } from "../../src/lib/modelsDevSync.ts";
+import { knownReasoningEffortTiers } from "../../src/lib/modelsDevSync/transform.ts";
 
 // ─── Mock data ───────────────────────────────────────────
 
@@ -309,7 +310,10 @@ describe("modelsDevSync — transformModelsDevToCapabilities", () => {
             reasoning: true,
             reasoning_options: [
               { type: "toggle" },
-              { type: "effort", values: ["minimal", "low", "medium", "high", "xhigh", "max", "turbo"] },
+              {
+                type: "effort",
+                values: ["minimal", "low", "medium", "high", "xhigh", "max", "turbo"],
+              },
             ],
             tool_call: true,
             release_date: "2026-10-01",
@@ -325,7 +329,27 @@ describe("modelsDevSync — transformModelsDevToCapabilities", () => {
     const caps = transformModelsDevToCapabilities(data);
     const haiku = caps.anthropic["claude-haiku-5-5"];
     assert.equal(haiku.reasoning, true);
-    assert.deepEqual(haiku.reasoning_efforts, ["minimal", "low", "medium", "high", "xhigh", "max"]);
+    // Stored as published so MODELS_DEV_EFFORT_TIERS_ENABLED toggles losslessly; the
+    // known-vocabulary narrowing happens where the tiers are read (#15944).
+    assert.deepEqual(haiku.reasoning_efforts, [
+      "minimal",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+      "turbo",
+    ]);
+    assert.deepEqual(knownReasoningEffortTiers(haiku.reasoning_efforts), [
+      "minimal",
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+      "max",
+    ]);
+    assert.equal(knownReasoningEffortTiers(["turbo"]), null);
+    assert.equal(knownReasoningEffortTiers(null), null);
   });
 
   it("handles interleaved reasoning field", () => {
