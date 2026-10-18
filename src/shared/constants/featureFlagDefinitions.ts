@@ -361,6 +361,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED",
+    label: "OpenCode Zen Egress-IP Lockout",
+    description:
+      "Add OpenCode Zen (opencode-zen) to the default egress-IP lockout family, so a 429 on one Zen connection also cools every sibling Zen connection that shares its egress IP. Off by default: Zen is keyed and each connection cools down on its own, exactly as before. An explicit OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS value always wins over this flag.",
+    descriptionI18nKey: "featureFlagOpencodeZenEgressIpLockEnabledDescription",
+    category: "network",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
     key: "MITM_DISABLE_TLS_VERIFY",
     label: "Disable TLS Verify (MITM)",
     description: "Disable TLS certificate verification for MITM proxy",

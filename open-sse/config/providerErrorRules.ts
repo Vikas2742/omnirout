@@ -411,8 +411,70 @@ const EGRESS_BUCKETED_LOCK_PROVIDERS = egressIpLockProvidersFromEnv(
   process.env.OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS
 );
 
+/**
+ * Feature-flag reader injected by a module that is allowed to read the flag store
+ * (`open-sse/services/accountFallback.ts` registers `isFeatureFlagEnabled`). This file
+ * stays free of `src/` imports: it is reachable from client bundles and the
+ * open-sse → src boundary is ratcheted. Unregistered or throwing reader = flag off, so
+ * every flag below fails closed to the release default.
+ */
+let featureFlagReader: ((key: string) => boolean) | null = null;
+
+export function setProviderErrorRuleFlagReader(reader: ((key: string) => boolean) | null): void {
+  featureFlagReader = reader;
+}
+
+function isRuleFlagEnabled(key: string): boolean {
+  if (!featureFlagReader) return false;
+  try {
+    return featureFlagReader(key) === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Opt-in (#16797): OpenCode Zen joins the default egress-IP lock family. Off by default
+ * because Zen is keyed (account-bucketed paid plans would see one 429 park every sibling
+ * connection sharing an egress IP). An explicit OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS value
+ * (a list or `none`) always wins over the flag.
+ */
+export const OPENCODE_ZEN_EGRESS_IP_LOCK_FLAG = "OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED";
+const OPENCODE_ZEN_PROVIDER_ID = "opencode-zen";
+
+/**
+ * Pure resolver for the effective egress-lock set (exported for tests): the explicit env
+ * value wins; otherwise the default family, plus `opencode-zen` when the opt-in flag is on.
+ */
+export function resolveEgressIpLockProviders(
+  raw: string | undefined,
+  zenOptIn: boolean
+): Set<string> {
+  const set = egressIpLockProvidersFromEnv(raw);
+  if (zenOptIn && (raw === undefined || raw.trim() === "")) set.add(OPENCODE_ZEN_PROVIDER_ID);
+  return set;
+}
+
+const EGRESS_LOCK_ENV_IS_EXPLICIT = Boolean(process.env.OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS?.trim());
+const EGRESS_BUCKETED_LOCK_PROVIDERS_WITH_ZEN = resolveEgressIpLockProviders(
+  process.env.OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS,
+  true
+);
+
+/** The effective set: the flag is read per call so a dashboard override applies live. */
+function effectiveEgressBucketedLockProviders(): Set<string> {
+  if (EGRESS_LOCK_ENV_IS_EXPLICIT) return EGRESS_BUCKETED_LOCK_PROVIDERS;
+  return isRuleFlagEnabled(OPENCODE_ZEN_EGRESS_IP_LOCK_FLAG)
+    ? EGRESS_BUCKETED_LOCK_PROVIDERS_WITH_ZEN
+    : EGRESS_BUCKETED_LOCK_PROVIDERS;
+}
+
 export function isEgressBucketedLockScope(provider: string | null | undefined): boolean {
-  return !!provider && EGRESS_BUCKETED_LOCK_PROVIDERS.has(provider.toLowerCase());
+  if (!provider) return false;
+  const key = provider.toLowerCase();
+  if (EGRESS_BUCKETED_LOCK_PROVIDERS.has(key)) return true;
+  // Only an opencode-zen lookup ever reads the flag store (hot path for everyone else).
+  return key === OPENCODE_ZEN_PROVIDER_ID && effectiveEgressBucketedLockProviders().has(key);
 }
 
 /**
@@ -424,7 +486,7 @@ export function isEgressBucketedLockScope(provider: string | null | undefined): 
  * applied.
  */
 export function egressBucketedLockProviders(): string[] {
-  return [...EGRESS_BUCKETED_LOCK_PROVIDERS].sort();
+  return [...effectiveEgressBucketedLockProviders()].sort();
 }
 
 /**
