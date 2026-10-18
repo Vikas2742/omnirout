@@ -12,6 +12,10 @@ import {
   stripTrailingGeminiModelTurns,
 } from "../helpers/geminiTrailingModelTurn.ts";
 import {
+  isClaudeServerWebSearchTool,
+  isSoleClaudeServerWebSearchTool,
+} from "../helpers/claudeServerWebSearch.ts";
+import {
   buildGeminiThoughtSignatureKey,
   resolveGeminiThoughtSignature,
 } from "../../services/geminiThoughtSignatureStore.ts";
@@ -410,7 +414,19 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
   }
 
   // ── Convert tools ──────────────────────────────────────────────
-  const geminiTools = buildGeminiTools(body.tools, {
+  // Claude Code's WebSearch sends Anthropic's dated web-search *server* tool as the
+  // request's sole tool. `buildGeminiTools` only recognizes the non-versioned
+  // `web_search` type, so normalize the dated form to the marker it maps to
+  // `{ googleSearch: {} }`. A mixed request (server tool next to custom tools) must
+  // NOT enable grounding — Antigravity 400s on a built-in tool mixed with
+  // functionDeclarations, and the custom tools have to survive — so there the server
+  // tool is dropped, matching the hub lane (claude-to-openai.ts).
+  const geminiToolsInput = Array.isArray(body.tools)
+    ? isSoleClaudeServerWebSearchTool(body.tools)
+      ? [{ type: "web_search" }]
+      : body.tools.filter((tool) => !isClaudeServerWebSearchTool(tool))
+    : body.tools;
+  const geminiTools = buildGeminiTools(geminiToolsInput, {
     toolNameMap,
   });
   if (geminiTools) {
