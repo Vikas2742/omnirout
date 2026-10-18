@@ -67,7 +67,11 @@ const read = (rel: string) => readFileSync(new URL(`../../${rel}`, import.meta.u
 const providerComponents = "src/app/(dashboard)/dashboard/providers/[id]/components";
 
 test("connections toolbar and bulk actions use the shared full-width ActionBar", () => {
-  assert.match(read(`${providerComponents}/ConnectionsHeaderToolbar.tsx`), /<ActionBar>/);
+  // Codex keeps its start-aligned bar (#16248); every provider uses the shared ActionBar.
+  assert.match(
+    read(`${providerComponents}/ConnectionsHeaderToolbar.tsx`),
+    /<ActionBar align=\{providerId === "codex" \? "start" : "end"\}>/
+  );
   assert.match(read(`${providerComponents}/ConnectionsListPanel.tsx`), /<ActionBar>/);
   const actionBar = read("src/shared/components/ActionBar.tsx");
   assert.match(

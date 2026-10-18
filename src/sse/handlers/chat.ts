@@ -1,5 +1,8 @@
+import { hasQoderCallerTools } from "@omniroute/open-sse/services/qoderCapabilities";
+import { getRequestedModelEndpointMismatch } from "@/lib/providerModels/modelEndpointGuard";
 import { randomUUID } from "crypto";
 import { resolveChatRequestBody } from "./requestBody";
+import { getComboCredentialAvailability } from "./comboCredentialAvailability.ts";
 import * as chatAdmission from "./chatAdmission.ts";
 import { buildClientRawRequest, resolveDispatchClientRawRequest } from "./chat/clientRawRequest.ts";
 export { buildClientRawRequest, resolveDispatchClientRawRequest };
@@ -9,14 +12,15 @@ import { resolvePreviousResponseState } from "@/lib/db/responsesContinuationStor
 import { normalizeResponsesPreviousResponseIdMode } from "@omniroute/open-sse/utils/responsesStatePolicy.ts";
 import { FORMATS } from "@omniroute/open-sse/translator/formats.ts";
 import { resolveRoutingModel, RoutingModelOps } from "./resolveRoutingModel";
+import { resolveApiKeyForcedModel } from "./apiKeyForcedModel";
 import {
   getProviderCredentialsWithQuotaPreflight,
   markAccountUnavailable,
   buildExhaustionOptions,
-  extractApiKey,
   isValidApiKey,
   extractSessionAffinityKey,
 } from "../services/auth";
+import { resolveClientApiKey } from "../services/clientApiKeyResolver";
 import {
   getRuntimeProviderProfile,
   clearModelLock,
@@ -44,7 +48,6 @@ import { isVerifiedNativeCodexRequest } from "@omniroute/open-sse/config/codexId
 import { resolveCompressionSettings } from "@omniroute/open-sse/handlers/chatCore/compressionSettings.ts";
 import type { CompressionExclusions } from "@omniroute/open-sse/services/compression/exclusions.ts";
 import { resolveComboConfig } from "@omniroute/open-sse/services/comboConfig.ts";
-import { comboPinAllowlist } from "@/lib/combos/steps.ts";
 import { injectHandoffIntoBody } from "@omniroute/open-sse/services/contextHandoff.ts";
 import { runWithTransientBackendRetry } from "@omniroute/open-sse/services/transientBackendRetry.ts";
 import {
@@ -82,6 +85,7 @@ import { dispatchChatWithAffinityEviction } from "./chatDispatch";
 import { getCachedSettings, getCombosCacheVersion } from "@/lib/db/readCache";
 import { comboCheckProvider, ghComboGate } from "./chat/githubLiveCatalogFilter.ts";
 import { markEmergencyFallback } from "./emergencyFallbackHeader.ts";
+import { resolveEmergencyFallbackDecision } from "./emergencyFallbackHeader.ts";
 import { evaluateComboTargetPreflight } from "./chat/comboTargetKeyPolicy.ts";
 import * as resolvedPolicy from "./chat/resolvedModelPolicy.ts";
 import { recordGateRejection, recordQuotaParkedSkip } from "./quotaParkedSkipUsage";
@@ -115,7 +119,10 @@ import {
 import { buildModalityBridgeHeader } from "@/lib/guardrails/modalityBridge/bridgeStats";
 import type { VideoBridgeLogRedactionEntry } from "@/lib/guardrails/videoBridge";
 import { reanchorVideoBridgeRedaction } from "@/lib/guardrails/videoBridge";
-import { resolveConversationId } from "@omniroute/open-sse/services/conversationTracker.ts";
+import {
+  resolveClientSessionId,
+  resolveConversationId,
+} from "@omniroute/open-sse/services/conversationTracker.ts";
 import {
   classifyProviderBreakerResult,
   isAntigravityMissingProjectError,
@@ -125,7 +132,7 @@ import {
 import { markAntigravityMissingCloudCodeProject } from "@omniroute/open-sse/services/antigravityProjectPersistence.ts";
 import { connectionHasExtraKeys } from "@omniroute/open-sse/services/apiKeyRotator.ts";
 import { wrapResponseWithOAuthSessionRelease } from "@omniroute/open-sse/services/oauthSessionOccupancy.ts";
-import { inheritProviderProbeResponse } from "@/shared/utils/providerProbeResult";
+import { inheritProviderProbeResponse, inheritResponsePolicies } from "./chat/responsePolicies.ts";
 import { resolveProviderId } from "@/shared/constants/providers";
 import {
   extractReasoningIntent,
@@ -139,7 +146,12 @@ import {
 } from "./reasoningRouting";
 import { createVirtualAutoCombo, resolveAutoRoutingState } from "./autoRouting";
 import { getComboFailureLogError } from "./comboFailureLogging";
-import { logAdmissionRejection, logHandlerRejection } from "./admissionRejectionLog";
+import {
+  logAdmissionRejection,
+  logHandlerRejection,
+  previousResponseNotFoundRejection,
+  rejectPayload,
+} from "./admissionRejectionLog";
 
 // Pipeline integration — wired modules
 import { classify429FromError, type FailureKind } from "@/shared/utils/classify429";
@@ -178,10 +190,7 @@ import {
   isSessionRegisteredForKey,
 } from "@omniroute/open-sse/services/sessionManager.ts";
 import { startQuotaMonitor } from "@omniroute/open-sse/services/quotaMonitor.ts";
-import {
-  isFallbackDecision,
-  shouldUseFallback,
-} from "@omniroute/open-sse/services/emergencyFallback.ts";
+import { isFallbackDecision } from "@omniroute/open-sse/services/emergencyFallback.ts";
 import {
   registerCodexConnection,
   registerCodexQuotaFetcher,
@@ -221,6 +230,7 @@ import {
   validateExclusiveLeaseKeyConfiguration,
   type ManagedLeaseDispatchContext,
 } from "../services/leaseContext";
+import { resolveConnectionRestrictions } from "../services/connectionRestrictions.ts";
 
 registerCodexQuotaFetcher();
 registerQuotaTrackersBatch();
@@ -326,25 +336,6 @@ async function getCombosCachedForChat(): Promise<ComboLike[]> {
   combosCacheVersionSnapshot = getCombosCacheVersion();
   combosCachePromise = getCombos().catch(() => []) as Promise<ComboLike[]>;
   return combosCachePromise;
-}
-
-function normalizeAllowedConnectionIds(value: unknown): string[] | null {
-  if (!Array.isArray(value)) return null;
-  const ids = value.filter(
-    (entry): entry is string => typeof entry === "string" && entry.trim().length > 0
-  );
-  return ids.length > 0 ? ids : null;
-}
-
-function intersectAllowedConnectionIds(primary: unknown, secondary: unknown): string[] | null {
-  const first = normalizeAllowedConnectionIds(primary);
-  const second = normalizeAllowedConnectionIds(secondary);
-
-  if (first && second) {
-    return first.filter((id) => second.includes(id));
-  }
-
-  return first || second || null;
 }
 
 /** Shape of the videoBridgeLog param threaded to executeChatWithBreaker -> handleChatCore (#12150 P1b). */
@@ -468,6 +459,7 @@ async function handleChatImplementation(
     });
   }
 
+  if ((body = rejectPayload(body, request, reqId)) instanceof Response) return body;
   // Only the server's policy resolver may attach execution directives or route traces.
   // Discard lookalike JSON fields supplied by callers before evaluating any rule.
   if (body && typeof body === "object") {
@@ -647,10 +639,11 @@ async function handleChatImplementation(
     log.debug("NO_THINKING", `Resolved no-thinking alias → ${noThinking.realModel}`);
   }
 
-  // X-Route-Model header overrides body.model for routing purposes (see
-  // resolveRoutingModel). The resolved model still passes through
-  // enforceApiKeyPolicy below, so it cannot bypass per-key allowlists.
-  let modelStr = resolveRoutingModel(request, body);
+  // X-Route-Model header overrides body.model for routing purposes, and a per-key
+  // enforced model overrides both (see resolveRoutingModel). The resolved model
+  // still passes through enforceApiKeyPolicy below, so it cannot bypass per-key
+  // allowlists or budgets.
+  let modelStr = resolveRoutingModel(request, body, await resolveApiKeyForcedModel(request, log));
   if (typeof modelStr === "string") {
     // Preserve literal combo names such as "Claude [1m]". Context tags are
     // stripped only when the exact request does not identify a combo.
@@ -698,7 +691,7 @@ async function handleChatImplementation(
   // masked prefix/last4. These debug lines get copied verbatim into bug reports
   // and support tickets, so any key fragment is sensitive.
   const authHeader = request.headers.get("Authorization");
-  const apiKey = extractApiKey(request);
+  const { apiKey } = await resolveClientApiKey(request);
   if (authHeader && apiKey) {
     log.debug("AUTH", "API key provided");
   } else {
@@ -756,6 +749,20 @@ async function handleChatImplementation(
         correlationId: reqId,
       }
     );
+  }
+
+  // A trusted endpoint-tag mismatch is a local client error, not a provider or
+  // connection health failure. Exact combo names are exempt in the resolver.
+  const endpointMismatch = await getRequestedModelEndpointMismatch(modelStr, "chat");
+  if (endpointMismatch) {
+    return logHandlerRejection(errorResponse(HTTP_STATUS.BAD_REQUEST, endpointMismatch), {
+      path: new URL(request.url).pathname,
+      model: modelStr,
+      requestBody: body ?? null,
+      apiKeyId: null,
+      apiKeyName: null,
+      correlationId: reqId,
+    });
   }
 
   // T04: client-provided external session header has priority over generated fingerprint.
@@ -841,20 +848,14 @@ async function handleChatImplementation(
       : null;
     // resume flag for the attempt store in handleChatCore (best-effort).
     if (!stored) {
-      // Matches OpenAI's own `previous_response_not_found` contract (missing
-      // or expired server-side state) so a client with the matching retry
-      // behavior -- resend the full request, same turn -- recovers exactly
-      // as it would against the real OpenAI backend.
-      return new Response(
-        JSON.stringify({
-          error: {
-            message: "Previous response not found.",
-            type: "invalid_request_error",
-            code: "previous_response_not_found",
-          },
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return previousResponseNotFoundRejection({
+        path: new URL(request.url).pathname,
+        model: modelStr,
+        requestBody: body ?? null,
+        apiKeyId: apiKeyInfo?.id ?? null,
+        apiKeyName: apiKeyInfo?.name ?? null,
+        correlationId: reqId,
+      });
     }
     const deltaInput = Array.isArray((body as { input?: unknown }).input)
       ? (body as { input: unknown[] }).input
@@ -965,6 +966,7 @@ async function handleChatImplementation(
       model: modelStr,
       apiKeyId: apiKeyInfo?.id ?? null,
       clientSessionIdHeader: clientConversationHeader,
+      clientSessionId: resolveClientSessionId(request.headers, body),
       correlationId: reqId,
     }));
   } catch (error) {
@@ -1182,10 +1184,8 @@ async function handleChatImplementation(
       const resolvedModel = modelInfo.model || modelString;
       const githubGate = await ghComboGate(comboPreselectedCredentials, provider, resolvedModel);
       if (githubGate !== null) return githubGate;
-      let allowedConnections = intersectAllowedConnectionIds(
-        apiKeyInfo?.allowedConnections ?? null,
-        comboPinAllowlist(true, target?.connectionId ?? null, target?.allowedConnectionIds ?? null)
-      );
+      const restrictions = resolveConnectionRestrictions(apiKeyInfo, target, true);
+      let allowedConnections = restrictions.allowedConnections;
 
       // A4: quota-exclusive keys must only use the pool's connection(s).
       if (apiKeyInfo?.allowedQuotas && apiKeyInfo.allowedQuotas.length > 0) {
@@ -1206,6 +1206,8 @@ async function handleChatImplementation(
         allowedConnections,
         resolvedModel,
         {
+          connectionRestrictionSources: restrictions.sources,
+          requireToolCalling: hasQoderCallerTools(body),
           sessionKey: sessionAffinityKey,
           ...(target?.allowRateLimitedConnection ? { allowRateLimitedConnections: true } : {}),
           ...(target?.connectionId ? { forcedConnectionId: target.connectionId } : {}),
@@ -1213,12 +1215,8 @@ async function handleChatImplementation(
           ...(managedLease ? { lease: credentialLease(managedLease) } : {}),
         }
       );
-      if (
-        !creds ||
-        ("allRateLimited" in creds && creds.allRateLimited) ||
-        ("waitingForCapacity" in creds && creds.waitingForCapacity)
-      )
-        return false;
+      const availability = getComboCredentialAvailability(creds);
+      if (availability !== true) return availability;
 
       // OAuth selection must happen atomically with occupancy reservation in the
       // actual dispatch. Availability preflight may finish well before a combo
@@ -1273,6 +1271,7 @@ async function handleChatImplementation(
           executionKey?: string | null;
           stepId?: string | null;
           allowedConnectionIds?: string[] | null;
+          emptyTurnConnectionId?: string | null;
           failoverBeforeRetry?: boolean;
           providerId?: string | null;
           effectiveComboStrategy?: string | null;
@@ -1295,6 +1294,7 @@ async function handleChatImplementation(
             ...resolvedPolicy.comboAuthorizationOptions(apiKeyInfo, resolvedModelStr),
             forcedConnectionId: target?.connectionId ?? null,
             allowedConnectionIds: target?.allowedConnectionIds ?? null,
+            emptyTurnConnectionId: target?.emptyTurnConnectionId ?? null,
             comboStepId: target?.stepId || null,
             comboExecutionKey: target?.executionKey || target?.stepId || null,
             skipUpstreamRetry: target?.failoverBeforeRetry ?? false,
@@ -1505,6 +1505,14 @@ async function handleChatImplementation(
 
 export const handleChat = chatAdmission.withChatAdmission(handleChatImplementation);
 
+function readEmptyStreamSiblingRecoveryFlag(): boolean {
+  try {
+    return isFeatureFlagEnabled("EMPTY_STREAM_SIBLING_RECOVERY_ENABLED");
+  } catch {
+    return false;
+  }
+}
+
 /** Handle one resolved model through gates, credentials, and retry/fallback. */
 async function handleSingleModelChat(
   body: any,
@@ -1521,6 +1529,7 @@ async function handleSingleModelChat(
     sessionAffinityKey?: string | null;
     forcedConnectionId?: string | null;
     allowedConnectionIds?: string[] | null;
+    emptyTurnConnectionId?: string | null;
     comboStepId?: string | null;
     comboExecutionKey?: string | null;
     skipUpstreamRetry?: boolean;
@@ -1665,9 +1674,9 @@ async function handleSingleModelChat(
     if (modelStr.startsWith(runtimeOptions.providerId + "/")) return resolvedProvider;
     return runtimeOptions.providerId;
   })();
-  const resolvedModelGate = resolvedPolicy.createResolvedModelGate({
+  const resolvedModelGate = resolvedPolicy.createVisibleResolvedModelGate({
     apiKeyInfo,
-    apiKey: extractApiKey(request),
+    apiKey: (await resolveClientApiKey(request)).apiKey,
     contextModel: runtimeOptions.authorizationContextModel,
     comboGrantsTargets: runtimeOptions.comboGrantsTargets,
     provider,
@@ -1685,10 +1694,9 @@ async function handleSingleModelChat(
       ? runtimeOptions.forcedConnectionId.trim()
       : "";
   const hasForcedConnection = forcedConnectionId.length > 0;
-  let effectiveAllowedConnections = intersectAllowedConnectionIds(
-    apiKeyInfo?.allowedConnections ?? null,
-    comboPinAllowlist(isCombo, forcedConnectionId || null, runtimeOptions.allowedConnectionIds)
-  );
+  const pinTarget = { ...runtimeOptions, connectionId: forcedConnectionId };
+  const restrictions = resolveConnectionRestrictions(apiKeyInfo, pinTarget, isCombo);
+  let effectiveAllowedConnections = restrictions.allowedConnections;
 
   // A4: quota-exclusive keys must only use the pool's connection(s).
   if (apiKeyInfo?.allowedQuotas && apiKeyInfo.allowedQuotas.length > 0) {
@@ -1807,52 +1815,74 @@ async function handleSingleModelChat(
     let preselectedCredentials = initialPreselectedCredentials;
     initialPreselectedCredentials = null;
 
+    // #16438 opt-in (EMPTY_STREAM_SIBLING_RECOVERY_ENABLED): read once per dispatch;
+    // fail closed so any flag-resolution error keeps the release retry behavior.
+    const emptyStreamSiblingRecovery = readEmptyStreamSiblingRecoveryFlag();
     while (true) {
-      const credentials =
-        preselectedCredentials && excludedConnectionIds.size === 0 && !agy.on
+      const emptyTurnExcluded = new Set(excludedConnectionIds);
+      if (
+        emptyStreamSiblingRecovery &&
+        runtimeOptions.emptyTurnConnectionId &&
+        !hasForcedConnection &&
+        !runtimeOptions.managedLease
+      ) {
+        emptyTurnExcluded.add(runtimeOptions.emptyTurnConnectionId);
+      }
+      const selectCredentials = (excluded: Set<string>) =>
+        getProviderCredentialsWithQuotaPreflight(
+          provider,
+          null,
+          effectiveAllowedConnections,
+          model,
+          {
+            connectionRestrictionSources: restrictions.sources,
+            requireToolCalling: hasQoderCallerTools(body),
+            sessionKey: occupancySessionKey,
+            reserveOAuthSession: true,
+            excludeConnectionIds: Array.from(excluded),
+            ...(agy.on ? { reserveAntigravityLease: true, routingRequestId: agy.requestId } : {}),
+            ...(runtimeOptions.allowRateLimitedConnection
+              ? { allowRateLimitedConnections: true }
+              : {}),
+            ...(forceLiveComboTest
+              ? {
+                  allowSuppressedConnections: true,
+                  bypassQuotaPolicy: true,
+                }
+              : {}),
+            ...(!forceLiveComboTest && bypassProviderQuotaPolicy
+              ? { bypassQuotaPolicy: true }
+              : {}),
+            ...(runtimeOptions.managedLease
+              ? { lease: credentialLease(runtimeOptions.managedLease) }
+              : {}),
+            ...(() => {
+              const effectiveForcedId = resolveForcedConnectionForCredentialPool({
+                forcedConnectionId: forcedConnectionId || null,
+                excludedConnectionIds: excluded,
+                connections: [],
+                allowRateLimitedConnections:
+                  runtimeOptions.allowRateLimitedConnection === true || forceLiveComboTest,
+                bypassQuotaPolicy: forceLiveComboTest || bypassProviderQuotaPolicy,
+                isQuotaExhausted: () => false,
+                isQuotaPolicyBlocked: () => false,
+              });
+              return effectiveForcedId ? { forcedConnectionId: effectiveForcedId } : {};
+            })(),
+          }
+        );
+      let credentials =
+        preselectedCredentials && emptyTurnExcluded.size === 0 && !agy.on
           ? preselectedCredentials
-          : await getProviderCredentialsWithQuotaPreflight(
-              provider,
-              null,
-              effectiveAllowedConnections,
-              model,
-              {
-                sessionKey: occupancySessionKey,
-                reserveOAuthSession: true,
-                excludeConnectionIds: Array.from(excludedConnectionIds),
-                ...(agy.on
-                  ? { reserveAntigravityLease: true, routingRequestId: agy.requestId }
-                  : {}),
-                ...(runtimeOptions.allowRateLimitedConnection
-                  ? { allowRateLimitedConnections: true }
-                  : {}),
-                ...(forceLiveComboTest
-                  ? {
-                      allowSuppressedConnections: true,
-                      bypassQuotaPolicy: true,
-                    }
-                  : {}),
-                ...(!forceLiveComboTest && bypassProviderQuotaPolicy
-                  ? { bypassQuotaPolicy: true }
-                  : {}),
-                ...(runtimeOptions.managedLease
-                  ? { lease: credentialLease(runtimeOptions.managedLease) }
-                  : {}),
-                ...(() => {
-                  const effectiveForcedId = resolveForcedConnectionForCredentialPool({
-                    forcedConnectionId: forcedConnectionId || null,
-                    excludedConnectionIds,
-                    connections: [],
-                    allowRateLimitedConnections:
-                      runtimeOptions.allowRateLimitedConnection === true || forceLiveComboTest,
-                    bypassQuotaPolicy: forceLiveComboTest || bypassProviderQuotaPolicy,
-                    isQuotaExhausted: () => false,
-                    isQuotaPolicyBlocked: () => false,
-                  });
-                  return effectiveForcedId ? { forcedConnectionId: effectiveForcedId } : {};
-                })(),
-              }
-            );
+          : await selectCredentials(emptyTurnExcluded);
+      if (
+        emptyTurnExcluded.size > excludedConnectionIds.size &&
+        (!credentials || "allRateLimited" in credentials || "allExpired" in credentials)
+      ) {
+        // Empty turns are stochastic, not account faults. Prefer an allowed sibling,
+        // but a singleton still spends its existing retry on its original account.
+        credentials = await selectCredentials(excludedConnectionIds);
+      }
       preselectedCredentials = null;
 
       if (credentials && "leaseUnavailable" in credentials && credentials.leaseUnavailable) {
@@ -1907,7 +1937,7 @@ async function handleSingleModelChat(
             requestRetryBudgetLeftMs = Math.max(0, requestRetryBudgetLeftMs - retryDecision.waitMs);
             log.info(
               "COOLDOWN_RETRY",
-              `${provider}/${model} cooldown elapsed — restarting request attempt ${requestRetryAttempt + 1}/${retrySettings.maxRetries}`
+              `${provider}/${model} cooldown elapsed — restarting request (retry ${requestRetryAttempt}/${retrySettings.maxRetries})`
             );
             continue requestAttemptLoop;
           }
@@ -2169,6 +2199,7 @@ async function handleSingleModelChat(
             previousResponseResumed: runtimeOptions.previousResponseResumed,
             fallbackAttempts: runtimeOptions.fallbackAttempts,
             forcedConnectionId: hasForcedConnection ? forcedConnectionId : null, // #14116
+            allowedConnections: effectiveAllowedConnections,
           },
           runtimeOptions
         );
@@ -2239,7 +2270,7 @@ async function handleSingleModelChat(
           credentials?.connectionId
         );
         if (requestBody.stream === true) {
-          return inheritProviderProbeResponse(
+          return inheritResponsePolicies(
             successResponse,
             wrapResponseWithOAuthSessionRelease(successResponse, releaseOAuthSession)
           );
@@ -2291,7 +2322,8 @@ async function handleSingleModelChat(
       if (
         (result.errorType === "stream_timeout" ||
           result.errorType === "stream_early_eof" ||
-          result.errorCode === "empty_response") &&
+          result.errorCode === "empty_response" ||
+          (emptyStreamSiblingRecovery && result.errorCode === "empty_content")) &&
         !isAntigravityStreamReadinessFailure
       ) {
         // Bug #3758: flaky OpenAI-compatible upstreams (e.g. NVIDIA NIM) sometimes
@@ -2302,9 +2334,16 @@ async function handleSingleModelChat(
         // the account unavailable for the early close.
         if (
           shouldRetryStreamEarlyEof(result.errorCode, streamEarlyEofRetries) &&
-          !hasForcedConnection
+          !hasForcedConnection &&
+          // #16438 (flag-gated): never spend a retry on a client that already left, and
+          // let the combo own empty_content recovery so the two layers never stack.
+          !(emptyStreamSiblingRecovery && requestSignal?.aborted) &&
+          !(isCombo && result.errorCode === "empty_content")
         ) {
           streamEarlyEofRetries += 1;
+          if (result.errorCode === "empty_content") {
+            runtimeOptions.emptyTurnConnectionId = credentials.connectionId;
+          }
           log.warn(
             "STREAM",
             `${provider}/${model} closed the stream early before useful content — retrying once (attempt ${streamEarlyEofRetries})`
@@ -2472,10 +2511,11 @@ async function handleSingleModelChat(
       // (target-level orchestration plus the global fallback #689 after it), and a
       // per-target hop burns extra upstream calls against exhausted providers (#1731).
       if (!runtimeOptions.emergencyFallbackTried && !comboName) {
-        const fallbackDecision = shouldUseFallback(
+        const fallbackDecision = await resolveEmergencyFallbackDecision(
           Number(result.status || 0),
           String(result.error || ""),
-          Array.isArray(body?.tools) && body.tools.length > 0
+          Array.isArray(body?.tools) && body.tools.length > 0,
+          runtimeOptions
         );
 
         if (isFallbackDecision(fallbackDecision)) {
@@ -2659,6 +2699,7 @@ async function handleSingleModelChat(
               ),
               isCombo,
               headers: result.response.headers,
+              structuredError: { code: result.errorCode, type: result.errorType },
             })
           );
 

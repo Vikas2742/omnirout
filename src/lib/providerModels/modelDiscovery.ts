@@ -65,7 +65,7 @@ function labelsIncludeVision(value: unknown): boolean {
  * Returns false when the upstream exposes no modality info.
  */
 export function detectVisionInput(record: JsonRecord): boolean {
-  if (record.supportsVision === true) return true;
+  if (record.supportsVision === true || record.vision === true) return true;
 
   const architecture = asRecord(record.architecture);
   if (modalitiesIncludeImage(architecture.input_modalities)) return true;
@@ -605,6 +605,23 @@ export function normalizeDiscoveredModels(
             ? ["images"]
             : undefined;
 
+    // #16929 provenance. Only a parser that genuinely reads the upstream's own
+    // capability declaration (e.g. Gemini supportedGenerationMethods) stamps
+    // "declared" explicitly on the record. A bare supportedEndpoints array is NOT
+    // proof of declaration: OpenAI/OpenRouter/Ollama/codex/compatible parsers fill it
+    // from heuristics or fixed defaults, so it stays unmarked (= defaulted, never
+    // gating). Id/type modality inference applies only when no array was supplied.
+    // "defaulted" is left off the row so chat rows keep the tip's exact shape.
+    const endpointCapabilitySource: SyncedAvailableModel["endpointCapabilitySource"] =
+      record.endpointCapabilitySource === "operator" ||
+      record.endpointCapabilitySource === "declared" ||
+      record.endpointCapabilitySource === "inferred"
+        ? record.endpointCapabilitySource
+        : !Array.isArray(record.supportedEndpoints) &&
+            (modality.isEmbedding || modality.isRerank || modality.isImage)
+          ? "inferred"
+          : undefined;
+
     const apiFormat =
       toNonEmptyString(record.apiFormat) ||
       (modality.isEmbedding
@@ -624,6 +641,9 @@ export function normalizeDiscoveredModels(
     // window as `max_model_len`, the value the engine was actually started with.
     // Without it a vLLM model syncs with no window at all and the resolver hands
     // out the 128K default, understating a 250K deployment by half. #12858
+    // Explicit max fields beat a plain `context_window`: catalogs that send both
+    // use `context_window` as the smaller pricing tier (272K) and
+    // `max_context_window` / `max_model_len` as the usable window.
     // Anthropic Models API reports the window as `max_input_tokens` and the output
     // cap as `max_tokens`. #14159 briefly treated `max_tokens` as a window candidate;
     // that mapped Claude Opus 5 to 128K instead of 1M. Do not put `max_tokens` here.
@@ -634,6 +654,9 @@ export function normalizeDiscoveredModels(
       record.max_model_len,
       record.maxModelLen,
       record.max_context_window,
+      record.context_window,
+      record.context_window_tokens,
+      record.max_context_window_tokens,
       record.max_input_tokens,
       record.maxInputTokens,
       topProvider.context_length
@@ -666,6 +689,15 @@ export function normalizeDiscoveredModels(
       id,
       name,
       source: "imported",
+      ...(record.visibility === "hide" || record.visibility === "list"
+        ? { visibility: record.visibility }
+        : {}),
+      ...(typeof record.supportedInApi === "boolean"
+        ? { supportedInApi: record.supportedInApi }
+        : {}),
+      ...(toNonEmptyString(record.minimalClientVersion)
+        ? { minimalClientVersion: toNonEmptyString(record.minimalClientVersion)! }
+        : {}),
       ...(apiFormat ? { apiFormat } : {}),
       ...(toNonEmptyString(record.targetFormat)
         ? { targetFormat: toNonEmptyString(record.targetFormat)! }
@@ -674,6 +706,7 @@ export function normalizeDiscoveredModels(
         ? { upstreamProtocol: toNonEmptyString(record.upstreamProtocol)! }
         : {}),
       ...(supportedEndpoints && supportedEndpoints.length > 0 ? { supportedEndpoints } : {}),
+      ...(endpointCapabilitySource ? { endpointCapabilitySource } : {}),
       ...(supportedThinkingEfforts !== undefined ? { supportedThinkingEfforts } : {}),
       ...(defaultThinkingEffort !== undefined ? { defaultThinkingEffort } : {}),
       ...(typeof inputTokenLimit === "number" ? { inputTokenLimit } : {}),
