@@ -839,6 +839,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "COMBO_EMPTY_POOL_NO_ELIGIBLE_TARGETS_ENABLED",
+    label: "Auto Combo: Empty Pool Answers 503",
+    description:
+      'When an auto combo\'s candidate pool is already empty before the tool-calling pre-filter runs (every target skipped by cooldowns, lockouts or exhaustion), answer 503 no_eligible_targets instead of the legacy 400 "No target supports tool calling" capability_mismatch. Off by default: the empty pool keeps the legacy 400.',
+    descriptionI18nKey: "featureFlagComboEmptyPoolNoEligibleTargetsEnabledDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
     key: "MISTRAL_AMBIGUOUS_401_SOFT_LOCKOUT",
     label: "Mistral Ambiguous 401 Soft Lockout",
     description:
