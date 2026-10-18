@@ -32,7 +32,7 @@ import { getCombo, getComboForModel, getModelInfo } from "../services/model";
 import { stripContextWindowSuffix } from "@omniroute/open-sse/services/model.ts";
 import { resolveBareModelToConnectionDefault } from "@omniroute/open-sse/services/model.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { getImageModelEntry } from "@omniroute/open-sse/config/imageRegistry.ts";
+import { getImageModelEntry, isImageOnlyModel } from "@omniroute/open-sse/config/imageRegistry.ts";
 import { acceptHeaderForcesStream } from "@omniroute/open-sse/utils/aiSdkCompat.ts";
 import { applyNoThinkingAlias } from "@omniroute/open-sse/utils/noThinkingAlias.ts";
 import { resolveCcDiscoveryAliasStrip } from "@/lib/ccDiscoveryAliasResolve";
@@ -60,7 +60,6 @@ import {
   detectFormatFromUrl,
 } from "@omniroute/open-sse/services/provider.ts";
 import {
-  getModelsByProviderId,
   getModelTargetFormat,
   PROVIDER_ID_TO_ALIAS,
 } from "@omniroute/open-sse/config/providerModels.ts";
@@ -743,10 +742,7 @@ async function handleChatImplementation(
   // Keep this narrower than getComboForModel() so mappings and synthetic aliases
   // retain their existing resolution order.
   const isExactStoredCombo = imageModel ? Boolean(await getComboByName(modelStr)) : false;
-  const isChatCatalogModel = imageModel
-    ? getModelsByProviderId(imageModel.provider).some((model) => model.id === imageModel.model)
-    : false;
-  if (imageModel && !isExactStoredCombo && !isChatCatalogModel) {
+  if (imageModel && !isExactStoredCombo && isImageOnlyModel(modelStr)) {
     log.warn("CHAT", `Rejecting image-generation model on chat endpoint: ${modelStr}`);
     return logHandlerRejection(
       errorResponse(
