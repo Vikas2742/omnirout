@@ -1,18 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const { sanitizeFunctionResponseData, sanitizeGeminiPartFunctionResponse } = await import(
-  "../../open-sse/translator/request/openai-to-gemini/helpers.ts"
-);
-const { openaiToCloudCodeGeminiRequest } = await import(
-  "../../open-sse/translator/request/openai-to-gemini.ts"
-);
-const { claudeToGeminiRequest } = await import(
-  "../../open-sse/translator/request/claude-to-gemini.ts"
-);
-const { AntigravityExecutor } = await import(
-  "../../open-sse/executors/antigravity.ts"
-);
+const { sanitizeFunctionResponseData, sanitizeGeminiPartFunctionResponse } =
+  await import("../../open-sse/translator/request/openai-to-gemini/helpers.ts");
+const { openaiToCloudCodeGeminiRequest } =
+  await import("../../open-sse/translator/request/openai-to-gemini.ts");
+const { claudeToGeminiRequest } =
+  await import("../../open-sse/translator/request/claude-to-gemini.ts");
+const { AntigravityExecutor } = await import("../../open-sse/executors/antigravity.ts");
 const {
   buildGeminiThoughtSignatureKey,
   storeGeminiThoughtSignature,
@@ -284,4 +279,15 @@ test("sanitizeGeminiPartFunctionResponse handles part with/without functionRespo
   });
 });
 
-
+test("sanitizeFunctionResponseData never clobbers an existing _-prefixed key when renaming", () => {
+  const out = sanitizeFunctionResponseData({
+    _ref: "kept-original",
+    $ref: "#/definitions/Item",
+    nested: { $id: "a", _id: "b", __id: "c" },
+  });
+  assert.deepEqual(out, {
+    _ref: "kept-original",
+    __ref: "#/definitions/Item",
+    nested: { _id: "b", __id: "c", ___id: "a" },
+  });
+});

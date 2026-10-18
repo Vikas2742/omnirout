@@ -628,12 +628,11 @@ function openaiToGeminiBase(
               }
               name = sanitizeToolName(name);
 
-              const parsedResp = resp;
               toolParts.push({
                 functionResponse: {
                   ...(toolNameOptions.stripFunctionCallId ? {} : { id: fid }),
                   name: name,
-                  response: { result: sanitizeFunctionResponseData(parsedResp) },
+                  response: { result: sanitizeFunctionResponseData(resp) },
                 },
               });
             }

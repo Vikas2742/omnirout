@@ -367,12 +367,11 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
                 break;
               }
 
-              const parsedContent = content;
               parts.push({
                 functionResponse: {
                   ...(stripFunctionCallId ? {} : { id: toolUseId }),
                   name,
-                  response: { result: sanitizeFunctionResponseData(parsedContent) },
+                  response: { result: sanitizeFunctionResponseData(content) },
                 },
               });
               afterLastToolResult = parts.length;
