@@ -12,6 +12,7 @@ const {
   recordProviderQuotaResetEventIfChanged,
   getProviderQuotaWindowStart,
   getProviderQuotaWindowStartIso,
+  hasObservedClaudeQuotaResetAfter,
 } = await import("../../../src/lib/db/quotaResetEvents.ts");
 
 // Force migrations (incl. 108_provider_quota_reset_events) to run.
@@ -203,5 +204,52 @@ test("does not record for a non-weekly (e.g. daily) window", () => {
   assert.equal(
     getProviderQuotaWindowStartIso("conn-daily", CUR_RESET, Date.parse(OBSERVED) + 1000),
     null
+  );
+});
+
+test("#17043: only a measured Claude weekly refill AFTER the 429 authorizes recovery", () => {
+  const now = Date.now();
+  const observedAt = new Date(now - 10_000).toISOString();
+  const lastErrorAt = new Date(now - 20_000).toISOString();
+  const weeklyReset = new Date(now + 86_400_000).toISOString();
+  const id = "conn-17043-confirmed";
+
+  recordProviderQuotaResetEventIfChanged({
+    provider: "claude",
+    connectionId: id,
+    windowKey: "weekly (7d)",
+    currentResetAt: weeklyReset,
+    currentRemainingPercentage: 100,
+    previousObservation: { resetAt: weeklyReset, remainingPercentage: 0 },
+    observedAt,
+  });
+  assert.equal(hasObservedClaudeQuotaResetAfter(id, lastErrorAt, now), true);
+  assert.equal(
+    hasObservedClaudeQuotaResetAfter(id, new Date(now - 5_000).toISOString(), now),
+    false,
+    "a second 429 newer than the event must never inherit an older reset"
+  );
+  assert.equal(hasObservedClaudeQuotaResetAfter("conn-17043-unrelated", lastErrorAt, now), false);
+  assert.equal(hasObservedClaudeQuotaResetAfter(id, null, now), false);
+});
+
+test("#17043: a reset timestamp change without measured quota recovery is insufficient", () => {
+  const now = Date.now();
+  const id = "conn-17043-unknown-refill";
+  const pastReset = new Date(now + 86_400_000).toISOString();
+  const nextReset = new Date(now + 2 * 86_400_000).toISOString();
+  recordProviderQuotaResetEventIfChanged({
+    provider: "claude",
+    connectionId: id,
+    windowKey: "weekly (7d)",
+    currentResetAt: nextReset,
+    currentRemainingPercentage: 99,
+    previousObservation: { resetAt: pastReset, remainingPercentage: null },
+    observedAt: new Date(now - 5_000).toISOString(),
+  });
+  assert.equal(
+    hasObservedClaudeQuotaResetAfter(id, new Date(now - 10_000).toISOString(), now),
+    false,
+    "a reset date moving without known previous capacity is not positive evidence"
   );
 });
