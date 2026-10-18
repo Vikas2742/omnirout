@@ -150,8 +150,7 @@ export async function createVirtualAutoCombo(
       state.spec,
       apiKeyId,
       state.model,
-      invocationId,
-      true
+      invocationId
     );
     virtualCombo.name = state.model;
     virtualCombo.id = state.model;

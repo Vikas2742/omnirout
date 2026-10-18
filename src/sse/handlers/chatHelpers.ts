@@ -206,13 +206,17 @@ export async function resolveModelOrError(
       }
     }
 
-    // Build the shared snapshot on first use: persisted exact and fuzzy hits
-    // above return before it is needed, so those paths skip the bulk reads.
+    // One pool preparation shared by the attempt below and the fuzzy fallbacks,
+    // built only when an id actually materializes (unknown ids never prepare).
+    // Same inputs as createVirtualAutoCombo(): capabilities resolve on demand.
     let prepared: Awaited<ReturnType<typeof prepareBuiltinAutoComboInputs>> | undefined;
-    const loadPrepared = async () => (prepared ??= await prepareBuiltinAutoComboInputs());
+    const loadPrepared = async () =>
+      (prepared ??= await prepareBuiltinAutoComboInputs(undefined, {
+        includeResolvedCapabilities: false,
+      }));
 
     try {
-      const virtualCombo = await createBuiltinAutoCombo(modelStr, suffix, await loadPrepared());
+      const virtualCombo = await createBuiltinAutoCombo(modelStr, suffix, loadPrepared);
       const poolSize = virtualCombo.candidatePool?.length || 0;
       log.info(
         "AUTO",
@@ -238,7 +242,7 @@ export async function resolveModelOrError(
         const virtualCombo = await createBuiltinAutoCombo(
           candidate,
           candidate.replace(/^auto\/?/, ""),
-          await loadPrepared()
+          loadPrepared
         );
         log.info(
           "AUTO",

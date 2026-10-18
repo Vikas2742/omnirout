@@ -1,11 +1,12 @@
 /**
- * An `auto/*` request prepares the pool with resolved capabilities.
+ * #16419 — the `auto/*` request path shares one pool preparation.
  *
- * The request path (`resolveModelOrError` and the auto-routing wrapper) built
- * the candidate pool without `includeResolvedCapabilities`, so capability and
- * override tables were re-read per candidate on every request. Preparing once
- * with a snapshot bounds those reads by a constant, like the combos/auto
- * route.
+ * Default path (AUTO_REQUEST_RESOLVED_CAPABILITIES off): `resolveModelOrError`
+ * prepares the pool once, lazily, and hands it to the primary attempt and the
+ * fuzzy fallbacks. It must serve exactly what `createBuiltinAutoCombo(id, suffix)`
+ * (the release-tip code path, which prepares inside `createVirtualAutoCombo`)
+ * serves: same members, same order, same snapshot weights, same advertised limits.
+ * Unknown ids must not prepare a pool at all.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -16,11 +17,14 @@ import path from "node:path";
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-auto-req-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
 process.env.API_KEY_SECRET = process.env.API_KEY_SECRET ?? "auto-req-test-secret";
+delete process.env.AUTO_REQUEST_RESOLVED_CAPABILITIES;
 
 const core = await import("../../src/lib/db/core.ts");
 const settingsDb = await import("../../src/lib/db/settings.ts");
 const providersDb = await import("../../src/lib/db/providers.ts");
 const { resolveModelOrError } = await import("../../src/sse/handlers/chatHelpers.ts");
+const builtinCatalog = await import("../../open-sse/services/autoCombo/builtinCatalog.ts");
+const virtualFactory = await import("../../open-sse/services/autoCombo/virtualFactory.ts");
 
 test.after(() => {
   core.resetDbInstance();
@@ -31,41 +35,12 @@ test.after(() => {
   }
 });
 
-async function countDbReads(
-  fn: () => Promise<unknown>
-): Promise<{ syncedReads: number; capabilityReads: number; overrideReads: number }> {
-  const db = core.getDbInstance() as unknown as {
-    prepare: (sql: string) => { all: (...args: unknown[]) => unknown[] };
-  };
-  const realPrepare = db.prepare.bind(db);
-  let syncedReads = 0;
-  let capabilityReads = 0;
-  let overrideReads = 0;
-  db.prepare = ((sql: string, ...rest: unknown[]) => {
-    if (typeof sql === "string") {
-      if (sql.includes("syncedAvailableModels")) syncedReads++;
-      if (sql.includes("model_capabilities")) capabilityReads++;
-      if (
-        sql.includes("model_capability_overrides") ||
-        sql.includes("model_context_overrides") ||
-        sql.includes("customModels") ||
-        sql.includes("modelCompatOverrides")
-      )
-        overrideReads++;
-    }
-    return (realPrepare as (...a: unknown[]) => unknown)(sql, ...rest);
-  }) as typeof db.prepare;
-  try {
-    await fn();
-  } finally {
-    db.prepare = realPrepare;
-  }
-  return { syncedReads, capabilityReads, overrideReads };
-}
-
 const PROVIDERS = ["openai", "anthropic", "gemini", "groq", "deepseek", "mistral"];
+let seeded = false;
 
 async function seedProviders() {
+  if (seeded) return;
+  seeded = true;
   await settingsDb.updateSettings({ requireLogin: false });
   for (const provider of PROVIDERS) {
     await providersDb.createProviderConnection({
@@ -78,108 +53,101 @@ async function seedProviders() {
   }
 }
 
-function sorted<T>(values: readonly T[]): T[] {
-  return [...values].sort();
+type ComboLike = {
+  models?: Array<Record<string, unknown>>;
+  candidatePool?: string[];
+  weights?: unknown;
+  advertisedContextLength?: number | null;
+  advertisedMaxOutputTokens?: number | null;
+  config?: unknown;
+  name?: string;
+};
+
+/** Everything routing reads from a virtual combo: members, order, weights, limits. */
+function routingView(combo: ComboLike) {
+  return JSON.parse(
+    JSON.stringify({
+      name: combo.name,
+      models: combo.models,
+      candidatePool: combo.candidatePool,
+      weights: combo.weights,
+      config: combo.config,
+      advertisedContextLength: combo.advertisedContextLength,
+      advertisedMaxOutputTokens: combo.advertisedMaxOutputTokens,
+    })
+  );
 }
 
-test("request auto/coding on test db, syncedAvailableModels read counter is bounded", async () => {
-  await seedProviders();
-  const reads = await countDbReads(async () => {
-    const result = await resolveModelOrError(
-      "auto/coding",
-      { messages: [{ role: "user", content: "hi" }] },
-      "/v1/chat/completions"
-    );
+const BODY = { messages: [{ role: "user", content: "hi" }] };
+
+for (const [modelStr, suffix] of [
+  ["auto/coding", "coding"],
+  ["auto/vision", "vision"],
+  ["auto/reasoning", "reasoning"],
+  ["auto/best-chat", "best-chat"],
+] as const) {
+  test(`default path: ${modelStr} serves the same members, order and weights as the tip path`, async () => {
+    await seedProviders();
+    const result = await resolveModelOrError(modelStr, BODY, "/v1/chat/completions");
     assert.equal(result.error, undefined);
-    assert.ok(result.combo);
+    assert.ok(result.combo, "expected a built-in virtual combo");
+    const tipPath = await builtinCatalog.createBuiltinAutoCombo(modelStr, suffix);
+    assert.ok((tipPath.models?.length ?? 0) > 0, "seeded pool should not be empty");
+    assert.deepEqual(routingView(result.combo), routingView(tipPath));
   });
-  assert.ok(
-    reads.syncedReads <= 2 * PROVIDERS.length,
-    `synced model reads should be bounded, saw ${reads.syncedReads}`
+}
+
+test("default path: a fuzzy fallback serves the same combo as the tip path", async () => {
+  await seedProviders();
+  // `auto/coding-fast` is not a built-in id; `auto/best-coding-fast` is.
+  const result = await resolveModelOrError("auto/coding-fast", BODY, "/v1/chat/completions");
+  assert.equal(result.error, undefined);
+  assert.ok(result.combo, "expected the fuzzy built-in combo");
+  const tipPath = await builtinCatalog.createBuiltinAutoCombo(
+    "auto/best-coding-fast",
+    "best-coding-fast"
   );
-  assert.ok(
-    reads.capabilityReads <= 2,
-    `capability table reads should be bounded, saw ${reads.capabilityReads}`
+  assert.deepEqual(routingView(result.combo), routingView(tipPath));
+});
+
+test("prepared loader runs only when a combo materializes, once per attempt", async () => {
+  await seedProviders();
+  let calls = 0;
+  let cached: Awaited<ReturnType<typeof virtualFactory.prepareVirtualAutoComboInputs>> | undefined;
+  const loader = async () => {
+    calls++;
+    return (cached ??= await virtualFactory.prepareVirtualAutoComboInputs());
+  };
+  await assert.rejects(
+    builtinCatalog.createBuiltinAutoCombo("auto/zzz-not-a-builtin", "zzz-not-a-builtin", loader),
+    /Unknown built-in auto combo/
   );
-  // One bulk read per override table plus one custom-model row per connected
-  // provider: the bound scales with the provider count, not with candidates.
-  assert.ok(
-    reads.overrideReads <= 3 * PROVIDERS.length,
-    `override reads should be bounded, saw ${reads.overrideReads}`
+  assert.equal(calls, 0, "an unknown id must not prepare a pool");
+  const combo = await builtinCatalog.createBuiltinAutoCombo("auto/coding", "coding", loader);
+  assert.equal(calls, 1);
+  assert.deepEqual(
+    routingView(combo),
+    routingView(await builtinCatalog.createBuiltinAutoCombo("auto/coding", "coding"))
   );
 });
 
-test("same request without the change reads per candidate", async () => {
-  const { createBuiltinAutoCombo } =
-    await import("../../open-sse/services/autoCombo/builtinCatalog.ts");
-  const reads = await countDbReads(async () => {
-    await createBuiltinAutoCombo("auto/coding", "coding");
-  });
-  assert.ok(
-    reads.capabilityReads > 50,
-    `on-demand resolution should read capabilities per candidate, saw ${reads.capabilityReads}`
-  );
-  assert.ok(
-    reads.overrideReads > 50,
-    `on-demand resolution should read overrides per candidate, saw ${reads.overrideReads}`
-  );
+test("default path: an unknown auto id keeps the 400", async () => {
+  await seedProviders();
+  const result = await resolveModelOrError("auto/zzz-not-a-builtin", BODY, "/v1/chat/completions");
+  assert.ok(result.error, "unknown built-in id must stay an error");
+  assert.equal(result.error.status, 400);
+  assert.equal(result.combo, undefined);
+  await result.error.body?.cancel();
 });
 
-test("same request before and after on test db serves the same targets as sets", async () => {
-  const { createBuiltinAutoCombo, prepareBuiltinAutoComboInputs } =
-    await import("../../open-sse/services/autoCombo/builtinCatalog.ts");
-  const oldVirtual = await createBuiltinAutoCombo("auto/coding", "coding");
-  const prepared = await prepareBuiltinAutoComboInputs();
-  const newVirtual = await createBuiltinAutoCombo("auto/coding", "coding", prepared);
-  assert.deepEqual(sorted(newVirtual.candidatePool ?? []), sorted(oldVirtual.candidatePool ?? []));
-});
-
-test("forced model at the vision bridge keeps an identical verdict on both branches", async () => {
-  const { buildAutoCandidateFilter } =
-    await import("../../open-sse/services/autoCombo/suffixComposition.ts");
-  const filter = buildAutoCandidateFilter("vision");
-  assert.ok(filter, "vision category should build a filter");
-  const forced = [
-    { provider: "opencode-go", model: "deepseek-v4-flash" },
-    { provider: "opencode-go", model: "deepseek-v4-pro" },
-    { provider: "opencode-zen", model: "deepseek-v4-flash" },
-  ];
-  for (const candidate of forced) {
-    assert.equal(filter?.({ ...candidate, resolvedSupportsVision: true }), false);
-    assert.equal(filter?.({ ...candidate, resolvedSupportsVision: true }), filter?.(candidate));
-  }
-});
-
-test("auto request with no connected candidate keeps the existing 503", async () => {
+test("default path: no connected candidate keeps the existing 503", async () => {
   core.resetDbInstance();
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   fs.mkdirSync(TEST_DATA_DIR, { recursive: true });
-  const result = await resolveModelOrError(
-    "auto/coding:pro",
-    { messages: [{ role: "user", content: "hi" }] },
-    "/v1/chat/completions"
-  );
+  seeded = false;
+  const result = await resolveModelOrError("auto/coding:pro", BODY, "/v1/chat/completions");
   assert.ok(result.error, "expected an error result, not a combo");
   assert.equal(result.error.status, 503, "empty auto pool must fail fast with 503");
   assert.equal(result.combo, undefined, "must not return a combo for an empty pool");
-  await seedProviders();
-});
-
-test("auto-routing wrapper request on test db reads bounded with snapshot", async () => {
-  const { resolveAutoRoutingState, createVirtualAutoCombo } =
-    await import("../../src/sse/handlers/autoRouting.ts");
-  const state = await resolveAutoRoutingState("auto/coding");
-  assert.ok(state.isAutoRouting, "auto/coding should route through the wrapper");
-  const reads = await countDbReads(async () => {
-    const combo = await createVirtualAutoCombo(state, null);
-    assert.ok(combo && !(combo instanceof Response));
-  });
-  assert.ok(
-    reads.capabilityReads <= 2,
-    `capability table reads should be bounded, saw ${reads.capabilityReads}`
-  );
-  assert.ok(
-    reads.overrideReads <= 3 * PROVIDERS.length,
-    `override reads should be bounded, saw ${reads.overrideReads}`
-  );
+  await result.error.body?.cancel();
 });
