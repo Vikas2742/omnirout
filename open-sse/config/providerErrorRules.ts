@@ -515,10 +515,15 @@ const FULL_TEXT_RULE_PROVIDERS = new Set(["agentrouter"]);
  * (rate_limit → quota_exhausted) and the cooldown/lock scope, hence default-off flags.
  */
 export const OPENCODE_FULL_TEXT_ERROR_RULES_FLAG = "OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED";
+export const CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_FLAG =
+  "CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED";
 const OPT_IN_FULL_TEXT_RULE_PROVIDERS: ReadonlyArray<{
   flag: string;
   providers: ReadonlySet<string>;
-}> = [{ flag: OPENCODE_FULL_TEXT_ERROR_RULES_FLAG, providers: new Set(OPENCODE_RULE_FAMILY) }];
+}> = [
+  { flag: OPENCODE_FULL_TEXT_ERROR_RULES_FLAG, providers: new Set(OPENCODE_RULE_FAMILY) },
+  { flag: CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_FLAG, providers: new Set(["cloudflare-ai"]) },
+];
 
 function usesFullTextRuleBody(key: string): boolean {
   if (FULL_TEXT_RULE_PROVIDERS.has(key)) return true;

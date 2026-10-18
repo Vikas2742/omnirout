@@ -6,7 +6,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 delete process.env.OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS;
-const FLAGS = ["OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED", "OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED"];
+const FLAGS = [
+  "OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED",
+  "OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED",
+  "CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED",
+];
 for (const flag of FLAGS) delete process.env[flag];
 
 const rules = await import("../../open-sse/config/providerErrorRules.ts");
@@ -99,6 +103,23 @@ test("full-text bodies: the opencode family keeps the structured body unless opt
   );
 });
 
+test("full-text bodies: cloudflare-ai keeps the structured body unless opted in", () => {
+  assert.equal(
+    rules.resolveRuleMatchBody("cloudflare-ai", STRUCTURED, CLOUDFLARE_DAILY_BODY),
+    STRUCTURED
+  );
+  withFlag("CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED", () => {
+    assert.equal(
+      rules.resolveRuleMatchBody("cloudflare-ai", STRUCTURED, CLOUDFLARE_DAILY_BODY),
+      CLOUDFLARE_DAILY_BODY
+    );
+    assert.equal(
+      rules.resolveRuleMatchBody("opencode-zen", STRUCTURED, OPENCODE_QUOTA_BODY),
+      STRUCTURED
+    );
+  });
+});
+
 test("checkFallbackError: an opencode-zen quota body stays a rate limit by default", () => {
   const off = checkFallbackError(429, OPENCODE_QUOTA_BODY, 0, null, "opencode-zen", null);
   assert.equal(off.shouldFallback, true);
@@ -110,4 +131,15 @@ test("checkFallbackError: an opencode-zen quota body stays a rate limit by defau
   assert.equal(on.shouldFallback, true);
   assert.equal(on.reason, "quota_exhausted");
   assert.equal(on.ruleScope, "connection");
+});
+
+test("checkFallbackError: the cloudflare-ai daily allocation body is a quota only when opted in", () => {
+  const off = checkFallbackError(429, CLOUDFLARE_DAILY_BODY, 0, null, "cloudflare-ai", null);
+  assert.equal(off.shouldFallback, true);
+  assert.notEqual(off.reason, "quota_exhausted");
+  const on = withFlag("CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED", () =>
+    checkFallbackError(429, CLOUDFLARE_DAILY_BODY, 0, null, "cloudflare-ai", null)
+  );
+  assert.equal(on.shouldFallback, true);
+  assert.equal(on.reason, "quota_exhausted");
 });
