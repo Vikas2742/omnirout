@@ -12,6 +12,7 @@ import {
   splitClaudeEffortSuffix,
   getProviderModels,
 } from "@omniroute/open-sse/config/providerModels.ts";
+import { splitKimiCodingEffortVariant } from "@omniroute/open-sse/utils/kimiCodingEffortVariant.ts";
 import {
   codexModelFamilySupportsExtendedEffort,
   isCodexExtendedEffortBaseModel,
@@ -86,25 +87,26 @@ function splitGenericEffortSuffix(model: string): {
   return splitCodexEffortSuffix(model) ?? { model, effort: null };
 }
 
+const KIMI_CODING_PREFIX_PROVIDER: Record<string, string> = {
+  "kimi-coding": "kimi-coding",
+  kmc: "kimi-coding",
+  "kimi-coding-apikey": "kimi-coding-apikey",
+  kmca: "kimi-coding-apikey",
+};
+
 function splitKimiEffortSuffix(model: string): { model: string; effort: ReasoningEffort } | null {
-  // Kimi upstream serves bare ids (k3, kimi-k2.7, kimi-k2.7-code, ...) and takes
-  // reasoning effort as a REQUEST property — it rejects effort-suffixed ids
-  // outright ("Your model id does not exist ... Please set model id as `k3`").
-  // Accept the family's spec/alias names as bases (MODEL_SPECS["kimi-k3"] is
-  // aliased to the k3 wire id) and turn the suffix into the request effort,
-  // mirroring the codex/claude handling. Only low/medium/high/none: xhigh/max/
-  // ultra are not part of Kimi's effort vocabulary. Genuine ids never end in
-  // these tokens today (kimi-for-coding-highspeed does not end in "-high").
-  const lower = model.toLowerCase();
-  for (const candidate of ["high", "medium", "low", "none"] as const) {
-    if (!lower.endsWith(`-${candidate}`)) continue;
-    const baseModel = model.slice(0, -(candidate.length + 1));
-    const normalizedBase = baseModel.toLowerCase().replace(/^(?:kimi-coding|kimi-code|kmc)\//, "");
-    if (/^k3$/.test(normalizedBase) || /^kimi-k/.test(normalizedBase)) {
-      return { model: baseModel, effort: candidate };
-    }
-  }
-  return null;
+  // Kimi Coding serves bare ids (k3, kimi-for-coding) and takes the effort as a request
+  // property; chatCore strips the suffix before dispatch (#16985). Mirror that split for
+  // reasoning-rule matching, using the same splitter, and only for ids explicitly routed
+  // to a Kimi Coding provider — a bare `kimi-k3-high` may be Cursor's genuine id.
+  const slash = model.indexOf("/");
+  if (slash <= 0) return null;
+  const provider = KIMI_CODING_PREFIX_PROVIDER[model.slice(0, slash).toLowerCase()];
+  if (!provider) return null;
+  const split = splitKimiCodingEffortVariant(provider, model.slice(slash + 1));
+  if (!split) return null;
+  const baseModel = model.slice(0, -(split.effort.length + 1));
+  return { model: baseModel, effort: split.effort };
 }
 
 function supportsCodexSuffix(candidate: string, normalizedBase: string): boolean {
