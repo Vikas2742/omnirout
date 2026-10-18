@@ -742,12 +742,28 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
     // outright (capability_mismatch), so stub text is strictly better than
     // preserving bytes no combo target can consume.
     const allNull = descriptions.every((d) => d === null);
+    // #17069: a confirmed text-only direct target cannot accept raw images even
+    // when only ONE description fails, or the history contains more images than
+    // maxImages. Keep the original fail-open rule for UNKNOWN/vision-capable
+    // targets: they may still be able to consume the unmodified image bytes.
+    const confirmedTextOnlyDirectTarget =
+      !isAuto &&
+      comboVisionBridgeDecision === "not-combo" &&
+      (requestedModelVision === false || forceVisionBridge);
+    const noVisionCombo = comboVisionBridgeDecision === "no-vision";
     if (
-      allNull &&
-      (comboVisionBridgeDecision === "process" || comboVisionBridgeDecision === "no-vision")
+      confirmedTextOnlyDirectTarget ||
+      noVisionCombo ||
+      (allNull && comboVisionBridgeDecision === "process")
     ) {
-      for (let i = 0; i < descriptions.length; i++) {
-        descriptions[i] = `[Image ${i + 1}]: (unavailable — no vision-capable provider connected)`;
+      const totalImagesToReplace =
+        confirmedTextOnlyDirectTarget || noVisionCombo
+          ? imageParts.length
+          : descriptions.length;
+      for (let i = 0; i < totalImagesToReplace; i++) {
+        if (descriptions[i] == null) {
+          descriptions[i] = `[Image ${i + 1}]: (unavailable — no vision-capable provider connected)`;
+        }
       }
     }
 
