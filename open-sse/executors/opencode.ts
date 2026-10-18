@@ -33,6 +33,7 @@ import {
 } from "../utils/opencodeHeaders.ts";
 import { projectOpencodeSessionBody } from "../utils/opencodeSessionIdentity.ts";
 import { listForRequest, releaseRequestList } from "./opencodeAccountScope.ts";
+import { applyOpencodeToolNameLengthAliases } from "./toolNameLengthAlias.ts";
 import type { ScopedAccount, ScopedAccountHealth } from "./opencodeAccountScope.ts";
 import { guardRequiredAccountProxies } from "./opencodeRequiredProxy.ts";
 import {
@@ -68,7 +69,7 @@ import {
   surfaceFromBaseUrl,
 } from "./opencodeFreeTierContract.ts";
 import {
-  applyMuseSparkMinOutputTokens,
+  applyOpencodeOutputBudgetFloors,
   createMuseSparkStreamFinishNormalizer,
   isResponsesTerminalLine,
   normalizeMuseSparkFinishReason,
@@ -116,6 +117,7 @@ import {
   parkWaitMs,
   readPoolStrainMarker,
   runParkAndReplay,
+  setAsideParkWaitMs,
 } from "./opencodeParkResume.ts";
 
 /**
@@ -190,7 +192,7 @@ export function parseEffortLevel(model: string): { baseModel: string; effort: st
 /**
  * Resolves the registry `targetFormat` for a model, aliasing `provider` first.
  *
- * `PROVIDER_MODELS` is keyed by the provider's public ALIAS (e.g. `"oc"`), not its
+ * `PROVIDER_MODELS` is keyed by the provider's public ALIAS (e.g. `"opencode-zen"`), not its
  * raw registry id (e.g. `"opencode"`) — mirrors `resolveChatCoreTargetFormat()`
  * (`handlers/chatCore/targetFormat.ts`), which already aliases before calling
  * `getModelTargetFormat()`. Calling it with the raw id here made every entry miss
@@ -568,9 +570,9 @@ export class OpencodeExecutor extends BaseExecutor {
       // muse-spark reasoning models consume the entire output budget on hidden
       // server-side reasoning; small caller budgets come back as empty-message
       // 200s ("Provider returned empty content"). Raise tiny budgets to the
-      // floor before dispatch (see MUSE_SPARK_MIN_OUTPUT_TOKENS).
+      // floor before dispatch (see applyOpencodeOutputBudgetFloors).
       if (input.body && typeof input.body === "object" && !Array.isArray(input.body)) {
-        applyMuseSparkMinOutputTokens(
+        applyOpencodeOutputBudgetFloors(
           String(input.model ?? ""),
           input.body as Record<string, unknown>
         );
@@ -1027,7 +1029,8 @@ export class OpencodeExecutor extends BaseExecutor {
             }
             if (!parked && isOpencodeParkAndResumeEnabled()) {
               const marker = await readPoolStrainMarker();
-              if (burstStreak >= BURST_PARK_THRESHOLD || marker.fresh) {
+              const setAsideWaitMs = setAsideParkWaitMs(accounts.map((a) => keyOfMember(a)));
+              if (burstStreak >= BURST_PARK_THRESHOLD || marker.fresh || setAsideWaitMs !== null) {
                 parked = true;
                 log?.warn?.(
                   "OPENCODE",
@@ -1045,7 +1048,10 @@ export class OpencodeExecutor extends BaseExecutor {
                     replayKeyOfMember: keyOfMember,
                   },
                   input,
-                  parkWaitMs(marker.fresh ? marker.ttlLeftMs : null),
+                  Math.min(
+                    setAsideWaitMs ?? Number.POSITIVE_INFINITY,
+                    parkWaitMs(marker.fresh ? marker.ttlLeftMs : null)
+                  ),
                   result,
                   log,
                   cid
@@ -1529,6 +1535,8 @@ export class OpencodeExecutor extends BaseExecutor {
     if (isThinkingMessageModel(model)) {
       modifiedBody = injectReasoningContentForThinkingModel(modifiedBody);
     }
+    const toolFormat = this._requestFormat ?? resolveOpencodeTargetFormat(this.provider, model);
+    applyOpencodeToolNameLengthAliases(this.provider, modifiedBody, toolFormat);
     return modifiedBody;
   }
 }
