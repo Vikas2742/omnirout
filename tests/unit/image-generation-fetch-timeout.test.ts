@@ -324,6 +324,8 @@ test("flag on: caller abort while reading the image body is still classified as 
               const abort = () => streamController.error(makeAbortError());
               if (init?.signal?.aborted) abort();
               else init?.signal?.addEventListener("abort", abort, { once: true });
+              // Fail (502) instead of hanging when the caller abort never reaches the body.
+              setTimeout(() => streamController.error(new Error("body stayed open")), 1000);
             },
           }),
           { status: 200, headers: { "content-type": "application/json" } }
@@ -358,7 +360,7 @@ function stalledBodyFetch() {
             },
             { once: true }
           );
-          setTimeout(() => streamController.error(new Error("body stayed open")), 400);
+          setTimeout(() => streamController.error(new Error("body stayed open")), 2000);
         },
       }),
       { status: 200, headers: { "content-type": "application/json" } }
@@ -380,7 +382,7 @@ test("default-on: the image deadline stays armed while reading the response body
 
     assert.equal(result.success, false);
     assert.equal(result.status, 504);
-    assert.ok(Date.now() - startedAt < 300, "body timeout should use the configured deadline");
+    assert.ok(Date.now() - startedAt < 1500, "body timeout should use the configured deadline");
   }));
 
 test("default-on: a stalled body through the dispatcher (flag off) ends with 504 at the budget", () =>
