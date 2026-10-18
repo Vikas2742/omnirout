@@ -19,7 +19,7 @@ import { clearRecoveredProviderState } from "@/sse/services/auth";
 import { hasObservedClaudeQuotaResetAfter } from "@/lib/db/quotaResetEvents";
 import { clearModelLock, getAllModelLockouts } from "@omniroute/open-sse/services/accountFallback.ts";
 import { RateLimitReason } from "@omniroute/open-sse/config/constants.ts";
-import { isExplicitClaudeQuota429Text } from "@omniroute/open-sse/services/usage/claudeQuota.ts";
+import { claudeQuotaMatchesModel, isClaudeQuotaMetadata, isExplicitClaudeQuota429Text } from "@omniroute/open-sse/services/usage/claudeQuota.ts";
 import { getMachineId } from "@/shared/utils/machine";
 import { supportsProviderQuota } from "@/shared/utils/providerQuotaVisibility";
 import { mergeProviderLimitsCacheEntry, toProviderLimitsCacheEntry } from "./providerLimitsCache";
@@ -481,6 +481,31 @@ export function everyQuotaWindowReplenished(usage: JsonRecord): boolean {
   });
 }
 
+/**
+ * Resetting the account-wide weekly bucket is not proof that a model-scoped
+ * weekly bucket has reopened. Leave that model's existing lock alone while
+ * its fresh Claude metadata still shows a blocking, exhausted scope. Unknown
+ * remaining fractions are conservatively treated as unresolved.
+ */
+export function hasBlockingClaudeModelQuota(usage: JsonRecord, model: string): boolean {
+  if (!isRecord(usage.modelQuotas)) return false;
+  return Object.values(usage.modelQuotas).some((value) => {
+    if (!isRecord(value) || !isClaudeQuotaMetadata(value.claudeQuota)) return false;
+    const metadata = value.claudeQuota;
+    if (metadata.kind !== "weekly_scoped" || !claudeQuotaMatchesModel(metadata, model)) {
+      return false;
+    }
+    if (!metadata.active) return false;
+    const severity = metadata.severity?.trim().toLowerCase() || null;
+    if (severity !== null && severity !== "critical") return false;
+    const remaining = typeof value.remainingPercentage === "number"
+      ? value.remainingPercentage
+      : typeof value.remaining === "number" ? value.remaining : null;
+    return value.fractionReported === false ||
+      remaining === null || !Number.isFinite(remaining) || remaining <= 0;
+  });
+}
+
 export async function maybeClearRecoveredQuotaState(
   connection: ProviderConnectionLike,
   usage: JsonRecord
@@ -568,6 +593,7 @@ export async function maybeClearRecoveredQuotaState(
     for (const lock of accountLocks) {
       if (lock.reason !== RateLimitReason.QUOTA_EXHAUSTED) continue;
       if (unrelatedModels.has(lock.model)) continue;
+      if (hasBlockingClaudeModelQuota(usage, lock.model)) continue;
       clearModelLock(lock.provider, lock.connectionId, lock.model);
     }
   }
