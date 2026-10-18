@@ -1,1 +1,0 @@
-- **fix(api):** `POST /api/plugins` and `PATCH /api/relay/tokens/[id]` called `request.json()` with no guard, so a body that is not JSON made the handler reject instead of answering; both now answer 400 with `Invalid JSON body`.
