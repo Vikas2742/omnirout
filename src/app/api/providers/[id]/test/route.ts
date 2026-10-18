@@ -29,7 +29,7 @@ import { shouldUseApiKeyConnectionTest } from "./webSessionTestDispatch";
 import { testCodexAppServerConnection, makeDiagnosis } from "./codexAppServerHealth";
 import { recoverKeyHealth } from "@omniroute/open-sse/services/apiKeyRotator.ts";
 import { lockModelIfPerModelQuota } from "@omniroute/open-sse/services/accountFallback.ts";
-import { clearTestedBreakers } from "@omniroute/open-sse/services/connectionCircuitBreaker.ts";
+import { clearTestedBreakers } from "@/lib/resilience/clearTestedBreakers";
 import { shouldClearErrorStateOnValidProbe } from "@/lib/usage/providerLimits";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
 import * as apiKeyTestResult from "./apiKeyTestResult";
