@@ -43,11 +43,17 @@ export function classifyModelSupportedEndpoints(endpoints: readonly string[]): {
   // modality type. Return before the media checks so a multimodal chat model
   // is not classified as image, audio, embedding, or rerank.
   if (endpoints.includes("chat") || endpoints.includes("responses")) return {};
-  if (endpoints.includes("embeddings")) return { type: "embedding" };
-  if (endpoints.includes("rerank")) return { type: "rerank" };
-  if (endpoints.includes("images")) return { type: "image" };
-  if (endpoints.includes("videos") || endpoints.includes("video")) return { type: "video" };
-  if (endpoints.includes("music")) return { type: "music" };
+  const primary = (
+    [
+      ["embeddings", "embedding"],
+      ["rerank", "rerank"],
+      ["images", "image"],
+      ["videos", "video"],
+      ["video", "video"],
+      ["music", "music"],
+    ] as const
+  ).find(([endpoint]) => endpoints.includes(endpoint));
+  if (primary) return { type: primary[1] };
 
   const supportsSpeech = endpoints.includes("audio-speech");
   const supportsTranscription =
