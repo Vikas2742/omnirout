@@ -1041,4 +1041,16 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     requiresRestart: false,
     warningLevel: "caution",
   },
+  {
+    key: "COOLDOWN_RETRY_SKIP_REFUSALS_ENABLED",
+    label: "Cooldown Retry: Skip 403/410 Refusals",
+    description:
+      "When every account is cooling down and the cooldown that ends first was caused by a 403 (access refused) or a 410 (gone), return that refusal at once instead of waiting the cooldown out and re-sending the request; a renewing agentrouter connection-scoped quota 403 is then persisted with errorCode 429 so it stays retryable. Off by default: only a 401 skips the wait, and every refusal is persisted with the status it arrived with.",
+    descriptionI18nKey: "featureFlagCooldownRetrySkipRefusalsEnabledDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
 ];
