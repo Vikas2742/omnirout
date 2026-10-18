@@ -468,6 +468,35 @@ function useOverviewProjection(
   };
 }
 
+type OverviewContentProps = {
+  display: DisplayAccount[];
+  id: string;
+  legendHidden: boolean;
+  toggleLegend: () => void;
+  custom: boolean;
+  reset: () => void;
+  summaryFailed: boolean;
+  t: (key: string, values?: Record<string, unknown>) => string;
+  relative: (value?: string | null) => string;
+  oldest: (key: "runtimeObservedAt" | "quotaObservedAt") => string | undefined;
+  groups: Array<{ provider: string; accounts: HealthAccount[] }>;
+  order: string[];
+  providerLabels: Record<string, string>;
+  reorder: (visible: string[]) => void;
+  now: number;
+  selected: string | null;
+  preview: { id: string; pool?: string; anchor: HTMLElement } | null;
+  poolLabel: (id: string) => string;
+  label: (connection: HealthConnection) => string;
+  primary: (account: HealthAccount) => string;
+  all: (key: string) => string;
+  setSelected: (id: string | null) => void;
+  setPreview: (value: { id: string; pool?: string; anchor: HTMLElement } | null) => void;
+  currentPreview: DisplayAccount | undefined;
+  selectedAccount: HealthAccount | undefined;
+  previewAccount: HealthAccount | undefined;
+  renderCard: (connection: HealthConnection) => ReactNode;
+};
 function OverviewContent({
   display,
   id,
@@ -496,35 +525,7 @@ function OverviewContent({
   selectedAccount,
   previewAccount,
   renderCard,
-}: {
-  display: DisplayAccount[];
-  id: string;
-  legendHidden: boolean;
-  toggleLegend: () => void;
-  custom: boolean;
-  reset: () => void;
-  summaryFailed: boolean;
-  t: (key: string, values?: Record<string, unknown>) => string;
-  relative: (value?: string | null) => string;
-  oldest: (key: "runtimeObservedAt" | "quotaObservedAt") => string | undefined;
-  groups: Array<{ provider: string; accounts: HealthAccount[] }>;
-  order: string[];
-  providerLabels: Record<string, string>;
-  reorder: (visible: string[]) => void;
-  now: number;
-  selected: string | null;
-  preview: { id: string; pool?: string; anchor: HTMLElement } | null;
-  poolLabel: (id: string) => string;
-  label: (connection: HealthConnection) => string;
-  primary: (account: HealthAccount) => string;
-  all: (key: string) => string;
-  setSelected: (id: string | null) => void;
-  setPreview: (value: { id: string; pool?: string; anchor: HTMLElement } | null) => void;
-  currentPreview: DisplayAccount | undefined;
-  selectedAccount: HealthAccount | undefined;
-  previewAccount: HealthAccount | undefined;
-  renderCard: (connection: HealthConnection) => ReactNode;
-}) {
+}: OverviewContentProps) {
   return (
     <div className="min-w-0 space-y-[14px]">
       <HealthBanner accounts={display} />
@@ -574,6 +575,13 @@ function OverviewContent({
   );
 }
 
+function oldestObserved(rows: HealthAccount[], key: "runtimeObservedAt" | "quotaObservedAt") {
+  return rows
+    .map((account) => account[key])
+    .filter((value) => value && Number.isFinite(Date.parse(value)))
+    .sort((a, b) => Date.parse(a) - Date.parse(b))[0];
+}
+
 interface Props {
   connections: HealthConnection[];
   quotaData: Record<string, HealthData>;
@@ -613,7 +621,6 @@ export default function QuotaHealthOverview({
     setPreview
   );
   const {
-    rows,
     order,
     custom,
     reset,
@@ -626,11 +633,6 @@ export default function QuotaHealthOverview({
   } = projection;
   const label = (c: HealthConnection) =>
     pickDisplayValue([c.name, c.displayName, c.email], emailsVisible, c.provider) || c.id;
-  const oldest = (key: "runtimeObservedAt" | "quotaObservedAt") =>
-    rows
-      .map((a) => a[key])
-      .filter((v) => v && Number.isFinite(Date.parse(v)))
-      .sort((a, b) => Date.parse(a) - Date.parse(b))[0];
   return (
     <OverviewContent
       display={display}
@@ -642,7 +644,7 @@ export default function QuotaHealthOverview({
       summaryFailed={summaryFailed}
       t={t}
       relative={relative}
-      oldest={oldest}
+      oldest={(key) => oldestObserved(projection.rows, key)}
       groups={groups}
       order={order}
       providerLabels={providerLabels}
