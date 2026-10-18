@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "Wannan biyan kuɗin yana da nodes waɗanda ke buƙatar proxy core na gida (SS/VMess/Trojan/VLESS); ba za a bi da zirga-zirga ta cikinsu ba har sai ka saita endpoint na SOCKS5 na local-core.",
         "NO_USABLE_NODES": "Biyan kuɗin bai samar da nodes da za a iya amfani da su ba (http/https/socks5 ko nodes masu local core endpoint).",
         "SELECTOR_SWITCH_FAILED": "Kiran sarrafa proxy-core ya gaza; tsohuwar hanya tana nan. Duba URL da sirrin sarrafawa, sannan ka sabunta.",
+        "SELECTOR_EARLY_NO_CONTROL": "Babu URL mai sarrafawa",
+        "SELECTOR_EARLY_UNMAPPED": "Babu biyan kuɗi da ya dace",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "An tsarin da aka ƙirƙira ba zai iya maye gurbin fayil ɗin da aka karɓa ba; ma'anonin da ke gefen shi ne aka riƙe a mahaqu.",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "Ƙirƙiri Biyan Kuɗi",
       "loading": "Ana lodawa…",
       "noSubscriptions": "Babu biyan kuɗi tukuna. Danna \"Ƙara Biyan Kuɗi\" don farawa.",
+      "earlySkipsSinceRestart": "Tsallaken mai zaɓi tun sake farawa na ƙarshe",
       "statusOk": "To",
       "statusError": "Kuskure",
       "statusEmpty": "Babu Komai",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "Adadin Gazawa",
       "retryAfterMs": "Sake Gwadawa Bayan (ms)",
-      "lastFailureKind": "Nau'in Gazawar Ƙarshe"
+      "lastFailureKind": "Nau'in Gazawar Ƙarshe",
+      "lastClose": "Rufewa na ƙarshe"
     },
     "empty": {
       "title": "Babu haɗe-haɗe",

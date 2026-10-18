@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "Dan l-abbonament għandu nodi li jeħtieġu proxy core lokali (SS/VMess/Trojan/VLESS); dawn ma jiġux direzzjonati sakemm tikkonfigura l-endpoint SOCKS5 tal-core lokali.",
         "NO_USABLE_NODES": "L-abbonament ma pproduċa l-ebda nodu li jista’ jintuża (http/https/socks5 jew nodi b’endpoint ta’ core lokali).",
         "SELECTOR_SWITCH_FAILED": "Is-sejħa ta' kontroll tal-proxy-core falliet; ir-rotta ta' qabel tibqa attiva. Iċċekkja l-URL u s-sigriet tal-kontroll, imbagħad aġġorna.",
+        "SELECTOR_EARLY_NO_CONTROL": "Ebda URL tal-kontroll",
+        "SELECTOR_EARLY_UNMAPPED": "Ebda abbonament li jikkoinċidi",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "Il-konfigurazzjoni ċentrali mġenerata ma setgħetx tissostitixxi l-fajl adottat; in-nies kopja mit-taħt ġiet miżmuma minflok.",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "Oħloq Abbonament",
       "loading": "Qed jitgħabba…",
       "noSubscriptions": "Għad m'hemmx abbonamenti. Ikklikkja \"Żid Abbonament\" biex tibda.",
+      "earlySkipsSinceRestart": "Qbiżiet tas-selettur mill-aħħar startjar mill-ġdid",
       "statusOk": "OK",
       "statusError": "Żball",
       "statusEmpty": "Vojt",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "Għadd ta' Fallimenti",
       "retryAfterMs": "Erġa' Pprova Wara (ms)",
-      "lastFailureKind": "Tip tal-Aħħar Falliment"
+      "lastFailureKind": "Tip tal-Aħħar Falliment",
+      "lastClose": "L-aħħar għeluq"
     },
     "empty": {
       "title": "L-ebda konnessjoni",

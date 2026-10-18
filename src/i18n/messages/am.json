@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "ይህ ምዝገባ የአካባቢ proxy core (SS/VMess/Trojan/VLESS) የሚያስፈልጋቸው ኖዶች አሉት፤ የlocal-core SOCKS5 መዳረሻ ነጥቡን እስኪያዋቅሩ ድረስ አይዘዋወሩም።",
         "NO_USABLE_NODES": "ምዝገባው ጥቅም ላይ የሚውሉ ኖዶችን አላመጣም (http/https/socks5 ወይም የአካባቢ core መዳረሻ ነጥብ ያላቸው ኖዶች)።",
         "SELECTOR_SWITCH_FAILED": "የፕሮክሲ-ኮር መቆጣጠሪያ ጥሪ አልተሳካም; የቀደመው መስመር ንቁ ሆኖ ይቆያል። የመቆጣጠሪያ URL እና ሚስጥር ያረጋግጡ፣ ከዚያ ያድሱ።",
+        "SELECTOR_EARLY_NO_CONTROL": "የመቆጣጠሪያ URL የለም",
+        "SELECTOR_EARLY_UNMAPPED": "የሚዛመድ ምዝገባ የለም",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "የተፈጠረው ዋና ዋና ውሂብ አሰልጣኝ ተቀባይን ወርቀ ሊይዘው አልቻለም፤ ከዚያ በኋላ ያለው ቅጂ ተቀብሏል።",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "ምዝገባ ፍጠር",
       "loading": "በመጫን ላይ…",
       "noSubscriptions": "እስካሁን ምንም ምዝገባዎች የሉም። ለመጀመር \"ምዝገባ ያክሉ\"ን ጠቅ ያድርጉ።",
+      "earlySkipsSinceRestart": "ከመጨረሻው ዳግም ማስጀመር ጀምሮ የመራጭ መዝለሎች",
       "statusOk": "እሺ",
       "statusError": "ስህተት",
       "statusEmpty": "ባዶ",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "የውድቀት ብዛት",
       "retryAfterMs": "ከሚከተለው ጊዜ በኋላ ዳግም ይሞክሩ (ms)",
-      "lastFailureKind": "የመጨረሻው ውድቀት ዓይነት"
+      "lastFailureKind": "የመጨረሻው ውድቀት ዓይነት",
+      "lastClose": "የመጨረሻው ዋጋ"
     },
     "empty": {
       "title": "ምንም ግንኙነቶች የሉም",

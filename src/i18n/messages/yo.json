@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "Ìforúkọsílẹ̀ yìí ní àwọn node tó nílò local proxy core (SS/VMess/Trojan/VLESS); a kò ní darí wọn títí tí o fi ṣètò ojú-ọ̀nà SOCKS5 local-core.",
         "NO_USABLE_NODES": "Ìforúkọsílẹ̀ kò mú node tó ṣeé lò kankan jáde (http/https/socks5 tàbí àwọn node tó ní ojú-ọ̀nà local core).",
         "SELECTOR_SWITCH_FAILED": "Ìpè ìṣàkóso proxy-core kùnà; ọ̀nà àtijọ́ wà ni íṣiṣẹ́. Ṣàyẹ̀wò URL àti àṣírí ìṣàkóso, lẹ́yìn náà ṣe àtúnsọ.",
+        "SELECTOR_EARLY_NO_CONTROL": "Kò sí URL ìdarí",
+        "SELECTOR_EARLY_UNMAPPED": "Kò sí ìforúkọsílẹ̀ tó bá mu",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "Aṣẹ-ọ̀pọ̀ ti ṣe ko le yí iwe wọ́le tó ti hàn padà; àwọn lẹ́yìn rẹ̀ la fi páyà.",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "Ṣẹ̀dá Ìforúkọsílẹ̀",
       "loading": "Ń ṣàkójọ…",
       "noSubscriptions": "Kò sí ìforúkọsílẹ̀ kankan síbẹ̀. Tẹ \"Ṣàfikún Ìforúkọsílẹ̀\" láti bẹ̀rẹ̀.",
+      "earlySkipsSinceRestart": "Àwọn ìfojúfò aṣàyàn láti ìgbà àtúnbẹ̀rẹ̀ tó kẹ́yìn",
       "statusOk": "Ó DÁRA",
       "statusError": "Àṣìṣe",
       "statusEmpty": "Òfìfo",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "Iye Ìkùnà",
       "retryAfterMs": "Tún Gbìyànjú Lẹ́yìn (ms)",
-      "lastFailureKind": "Irú Ìkùnà Tó Kẹ́yìn"
+      "lastFailureKind": "Irú Ìkùnà Tó Kẹ́yìn",
+      "lastClose": "Ìparí Àkọ́kọ́"
     },
     "empty": {
       "title": "Kò sí àwọn àsopọ̀",

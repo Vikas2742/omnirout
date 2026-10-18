@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "ការជាវនេះមាន node ដែលត្រូវការ proxy core ក្នុងម៉ាស៊ីន (SS/VMess/Trojan/VLESS)។ ពួកវានឹងមិនត្រូវបានកំណត់ផ្លូវទេ រហូតដល់អ្នកកំណត់រចនាសម្ព័ន្ធចំណុចបញ្ចប់ SOCKS5 របស់ local-core។",
         "NO_USABLE_NODES": "ការជាវនេះមិនមាន node ដែលអាចប្រើបានទេ (http/https/socks5 ឬ node ដែលមានចំណុចបញ្ចប់ local core)។",
         "SELECTOR_SWITCH_FAILED": "ការហៅបញ្ជា proxy-core បានបរាជ័យ; ផ្លូវមុននៅតែសកម្ម។ សូមពិនិត្យ URL និង secret បញ្ជា រួចផ្ទុកឡើងវិញ។",
+        "SELECTOR_EARLY_NO_CONTROL": "មិនមាន URL គ្រប់គ្រងទេ",
+        "SELECTOR_EARLY_UNMAPPED": "មិនមានការជាវដែលត្រូវគ្នា",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "ការតភ្ជាប់គោលការណ៍ខ្នាតដែលបានបង្កើតមិនអាចជំនួសឯកសារដែលបានអនុម័តបានទេ។ មានការថតមួយនៅក្បែរនោះជំនួសវិញ។",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "បង្កើតការជាវ",
       "loading": "កំពុងផ្ទុក…",
       "noSubscriptions": "មិនទាន់មានការជាវទេ។ ចុច \"បន្ថែមការជាវ\" ដើម្បីចាប់ផ្តើម។",
+      "earlySkipsSinceRestart": "ការរំលងរបស់ជម្រើស ចាប់តាំងពីការចាប់ផ្ដើមឡើងវិញចុងក្រោយ",
       "statusOk": "យល់ព្រម",
       "statusError": "កំហុស",
       "statusEmpty": "ទទេ",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "ចំនួនបរាជ័យ",
       "retryAfterMs": "ព្យាយាមម្ដងទៀតបន្ទាប់ពី (ms)",
-      "lastFailureKind": "ប្រភេទបរាជ័យចុងក្រោយ"
+      "lastFailureKind": "ប្រភេទបរាជ័យចុងក្រោយ",
+      "lastClose": "ការបិទចុងក្រោយ"
     },
     "empty": {
       "title": "គ្មានការតភ្ជាប់ទេ",

@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "Acest abonament are noduri care necesită un proxy-core local (SS/VMess/Trojan/VLESS); acestea nu sunt rutate până când nu configurați endpoint-ul SOCKS5 local-core.",
         "NO_USABLE_NODES": "Abonamentul nu a returnat noduri utilizabile (http/https/socks5 sau noduri cu un endpoint local-core).",
         "SELECTOR_SWITCH_FAILED": "Apelul de control al proxy-core a eșuat; ruta anterioară rămâne activă. Verificați URL-ul și secretul de control, apoi reîmprospătați.",
+        "SELECTOR_EARLY_NO_CONTROL": "Niciun URL de control",
+        "SELECTOR_EARLY_UNMAPPED": "Niciun abonament corespunzător",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "Configurația generată nu a putut înlocui fișierul adoptat; copia de alături a fost păstrată în schimb.",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "Creați abonament",
       "loading": "Se încarcă…",
       "noSubscriptions": "Încă nu există abonamente. Faceți clic pe „Adăugați abonament” pentru a începe.",
+      "earlySkipsSinceRestart": "Omiteri ale selectorului de la ultima repornire",
       "statusOk": "OK",
       "statusError": "Eroare",
       "statusEmpty": "Gol",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "Număr Eșecuri",
       "retryAfterMs": "Reîncearcă După (ms)",
-      "lastFailureKind": "Ultimul Tip de Eșec"
+      "lastFailureKind": "Ultimul Tip de Eșec",
+      "lastClose": "Ultima închidere"
     },
     "empty": {
       "title": "Nicio conexiune",

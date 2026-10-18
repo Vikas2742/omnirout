@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "ਇਸ ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਵਿੱਚ ਅਜਿਹੇ ਨੋਡ ਹਨ ਜਿਨ੍ਹਾਂ ਨੂੰ ਲੋਕਲ ਪ੍ਰੌਕਸੀ ਕੋਰ (SS/VMess/Trojan/VLESS) ਦੀ ਲੋੜ ਹੈ; ਜਦੋਂ ਤੱਕ ਤੁਸੀਂ local-core SOCKS5 ਐਂਡਪੁਆਇੰਟ ਕੌਂਫਿਗਰ ਨਹੀਂ ਕਰਦੇ, ਉਹ ਰੂਟ ਨਹੀਂ ਕੀਤੇ ਜਾਣਗੇ।",
         "NO_USABLE_NODES": "ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਤੋਂ ਕੋਈ ਵਰਤੋਂਯੋਗ ਨੋਡ ਨਹੀਂ ਮਿਲਿਆ (http/https/socks5 ਜਾਂ ਲੋਕਲ ਕੋਰ ਐਂਡਪੁਆਇੰਟ ਵਾਲੇ ਨੋਡ)।",
         "SELECTOR_SWITCH_FAILED": "ਪ੍ਰੌਕਸੀ-ਕੋਰ ਕੰਟਰੋਲ ਕਾਲ ਅਸਫਲ ਰਹੀ; ਪਿਛਲਾ ਰਸਤਾ ਸਰਗਰਮ ਰਹਿੰਦਾ ਹੈ। ਕੰਟਰੋਲ URL ਅਤੇ ਸੀਕਰੇਟ ਜਾਂਚੋ, ਫਿਰ ਰਿਫ੍ਰੈਸ਼ ਕਰੋ।",
+        "SELECTOR_EARLY_NO_CONTROL": "ਕੋਈ ਕੰਟਰੋਲ URL ਨਹੀਂ",
+        "SELECTOR_EARLY_UNMAPPED": "ਕੋਈ ਮੇਲ ਖਾਂਦੀ ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਨਹੀਂ",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "ਬਣਾਈ ਗਈ ਕੋਰ ਕੌਂਫ਼ਿਗਰੇਸ਼ਨ ਅਪਣਾਈ ਗਈ ਫ਼ਾਈਲ ਨੂੰ ਬਦਲ ਨਹੀਂ ਸਕੀ; ਇਸ ਦੀ ਬਜਾਏ ਉਸ ਦੇ ਨਾਲ ਵਾਲੀ ਕਾਪੀ ਰੱਖੀ ਗਈ।",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਬਣਾਓ",
       "loading": "ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ…",
       "noSubscriptions": "ਹਾਲੇ ਕੋਈ ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਨਹੀਂ ਹੈ। ਸ਼ੁਰੂ ਕਰਨ ਲਈ \"ਸਬਸਕ੍ਰਿਪਸ਼ਨ ਜੋੜੋ\" 'ਤੇ ਕਲਿੱਕ ਕਰੋ।",
+      "earlySkipsSinceRestart": "ਪਿਛਲੀ ਮੁੜ-ਸ਼ੁਰੂਆਤ ਤੋਂ ਬਾਅਦ ਸਿਲੈਕਟਰ ਵੱਲੋਂ ਛੱਡੇ ਗਏ",
       "statusOk": "ਠੀਕ ਹੈ",
       "statusError": "ਗਲਤੀ",
       "statusEmpty": "ਖਾਲੀ",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "ਅਸਫਲਤਾਵਾਂ ਦੀ ਗਿਣਤੀ",
       "retryAfterMs": "ਇਸ ਤੋਂ ਬਾਅਦ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ (ms)",
-      "lastFailureKind": "ਆਖਰੀ ਅਸਫਲਤਾ ਦੀ ਕਿਸਮ"
+      "lastFailureKind": "ਆਖਰੀ ਅਸਫਲਤਾ ਦੀ ਕਿਸਮ",
+      "lastClose": "ਆਖ਼ਰੀ ਬੰਦ"
     },
     "empty": {
       "title": "ਕੋਈ ਕਨੈਕਸ਼ਨ ਨਹੀਂ",

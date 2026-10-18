@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "Ova pretplata ima čvorove koji zahtijevaju lokalni proxy core (SS/VMess/Trojan/VLESS); neće se usmjeravati dok ne konfigurirate lokalnu SOCKS5 krajnju točku za local-core.",
         "NO_USABLE_NODES": "Pretplata nije dala nijedan upotrebljiv čvor (http/https/socks5 ili čvorove s lokalnom krajnjom točkom za core).",
         "SELECTOR_SWITCH_FAILED": "Upravljački poziv proxy-corea nije uspio; prethodna ruta ostaje aktivna. Provjerite upravljački URL i tajnu, a zatim osvježite.",
+        "SELECTOR_EARLY_NO_CONTROL": "Nema kontrolnog URL-a",
+        "SELECTOR_EARLY_UNMAPPED": "Nema odgovarajuće pretplate",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "Generiranu osnovnu konfiguraciju nije bilo moguće zamijeniti prihvaćenu datoteku; umjesto toga zadržana je kopija pokraj nje.",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "Stvori pretplatu",
       "loading": "Učitavanje…",
       "noSubscriptions": "Još nema pretplata. Kliknite „Dodaj pretplatu” za početak.",
+      "earlySkipsSinceRestart": "Preskakanja odabira od posljednjeg ponovnog pokretanja",
       "statusOk": "U redu",
       "statusError": "Pogreška",
       "statusEmpty": "Prazno",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "Broj neuspjeha",
       "retryAfterMs": "Pokušaj ponovno nakon (ms)",
-      "lastFailureKind": "Vrsta posljednjeg neuspjeha"
+      "lastFailureKind": "Vrsta posljednjeg neuspjeha",
+      "lastClose": "Zadnje Zatvaranje"
     },
     "empty": {
       "title": "Nema veza",

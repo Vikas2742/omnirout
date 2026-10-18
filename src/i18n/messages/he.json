@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "במנוי זה ישנם צמתים הזקוקים לליבת פרוקסי מקומית (SS/VMess/Trojan/VLESS); הם לא ינותבו עד שתגדיר את נקודת הקצה SOCKS5 של הליבה המקומית.",
         "NO_USABLE_NODES": "המנוי לא הניב צמתים שמישים (http/https/socks5 או צמתים עם נקודת קצה של ליבה מקומית).",
         "SELECTOR_SWITCH_FAILED": "קריאת הבקרה של proxy-core נכשלה; המסלול הקודם נשאר פעיל. בדקו את כתובת הבקרה ואת הסוד, ואז רעננו.",
+        "SELECTOR_EARLY_NO_CONTROL": "אין כתובת URL לבקרה",
+        "SELECTOR_EARLY_UNMAPPED": "אין מנוי תואם",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "לא ניתן היה להחליף את קובץ התצורה שנוצר עם הקובץ שאומץ; במקום זאת נשמרה ההעתקה שלצידו.",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "צור מנוי",
       "loading": "טוען...",
       "noSubscriptions": "עדיין אין מנויים. לחץ על \"הוסף מנוי\" כדי להתחיל.",
+      "earlySkipsSinceRestart": "דילוגי בורר מאז ההפעלה מחדש האחרונה",
       "statusOk": "בסדר",
       "statusError": "שגיאה",
       "statusEmpty": "ריק",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "מספר כשלים",
       "retryAfterMs": "נסה שוב אחרי (ms)",
-      "lastFailureKind": "סוג כשל אחרון"
+      "lastFailureKind": "סוג כשל אחרון",
+      "lastClose": "סגירה אחרונה"
     },
     "empty": {
       "title": "אין חיבורים",

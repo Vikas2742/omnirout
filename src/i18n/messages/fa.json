@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "این اشتراک دارای گره‌هایی است که به یک هسته پروکسی محلی (SS/VMess/Trojan/VLESS) نیاز دارند؛ تا زمانی که نقطه پایانی SOCKS5 هسته محلی را پیکربندی نکنید، آن‌ها مسیریابی نمی‌شوند.",
         "NO_USABLE_NODES": "اشتراک هیچ گره قابل استفاده‌ای ارائه نداد (http/https/socks5 یا گره‌هایی با نقطه پایانی هسته محلی).",
         "SELECTOR_SWITCH_FAILED": "فراخوانی کنترل هستهٔ پروکسی ناموفق بود؛ مسیر قبلی همچنان فعال است. نشانی و راز کنترل را بررسی کنید، سپس تازه‌سازی کنید.",
+        "SELECTOR_EARLY_NO_CONTROL": "بدون URL کنترل",
+        "SELECTOR_EARLY_UNMAPPED": "اشتراک منطبقی وجود ندارد",
         "CORE_CONFIG_NOT_GENERATED": "The local-core config was not generated; the adopted file is unchanged. Check the path and refresh.",
         "CORE_CONFIG_NOT_APPLIED": "پیکربندی هسته تولیدشده نتوانست فایل پذیرفته‌شده را جایگزین کند؛ به‌جای آن نسخهٔ کناری نگه داشته شد.",
         "CORE_RELOAD_UNDECLARED": "No reload channel is declared for the replaced core config. Declare one: a control URL on a compatible core, the OMNIROUTE_PROXY_CORE_RELOAD_COMMAND variable as a JSON argument array, or the value external for an outside observer.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "ایجاد اشتراک",
       "loading": "در حال بارگیری…",
       "noSubscriptions": "هنوز اشتراکی وجود ندارد. برای شروع روی «افزودن اشتراک» کلیک کنید.",
+      "earlySkipsSinceRestart": "رد شدن‌های انتخابگر از آخرین راه‌اندازی مجدد",
       "statusOk": "باشه",
       "statusError": "خطا",
       "statusEmpty": "خالی",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "تعداد شکست‌ها",
       "retryAfterMs": "تلاش مجدد پس از (ms)",
-      "lastFailureKind": "آخرین نوع شکست"
+      "lastFailureKind": "آخرین نوع شکست",
+      "lastClose": "آخرین بسته شدن"
     },
     "empty": {
       "title": "بدون اتصال",

@@ -7140,6 +7140,8 @@
         "NEEDS_CORE_NOT_CONFIGURED": "Esta assinatura tem nós que precisam de um core local (SS/VMess/Trojan/VLESS); eles não são roteados até você configurar o endpoint SOCKS5 do core local.",
         "NO_USABLE_NODES": "A assinatura não retornou nós utilizáveis (http/https/socks5 ou nós com endpoint de core local).",
         "SELECTOR_SWITCH_FAILED": "A chamada de controle do proxy-core falhou; a rota anterior continua ativa. Verifique a URL e o segredo de controle e atualize.",
+        "SELECTOR_EARLY_NO_CONTROL": "Nenhuma URL de controle",
+        "SELECTOR_EARLY_UNMAPPED": "Nenhuma assinatura correspondente",
         "CORE_CONFIG_NOT_GENERATED": "A configuração do núcleo local não foi gerada; o arquivo adotado não mudou. Verifique o caminho e atualize.",
         "CORE_CONFIG_NOT_APPLIED": "A configuração central gerada não pôde substituir o arquivo adotado; a cópia ao lado foi mantida.",
         "CORE_RELOAD_UNDECLARED": "Nenhum canal de recarga foi declarado para a configuração do núcleo substituída. Declare um: uma URL de controle em um núcleo compatível, a variável OMNIROUTE_PROXY_CORE_RELOAD_COMMAND como um array JSON de argumentos, ou o valor external para um observador externo.",
@@ -7171,6 +7173,7 @@
       "createSubscription": "Criar assinatura",
       "loading": "Carregando…",
       "noSubscriptions": "Ainda não há assinaturas. Clique em \"Adicionar assinatura\" para começar.",
+      "earlySkipsSinceRestart": "Saltos do seletor desde a última reinicialização",
       "statusOk": "OK",
       "statusError": "Erro",
       "statusEmpty": "Vazio",
@@ -14375,7 +14378,8 @@
       "never": "-",
       "failureCount": "Contagem de Falhas",
       "retryAfterMs": "Repetir Após (ms)",
-      "lastFailureKind": "Último Tipo de Falha"
+      "lastFailureKind": "Último Tipo de Falha",
+      "lastClose": "Último Fechamento"
     },
     "empty": {
       "title": "Nenhuma conexão",
