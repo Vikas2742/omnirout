@@ -9,6 +9,11 @@ import {
   isAlibabaModelFreeDrained,
   isAlibabaModelStudioProvider,
 } from "@omniroute/open-sse/services/alibabaFreeTier.ts";
+import { getAntigravityFamilyCooldownUntil } from "@omniroute/open-sse/services/antigravityFamilyCooldown.ts";
+import {
+  getAntigravityQuotaFamily,
+  isAntigravityQuotaProvider,
+} from "@omniroute/open-sse/services/antigravityQuotaFamily.ts";
 import { CODEX_SPARK_MODEL_ID } from "@omniroute/open-sse/config/codexQuotaScopes.ts";
 import { getProviderModels } from "@omniroute/open-sse/config/providerModels.ts";
 import type { QuotaAvailabilityWindow } from "./availabilityTypes";
@@ -41,6 +46,14 @@ export function savedRouterBlockers(
   if (peak.active) blockers.push(timedBlocker("peakHour", peak.retryAfter, "peakHour"));
   if (isAlibabaModelFreeDrained(connection.provider, connection.providerSpecificData, model))
     blockers.push(timedBlocker(model!, null, "modelLockout"));
+  if (isAntigravityQuotaProvider(connection.provider) && model) {
+    const until = getAntigravityFamilyCooldownUntil(
+      connection.providerSpecificData,
+      getAntigravityQuotaFamily(model)
+    );
+    if (until !== null)
+      blockers.push(timedBlocker(model, new Date(until).toISOString(), "modelLockout"));
+  }
   return blockers;
 }
 
