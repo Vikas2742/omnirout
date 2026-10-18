@@ -743,3 +743,79 @@ test("Claude extra-usage block stays locked through the real sync chain when rec
     "extra_usage marker must survive the general recovery-clearing logic"
   );
 });
+
+test("#17043: recorded external Claude reset releases the genuine weekly 429", async () => {
+  const now = Date.now();
+  const before = new Date(now - 120_000).toISOString();
+  const observed = new Date(now - 60_000).toISOString();
+  const weeklyReset = new Date(now + 3 * 86400_000).toISOString();
+  const created = await providersDb.createProviderConnection({
+    provider: "claude", authType: "oauth", accessToken: "token-reset-17043",
+    refreshToken: "refresh-reset-17043", testStatus: "unavailable", isActive: true,
+    lastError: "weekly quota depleted", lastErrorAt: before,
+    lastErrorType: "quota_exhausted", lastErrorSource: "executor",
+    errorCode: 429, rateLimitedUntil: weeklyReset, backoffLevel: 2,
+  });
+  const id = (created as {id: string}).id;
+  const events = await import("../../src/lib/db/quotaResetEvents.ts");
+  events.recordProviderQuotaResetEventIfChanged({
+    provider: "claude", connectionId: id, windowKey: "weekly (7d)",
+    currentResetAt: weeklyReset, currentRemainingPercentage: 100,
+    previousObservation: { resetAt: weeklyReset, remainingPercentage: 0 },
+    observedAt: observed,
+  });
+  const dbRow = await providersDb.getProviderConnectionById(id);
+  const result = await providerLimits.maybeClearRecoveredQuotaState(dbRow, {
+    quotas: {
+      session: { remainingPercentage: 98, resetAt: new Date(now + 4 * 3600_000).toISOString() },
+      weekly: { remainingPercentage: 93, resetAt: weeklyReset },
+    },
+  });
+  assert.equal(result.rateLimitedUntil, null);
+  assert.equal(result.testStatus, "active");
+  assert.equal((await providersDb.getProviderConnectionById(id)).rateLimitedUntil, null);
+});
+
+test("#17043: old event, exhausted window, stale poll and terminal status cannot release 429", async () => {
+  const now = Date.now();
+  const observed = new Date(now - 180_000).toISOString();
+  const lastErrorAt = new Date(now - 60_000).toISOString();
+  const weeklyReset = new Date(now + 3 * 86400_000).toISOString();
+  const created = await providersDb.createProviderConnection({
+    provider: "claude", authType: "oauth", accessToken: "token-negative-17043",
+    refreshToken: "refresh-negative-17043", testStatus: "unavailable", isActive: true,
+    lastError: "weekly exhausted", lastErrorAt,
+    lastErrorType: "quota_exhausted", lastErrorSource: "executor",
+    errorCode: 429, rateLimitedUntil: weeklyReset, backoffLevel: 2,
+  });
+  const id = (created as {id: string}).id;
+  const events = await import("../../src/lib/db/quotaResetEvents.ts");
+  events.recordProviderQuotaResetEventIfChanged({
+    provider: "claude", connectionId: id, windowKey: "weekly (7d)",
+    currentResetAt: weeklyReset, currentRemainingPercentage: 100,
+    previousObservation: {resetAt: weeklyReset, remainingPercentage: 0},
+    observedAt: observed,
+  });
+  const base = await providersDb.getProviderConnectionById(id);
+  const recovered = { quotas: {
+    session: { remainingPercentage: 98, resetAt: new Date(now + 3600_000).toISOString() },
+    weekly: { remainingPercentage: 94, resetAt: weeklyReset },
+  }};
+  assert.ok((await providerLimits.maybeClearRecoveredQuotaState(base, recovered)).rateLimitedUntil);
+  events.recordProviderQuotaResetEventIfChanged({
+    provider: "claude", connectionId: id, windowKey: "weekly (7d)",
+    currentResetAt: new Date(now + 4 * 86400_000).toISOString(),
+    currentRemainingPercentage: 100,
+    previousObservation: {resetAt: weeklyReset, remainingPercentage: 0},
+    observedAt: new Date(now - 20_000).toISOString(),
+  });
+  assert.ok((await providerLimits.maybeClearRecoveredQuotaState(base, {
+    quotas: { session: {remainingPercentage: 98}, weekly: {remainingPercentage: 0} },
+  })).rateLimitedUntil);
+  assert.ok((await providerLimits.maybeClearRecoveredQuotaState(base, {
+    ...recovered, _stale: true,
+  })).rateLimitedUntil);
+  assert.ok((await providerLimits.maybeClearRecoveredQuotaState({
+    ...base, testStatus: "banned",
+  }, recovered)).rateLimitedUntil);
+});
