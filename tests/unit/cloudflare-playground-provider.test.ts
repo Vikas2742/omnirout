@@ -105,10 +105,7 @@ class FakeTransport implements CfTransport {
   async close(): Promise<void> {}
 }
 
-function makeExecutor(
-  buildFrames: (chatId: string) => string[],
-  fail?: CfTransportFailure
-) {
+function makeExecutor(buildFrames: (chatId: string) => string[], fail?: CfTransportFailure) {
   return new CloudflarePlaygroundExecutor((chatId) => new FakeTransport(buildFrames(chatId), fail));
 }
 
@@ -255,7 +252,9 @@ test("#16460 missing Playwright package or Chromium binary is a 503 host error",
     assert.ok(!result.message.includes("/home/node"), "no local executable path leaks");
   }
 
-  const upstream = classifyCfBrowserStartFailure(new Error("Navigation timeout of 45000 ms exceeded"));
+  const upstream = classifyCfBrowserStartFailure(
+    new Error("Navigation timeout of 45000 ms exceeded")
+  );
   assert.equal(upstream.status, 502);
   assert.match(upstream.message, /browser session failed/i);
 
@@ -343,14 +342,33 @@ test("#16460 deeply nested image wrappers fail closed instead of being silently 
   for (let depth = 0; depth < 18; depth++) textOnly = { content: textOnly };
   assert.equal(hasUnsupportedCfImageParts([{ role: "user", content: textOnly }]), false);
 
-  // Extremely broad JSON-like bodies are rejected conservatively rather than
-  // scanning an unbounded number of objects on the request hot path.
+  // The scan budget bounds work on the request hot path; exhausting it on a
+  // broad text-only body must fail OPEN — it is not evidence of an image.
   const oversized = Array.from({ length: 2050 }, () => ({ type: "text", text: "x" }));
-  assert.equal(hasUnsupportedCfImageParts(oversized), true);
+  assert.equal(hasUnsupportedCfImageParts(oversized), false);
 
   const cyclic: { content?: unknown } = {};
   cyclic.content = cyclic;
   assert.equal(hasUnsupportedCfImageParts(cyclic), true);
+});
+
+test("#16460 long text-only conversation over the scan budget is not rejected as an image", async () => {
+  // 800 turns x (message + content array + text part) = 2400 nodes > 2048 budget.
+  const messages = Array.from({ length: 800 }, (_, i) => ({
+    role: i % 2 === 0 ? "user" : "assistant",
+    content: [{ type: "text", text: `turn ${i}` }],
+  }));
+  assert.equal(hasUnsupportedCfImageParts(messages), false);
+  let created = 0;
+  const executor = new CloudflarePlaygroundExecutor((chatId) => {
+    created++;
+    return new FakeTransport(buildSuccessFrames(chatId));
+  });
+  const result = await executor.execute(
+    executeArgs({ model: "zai-org/glm-4.7-flash", messages }, false)
+  );
+  assert.equal(result.response.status, 200);
+  assert.equal(created, 1);
 });
 
 test("#16460 nested tool-output images are rejected before starting Playwright", async () => {
@@ -365,9 +383,7 @@ test("#16460 nested tool-output images are rejected before starting Playwright",
     [
       {
         role: "tool",
-        content: [
-          { type: "output", content: [{ type: "image", source: { data: "cG5n" } }] },
-        ],
+        content: [{ type: "output", content: [{ type: "image", source: { data: "cG5n" } }] }],
       },
     ],
   ];
@@ -631,7 +647,9 @@ test("PlaywrightCfTransport.start() closes the browser when Cloudflare Attention
       close: async () => {
         closeCalls += 1;
       },
-    }) as unknown as ReturnType<typeof playwright.chromium.launch>) as typeof playwright.chromium.launch;
+    }) as unknown as ReturnType<
+      typeof playwright.chromium.launch
+    >) as typeof playwright.chromium.launch;
 
   try {
     const transport = new PlaywrightCfTransport("chat-attention-required");

@@ -229,9 +229,10 @@ function isUnsupportedCfImagePart(value: unknown): boolean {
 
 export function hasUnsupportedCfImageParts(messages: unknown): boolean {
   // Scan only known message/content/output/input envelopes. An iterative walk
-  // catches deeply nested image parts without recursion overflow, while a
-  // bounded budget and repeat-reference guard fail closed for malformed input.
-  // Well-formed deeply nested TEXT is still safe and is not falsely rejected.
+  // catches deeply nested image parts without recursion overflow. The node
+  // budget only bounds hot-path work: exhausting it fails OPEN (a long
+  // text-only conversation is not evidence of an image), while a repeated
+  // reference (impossible in parsed JSON) still fails closed.
   const pending: unknown[] = [messages];
   const visited = new WeakSet<object>();
   const maxNodes = 2048;
@@ -241,9 +242,9 @@ export function hasUnsupportedCfImageParts(messages: unknown): boolean {
     if (!value || typeof value !== "object") continue;
     if (visited.has(value)) return true; // cycle or non-JSON repeated reference
     visited.add(value);
-    if (++scanned > maxNodes) return true;
+    if (++scanned > maxNodes) return false;
     if (Array.isArray(value)) {
-      if (value.length > maxNodes) return true;
+      if (value.length > maxNodes) return false;
       for (const part of value) pending.push(part);
       continue;
     }
@@ -297,9 +298,7 @@ export type CfTransportStartResult =
   | { ok: false; status: number; message: string; fallbackHint?: "connection_cooldown" };
 
 export interface CfTransport {
-  start(
-    config: CfTransportConfig
-  ): Promise<CfTransportStartResult>;
+  start(config: CfTransportConfig): Promise<CfTransportStartResult>;
   frames(): AsyncGenerator<string>;
   close(): Promise<void>;
 }
@@ -370,9 +369,7 @@ export class PlaywrightCfTransport implements CfTransport {
     private chromeExecutablePath?: string
   ) {}
 
-  async start(
-    config: CfTransportConfig
-  ): Promise<CfTransportStartResult> {
+  async start(config: CfTransportConfig): Promise<CfTransportStartResult> {
     try {
       // #12274: prefer the shared Obscura browser (browser-grade TLS fingerprint
       // on the WS upgrade, ~30MB) over a full Chromium per request; fall back to
@@ -538,9 +535,7 @@ export class CloudflarePlaygroundExecutor extends BaseExecutor {
         started.message,
         body,
         PLAYGROUND_URL,
-        started.fallbackHint
-          ? { "X-Omni-Fallback-Hint": started.fallbackHint }
-          : undefined
+        started.fallbackHint ? { "X-Omni-Fallback-Hint": started.fallbackHint } : undefined
       );
     }
 
