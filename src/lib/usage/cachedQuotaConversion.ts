@@ -66,6 +66,7 @@ export function convertCachedUsageToQuotaInfo(
         {
           limit_name: CODEX_SPARK_DISPLAY_NAME,
           rate_limit: {
+            limit_reached: usage.sparkLimitReached ?? false,
             primary_window: codexWindow(quotas[CODEX_SPARK_QUOTA_SESSION]),
             secondary_window: codexWindow(quotas[CODEX_SPARK_QUOTA_WEEKLY]),
           },

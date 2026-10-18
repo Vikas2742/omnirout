@@ -73,6 +73,7 @@ export interface HealthConnection {
 export interface HealthCooldown {
   id: string;
   status: string;
+  isActive?: boolean;
   testStatus?: string | null;
   rateLimitedUntil?: string | number | null;
   lastErrorAt?: string | number | null;
@@ -314,11 +315,16 @@ export function buildHealthAccount(
     );
   const {
     row,
-    runtime,
+    runtime: selectedRuntime,
     summaryTime,
     lockouts,
     until: reportedUntil,
   } = runtimeCooldownEvidence(connection, evidence, now);
+  // Older summaries omit the active field; only an explicit boolean supersedes it.
+  const runtime = {
+    ...selectedRuntime,
+    isActive: selectedRuntime.isActive ?? connection.isActive,
+  };
   const testStatus = runtime.testStatus?.trim().toLowerCase();
   const runtimeAvailable =
     !!row ||
@@ -381,7 +387,7 @@ export function buildHealthAccount(
     groups.size > 0 &&
     [...groups].every((g) => blocked.some((r) => r.scope === "group" && r.scopeId === g));
   let status: HealthStatus;
-  if (connection.isActive === false) status = "paused";
+  if (runtime.isActive === false) status = "paused";
   else if (terminal || cooldown || availability?.account.usable === false || allGroupsBlocked)
     status = "critical";
   else if (!availability || availability.account.usable === null) status = "empty";
@@ -404,8 +410,7 @@ export function buildHealthAccount(
       ? new Date(Math.max(...times)).toISOString()
       : undefined;
   return {
-    runtimeAvailability:
-      connection.isActive === false ? { state: "DISABLED" } : runtimeAvailability,
+    runtimeAvailability: runtime.isActive === false ? { state: "DISABLED" } : runtimeAvailability,
     quotaPools: data?.raw?.quotaGroups?.map(({ id, models }) => ({ id, models })),
     connection,
     cells,

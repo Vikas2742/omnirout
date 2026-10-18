@@ -35,6 +35,7 @@ export interface ProviderLimitsCacheEntry {
   billing?: ProviderBillingStatus;
   quotaGroups?: Array<Record<string, unknown>>;
   limitReached?: boolean;
+  sparkLimitReached?: boolean;
   rateLimitReachedType?: string;
 }
 
@@ -79,6 +80,9 @@ function normalizeCacheEntry(value: unknown): ProviderLimitsCacheEntry | null {
     fetchedAt,
     source: typeof record.source === "string" ? record.source : null,
     ...(typeof record.limitReached === "boolean" ? { limitReached: record.limitReached } : {}),
+    ...(typeof record.sparkLimitReached === "boolean"
+      ? { sparkLimitReached: record.sparkLimitReached }
+      : {}),
     ...(typeof record.rateLimitReachedType === "string"
       ? { rateLimitReachedType: record.rateLimitReachedType }
       : {}),

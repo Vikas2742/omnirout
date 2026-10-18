@@ -74,12 +74,19 @@ export function useAvailability(
         // Neither an out-of-order response nor an omitted row proves recovery.
         if (parseRuntimeTimestamp(data.generatedAt) <= parseRuntimeTimestamp(previous.observedAt))
           return previous;
-        const rows = Object.fromEntries(
-          (data.connections as HealthCooldown[]).map((cooldown) => [
-            cooldown.id,
-            { cooldown, observedAt: data.generatedAt as string | number },
-          ])
-        );
+        const rows: Record<string, { cooldown: HealthCooldown; observedAt: string | number }> =
+          Object.fromEntries(
+            (data.connections as HealthCooldown[]).map((cooldown) => [
+              cooldown.id,
+              {
+                cooldown: {
+                  ...cooldown,
+                  isActive: typeof cooldown.isActive === "boolean" ? cooldown.isActive : undefined,
+                },
+                observedAt: data.generatedAt as string | number,
+              },
+            ])
+          );
         for (const [id, entry] of Object.entries(previous.rows)) {
           if (!rows[id] && hasTerminalStatus(entry.cooldown)) rows[id] = entry;
         }

@@ -38,6 +38,9 @@ export function toProviderLimitsCacheEntry(
     fetchedAt,
     source,
     ...(typeof usage.limitReached === "boolean" ? { limitReached: usage.limitReached } : {}),
+    ...(typeof usage.sparkLimitReached === "boolean"
+      ? { sparkLimitReached: usage.sparkLimitReached }
+      : {}),
     ...(typeof usage.rateLimitReachedType === "string"
       ? { rateLimitReachedType: usage.rateLimitReachedType }
       : {}),
