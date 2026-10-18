@@ -507,6 +507,26 @@ export function egressBucketedLockProviders(): string[] {
 const FULL_TEXT_RULE_PROVIDERS = new Set(["agentrouter"]);
 
 /**
+ * Opt-in widenings of FULL_TEXT_RULE_PROVIDERS (#16797), one flag per provider family.
+ * The opencode and cloudflare-ai catalog rules above match on body-text markers
+ * ("organization_quota_exceeded", "monthly usage limit reached", "daily free
+ * allocation", ...) that the stripped structured error never carries, so today they
+ * cannot fire through checkFallbackError. Letting them fire changes the classification
+ * (rate_limit → quota_exhausted) and the cooldown/lock scope, hence default-off flags.
+ */
+export const OPENCODE_FULL_TEXT_ERROR_RULES_FLAG = "OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED";
+const OPT_IN_FULL_TEXT_RULE_PROVIDERS: ReadonlyArray<{
+  flag: string;
+  providers: ReadonlySet<string>;
+}> = [{ flag: OPENCODE_FULL_TEXT_ERROR_RULES_FLAG, providers: new Set(OPENCODE_RULE_FAMILY) }];
+
+function usesFullTextRuleBody(key: string): boolean {
+  if (FULL_TEXT_RULE_PROVIDERS.has(key)) return true;
+  const optIn = OPT_IN_FULL_TEXT_RULE_PROVIDERS.find((entry) => entry.providers.has(key));
+  return !!optIn && isRuleFlagEnabled(optIn.flag);
+}
+
+/**
  * True when an operator has declared at least one rule for this provider via
  * `settings.providerErrorRules` (injected through `setOperatorProviderErrorRules`).
  * Presence of the rule IS the opt-in — no separate allowlist to maintain, and
@@ -531,8 +551,7 @@ export function resolveRuleMatchBody(
 ): unknown {
   if (
     provider &&
-    (FULL_TEXT_RULE_PROVIDERS.has(provider.toLowerCase()) ||
-      hasOperatorRuleForProvider(provider)) &&
+    (usesFullTextRuleBody(provider.toLowerCase()) || hasOperatorRuleForProvider(provider)) &&
     errorText
   ) {
     return errorText;

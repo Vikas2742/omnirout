@@ -6,16 +6,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 delete process.env.OMNIROUTE_EGRESS_IP_LOCK_PROVIDERS;
-const FLAGS = [
-  "OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED",
-  "OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED",
-  "CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED",
-];
+const FLAGS = ["OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED", "OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED"];
 for (const flag of FLAGS) delete process.env[flag];
 
 const rules = await import("../../open-sse/config/providerErrorRules.ts");
-// Loading accountFallback registers the feature-flag reader on providerErrorRules.
-await import("../../open-sse/services/accountFallback.ts");
+const { checkFallbackError } = await import("../../open-sse/services/accountFallback.ts");
 const core = await import("../../src/lib/db/core.ts");
 const { isFeatureFlagEnabled } = await import("../../src/shared/utils/featureFlags.ts");
 
@@ -75,4 +70,44 @@ test("a throwing or missing flag reader fails closed to the release default", ()
     delete process.env.OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED;
     rules.setProviderErrorRuleFlagReader(isFeatureFlagEnabled);
   }
+});
+
+const STRUCTURED = { code: "rate_limited", type: "requests" };
+const OPENCODE_QUOTA_BODY = '{"error":{"message":"organization_quota_exceeded"}}';
+const CLOUDFLARE_DAILY_BODY =
+  "you have used up your daily free allocation of 10,000 neurons, please upgrade";
+
+test("full-text bodies: the opencode family keeps the structured body unless opted in", () => {
+  for (const provider of ["opencode-zen", "opencode-go", "opencode-cli"]) {
+    assert.equal(rules.resolveRuleMatchBody(provider, STRUCTURED, OPENCODE_QUOTA_BODY), STRUCTURED);
+    withFlag("OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED", () => {
+      assert.equal(
+        rules.resolveRuleMatchBody(provider, STRUCTURED, OPENCODE_QUOTA_BODY),
+        OPENCODE_QUOTA_BODY,
+        provider
+      );
+      // The opencode flag never widens another provider.
+      assert.equal(
+        rules.resolveRuleMatchBody("cloudflare-ai", STRUCTURED, CLOUDFLARE_DAILY_BODY),
+        STRUCTURED
+      );
+    });
+  }
+  assert.equal(
+    rules.resolveRuleMatchBody("agentrouter", STRUCTURED, "用户额度不足"),
+    "用户额度不足"
+  );
+});
+
+test("checkFallbackError: an opencode-zen quota body stays a rate limit by default", () => {
+  const off = checkFallbackError(429, OPENCODE_QUOTA_BODY, 0, null, "opencode-zen", null);
+  assert.equal(off.shouldFallback, true);
+  assert.equal(off.reason, "rate_limit_exceeded");
+  assert.equal(off.ruleScope, undefined);
+  const on = withFlag("OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED", () =>
+    checkFallbackError(429, OPENCODE_QUOTA_BODY, 0, null, "opencode-zen", null)
+  );
+  assert.equal(on.shouldFallback, true);
+  assert.equal(on.reason, "quota_exhausted");
+  assert.equal(on.ruleScope, "connection");
 });

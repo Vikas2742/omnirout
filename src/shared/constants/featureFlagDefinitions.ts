@@ -373,6 +373,19 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED",
+    label: "OpenCode Full-Text Error Rules",
+    description:
+      'Let the built-in OpenCode error rules (opencode-zen, opencode-go, opencode-cli) match on the full upstream error text, so body markers such as organization_quota_exceeded or "monthly usage limit reached" classify a 429 as quota exhausted with a connection-scoped lock. Off by default: those rules only see the structured error code and such a 429 stays a short rate limit, exactly as before.',
+    descriptionI18nKey: "featureFlagOpencodeFullTextErrorRulesEnabledDescription",
+    category: "network",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+
+  {
     key: "MITM_DISABLE_TLS_VERIFY",
     label: "Disable TLS Verify (MITM)",
     description: "Disable TLS certificate verification for MITM proxy",
