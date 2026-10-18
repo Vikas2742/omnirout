@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { FREE_MODEL_BUDGETS } from "../../open-sse/config/freeModelCatalog.ts";
+import { FREE_MODEL_BUDGETS, computeFreeModelTotals } from "../../open-sse/config/freeModelCatalog.ts";
 import {
   isCatalogFreeModel,
   isFreeForProvider,
@@ -26,6 +26,30 @@ const formerlyMisclassifiedIds = [
 ];
 
 describe("#17028 SiliconFlow pay-as-you-go model protection", () => {
+  it("retains honest release catalog counts and never counts SiliconFlow as statically uncapped", () => {
+    const totals = computeFreeModelTotals();
+    assert.equal(totals.modelCount, 468);
+    assert.equal(totals.poolCount, 34);
+    assert.equal(totals.uncappedProviders.includes("siliconflow"), false);
+  });
+
+  it("vetoes any contradictory paid flag, including nested pricing and is_free badges", () => {
+    const id = formerlyMisclassifiedIds[0];
+    const contradictions = [
+      { id, isFree: true, free: false },
+      { id, isFree: true, is_free: false },
+      { id, is_free: true, pricing: { isFree: false } },
+      { id, free: true, pricing: { free: false } },
+    ];
+    for (const model of contradictions) {
+      assert.equal(hasPayloadPaidEvidence(model), true);
+      assert.equal(isFreeModel("siliconflow", model), false);
+      assert.equal(isModelFreeBadge("siliconflow", model), false);
+    }
+    assert.equal(isModelFreeBadge("siliconflow", { id, is_free: true }), true);
+    assert.equal(isModelFreeBadge("siliconflow", { id, is_free: false }), false);
+  });
+
   it("removes the ten paid flagship ids from unconditional free-tier catalog decisions", () => {
     const listed = new Set(
       FREE_MODEL_BUDGETS.filter((row) => row.provider === "siliconflow").map((row) => row.modelId)
