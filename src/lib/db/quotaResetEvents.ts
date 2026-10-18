@@ -195,6 +195,38 @@ export function recordProviderQuotaResetEventIfChanged(input: ResetEventInput): 
   }
 }
 
+/**
+ * A recorded refill is positive recovery evidence only if it was observed after
+ * the particular 429. A regular usage poll is not a replacement for this proof.
+ * Do not reuse events from a previous cooldown or another connection.
+ */
+export function hasObservedClaudeQuotaResetAfter(
+  connectionId: string,
+  cooldownWrittenAt: string | null | undefined,
+  nowMs = Date.now()
+): boolean {
+  const afterMs = Date.parse(cooldownWrittenAt ?? "");
+  if (!connectionId || !Number.isFinite(afterMs) || afterMs > nowMs) return false;
+  try {
+    const db = getDbInstance() as unknown as DbLike;
+    const rows = db.prepare<{ observedAt: string }>(
+      `SELECT observed_at AS observedAt FROM provider_quota_reset_events
+       WHERE connection_id = ? AND LOWER(provider) = 'claude'
+         AND (LOWER(window_key) LIKE '%weekly%' OR LOWER(window_key) LIKE '%7d%')
+         AND LOWER(window_key) NOT LIKE '%sonnet%'
+         AND observed_at > ? AND observed_at <= ?
+       ORDER BY observed_at DESC, id DESC LIMIT 1`
+    ).all(connectionId, new Date(afterMs).toISOString(), new Date(nowMs).toISOString());
+    return rows.some((row) => {
+      const time = Date.parse(row.observedAt);
+      return Number.isFinite(time) && time > afterMs && time <= nowMs;
+    });
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message.includes("no such table")) return false;
+    throw error;
+  }
+}
+
 function getRecordedQuotaWindowStartIso(
   connectionId: string,
   targetResetAtIso: string,
