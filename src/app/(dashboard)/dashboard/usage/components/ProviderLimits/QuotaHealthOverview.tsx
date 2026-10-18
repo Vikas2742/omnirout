@@ -468,6 +468,112 @@ function useOverviewProjection(
   };
 }
 
+function OverviewContent({
+  display,
+  id,
+  legendHidden,
+  toggleLegend,
+  custom,
+  reset,
+  summaryFailed,
+  t,
+  relative,
+  oldest,
+  groups,
+  order,
+  providerLabels,
+  reorder,
+  now,
+  selected,
+  preview,
+  poolLabel,
+  label,
+  primary,
+  all,
+  setSelected,
+  setPreview,
+  currentPreview,
+  selectedAccount,
+  previewAccount,
+  renderCard,
+}: {
+  display: DisplayAccount[];
+  id: string;
+  legendHidden: boolean;
+  toggleLegend: () => void;
+  custom: boolean;
+  reset: () => void;
+  summaryFailed: boolean;
+  t: (key: string, values?: Record<string, unknown>) => string;
+  relative: (value?: string | null) => string;
+  oldest: (key: "runtimeObservedAt" | "quotaObservedAt") => string | undefined;
+  groups: Array<{ provider: string; accounts: HealthAccount[] }>;
+  order: string[];
+  providerLabels: Record<string, string>;
+  reorder: (visible: string[]) => void;
+  now: number;
+  selected: string | null;
+  preview: { id: string; pool?: string; anchor: HTMLElement } | null;
+  poolLabel: (id: string) => string;
+  label: (connection: HealthConnection) => string;
+  primary: (account: HealthAccount) => string;
+  all: (key: string) => string;
+  setSelected: (id: string | null) => void;
+  setPreview: (value: { id: string; pool?: string; anchor: HTMLElement } | null) => void;
+  currentPreview: DisplayAccount | undefined;
+  selectedAccount: HealthAccount | undefined;
+  previewAccount: HealthAccount | undefined;
+  renderCard: (connection: HealthConnection) => ReactNode;
+}) {
+  return (
+    <div className="min-w-0 space-y-[14px]">
+      <HealthBanner accounts={display} />
+      <div className="min-w-0 rounded-xl border border-border bg-surface">
+        <OverviewHeader
+          id={id}
+          legendHidden={legendHidden}
+          toggleLegend={toggleLegend}
+          custom={custom}
+          reset={reset}
+          summaryFailed={summaryFailed}
+          t={t}
+          relative={relative}
+          oldest={oldest}
+        />
+        <OverviewGroups
+          groups={groups}
+          order={order}
+          providerLabels={providerLabels}
+          reorder={reorder}
+          now={now}
+          selected={selected}
+          preview={preview}
+          id={id}
+          t={t}
+          poolLabel={poolLabel}
+          label={label}
+          primary={primary}
+          all={all}
+          setSelected={setSelected}
+          setPreview={setPreview}
+        />
+      </div>
+      <OverviewDetails
+        currentPreview={currentPreview}
+        selectedAccount={selectedAccount}
+        previewAccount={previewAccount}
+        preview={preview}
+        id={id}
+        now={now}
+        label={label}
+        poolLabel={poolLabel}
+        renderCard={renderCard}
+        t={t}
+      />
+    </div>
+  );
+}
+
 interface Props {
   connections: HealthConnection[];
   quotaData: Record<string, HealthData>;
@@ -526,50 +632,34 @@ export default function QuotaHealthOverview({
       .filter((v) => v && Number.isFinite(Date.parse(v)))
       .sort((a, b) => Date.parse(a) - Date.parse(b))[0];
   return (
-    <div className="min-w-0 space-y-[14px]">
-      <HealthBanner accounts={display} />
-      <div className="min-w-0 rounded-xl border border-border bg-surface">
-        <OverviewHeader
-          id={id}
-          legendHidden={legendHidden}
-          toggleLegend={toggleLegend}
-          custom={custom}
-          reset={reset}
-          summaryFailed={summaryFailed}
-          t={t}
-          relative={relative}
-          oldest={oldest}
-        />
-        <OverviewGroups
-          groups={groups}
-          order={order}
-          providerLabels={providerLabels}
-          reorder={reorder}
-          now={now}
-          selected={selected}
-          preview={preview}
-          id={id}
-          t={t}
-          poolLabel={poolLabel}
-          label={label}
-          primary={primary}
-          all={all}
-          setSelected={setSelected}
-          setPreview={setPreview}
-        />
-      </div>
-      <OverviewDetails
-        currentPreview={currentPreview}
-        selectedAccount={selectedAccount}
-        previewAccount={previewAccount}
-        preview={preview}
-        id={id}
-        now={now}
-        label={label}
-        poolLabel={poolLabel}
-        renderCard={renderCard}
-        t={t}
-      />
-    </div>
+    <OverviewContent
+      display={display}
+      id={id}
+      legendHidden={legendHidden}
+      toggleLegend={toggleLegend}
+      custom={custom}
+      reset={reset}
+      summaryFailed={summaryFailed}
+      t={t}
+      relative={relative}
+      oldest={oldest}
+      groups={groups}
+      order={order}
+      providerLabels={providerLabels}
+      reorder={reorder}
+      now={now}
+      selected={selected}
+      preview={preview}
+      poolLabel={poolLabel}
+      label={label}
+      primary={primary}
+      all={all}
+      setSelected={setSelected}
+      setPreview={setPreview}
+      currentPreview={currentPreview}
+      selectedAccount={selectedAccount}
+      previewAccount={previewAccount}
+      renderCard={renderCard}
+    />
   );
 }

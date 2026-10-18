@@ -124,6 +124,13 @@ function useQuotaSummary(setNow: (value: number) => void) {
   }, [setNow]);
   return { availability, refreshQuota: useMemo(() => queueSummaryRefresh(readQuota), [readQuota]) };
 }
+function summaryIsFailed(snapshot: CooldownSnapshot, now: number) {
+  return (
+    snapshot.receivedAt === undefined ||
+    now - snapshot.receivedAt > SUMMARY_FRESHNESS_MS ||
+    now - parseRuntimeTimestamp(snapshot.observedAt) > SUMMARY_FRESHNESS_MS
+  );
+}
 function useCooldownObservations(
   connections: HealthConnection[],
   snapshot: CooldownSnapshot,
@@ -180,10 +187,7 @@ export function useAvailability(
   const [now, setNow] = useState(() => Date.now());
   const { snapshot, refreshCooldowns } = useCooldownSummary(setNow);
   const { availability, refreshQuota } = useQuotaSummary(setNow);
-  const summaryFailed =
-    snapshot.receivedAt === undefined ||
-    now - snapshot.receivedAt > SUMMARY_FRESHNESS_MS ||
-    now - parseRuntimeTimestamp(snapshot.observedAt) > SUMMARY_FRESHNESS_MS;
+  const summaryFailed = summaryIsFailed(snapshot, now);
   const cooldownObservations = useCooldownObservations(
     connections,
     snapshot,
