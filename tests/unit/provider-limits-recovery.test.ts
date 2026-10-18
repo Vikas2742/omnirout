@@ -853,9 +853,15 @@ test("#17043: old event, exhausted window, stale poll and terminal status cannot
   assert.ok((await providerLimits.maybeClearRecoveredQuotaState(base, {
     ...recovered, _stale: true,
   })).rateLimitedUntil);
-  assert.ok((await providerLimits.maybeClearRecoveredQuotaState({
-    ...base, testStatus: "banned",
-  }, recovered)).rateLimitedUntil);
+  for (const testStatus of ["banned", "expired", "deactivated", "credits_exhausted"]) {
+    assert.ok(
+      (await providerLimits.maybeClearRecoveredQuotaState(
+        { ...base, testStatus },
+        recovered
+      )).rateLimitedUntil,
+      `terminal status ${testStatus} must survive a positive weekly reset`
+    );
+  }
 });
 
 test("#17043: a weekly refill never clears an ordinary per-minute 429", async () => {
