@@ -8,12 +8,13 @@ import ConnectionTestButton from "@/shared/components/ConnectionTestButton";
 
 import { readCookieExpiresAt } from "@/shared/utils/webCookieExpiry";
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Button, Toggle } from "@/shared/components";
 import { pickDisplayValue } from "@/shared/utils/maskEmail";
 import useEmailPrivacyStore from "@/store/emailPrivacyStore";
 import { isClaudeExtraUsageBlockEnabled } from "@/lib/providers/claudeExtraUsage";
 import { shouldShowConnectionLastError } from "./connectionRowHelpers";
+import { readStoredVerificationUrl } from "@omniroute/open-sse/services/antigravityVerification.ts";
 import type { ConnectionRowProps } from "./connectionRowTypes";
 import { getStatusPresentation } from "./connectionRowStatus";
 import { getCodexEffectiveServiceTier } from "@/lib/providers/codexFastTier";
@@ -21,11 +22,13 @@ import { normalizeCodexLimitPolicy, providerText } from "../providerPageHelpers"
 import { getCodexPlanLabel } from "../codexPlanLabel";
 import CodexAccountDetails from "./CodexAccountDetails";
 import ConnectionQuotaPanel from "./ConnectionQuotaPanel";
+import ConnectionIdChip from "./ConnectionIdChip";
 import {
   isProviderQuotaVisible,
   supportsProviderQuota,
 } from "@/shared/utils/providerQuotaVisibility";
 import ProviderQuotaVisibilityToggle from "./ProviderQuotaVisibilityToggle";
+import CodexPingNowButton from "./CodexPingNowButton";
 
 // ---------------------------------------------------------------------------
 // Types (exported so the client can reference them without re-importing)
@@ -136,6 +139,7 @@ export default function ConnectionRow({
   onRefreshQuota,
 }: ConnectionRowProps) {
   const t = useTranslations("providers");
+  const locale = useLocale();
   const emailsVisible = useEmailPrivacyStore((s) => s.emailsVisible);
   const displayName = isOAuth
     ? pickDisplayValue(
@@ -156,6 +160,8 @@ export default function ConnectionRow({
   // #11497: cookie rows with a decodable JWT credential carry a persisted
   // cookieExpiresAt — feed it into the same countdown badge OAuth rows use.
   const cookieExpiresAt = readCookieExpiresAt(connection.providerSpecificData);
+  // Antigravity 403 VALIDATION_REQUIRED: Google link that unlocks the account (validated host).
+  const verificationUrl = readStoredVerificationUrl(connection.providerSpecificData);
   const effectiveExpiresAt = connection.tokenExpiresAt || connection.expiresAt || cookieExpiresAt;
   const hasExpirySource = isOAuth || Boolean(cookieExpiresAt);
   const getTokenMinsLeft = () => {
@@ -284,10 +290,37 @@ export default function ConnectionRow({
   const effectiveUpstreamProxyMode = upstreamProxyMode ?? "native";
   const autoSyncEnabled = !!(connection.providerSpecificData as Record<string, unknown> | undefined)
     ?.autoSync;
+  const [syncClock, setSyncClock] = useState<number | null>(null);
+  useEffect(() => {
+    const update = () => setSyncClock(Date.now());
+    update();
+    const timer = setInterval(update, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const lastSync = connection.syncedModelsAt ? Date.parse(connection.syncedModelsAt) : NaN;
+  const validSync = Number.isFinite(lastSync) && lastSync > 0;
+  const ageMinutes =
+    validSync && syncClock !== null
+      ? Math.max(0, Math.floor((syncClock - lastSync) / 60_000))
+      : null;
+  const ageUnit =
+    ageMinutes === null ? null : ageMinutes < 60 ? "minute" : ageMinutes < 1440 ? "hour" : "day";
+  const ageValue =
+    ageMinutes === null
+      ? 0
+      : ageUnit === "minute"
+        ? ageMinutes
+        : ageUnit === "hour"
+          ? Math.floor(ageMinutes / 60)
+          : Math.floor(ageMinutes / 1440);
+  const syncAgeLabel =
+    ageUnit === null
+      ? null
+      : new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-ageValue, ageUnit);
 
   return (
     <div
-      className={`group flex items-center justify-between p-3 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors ${connection.isActive === false ? "opacity-60" : ""}`}
+      className={`group flex ${isCodex ? "flex-col items-stretch gap-3" : "items-center justify-between"} p-3 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors ${connection.isActive === false ? "opacity-60" : ""}`}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {onToggleSelect && (
@@ -378,6 +411,7 @@ export default function ConnectionRow({
               </span>
             )}
             <span className="text-xs text-text-muted">#{connection.priority}</span>
+            <ConnectionIdChip connectionId={connection.id} />
             {connection.globalPriority && (
               <span className="text-xs text-text-muted">
                 {t("autoPriority", { priority: connection.globalPriority })}
@@ -430,6 +464,17 @@ export default function ConnectionRow({
                   <span className="material-symbols-outlined text-[13px]">sync</span>
                   {t("autoSyncShort")}
                 </button>
+                <span
+                  className="text-xs text-text-muted"
+                  title={
+                    validSync ? new Date(lastSync).toLocaleString(locale) : t("autoSyncNeverSynced")
+                  }
+                  data-testid="connection-last-model-sync"
+                >
+                  {validSync && syncAgeLabel
+                    ? t("autoSyncLastSynced", { time: syncAgeLabel })
+                    : t("autoSyncNeverSynced")}
+                </span>
               </>
             )}
             {isClaude && (
@@ -617,7 +662,10 @@ export default function ConnectionRow({
                 return (
                   <>
                     <span className="text-text-muted/30 select-none">|</span>
-                    <span
+                    <button
+                      type="button"
+                      onClick={onProxy}
+                      disabled={!onProxy}
                       className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${colorClass}`}
                       title={t("proxyConfiguredBySource", {
                         source: label,
@@ -626,14 +674,14 @@ export default function ConnectionRow({
                     >
                       <span className="material-symbols-outlined text-[13px]">vpn_lock</span>
                       {proxyName || proxyHost || t("proxy")}
-                    </span>
+                    </button>
                   </>
                 );
               })()}
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${isCodex ? "flex-wrap" : ""}`}>
         <ConnectionTestButton
           connectionId={connection.id}
           disabled={connection.isActive === false}
@@ -664,6 +712,12 @@ export default function ConnectionRow({
           >
             {t("tokenShort")}
           </Button>
+        )}
+        {isCodex && isOAuth && connection.provider === "codex" && (
+          <CodexPingNowButton
+            connectionId={connection.id}
+            disabled={connection.isActive === false}
+          />
         )}
         {isCodex && onApplyCodexAuthLocal && (
           <Button
@@ -736,6 +790,19 @@ export default function ConnectionRow({
             >
               <span className="material-symbols-outlined text-[18px]">passkey</span>
             </button>
+          )}
+          {verificationUrl && (
+            <a
+              href={verificationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 hover:bg-amber-500/10 rounded text-amber-600 hover:text-amber-500"
+              title={t("verifyAccountHint")}
+              aria-label={t("verifyAccount")}
+              data-testid="connection-verify-account"
+            >
+              <span className="material-symbols-outlined text-[18px]">verified_user</span>
+            </a>
           )}
           <button
             onClick={onEdit}
