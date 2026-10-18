@@ -36,6 +36,10 @@ export const NOAUTH_PROVIDERS = {
     authHint: "No credentials required — DuckDuckGo AI Chat is anonymous and free.",
     // #7286: tools[] is prompt-emulated via webTools.ts (parseToolCallsFromText).
     toolCalling: "emulated",
+    // Transport gate (read by emulatedNoAuthAllowlist.ts): with the browser pool
+    // enabled (OMNIROUTE_BROWSER_POOL / WEB_COOKIE_USE_BROWSER) a request runs
+    // through a local Playwright/Cloakbrowser page instead of the HTTP path.
+    browserBacked: true,
   },
   "cloudflare-playground": {
     id: "cloudflare-playground",
@@ -49,6 +53,9 @@ export const NOAUTH_PROVIDERS = {
     hasFree: true,
     serviceKinds: ["llm"],
     toolCalling: "emulated",
+    // Transport gate (read by emulatedNoAuthAllowlist.ts): every request opens
+    // the cf_agent WebSocket inside a local Playwright/Chromium page.
+    browserBacked: true,
     freeNote:
       "Free — Cloudflare's AI Playground: GLM 5.2, Kimi K2.7 Code, DeepSeek V4 Pro, gpt-oss-120B and 16 more. No account, no API key.",
     authHint:

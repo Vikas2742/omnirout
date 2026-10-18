@@ -1259,6 +1259,42 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "AUTO_COMBO_KEYLESS_TRANSPORT_GATE",
+    label: "Auto-Combo: Keyless Transport Gate",
+    description:
+      "Hold keyless (no-auth) providers whose transport needs a local browser (browserBacked) or a locally installed CLI (isLocalCli) out of the auto/* candidate pool, so a hung member cannot stall an auto request until the per-target timeout (#17036). Off by default: every no-auth provider with emulated tool calling stays in the pool exactly as before. Direct <alias>/<model> calls work either way.",
+    descriptionI18nKey: "featureFlagAutoComboKeylessTransportGateDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
+    key: "CODEBUDDY_CN_INLINE_REASONING",
+    label: "CodeBuddy CN: Inline Reasoning Replay",
+    description:
+      "For codebuddy-cn thinking models (the DeepSeek-V4 / Kimi-K2 families that need reasoning replay), inline each replayed assistant reasoning_content as a visible <thought> block at the front of the message content, so it survives a gateway that drops the reasoning_content field (#13632). Off by default: codebuddy-cn requests are sent unchanged; the reasoning_content field itself is always kept.",
+    descriptionI18nKey: "featureFlagCodebuddyCnInlineReasoningDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
+    key: "PROVIDER_SAFETY_STOPS_TERMINAL",
+    label: "Provider Safety Stops: Terminal",
+    description:
+      "Keep an explicit provider safety stop (misalignment_policy_violation, content_policy_violation, or the exact legacy 'blocked by our safety systems' rejection labelled provider_safety_rejection) as a terminal, request-scoped refusal: its code is preserved through HTTP, Responses, WebSocket and completed-stream errors, and a combo stops at it instead of retrying other targets, cancelling admitted siblings (#17049). Off by default: these errors keep their existing handling and combo routing is unchanged.",
+    descriptionI18nKey: "featureFlagProviderSafetyStopsTerminalDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
     key: "CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED",
     label: "Credential Health: Retest Auto-Disabled Connections",
     description:
