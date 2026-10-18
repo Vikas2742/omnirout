@@ -13,22 +13,31 @@ const core = await import("../../src/lib/db/core.ts");
 const providersDb = await import("../../src/lib/db/providers.ts");
 const settingsDb = await import("../../src/lib/db/settings.ts");
 const virtualFactory = await import("../../open-sse/services/autoCombo/virtualFactory.ts");
+const noAuthReadiness = await import("../../open-sse/services/autoCombo/noAuthReadiness.ts");
+
+// devin-cli-agentic is admitted to auto/* only once its app-layer readiness probe
+// (`devin auth status`, registered at boot) confirms the login — #15446, covered in
+// noauth-autocombo-allowlist.test.ts. Stub that probe as "logged in" here so this file
+// keeps asserting the full emulated-tool-calling membership, Devin included.
+noAuthReadiness.registerNoAuthReadiness("devin-cli-agentic", () => true);
 
 type VirtualComboResult = Awaited<ReturnType<typeof virtualFactory.createVirtualAutoCombo>>;
 
 // No-auth pool membership, mirrored from tests/unit/noauth-autocombo-allowlist.test.ts
-// (the dedicated guard). Kept explicit here on purpose: a NOAUTH_PROVIDERS entry
-// whose transport gate changes must show up as a deliberate, reviewed diff in both files.
-const ALLOWED_NOAUTH_PROVIDERS = ["uncloseai"];
+// (the dedicated guard). Kept explicit here on purpose: adding `toolCalling: "emulated"`
+// to a NOAUTH_PROVIDERS entry must show up as a deliberate, reviewed diff in both files.
+const ALLOWED_NOAUTH_PROVIDERS = [
+  "cloudflare-playground",
+  "devin-cli-agentic",
+  "duckduckgo-web",
+  "uncloseai",
+];
 const EXCLUDED_NOAUTH_PROVIDERS = [
   "aihorde",
   "auggie",
   "codex-app-server",
   "veoaifree-web",
   "zcode",
-  "cloudflare-playground",
-  "devin-cli-agentic",
-  "duckduckgo-web",
 ];
 
 async function resetStorage() {
@@ -279,12 +288,12 @@ test("createVirtualAutoCombo includes clean-room ChatGPT Web and excludes its le
 
 test("createVirtualAutoCombo restricts the no-auth pool to the emulated-tool-calling providers", async () => {
   // Policy: the no-auth (keyless) auto-combo pool is built from the NOAUTH_PROVIDERS
-  // entries that opted into prompt-emulated tool calling (`toolCalling: "emulated"`)
-  // AND whose transport can serve keylessly (no browser-backed page, no local CLI),
+  // entries that opted into prompt-emulated tool calling (`toolCalling: "emulated"`),
   // discovered at startup by
   // open-sse/services/autoCombo/emulatedNoAuthAllowlist.ts::getEmulatedToolCallingNoAuthProviders().
-  // The admitted set is opencode and uncloseai. The others stay usable via direct
-  // `<alias>/<model>` calls but must NOT be auto-routed to.
+  // The admitted set is cloudflare-playground, devin-cli-agentic, duckduckgo-web,
+  // opencode, and uncloseai — duckduckgo-web is included, not excluded. The others
+  // stay usable via direct `<alias>/<model>` calls but must NOT be auto-routed to.
   // Dedicated guard: tests/unit/noauth-autocombo-allowlist.test.ts.
   // contract changed by #15979 (on top of #15839): `excludeTosAvoid` is ON by default and
   // uncataloged models now inherit the provider's curated `tos: "avoid"` verdict, so every
