@@ -10261,6 +10261,7 @@
     "healthAvailable": "Tillgänglig",
     "healthRestricted": "Delvis begränsad",
     "healthUnavailable": "Ej tillgänglig",
+    "healthPeakHourProtection": "Skydd under högtrafik",
     "healthCooldown": "Väntetid",
     "healthQuotaExhausted": "Kvoten är förbrukad",
     "healthOverview": "Översikt",

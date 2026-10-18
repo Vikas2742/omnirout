@@ -10261,6 +10261,7 @@
     "healthAvailable": "Saatavilla",
     "healthRestricted": "Osittain rajoitettu",
     "healthUnavailable": "Ei saatavilla",
+    "healthPeakHourProtection": "Ruuhka-ajan suojaus",
     "healthCooldown": "Odotusaika",
     "healthQuotaExhausted": "Kiintiö käytetty loppuun",
     "healthOverview": "Yleiskatsaus",

@@ -10261,6 +10261,7 @@
     "healthAvailable": "Dostupné",
     "healthRestricted": "Čiastočne obmedzené",
     "healthUnavailable": "nedostupné",
+    "healthPeakHourProtection": "Ochrana počas špičky",
     "healthCooldown": "Obdobie čakania",
     "healthQuotaExhausted": "Kvóta vyčerpaná",
     "healthOverview": "Prehľad",

@@ -10261,6 +10261,7 @@
     "healthAvailable": "Հասանելի է",
     "healthRestricted": "Մասամբ սահմանափակ",
     "healthUnavailable": "Անհասանելի",
+    "healthPeakHourProtection": "Պիկ ժամերի պաշտպանություն",
     "healthCooldown": "Սպասման ժամանակ",
     "healthQuotaExhausted": "Քվոտան սպառված է",
     "healthOverview": "Ընդհանուր տեսք",

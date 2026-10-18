@@ -10261,6 +10261,7 @@
     "healthAvailable": "Elérhető",
     "healthRestricted": "Részben korlátozott",
     "healthUnavailable": "Nem elérhető",
+    "healthPeakHourProtection": "Csúcsidős védelem",
     "healthCooldown": "Várakozási idő",
     "healthQuotaExhausted": "A kvóta kimerült",
     "healthOverview": "Áttekintés",

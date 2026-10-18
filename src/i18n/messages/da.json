@@ -10261,6 +10261,7 @@
     "healthAvailable": "Tilgængelig",
     "healthRestricted": "Delvist begrænset",
     "healthUnavailable": "Ikke tilgængelig",
+    "healthPeakHourProtection": "Beskyttelse i spidsbelastningstiden",
     "healthCooldown": "Ventetid",
     "healthQuotaExhausted": "Kvoten er opbrugt",
     "healthOverview": "Oversigt",

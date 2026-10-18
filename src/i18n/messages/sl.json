@@ -10261,6 +10261,7 @@
     "healthAvailable": "Na voljo",
     "healthRestricted": "Delno omejeno",
     "healthUnavailable": "Ni na voljo",
+    "healthPeakHourProtection": "Zaščita v času največje obremenitve",
     "healthCooldown": "Čakalna doba",
     "healthQuotaExhausted": "Kvota je izčrpana",
     "healthOverview": "Pregled",

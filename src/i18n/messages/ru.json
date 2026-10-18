@@ -10261,6 +10261,7 @@
     "healthAvailable": "Доступно",
     "healthRestricted": "Частично ограничено",
     "healthUnavailable": "Недоступно",
+    "healthPeakHourProtection": "Защита в часы пик",
     "healthCooldown": "Период ожидания",
     "healthQuotaExhausted": "Квота исчерпана",
     "healthOverview": "Обзор",

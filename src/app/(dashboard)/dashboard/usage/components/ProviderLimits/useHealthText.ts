@@ -25,6 +25,10 @@ export function useHealthText() {
         return t("healthLegendAction");
       case "cooldown":
         return t("healthCooldown");
+      case "scopeCooldown":
+        return `${t("healthCooldown")} · ${r.scopeId || window} · ${relative(r.resetAt)}`;
+      case "peakHour":
+        return `${t("healthPeakHourProtection")} · ${relative(r.resetAt)}`;
       case "quota":
         return `${t(r.percent === 0 ? "healthQuotaExhausted" : "quotaCutoffsColumnHelp")} · ${window} · ${format.number(r.percent! / 100, { style: "percent", maximumFractionDigits: 1 })} ≤ ${format.number(r.cutoff! / 100, { style: "percent", maximumFractionDigits: 1 })}`;
       case "quotaBypass":
@@ -63,8 +67,8 @@ export function useHealthText() {
     const r = account.reasons.find((r) =>
       ({
         paused: ["paused"],
-        critical: ["terminal", "cooldown", "quota"],
-        alert: ["quota", "lockout"],
+        critical: ["terminal", "cooldown", "scopeCooldown", "peakHour", "quota"],
+        alert: ["quota", "lockout", "scopeCooldown", "peakHour"],
         empty: ["quotaError", "noQuota", "noRuntime"],
         ok: ["previousFailure", "awaitingSync"],
       })[account.status].includes(r.type)

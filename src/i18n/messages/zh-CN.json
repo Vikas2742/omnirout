@@ -10261,6 +10261,7 @@
     "healthAvailable": "可用",
     "healthRestricted": "部分受限",
     "healthUnavailable": "不可用",
+    "healthPeakHourProtection": "高峰时段保护",
     "healthCooldown": "冷却中",
     "healthQuotaExhausted": "配额已用尽",
     "healthOverview": "健康总览",

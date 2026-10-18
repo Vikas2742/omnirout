@@ -10261,6 +10261,7 @@
     "healthAvailable": "ലഭ്യമാണ്",
     "healthRestricted": "ഭാഗികമായി നിയന്ത്രിതം",
     "healthUnavailable": "ലഭ്യമല്ല",
+    "healthPeakHourProtection": "തിരക്കേറിയ സമയത്തെ സംരക്ഷണം",
     "healthCooldown": "കാത്തിരിപ്പ് സമയം",
     "healthQuotaExhausted": "ക്വോട്ട തീർന്നു",
     "healthOverview": "അവലോകനം",

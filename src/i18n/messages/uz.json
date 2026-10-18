@@ -10261,6 +10261,7 @@
     "healthAvailable": "Mavjud",
     "healthRestricted": "Qisman cheklangan",
     "healthUnavailable": "Mavjud emas",
+    "healthPeakHourProtection": "Tig‘iz soatlardagi himoya",
     "healthCooldown": "Kutish davri",
     "healthQuotaExhausted": "Kvota tugagan",
     "healthOverview": "Umumiy ko‘rinish",

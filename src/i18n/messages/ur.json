@@ -10261,6 +10261,7 @@
     "healthAvailable": "دستیاب",
     "healthRestricted": "جزوی طور پر محدود",
     "healthUnavailable": "غیر دستیاب",
+    "healthPeakHourProtection": "مصروف اوقات کا تحفظ",
     "healthCooldown": "انتظار کی مدت",
     "healthQuotaExhausted": "کوٹا ختم ہو گیا",
     "healthOverview": "جائزہ",

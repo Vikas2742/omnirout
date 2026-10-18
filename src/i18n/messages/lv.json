@@ -10261,6 +10261,7 @@
     "healthAvailable": "Pieejams",
     "healthRestricted": "Daļēji ierobežots",
     "healthUnavailable": "Nepieejams",
+    "healthPeakHourProtection": "Pīķa stundu aizsardzība",
     "healthCooldown": "Nogaidīšanas periods",
     "healthQuotaExhausted": "Kvota izsmelta",
     "healthOverview": "Pārskats",

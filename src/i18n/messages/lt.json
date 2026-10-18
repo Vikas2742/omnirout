@@ -10261,6 +10261,7 @@
     "healthAvailable": "Prieinama",
     "healthRestricted": "Iš dalies apribota",
     "healthUnavailable": "Nepasiekiamas",
+    "healthPeakHourProtection": "Piko valandų apsauga",
     "healthCooldown": "Laukimo laikotarpis",
     "healthQuotaExhausted": "Kvota išnaudota",
     "healthOverview": "Apžvalga",

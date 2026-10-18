@@ -10261,6 +10261,7 @@
     "healthAvailable": "ხელმისაწვდომია",
     "healthRestricted": "ნაწილობრივ შეზღუდული",
     "healthUnavailable": "მიუწვდომელია",
+    "healthPeakHourProtection": "პიკის საათების დაცვა",
     "healthCooldown": "ლოდინის პერიოდი",
     "healthQuotaExhausted": "კვოტა ამოწურულია",
     "healthOverview": "მიმოხილვა",

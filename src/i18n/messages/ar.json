@@ -10261,6 +10261,7 @@
     "healthAvailable": "متاح",
     "healthRestricted": "مقيد جزئيًا",
     "healthUnavailable": "غير متاح",
+    "healthPeakHourProtection": "الحماية في ساعات الذروة",
     "healthCooldown": "فترة الانتظار",
     "healthQuotaExhausted": "نفدت الحصة",
     "healthOverview": "نظرة عامة",

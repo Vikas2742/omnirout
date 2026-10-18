@@ -10261,6 +10261,7 @@
     "healthAvailable": "Khả dụng",
     "healthRestricted": "Bị hạn chế một phần",
     "healthUnavailable": "Không khả dụng",
+    "healthPeakHourProtection": "Bảo vệ giờ cao điểm",
     "healthCooldown": "Thời gian chờ",
     "healthQuotaExhausted": "Đã hết hạn mức",
     "healthOverview": "Tổng quan",

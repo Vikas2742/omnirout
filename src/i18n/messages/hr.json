@@ -10261,6 +10261,7 @@
     "healthAvailable": "Dostupno",
     "healthRestricted": "Djelomično ograničeno",
     "healthUnavailable": "Nedostupno",
+    "healthPeakHourProtection": "Zaštita tijekom vršnog opterećenja",
     "healthCooldown": "Razdoblje čekanja",
     "healthQuotaExhausted": "Kvota iscrpljena",
     "healthOverview": "Pregled",

@@ -31,6 +31,7 @@ import {
 } from "@omniroute/open-sse/config/codexQuotaScopes.ts";
 import { formatQuotaWindowLabel } from "@omniroute/open-sse/services/quotaWindowLabel.ts";
 import { availabilityScopes } from "./availabilityScopes";
+import { appendSavedRouterScopes, savedRouterBlockers } from "./availabilityRouterFilters";
 import { combineQuotaAlternatives } from "./availabilityAlternatives";
 import { cutoffBlockingWindows, exhaustedBlockingWindows } from "./availabilityWindows";
 import { canEvaluateCachedCutoff, convertCachedUsageToQuotaInfo } from "./cachedQuotaConversion";
@@ -160,7 +161,8 @@ export function evaluateCachedQuotaAvailability(
             { provider, requestedModel, providerSpecificData, connectionId: id }
           )
         : { proceed: true };
-    const blockers: QuotaAvailabilityWindow[] = [];
+    const routerBlockers = savedRouterBlockers(connection, requestedModel);
+    const blockers: QuotaAvailabilityWindow[] = [...routerBlockers];
     if (limitPolicy.blocked) {
       const local = resolveQuotaLimitPolicy(provider, providerSpecificData);
       for (const key of local.windows) {
@@ -203,11 +205,12 @@ export function evaluateCachedQuotaAvailability(
       for (const q of exhaustedBlockingWindows(id, provider, requestedModel, providerSpecificData))
         if (!blockers.some((b) => b.name === q.name))
           blockers.push(blockingWindow(q.name, q.resetAt, usage, q.remainingPercentage, 0));
-      if (!blockers.length)
+      if (!blockers.some((blocker) => !blocker.reason))
         blockers.push(blockingWindow("quota", cached?.nextResetAt ?? null, usage));
     }
     const observed = timestamp(usage.fetchedAt) || timestamp(cached?.fetchedAt);
-    const blocked = limitPolicy.blocked || exhausted || !cutoff.proceed;
+    const blocked =
+      routerBlockers.length > 0 || limitPolicy.blocked || exhausted || !cutoff.proceed;
     return {
       usable: blocked ? false : observed ? true : null,
       blockers,
@@ -246,7 +249,10 @@ export function buildConnectionQuotaAvailability(
         : {})
     );
   });
-  const evaluated = availabilityScopes(connection.provider, cachedUsage).map((scope) => ({
+  const evaluated = appendSavedRouterScopes(
+    connection,
+    availabilityScopes(connection.provider, cachedUsage)
+  ).map((scope) => ({
     ...scope,
     // Routing has no request-specific selector for this display-only window.
     decision:

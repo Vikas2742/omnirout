@@ -10261,6 +10261,7 @@
     "healthAvailable": "利用可能",
     "healthRestricted": "一部制限あり",
     "healthUnavailable": "利用不可",
+    "healthPeakHourProtection": "ピーク時間帯の保護",
     "healthCooldown": "待機期間",
     "healthQuotaExhausted": "クォータを使い切りました",
     "healthOverview": "概要",

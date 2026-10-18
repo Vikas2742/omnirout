@@ -10261,6 +10261,7 @@
     "healthAvailable": "Saadaval",
     "healthRestricted": "Osaliselt piiratud",
     "healthUnavailable": "Pole saadaval",
+    "healthPeakHourProtection": "Tipptunni kaitse",
     "healthCooldown": "Ooteaeg",
     "healthQuotaExhausted": "Kvoot on ammendatud",
     "healthOverview": "Ülevaade",

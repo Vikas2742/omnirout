@@ -10261,6 +10261,7 @@
     "healthAvailable": "கிடைக்கிறது",
     "healthRestricted": "பகுதியளவு கட்டுப்படுத்தப்பட்டது",
     "healthUnavailable": "கிடைக்கவில்லை",
+    "healthPeakHourProtection": "உச்ச நேரப் பாதுகாப்பு",
     "healthCooldown": "காத்திருப்பு காலம்",
     "healthQuotaExhausted": "ஒதுக்கீடு தீர்ந்தது",
     "healthOverview": "கண்ணோட்டம்",

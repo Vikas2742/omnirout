@@ -10261,6 +10261,7 @@
     "healthAvailable": "사용 가능",
     "healthRestricted": "일부 제한됨",
     "healthUnavailable": "이용 불가",
+    "healthPeakHourProtection": "혼잡 시간대 보호",
     "healthCooldown": "대기 시간",
     "healthQuotaExhausted": "할당량 소진",
     "healthOverview": "개요",

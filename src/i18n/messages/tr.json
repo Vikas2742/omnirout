@@ -10261,6 +10261,7 @@
     "healthAvailable": "Mevcut",
     "healthRestricted": "Kısmen kısıtlı",
     "healthUnavailable": "Kullanılamıyor",
+    "healthPeakHourProtection": "Yoğun saat koruması",
     "healthCooldown": "Bekleme süresi",
     "healthQuotaExhausted": "Kota tükendi",
     "healthOverview": "Genel bakış",

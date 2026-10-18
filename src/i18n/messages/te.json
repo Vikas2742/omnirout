@@ -10261,6 +10261,7 @@
     "healthAvailable": "అందుబాటులో ఉంది",
     "healthRestricted": "పాక్షికంగా పరిమితం చేయబడింది",
     "healthUnavailable": "అందుబాటులో లేదు",
+    "healthPeakHourProtection": "రద్దీ సమయ రక్షణ",
     "healthCooldown": "వేచి ఉండే సమయం",
     "healthQuotaExhausted": "కోటా అయిపోయింది",
     "healthOverview": "అవలోకనం",

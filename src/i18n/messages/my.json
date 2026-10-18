@@ -10261,6 +10261,7 @@
     "healthAvailable": "ရရှိနိုင်သည်",
     "healthRestricted": "တစ်စိတ်တစ်ပိုင်း ကန့်သတ်ထားသည်",
     "healthUnavailable": "အသုံးမပြုနိုင်ပါ",
+    "healthPeakHourProtection": "အလုပ်အများဆုံးအချိန် ကာကွယ်မှု",
     "healthCooldown": "စောင့်ဆိုင်းချိန်",
     "healthQuotaExhausted": "ခွဲတမ်း ကုန်ဆုံးသွားပြီ",
     "healthOverview": "ခြုံငုံသုံးသပ်ချက်",

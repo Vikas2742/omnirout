@@ -10261,6 +10261,7 @@
     "healthAvailable": "មាន",
     "healthRestricted": "មានកម្រិតមួយផ្នែក",
     "healthUnavailable": "មិនអាចប្រើបាន",
+    "healthPeakHourProtection": "ការការពារក្នុងម៉ោងមមាញឹក",
     "healthCooldown": "រយៈពេលរង់ចាំ",
     "healthQuotaExhausted": "កូតាត្រូវបានប្រើអស់",
     "healthOverview": "ទិដ្ឋភាពទូទៅ",

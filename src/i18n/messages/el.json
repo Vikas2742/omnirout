@@ -10261,6 +10261,7 @@
     "healthAvailable": "Διαθέσιμο",
     "healthRestricted": "Μερικώς περιορισμένο",
     "healthUnavailable": "Μη διαθέσιμο",
+    "healthPeakHourProtection": "Προστασία ωρών αιχμής",
     "healthCooldown": "Περίοδος αναμονής",
     "healthQuotaExhausted": "Η ποσόστωση εξαντλήθηκε",
     "healthOverview": "Επισκόπηση",

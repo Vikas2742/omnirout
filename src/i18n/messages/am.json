@@ -10261,6 +10261,7 @@
     "healthAvailable": "ይገኛል",
     "healthRestricted": "በከፊል የተገደበ",
     "healthUnavailable": "አይገኝም",
+    "healthPeakHourProtection": "በከፍተኛ ፍላጎት ሰዓት ጥበቃ",
     "healthCooldown": "የጥበቃ ጊዜ",
     "healthQuotaExhausted": "ኮታው አልቋል",
     "healthOverview": "አጠቃላይ እይታ",

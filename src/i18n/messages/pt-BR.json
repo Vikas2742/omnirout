@@ -10261,6 +10261,7 @@
     "healthAvailable": "Disponível",
     "healthRestricted": "Parcialmente restrita",
     "healthUnavailable": "Indisponível",
+    "healthPeakHourProtection": "Proteção em horários de pico",
     "healthCooldown": "Tempo de espera",
     "healthQuotaExhausted": "Cota esgotada",
     "healthOverview": "Visão geral",

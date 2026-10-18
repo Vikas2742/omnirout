@@ -10261,6 +10261,7 @@
     "healthAvailable": "ලබා ගත හැකිය",
     "healthRestricted": "අර්ධ වශයෙන් සීමා කර ඇත",
     "healthUnavailable": "ලබාගත නොහැකියි",
+    "healthPeakHourProtection": "අධික භාවිත වේලාවේ ආරක්ෂාව",
     "healthCooldown": "රැඳී සිටීමේ කාලය",
     "healthQuotaExhausted": "කෝටාව අවසන් වී ඇත",
     "healthOverview": "දළ විශ්ලේෂණය",

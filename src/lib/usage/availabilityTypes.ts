@@ -6,6 +6,7 @@ export interface QuotaAvailabilityWindow {
   kind: "fiveHour" | "overall";
   remainingPercent?: number;
   cutoffPercent?: number;
+  reason?: "scopeCooldown" | "peakHour" | "modelLockout";
 }
 export interface QuotaAvailabilityDecision {
   /** null means that there is no cached observation, not a guessed healthy account. */

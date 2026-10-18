@@ -10261,6 +10261,7 @@
     "healthAvailable": "Disponibbli",
     "healthRestricted": "Parzjalment ristrett",
     "healthUnavailable": "Mhux Disponibbli",
+    "healthPeakHourProtection": "Protezzjoni fil-ħinijiet tal-quċċata",
     "healthCooldown": "Perjodu ta’ stennija",
     "healthQuotaExhausted": "Il-kwota ntużat kollha",
     "healthOverview": "Ħarsa ġenerali",

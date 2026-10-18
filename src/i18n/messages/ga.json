@@ -10261,6 +10261,7 @@
     "healthAvailable": "Ar Fáil",
     "healthRestricted": "Srianta go páirteach",
     "healthUnavailable": "Níl ar fáil",
+    "healthPeakHourProtection": "Cosaint le linn buaicuaireanta",
     "healthCooldown": "Tréimhse feithimh",
     "healthQuotaExhausted": "Cuóta ídithe",
     "healthOverview": "Forbhreathnú",

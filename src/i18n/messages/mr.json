@@ -10261,6 +10261,7 @@
     "healthAvailable": "उपलब्ध",
     "healthRestricted": "अंशतः मर्यादित",
     "healthUnavailable": "अनुपलब्ध",
+    "healthPeakHourProtection": "गर्दीच्या वेळेतील संरक्षण",
     "healthCooldown": "प्रतीक्षा कालावधी",
     "healthQuotaExhausted": "कोटा संपला",
     "healthOverview": "आढावा",

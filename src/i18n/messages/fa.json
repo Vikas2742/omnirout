@@ -10261,6 +10261,7 @@
     "healthAvailable": "در دسترس",
     "healthRestricted": "تا حدی محدود",
     "healthUnavailable": "در دسترس نیست",
+    "healthPeakHourProtection": "محافظت در ساعات اوج مصرف",
     "healthCooldown": "زمان انتظار",
     "healthQuotaExhausted": "سهمیه تمام شده است",
     "healthOverview": "نمای کلی",

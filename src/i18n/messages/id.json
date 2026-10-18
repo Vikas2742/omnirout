@@ -10261,6 +10261,7 @@
     "healthAvailable": "Tersedia",
     "healthRestricted": "Dibatasi sebagian",
     "healthUnavailable": "Tidak tersedia",
+    "healthPeakHourProtection": "Perlindungan jam sibuk",
     "healthCooldown": "Waktu tunggu",
     "healthQuotaExhausted": "Kuota habis",
     "healthOverview": "Ringkasan",

@@ -10261,6 +10261,7 @@
     "healthAvailable": "Magagamit",
     "healthRestricted": "Bahagyang limitado",
     "healthUnavailable": "Hindi magagamit",
+    "healthPeakHourProtection": "Proteksiyon sa oras ng matinding paggamit",
     "healthCooldown": "Panahon ng paghihintay",
     "healthQuotaExhausted": "Ubos na ang quota",
     "healthOverview": "Pangkalahatang-ideya",

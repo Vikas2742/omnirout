@@ -10261,6 +10261,7 @@
     "healthAvailable": "זמין",
     "healthRestricted": "מוגבל חלקית",
     "healthUnavailable": "לא זמין",
+    "healthPeakHourProtection": "הגנה בשעות עומס",
     "healthCooldown": "זמן המתנה",
     "healthQuotaExhausted": "המכסה נוצלה",
     "healthOverview": "סקירה כללית",

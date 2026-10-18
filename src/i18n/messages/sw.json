@@ -10261,6 +10261,7 @@
     "healthAvailable": "Inapatikana",
     "healthRestricted": "Imezuiliwa kwa sehemu",
     "healthUnavailable": "Haipatikani",
+    "healthPeakHourProtection": "Ulinzi wakati wa matumizi mengi",
     "healthCooldown": "Muda wa kusubiri",
     "healthQuotaExhausted": "Mgao umeisha",
     "healthOverview": "Muhtasari",

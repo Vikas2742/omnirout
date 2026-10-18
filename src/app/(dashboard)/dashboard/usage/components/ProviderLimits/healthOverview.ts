@@ -99,6 +99,8 @@ export interface HealthReason {
     | "paused"
     | "terminal"
     | "cooldown"
+    | "scopeCooldown"
+    | "peakHour"
     | "quota"
     | "quotaBypass"
     | "cutoffNotEvaluated"
@@ -236,7 +238,7 @@ export function buildHealthAccount(
     if (decision.usable === false)
       for (const blocker of decision.blockers)
         blocked.push({
-          type: "quota",
+          type: blocker.reason === "modelLockout" ? "lockout" : blocker.reason || "quota",
           scope,
           scopeId,
           window: blocker.name,

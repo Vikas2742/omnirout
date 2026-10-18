@@ -10261,6 +10261,7 @@
     "healthAvailable": "พร้อมใช้งาน",
     "healthRestricted": "ถูกจำกัดบางส่วน",
     "healthUnavailable": "ไม่พร้อมใช้งาน",
+    "healthPeakHourProtection": "การป้องกันช่วงใช้งานสูงสุด",
     "healthCooldown": "ระยะเวลารอ",
     "healthQuotaExhausted": "โควตาหมดแล้ว",
     "healthOverview": "ภาพรวม",

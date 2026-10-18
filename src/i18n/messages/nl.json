@@ -10261,6 +10261,7 @@
     "healthAvailable": "Beschikbaar",
     "healthRestricted": "Gedeeltelijk beperkt",
     "healthUnavailable": "Niet beschikbaar",
+    "healthPeakHourProtection": "Bescherming tijdens piekuren",
     "healthCooldown": "Wachttijd",
     "healthQuotaExhausted": "Quota opgebruikt",
     "healthOverview": "Overzicht",

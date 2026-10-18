@@ -10261,6 +10261,7 @@
     "healthAvailable": "Əlçatandır",
     "healthRestricted": "Qismən məhdud",
     "healthUnavailable": "Əlçatan deyil",
+    "healthPeakHourProtection": "Pik saatlarda qorunma",
     "healthCooldown": "Gözləmə müddəti",
     "healthQuotaExhausted": "Kvota tükənib",
     "healthOverview": "İcmal",
