@@ -46,6 +46,7 @@ const CATALOG_RELEVANT_FEATURE_FLAGS = new Set([
   "OMNIROUTE_DISABLE_THINKING_LEVEL_VARIANTS",
   // #16929: hides models with no runnable endpoint adapter from /v1/models.
   "MODEL_ENDPOINT_CAPABILITY_GATE_ENABLED",
+  "MODELS_DEV_EFFORT_TIERS_ENABLED",
 ]);
 
 /**
