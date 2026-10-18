@@ -10290,6 +10290,8 @@
     "healthIncluded": "含 {count, number} 個部分受限",
     "healthBannerUnavailable": "{count, number} 個帳號暫時無法使用",
     "healthBannerAvailable": "全部 {count, number} 個帳號可用",
+    "healthLegendHide": "隱藏圖例",
+    "healthLegendShow": "顯示圖例",
     "healthLegendOk": "實心 = 剩餘額度，半透明 = 已用額度",
     "healthLegendCooldown": "{window}額度已用完；實心 = 已等待時間，半透明 = 剩餘等待時間",
     "healthLegendAction": "授權失效或帳號遭封鎖，等待無法恢復",

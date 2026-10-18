@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Dont # compte partiellement restreint} many {Dont # comptes partiellement restreints} other {Dont # comptes partiellement restreints}}",
     "healthBannerUnavailable": "{count, plural, one {# compte temporairement indisponible} many {# comptes temporairement indisponibles} other {# comptes temporairement indisponibles}}",
     "healthBannerAvailable": "{count, plural, one {# compte disponible} many {Les # comptes sont disponibles} other {Les # comptes sont disponibles}}",
+    "healthLegendHide": "Masquer la légende",
+    "healthLegendShow": "Afficher la légende",
     "healthLegendOk": "Plein = quota restant ; translucide = quota consommé.",
     "healthLegendCooldown": "Quota {window} épuisé. Plein = attente écoulée ; translucide = attente restante.",
     "healthLegendAction": "Autorisation expirée ou compte banni ; attendre ne suffit pas.",

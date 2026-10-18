@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {আংশিক সীমিত #টি অ্যাকাউন্ট অন্তর্ভুক্ত} other {আংশিক সীমিত #টি অ্যাকাউন্ট অন্তর্ভুক্ত}}",
     "healthBannerUnavailable": "{count, plural, one {#টি অ্যাকাউন্ট সাময়িকভাবে অনুপলব্ধ} other {#টি অ্যাকাউন্ট সাময়িকভাবে অনুপলব্ধ}}",
     "healthBannerAvailable": "{count, plural, one {#টি অ্যাকাউন্ট উপলভ্য} other {সব #টি অ্যাকাউন্ট উপলভ্য}}",
+    "healthLegendHide": "চিহ্নের ব্যাখ্যা লুকান",
+    "healthLegendShow": "চিহ্নের ব্যাখ্যা দেখান",
     "healthLegendOk": "গাঢ় = অবশিষ্ট কোটা; আধা স্বচ্ছ = ব্যবহৃত।",
     "healthLegendCooldown": "{window} কোটা শেষ। গাঢ় = অতিবাহিত অপেক্ষা; আধা স্বচ্ছ = বাকি অপেক্ষা।",
     "healthLegendAction": "অনুমোদনের মেয়াদ শেষ বা অ্যাকাউন্ট নিষিদ্ধ; অপেক্ষায় ঠিক হবে না।",

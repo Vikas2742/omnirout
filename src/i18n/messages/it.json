@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Include # account parzialmente limitato} many {Include # account parzialmente limitati} other {Include # account parzialmente limitati}}",
     "healthBannerUnavailable": "{count, plural, one {# account temporaneamente non disponibile} many {# account temporaneamente non disponibili} other {# account temporaneamente non disponibili}}",
     "healthBannerAvailable": "{count, plural, one {# account disponibile} many {Tutti i # account disponibili} other {Tutti i # account disponibili}}",
+    "healthLegendHide": "Nascondi legenda",
+    "healthLegendShow": "Mostra legenda",
     "healthLegendOk": "Pieno = quota restante; traslucido = quota consumata.",
     "healthLegendCooldown": "Quota di {window} esaurita. Pieno = attesa trascorsa; traslucido = attesa restante.",
     "healthLegendAction": "Autorizzazione scaduta o account bloccato; attendere non basta.",

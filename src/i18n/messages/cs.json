@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Z toho # částečně omezený účet} few {Z toho # částečně omezené účty} many {Z toho # částečně omezeného účtu} other {Z toho # částečně omezených účtů}}",
     "healthBannerUnavailable": "{count, plural, one {# účet je dočasně nedostupný} few {# účty jsou dočasně nedostupné} many {# dočasně nedostupného účtu} other {# účtů je dočasně nedostupných}}",
     "healthBannerAvailable": "{count, plural, one {# účet je dostupný} few {Všechny # účty jsou dostupné} many {# dostupného účtu} other {Všech # účtů je dostupných}}",
+    "healthLegendHide": "Skrýt legendu",
+    "healthLegendShow": "Zobrazit legendu",
     "healthLegendOk": "Plná část = zbývající kvóta; průsvitná = spotřebovaná.",
     "healthLegendCooldown": "Kvóta pro {window} vyčerpána. Plná část = uplynulé čekání; průsvitná = zbývající čekání.",
     "healthLegendAction": "Oprávnění vypršelo nebo byl účet zablokován; čekání nepomůže.",

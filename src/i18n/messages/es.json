@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Incluye # cuenta con restricciones parciales} many {Incluye # cuentas con restricciones parciales} other {Incluye # cuentas con restricciones parciales}}",
     "healthBannerUnavailable": "{count, plural, one {# cuenta temporalmente no disponible} many {# cuentas temporalmente no disponibles} other {# cuentas temporalmente no disponibles}}",
     "healthBannerAvailable": "{count, plural, one {# cuenta disponible} many {Las # cuentas están disponibles} other {Las # cuentas están disponibles}}",
+    "healthLegendHide": "Ocultar leyenda",
+    "healthLegendShow": "Mostrar leyenda",
     "healthLegendOk": "Opaco = cuota restante; translúcido = cuota consumida.",
     "healthLegendCooldown": "Cuota de {window} agotada. Opaco = espera transcurrida; translúcido = espera restante.",
     "healthLegendAction": "Autorización caducada o cuenta bloqueada; esperar no lo resuelve.",

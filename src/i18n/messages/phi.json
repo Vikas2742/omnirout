@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Kasama ang # account na bahagyang nililimitahan} other {Kasama ang # mga account na bahagyang nililimitahan}}",
     "healthBannerUnavailable": "{count, plural, one {Pansamantalang hindi magamit ang # account} other {Pansamantalang hindi magamit ang # mga account}}",
     "healthBannerAvailable": "{count, plural, one {Magagamit ang # account} other {Magagamit ang lahat ng # account}}",
+    "healthLegendHide": "Itago ang paliwanag ng mga simbolo",
+    "healthLegendShow": "Ipakita ang paliwanag ng mga simbolo",
     "healthLegendOk": "Buo = natitirang quota; bahagyang malinaw = nagamit.",
     "healthLegendCooldown": "Ubos ang quota sa {window}. Buo = lumipas na paghihintay; bahagyang malinaw = natitirang paghihintay.",
     "healthLegendAction": "Paso na ang pahintulot o ipinagbawal ang account; hindi maaayos sa paghihintay.",

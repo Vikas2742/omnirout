@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Qisman cheklangan # hisobni o‘z ichiga oladi} other {Qisman cheklangan # hisobni o‘z ichiga oladi}}",
     "healthBannerUnavailable": "{count, plural, one {# hisob vaqtincha mavjud emas} other {# hisob vaqtincha mavjud emas}}",
     "healthBannerAvailable": "{count, plural, one {# hisob mavjud} other {Barcha # hisob mavjud}}",
+    "healthLegendHide": "Shartli belgilarni yashirish",
+    "healthLegendShow": "Shartli belgilarni ko‘rsatish",
     "healthLegendOk": "To‘liq = qolgan kvota; yarim shaffof = ishlatilgan.",
     "healthLegendCooldown": "{window} kvotasi tugadi. To‘liq = o‘tgan kutish; yarim shaffof = qolgan kutish.",
     "healthLegendAction": "Ruxsat muddati tugagan yoki hisob bloklangan; kutish yordam bermaydi.",

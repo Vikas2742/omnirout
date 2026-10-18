@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {આંશિક રીતે પ્રતિબંધિત # ખાતું સામેલ છે} other {આંશિક રીતે પ્રતિબંધિત # ખાતાં સામેલ છે}}",
     "healthBannerUnavailable": "{count, plural, one {# ખાતું હંગામી ધોરણે અનુપલબ્ધ છે} other {# ખાતાં હંગામી ધોરણે અનુપલબ્ધ છે}}",
     "healthBannerAvailable": "{count, plural, one {# ખાતું ઉપલબ્ધ છે} other {બધાં # ખાતાં ઉપલબ્ધ છે}}",
+    "healthLegendHide": "ચિહ્નોની સમજૂતી છુપાવો",
+    "healthLegendShow": "ચિહ્નોની સમજૂતી બતાવો",
     "healthLegendOk": "ઘાટો = બાકી ક્વોટા; અર્ધપારદર્શક = વપરાયેલો.",
     "healthLegendCooldown": "{window} ક્વોટા પૂરો. ઘાટો = વીતેલી રાહ; અર્ધપારદર્શક = બાકી રાહ.",
     "healthLegendAction": "અધિકૃતતા સમાપ્ત અથવા ખાતું પ્રતિબંધિત; રાહ જોવાથી નહીં સુધરે.",

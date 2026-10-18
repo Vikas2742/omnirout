@@ -10290,6 +10290,8 @@
     "healthIncluded": "รวมที่จำกัดบางส่วน {count, number}",
     "healthBannerUnavailable": "บัญชีที่ใช้ไม่ได้ชั่วคราว: {count, number}",
     "healthBannerAvailable": "บัญชีทั้ง {count, number} บัญชีใช้งานได้",
+    "healthLegendHide": "ซ่อนคำอธิบายสัญลักษณ์",
+    "healthLegendShow": "แสดงคำอธิบายสัญลักษณ์",
     "healthLegendOk": "ทึบ = โควตาที่เหลือ โปร่งแสง = ใช้แล้ว",
     "healthLegendCooldown": "โควตา {window} หมด ทึบ = เวลาที่รอแล้ว โปร่งแสง = เวลาที่ต้องรอต่อ",
     "healthLegendAction": "สิทธิ์หมดอายุหรือบัญชีถูกระงับ รออย่างเดียวไม่หาย",

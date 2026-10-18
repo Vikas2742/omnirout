@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {جزوی طور پر محدود # اکاؤنٹ شامل ہے} other {جزوی طور پر محدود # اکاؤنٹس شامل ہیں}}",
     "healthBannerUnavailable": "{count, plural, one {# اکاؤنٹ عارضی طور پر غیر دستیاب ہے} other {# اکاؤنٹس عارضی طور پر غیر دستیاب ہیں}}",
     "healthBannerAvailable": "{count, plural, one {# اکاؤنٹ دستیاب ہے} other {تمام # اکاؤنٹس دستیاب ہیں}}",
+    "healthLegendHide": "علامتوں کی وضاحت چھپائیں",
+    "healthLegendShow": "علامتوں کی وضاحت دکھائیں",
     "healthLegendOk": "ٹھوس = باقی کوٹا؛ نیم شفاف = استعمال شدہ۔",
     "healthLegendCooldown": "{window} کا کوٹا ختم۔ ٹھوس = گزرا انتظار؛ نیم شفاف = باقی انتظار۔",
     "healthLegendAction": "اجازت ختم یا اکاؤنٹ بند؛ انتظار سے درست نہیں ہوگا۔",

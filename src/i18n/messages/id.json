@@ -10290,6 +10290,8 @@
     "healthIncluded": "Termasuk {count, number} yang dibatasi sebagian",
     "healthBannerUnavailable": "Akun sementara tidak tersedia: {count, number}",
     "healthBannerAvailable": "Semua {count, number} akun tersedia",
+    "healthLegendHide": "Sembunyikan legenda",
+    "healthLegendShow": "Tampilkan legenda",
     "healthLegendOk": "Padat = sisa kuota; tembus pandang = terpakai.",
     "healthLegendCooldown": "Kuota {window} habis. Padat = waktu tunggu berlalu; tembus pandang = sisa waktu tunggu.",
     "healthLegendAction": "Otorisasi kedaluwarsa atau akun diblokir; menunggu tidak menyelesaikannya.",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Включва # частично ограничен акаунт} other {Включва # частично ограничени акаунта}}",
     "healthBannerUnavailable": "{count, plural, one {# акаунт е временно недостъпен} other {# акаунта са временно недостъпни}}",
     "healthBannerAvailable": "{count, plural, one {# акаунт е достъпен} other {Всичките # акаунта са достъпни}}",
+    "healthLegendHide": "Скриване на легендата",
+    "healthLegendShow": "Показване на легендата",
     "healthLegendOk": "Плътно = оставаща квота; полупрозрачно = изразходвана.",
     "healthLegendCooldown": "Квотата за {window} е изчерпана. Плътно = изминало чакане; полупрозрачно = оставащо чакане.",
     "healthLegendAction": "Упълномощаването е изтекло или акаунтът е блокиран; чакането не помага.",

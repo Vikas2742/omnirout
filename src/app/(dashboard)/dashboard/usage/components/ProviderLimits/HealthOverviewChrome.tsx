@@ -38,7 +38,21 @@ export function HealthCounts({ accounts }: { accounts: DisplayAccount[] }) {
     </div>
   );
 }
-export function HealthLegend() {
+export function HealthLegend({ id, hidden }: { id: string; hidden: boolean }) {
+  return (
+    <div
+      id={id}
+      inert={hidden}
+      aria-hidden={hidden}
+      className={`grid transition-[grid-template-rows,opacity] duration-200 ease-in-out motion-reduce:transition-none ${hidden ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <LegendItems />
+      </div>
+    </div>
+  );
+}
+function LegendItems() {
   const { t, all, format } = useHealthText();
   return (
     <div

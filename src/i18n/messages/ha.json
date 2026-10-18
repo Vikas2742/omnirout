@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Ya haɗa da asusu # mai ƙuntatawa kaɗan} other {Ya haɗa da asusu # masu ƙuntatawa kaɗan}}",
     "healthBannerUnavailable": "{count, plural, one {Asusu # ba ya samuwa na ɗan lokaci} other {Asusu # ba sa samuwa na ɗan lokaci}}",
     "healthBannerAvailable": "{count, plural, one {Asusu # yana samuwa} other {Duk asusu # suna samuwa}}",
+    "healthLegendHide": "Ɓoye bayanin alamomi",
+    "healthLegendShow": "Nuna bayanin alamomi",
     "healthLegendOk": "Cikakke = ragowar kaso; mai ɗan haske = wanda aka yi amfani da shi.",
     "healthLegendCooldown": "Kason {window} ya ƙare. Cikakke = jiran da ya wuce; mai ɗan haske = ragowar jira.",
     "healthLegendAction": "Izini ya ƙare ko an hana asusu; jira ba zai gyara ba.",

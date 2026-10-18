@@ -21,6 +21,7 @@ import {
 import HealthAccountTooltip from "./HealthAccountTooltip";
 import { useHealthText } from "./useHealthText";
 import { useProviderOrder } from "./useProviderOrder";
+import { useLegendVisibility } from "./useLegendVisibility";
 import { SortableProviderRow, ProviderSortContext } from "./ProviderRowSort";
 import { CAPSULE_CLASS, capsuleStyle, CapsuleWater } from "./HealthCapsule";
 import { HealthBanner, HealthLegend, HealthCounts } from "./HealthOverviewChrome";
@@ -46,6 +47,7 @@ export default function QuotaHealthOverview({
 }: Props) {
   const { t, all, relative, primary, poolLabel } = useHealthText();
   const id = useId();
+  const { legendHidden, toggleLegend } = useLegendVisibility();
   const now = useNow({ updateInterval: 1000 }).getTime();
   const [selected, setSelected] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ id: string; pool?: string; anchor: HTMLElement } | null>(
@@ -147,18 +149,22 @@ export default function QuotaHealthOverview({
             {t("healthRuntimeObserved", { time: relative(oldest("runtimeObservedAt")) })} ·{" "}
             {t("healthOldestQuota", { time: relative(oldest("quotaObservedAt")) })}
           </span>
+          <button
+            type="button"
+            className="ml-auto text-xs text-primary"
+            aria-expanded={!legendHidden}
+            aria-controls={`${id}-legend`}
+            onClick={toggleLegend}
+          >
+            {t(legendHidden ? "healthLegendShow" : "healthLegendHide")}
+          </button>
           {custom && (
-            <button
-              type="button"
-              data-reset-order
-              className="ml-auto text-xs text-primary"
-              onClick={reset}
-            >
+            <button type="button" data-reset-order className="text-xs text-primary" onClick={reset}>
               ↺ {t("healthResetOrder")}
             </button>
           )}
         </div>
-        <HealthLegend />
+        <HealthLegend id={`${id}-legend`} hidden={legendHidden} />
         {summaryFailed && (
           <p
             data-summary-warning

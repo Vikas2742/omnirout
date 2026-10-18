@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {අර්ධ වශයෙන් සීමා කළ ගිණුම් #ක් ඇතුළත් වේ} other {අර්ධ වශයෙන් සීමා කළ ගිණුම් #ක් ඇතුළත් වේ}}",
     "healthBannerUnavailable": "{count, plural, one {ගිණුම් #ක් තාවකාලිකව ලබාගත නොහැක} other {ගිණුම් #ක් තාවකාලිකව ලබාගත නොහැක}}",
     "healthBannerAvailable": "{count, plural, one {ගිණුම් #ක් ලබාගත හැක} other {ගිණුම් #ම ලබාගත හැක}}",
+    "healthLegendHide": "සංකේත විස්තරය සඟවන්න",
+    "healthLegendShow": "සංකේත විස්තරය පෙන්වන්න",
     "healthLegendOk": "තද පැහැය = ඉතිරි කෝටාව; අර්ධ පාරදෘශ්‍ය = භාවිත කළ ප්‍රමාණය.",
     "healthLegendCooldown": "{window} කෝටාව අවසන්. තද පැහැය = ගත වූ රැඳී සිටීම; අර්ධ පාරදෘශ්‍ය = ඉතිරි රැඳී සිටීම.",
     "healthLegendAction": "අවසරය කල් ඉකුත් හෝ ගිණුම තහනම්; බලා සිටීමෙන් සුව නොවේ.",

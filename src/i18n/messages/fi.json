@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Sisältää # osittain rajoitetun tilin} other {Sisältää # osittain rajoitettua tiliä}}",
     "healthBannerUnavailable": "{count, plural, one {# tili on tilapäisesti poissa käytöstä} other {# tiliä on tilapäisesti poissa käytöstä}}",
     "healthBannerAvailable": "{count, plural, one {# tili on käytettävissä} other {Kaikki # tiliä ovat käytettävissä}}",
+    "healthLegendHide": "Piilota selite",
+    "healthLegendShow": "Näytä selite",
     "healthLegendOk": "Umpinainen = jäljellä oleva kiintiö; läpikuultava = käytetty.",
     "healthLegendCooldown": "Kiintiö ajalle {window} loppui. Umpinainen = kulunut odotusaika; läpikuultava = jäljellä oleva odotusaika.",
     "healthLegendAction": "Valtuutus vanhentui tai tili estettiin; odottaminen ei auta.",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Ebből # részben korlátozott fiók} other {Ebből # részben korlátozott fiók}}",
     "healthBannerUnavailable": "{count, plural, one {# fiók átmenetileg nem érhető el} other {# fiók átmenetileg nem érhető el}}",
     "healthBannerAvailable": "{count, plural, one {# fiók elérhető} other {Mind a(z) # fiók elérhető}}",
+    "healthLegendHide": "Jelmagyarázat elrejtése",
+    "healthLegendShow": "Jelmagyarázat megjelenítése",
     "healthLegendOk": "Tömör = megmaradt keret; áttetsző = felhasznált.",
     "healthLegendCooldown": "A(z) {window} kerete elfogyott. Tömör = eltelt várakozás; áttetsző = hátralévő várakozás.",
     "healthLegendAction": "A jogosultság lejárt vagy a fiókot letiltották; várakozás nem segít.",

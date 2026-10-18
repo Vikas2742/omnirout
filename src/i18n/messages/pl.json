@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {W tym # częściowo ograniczone konto} few {W tym # częściowo ograniczone konta} many {W tym # częściowo ograniczonych kont} other {W tym # częściowo ograniczonego konta}}",
     "healthBannerUnavailable": "{count, plural, one {# konto tymczasowo niedostępne} few {# konta tymczasowo niedostępne} many {# kont tymczasowo niedostępnych} other {# konta tymczasowo niedostępnego}}",
     "healthBannerAvailable": "{count, plural, one {# konto dostępne} few {Wszystkie # konta dostępne} many {Wszystkie konta dostępne: #} other {# konta dostępnego}}",
+    "healthLegendHide": "Ukryj legendę",
+    "healthLegendShow": "Pokaż legendę",
     "healthLegendOk": "Pełne = pozostały limit; półprzezroczyste = wykorzystany.",
     "healthLegendCooldown": "Limit {window} wyczerpany. Pełne = czas odczekany; półprzezroczyste = pozostałe oczekiwanie.",
     "healthLegendAction": "Autoryzacja wygasła lub konto zablokowano; czekanie nie pomoże.",

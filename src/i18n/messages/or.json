@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {ଆଂଶିକ ସୀମିତ #ଟି ଖାତା ଅନ୍ତର୍ଭୁକ୍ତ} other {ଆଂଶିକ ସୀମିତ #ଟି ଖାତା ଅନ୍ତର୍ଭୁକ୍ତ}}",
     "healthBannerUnavailable": "{count, plural, one {#ଟି ଖାତା ସାମୟିକ ଭାବେ ଅନୁପଲବ୍ଧ} other {#ଟି ଖାତା ସାମୟିକ ଭାବେ ଅନୁପଲବ୍ଧ}}",
     "healthBannerAvailable": "{count, plural, one {#ଟି ଖାତା ଉପଲବ୍ଧ} other {ସମସ୍ତ #ଟି ଖାତା ଉପଲବ୍ଧ}}",
+    "healthLegendHide": "ଚିହ୍ନଗୁଡ଼ିକର ବ୍ୟାଖ୍ୟା ଲୁଚାନ୍ତୁ",
+    "healthLegendShow": "ଚିହ୍ନଗୁଡ଼ିକର ବ୍ୟାଖ୍ୟା ଦେଖାନ୍ତୁ",
     "healthLegendOk": "ଗାଢ଼ = ଅବଶିଷ୍ଟ କୋଟା; ଅର୍ଦ୍ଧସ୍ୱଚ୍ଛ = ବ୍ୟବହୃତ।",
     "healthLegendCooldown": "{window} କୋଟା ଶେଷ। ଗାଢ଼ = ବିତିଥିବା ଅପେକ୍ଷା; ଅର୍ଦ୍ଧସ୍ୱଚ୍ଛ = ବାକି ଅପେକ୍ଷା।",
     "healthLegendAction": "ଅନୁମତି ସମାପ୍ତ କିମ୍ବା ଖାତା ଅବରୋଧିତ; ଅପେକ୍ଷାରେ ଠିକ୍ ହେବନାହିଁ।",

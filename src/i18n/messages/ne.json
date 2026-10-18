@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {आंशिक प्रतिबन्धित # खाता समावेश छ} other {आंशिक प्रतिबन्धित # खाताहरू समावेश छन्}}",
     "healthBannerUnavailable": "{count, plural, one {# खाता अस्थायी रूपमा अनुपलब्ध छ} other {# खाताहरू अस्थायी रूपमा अनुपलब्ध छन्}}",
     "healthBannerAvailable": "{count, plural, one {# खाता उपलब्ध छ} other {सबै # खाताहरू उपलब्ध छन्}}",
+    "healthLegendHide": "सङ्केतहरूको व्याख्या लुकाउनुहोस्",
+    "healthLegendShow": "सङ्केतहरूको व्याख्या देखाउनुहोस्",
     "healthLegendOk": "ठोस = बाँकी कोटा; अर्धपारदर्शी = प्रयोग भएको।",
     "healthLegendCooldown": "{window} कोटा सकियो। ठोस = बितेको प्रतीक्षा; अर्धपारदर्शी = बाँकी प्रतीक्षा।",
     "healthLegendAction": "अनुमति सकियो वा खाता रोकियो; पर्खेर समाधान हुँदैन।",

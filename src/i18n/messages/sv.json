@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Varav # delvis begränsat konto} other {Varav # delvis begränsade konton}}",
     "healthBannerUnavailable": "{count, plural, one {# konto är tillfälligt otillgängligt} other {# konton är tillfälligt otillgängliga}}",
     "healthBannerAvailable": "{count, plural, one {# konto är tillgängligt} other {Alla # konton är tillgängliga}}",
+    "healthLegendHide": "Dölj teckenförklaring",
+    "healthLegendShow": "Visa teckenförklaring",
     "healthLegendOk": "Solid = återstående kvot; genomskinlig = förbrukat.",
     "healthLegendCooldown": "Kvoten för {window} är slut. Solid = förfluten väntetid; genomskinlig = kvarvarande väntetid.",
     "healthLegendAction": "Behörighet har löpt ut eller kontot är spärrat; väntan hjälper inte.",

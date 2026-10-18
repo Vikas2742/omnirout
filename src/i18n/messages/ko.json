@@ -10290,6 +10290,8 @@
     "healthIncluded": "부분 제한 포함: {count, number}",
     "healthBannerUnavailable": "일시적으로 사용 불가: {count, number}",
     "healthBannerAvailable": "계정 {count, number}개 모두 사용 가능",
+    "healthLegendHide": "범례 숨기기",
+    "healthLegendShow": "범례 표시",
     "healthLegendOk": "불투명 = 잔여 할당량, 반투명 = 사용량",
     "healthLegendCooldown": "{window} 할당량 소진. 불투명 = 경과한 대기 시간, 반투명 = 남은 대기 시간",
     "healthLegendAction": "인증이 만료되었거나 계정이 차단되어 기다려도 복구되지 않음",

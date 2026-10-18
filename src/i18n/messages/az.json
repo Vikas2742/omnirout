@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Qismən məhdudlaşdırılmış # hesab daxildir} other {Qismən məhdudlaşdırılmış # hesab daxildir}}",
     "healthBannerUnavailable": "{count, plural, one {# hesab müvəqqəti əlçatan deyil} other {# hesab müvəqqəti əlçatan deyil}}",
     "healthBannerAvailable": "{count, plural, one {# hesab əlçatandır} other {Bütün # hesab əlçatandır}}",
+    "healthLegendHide": "Şərti işarələri gizlət",
+    "healthLegendShow": "Şərti işarələri göstər",
     "healthLegendOk": "Dolu = qalan kvota; yarımşəffaf = istifadə olunmuş.",
     "healthLegendCooldown": "{window} kvotası tükənib. Dolu = keçmiş gözləmə; yarımşəffaf = qalan gözləmə.",
     "healthLegendAction": "İcazə bitib və ya hesab bloklanıb; gözləmək həll etmir.",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Áirítear # chuntas atá srianta go páirteach} two {Áirítear # chuntas atá srianta go páirteach} few {Áirítear # chuntas atá srianta go páirteach} many {Áirítear # gcuntas atá srianta go páirteach} other {Áirítear # cuntas atá srianta go páirteach}}",
     "healthBannerUnavailable": "{count, plural, one {# chuntas amháin nach bhfuil ar fáil go sealadach} two {# chuntas nach bhfuil ar fáil go sealadach} few {# chuntas nach bhfuil ar fáil go sealadach} many {# gcuntas nach bhfuil ar fáil go sealadach} other {# cuntas nach bhfuil ar fáil go sealadach}}",
     "healthBannerAvailable": "{count, plural, one {Tá # chuntas amháin ar fáil} two {Tá an # chuntas ar fáil} few {Tá na # chuntas ar fad ar fáil} many {Tá na # gcuntas ar fad ar fáil} other {Tá gach cuntas ar fáil: #}}",
+    "healthLegendHide": "Folaigh an eochair",
+    "healthLegendShow": "Taispeáin an eochair",
     "healthLegendOk": "Soladach = cuóta fágtha; tréshoilseach = úsáidte.",
     "healthLegendCooldown": "Cuóta {window} ídithe. Soladach = fanacht caite; tréshoilseach = fanacht fágtha.",
     "healthLegendAction": "Údarú imithe in éag nó cuntas coiscthe; ní réiteoidh fanacht é.",

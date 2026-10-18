@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Enthält # teilweise eingeschränktes Konto} other {Enthält # teilweise eingeschränkte Konten}}",
     "healthBannerUnavailable": "{count, plural, one {# Konto vorübergehend nicht verfügbar} other {# Konten vorübergehend nicht verfügbar}}",
     "healthBannerAvailable": "{count, plural, one {# Konto verfügbar} other {Alle # Konten verfügbar}}",
+    "healthLegendHide": "Legende ausblenden",
+    "healthLegendShow": "Legende anzeigen",
     "healthLegendOk": "Deckend = verbleibendes Kontingent; durchscheinend = verbraucht.",
     "healthLegendCooldown": "Kontingent für {window} erschöpft. Deckend = vergangene Wartezeit; durchscheinend = verbleibende Wartezeit.",
     "healthLegendAction": "Autorisierung abgelaufen oder Konto gesperrt; Warten hilft nicht.",

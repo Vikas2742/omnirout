@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {شامل # حساب با محدودیت جزئی} other {شامل # حساب با محدودیت جزئی}}",
     "healthBannerUnavailable": "{count, plural, one {# حساب موقتاً در دسترس نیست} other {# حساب موقتاً در دسترس نیست}}",
     "healthBannerAvailable": "{count, plural, one {# حساب در دسترس است} other {همهٔ # حساب در دسترس هستند}}",
+    "healthLegendHide": "پنهان کردن راهنمای علائم",
+    "healthLegendShow": "نمایش راهنمای علائم",
     "healthLegendOk": "پررنگ = سهمیهٔ باقی‌مانده؛ نیمه‌شفاف = مصرف‌شده.",
     "healthLegendCooldown": "سهمیهٔ {window} تمام شده. پررنگ = انتظار سپری‌شده؛ نیمه‌شفاف = انتظار باقی‌مانده.",
     "healthLegendAction": "مجوز منقضی یا حساب مسدود شده؛ انتظار مشکل را حل نمی‌کند.",

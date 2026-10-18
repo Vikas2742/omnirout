@@ -10290,6 +10290,8 @@
     "healthIncluded": "រួមមានកំណត់ខ្លះ៖ {count, number}",
     "healthBannerUnavailable": "គណនីមិនអាចប្រើបណ្តោះអាសន្ន៖ {count, number}",
     "healthBannerAvailable": "គណនីទាំង {count, number} អាចប្រើបាន",
+    "healthLegendHide": "លាក់សេចក្តីពន្យល់និមិត្តសញ្ញា",
+    "healthLegendShow": "បង្ហាញសេចក្តីពន្យល់និមិត្តសញ្ញា",
     "healthLegendOk": "ពណ៌ពេញ = កូតានៅសល់; ពាក់កណ្តាលថ្លា = បានប្រើ។",
     "healthLegendCooldown": "កូតា {window} អស់។ ពណ៌ពេញ = ពេលបានរង់ចាំ; ពាក់កណ្តាលថ្លា = ពេលរង់ចាំនៅសល់។",
     "healthLegendAction": "ការអនុញ្ញាតផុតកំណត់ ឬគណនីត្រូវបានហាម; ការរង់ចាំមិនអាចដោះស្រាយបាន។",

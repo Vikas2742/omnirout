@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Uključuje # djelomično ograničen račun} few {Uključuje # djelomično ograničena računa} other {Uključuje # djelomično ograničenih računa}}",
     "healthBannerUnavailable": "{count, plural, one {# račun privremeno nedostupan} few {# računa privremeno nedostupna} other {# računa privremeno nedostupno}}",
     "healthBannerAvailable": "{count, plural, one {# račun dostupan} few {Sva # računa dostupna} other {Svih # računa dostupno}}",
+    "healthLegendHide": "Sakrij legendu",
+    "healthLegendShow": "Prikaži legendu",
     "healthLegendOk": "Puno = preostala kvota; prozirno = potrošeno.",
     "healthLegendCooldown": "Kvota za {window} potrošena. Puno = proteklo čekanje; prozirno = preostalo čekanje.",
     "healthLegendAction": "Autorizacija je istekla ili račun je blokiran; čekanje ne pomaže.",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {በከፊል የተገደበ # መለያ ይጨምራል} other {በከፊል የተገደቡ # መለያዎችን ይጨምራል}}",
     "healthBannerUnavailable": "{count, plural, one {# መለያ ለጊዜው አይገኝም} other {# መለያዎች ለጊዜው አይገኙም}}",
     "healthBannerAvailable": "{count, plural, one {# መለያ ይገኛል} other {ሁሉም # መለያዎች ይገኛሉ}}",
+    "healthLegendHide": "የምልክት ማብራሪያን ደብቅ",
+    "healthLegendShow": "የምልክት ማብራሪያን አሳይ",
     "healthLegendOk": "ጠንካራ ቀለም = ቀሪ ኮታ፤ ግልጽ ቀለም = የተጠቀመው።",
     "healthLegendCooldown": "የ{window} ኮታ አልቋል። ጠንካራ ቀለም = ያለፈ ጥበቃ፤ ግልጽ ቀለም = ቀሪ ጥበቃ።",
     "healthLegendAction": "ፈቃዱ አልቋል ወይም መለያው ታግዷል፤ መጠበቅ አያስተካክለውም።",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Jinkludi # kont parzjalment ristrett} two {Jinkludi żewġ kontijiet parzjalment ristretti (#)} few {Jinkludi # kontijiet parzjalment ristretti} many {Jinkludi #-il kont parzjalment ristrett} other {Jinkludi # kont parzjalment ristrett}}",
     "healthBannerUnavailable": "{count, plural, one {# kont temporanjament mhux disponibbli} two {Żewġ kontijiet temporanjament mhux disponibbli (#)} few {# kontijiet temporanjament mhux disponibbli} many {#-il kont temporanjament mhux disponibbli} other {# kont temporanjament mhux disponibbli}}",
     "healthBannerAvailable": "{count, plural, one {# kont disponibbli} two {Iż-żewġ kontijiet huma disponibbli (#)} few {Il-# kontijiet kollha huma disponibbli} many {Il-kontijiet kollha huma disponibbli: #} other {Il-kontijiet kollha huma disponibbli: #}}",
+    "healthLegendHide": "Aħbi l-leġġenda",
+    "healthLegendShow": "Uri l-leġġenda",
     "healthLegendOk": "Mimli = kwota li fadal; trasluċidu = użat.",
     "healthLegendCooldown": "Il-kwota ta’ {window} spiċċat. Mimli = stennija li għaddiet; trasluċidu = stennija li fadal.",
     "healthLegendAction": "L-awtorizzazzjoni skadiet jew il-kont ġie mblukkat; l-istennija ma ssolvix dan.",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "Gồm {count, number} tài khoản bị hạn chế một phần",
     "healthBannerUnavailable": "Tài khoản tạm thời không dùng được: {count, number}",
     "healthBannerAvailable": "Cả {count, number} tài khoản đều dùng được",
+    "healthLegendHide": "Ẩn chú giải",
+    "healthLegendShow": "Hiện chú giải",
     "healthLegendOk": "Đặc = hạn mức còn lại; trong mờ = đã dùng.",
     "healthLegendCooldown": "Hết hạn mức {window}. Đặc = thời gian đã chờ; trong mờ = thời gian chờ còn lại.",
     "healthLegendAction": "Ủy quyền hết hạn hoặc tài khoản bị khóa; chờ không khắc phục được.",

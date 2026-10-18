@@ -10290,6 +10290,8 @@
     "healthIncluded": "Tí a dí díẹ̀: {count, number}",
     "healthBannerUnavailable": "Àkọọ́lẹ̀ tí kò sí fún ìgbà díẹ̀: {count, number}",
     "healthBannerAvailable": "Gbogbo àkọọ́lẹ̀ {count, number} wà",
+    "healthLegendHide": "Fi àlàyé àmì pamọ́",
+    "healthLegendShow": "Ṣàfihàn àlàyé àmì",
     "healthLegendOk": "Àwọ̀ kíkún = ìpín tó kù; àwọ̀ tí ó mọ́ díẹ̀ = tí a ti lò.",
     "healthLegendCooldown": "Ìpín {window} ti tán. Àwọ̀ kíkún = àkókò tí a ti dúró; àwọ̀ tí ó mọ́ díẹ̀ = àkókò tó kù.",
     "healthLegendAction": "Àṣẹ ti parí tàbí a ti dí àkọọ́lẹ̀; dídúró kò ní tún un ṣe.",

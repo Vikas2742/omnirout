@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {ಭಾಗಶಃ ನಿರ್ಬಂಧಿತ # ಖಾತೆಯನ್ನು ಒಳಗೊಂಡಿದೆ} other {ಭಾಗಶಃ ನಿರ್ಬಂಧಿತ # ಖಾತೆಗಳನ್ನು ಒಳಗೊಂಡಿದೆ}}",
     "healthBannerUnavailable": "{count, plural, one {# ಖಾತೆ ತಾತ್ಕಾಲಿಕವಾಗಿ ಲಭ್ಯವಿಲ್ಲ} other {# ಖಾತೆಗಳು ತಾತ್ಕಾಲಿಕವಾಗಿ ಲಭ್ಯವಿಲ್ಲ}}",
     "healthBannerAvailable": "{count, plural, one {# ಖಾತೆ ಲಭ್ಯವಿದೆ} other {ಎಲ್ಲಾ # ಖಾತೆಗಳು ಲಭ್ಯವಿವೆ}}",
+    "healthLegendHide": "ಸಂಕೇತಗಳ ವಿವರಣೆಯನ್ನು ಮರೆಮಾಡಿ",
+    "healthLegendShow": "ಸಂಕೇತಗಳ ವಿವರಣೆಯನ್ನು ತೋರಿಸಿ",
     "healthLegendOk": "ಘನ = ಉಳಿದ ಕೋಟಾ; ಅರೆಪಾರದರ್ಶಕ = ಬಳಸಿದ ಕೋಟಾ.",
     "healthLegendCooldown": "{window} ಕೋಟಾ ಮುಗಿದಿದೆ. ಘನ = ಕಳೆದ ಕಾಯುವಿಕೆ; ಅರೆಪಾರದರ್ಶಕ = ಉಳಿದ ಕಾಯುವಿಕೆ.",
     "healthLegendAction": "ಅನುಮತಿ ಅವಧಿ ಮುಗಿದಿದೆ ಅಥವಾ ಖಾತೆ ನಿಷೇಧಿತ; ಕಾಯುವುದರಿಂದ ಸರಿಯಾಗುವುದಿಲ್ಲ.",

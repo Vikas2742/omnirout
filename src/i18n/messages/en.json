@@ -10290,6 +10290,8 @@
     "healthIncluded": "Includes {count, plural, one {# partially restricted account} other {# partially restricted accounts}}",
     "healthBannerUnavailable": "{count, plural, one {# account temporarily unavailable} other {# accounts temporarily unavailable}}",
     "healthBannerAvailable": "{count, plural, one {# account available} other {All # accounts available}}",
+    "healthLegendHide": "Hide legend",
+    "healthLegendShow": "Show legend",
     "healthLegendOk": "Solid = remaining quota; translucent = used.",
     "healthLegendCooldown": "{window} quota exhausted. Solid = time already waited; translucent = time left.",
     "healthLegendAction": "Authorization expired or account banned; waiting will not fix it.",

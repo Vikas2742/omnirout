@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Waarvan # gedeeltelijk beperkt account} other {Waarvan # gedeeltelijk beperkte accounts}}",
     "healthBannerUnavailable": "{count, plural, one {# account tijdelijk niet beschikbaar} other {# accounts tijdelijk niet beschikbaar}}",
     "healthBannerAvailable": "{count, plural, one {# account beschikbaar} other {Alle # accounts beschikbaar}}",
+    "healthLegendHide": "Legenda verbergen",
+    "healthLegendShow": "Legenda tonen",
     "healthLegendOk": "Vol = resterend quotum; doorschijnend = verbruikt.",
     "healthLegendCooldown": "Quotum voor {window} verbruikt. Vol = verstreken wachttijd; doorschijnend = resterende wachttijd.",
     "healthLegendAction": "Autorisatie verlopen of account geblokkeerd; wachten helpt niet.",

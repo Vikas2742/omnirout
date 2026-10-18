@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, zero {Ietver # daļēji ierobežotu kontu} one {Ietver # daļēji ierobežotu kontu} other {Ietver # daļēji ierobežotus kontus}}",
     "healthBannerUnavailable": "{count, plural, zero {# kontu īslaicīgi nav pieejami} one {# konts īslaicīgi nav pieejams} other {# konti īslaicīgi nav pieejami}}",
     "healthBannerAvailable": "{count, plural, zero {Visi konti ir pieejami: #} one {# konts ir pieejams} other {Visi # konti ir pieejami}}",
+    "healthLegendHide": "Paslēpt apzīmējumus",
+    "healthLegendShow": "Rādīt apzīmējumus",
     "healthLegendOk": "Necaurspīdīgs = atlikusī kvota; puscaurspīdīgs = izlietots.",
     "healthLegendCooldown": "{window} kvota izlietota. Necaurspīdīgs = nogaidītais laiks; puscaurspīdīgs = atlikušais gaidīšanas laiks.",
     "healthLegendAction": "Pilnvarojums beidzies vai konts bloķēts; gaidīšana nepalīdz.",

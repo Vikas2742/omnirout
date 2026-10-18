@@ -10290,6 +10290,8 @@
     "healthIncluded": "Ndị amachibidoro ụfọdụ: {count, number}",
     "healthBannerUnavailable": "Akaụntụ na-adịghị adị nwa oge: {count, number}",
     "healthBannerAvailable": "Akaụntụ {count, number} niile dị",
+    "healthLegendHide": "Zoo nkọwa akara",
+    "healthLegendShow": "Gosi nkọwa akara",
     "healthLegendOk": "Juru = oke fọdụrụ; ọkara uzo = nke ejirila.",
     "healthLegendCooldown": "Oke {window} agwụla. Juru = oge echere; ọkara uzo = oge ichere fọdụrụ.",
     "healthLegendAction": "Ikike agwụla ma ọ bụ egbochila akaụntụ; ichere agaghị edozi ya.",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Inkludert # delvis begrenset konto} other {Inkludert # delvis begrensede kontoer}}",
     "healthBannerUnavailable": "{count, plural, one {# konto er midlertidig utilgjengelig} other {# kontoer er midlertidig utilgjengelige}}",
     "healthBannerAvailable": "{count, plural, one {# konto er tilgjengelig} other {Alle # kontoer er tilgjengelige}}",
+    "healthLegendHide": "Skjul tegnforklaring",
+    "healthLegendShow": "Vis tegnforklaring",
     "healthLegendOk": "Heldekkende = gjenværende kvote; gjennomskinnelig = brukt.",
     "healthLegendCooldown": "Kvoten for {window} er brukt opp. Heldekkende = ventet tid; gjennomskinnelig = gjenværende ventetid.",
     "healthLegendAction": "Tilgang utløpt eller konto sperret; venting hjelper ikke.",

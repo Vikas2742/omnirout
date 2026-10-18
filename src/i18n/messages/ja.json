@@ -10290,6 +10290,8 @@
     "healthIncluded": "一部制限あり：{count, number}",
     "healthBannerUnavailable": "一時的に利用不可：{count, number}",
     "healthBannerAvailable": "全 {count, number} アカウントが利用可能",
+    "healthLegendHide": "凡例を非表示",
+    "healthLegendShow": "凡例を表示",
     "healthLegendOk": "不透明部分＝残りの割り当て、半透明部分＝使用済み",
     "healthLegendCooldown": "{window} の割り当てを消費済み。不透明部分＝経過した待ち時間、半透明部分＝残りの待ち時間",
     "healthLegendAction": "認証切れ、またはアカウント停止。待っても復旧しません",

@@ -10290,6 +10290,8 @@
     "healthIncluded": "含 {count, number} 个部分受限",
     "healthBannerUnavailable": "{count, number} 个号暂时不能用",
     "healthBannerAvailable": "全部 {count, number} 个号可用",
+    "healthLegendHide": "隐藏图例",
+    "healthLegendShow": "显示图例",
     "healthLegendOk": "实心 = 剩余额度，半透明 = 已用掉",
     "healthLegendCooldown": "{window}额度用完；实心 = 已等过的时间，半透明 = 还要等多久",
     "healthLegendAction": "授权失效或被封，等不回来",

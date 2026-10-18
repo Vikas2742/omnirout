@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Inajumuisha akaunti # iliyowekewa mipaka kwa sehemu} other {Inajumuisha akaunti # zilizowekewa mipaka kwa sehemu}}",
     "healthBannerUnavailable": "{count, plural, one {Akaunti # haipatikani kwa muda} other {Akaunti # hazipatikani kwa muda}}",
     "healthBannerAvailable": "{count, plural, one {Akaunti # inapatikana} other {Akaunti zote # zinapatikana}}",
+    "healthLegendHide": "Ficha maelezo ya alama",
+    "healthLegendShow": "Onyesha maelezo ya alama",
     "healthLegendOk": "Imara = mgao uliobaki; inayopenyeza mwanga = uliotumika.",
     "healthLegendCooldown": "Mgao wa {window} umeisha. Imara = muda uliosubiriwa; inayopenyeza mwanga = muda wa kusubiri uliobaki.",
     "healthLegendAction": "Idhini imeisha au akaunti imezuiwa; kusubiri hakutatatua.",

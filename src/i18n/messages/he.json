@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {כולל חשבון # מוגבל חלקית} two {כולל # חשבונות מוגבלים חלקית} other {כולל # חשבונות מוגבלים חלקית}}",
     "healthBannerUnavailable": "{count, plural, one {חשבון # אינו זמין זמנית} two {# חשבונות אינם זמינים זמנית} other {# חשבונות אינם זמינים זמנית}}",
     "healthBannerAvailable": "{count, plural, one {חשבון # זמין} two {שני החשבונות זמינים (#)} other {כל # החשבונות זמינים}}",
+    "healthLegendHide": "הסתרת המקרא",
+    "healthLegendShow": "הצגת המקרא",
     "healthLegendOk": "מלא = מכסה שנותרה; שקוף למחצה = נוצל.",
     "healthLegendCooldown": "מכסת {window} מוצתה. מלא = המתנה שחלפה; שקוף למחצה = המתנה שנותרה.",
     "healthLegendAction": "ההרשאה פגה או שהחשבון נחסם; המתנה לא תפתור זאת.",

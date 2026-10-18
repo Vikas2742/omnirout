@@ -10290,6 +10290,8 @@
     "healthIncluded": "တစ်စိတ်တစ်ပိုင်း ကန့်သတ်ထားမှု {count, number}",
     "healthBannerUnavailable": "ယာယီအသုံးမပြုနိုင်သော အကောင့် {count, number}",
     "healthBannerAvailable": "အကောင့် {count, number} ခုလုံး အသုံးပြုနိုင်",
+    "healthLegendHide": "သင်္ကေတရှင်းလင်းချက်ကို ဖျောက်ရန်",
+    "healthLegendShow": "သင်္ကေတရှင်းလင်းချက်ကို ပြရန်",
     "healthLegendOk": "အပြည့်ရောင် = ကျန်ခွဲတမ်း၊ ဖောက်မြင်ရောင် = သုံးပြီး။",
     "healthLegendCooldown": "{window} ခွဲတမ်းကုန်ပြီ။ အပြည့်ရောင် = စောင့်ပြီးချိန်၊ ဖောက်မြင်ရောင် = ကျန်စောင့်ချိန်။",
     "healthLegendAction": "ခွင့်ပြုချက်သက်တမ်းကုန် သို့မဟုတ် အကောင့်ပိတ်ထား၍ စောင့်ရုံဖြင့် မပြေလည်ပါ။",

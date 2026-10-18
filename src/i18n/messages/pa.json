@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {ਅੰਸ਼ਕ ਪਾਬੰਦੀ ਵਾਲਾ # ਖਾਤਾ ਸ਼ਾਮਲ ਹੈ} other {ਅੰਸ਼ਕ ਪਾਬੰਦੀ ਵਾਲੇ # ਖਾਤੇ ਸ਼ਾਮਲ ਹਨ}}",
     "healthBannerUnavailable": "{count, plural, one {# ਖਾਤਾ ਅਸਥਾਈ ਤੌਰ ਤੇ ਅਣਉਪਲਬਧ ਹੈ} other {# ਖਾਤੇ ਅਸਥਾਈ ਤੌਰ ਤੇ ਅਣਉਪਲਬਧ ਹਨ}}",
     "healthBannerAvailable": "{count, plural, one {# ਖਾਤਾ ਉਪਲਬਧ ਹੈ} other {ਸਾਰੇ # ਖਾਤੇ ਉਪਲਬਧ ਹਨ}}",
+    "healthLegendHide": "ਚਿੰਨ੍ਹਾਂ ਦੀ ਵਿਆਖਿਆ ਲੁਕਾਓ",
+    "healthLegendShow": "ਚਿੰਨ੍ਹਾਂ ਦੀ ਵਿਆਖਿਆ ਦਿਖਾਓ",
     "healthLegendOk": "ਠੋਸ = ਬਾਕੀ ਕੋਟਾ; ਅਰਧਪਾਰਦਰਸ਼ੀ = ਵਰਤਿਆ ਹੋਇਆ।",
     "healthLegendCooldown": "{window} ਕੋਟਾ ਮੁੱਕ ਗਿਆ। ਠੋਸ = ਲੰਘੀ ਉਡੀਕ; ਅਰਧਪਾਰਦਰਸ਼ੀ = ਬਾਕੀ ਉਡੀਕ।",
     "healthLegendAction": "ਇਜਾਜ਼ਤ ਮੁੱਕੀ ਜਾਂ ਖਾਤਾ ਬੰਦ ਹੈ; ਉਡੀਕ ਨਾਲ ਠੀਕ ਨਹੀਂ ਹੋਵੇਗਾ।",

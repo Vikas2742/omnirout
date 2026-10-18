@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Kısmen kısıtlı # hesap içerir} other {Kısmen kısıtlı # hesap içerir}}",
     "healthBannerUnavailable": "{count, plural, one {# hesap geçici olarak kullanılamıyor} other {# hesap geçici olarak kullanılamıyor}}",
     "healthBannerAvailable": "{count, plural, one {# hesap kullanılabilir} other {# hesabın tamamı kullanılabilir}}",
+    "healthLegendHide": "Gösterge açıklamasını gizle",
+    "healthLegendShow": "Gösterge açıklamasını göster",
     "healthLegendOk": "Dolu = kalan kota; yarı saydam = kullanılan.",
     "healthLegendCooldown": "{window} kotası tükendi. Dolu = geçen bekleme; yarı saydam = kalan bekleme.",
     "healthLegendAction": "Yetkilendirme sona ermiş veya hesap engellenmiş; beklemek çözmez.",

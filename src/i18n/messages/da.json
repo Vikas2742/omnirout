@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Heraf # delvist begrænset konto} other {Heraf # delvist begrænsede konti}}",
     "healthBannerUnavailable": "{count, plural, one {# konto er midlertidigt utilgængelig} other {# konti er midlertidigt utilgængelige}}",
     "healthBannerAvailable": "{count, plural, one {# konto er tilgængelig} other {Alle # konti er tilgængelige}}",
+    "healthLegendHide": "Skjul forklaring",
+    "healthLegendShow": "Vis forklaring",
     "healthLegendOk": "Massiv = resterende kvote; gennemsigtig = brugt.",
     "healthLegendCooldown": "Kvoten for {window} er opbrugt. Massiv = ventet tid; gennemsigtig = resterende ventetid.",
     "healthLegendAction": "Godkendelse udløbet eller konto spærret; ventetid løser det ikke.",

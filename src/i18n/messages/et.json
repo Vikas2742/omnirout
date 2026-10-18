@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Sisaldab # osaliselt piiratud kontot} other {Sisaldab # osaliselt piiratud kontot}}",
     "healthBannerUnavailable": "{count, plural, one {# konto on ajutiselt kasutamatu} other {# kontot on ajutiselt kasutamatud}}",
     "healthBannerAvailable": "{count, plural, one {# konto on kasutatav} other {Kõik # kontot on kasutatavad}}",
+    "healthLegendHide": "Peida legend",
+    "healthLegendShow": "Näita legendi",
     "healthLegendOk": "Täisosa = allesjäänud kvoot; poolläbipaistev = kasutatud.",
     "healthLegendCooldown": "Ajavahemiku {window} kvoot on otsas. Täisosa = oodatud aeg; poolläbipaistev = järelejäänud ooteaeg.",
     "healthLegendAction": "Volitus aegunud või konto blokeeritud; ootamine ei aita.",

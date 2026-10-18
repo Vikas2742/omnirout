@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Įtraukta # iš dalies apribota paskyra} few {Įtrauktos # iš dalies apribotos paskyros} many {Įtraukta # iš dalies apribotos paskyros} other {Įtraukta # iš dalies apribotų paskyrų}}",
     "healthBannerUnavailable": "{count, plural, one {# paskyra laikinai nepasiekiama} few {# paskyros laikinai nepasiekiamos} many {# paskyros laikinai nepasiekiama} other {# paskyrų laikinai nepasiekiama}}",
     "healthBannerAvailable": "{count, plural, one {# paskyra pasiekiama} few {Visos # paskyros pasiekiamos} many {# paskyros pasiekiama} other {Visos paskyros pasiekiamos: #}}",
+    "healthLegendHide": "Slėpti legendą",
+    "healthLegendShow": "Rodyti legendą",
     "healthLegendOk": "Vientisa = likusi kvota; permatoma = sunaudota.",
     "healthLegendCooldown": "{window} kvota išnaudota. Vientisa = išlauktas laikas; permatoma = likęs laukimo laikas.",
     "healthLegendAction": "Leidimas pasibaigė arba paskyra užblokuota; laukimas nepadės.",

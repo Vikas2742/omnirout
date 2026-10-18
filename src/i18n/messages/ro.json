@@ -10290,6 +10290,8 @@
     "healthIncluded": "{count, plural, one {Include # cont parțial restricționat} few {Include # conturi parțial restricționate} other {Include # de conturi parțial restricționate}}",
     "healthBannerUnavailable": "{count, plural, one {# cont temporar indisponibil} few {# conturi temporar indisponibile} other {# de conturi temporar indisponibile}}",
     "healthBannerAvailable": "{count, plural, one {# cont disponibil} few {Toate cele # conturi sunt disponibile} other {Toate cele # de conturi sunt disponibile}}",
+    "healthLegendHide": "Ascunde legenda",
+    "healthLegendShow": "Afișează legenda",
     "healthLegendOk": "Plin = cotă rămasă; translucid = consumat.",
     "healthLegendCooldown": "Cota pentru {window} epuizată. Plin = așteptare trecută; translucid = așteptare rămasă.",
     "healthLegendAction": "Autorizare expirată sau cont blocat; așteptarea nu rezolvă problema.",

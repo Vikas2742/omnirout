@@ -10290,6 +10290,8 @@
     "healthIncluded": "Termasuk {count, number} terhad sebahagian",
     "healthBannerUnavailable": "Akaun tidak tersedia sementara: {count, number}",
     "healthBannerAvailable": "Semua {count, number} akaun tersedia",
+    "healthLegendHide": "Sembunyikan petunjuk",
+    "healthLegendShow": "Tunjukkan petunjuk",
     "healthLegendOk": "Pejal = baki kuota; lut cahaya = telah digunakan.",
     "healthLegendCooldown": "Kuota {window} habis. Pejal = masa menunggu berlalu; lut cahaya = baki masa menunggu.",
     "healthLegendAction": "Kebenaran tamat atau akaun disekat; menunggu tidak menyelesaikannya.",
