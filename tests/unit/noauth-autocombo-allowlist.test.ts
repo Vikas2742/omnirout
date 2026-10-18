@@ -11,12 +11,9 @@
  * Every other keyless provider stays OUT of every auto/* pool — it remains fully
  * usable via direct `<alias>/<model>` calls, it is just not auto-routed to.
  *
- * Owner-accepted set (no feature flag): `opencode` and `uncloseai`.
- * `cloudflare-playground`, `devin-cli-agentic`, and `duckduckgo-web` carry the
- * emulated opt-in but are held out by the transport gate (browser-backed or
- * local-CLI transports cannot answer keylessly, so they stall the combo).
- * `aihorde`, `auggie`, `codex-app-server`, `veoaifree-web`, and `zcode` have no
- * flag and stay out.
+ * On this branch the pool is `uncloseai` alone: it is the only catalog entry with
+ * both the `noAuth` + `toolCalling: "emulated"` opt-in and no transport-gate flag
+ * (`browserBacked` / `isLocalCli`) holding it back.
  *
  * Historical note: until 2026-07-24 (refs #8183/#6453/#7032) the pool was a
  * hardcoded `{opencode}` allowlist. On 2026-07-24 it was expanded to every
@@ -26,7 +23,8 @@
  *
  * Regression guard: EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS in
  * open-sse/services/autoCombo/emulatedNoAuthAllowlist.ts drives what belongs
- * here. Adding `toolCalling: "emulated"` to another NOAUTH_PROVIDERS entry WILL
+ * here. Adding `toolCalling: "emulated"` to another NOAUTH_PROVIDERS entry — or
+ * setting/clearing a `browserBacked` / `isLocalCli` transport-gate flag — WILL
  * change the pool and must update ALLOWED_NOAUTH_PROVIDERS below.
  */
 import test from "node:test";
@@ -145,4 +143,31 @@ test("fresh install: ONLY the emulated-tool-calling providers are synthetic-noau
     `only the emulated-tool-calling providers may be no-auth (connectionId="noauth") candidates on a ` +
       `fresh install, but found: ${JSON.stringify(noauthProviders)}`
   );
+});
+
+test("transport gate is catalog-driven: every flagged no-auth transport stays out of the pool", async () => {
+  const { NOAUTH_PROVIDERS } = await import("../../src/shared/constants/providers.ts");
+  const combo = await virtualFactory.createVirtualAutoCombo(undefined);
+  const poolProviders = new Set(combo.models.map((m: { providerId: string }) => m.providerId));
+
+  // The gate must key off the catalog flags, never off an id list held in the
+  // allowlist module: flagging a transport is what keeps it out of the pool.
+  const flagged = Object.values(NOAUTH_PROVIDERS).filter(
+    (p) =>
+      ("browserBacked" in p && p.browserBacked === true) ||
+      ("isLocalCli" in p && p.isLocalCli === true)
+  );
+  assert.ok(
+    flagged.length > 0,
+    "expected at least one transport-gated no-auth entry in the catalog"
+  );
+
+  for (const entry of flagged) {
+    assert.equal(
+      poolProviders.has(entry.id),
+      false,
+      `"${entry.id}" is transport-gated (browserBacked/isLocalCli) and must not be auto-routed to. ` +
+        `Pool: ${JSON.stringify([...poolProviders])}`
+    );
+  }
 });
