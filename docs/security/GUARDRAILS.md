@@ -58,11 +58,13 @@ Flow:
    (`visionBridgeHelpers.ts`), which delegates to the **unified media
    detector** `detectMediaParts()` in `open-sse/utils/mediaParts.ts` — the
    single source of truth shared with the combo compatibility filter.
-   Extraction is allowlisted to top-level parts of the shapes
-   `replaceImageParts` can splice back (the extract↔replace contract): OpenAI
-   `image_url`, Anthropic base64 `source.type:"base64"`, Anthropic URL
-   `source.type:"url"`, and Responses API `input_image`. Nested hits and
-   indicator-only shapes are combo-filter material and are never extracted.
+   Extraction is allowlisted to the shapes `replaceImageParts` can splice
+   back (the extract↔replace contract): OpenAI `image_url`, Anthropic base64
+   `source.type:"base64"`, Anthropic URL `source.type:"url"`, and Responses
+   API `input_image`. Matching images nested inside Claude Code
+   `tool_result.content` and Responses tool outputs are also extracted and
+   replaced at their original paths; indicator-only shapes are combo-filter
+   material and are not extracted.
    Skip if none found.
 3. Resolve runtime config via `resolveVisionBridgeRuntimeSettings()`
    (`src/shared/constants/modalityBridgeDefaults.ts`): new `modalityBridge*`
@@ -75,10 +77,13 @@ Flow:
 5. Describe path: cap images at `maxImages`, compose the task-aware prompt,
    consult the describe cache, call the vision model **in parallel**
    (`Promise.allSettled`), and inject `[Image N]: <description>` text parts in
-   their place. A failed describe yields `null` and the original image part is
-   **preserved** (#4012) — except on the combo describe path when every
-   describe failed, where a confirmed non-vision upstream gets an
-   `(unavailable — no vision-capable provider connected)` stub instead (#8430).
+   their place. A failed describe yields `null`: the raw image is preserved for
+   unknown/vision-capable targets (#4012), but a **confirmed text-only direct
+   target** or zero-vision combo gets an explicit
+   `(unavailable — no vision-capable provider connected)` text stub for
+   every undescribed image, including partial failures and images beyond the
+   describe-call cap (#17069). The existing all-failed combo describe fallback
+   remains in place (#8430).
 6. Return `modifiedPayload` + meta (`imagesProcessed`, `descriptions`,
    `processingTimeMs`, `visionModel`).
 
@@ -88,7 +93,7 @@ Flow:
 | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `auto`     | ✔       | Legacy heuristic, untouched (#6640/#7204): non-combo/`auto/` models reroute to the best vision model unless the original model already has usable credentials (then describe); combo targets always describe.                                           |
 | `describe` |         | Always describe — the reroute block is skipped entirely; the user's chosen model always answers.                                                                                                                                                        |
-| `reroute`  |         | Force reroute: the keep-credentialed-model guard is bypassed. The reroute-**target** credential guard still applies — when no usable vision target exists, the request falls through to describe so raw images never reach a text-only backend (#8430). |
+| `reroute`  |         | Force reroute: the keep-credentialed-model guard is bypassed. The reroute-**target** credential guard still applies — when no usable vision target exists, the bridge blocks with a clear error rather than describing or sending raw images to a text-only target. |
 
 Forced modes short-circuit **before** the auto heuristic runs; `auto` behavior
 is byte-identical to the pre-PR-1 guardrail.
