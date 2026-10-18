@@ -128,24 +128,84 @@ function headerSecretValues(config: OtlpHttpConfig): string[] {
   const values = new Set<string>([config.headers, config.identitySalt ?? ""]);
   for (const [name, value] of Object.entries(parseOtlpHeaders(config.headers))) {
     values.add(value);
-    if (name === "authorization" || name === "proxy-authorization") {
-      const match = /^(Basic|Bearer)\s+(.+)$/i.exec(value);
-      if (match) {
-        values.add(match[2]);
-        if (match[1].toLowerCase() === "basic") {
-          const decodedBytes = Buffer.from(match[2], "base64");
-          const decoded = decodedBytes.toString("utf8");
-          const colon = decoded.indexOf(":");
-          if (isUtf8(decodedBytes) && colon >= 0) {
-            values.add(decoded);
-            values.add(decoded.slice(colon + 1));
-            values.add(decoded.slice(0, colon));
-          }
-        }
-      }
+    if (name !== "authorization" && name !== "proxy-authorization") continue;
+    const match = /^(Basic|Bearer)\s+(.+)$/i.exec(value);
+    if (!match) continue;
+    values.add(match[2]);
+    if (match[1].toLowerCase() !== "basic") continue;
+    const decodedBytes = Buffer.from(match[2], "base64");
+    const decoded = decodedBytes.toString("utf8");
+    const colon = decoded.indexOf(":");
+    if (isUtf8(decodedBytes) && colon >= 0) {
+      values.add(decoded);
+      values.add(decoded.slice(colon + 1));
+      values.add(decoded.slice(0, colon));
     }
   }
   return [...new Set([...values].flatMap(secretForms))].sort((a, b) => b.length - a.length);
+}
+
+type AddAttribute = (key: string, value: string | number | boolean | null | undefined) => void;
+
+function langfuseUsage(row: LogExportRecord): Record<string, number> {
+  const usage: Record<string, number> = {};
+  if (row.tokensIn !== null) usage.input = row.tokensIn;
+  if (row.tokensOut !== null) usage.output = row.tokensOut;
+  if (row.tokensIn !== null && row.tokensOut !== null) usage.total = row.tokensIn + row.tokensOut;
+  if (row.tokensCacheRead !== null) usage.cache_read_input_tokens = row.tokensCacheRead;
+  if (row.tokensCacheWrite !== null) usage.cache_creation_input_tokens = row.tokensCacheWrite;
+  return usage;
+}
+
+function appendLangfuseAttributes(
+  row: LogExportRecord,
+  config: OtlpHttpConfig,
+  add: AddAttribute,
+  context: {
+    endMs: number;
+    duration: number;
+    error: boolean;
+    message: string | undefined;
+    input: string | null;
+    output: string | null;
+  }
+) {
+  const { endMs, duration, error, message, input, output } = context;
+  add("langfuse.observation.type", "generation");
+  add("langfuse.observation.model.name", row.model);
+  add("langfuse.observation.usage_details", JSON.stringify(langfuseUsage(row)));
+  add("langfuse.observation.input", input);
+  add("langfuse.observation.output", output);
+  add("langfuse.observation.level", error ? "ERROR" : "DEFAULT");
+  add("langfuse.observation.status_message", message);
+  if (row.ttftMs !== null && row.ttftMs >= 0 && row.ttftMs <= duration)
+    add(
+      "langfuse.observation.completion_start_time",
+      new Date(endMs - duration + row.ttftMs).toISOString()
+    );
+  add("langfuse.session.id", row.sessionTag);
+  if (config.identity === "keyName") add("langfuse.user.id", row.apiKeyName);
+  if (config.identity === "pseudonymous" && row.apiKeyId) {
+    if (!config.identitySalt)
+      throw new Error("OTLP pseudonymous identity requires a stored destination salt");
+    add(
+      "langfuse.user.id",
+      createHmac("sha256", Buffer.from(config.identitySalt, "hex"))
+        .update(row.apiKeyId)
+        .digest("hex")
+    );
+  }
+  add("langfuse.trace.name", row.path);
+  add("langfuse.environment", config.environment || undefined);
+  for (const [key, value] of Object.entries({
+    provider: row.provider,
+    requested_model: row.requestedModel,
+    path: row.path,
+    combo: row.comboName,
+    cache_source: row.cacheSource,
+    status: row.status,
+  }))
+    add(`langfuse.observation.metadata.${key}`, value);
 }
 
 function toSpan(row: LogExportRecord, config: OtlpHttpConfig): Span {
@@ -204,47 +264,7 @@ function toSpan(row: LogExportRecord, config: OtlpHttpConfig): Span {
   }
   if (row.bodiesTruncated) add("omniroute.bodies_truncated", true);
   if (config.langfuseMapping) {
-    add("langfuse.observation.type", "generation");
-    add("langfuse.observation.model.name", row.model);
-    const usage: Record<string, number> = {};
-    if (row.tokensIn !== null) usage.input = row.tokensIn;
-    if (row.tokensOut !== null) usage.output = row.tokensOut;
-    if (row.tokensIn !== null && row.tokensOut !== null) usage.total = row.tokensIn + row.tokensOut;
-    if (row.tokensCacheRead !== null) usage.cache_read_input_tokens = row.tokensCacheRead;
-    if (row.tokensCacheWrite !== null) usage.cache_creation_input_tokens = row.tokensCacheWrite;
-    add("langfuse.observation.usage_details", JSON.stringify(usage));
-    add("langfuse.observation.input", input);
-    add("langfuse.observation.output", output);
-    add("langfuse.observation.level", error ? "ERROR" : "DEFAULT");
-    add("langfuse.observation.status_message", message);
-    if (row.ttftMs !== null && row.ttftMs >= 0 && row.ttftMs <= duration)
-      add(
-        "langfuse.observation.completion_start_time",
-        new Date(endMs - duration + row.ttftMs).toISOString()
-      );
-    add("langfuse.session.id", row.sessionTag);
-    if (config.identity === "keyName") add("langfuse.user.id", row.apiKeyName);
-    if (config.identity === "pseudonymous" && row.apiKeyId) {
-      if (!config.identitySalt)
-        throw new Error("OTLP pseudonymous identity requires a stored destination salt");
-      add(
-        "langfuse.user.id",
-        createHmac("sha256", Buffer.from(config.identitySalt, "hex"))
-          .update(row.apiKeyId)
-          .digest("hex")
-      );
-    }
-    add("langfuse.trace.name", row.path);
-    add("langfuse.environment", config.environment || undefined);
-    for (const [key, value] of Object.entries({
-      provider: row.provider,
-      requested_model: row.requestedModel,
-      path: row.path,
-      combo: row.comboName,
-      cache_source: row.cacheSource,
-      status: row.status,
-    }))
-      add(`langfuse.observation.metadata.${key}`, value);
+    appendLangfuseAttributes(row, config, add, { endMs, duration, error, message, input, output });
   }
   return {
     traceId: createHash("sha256")
@@ -342,13 +362,33 @@ function acknowledgementFailure(
   }
 }
 
-function createClient(config: OtlpHttpConfig) {
-  const endpoint = parseAndValidateNonMetadataUrl(config.endpoint).href;
-  const headers = new Headers(parseOtlpHeaders(config.headers));
-  headers.set("Content-Type", "application/json");
-  if (config.langfuseMapping) headers.set("x-langfuse-ingestion-version", "4");
-  else headers.delete("x-langfuse-ingestion-version");
-  async function post(body: string, spanCount: number): Promise<number> {
+async function httpStatusFailure(
+  response: Response,
+  attempt: number,
+  spanCount: number,
+  retryMs: number,
+  retryable: boolean
+) {
+  const after = response.headers.get("Retry-After");
+  if (after) {
+    const seconds = Number(after);
+    const parsed = Number.isFinite(seconds) ? seconds * 1000 : Date.parse(after) - Date.now();
+    if (Number.isFinite(parsed)) retryMs = Math.min(RETRY_AFTER_CAP_MS, Math.max(retryMs, parsed));
+  }
+  // Discard collector text without decoding or copying it into any error surface.
+  try {
+    await response.body?.cancel();
+  } catch {
+    // Best-effort cleanup: a closed/aborted body cannot change the HTTP failure.
+  }
+  const failure = new Error(
+    `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${response.status} (${attempt + 1} ${attempt === 0 ? "attempt" : "attempts"}, ${spanCount} spans not acknowledged)`
+  );
+  return { retryable, retryMs, failure };
+}
+
+function createPost(endpoint: string, headers: Headers, config: OtlpHttpConfig) {
+  return async function post(body: string, spanCount: number): Promise<number> {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       let retryMs = 250 * 2 ** attempt;
       let failure: Error;
@@ -374,24 +414,13 @@ function createClient(config: OtlpHttpConfig) {
           failure = new Error(rejected);
         } else {
           retryable = response.status === 408 || response.status === 429 || response.status >= 500;
-          const after = response.headers.get("Retry-After");
-          if (after) {
-            const seconds = Number(after);
-            const parsed = Number.isFinite(seconds)
-              ? seconds * 1000
-              : Date.parse(after) - Date.now();
-            if (Number.isFinite(parsed))
-              retryMs = Math.min(RETRY_AFTER_CAP_MS, Math.max(retryMs, parsed));
-          }
-          // Discard collector text without decoding or copying it into any error surface.
-          try {
-            await response.body?.cancel();
-          } catch {
-            // Best-effort cleanup: a closed/aborted body cannot change the HTTP failure.
-          }
-          failure = new Error(
-            `OTLP/HTTP ${retryable ? "retryable" : "permanent"} status ${response.status} (${attempt + 1} ${attempt === 0 ? "attempt" : "attempts"}, ${spanCount} spans not acknowledged)`
-          );
+          ({ retryMs, failure } = await httpStatusFailure(
+            response,
+            attempt,
+            spanCount,
+            retryMs,
+            retryable
+          ));
         }
       } catch {
         // Never include fetch's error/cause, URL or request headers in errors crossing IPC.
@@ -403,7 +432,16 @@ function createClient(config: OtlpHttpConfig) {
       await delay(retryMs);
     }
     throw new Error("OTLP/HTTP retry limit reached");
-  }
+  };
+}
+
+function createClient(config: OtlpHttpConfig) {
+  const endpoint = parseAndValidateNonMetadataUrl(config.endpoint).href;
+  const headers = new Headers(parseOtlpHeaders(config.headers));
+  headers.set("Content-Type", "application/json");
+  if (config.langfuseMapping) headers.set("x-langfuse-ingestion-version", "4");
+  else headers.delete("x-langfuse-ingestion-version");
+  const post = createPost(endpoint, headers, config);
   return {
     async test() {
       try {

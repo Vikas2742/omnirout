@@ -34,6 +34,12 @@ interface DestinationFormModalProps {
 
 type FormValues = Record<string, string | boolean>;
 
+function numericFieldValue(value: string | boolean | undefined): number | undefined {
+  if (value === "" || value === undefined) return undefined;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : undefined;
+}
+
 function initialValues(
   descriptor: LogExportTypeDescriptor | undefined,
   destination: LogExportDestination | null
@@ -106,9 +112,8 @@ function DestinationForm({
         continue;
       }
       if (field.type === "number") {
-        if (value === "" || value === undefined) continue;
-        const numeric = Number(value);
-        if (Number.isFinite(numeric)) config[field.key] = numeric;
+        const numeric = numericFieldValue(value);
+        if (numeric !== undefined) config[field.key] = numeric;
         continue;
       }
       const text = typeof value === "string" ? value.trim() : "";

@@ -257,6 +257,10 @@ interface BigQueryResponse {
   json: BigQueryResponseBody | null;
 }
 
+function hasTtftField(body: BigQueryResponseBody | null): boolean {
+  return body?.schema?.fields?.some((field) => field.name === "ttft_ms") ?? false;
+}
+
 function describeFailure(status: number, body: BigQueryResponseBody | null): string {
   const message = body?.error?.message;
   if (message) return message;
@@ -337,8 +341,7 @@ class BigQueryClient implements LogExportClient {
   async prepare(): Promise<void> {
     const table = await this.request("GET", this.tablePath);
     if (table.ok) {
-      this.includeTtft =
-        table.json?.schema?.fields?.some((field) => field.name === "ttft_ms") ?? false;
+      this.includeTtft = hasTtftField(table.json);
       return;
     }
     if (table.status !== 404) throw new Error(describeFailure(table.status, table.json));
@@ -391,8 +394,7 @@ class BigQueryClient implements LogExportClient {
       // A parallel creator may have supplied the legacy schema; inspect the winner.
       const existing = await this.request("GET", this.tablePath);
       if (!existing.ok) throw new Error(describeFailure(existing.status, existing.json));
-      this.includeTtft =
-        existing.json?.schema?.fields?.some((field) => field.name === "ttft_ms") ?? false;
+      this.includeTtft = hasTtftField(existing.json);
       return;
     }
     this.includeTtft = true;
