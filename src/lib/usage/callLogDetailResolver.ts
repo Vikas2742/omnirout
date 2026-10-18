@@ -83,6 +83,84 @@ async function legacyDisk(
   }
 }
 
+type ArtifactState = "missing" | "corrupt";
+type DetailPayload = Record<string, unknown>;
+interface ArtifactRead {
+  payload: DetailPayload | null;
+  detailState: string;
+  artifactRelPath: string | null;
+  pipelinePayloads: DetailPayload | null;
+}
+
+async function readArtifactPayload(
+  db: CallLogReadDb,
+  entry: CallLogDetailEntry,
+  baseDir: string | null,
+  io: DetailFileIo,
+  onArtifactState?: (relativePath: string, state: ArtifactState) => void
+): Promise<ArtifactRead> {
+  const relPath = entry.artifactRelPath;
+  const unchanged: ArtifactRead = {
+    payload: null,
+    detailState: entry.detailState,
+    artifactRelPath: relPath,
+    pipelinePayloads: null,
+  };
+  if (!relPath || !baseDir) return unchanged;
+  try {
+    const payload = JSON.parse(await io.readFile(path.join(baseDir, relPath))) as DetailPayload;
+    if (!payload) return unchanged;
+    return {
+      payload,
+      detailState: "ready",
+      artifactRelPath: relPath,
+      pipelinePayloads: (payload.pipeline ?? legacyPipeline(db, entry.id)) as DetailPayload | null,
+    };
+  } catch (error) {
+    const state: ArtifactState =
+      (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "corrupt";
+    onArtifactState?.(relPath, state);
+    return {
+      payload: null,
+      detailState: state,
+      artifactRelPath: state === "missing" ? null : relPath,
+      pipelinePayloads: null,
+    };
+  }
+}
+
+/** Legacy inline error column: blank → null, JSON → parsed, plain text kept verbatim. */
+function parseLegacyError(value: unknown): unknown {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value; // Historical plain-text error.
+  }
+}
+
+function readLegacyInline(db: CallLogReadDb, id: string): DetailPayload | null {
+  if (!hasTable(db, "call_logs_v1_legacy")) return null;
+  const row = db
+    .prepare("SELECT request_body, response_body, error FROM call_logs_v1_legacy WHERE id = ?")
+    .get(id) as Record<string, unknown> | undefined;
+  if (!row) return null;
+  return {
+    requestBody: parseStoredPayload(row.request_body),
+    responseBody: parseStoredPayload(row.response_body),
+    error: parseLegacyError(row.error),
+  };
+}
+
+/** Body/error fields; an inline legacy row's error wins even when null (historical shape). */
+function detailBodyFields(payload: DetailPayload | null, inline: boolean, entryError: unknown) {
+  return {
+    requestBody: payload?.requestBody ?? null,
+    responseBody: payload?.responseBody ?? null,
+    error: inline ? payload?.error : (payload?.error ?? entryError),
+  };
+}
+
 /**
  * Pure detail resolution: artifact → legacy-inline → legacy-disk → none.
  * Never updates SQLite. The dashboard owns missing/corrupt bookkeeping via onArtifactState;
@@ -94,73 +172,27 @@ export async function resolveCallLogDetail<T extends CallLogDetailEntry>(
   baseDir: string | null,
   options: {
     io?: DetailFileIo;
-    onArtifactState?: (relativePath: string, state: "missing" | "corrupt") => void;
+    onArtifactState?: (relativePath: string, state: ArtifactState) => void;
   } = {}
 ) {
   const io = options.io ?? asyncIo;
-  let detailState = entry.detailState;
-  let artifactRelPath = entry.artifactRelPath;
-  let payload: Record<string, unknown> | null = null;
-  let artifactReady = false;
-  let inline = false;
-  let pipelinePayloads: Record<string, unknown> | null = null;
-  if (artifactRelPath && baseDir) {
-    try {
-      payload = JSON.parse(await io.readFile(path.join(baseDir, artifactRelPath))) as Record<
-        string,
-        unknown
-      >;
-      if (payload) {
-        artifactReady = true;
-        detailState = "ready";
-        pipelinePayloads = (payload.pipeline ?? legacyPipeline(db, entry.id)) as Record<
-          string,
-          unknown
-        > | null;
-      }
-    } catch (error) {
-      detailState = (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "corrupt";
-      options.onArtifactState?.(artifactRelPath, detailState as "missing" | "corrupt");
-      if (detailState === "missing") artifactRelPath = null;
-    }
-  }
-  if (!payload && detailState === "legacy-inline" && hasTable(db, "call_logs_v1_legacy")) {
-    const row = db
-      .prepare("SELECT request_body, response_body, error FROM call_logs_v1_legacy WHERE id = ?")
-      .get(entry.id) as Record<string, unknown> | undefined;
-    if (row) {
-      inline = true;
-      let error: unknown = row.error;
-      if (typeof error === "string") {
-        if (!error.trim()) error = null;
-        else {
-          try {
-            error = JSON.parse(error);
-          } catch {
-            /* Historical plain-text error. */
-          }
-        }
-      } else error = null;
-      payload = {
-        requestBody: parseStoredPayload(row.request_body),
-        responseBody: parseStoredPayload(row.response_body),
-        error,
-      };
-    }
-  }
-  if (!payload) payload = await legacyDisk(entry, baseDir, io);
-  if (!pipelinePayloads) pipelinePayloads = legacyPipeline(db, entry.id);
+  const artifact = await readArtifactPayload(db, entry, baseDir, io, options.onArtifactState);
+  const artifactReady = artifact.payload !== null;
+  const inlinePayload =
+    !artifactReady && artifact.detailState === "legacy-inline"
+      ? readLegacyInline(db, entry.id)
+      : null;
+  const inline = inlinePayload !== null;
+  const payload = artifact.payload ?? inlinePayload ?? (await legacyDisk(entry, baseDir, io));
+  const pipelinePayloads = artifact.pipelinePayloads || legacyPipeline(db, entry.id);
+  const hasPipelineDetails = artifactReady ? Boolean(payload?.pipeline) : Boolean(pipelinePayloads);
   return {
     ...entry,
-    detailState,
-    artifactRelPath,
-    requestBody: payload?.requestBody ?? null,
-    responseBody: payload?.responseBody ?? null,
-    error: inline ? payload?.error : (payload?.error ?? entry.error),
+    detailState: artifact.detailState,
+    artifactRelPath: artifact.artifactRelPath,
+    ...detailBodyFields(payload, inline, entry.error),
     pipelinePayloads,
-    hasPipelineDetails:
-      (artifactReady ? Boolean(payload?.pipeline) : Boolean(pipelinePayloads)) ||
-      entry.hasPipelineDetails,
+    hasPipelineDetails: hasPipelineDetails || entry.hasPipelineDetails,
     active: false,
   };
 }

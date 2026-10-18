@@ -3,7 +3,6 @@ import { getDbInstance } from "../db/core";
 import { getCallLogById } from "./callLogs";
 import * as queries from "./callLogExportQueries";
 import type { LogExportSourceRow } from "../logExport/types";
-export { DEFAULT_MAX_BODY_BYTES, type CallLogExportOptions } from "./callLogExportQueries";
 export function getMaxCallLogRowId(): number {
   return queries.getMaxCallLogRowId(getDbInstance());
 }
