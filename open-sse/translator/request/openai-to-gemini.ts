@@ -22,12 +22,14 @@ import { gemini38ThinkingConfig, isGemini38Model } from "../../services/thinking
 import {
   DEFAULT_SAFETY_SETTINGS,
   buildGeminiThinkingConfig,
+  geminiModelRejectsThinkingConfig,
   convertOpenAIContentToParts,
   extractTextContent,
   tryParseJSON,
   cleanJSONSchemaForAntigravity,
 } from "../helpers/geminiHelper.ts";
 import { buildGeminiTools, sanitizeGeminiToolName } from "../helpers/geminiToolsSanitizer.ts";
+import { createSchemaBudget } from "../helpers/schemaBudget.ts";
 import {
   isGeminiTrailingModelTurnRejectingModel,
   stripTrailingGeminiModelTurns,
@@ -262,7 +264,10 @@ function openaiToGeminiBase(
   // Mirrors the same guard in claude-to-gemini.ts. Port of the thinkingConfig
   // guard half of decolua/9router#2480 (the signature-replay half of that PR
   // is out of scope and not ported here).
-  if (model.startsWith("gemma-4")) {
+  // Models without thinking support (TTS, transcription, gemini-2.5-flash-image)
+  // 400 on ANY thinkingConfig, so every path below skips them (#16928).
+  const rejectsThinkingConfig = geminiModelRejectsThinkingConfig(model);
+  if (model.startsWith("gemma-4") || rejectsThinkingConfig) {
     // gemma-4 models returns - 400: Thinking budget is not supported for this model
   } else {
     // 1. OpenAI format: reasoning_effort (none/low/medium/high/auto/max/xhigh)
@@ -339,7 +344,7 @@ function openaiToGeminiBase(
   // "reasoning_effort: none" off-switch above (#6813) is the supported opt-out.
   // Gemini 3.x: with an explicit thinkingLevel, only includeThoughts is injected —
   // the deprecated numeric budget is omitted entirely.
-  if (!result.generationConfig.thinkingConfig) {
+  if (!result.generationConfig.thinkingConfig && !rejectsThinkingConfig) {
     const modelLower = model.toLowerCase();
     if (
       modelLower.includes("gemini") &&
@@ -383,7 +388,11 @@ function openaiToGeminiBase(
   // surface: camelCase and snake_case spellings, at both the top level and nested
   // under generationConfig.thinkingConfig (the operator payload-override surface).
   // The deprecated numeric thinkingBudget is never emitted alongside the level.
-  if (explicitThinkingLevel && !result.generationConfig.thinkingConfig?.thinkingLevel) {
+  if (
+    explicitThinkingLevel &&
+    !rejectsThinkingConfig &&
+    !result.generationConfig.thinkingConfig?.thinkingLevel
+  ) {
     result.generationConfig.thinkingConfig = {
       ...result.generationConfig.thinkingConfig,
       thinkingLevel: explicitThinkingLevel,
@@ -688,9 +697,12 @@ function openaiToGeminiBase(
 
   // Convert tools
   const bodyTools = body.tools as Array<Record<string, unknown>> | undefined;
+  // One `$ref` expansion budget for every schema of this request (tools + response).
+  const schemaBudget = createSchemaBudget();
   const geminiTools = buildGeminiTools(bodyTools, {
     ...toolNameOptions,
     toolNameMap,
+    schemaBudget,
   });
 
   // Support for Google Search grounding if requested via 'google_search' tool
@@ -730,6 +742,8 @@ function openaiToGeminiBase(
         // parameters (geminiToolsSanitizer) keep the default flattening.
         result.generationConfig.responseSchema = cleanJSONSchemaForAntigravity(schema, {
           preserveNullable: true,
+          budget: schemaBudget,
+          location: "response_format",
         });
       }
     } else if (responseFormat.type === "json_object") {
