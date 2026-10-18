@@ -307,6 +307,8 @@ export interface VisionBridgeDependencies {
   ) => Promise<string>;
   /** Override combo-target vision check — return true to force processing, false to skip. */
   checkModelHasComboMapping?: (model: string) => Promise<boolean>;
+  /** Test/embedder seam: preserve the full combo verdict, including non-combo. */
+  resolveComboVisionDecision?: (model: string) => Promise<ComboVisionBridgeDecision>;
   /**
    * Whether a model string has a usable active credential (true/false).
    * Return `null` when indeterminate (no DB / error) so callers can fail-open.
@@ -367,6 +369,8 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
       requestedModelVision = capabilities?.supportsVision ?? null;
       comboVisionBridgeDecision = forceVisionBridge
         ? "process"
+        : this.deps.resolveComboVisionDecision
+          ? await this.deps.resolveComboVisionDecision(model)
         : this.deps.checkModelHasComboMapping
           ? (await this.deps.checkModelHasComboMapping(model))
             ? "process"
