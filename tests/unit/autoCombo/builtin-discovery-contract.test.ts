@@ -44,13 +44,17 @@ const rejected = [
   "auto/__proto__",
 ];
 
+// The catalog only filters `auto/*` mirrors in the opt-in refined mode
+// (CATALOG_MIRROR_REFINEMENTS_ENABLED), with the resolver injected by catalogResponse.ts.
+const REFINED = { refined: true, isResolvableAutoId: isResolvableBuiltinAutoId };
+
 beforeEach(() => vi.clearAllMocks());
 
 describe("built-in discovery and materialization share one acceptance contract", () => {
   it.each(accepted)("advertises and materializes %s", async (id) => {
     expect(isResolvableBuiltinAutoId(id)).toBe(true);
     const models = [{ id, owned_by: "combo" }];
-    expect(appendCcDiscoveryAliases(models, () => true).map((model) => model.id)).toEqual([
+    expect(appendCcDiscoveryAliases(models, () => true, REFINED).map((model) => model.id)).toEqual([
       id,
       `claude/combo/${id}`,
     ]);
@@ -62,7 +66,7 @@ describe("built-in discovery and materialization share one acceptance contract",
   it.each(rejected)("neither advertises nor materializes %s", async (id) => {
     expect(isResolvableBuiltinAutoId(id)).toBe(false);
     const models = [{ id, owned_by: "combo" }];
-    expect(appendCcDiscoveryAliases(models, () => true)).toBe(models);
+    expect(appendCcDiscoveryAliases(models, () => true, REFINED)).toBe(models);
     await expect(createBuiltinAutoCombo(id, id.slice("auto/".length))).rejects.toThrow(
       "Unknown built-in auto combo"
     );
@@ -70,13 +74,20 @@ describe("built-in discovery and materialization share one acceptance contract",
   });
 
   it.each([
-    ["other/fast", "fast"],
-    ["auto/nonsense", "fast"],
-    ["auto/fast", "coding"],
-  ])("rejects mismatched id/suffix pairs: %s / %s", async (id, suffix) => {
-    await expect(createBuiltinAutoCombo(id, suffix)).rejects.toThrow("Unknown built-in auto combo");
-    expect(factory.createVirtualAutoCombo).not.toHaveBeenCalled();
-  });
+    ["other/fast", "fast", "fast"],
+    ["auto/nonsense", "fast", "fast"],
+    ["auto/fast", "coding", "fast"],
+  ])(
+    "request path keeps the lenient (modelStr, suffix) contract: %s / %s still materializes",
+    async (id, suffix, variant) => {
+      // chatHelpers.ts passes the raw model and the parsed suffix separately; the
+      // exact `auto/<suffix>` guard is catalog-only (isResolvableBuiltinAutoId).
+      expect(isResolvableBuiltinAutoId(id)).toBe(id === "auto/fast");
+      const combo = await createBuiltinAutoCombo(id, suffix);
+      expect(combo).toMatchObject({ id, name: id });
+      expect(factory.createVirtualAutoCombo).toHaveBeenCalledWith(variant, {});
+    }
+  );
 
   it.each([
     ["auto/chat", undefined, undefined],

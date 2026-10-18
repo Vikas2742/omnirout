@@ -2,7 +2,7 @@ import type { ModelCapabilityResolutionSnapshot } from "@/lib/modelCapabilities"
 
 import type { AutoVariant } from "./autoPrefix";
 import { VALID_VARIANTS } from "./autoPrefix";
-import type { PreparedVirtualAutoComboInputs } from "./virtualFactory";
+import type { AutoComboSpec, PreparedVirtualAutoComboInputs } from "./virtualFactory";
 import { parseAutoSuffix, type AutoCategory, type AutoTier } from "./suffixComposition";
 import { isValidModelFamily, AUTO_FAMILY_IDS, type ModelFamily } from "./modelFamily";
 
@@ -104,7 +104,6 @@ export function resolveAutoVariant(modelStr: string, suffix: string): ResolvedAu
  * decide whether an `auto/` model is a valid built-in before materializing it.
  */
 export function isRecognizedBuiltinAuto(modelStr: string, suffix: string): boolean {
-  if (!suffix || modelStr !== `auto/${suffix}`) return false;
   return (
     resolveAutoVariant(modelStr, suffix).recognized ||
     parseAutoSuffix(suffix).valid ||
@@ -184,12 +183,63 @@ export function resolveBuiltinAutoSpec(modelStr: string, suffix: string): Builti
 }
 
 /**
- * True iff `createBuiltinAutoCombo` will materialize `modelStr` instead of
- * throwing "Unknown built-in auto combo". Discovery and materialization share
- * the recognition rule instead of maintaining separate acceptance branches.
+ * Catalog-side check: true iff `modelStr` is exactly `auto/<suffix>` for a
+ * non-empty suffix that `createBuiltinAutoCombo(modelStr, suffix)` materializes
+ * instead of throwing "Unknown built-in auto combo".
+ *
+ * The exact-suffix guard lives HERE only. The request path
+ * (`chatHelpers.ts` → `createBuiltinAutoCombo(modelStr, suffix)` with the raw
+ * model and the parsed suffix) keeps the historical, more lenient
+ * `isRecognizedBuiltinAuto(modelStr, suffix)` contract unchanged.
  */
 export function isResolvableBuiltinAutoId(modelStr: string): boolean {
-  return isRecognizedBuiltinAuto(modelStr, modelStr.slice("auto/".length));
+  if (typeof modelStr !== "string" || !modelStr.startsWith("auto/")) return false;
+  const suffix = modelStr.slice("auto/".length);
+  if (!suffix) return false;
+  return isRecognizedBuiltinAuto(modelStr, suffix);
+}
+
+/** The `(variant, spec)` pair `createBuiltinAutoCombo` hands to the virtual factory. */
+export type BuiltinAutoMaterialization = {
+  variant: AutoVariant | undefined;
+  spec: AutoComboSpec | undefined;
+};
+
+/**
+ * Pure: the `(variant, spec)` arguments `createBuiltinAutoCombo` materializes a
+ * built-in `auto/*` id with, or `null` when it is not a recognized built-in
+ * (the caller throws "Unknown built-in auto combo").
+ *
+ * Collapses the historical four-branch chain (category → defined variant →
+ * template-without-variant → category parse → family) into one decision while
+ * keeping its exact outputs, including the category-before-family precedence
+ * for a suffix that would parse both ways. Equivalence is pinned by
+ * tests/unit/autoCombo/builtin-materialize-equivalence.test.ts.
+ */
+export function resolveBuiltinAutoMaterialization(
+  modelStr: string,
+  suffix: string
+): BuiltinAutoMaterialization | null {
+  if (!isRecognizedBuiltinAuto(modelStr, suffix)) return null;
+  const spec = resolveBuiltinAutoSpec(modelStr, suffix);
+  if ("variant" in spec) {
+    const overlayTier = FLAT_TIER_OVERLAY_IDS[modelStr];
+    return {
+      variant: spec.variant,
+      spec: overlayTier ? { tier: overlayTier } : spec.variant !== undefined ? {} : undefined,
+    };
+  }
+  if ("category" in spec) {
+    return {
+      variant: undefined,
+      spec: { category: spec.category, ...(spec.tier ? { tier: spec.tier } : {}) },
+    };
+  }
+  const parsed = parseAutoSuffix(suffix);
+  if (parsed.valid) {
+    return { variant: undefined, spec: { category: parsed.category, tier: parsed.tier } };
+  }
+  return { variant: undefined, spec: { family: spec.family } };
 }
 
 export async function prepareBuiltinAutoComboInputs(
@@ -207,28 +257,16 @@ export async function createBuiltinAutoCombo(
   suffix: string,
   prepared?: PreparedVirtualAutoComboInputs
 ) {
-  if (!isRecognizedBuiltinAuto(modelStr, suffix)) {
+  const materialization = resolveBuiltinAutoMaterialization(modelStr, suffix);
+  if (!materialization) {
     throw new Error(`Unknown built-in auto combo: ${modelStr}`);
   }
   const { createVirtualAutoCombo, createVirtualAutoComboFromPrepared } =
     await import("./virtualFactory.ts");
-  const materialize = (
-    variant: AutoVariant | undefined,
-    spec?: Parameters<typeof createVirtualAutoCombo>[1]
-  ) =>
-    prepared
-      ? createVirtualAutoComboFromPrepared(prepared, variant, spec)
-      : createVirtualAutoCombo(variant, spec);
-
-  const spec = resolveBuiltinAutoSpec(modelStr, suffix);
-  const overlayTier = FLAT_TIER_OVERLAY_IDS[modelStr];
-  const virtualCombo =
-    "variant" in spec
-      ? await materialize(
-          spec.variant,
-          overlayTier ? { tier: overlayTier } : spec.variant !== undefined ? {} : undefined
-        )
-      : await materialize(undefined, spec);
+  const { variant, spec } = materialization;
+  const virtualCombo = prepared
+    ? await createVirtualAutoComboFromPrepared(prepared, variant, spec)
+    : await createVirtualAutoCombo(variant, spec);
   virtualCombo.name = modelStr;
   virtualCombo.id = modelStr;
   return virtualCombo;
