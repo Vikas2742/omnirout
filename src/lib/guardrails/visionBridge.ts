@@ -61,19 +61,17 @@ function evaluateModelStepCapability(s: Record<string, unknown>): "vision" | "no
   // refer to one configured compatible provider. A generic capability lookup
   // is NOT sufficient proof for such a node: its fallback may find the same
   // model name in a completely different provider's customModels rows.
-  const internalProvider =
-    provider && isCompatibleProviderConnectionId(provider) ? provider : null;
+  const internalProvider = provider && isCompatibleProviderConnectionId(provider) ? provider : null;
   if (internalProvider) {
     const slash = targetModel.indexOf("/");
     const prefix = slash > 0 ? targetModel.slice(0, slash) : null;
     const ownPrefix = getProviderNodePrefixSync(internalProvider);
     const hasOwnPrefix = Boolean(
-      prefix && (prefix === internalProvider ||
+      prefix &&
+      (prefix === internalProvider ||
         (ownPrefix && prefix.toLowerCase() === ownPrefix.toLowerCase()))
     );
-    const candidates = hasOwnPrefix
-      ? [targetModel.slice(slash + 1), targetModel]
-      : [targetModel];
+    const candidates = hasOwnPrefix ? [targetModel.slice(slash + 1), targetModel] : [targetModel];
 
     // Preserve source precedence: an explicit false from this node must win
     // before positive discoveries and must not be overridden by a foreign
