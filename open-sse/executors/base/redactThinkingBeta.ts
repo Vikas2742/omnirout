@@ -11,10 +11,42 @@
 // thinking, or when the operator sets OMNIROUTE_REDACT_THINKING=false — unless
 // the client itself negotiated a redact-thinking beta in its own anthropic-beta
 // (or a CC-compatible connection explicitly opted in via requestDefaults).
+//
+// Claude OAuth exception: `redact-thinking-2026-02-12` is part of the Claude Code
+// OAuth wire fingerprint (open-sse/config/anthropicHeaders.ts). OmniRoute leaves
+// it untouched on OAuth requests unless the operator opts in with the default-off
+// CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED feature flag.
 
 export const REDACT_THINKING_BETA_PREFIX = "redact-thinking-";
 
+/** Default-off feature flag that lets the OAuth fingerprint drop the redact beta. */
+export const CLAUDE_OAUTH_SUMMARIZED_THINKING_FLAG = "CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED";
+
 type EnvLike = Record<string, string | undefined>;
+
+// The server feature-flag resolver (DB override > env > definition default) is
+// published on globalThis by src/shared/utils/featureFlagResolverBridge.ts under
+// this process-wide symbol. Reading it here keeps open-sse free of a new src
+// import (boundary ratchet); tests/unit/claude-summarized-thinking-redact-beta.test.ts
+// locks the key against the bridge.
+const FEATURE_FLAG_RESOLVER_KEY = Symbol.for("omniroute.featureFlagResolver");
+
+/**
+ * True only when the operator enabled CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED.
+ * Fails closed (OAuth fingerprint unchanged) when the resolver throws.
+ */
+export function isClaudeOAuthSummarizedThinkingUnredacted(env: EnvLike = process.env): boolean {
+  try {
+    const resolver = (globalThis as Record<symbol, unknown>)[FEATURE_FLAG_RESOLVER_KEY];
+    if (typeof resolver === "function") {
+      return (resolver as (key: string) => boolean)(CLAUDE_OAUTH_SUMMARIZED_THINKING_FLAG) === true;
+    }
+    const raw = env[CLAUDE_OAUTH_SUMMARIZED_THINKING_FLAG];
+    return raw === "true" || raw === "1" || raw === "yes";
+  } catch {
+    return false;
+  }
+}
 
 function isRedactThinkingToken(token: string): boolean {
   return token.trim().toLowerCase().startsWith(REDACT_THINKING_BETA_PREFIX);
@@ -52,16 +84,22 @@ export function shouldSuppressRedactThinking(
 /**
  * Remove `redact-thinking-*` tokens from the outbound anthropic-beta header
  * (any casing) when shouldSuppressRedactThinking() holds and the connection did
- * not explicitly opt into redact-thinking. Returns true when the header changed.
+ * not explicitly opt into redact-thinking. On a Claude OAuth request
+ * (`claudeOAuth: true`) the header is left alone unless the
+ * CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED flag is on. Returns true when the
+ * header changed.
  */
 export function stripRedactThinkingBetaForVisibleThinking(
   headers: Record<string, string>,
   body: unknown,
   clientHeaders?: Record<string, string> | null,
-  options: { connectionOptedIn?: boolean; env?: EnvLike } = {}
+  options: { connectionOptedIn?: boolean; claudeOAuth?: boolean; env?: EnvLike } = {}
 ): boolean {
   if (options.connectionOptedIn === true) return false;
   const env = options.env ?? process.env;
+  if (options.claudeOAuth === true && !isClaudeOAuthSummarizedThinkingUnredacted(env)) {
+    return false;
+  }
   const clientBeta = clientHeaders
     ? (Object.entries(clientHeaders).find(([key]) => key.toLowerCase() === "anthropic-beta")?.[1] ??
       null)

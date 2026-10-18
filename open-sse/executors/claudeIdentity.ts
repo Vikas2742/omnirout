@@ -10,7 +10,10 @@
 
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
-import { shouldSuppressRedactThinking } from "./base/redactThinkingBeta.ts";
+import {
+  isClaudeOAuthSummarizedThinkingUnredacted,
+  shouldSuppressRedactThinking,
+} from "./base/redactThinkingBeta.ts";
 
 import {
   CLAUDE_CODE_CLIENT_VERSION,
@@ -443,8 +446,15 @@ export function selectBetaFlags(
   if (allowThinking) {
     flags.push("interleaved-thinking-2025-05-14");
     // A client that explicitly asks for summarized (readable) thinking must not
-    // have it blanked by a redact beta it never negotiated.
-    if (!shouldSuppressRedactThinking(b, clientBeta)) flags.push("redact-thinking-2026-02-12");
+    // have it blanked by a redact beta it never negotiated. This shape-derived set
+    // is the Claude Code (OAuth) fingerprint, so the redact beta is only dropped
+    // here behind the default-off CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED flag;
+    // non-OAuth requests are cleaned at dispatch (stripRedactThinkingBetaForVisibleThinking).
+    if (!(
+      isClaudeOAuthSummarizedThinkingUnredacted() && shouldSuppressRedactThinking(b, clientBeta)
+    )) {
+      flags.push("redact-thinking-2026-02-12");
+    }
     flags.push("thinking-token-count-2026-05-13");
   }
   flags.push("context-management-2025-06-27", "prompt-caching-scope-2026-01-05");

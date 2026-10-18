@@ -1406,8 +1406,11 @@ export class BaseExecutor {
         }
 
         // Explicit `thinking.display: "summarized"` must not be blanked by redact-thinking.
+        // Claude OAuth keeps its fingerprint beta unless the default-off
+        // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED flag is on.
         stripRedactThinkingBetaForVisibleThinking(headers, transformedBody, clientHeaders, {
           connectionOptedIn: ccRequestDefaults.redactThinking === true,
+          claudeOAuth: this.provider === "claude" && hasClaudeOAuthToken,
         });
         stripInternalBodyFields(transformedBody);
 
