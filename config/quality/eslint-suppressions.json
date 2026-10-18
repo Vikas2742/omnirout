@@ -191,7 +191,7 @@
   },
   "open-sse/handlers/imageGeneration.ts": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 5
+      "count": 4
     }
   },
   "open-sse/handlers/musicGeneration.ts": {
@@ -560,11 +560,6 @@
   },
   "open-sse/services/v0QuotaFetcher.ts": {
     "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "open-sse/services/videoCombo.ts": {
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
@@ -1016,11 +1011,6 @@
   "src/app/api/providers/bulk-web-session/route.ts": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    }
-  },
-  "src/app/api/relay/tokens/[id]/route.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
     }
   },
   "src/app/api/search/stats/route.ts": {
@@ -2525,11 +2515,6 @@
       "count": 10
     }
   },
-  "tests/unit/chat-cooldown-aware-retry.test.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 10
-    }
-  },
   "tests/unit/chat-rate-limit-body-lock.test.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 2
@@ -3990,11 +3975,6 @@
   },
   "tests/unit/opencode-executor.test.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "tests/unit/opencode-premium-keyless-gate-8681.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },

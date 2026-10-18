@@ -1,6 +1,7 @@
 import { CORS_HEADERS } from "./cors.ts";
 import { unwrapClinepassEnvelope } from "./clinepassEnvelope.ts";
 import { extractJsonErrorFields } from "./tencentEnvelope.ts";
+import { classifyProviderSafetyError, isPublicProviderSafetyCode } from "./providerSafety.ts";
 import {
   redactSensitiveErrorText,
   sanitizeErrorMessage,
@@ -13,6 +14,7 @@ import { buildPassthroughErrorResponse } from "./upstreamErrorPassthrough.ts";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { resolveRetryAfterInstant } from "./retryAfterInstant.ts";
 import { parseAntigravityRetryTime, parseProseRetryDelayMs } from "./proseRetryDelay.ts";
+import { parseDetailedRetryHintFromJsonBody } from "../services/retryAfterJson.ts";
 
 export { parseRetryAfterHeader, resolveRetryAfterInstant } from "./retryAfterInstant.ts";
 export { parseAntigravityRetryTime, parseProseRetryDelayMs };
@@ -45,6 +47,8 @@ export type ErrorBodyClassification = {
 
 const PUBLIC_ERROR_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
+  "cyber_policy",
+  "content_policy_violation",
   "abort",
   "aborted",
   "account_semaphore_capacity",
@@ -217,6 +221,7 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "native_codex_pinned_model_unavailable",
   "network_error",
   "no_active_connection",
+  "no_eligible_targets",
   "no_free_eligible_connection",
   "no_local_login",
   "no_refresh_token",
@@ -361,7 +366,9 @@ function isSafePublicErrorIdentifier(value: string): boolean {
   if (!PUBLIC_ERROR_IDENTIFIER.test(value)) return false;
   if (/^[1-5]\d{2}$/.test(value)) return true;
   if (/^HTTP_[1-5]\d{2}$/i.test(value)) return true;
-  return SAFE_PUBLIC_ERROR_IDENTIFIERS.has(value.toLowerCase());
+  return (
+    SAFE_PUBLIC_ERROR_IDENTIFIERS.has(value.toLowerCase()) || isPublicProviderSafetyCode(value)
+  );
 }
 
 /** Project an internal classification onto the bounded client-visible identifier vocabulary. */
@@ -710,6 +717,20 @@ export function isRetryAfterProvenanceEnabled(): boolean {
 }
 
 /**
+ * #15917 — opt-in CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED (default off): stop a combo on an
+ * exact content-policy refusal even when the remaining targets are different models. Lives
+ * here because this module already reads feature flags (no new open-sse → src edge). Fails
+ * closed to the default (heterogeneous combos advance) when the flag store cannot be read.
+ */
+export function isContentPolicyRefusalComboStopEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED");
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Seconds until a concrete FUTURE retry time, or null when there is none: absent,
  * non-positive or invalid values, numeric strings, and dates that already elapsed.
  * Unlike normalizeRetryAfterSeconds it never invents a 1s wait; when it returns a
@@ -790,14 +811,18 @@ export function logRetryHintUnreadable(
  * @returns {Promise<{statusCode: number, message: string, retryAfterMs: number|null, responseBody: unknown}>}
  */
 export async function parseUpstreamError(response: Response, provider: string | null = null) {
+  // Cap maximum retry time at 24 hours to prevent infinite wait
+  const MAX_RETRY_MS = 24 * 60 * 60 * 1000;
   let message = "";
   let retryAfterMs: number | null = null;
   let responseBody: unknown = null;
   let errorCode: unknown = undefined;
   let errorType: unknown = undefined;
+  let rawText = "";
 
   try {
     const text = await response.text();
+    rawText = text;
     responseBody = normalizePayloadForLog(text);
 
     // Try parse as JSON
@@ -825,6 +850,17 @@ export async function parseUpstreamError(response: Response, provider: string | 
     responseBody = { _rawText: message };
   }
 
+  // Code-only Responses failures still belong to the request, not account health.
+  const safety = classifyProviderSafetyError({
+    status: response.status,
+    code: errorCode,
+    type: errorType,
+    message,
+  });
+  if (safety) {
+    errorCode = safety.code;
+    errorType = "invalid_request_error";
+  }
   const messageStr = message;
 
   const retryAfterHeader = response.headers?.get?.("retry-after");
@@ -837,6 +873,19 @@ export async function parseUpstreamError(response: Response, provider: string | 
       if (Number.isFinite(retryAfterDate) && retryAfterDate > Date.now()) {
         retryAfterMs = retryAfterDate - Date.now();
       }
+    }
+  }
+
+  // #16442: a structured google.rpc.RetryInfo detail (`error.details[].retryDelay`)
+  // with NO prose hint in the message and NO Retry-After header is still an
+  // authoritative upstream window — Gemini 429s carry the delay only there. Read
+  // it from the raw body before the prose heuristics, mirroring the structured-
+  // first order detectRetryHint() uses on the classification side. Returns null
+  // for non-JSON bodies, so this is a no-op on every existing path.
+  if (response.status === 429 && !retryAfterMs) {
+    const structuredHint = parseDetailedRetryHintFromJsonBody(rawText, MAX_RETRY_MS);
+    if (structuredHint) {
+      retryAfterMs = structuredHint.retryAfterMs;
     }
   }
 
@@ -858,8 +907,6 @@ export async function parseUpstreamError(response: Response, provider: string | 
     }
   }
 
-  // Cap maximum retry time at 24 hours to prevent infinite wait
-  const MAX_RETRY_MS = 24 * 60 * 60 * 1000;
   if (retryAfterMs && retryAfterMs > MAX_RETRY_MS) {
     retryAfterMs = MAX_RETRY_MS;
   }
@@ -877,6 +924,23 @@ export async function parseUpstreamError(response: Response, provider: string | 
     responseBody,
     responseHeaders,
   };
+}
+
+/**
+ * Headers for a createErrorResult response. #16442: a parsed upstream retry hint
+ * must ride the REBUILT response, not only the `result.retryAfterMs` field —
+ * the fallback engine (chat.ts → markAccountUnavailable → checkFallbackError →
+ * detectRetryHint) reads `result.response.headers`, so dropping the header
+ * dropped the hint and every Gemini 429 with a details-only google.rpc.RetryInfo
+ * locked the model for the 3s base cooldown instead of the real upstream window.
+ * Standard seconds form; the passthrough branch below already does the same.
+ */
+function buildErrorResultHeaders(retryAfterMs: number | null | undefined): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (retryAfterMs && Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
+    headers["Retry-After"] = String(Math.ceil(retryAfterMs / 1000));
+  }
+  return headers;
 }
 
 /**
@@ -929,7 +993,7 @@ export function createErrorResult(
     errorCode,
     response: new Response(JSON.stringify(body), {
       status: statusCode,
-      headers: { "Content-Type": "application/json" },
+      headers: buildErrorResultHeaders(retryAfterMs),
     }),
   };
 
