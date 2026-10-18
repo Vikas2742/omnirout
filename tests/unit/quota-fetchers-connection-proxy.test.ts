@@ -775,14 +775,34 @@ test("opencode quota reads inside the proxy context", async () => {
   }
 });
 
-test("opencode quota invalidation clears the shared no-auth reading", async () => {
+test("opencode quota without a connection identifier makes no fetch outside the proxy", async () => {
+  // Keyless OpenCode Free is gone (#16310): every OpenCode reading belongs to a
+  // stored connection, so there is no shared "noauth" reading to resolve a proxy
+  // for. An empty id reports no reading, like every other quota fetcher.
   useAssignedProxy();
   let calls = 0;
-  let observed: boolean | null = null;
   const wrappedFetch = globalThis.fetch;
   globalThis.fetch = (async () => {
     calls += 1;
-    observed = hasAmbientProxyContext();
+    return new Response("{}", { status: 200 });
+  }) as typeof globalThis.fetch;
+  try {
+    const quota = await fetchOpencodeQuota("", { apiKey: "opencode-key" });
+    assert.equal(quota, null);
+    assert.equal(calls, 0);
+  } finally {
+    globalThis.fetch = wrappedFetch;
+    invalidateOpencodeQuotaCache("");
+  }
+});
+
+test("opencode quota caches and invalidates by the connection id, not a shared no-auth key", async () => {
+  useAssignedProxy();
+  const connectionId = `opencode-cache-${Date.now()}`;
+  let calls = 0;
+  const wrappedFetch = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    calls += 1;
     return new Response(
       JSON.stringify({
         usage: {
@@ -795,18 +815,18 @@ test("opencode quota invalidation clears the shared no-auth reading", async () =
     );
   }) as typeof globalThis.fetch;
   try {
-    const first = await fetchOpencodeQuota("", { apiKey: "opencode-key" });
-    assert.ok(first);
-    assert.equal(observed, true);
+    assert.ok(await fetchOpencodeQuota(connectionId, { apiKey: "opencode-key" }));
+    assert.ok(await fetchOpencodeQuota(connectionId, { apiKey: "opencode-key" }));
     assert.equal(calls, 1);
-    invalidateOpencodeQuotaCache("");
-    const second = await fetchOpencodeQuota("", { apiKey: "opencode-key" });
-    assert.ok(second);
+    invalidateOpencodeQuotaCache("noauth");
+    assert.ok(await fetchOpencodeQuota(connectionId, { apiKey: "opencode-key" }));
+    assert.equal(calls, 1);
+    invalidateOpencodeQuotaCache(connectionId);
+    assert.ok(await fetchOpencodeQuota(connectionId, { apiKey: "opencode-key" }));
     assert.equal(calls, 2);
   } finally {
     globalThis.fetch = wrappedFetch;
-    invalidateOpencodeQuotaCache("");
-    invalidateOpencodeQuotaCache("noauth");
+    invalidateOpencodeQuotaCache(connectionId);
   }
 });
 

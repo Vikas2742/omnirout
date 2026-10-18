@@ -170,21 +170,17 @@ export async function fetchOpencodeQuota(
   connectionId: string,
   connection?: Record<string, unknown>
 ): Promise<OpencodeTripleWindowQuota | null> {
-  // The dashboard usage path calls without a stored connection identifier; keep
-  // the previous behaviour there by resolving the shared no-auth fallback
-  // instead of reporting an unknown reading.
-  const effectiveConnectionId = connectionId || "noauth";
   const apiKey = normalizeApiKey(connection);
   if (!apiKey) return null;
 
-  const cached = quotaCache.get(effectiveConnectionId);
+  const cached = quotaCache.get(connectionId);
   if (cached && cached.apiKey === apiKey && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
     return cached.quota;
   }
 
   try {
     await throttleQuotaFetch();
-    const response = await fetchWithConnectionProxy(effectiveConnectionId, OPENCODE_QUOTA_URL, {
+    const response = await fetchWithConnectionProxy(connectionId, OPENCODE_QUOTA_URL, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -194,7 +190,7 @@ export async function fetchOpencodeQuota(
         // ("Bun fetch") without x-opencode-session are flagged, with hard
         // errors announced from 2026-09-06. Send the CLI identity + a stable
         // per-connection session fingerprint (see buildOpencodeBackgroundHeaders).
-        ...buildOpencodeBackgroundHeaders({ seed: effectiveConnectionId }),
+        ...buildOpencodeBackgroundHeaders({ seed: connectionId }),
       },
       signal: AbortSignal.timeout(8_000),
     });
@@ -208,8 +204,7 @@ export async function fetchOpencodeQuota(
             "Verify OMNIROUTE_OPENCODE_QUOTA_URL when using a relay or test server."
         );
       }
-      if (response.status === 401 || response.status === 403)
-        quotaCache.delete(effectiveConnectionId);
+      if (response.status === 401 || response.status === 403) quotaCache.delete(connectionId);
       return null;
     }
 
@@ -223,7 +218,7 @@ export async function fetchOpencodeQuota(
     const quota = parseOpencodeQuotaResponse(data);
     if (!quota) return null;
 
-    quotaCache.set(effectiveConnectionId, { quota, fetchedAt: Date.now(), apiKey });
+    quotaCache.set(connectionId, { quota, fetchedAt: Date.now(), apiKey });
     return quota;
   } catch {
     return null;
@@ -236,7 +231,7 @@ export async function fetchOpencodeQuota(
  * Force-invalidate the cache for a connection (e.g., after receiving quota headers).
  */
 export function invalidateOpencodeQuotaCache(connectionId: string): void {
-  quotaCache.delete(connectionId || "noauth");
+  quotaCache.delete(connectionId);
 }
 
 // ─── Registration ─────────────────────────────────────────────────────────────
