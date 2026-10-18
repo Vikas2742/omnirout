@@ -1,6 +1,8 @@
 import { getProviderModels } from "@omniroute/open-sse/config/providerModels.ts";
 import {
   CODEX_SPARK_MODEL_ID,
+  getCodexModelScope,
+  getCodexQuotaWindowFilterForModel,
   isCodexSparkQuotaKey,
 } from "@omniroute/open-sse/config/codexQuotaScopes.ts";
 import {
@@ -15,7 +17,7 @@ import type { ProviderLimitsCacheEntry } from "@/lib/db/providerLimits";
 
 export interface AvailabilityScopeInput {
   id: string;
-  kind: "group" | "scoped";
+  kind: "account" | "group" | "scoped";
   model: string;
   windows: string[];
 }
@@ -27,6 +29,31 @@ export function availabilityScopes(
   const scopes: AvailabilityScopeInput[] = [];
   const names = Object.keys(usage.quotas || {});
   const catalog = getProviderModels(provider).map((m) => m.id);
+  // Include the ordinary request scope alongside special pools, using the same catalog
+  // and scope matchers as routing; no separate representative-model inventory.
+  const ordinaryModel =
+    provider === "codex"
+      ? catalog.find((m) => getCodexModelScope(m) === "codex")
+      : provider === "openrouter"
+        ? catalog.find((m) => !m.endsWith(":free"))
+        : provider === "claude" || provider === "anthropic"
+          ? catalog.find((m) =>
+              Object.values(usage.modelQuotas || {}).every((value) => {
+                const metadata = (value as { claudeQuota?: unknown })?.claudeQuota;
+                return !isClaudeQuotaMetadata(metadata) || !claudeQuotaMatchesModel(metadata, m);
+              })
+            )
+          : undefined;
+  if (ordinaryModel) {
+    const filter =
+      provider === "codex" ? getCodexQuotaWindowFilterForModel(ordinaryModel) : undefined;
+    scopes.push({
+      id: "account",
+      kind: "account",
+      model: ordinaryModel,
+      windows: filter ? names.filter(filter) : names,
+    });
+  }
   if (provider === "openrouter" && names.some((n) => ["free_daily", "free_rpm"].includes(n)))
     scopes.push({
       id: ":free",

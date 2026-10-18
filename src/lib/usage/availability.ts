@@ -31,6 +31,7 @@ import {
 } from "@omniroute/open-sse/config/codexQuotaScopes.ts";
 import { formatQuotaWindowLabel } from "@omniroute/open-sse/services/quotaWindowLabel.ts";
 import { availabilityScopes } from "./availabilityScopes";
+import { cutoffBlockingWindows, exhaustedBlockingWindows } from "./availabilityWindows";
 import { canEvaluateCachedCutoff, convertCachedUsageToQuotaInfo } from "./cachedQuotaConversion";
 import type {
   ConnectionQuotaAvailability,
@@ -176,23 +177,31 @@ export function evaluateCachedQuotaAvailability(
           );
       }
     }
-    if (!cutoff.proceed)
-      blockers.push(
-        blockingWindow(
-          cutoff.windowName || "quota",
-          cutoff.resetAt ?? null,
-          usage,
-          cutoff.quotaPercent === undefined ? undefined : (1 - cutoff.quotaPercent) * 100,
-          resolveMinRemainingPercent(provider, connection, policy, cutoff.windowName ?? null)
-        )
+    if (!cutoff.proceed) {
+      const complete = cutoffBlockingWindows(
+        quota,
+        {
+          resolveMinRemainingPercent: (name) =>
+            resolveMinRemainingPercent(provider, connection, policy, name),
+        },
+        { provider, requestedModel, providerSpecificData, connectionId: id }
       );
+      for (const result of complete.length ? complete : [cutoff])
+        blockers.push(
+          blockingWindow(
+            result.windowName || "quota",
+            result.resetAt ?? null,
+            usage,
+            result.quotaPercent === undefined ? undefined : (1 - result.quotaPercent) * 100,
+            resolveMinRemainingPercent(provider, connection, policy, result.windowName ?? null)
+          )
+        );
+    }
     // These rows explain an already-made domain decision; they never decide eligibility.
-    if (exhausted && !blockers.length) {
-      const windows = { ...cached?.quotas, ...cached?.modelQuotas };
-      for (const [name, q] of Object.entries(windows)) {
-        if (q.remainingPercentage <= 0 && q.fractionReported !== false)
-          blockers.push(blockingWindow(name, q.resetAt, usage, q.remainingPercentage, 0));
-      }
+    if (exhausted) {
+      for (const q of exhaustedBlockingWindows(id, provider, requestedModel, providerSpecificData))
+        if (!blockers.some((b) => b.name === q.name))
+          blockers.push(blockingWindow(q.name, q.resetAt, usage, q.remainingPercentage, 0));
       if (!blockers.length)
         blockers.push(blockingWindow("quota", cached?.nextResetAt ?? null, usage));
     }
@@ -236,26 +245,56 @@ export function buildConnectionQuotaAvailability(
         : {})
     );
   });
+  const evaluated = availabilityScopes(connection.provider, cachedUsage).map((scope) => ({
+    ...scope,
+    // Routing has no request-specific selector for this display-only window.
+    decision:
+      scope.id === "code_review" &&
+      connection.provider === "codex" &&
+      scope.windows.some((name) => {
+        const q = normalizeQuotas(cachedUsage.quotas || {})[name];
+        return q && q.fractionReported !== false && q.remainingPercentage <= 0;
+      })
+        ? {
+            usable: null,
+            blockers: [],
+            allowanceReasons: [],
+            fetchedAt: cachedUsage.fetchedAt || null,
+          }
+        : evaluateCachedQuotaAvailability(input, usage, policy, scope.model),
+  }));
+  const candidates = evaluated.filter((scope) => scope.id !== "code_review");
+  // Ordinary requests define the account verdict. Only peer pools may use any-usable
+  // aggregation; attached scopes remain visible without promoting a blocked account.
+  const ordinary = evaluated.find((scope) => scope.kind === "account");
+  const decisions = evaluated
+    .filter((scope) => scope.kind === "group")
+    .map((scope) => scope.decision);
+  const fallback = evaluateCachedQuotaAvailability(input, usage, policy);
+  const usable = decisions.find((decision) => decision.usable === true);
+  const allBlocked = decisions.every((decision) => decision.usable === false);
+  const account = ordinary
+    ? ordinary.decision
+    : !decisions.length
+      ? fallback
+      : usable
+        ? { ...usable, blockers: [] }
+        : {
+            ...fallback,
+            usable: allBlocked ? false : null,
+            blockers: allBlocked ? decisions.flatMap((decision) => decision.blockers) : [],
+            allowanceReasons: [],
+          };
+  const payloadScopes = evaluated.flatMap((scope) =>
+    scope.kind === "account"
+      ? candidates.some((candidate) => candidate.kind !== "account")
+        ? [{ ...scope, kind: "scoped" as const }]
+        : []
+      : [{ ...scope, kind: scope.kind }]
+  );
   return {
     id: connection.id,
-    account: evaluateCachedQuotaAvailability(input, usage, policy),
-    scopes: availabilityScopes(connection.provider, cachedUsage).map((scope) => ({
-      ...scope,
-      // Routing has no review-specific selector; keep this observed display scope unknown.
-      decision:
-        scope.id === "code_review" &&
-        connection.provider === "codex" &&
-        scope.windows.some((name) => {
-          const q = normalizeQuotas(cachedUsage.quotas || {})[name];
-          return q && q.fractionReported !== false && q.remainingPercentage <= 0;
-        })
-          ? {
-              usable: null,
-              blockers: [],
-              allowanceReasons: [],
-              fetchedAt: cachedUsage.fetchedAt || null,
-            }
-          : evaluateCachedQuotaAvailability(input, usage, policy, scope.model),
-    })),
+    account,
+    scopes: payloadScopes,
   };
 }

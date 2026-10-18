@@ -182,6 +182,10 @@ export function useAvailability(
               until: cooldown.until,
               derived: cooldown.derived,
               observedAt,
+              startedAt:
+                parseRuntimeTimestamp(cooldown.runtime.lastErrorAt) < cooldown.until
+                  ? parseRuntimeTimestamp(cooldown.runtime.lastErrorAt)
+                  : observedAt,
             });
         }
         return next.size === previous.size &&
@@ -208,6 +212,7 @@ export function useAvailability(
           if (sameCooldown(observation, runtimeCooldownEvidence(connection, evidence, now))) {
             evidence.cooldownObservedAt = observation!.observedAt;
             evidence.cooldownDeadline = observation!.until;
+            evidence.cooldownStartedAt = observation!.startedAt;
           }
           return [
             connection.id,

@@ -65,6 +65,7 @@ export interface CooldownObservation {
   until: number;
   derived: boolean;
   observedAt: number;
+  startedAt: number;
 }
 export function sameCooldown(
   old: CooldownObservation | undefined,

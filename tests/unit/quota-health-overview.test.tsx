@@ -107,6 +107,21 @@ afterEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
 });
+it("keeps known-usable capsules green when the water level is unknown", () => {
+  const account = buildHealthAccount(connection, undefined, {}, now, {
+    availability: availability(connection.id, decision(true)),
+    availabilityObservedAt: now,
+  });
+  expect(account.cells).toHaveLength(0);
+  localized(<QuotaHealthOverview {...props()} accounts={{ [connection.id]: account }} />);
+  const unit = units()[0];
+  expect(unit).toHaveAttribute("data-availability", "ok");
+  expect(unit).toHaveAttribute("data-kind", "ok");
+  expect(unit).not.toHaveClass("border-dashed");
+  expect(unit.style.getPropertyValue("--capsule-color")).toBe("#22c55e");
+  expect(unit.querySelector("[data-fill]")).toBeNull();
+  expect(document.querySelector("[data-group-counts]")).toHaveTextContent("1 / 1 available");
+});
 it.each([1, 2, 40, 200])(
   "renders %i fixed-width capsules with inverse cooldown waterlines",
   (size) => {

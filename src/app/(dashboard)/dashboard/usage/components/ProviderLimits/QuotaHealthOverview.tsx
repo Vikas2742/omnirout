@@ -102,7 +102,7 @@ export default function QuotaHealthOverview({
     <div className="flex min-w-0 flex-wrap gap-x-[4px] gap-y-[6px]">
       {[...list].sort(compareDisplayAccounts).map((a) => {
         const expanded = selected === a.connection.id;
-        const visualKind = a.kind === "ok" && a.fill === null ? "empty" : a.kind;
+        const visualKind = a.kind;
         return (
           <button
             key={a.connection.id}

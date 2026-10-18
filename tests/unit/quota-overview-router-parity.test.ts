@@ -21,10 +21,8 @@ import {
   countDisplay,
 } from "../../src/app/(dashboard)/dashboard/usage/components/ProviderLimits/availabilityDisplay.ts";
 import { parseQuotaData } from "../../src/app/(dashboard)/dashboard/usage/components/ProviderLimits/quotaParsing.ts";
-import {
-  buildConnectionQuotaAvailability,
-  evaluateCachedQuotaAvailability,
-} from "../../src/lib/usage/availability.ts";
+import { buildConnectionQuotaAvailability } from "../../src/lib/usage/availability.ts";
+import { availabilityScopes } from "../../src/lib/usage/availabilityScopes.ts";
 import type { ProviderLimitsCacheEntry } from "../../src/lib/db/providerLimits.ts";
 import * as f from "./quota-overview-router-fixtures.ts";
 
@@ -304,25 +302,14 @@ for (const fixture of table)
       {},
       f.now,
       {
-        availability: {
-          ...buildConnectionQuotaAvailability(
-            connection,
-            {
-              ...raw,
-              fetchedAt: new Date(f.now).toISOString(),
-            } as Partial<ProviderLimitsCacheEntry>,
-            f.policy
-          ),
-          account: evaluateCachedQuotaAvailability(
-            connection,
-            {
-              ...raw,
-              fetchedAt: new Date(f.now).toISOString(),
-            } as Partial<ProviderLimitsCacheEntry>,
-            f.policy,
-            fixture.model || "test-model"
-          ),
-        },
+        availability: buildConnectionQuotaAvailability(
+          connection,
+          {
+            ...raw,
+            fetchedAt: new Date(f.now).toISOString(),
+          } as Partial<ProviderLimitsCacheEntry>,
+          f.policy
+        ),
         availabilityObservedAt: f.now,
       }
     );
@@ -335,6 +322,21 @@ for (const fixture of table)
       fixture.cutoffs
     );
     assert.equal(router.proceed, fixture.permitted, "router control");
+    const scopes = availabilityScopes(fixture.provider, raw);
+    const ordinary = scopes.find((scope) => scope.kind === "account");
+    const representatives = ordinary
+      ? [ordinary]
+      : scopes.filter((scope) => scope.kind === "group");
+    const routedScopes = await Promise.all(
+      representatives.map((scope) =>
+        route(fixture.provider, raw, scope.model, fixture.psd, fixture.cutoffs)
+      )
+    );
+    assert.equal(
+      account.quotaAvailability?.account.usable,
+      routedScopes.length ? routedScopes.some((decision) => decision.proceed) : router.proceed,
+      "account payload follows ordinary requests or independent pools"
+    );
     assert.equal(view.kind === "ok", router.proceed, "overview must agree with real cutoff");
     assert.equal(countDisplay([view]).ok, Number(router.proceed), "availability count");
     if (fixture.restricted) {

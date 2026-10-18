@@ -87,6 +87,7 @@ export interface AvailabilityEvidence {
   /** First local observation of this connection + cooldown-until pair. */
   cooldownObservedAt?: number;
   cooldownDeadline?: number;
+  cooldownStartedAt?: number;
   summaryFailed?: boolean;
   observedAt?: string | number;
   error?: string | null;
@@ -345,7 +346,15 @@ export function buildHealthAccount(
     ? { type: "terminal" as const, terminal: testStatus }
     : null;
   const startedAt =
-    Number.isFinite(errorAt) && errorAt < until ? errorAt : (evidence.cooldownObservedAt ?? now);
+    evidence.cooldownStartedAt ??
+    (evidence.cooldownObservedAt !== undefined
+      ? Math.min(
+          evidence.cooldownObservedAt,
+          Number.isFinite(errorAt) && errorAt < until ? errorAt : Infinity
+        )
+      : Number.isFinite(errorAt) && errorAt < until
+        ? errorAt
+        : now);
   const cooldown: HealthReason | null =
     until > now
       ? {
