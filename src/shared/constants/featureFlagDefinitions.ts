@@ -313,6 +313,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "STREAM_LATE_OUTPUT_PROBE_ENABLED",
+    label: "Stream Late Output Probe",
+    description:
+      "Streaming output probe: after the first 64 forwarded chunks keep sampling one chunk in 16 for the first visible output, so output that starts late still marks the stream as having emitted output. A lone 5xx after that point then stays request-scoped instead of recording a model-only lockout, and firstOutputMs is back-filled to the first output chunk of the current sampling gap. Off by default: only the first 64 forwarded chunks are probed, exactly as before.",
+    descriptionI18nKey: "featureFlagStreamLateOutputProbeEnabledDescription",
+    category: "network",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
     key: "OPENCODE_RATE_LIMITED_429_EARLY_STOP",
     label: "OpenCode Rate-Limited 429 Early Stop",
     description:
