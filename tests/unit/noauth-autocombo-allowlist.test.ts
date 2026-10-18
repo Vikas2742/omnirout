@@ -11,15 +11,18 @@
  * Every other keyless provider stays OUT of every auto/* pool — it remains fully
  * usable via direct `<alias>/<model>` calls, it is just not auto-routed to.
  *
- * Owner-accepted set (no feature flag): `cloudflare-playground`,
- * `devin-cli-agentic`, `duckduckgo-web`, `opencode`, and `uncloseai`.
- * `duckduckgo-web` and `devin-cli-agentic` already carried
- * `toolCalling: "emulated"`; the other three opt in the same way.
+ * Owner-accepted set (no feature flag): `opencode` and `uncloseai`.
+ * `cloudflare-playground`, `devin-cli-agentic`, and `duckduckgo-web` carry the
+ * emulated opt-in but are held out by the transport gate (browser-backed or
+ * local-CLI transports cannot answer keylessly, so they stall the combo).
  * `aihorde`, `auggie`, `codex-app-server`, `veoaifree-web`, and `zcode` have no
- * flag and stay out. `duckduckgo-web` is in the pool, not excluded.
+ * flag and stay out.
  *
  * Historical note: until 2026-07-24 (refs #8183/#6453/#7032) the pool was a
- * hardcoded `{opencode}` allowlist. That narrowing is retired.
+ * hardcoded `{opencode}` allowlist. On 2026-07-24 it was expanded to every
+ * emulated no-auth provider; on 2026-10-16 the browser-backed and local-CLI
+ * transports were held back out again (log evidence: a hung
+ * `cloudflare-playground` target cost ~120s per auto request).
  *
  * Regression guard: EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS in
  * open-sse/services/autoCombo/emulatedNoAuthAllowlist.ts drives what belongs
@@ -68,20 +71,22 @@ test.after(async () => {
   }
 });
 
-// Exactly the NOAUTH_PROVIDERS entries with `noAuth: true` + `toolCalling: "emulated"`.
-const ALLOWED_NOAUTH_PROVIDERS = [
-  "cloudflare-playground",
-  "devin-cli-agentic",
-  "duckduckgo-web",
-  "uncloseai",
-];
-// Keyless providers that never opted in — must stay out of every auto/* pool.
+// Exactly the NOAUTH_PROVIDERS entries with `noAuth: true` + `toolCalling: "emulated"`
+// whose transport can serve keylessly (plain HTTP), not a browser or local CLI.
+// `opencode` is not part of the no-auth catalog on this branch, so `uncloseai` is the
+// only one left; the browser-backed and local-CLI emulated providers are held out.
+const ALLOWED_NOAUTH_PROVIDERS = ["uncloseai"];
+// Keyless providers held out of every auto/* pool: no emulated opt-in, or an
+// infra-dependent transport (browser-backed / local CLI) that stalls the combo.
 const EXCLUDED_NOAUTH_PROVIDERS = [
   "aihorde",
   "auggie",
   "codex-app-server",
   "veoaifree-web",
   "zcode",
+  "cloudflare-playground",
+  "devin-cli-agentic",
+  "duckduckgo-web",
 ];
 
 test("fresh install: the emulated-tool-calling no-auth providers are present in the auto-combo pool", async () => {
