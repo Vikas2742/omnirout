@@ -2,6 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 const { handleImageGeneration } = await import("../../open-sse/handlers/imageGeneration.ts");
+const { fetchImageEndpoint } =
+  await import("../../open-sse/handlers/imageGeneration/openAiImageFetch.ts");
+const { getConfiguredTimeout } = await import("../../src/shared/utils/fetchTimeout.ts");
+const { resolveImageGenerationTimeoutMs } =
+  await import("../../src/lib/images/imageGenerationLongJobs.ts");
+
+/** What the routes inject with IMAGE_GENERATION_LONG_JOBS on (#16260). */
+const LONG_JOBS = { resolveTimeoutMs: (psd: unknown) => resolveImageGenerationTimeoutMs(psd) };
 
 const TIMEOUT_ENV_KEYS = [
   "FETCH_TIMEOUT_MS",
@@ -41,6 +49,7 @@ async function captureImageFetchTimeout(
     body?: { model: string; prompt: string };
     credentials?: Record<string, unknown>;
     resolvedProvider?: string;
+    longJobs?: typeof LONG_JOBS | null;
   } = {}
 ): Promise<number | undefined> {
   const originalSetTimeout = globalThis.setTimeout;
@@ -65,6 +74,7 @@ async function captureImageFetchTimeout(
       body: options.body ?? { model: "openai/gpt-image-2", prompt: "timeout selection" },
       credentials: options.credentials ?? { apiKey: "test-key" },
       resolvedProvider: options.resolvedProvider,
+      longJobs: options.longJobs ?? null,
       log: null,
     });
     assert.equal(result.success, true);
@@ -149,10 +159,23 @@ test("successful image gen passes AbortSignal and returns URL", () =>
     assert.equal(result.data.data[0].url, "https://cdn.example.com/timeout-test.png");
   }));
 
-test("OpenAI image timeout defaults to 600s and honors central then legacy env precedence", () =>
+test("flag off (default): the OpenAI image path keeps the fixed configured budget", () =>
+  restore(async () => {
+    await withTimeoutEnv({ FETCH_TIMEOUT_MS: "111", REQUEST_TIMEOUT_MS: "222" }, async () => {
+      assert.equal(await captureImageFetchTimeout(), getConfiguredTimeout());
+      assert.equal(
+        await captureImageFetchTimeout({
+          credentials: { apiKey: "test-key", providerSpecificData: { timeoutMs: 4_321 } },
+        }),
+        getConfiguredTimeout()
+      );
+    });
+  }));
+
+test("flag on: OpenAI image timeout defaults to 600s and honors central then legacy env precedence", () =>
   restore(async () => {
     await withTimeoutEnv({}, async () => {
-      assert.equal(await captureImageFetchTimeout(), 600_000);
+      assert.equal(await captureImageFetchTimeout({ longJobs: LONG_JOBS }), 600_000);
     });
 
     await withTimeoutEnv(
@@ -162,31 +185,29 @@ test("OpenAI image timeout defaults to 600s and honors central then legacy env p
         OMNIROUTE_DEFAULT_FETCH_TIMEOUT_MS: "333",
       },
       async () => {
-        assert.equal(await captureImageFetchTimeout(), 111);
+        assert.equal(await captureImageFetchTimeout({ longJobs: LONG_JOBS }), 111);
       }
     );
 
     await withTimeoutEnv(
       { REQUEST_TIMEOUT_MS: "222", OMNIROUTE_DEFAULT_FETCH_TIMEOUT_MS: "333" },
       async () => {
-        assert.equal(await captureImageFetchTimeout(), 222);
+        assert.equal(await captureImageFetchTimeout({ longJobs: LONG_JOBS }), 222);
       }
     );
 
     await withTimeoutEnv({ OMNIROUTE_DEFAULT_FETCH_TIMEOUT_MS: "333" }, async () => {
-      assert.equal(await captureImageFetchTimeout(), 333);
+      assert.equal(await captureImageFetchTimeout({ longJobs: LONG_JOBS }), 333);
     });
   }));
 
-test("connection timeout overrides env for built-in and custom OpenAI image providers", () =>
+test("flag on: connection timeout overrides env for built-in and custom OpenAI image providers", () =>
   restore(async () => {
     await withTimeoutEnv({ FETCH_TIMEOUT_MS: "111" }, async () => {
       assert.equal(
         await captureImageFetchTimeout({
-          credentials: {
-            apiKey: "test-key",
-            providerSpecificData: { timeoutMs: 4_321 },
-          },
+          credentials: { apiKey: "test-key", providerSpecificData: { timeoutMs: 4_321 } },
+          longJobs: LONG_JOBS,
         }),
         4_321
       );
@@ -202,13 +223,14 @@ test("connection timeout overrides env for built-in and custom OpenAI image prov
             },
           },
           resolvedProvider: "custom",
+          longJobs: LONG_JOBS,
         }),
         5_432
       );
     });
   }));
 
-test("zero timeout disables the image timer and keeps the caller signal", () =>
+test("flag on: zero timeout disables the image timer and keeps the caller signal", () =>
   restore(async () => {
     await withTimeoutEnv({ FETCH_TIMEOUT_MS: "0" }, async () => {
       const controller = new AbortController();
@@ -225,6 +247,7 @@ test("zero timeout disables the image timer and keeps the caller signal", () =>
         body: { model: "openai/gpt-image-2", prompt: "no timeout" },
         credentials: { apiKey: "test-key" },
         signal: controller.signal,
+        longJobs: LONG_JOBS,
         log: null,
       });
 
@@ -233,45 +256,64 @@ test("zero timeout disables the image timer and keeps the caller signal", () =>
     });
   }));
 
-test("caller abort is classified as 499 before the image timeout", () =>
+function hangingFetch(state: { seenSignal?: AbortSignal | null }) {
+  return async (_url: string | URL | Request, init?: RequestInit) => {
+    state.seenSignal = init?.signal;
+    return new Promise<Response>((_resolve, reject) => {
+      if (init?.signal?.aborted) {
+        reject(makeAbortError());
+        return;
+      }
+      init?.signal?.addEventListener("abort", () => reject(makeAbortError()), { once: true });
+      setTimeout(() => reject(makeAbortError()), 50);
+    });
+  };
+}
+
+test("flag on: caller abort is classified as 499 before the image timeout", () =>
   restore(async () => {
     await withTimeoutEnv({ FETCH_TIMEOUT_MS: "200" }, async () => {
       const controller = new AbortController();
-      let seenSignal: AbortSignal | null | undefined;
-      globalThis.fetch = async (_url, init) => {
-        seenSignal = init?.signal;
-        return new Promise<Response>((_resolve, reject) => {
-          if (init?.signal?.aborted) {
-            reject(makeAbortError());
-            return;
-          }
-          init?.signal?.addEventListener(
-            "abort",
-            () => {
-              reject(makeAbortError());
-            },
-            { once: true }
-          );
-          setTimeout(() => reject(makeAbortError()), 50);
-        });
-      };
+      const state: { seenSignal?: AbortSignal | null } = {};
+      globalThis.fetch = hangingFetch(state) as typeof fetch;
 
       const pending = handleImageGeneration({
         body: { model: "openai/gpt-image-2", prompt: "cancel me" },
         credentials: { apiKey: "test-key" },
         signal: controller.signal,
+        longJobs: LONG_JOBS,
         log: null,
       });
       controller.abort();
 
       const result = await pending;
-      assert.equal(seenSignal?.aborted, true);
+      assert.equal(state.seenSignal?.aborted, true);
       assert.equal(result.success, false);
       assert.equal(result.status, 499);
     });
   }));
 
-test("caller abort while reading the image body is still classified as 499", () =>
+test("flag off (default): a caller abort is not propagated and never yields 499", () =>
+  restore(async () => {
+    const controller = new AbortController();
+    const state: { seenSignal?: AbortSignal | null } = {};
+    globalThis.fetch = hangingFetch(state) as typeof fetch;
+
+    const pending = handleImageGeneration({
+      body: { model: "openai/gpt-image-2", prompt: "cancel me" },
+      credentials: { apiKey: "test-key" },
+      signal: controller.signal,
+      log: null,
+    });
+    controller.abort();
+
+    const result = await pending;
+    assert.notEqual(state.seenSignal, controller.signal);
+    assert.equal(result.success, false);
+    assert.equal(result.status, 504);
+  }));
+
+test("flag on: caller abort while reading the image body is still classified as 499", () =>
   restore(async () => {
     await withTimeoutEnv({ FETCH_TIMEOUT_MS: "200" }, async () => {
       const controller = new AbortController();
@@ -291,6 +333,7 @@ test("caller abort while reading the image body is still classified as 499", () 
         body: { model: "openai/gpt-image-2", prompt: "cancel body read" },
         credentials: { apiKey: "test-key" },
         signal: controller.signal,
+        longJobs: LONG_JOBS,
         log: null,
       });
       controller.abort();
@@ -301,42 +344,73 @@ test("caller abort while reading the image body is still classified as 499", () 
     });
   }));
 
-test("image timeout remains active while reading the response body", () =>
-  restore(async () => {
-    await withTimeoutEnv({ FETCH_TIMEOUT_MS: "20" }, async () => {
-      globalThis.fetch = async (_url, init) =>
-        new Response(
-          new ReadableStream<Uint8Array>({
-            start(streamController) {
-              init?.signal?.addEventListener(
-                "abort",
-                () => {
-                  const error = new Error("aborted");
-                  error.name = "AbortError";
-                  streamController.error(error);
-                },
-                { once: true }
-              );
-              setTimeout(() => streamController.error(new Error("body stayed open")), 80);
+function stalledBodyFetch() {
+  return async (_url: string | URL | Request, init?: RequestInit) =>
+    new Response(
+      new ReadableStream<Uint8Array>({
+        start(streamController) {
+          init?.signal?.addEventListener(
+            "abort",
+            () => {
+              const error = new Error("aborted");
+              error.name = "AbortError";
+              streamController.error(error);
             },
-          }),
-          { status: 200, headers: { "content-type": "application/json" } }
-        );
+            { once: true }
+          );
+          setTimeout(() => streamController.error(new Error("body stayed open")), 400);
+        },
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+}
 
-      const startedAt = Date.now();
+test("default-on: the image deadline stays armed while reading the response body", () =>
+  restore(async () => {
+    globalThis.fetch = stalledBodyFetch() as typeof fetch;
+    const startedAt = Date.now();
+    const result = await fetchImageEndpoint(
+      "https://api.example.test/v1/images/generations",
+      {},
+      "{}",
+      "openai",
+      null,
+      { timeoutMs: 20 }
+    );
+
+    assert.equal(result.success, false);
+    assert.equal(result.status, 504);
+    assert.ok(Date.now() - startedAt < 300, "body timeout should use the configured deadline");
+  }));
+
+test("default-on: a stalled body through the dispatcher (flag off) ends with 504 at the budget", () =>
+  restore(async () => {
+    const originalSetTimeout = globalThis.setTimeout;
+    let deadlineArmed = false;
+    // Shrink only the image deadline timer (the configured budget) so the test stays fast.
+    globalThis.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+      if (!deadlineArmed && timeout === getConfiguredTimeout()) {
+        deadlineArmed = true;
+        return originalSetTimeout(handler, 20, ...args);
+      }
+      return originalSetTimeout(handler, timeout, ...args);
+    }) as typeof globalThis.setTimeout;
+    try {
+      globalThis.fetch = stalledBodyFetch() as typeof fetch;
       const result = await handleImageGeneration({
         body: { model: "openai/gpt-image-2", prompt: "body timeout" },
         credentials: { apiKey: "test-key" },
         log: null,
       });
-
+      assert.equal(deadlineArmed, true);
       assert.equal(result.success, false);
       assert.equal(result.status, 504);
-      assert.ok(Date.now() - startedAt < 70, "body timeout should use the configured deadline");
-    });
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+    }
   }));
 
-test("an already-aborted image request does not dispatch a fallback URL", () =>
+test("flag on: an already-aborted image request does not dispatch a fallback URL", () =>
   restore(async () => {
     const controller = new AbortController();
     controller.abort();
@@ -353,6 +427,7 @@ test("an already-aborted image request does not dispatch a fallback URL", () =>
       },
       credentials: { apiKey: "test-key" },
       signal: controller.signal,
+      longJobs: LONG_JOBS,
       log: null,
     });
 

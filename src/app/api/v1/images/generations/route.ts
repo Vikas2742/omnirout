@@ -61,6 +61,8 @@ import {
 } from "@/shared/constants/chatgptWebRetirement";
 import { PLAYGROUND_IMAGE_STREAM_HEADER } from "@/shared/utils/playgroundImageStream";
 import { createPlaygroundImageStreamResponse } from "@/lib/playground/imageGenerationStream";
+import { getImageLongJobOptions } from "@/lib/images/imageGenerationLongJobs";
+import { isImageGenerationLongJobsEnabled } from "@/shared/utils/featureFlags";
 
 export const dynamic = "force-dynamic";
 
@@ -393,6 +395,8 @@ async function postHandler(request, context) {
               log,
               ...(isCustomModel && { resolvedProvider: provider }),
               signal: request.signal,
+              // #16260 — IMAGE_GENERATION_LONG_JOBS (default off): null keeps the default path.
+              longJobs: getImageLongJobOptions(),
               clientHeaders: publicBaseUrlHeaders(request.headers),
               // Trusted "loopback"|"lan"|"remote" verdict stamped by the authz
               // pipeline from the real TCP peer (never the spoofable Host
@@ -456,7 +460,12 @@ async function postHandler(request, context) {
 const guardedPost = withInjectionGuard(postHandler);
 
 export function POST(request: Request, context?: unknown) {
-  if (request.headers.get(PLAYGROUND_IMAGE_STREAM_HEADER) === "1") {
+  // #16260 — the Playground SSE keepalive wrapper is honoured only with
+  // IMAGE_GENERATION_LONG_JOBS on; off, the header is ignored and the JSON response is unchanged.
+  if (
+    request.headers.get(PLAYGROUND_IMAGE_STREAM_HEADER) === "1" &&
+    isImageGenerationLongJobsEnabled()
+  ) {
     return createPlaygroundImageStreamResponse(request, context, guardedPost);
   }
   return guardedPost(request, context);

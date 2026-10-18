@@ -28,6 +28,19 @@ const v1ModelsCatalog = await import("../../src/app/api/v1/models/catalog.ts");
 
 const originalFetch = globalThis.fetch;
 
+/** #16260 — IMAGE_GENERATION_LONG_JOBS (default off) gates cancellation + the Playground SSE wrapper. */
+async function withLongJobs<T>(on: boolean, fn: () => Promise<T>): Promise<T> {
+  const original = process.env.IMAGE_GENERATION_LONG_JOBS;
+  if (on) process.env.IMAGE_GENERATION_LONG_JOBS = "true";
+  else delete process.env.IMAGE_GENERATION_LONG_JOBS;
+  try {
+    return await fn();
+  } finally {
+    if (original === undefined) delete process.env.IMAGE_GENERATION_LONG_JOBS;
+    else process.env.IMAGE_GENERATION_LONG_JOBS = original;
+  }
+}
+
 async function resetStorage() {
   globalThis.fetch = originalFetch;
   apiKeysDb.resetApiKeyState();
@@ -385,117 +398,161 @@ test("provider-scoped image generation attributes its call log to the validated 
   assert.equal(logged.apiKeyName, "Provider-scoped image caller");
 });
 
-test("provider-scoped image generation forwards caller cancellation", async () => {
-  await seedConnection("openai", "provider-scoped-cancel-key");
-  const controller = new AbortController();
-  let upstreamSignal: AbortSignal | null | undefined;
+test("flag on: provider-scoped image generation forwards caller cancellation", () =>
+  withLongJobs(true, async () => {
+    await seedConnection("openai", "provider-scoped-cancel-key");
+    const controller = new AbortController();
+    let upstreamSignal: AbortSignal | null | undefined;
 
-  globalThis.fetch = async (_url, init) => {
-    upstreamSignal = init?.signal;
-    return new Promise<Response>((_resolve, reject) => {
-      const abort = () => {
-        const error = new Error("aborted");
-        error.name = "AbortError";
-        reject(error);
-      };
-      if (init?.signal?.aborted) abort();
-      else init?.signal?.addEventListener("abort", abort, { once: true });
-      setTimeout(abort, 50);
-    });
-  };
+    globalThis.fetch = async (_url, init) => {
+      upstreamSignal = init?.signal;
+      return new Promise<Response>((_resolve, reject) => {
+        const abort = () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        };
+        if (init?.signal?.aborted) abort();
+        else init?.signal?.addEventListener("abort", abort, { once: true });
+        setTimeout(abort, 50);
+      });
+    };
 
-  const pending = providerImageRoute.POST(
-    new Request("http://localhost/api/v1/providers/openai/images/generations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "gpt-image-2",
-        prompt: "provider-scoped cancellation test",
-      }),
-      signal: controller.signal,
-    }),
-    { params: Promise.resolve({ provider: "openai" }) }
-  );
-  controller.abort();
-
-  const response = await pending;
-  assert.ok(upstreamSignal === undefined || upstreamSignal.aborted);
-  assert.equal(response.status, 499);
-});
-
-test("Playground image stream sends a heartbeat before one slow generation and restores success", async () => {
-  await seedConnection("openai", "playground-stream-key");
-  let fetchCalls = 0;
-  let resolveUpstream!: (response: Response) => void;
-  const upstream = new Promise<Response>((resolve) => {
-    resolveUpstream = resolve;
-  });
-  globalThis.fetch = async () => {
-    fetchCalls += 1;
-    return upstream;
-  };
-
-  const pending = Promise.resolve(
-    imageRoute.POST(
-      new Request("http://localhost/api/v1/images/generations", {
+    const pending = providerImageRoute.POST(
+      new Request("http://localhost/api/v1/providers/openai/images/generations", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-OmniRoute-Playground-Stream": "1",
-        },
-        body: JSON.stringify({ model: "openai/gpt-image-2", prompt: "slow image" }),
-      })
-    )
-  );
-  const immediate = await Promise.race([
-    pending.then((response) => ({ response })),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 50)),
-  ]);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-image-2",
+          prompt: "provider-scoped cancellation test",
+        }),
+        signal: controller.signal,
+      }),
+      { params: Promise.resolve({ provider: "openai" }) }
+    );
+    controller.abort();
 
-  if (!immediate) {
+    const response = await pending;
+    assert.ok(upstreamSignal === undefined || upstreamSignal.aborted);
+    assert.equal(response.status, 499);
+  }));
+
+test("flag on: Playground image stream sends a heartbeat before one slow generation and restores success", () =>
+  withLongJobs(true, async () => {
+    await seedConnection("openai", "playground-stream-key");
+    let fetchCalls = 0;
+    let resolveUpstream!: (response: Response) => void;
+    const upstream = new Promise<Response>((resolve) => {
+      resolveUpstream = resolve;
+    });
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      return upstream;
+    };
+
+    const pending = Promise.resolve(
+      imageRoute.POST(
+        new Request("http://localhost/api/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-OmniRoute-Playground-Stream": "1",
+          },
+          body: JSON.stringify({ model: "openai/gpt-image-2", prompt: "slow image" }),
+        })
+      )
+    );
+    const immediate = await Promise.race([
+      pending.then((response) => ({ response })),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 50)),
+    ]);
+
+    if (!immediate) {
+      resolveUpstream(
+        new Response(JSON.stringify({ data: [{ url: "https://cdn.example.com/slow.png" }] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        })
+      );
+      await pending;
+      assert.fail("Playground stream response waited for upstream image headers");
+    }
+
+    const response = immediate.response;
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type") || "", /^text\/event-stream/);
+    const reader = response.body?.getReader();
+    assert.ok(reader);
+    const first = await reader.read();
+    assert.equal(new TextDecoder().decode(first.value), ": keepalive\n\n");
+
     resolveUpstream(
       new Response(JSON.stringify({ data: [{ url: "https://cdn.example.com/slow.png" }] }), {
         status: 200,
         headers: { "content-type": "application/json" },
       })
     );
-    await pending;
-    assert.fail("Playground stream response waited for upstream image headers");
-  }
+    const result = readPlaygroundResultFrame(await readRemainingText(reader));
+    assert.equal(fetchCalls, 1);
+    assert.equal(result.status, 200);
+    assert.equal(result.headers?.["content-type"], "application/json");
+    const body = JSON.parse(result.body) as { created?: unknown; data?: unknown };
+    assert.equal(typeof body.created, "number");
+    assert.deepEqual(body.data, [{ url: "https://cdn.example.com/slow.png" }]);
+  }));
 
-  const response = immediate.response;
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") || "", /^text\/event-stream/);
-  const reader = response.body?.getReader();
-  assert.ok(reader);
-  const first = await reader.read();
-  assert.equal(new TextDecoder().decode(first.value), ": keepalive\n\n");
+test("flag on: Playground image stream keeps auth inside the guarded POST", () =>
+  withLongJobs(true, async () => {
+    const originalRequireApiKey = process.env.REQUIRE_API_KEY;
+    process.env.REQUIRE_API_KEY = "true";
+    let fetchCalls = 0;
+    globalThis.fetch = async () => {
+      fetchCalls += 1;
+      throw new Error("auth rejection must not dispatch upstream");
+    };
 
-  resolveUpstream(
-    new Response(JSON.stringify({ data: [{ url: "https://cdn.example.com/slow.png" }] }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    })
-  );
-  const result = readPlaygroundResultFrame(await readRemainingText(reader));
-  assert.equal(fetchCalls, 1);
-  assert.equal(result.status, 200);
-  assert.equal(result.headers?.["content-type"], "application/json");
-  const body = JSON.parse(result.body) as { created?: unknown; data?: unknown };
-  assert.equal(typeof body.created, "number");
-  assert.deepEqual(body.data, [{ url: "https://cdn.example.com/slow.png" }]);
-});
+    try {
+      const response = await imageRoute.POST(
+        new Request("http://localhost/api/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-OmniRoute-Playground-Stream": "1",
+          },
+          body: JSON.stringify({ model: "openai/gpt-image-2", prompt: "auth test" }),
+        })
+      );
+      const result = readPlaygroundResultFrame(await response.text());
+      assert.equal(response.status, 200);
+      assert.equal(result.status, 401);
+      assert.match(result.body, /Authentication required/);
+      assert.equal(fetchCalls, 0);
+    } finally {
+      if (originalRequireApiKey === undefined) delete process.env.REQUIRE_API_KEY;
+      else process.env.REQUIRE_API_KEY = originalRequireApiKey;
+    }
+  }));
 
-test("Playground image stream keeps auth inside the guarded POST", async () => {
-  const originalRequireApiKey = process.env.REQUIRE_API_KEY;
-  process.env.REQUIRE_API_KEY = "true";
-  let fetchCalls = 0;
-  globalThis.fetch = async () => {
-    fetchCalls += 1;
-    throw new Error("auth rejection must not dispatch upstream");
-  };
+test("flag on: cancelling the Playground image response aborts the single upstream request", () =>
+  withLongJobs(true, async () => {
+    await seedConnection("openai", "playground-cancel-key");
+    let fetchCalls = 0;
+    let upstreamSignal: AbortSignal | null | undefined;
+    globalThis.fetch = async (_url, init) => {
+      fetchCalls += 1;
+      upstreamSignal = init?.signal;
+      return new Promise<Response>((_resolve, reject) => {
+        const abort = () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        };
+        if (init?.signal?.aborted) abort();
+        else init?.signal?.addEventListener("abort", abort, { once: true });
+        setTimeout(abort, 100);
+      });
+    };
 
-  try {
     const response = await imageRoute.POST(
       new Request("http://localhost/api/v1/images/generations", {
         method: "POST",
@@ -503,59 +560,85 @@ test("Playground image stream keeps auth inside the guarded POST", async () => {
           "Content-Type": "application/json",
           "X-OmniRoute-Playground-Stream": "1",
         },
-        body: JSON.stringify({ model: "openai/gpt-image-2", prompt: "auth test" }),
+        body: JSON.stringify({ model: "openai/gpt-image-2", prompt: "cancel stream" }),
       })
     );
-    const result = readPlaygroundResultFrame(await response.text());
+    const reader = response.body?.getReader();
+    assert.ok(reader);
+    await reader.read();
+    await waitFor(() => fetchCalls === 1);
+    await reader.cancel("Playground request cancelled");
+    await waitFor(() => upstreamSignal?.aborted === true);
+
+    assert.equal(fetchCalls, 1);
+    assert.equal(upstreamSignal?.aborted, true);
+  }));
+
+test("flag off (default): provider-scoped image generation does not propagate caller cancellation", () =>
+  withLongJobs(false, async () => {
+    await seedConnection("openai", "provider-scoped-cancel-off-key");
+    const controller = new AbortController();
+    let callerAbortReachedUpstream = false;
+
+    globalThis.fetch = async (_url, init) =>
+      new Promise<Response>((_resolve, reject) => {
+        const abort = () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        };
+        init?.signal?.addEventListener(
+          "abort",
+          () => {
+            callerAbortReachedUpstream = true;
+            abort();
+          },
+          { once: true }
+        );
+        setTimeout(abort, 50);
+      });
+
+    const pending = providerImageRoute.POST(
+      new Request("http://localhost/api/v1/providers/openai/images/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "gpt-image-2", prompt: "provider-scoped no-cancel test" }),
+        signal: controller.signal,
+      }),
+      { params: Promise.resolve({ provider: "openai" }) }
+    );
+    controller.abort();
+
+    const response = await pending;
+    assert.equal(callerAbortReachedUpstream, false);
+    assert.notEqual(response.status, 499);
+    assert.equal(response.status, 504);
+  }));
+
+test("flag off (default): the Playground stream header is ignored and JSON is returned", () =>
+  withLongJobs(false, async () => {
+    await seedConnection("openai", "playground-stream-off-key");
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ data: [{ url: "https://cdn.example.com/plain.png" }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+
+    const response = await imageRoute.POST(
+      new Request("http://localhost/api/v1/images/generations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-OmniRoute-Playground-Stream": "1",
+        },
+        body: JSON.stringify({ model: "openai/gpt-image-2", prompt: "plain image" }),
+      })
+    );
     assert.equal(response.status, 200);
-    assert.equal(result.status, 401);
-    assert.match(result.body, /Authentication required/);
-    assert.equal(fetchCalls, 0);
-  } finally {
-    if (originalRequireApiKey === undefined) delete process.env.REQUIRE_API_KEY;
-    else process.env.REQUIRE_API_KEY = originalRequireApiKey;
-  }
-});
-
-test("cancelling the Playground image response aborts the single upstream request", async () => {
-  await seedConnection("openai", "playground-cancel-key");
-  let fetchCalls = 0;
-  let upstreamSignal: AbortSignal | null | undefined;
-  globalThis.fetch = async (_url, init) => {
-    fetchCalls += 1;
-    upstreamSignal = init?.signal;
-    return new Promise<Response>((_resolve, reject) => {
-      const abort = () => {
-        const error = new Error("aborted");
-        error.name = "AbortError";
-        reject(error);
-      };
-      if (init?.signal?.aborted) abort();
-      else init?.signal?.addEventListener("abort", abort, { once: true });
-      setTimeout(abort, 100);
-    });
-  };
-
-  const response = await imageRoute.POST(
-    new Request("http://localhost/api/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-OmniRoute-Playground-Stream": "1",
-      },
-      body: JSON.stringify({ model: "openai/gpt-image-2", prompt: "cancel stream" }),
-    })
-  );
-  const reader = response.body?.getReader();
-  assert.ok(reader);
-  await reader.read();
-  await waitFor(() => fetchCalls === 1);
-  await reader.cancel("Playground request cancelled");
-  await waitFor(() => upstreamSignal?.aborted === true);
-
-  assert.equal(fetchCalls, 1);
-  assert.equal(upstreamSignal?.aborted, true);
-});
+    assert.doesNotMatch(response.headers.get("content-type") || "", /event-stream/);
+    const body = (await response.json()) as { data?: unknown };
+    assert.deepEqual(body.data, [{ url: "https://cdn.example.com/plain.png" }]);
+  }));
 
 test("Playground stream converts a guarded POST throw into one sanitized terminal result", async () => {
   let calls = 0;

@@ -37,7 +37,11 @@ import {
   resolveComfyUiBaseUrl,
 } from "../utils/comfyuiClient.ts";
 import { fetchUntrustedRemoteImage } from "@/shared/network/remoteImageFetch";
-import { FetchTimeoutError, fetchWithTimeout } from "@/shared/utils/fetchTimeout";
+import {
+  FetchTimeoutError,
+  fetchWithTimeout,
+  getConfiguredTimeout,
+} from "@/shared/utils/fetchTimeout";
 import { sanitizeErrorMessage, sanitizeUpstreamDetails } from "../utils/error.ts";
 // Shared with imageUpscale/shared.ts — see imageErrorLog.ts for why a bare
 // String(value) is unsafe here (null-prototype sanitizeUpstreamDetails() payloads, #12506).
@@ -79,10 +83,7 @@ import {
   applyPollinationsAnonymousFallback,
   reportPollinationsAnonOutcome,
 } from "./imageGeneration/pollinationsAnonAuth.ts";
-import {
-  fetchImageEndpoint,
-  resolveImageGenerationTimeoutMs,
-} from "./imageGeneration/openAiImageFetch.ts";
+import { fetchImageEndpoint } from "./imageGeneration/openAiImageFetch.ts";
 
 // Re-export so /v1/images/edits can dispatch Firefly reference-image edits.
 export { handleAdobeFireflyImageGeneration };
@@ -404,6 +405,9 @@ export async function handleImageGeneration({
   signal = null,
   clientHeaders = null,
   peerLocality = null,
+  // #16260 — IMAGE_GENERATION_LONG_JOBS, injected by the routes (the flag lives in src/):
+  // `{ resolveTimeoutMs }` for the OpenAI-compatible path. Null keeps the default behavior.
+  longJobs = null,
 }) {
   // Retirement guards: the retired-provider sets hold bare provider ids only, so testing
   // the `<provider>/` prefix (or the whole model when it carries no slash) covers both the
@@ -506,6 +510,7 @@ export async function handleImageGeneration({
       credentials,
       log,
       signal,
+      longJobs,
     });
   }
 
@@ -878,6 +883,7 @@ export async function handleImageGeneration({
     credentials,
     log,
     signal,
+    longJobs,
   });
 }
 
@@ -1326,6 +1332,7 @@ async function handleOpenAIImageGeneration({
   credentials,
   log,
   signal,
+  longJobs,
 }) {
   const startTime = Date.now();
 
@@ -1405,7 +1412,11 @@ async function handleOpenAIImageGeneration({
   }
 
   const requestBody = JSON.stringify(upstreamBody);
-  const timeoutMs = resolveImageGenerationTimeoutMs(credentials?.providerSpecificData);
+  // #16260 — the deadline always covers the body read (existing budget). The per-connection
+  // timeout and caller cancellation (499) only apply with IMAGE_GENERATION_LONG_JOBS on.
+  const fetchOptions = longJobs
+    ? { signal, timeoutMs: longJobs.resolveTimeoutMs(credentials?.providerSpecificData) }
+    : { timeoutMs: getConfiguredTimeout() };
 
   // Try primary URL
   let result = await fetchImageEndpoint(
@@ -1414,7 +1425,7 @@ async function handleOpenAIImageGeneration({
     requestBody,
     provider,
     log,
-    { signal, timeoutMs }
+    fetchOptions
   );
 
   // Fallback for providers with fallbackUrl (e.g., Nebius)
@@ -1432,7 +1443,7 @@ async function handleOpenAIImageGeneration({
       requestBody,
       provider,
       log,
-      { signal, timeoutMs }
+      fetchOptions
     );
   }
 
@@ -1556,7 +1567,8 @@ export async function handleOpenAIImageEdit({
     headers,
     multipartBody as unknown as BodyInit,
     provider,
-    log
+    log,
+    { timeoutMs: getConfiguredTimeout() }
   );
 
   saveCallLog({
@@ -1657,7 +1669,8 @@ export async function handleOpenRouterImageEdit({
     headers,
     JSON.stringify(upstreamBody),
     provider,
-    log
+    log,
+    { timeoutMs: getConfiguredTimeout() }
   );
 
   saveCallLog({

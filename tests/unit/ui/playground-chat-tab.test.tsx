@@ -231,8 +231,12 @@ describe("ChatTab", () => {
     );
 
     await act(async () => sendBtn?.click());
-    await waitFor(() => el.textContent?.includes("chat-image.png") === true);
+    // #16006 renders image results inline as <img>, not as JSON text.
+    await waitFor(() => el.querySelector("img") !== null);
 
+    expect((el.querySelector("img") as HTMLImageElement).getAttribute("src")).toBe(
+      "https://cdn.example.com/chat-image.png"
+    );
     expect(capturedHeaders?.["X-OmniRoute-Playground-Stream"]).toBe("1");
     expect(el.textContent).not.toContain("playground.image.result");
     fetchSpy.mockRestore();
