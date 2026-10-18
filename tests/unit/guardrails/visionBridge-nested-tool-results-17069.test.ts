@@ -65,6 +65,8 @@ function guardrail(maxImages: number, callVisionModel: (ref: string) => Promise<
         modalityBridgeCacheEnabled: false,
       }),
       callVisionModel,
+      // Avoid a live SQLite lookup, keeping the exact Claude Read sample deterministic.
+      checkModelHasComboMapping: async (model) => model === TEXT_ONLY_MODEL,
       hasUsableCredentials: async () => true,
     },
   });
