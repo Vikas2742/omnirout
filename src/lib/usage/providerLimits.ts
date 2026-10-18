@@ -16,6 +16,9 @@ import { syncToCloud } from "@/lib/cloudSync";
 import { setQuotaCache } from "@/domain/quotaCache";
 import { buildClaudeExtraUsageConnectionUpdate } from "@/lib/providers/claudeExtraUsage";
 import { clearRecoveredProviderState } from "@/sse/services/auth";
+import { hasObservedClaudeQuotaResetAfter } from "@/lib/db/quotaResetEvents";
+import { clearModelLock, getAllModelLockouts } from "@omniroute/open-sse/services/accountFallback.ts";
+import { RateLimitReason } from "@omniroute/open-sse/config/constants.ts";
 import { getMachineId } from "@/shared/utils/machine";
 import { supportsProviderQuota } from "@/shared/utils/providerQuotaVisibility";
 import { mergeProviderLimitsCacheEntry, toProviderLimitsCacheEntry } from "./providerLimitsCache";
@@ -443,6 +446,19 @@ export function shouldClearErrorStateOnValidProbe(
  * window elapses, the next probe clears the state normally.
  */
 
+/** A reset event must not make one full/unknown governing window disappear. */
+export function everyQuotaWindowReplenished(usage: JsonRecord): boolean {
+  if (usage.message || usage._stale || !isRecord(usage.quotas)) return false;
+  const windows = Object.values(usage.quotas);
+  return windows.length > 0 && windows.every((value) => {
+    if (!isRecord(value) || value.unlimited === true) return false;
+    const remaining = typeof value.remainingPercentage === "number"
+      ? value.remainingPercentage
+      : typeof value.remaining === "number" ? value.remaining : null;
+    return remaining !== null && Number.isFinite(remaining) && remaining > 0;
+  });
+}
+
 export async function maybeClearRecoveredQuotaState(
   connection: ProviderConnectionLike,
   usage: JsonRecord
@@ -460,7 +476,17 @@ export async function maybeClearRecoveredQuotaState(
       connection.lastErrorType === "quota_exhausted" &&
       connection.lastErrorSource !== "extra_usage" &&
       syntheticCooldownOutlivedByRealWindows(usage);
-    if (!syntheticRecoveryOverride) return connection;
+    // #17043: unlike an ordinary quota poll, a persisted weekly reset event
+    // observed after the last 429 is independent positive evidence. It can
+    // release only a Claude quota-exhaustion lock with every live window open.
+    const observedResetOverride =
+      connection.provider === "claude" &&
+      connection.lastErrorType === "quota_exhausted" &&
+      connection.lastErrorSource !== "extra_usage" &&
+      Number(connection.errorCode) === 429 &&
+      hasObservedClaudeQuotaResetAfter(connection.id, connection.lastErrorAt) &&
+      everyQuotaWindowReplenished(usage);
+    if (!syntheticRecoveryOverride && !observedResetOverride) return connection;
   }
 
   const hasTransientState =
@@ -496,6 +522,16 @@ export async function maybeClearRecoveredQuotaState(
   } catch (dbError) {
     console.warn("[ProviderLimits] Failed to clear recovered quota state:", dbError);
     return connection;
+  }
+
+  if (cleared && connection.provider === "claude") {
+    // Only quota-family locks belong to this reset. Preserve auth, capacity,
+    // missing-model, and generic RPM locks for their own recovery path.
+    for (const lock of getAllModelLockouts()) {
+      if (lock.connectionId !== connection.id || lock.provider !== "claude") continue;
+      if (lock.reason !== RateLimitReason.QUOTA_EXHAUSTED) continue;
+      clearModelLock(lock.provider, lock.connectionId, lock.model);
+    }
   }
 
   if (!cleared) {
