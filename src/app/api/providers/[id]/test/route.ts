@@ -29,6 +29,7 @@ import { shouldUseApiKeyConnectionTest } from "./webSessionTestDispatch";
 import { testCodexAppServerConnection, makeDiagnosis } from "./codexAppServerHealth";
 import { persistConnectionTestHealth } from "./connectionTestHealth";
 import { lockModelIfPerModelQuota } from "@omniroute/open-sse/services/accountFallback.ts";
+import { clearTestedBreakers } from "@/lib/resilience/clearTestedBreakers";
 import { shouldClearErrorStateOnValidProbe } from "@/lib/usage/providerLimits";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
 import * as apiKeyTestResult from "./apiKeyTestResult";
@@ -1118,6 +1119,8 @@ export async function testSingleConnection(
     now,
     persist: updateProviderConnection,
   });
+  // Once persisted, same gate as the error state: a valid probe also closes a DEGRADED breaker.
+  if (clearErrorState) clearTestedBreakers(provider, connectionId);
 
   // Sync to cloud if token was refreshed
   if (result.refreshed) {
