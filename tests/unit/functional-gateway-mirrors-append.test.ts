@@ -83,8 +83,12 @@ test("never mirrors ids that already carry the gateway alias prefix", () => {
   assert.equal(out.length, 1); // unchanged
 });
 
+// ── CATALOG_MIRROR_REFINEMENTS_ENABLED (opt-in `refined` mode) ─────────────────
 // A gateway with a distinct short alias (kilocode -> kc), and a connected codex owner.
+// `refined: true` is what catalogResponse.ts passes when the flag is on; the tests
+// at the end pin the default (flag off) selection, unchanged from before.
 const kcDeps = {
+  refined: true,
   gatewayProviderIds: ["kilocode"],
   isGateway: (p: string) => p === "kilocode",
   gatewayAlias: (p: string) => (p === "kilocode" ? "kc" : p),
@@ -192,5 +196,49 @@ test("asks the gateway about the full id it will actually receive", () => {
   assert.deepEqual(
     out.map((m) => m.id),
     ["ds/deepseek-v4-flash"]
+  );
+});
+
+test("default (flag off): keeps the historical selection for every refined case", () => {
+  const { refined: _refined, ...offDeps } = kcDeps;
+  const asked: string[] = [];
+  const models: CatalogEntry[] = [
+    // alias-prefixed id of a connected owner: historical owner = "cx" (not connected)
+    { id: "cx/gpt-6-sol-low", owned_by: "codex", root: "gpt-6-sol-low" },
+    // combo: historically treated like any provider-prefixed id
+    { id: "team/primary", owned_by: "combo", root: "team/primary" },
+    // synthetic no-think/ id: historical owner = "no-think"
+    { id: "no-think/claude/claude-opus-5-5", owned_by: "claude", root: "claude-opus-5-5" },
+  ];
+  const out = appendFunctionalGatewayMirrors(models, {
+    ...offDeps,
+    gatewayCovers: (_p: string, modelId: string) => {
+      asked.push(modelId);
+      return true;
+    },
+  });
+  assert.deepEqual(
+    out.slice(models.length).map((m) => m.id),
+    ["kc/cx/gpt-6-sol-low", "kc/team/primary", "kc/no-think/claude/claude-opus-5-5"]
+  );
+  assert.deepEqual(
+    asked,
+    ["gpt-6-sol-low", "primary", "claude/claude-opus-5-5"],
+    "flag off asks the gateway about the prefix-stripped id, as before"
+  );
+});
+
+test("default (flag off): a gateway can still be picked for its own owner's models", () => {
+  const { refined: _refined, ...offDeps } = kcDeps;
+  const models: CatalogEntry[] = [
+    { id: "kilocode/some-free-model", owned_by: "kilocode", root: "some-free-model" },
+  ];
+  const out = appendFunctionalGatewayMirrors(models, {
+    ...offDeps,
+    canonicalOwnerHasConnection: () => false,
+  });
+  assert.deepEqual(
+    out.map((m) => m.id),
+    ["kilocode/some-free-model", "kc/kilocode/some-free-model"]
   );
 });

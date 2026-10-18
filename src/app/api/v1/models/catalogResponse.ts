@@ -12,6 +12,7 @@ import { appendNoThinkingVariants } from "@omniroute/open-sse/utils/noThinkingAl
 import { appendClaudeEffortVariants } from "@omniroute/open-sse/utils/claudeEffortVariants";
 import { appendSyncedEffortVariants } from "@omniroute/open-sse/utils/syncedEffortVariants";
 import { appendCcDiscoveryAliases } from "@omniroute/open-sse/utils/ccDiscoveryAliases";
+import { isResolvableBuiltinAutoId } from "@omniroute/open-sse/services/autoCombo/builtinCatalog";
 import {
   appendFunctionalGatewayMirrors,
   isFunctionalGatewayMirror,
@@ -40,6 +41,7 @@ import {
   isModelCatalogNamesEnabled,
   isNoThinkingAliasEnabled,
   isDisableThinkingLevelVariantsEnabled,
+  isCatalogMirrorRefinementsEnabled,
 } from "@/shared/utils/featureFlags";
 import { extractApiKey } from "@/sse/services/auth";
 import { maybeOmitCatalogModelName } from "./catalogHelpers";
@@ -80,6 +82,42 @@ async function filterUnauthorizedAppendedVariants(
     if (await authorize(variant)) retained.push(variant);
   }
   return retained;
+}
+
+/**
+ * CATALOG_MIRROR_REFINEMENTS_ENABLED only (refined functional-gateway mirrors).
+ *
+ * A gateway whose live catalog is authoritative rejects any model outside it at
+ * request time ("not available in the active live catalog"), so a mirror for such
+ * a model is advertised-but-dead. Match the request path (lookupModelMeta), which
+ * receives the mirrored id verbatim: an exact synced id or a custom model
+ * (case-insensitive). Deliberately NOT catalogContainsModel — its after-the-slash
+ * fallback accepts `dva/claude-sonnet-4-6` because `claude-sonnet-4-6` is listed,
+ * yet dispatch rejects it. No authoritative catalog = fail open, as there.
+ */
+async function buildGatewayLiveCatalogCheck(
+  gatewayProviderIds: string[],
+  connections: Array<{ provider?: unknown }>
+): Promise<(provider: string, modelId: string) => boolean> {
+  const gatewayLiveIds = new Map<string, { synced: Set<string>; custom: Set<string> }>();
+  for (const provider of gatewayProviderIds) {
+    if (!connections.some((c) => c.provider === provider)) continue;
+    const catalog = await getActiveSyncedCatalog(provider);
+    if (!catalog.authoritative) continue;
+    const custom: unknown = await getCustomModels(provider);
+    gatewayLiveIds.set(provider, {
+      synced: new Set(catalog.models.map((model) => model.id)),
+      custom: new Set(
+        (Array.isArray(custom) ? custom : []).flatMap((model: { id?: unknown }) =>
+          typeof model?.id === "string" ? [model.id.toLowerCase()] : []
+        )
+      ),
+    });
+  }
+  return (provider, modelId) => {
+    const ids = gatewayLiveIds.get(provider);
+    return !ids || ids.synced.has(modelId) || ids.custom.has(modelId.toLowerCase());
+  };
 }
 
 /**
@@ -167,6 +205,10 @@ export async function applyCatalogPostFilters(
   // `type` here — non-chat entries (embedding/image/etc.) get a mirror too; the
   // gate itself (default-off + explicit opt-in) is the operator's filter, not a
   // hardcoded type allowlist.
+  // CATALOG_MIRROR_REFINEMENTS_ENABLED (default off): resolved once per build. Off keeps
+  // both mirror passes exactly as before; on mirrors claude/ effort variants, drops
+  // mirrors that cannot resolve, and checks gateways against what they will receive.
+  const mirrorRefinements = isCatalogMirrorRefinementsEnabled();
   const ccAliasGlobal = isCcAliasGlobalEnabled();
   const ccAliasSettings = getCcAliasSettingsBulk();
   if (ccAliasGlobal || ccAliasSettings.providers.size > 0 || ccAliasSettings.models.size > 0) {
@@ -176,7 +218,8 @@ export async function applyCatalogPostFilters(
         global: ccAliasGlobal,
         providers: ccAliasSettings.providers,
         models: ccAliasSettings.models,
-      })
+      }),
+      { refined: mirrorRefinements, isResolvableAutoId: isResolvableBuiltinAutoId }
     );
   }
 
@@ -191,37 +234,14 @@ export async function applyCatalogPostFilters(
   const fgGlobal = isFunctionalGatewayGlobalEnabled();
   const fgSettings = getFunctionalGatewaySettingsBulk();
   if (fgGlobal || fgSettings.providers.size > 0 || fgSettings.models.size > 0) {
-    // A gateway disabled via settings.blockedProviders has no usable credential at
-    // request time even when a connection row exists, so it cannot carry mirrors.
-    const gatewayProviderIds = [...getPassthroughProviders()].filter(
-      (provider) => !isProviderBlockedByIdOrAlias(provider, ctx.blockedProviders)
-    );
-    // A gateway whose live catalog is authoritative rejects any model outside it at
-    // request time ("not available in the active live catalog"), so a mirror for
-    // such a model is advertised-but-dead. Match the request path (lookupModelMeta),
-    // which receives the mirrored id verbatim: an exact synced id or a custom model
-    // (case-insensitive). Deliberately NOT catalogContainsModel — its after-the-slash
-    // fallback accepts `dva/claude-sonnet-4-6` because `claude-sonnet-4-6` is listed,
-    // yet dispatch rejects it. No authoritative catalog = fail open, as there.
-    const gatewayLiveIds = new Map<string, { synced: Set<string>; custom: Set<string> }>();
-    for (const provider of gatewayProviderIds) {
-      if (!ctx.connections.some((c) => c.provider === provider)) continue;
-      const catalog = await getActiveSyncedCatalog(provider);
-      if (!catalog.authoritative) continue;
-      const custom: unknown = await getCustomModels(provider);
-      gatewayLiveIds.set(provider, {
-        synced: new Set(catalog.models.map((model) => model.id)),
-        custom: new Set(
-          (Array.isArray(custom) ? custom : []).flatMap((model: { id?: unknown }) =>
-            typeof model?.id === "string" ? [model.id.toLowerCase()] : []
-          )
-        ),
-      });
-    }
-    const gatewayServes = (provider: string, modelId: string): boolean => {
-      const ids = gatewayLiveIds.get(provider);
-      return !ids || ids.synced.has(modelId) || ids.custom.has(modelId.toLowerCase());
-    };
+    const gatewayProviderIds = mirrorRefinements
+      ? [...getPassthroughProviders()].filter(
+          (provider) => !isProviderBlockedByIdOrAlias(provider, ctx.blockedProviders)
+        )
+      : [...getPassthroughProviders()];
+    const gatewayServes = mirrorRefinements
+      ? await buildGatewayLiveCatalogCheck(gatewayProviderIds, ctx.connections)
+      : () => true;
     finalModels = appendFunctionalGatewayMirrors(finalModels, {
       gatewayProviderIds,
       isGateway: (provider) => getPassthroughProviders().has(provider),
@@ -237,6 +257,7 @@ export async function applyCatalogPostFilters(
           ctx.connections.filter((c) => c.provider === owner),
           owner
         ),
+      refined: mirrorRefinements,
     });
     finalModels = finalModels.filter((m) =>
       buildFunctionalGatewayPredicate({ global: fgGlobal, ...fgSettings })(m)
