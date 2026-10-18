@@ -383,6 +383,40 @@ async function withAbort<T>(promise: Promise<T>, signal?: AbortSignal | null): P
   }
 }
 
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function prepareZcodeRequest(
+  body: unknown,
+  model: string,
+  signal?: AbortSignal | null
+): Promise<JsonRecord> {
+  const request = buildZcodeModelRequest(asRecord(body));
+  const hasImages = (request.messages as JsonRecord[]).some(
+    (message) =>
+      Array.isArray(message.content) &&
+      message.content.some((block) => asRecord(block).type === "image")
+  );
+  if (hasImages && !ZCODE_MODELS.find((entry) => entry.id === model)?.supportsVision)
+    throw new Error(`ZCode model "${model}" does not support image input`);
+  await resolveRequestImages(request, signal);
+  return request;
+}
+
+// The native runtime validates that maxOutputTokens is a positive integer
+// inside the model's option range on every turn, while the RPC selection
+// payload must stay schema-clean. Bound a caller-provided limit into the
+// registry range; otherwise use the bound.
+function boundMaxOutputTokens(request: JsonRecord, nativeMaxTokens: number | undefined): void {
+  if (typeof nativeMaxTokens !== "number") return;
+  const callerMax =
+    typeof request.maxOutputTokens === "number" && request.maxOutputTokens >= 1
+      ? Math.floor(request.maxOutputTokens)
+      : undefined;
+  request.maxOutputTokens = Math.min(callerMax ?? nativeMaxTokens, nativeMaxTokens);
+}
+
 export class ZcodeExecutor extends BaseExecutor {
   constructor(private readonly options: ZcodeExecutorOptions = {}) {
     super("zcode", { id: "zcode", baseUrl: ZCODE_URL, format: "openai" });
@@ -399,76 +433,26 @@ export class ZcodeExecutor extends BaseExecutor {
       return errorResponse(400, "error" in resolution ? resolution.error : "Invalid ZCode model");
     let request: JsonRecord;
     try {
-      request = buildZcodeModelRequest(asRecord(input.body));
-      const hasImages = (request.messages as JsonRecord[]).some(
-        (message) =>
-          Array.isArray(message.content) &&
-          message.content.some((block) => asRecord(block).type === "image")
-      );
-      if (hasImages && !ZCODE_MODELS.find((model) => model.id === resolution.model)?.supportsVision)
-        throw new Error(`ZCode model "${resolution.model}" does not support image input`);
-      await resolveRequestImages(request, input.signal);
+      request = await prepareZcodeRequest(input.body, resolution.model, input.signal);
     } catch (error) {
-      return errorResponse(
-        400,
-        sanitizeErrorMessage(error instanceof Error ? error.message : String(error))
-      );
+      return errorResponse(400, sanitizeErrorMessage(errorText(error)));
     }
     const client = this.createClient();
     try {
-      const workspace = {
-        workspacePath: resolve(this.options.cwd || process.env.ZCODE_CWD || process.cwd()),
-        workspaceIdentity: resolve(this.options.cwd || process.env.ZCODE_CWD || process.cwd()),
-      };
+      const cwd = resolve(this.workingDirectory());
+      const workspace = { workspacePath: cwd, workspaceIdentity: cwd };
       await withAbort(client.start(), input.signal);
       const initialized = asRecord(
         await withAbort(client.call("zcode-agent", "initialize", [workspace]), input.signal)
       );
       if (initialized.available !== true) throw new Error("ZCode model runtime is unavailable");
-      // The signed-in account can hydrate after initialize while custom providers
-      // are already ready. Wait for the exact model; never substitute a provider.
-      const readyDeadline = Date.now() + (this.options.startupTimeoutMs ?? 10_000);
-      let selection: ZcodeTurnSelection;
-      let nativeMaxTokens: number | undefined;
-      for (;;) {
-        const registry = await withAbort(
-          client.call("model-selection", "getView", []),
-          input.signal
-        );
-        try {
-          selection = resolveZcodeSelection(
-            registry,
-            resolution.model,
-            this.options.providerId || process.env.ZCODE_PROVIDER_ID
-          );
-          nativeMaxTokens = resolveZcodeMaxTokens(
-            registry,
-            resolution.model,
-            this.options.providerId || process.env.ZCODE_PROVIDER_ID
-          );
-          break;
-        } catch (error) {
-          if (Date.now() >= readyDeadline) throw error;
-          await withAbort(
-            new Promise((resolve) =>
-              setTimeout(resolve, Math.min(250, readyDeadline - Date.now()))
-            ),
-            input.signal
-          );
-        }
-      }
+      const { selection, nativeMaxTokens } = await this.waitForSelection(
+        client,
+        resolution.model,
+        input.signal
+      );
       input.log?.info?.("ZCODE", `native model request model=${resolution.model}`);
-      // The native runtime validates that maxOutputTokens is a positive integer
-      // inside the model's option range on every turn, while the RPC selection
-      // payload must stay schema-clean. Bound a caller-provided limit into the
-      // registry range; otherwise use the bound.
-      if (typeof nativeMaxTokens === "number") {
-        const callerMax =
-          typeof request.maxOutputTokens === "number" && request.maxOutputTokens >= 1
-            ? Math.floor(request.maxOutputTokens)
-            : undefined;
-        request.maxOutputTokens = Math.min(callerMax ?? nativeMaxTokens, nativeMaxTokens);
-      }
+      boundMaxOutputTokens(request, nativeMaxTokens);
       const result = asRecord(
         await withAbort(
           client.call("zcode-agent", "generateWorkspaceText", [
@@ -495,7 +479,7 @@ export class ZcodeExecutor extends BaseExecutor {
         transport: "local-zcode-model",
       };
     } catch (error) {
-      const message = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      const message = sanitizeErrorMessage(errorText(error));
       input.log?.warn?.("ZCODE", message);
       // No stream has started: retain a real HTTP error, not a 200 error-only SSE
       // that the readiness guard rewrites into STREAM_EARLY_EOF.
@@ -503,6 +487,34 @@ export class ZcodeExecutor extends BaseExecutor {
     } finally {
       await client.close().catch(() => undefined);
     }
+  }
+  // The signed-in account can hydrate after initialize while custom providers
+  // are already ready. Wait for the exact model; never substitute a provider.
+  private async waitForSelection(
+    client: ZcodeClientLike,
+    model: string,
+    signal?: AbortSignal | null
+  ): Promise<{ selection: ZcodeTurnSelection; nativeMaxTokens: number | undefined }> {
+    const providerId = this.options.providerId || process.env.ZCODE_PROVIDER_ID;
+    const readyDeadline = Date.now() + (this.options.startupTimeoutMs ?? 10_000);
+    for (;;) {
+      const registry = await withAbort(client.call("model-selection", "getView", []), signal);
+      try {
+        return {
+          selection: resolveZcodeSelection(registry, model, providerId),
+          nativeMaxTokens: resolveZcodeMaxTokens(registry, model, providerId),
+        };
+      } catch (error) {
+        if (Date.now() >= readyDeadline) throw error;
+        await withAbort(
+          new Promise((resolve) => setTimeout(resolve, Math.min(250, readyDeadline - Date.now()))),
+          signal
+        );
+      }
+    }
+  }
+  private workingDirectory(): string {
+    return this.options.cwd || process.env.ZCODE_CWD || process.cwd();
   }
   private turnTimeoutMs(): number {
     return (
