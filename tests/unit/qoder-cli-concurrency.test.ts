@@ -72,6 +72,60 @@ async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<bool
   return predicate();
 }
 
+test("qodercli slot gate has no cap unless QODER_CLI_MAX_CONCURRENCY is set", async () => {
+  concurrency.__resetQoderCliConcurrency();
+  await withEnv({ QODER_CLI_MAX_CONCURRENCY: undefined }, async () => {
+    // Default throughput is unchanged: many concurrent acquisitions are granted at
+    // once, nothing queues, and no queue timeout can fire.
+    const releases = await Promise.all(
+      Array.from({ length: 12 }, () => concurrency.acquireQoderCliSlot({ queueTimeoutMs: 10 }))
+    );
+    assert.deepEqual(concurrency.getQoderCliConcurrencyStats(), {
+      active: 12,
+      queued: 0,
+      limit: null,
+    });
+    for (const release of releases) release();
+    assert.equal(concurrency.getQoderCliConcurrencyStats().active, 0);
+  });
+  for (const raw of ["", "0", "-3", "abc"]) {
+    await withEnv({ QODER_CLI_MAX_CONCURRENCY: raw }, async () => {
+      assert.equal(concurrency.getQoderCliMaxConcurrency(), Number.POSITIVE_INFINITY, raw);
+    });
+  }
+});
+
+test("withQoderCliSlot never queues when no cap is configured", async () => {
+  concurrency.__resetQoderCliConcurrency();
+  await withEnv(
+    { QODER_CLI_MAX_CONCURRENCY: undefined, QODER_CLI_QUEUE_TIMEOUT_MS: "1" },
+    async () => {
+      const held = await Promise.all(
+        Array.from({ length: 4 }, () => concurrency.acquireQoderCliSlot())
+      );
+      try {
+        const run = await concurrency.withQoderCliSlot(async () => "ran", { queueTimeoutMs: 1 });
+        assert.equal(run, "ran");
+      } finally {
+        for (const release of held) release();
+        concurrency.__resetQoderCliConcurrency();
+      }
+    }
+  );
+});
+
+test("the ACP transport stays off unless QODER_CLI_TRANSPORT=acp", async () => {
+  const { isQoderAcpTransportEnabled } = await import("../../open-sse/services/qoderCliAcp.ts");
+  for (const raw of [undefined, "", "print", "ACP-ish", "1", "true"]) {
+    await withEnv({ QODER_CLI_TRANSPORT: raw }, async () => {
+      assert.equal(isQoderAcpTransportEnabled(), false, String(raw));
+    });
+  }
+  await withEnv({ QODER_CLI_TRANSPORT: " ACP " }, async () => {
+    assert.equal(isQoderAcpTransportEnabled(), true);
+  });
+});
+
 test("qodercli slot gate queues past the limit and grants FIFO on release", async () => {
   concurrency.__resetQoderCliConcurrency();
   await withEnv({ QODER_CLI_MAX_CONCURRENCY: "1" }, async () => {
@@ -171,7 +225,7 @@ test("runQoderCli reports busy when no qodercli slot frees up in time", async ()
   });
 });
 
-test("QoderExecutor answers 503 qodercli_busy when the qodercli queue times out", async () => {
+test("QoderExecutor answers 429 qodercli_busy with Retry-After when the queue times out", async () => {
   concurrency.__resetQoderCliConcurrency();
   await withEnv({ QODER_CLI_MAX_CONCURRENCY: "1", QODER_CLI_QUEUE_TIMEOUT_MS: "30" }, async () => {
     const release = await concurrency.acquireQoderCliSlot();
@@ -182,7 +236,10 @@ test("QoderExecutor answers 503 qodercli_busy when the qodercli queue times out"
         stream: false,
         credentials: { apiKey: "pt-busy-executor" },
       });
-      assert.equal(response.status, 503);
+      // A full local queue is request-scoped: 429 + Retry-After, never a 5xx that
+      // would count as a provider failure for the circuit breaker.
+      assert.equal(response.status, 429);
+      assert.equal(response.headers.get("Retry-After"), "5");
       const payload = (await response.json()) as { error: { code: string; message: string } };
       assert.equal(payload.error.code, "qodercli_busy");
       assert.doesNotMatch(payload.error.message, /at \//);

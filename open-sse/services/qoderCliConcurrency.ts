@@ -1,12 +1,13 @@
 /**
  * Process-wide gate for qodercli work. Every `qodercli --print` run is a fresh
  * Node process that peaks at ~750 MB RSS for ~12 s, so N parallel requests cost
- * N × 750 MB: ten concurrent Qoder requests OOM-killed a 4 GB host. The gate
- * bounds how many qodercli runs (print spawns or ACP prompts) are in flight and
- * queues the rest FIFO, with a queue timeout and abort support.
+ * N × 750 MB: ten concurrent Qoder requests OOM-killed a 4 GB host. When
+ * `QODER_CLI_MAX_CONCURRENCY` is set, the gate bounds how many qodercli runs
+ * (print spawns or ACP prompts) are in flight and queues the rest FIFO, with a
+ * queue timeout and abort support. Unset (the default) means no cap, so default
+ * throughput and status codes are unchanged; the operator opts in per host.
  */
 
-export const DEFAULT_QODER_CLI_MAX_CONCURRENCY = 2;
 export const DEFAULT_QODER_CLI_QUEUE_TIMEOUT_MS = 120_000;
 
 export class QoderCliQueueTimeoutError extends Error {
@@ -21,8 +22,9 @@ function readPositiveInt(raw: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+/** Configured cap, or `Infinity` when `QODER_CLI_MAX_CONCURRENCY` is unset/invalid (no cap). */
 export function getQoderCliMaxConcurrency(): number {
-  return readPositiveInt(process.env.QODER_CLI_MAX_CONCURRENCY, DEFAULT_QODER_CLI_MAX_CONCURRENCY);
+  return readPositiveInt(process.env.QODER_CLI_MAX_CONCURRENCY, Number.POSITIVE_INFINITY);
 }
 
 export function getQoderCliQueueTimeoutMs(): number {
@@ -124,8 +126,14 @@ export async function withQoderCliSlot<T>(
   }
 }
 
-export function getQoderCliConcurrencyStats(): { active: number; queued: number; limit: number } {
-  return { active, queued: waiters.length, limit: getQoderCliMaxConcurrency() };
+/** `limit` is null when no cap is configured. */
+export function getQoderCliConcurrencyStats(): {
+  active: number;
+  queued: number;
+  limit: number | null;
+} {
+  const limit = getQoderCliMaxConcurrency();
+  return { active, queued: waiters.length, limit: Number.isFinite(limit) ? limit : null };
 }
 
 /** Test-only: forget all slot state. */

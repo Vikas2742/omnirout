@@ -26,6 +26,9 @@ import {
 import { sanitizeErrorMessage } from "../utils/error.ts";
 import { hasQoderCallerTools, resolveQoderAuthToken } from "../services/qoderCapabilities.ts";
 
+/** Retry hint sent with a 429 `qodercli_busy` (local queue full). */
+const QODER_CLI_BUSY_RETRY_AFTER_SECONDS = 5;
+
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
   return `${text.slice(0, max)}…`;
@@ -379,11 +382,15 @@ export class QoderExecutor extends BaseExecutor {
     }
 
     if (run.busy) {
+      // The local qodercli queue is full — a request-scoped condition, not an
+      // upstream failure: 429 + Retry-After, never a 5xx that would count
+      // against the provider circuit breaker.
       return {
         response: createQoderErrorResponse({
-          status: 503,
+          status: 429,
           message: sanitizeErrorMessage(run.error || "qodercli is busy"),
           code: "qodercli_busy",
+          retryAfterSeconds: QODER_CLI_BUSY_RETRY_AFTER_SECONDS,
         }),
         url,
         headers: {},
