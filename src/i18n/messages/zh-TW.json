@@ -1017,6 +1017,7 @@
   "featureFlagBatchAndFileAutoCleanupEnabledDescription": "允許自動清理程序刪除早於 OMNIROUTE_BATCH_RETENTION_DAYS 且處於最終狀態（已完成／失敗／已取消／已過期）的 Batch API 作業及其逐行檢查點，並清除已超過各自 expires_at 的上傳檔案 BLOB 內容。預設關閉：在操作員選擇啟用前，所有現有安裝都會完全比照以往保留這些資料。無論是否啟用，操作員觸發的 DELETE /api/v1/batches/delete-completed 路由都不受影響——它是獨立且無條件的公開 API 合約。",
   "featureFlagXaiOauthLiveModelDiscoveryDescription": "使用 OAuth bearer token，從 https://api.x.ai/v1/models 擷取 xai-oauth 連線的即時 xAI 模型目錄，而非固定不變的靜態種子。預設關閉：xai-oauth 會繼續提供未變更的靜態種子。發生任何解析錯誤時，探索功能會回退至該種子。",
   "featureFlagDbHealthcheckStartupDeferredEnabledDescription": "伺服器開始接受請求後再執行啟動時的資料庫完整性／健康狀況檢查，而非在檢查完成前阻擋啟動程序。預設關閉：啟動程序會像此變更前一樣等待檢查完成，因此損壞的資料庫仍會在處理第一個請求前被偵測到。",
+  "featureFlagCatalogMirrorRefinementsEnabledDescription": "完善 /v1/models 上的 claude/ 探索與 functional-gateway 鏡像功能。預設關閉：兩種鏡像處理方式的行為都與先前完全相同。開啟時：claude/ 探索鏡像也會涵蓋列出的推理強度變體（-low/-medium/-high/-xhigh），略過請求路徑無法具現化的內建 auto/* ID，並略過已列出的別名；functional-gateway 鏡像會略過組合與 OmniRoute 合成的 ID（claude/、no-think/），從 owned_by 取得擁有者，絕不將擁有者本身用作其閘道，並略過 blockedProviders 中已停用的閘道，以及不在閘道權威即時目錄中的模型。",
   "sidebar": {
     "home": "首頁",
     "dashboard": "儀表板",
