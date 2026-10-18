@@ -1041,4 +1041,16 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     requiresRestart: false,
     warningLevel: "caution",
   },
+  {
+    key: "CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED",
+    label: "Combo: Stop on Content-Policy Refusal",
+    description:
+      "When a combo target answers with an exact content-policy refusal (code or type cyber_policy / content_policy_violation), stop the combo and return that refusal even when the remaining targets are different models, instead of advancing to the next target. Off by default: the refusal never cools the account or trips the provider breaker, and the combo advances to its next target exactly as before.",
+    descriptionI18nKey: "featureFlagContentPolicyRefusalComboStopEnabledDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
 ];
