@@ -97,6 +97,7 @@ describe("catalog usableOnly gating", () => {
       { ...baseOpts, usableOnly: false },
       {
         fetcher: stubModels,
+        combosFetcher: async () => [],
         providersFetcher: async () => {
           providersCalls += 1;
           return [];
@@ -105,7 +106,7 @@ describe("catalog usableOnly gating", () => {
     );
     assert.equal(providersCalls, 0);
     assert.equal(res.models, 3);
-    assert.deepEqual(res, { models: 3 });
+    assert.deepEqual(res, { models: 3, combos: 0 });
     assert.ok(models.has("omniroute/cc/keep-me"));
     assert.ok(models.has("omniroute/dead/drop-me"));
   });
@@ -121,6 +122,7 @@ describe("catalog usableOnly gating", () => {
       },
       {
         fetcher: stubModels,
+        combosFetcher: async () => [],
         providersFetcher: async () => [
           { id: "c1", provider: "claude", isActive: true, testStatus: "active" },
         ],
@@ -139,6 +141,7 @@ describe("catalog usableOnly gating", () => {
       { ...baseOpts, usableOnly: true },
       {
         fetcher: stubModels,
+        combosFetcher: async () => [],
         providersFetcher: async () => {
           throw new Error("down");
         },
@@ -148,7 +151,7 @@ describe("catalog usableOnly gating", () => {
     assert.ok(models.has("omniroute/dead/drop-me"));
   });
 
-  it("usableOnly=true filters combo rows by picker id", async () => {
+  it("usableOnly=true filters combos by member usability", async () => {
     const { draft, models } = fakeDraft();
     const res = await publishCatalog(
       draft,
@@ -158,22 +161,20 @@ describe("catalog usableOnly gating", () => {
         enrichment: enrichmentOf(["cc", "claude"], ["dead", "legacy"]),
       },
       {
-        fetcher: async () => [
-          { id: "cc/x" },
-          { id: "dead/y" },
-          { id: "cc/good", owned_by: "combo" },
-          { id: "dead/bad", owned_by: "combo" },
+        fetcher: async () => [{ id: "cc/x" }, { id: "dead/y" }],
+        combosFetcher: async () => [
+          { id: "good", name: "Good", models: [{ kind: "model", model: "cc/x" }] },
+          { id: "bad", name: "Bad", models: [{ kind: "model", model: "dead/y" }] },
         ],
         providersFetcher: async () => [
           { id: "c1", provider: "claude", isActive: true, testStatus: "active" },
         ],
       }
     );
-    assert.deepEqual(res, { models: 2 });
-    assert.ok(models.has("omniroute/cc/x"));
-    assert.ok(models.has("omniroute/cc/good"));
-    assert.ok(!models.has("omniroute/dead/y"));
-    assert.ok(!models.has("omniroute/dead/bad"));
+    assert.equal(res.combos, 1);
+    assert.deepEqual(res, { models: 1, combos: 1 });
+    assert.ok(models.has("omniroute/Good"));
+    assert.ok(!models.has("omniroute/Bad"));
   });
 
   it("usableOnly=false issues no providers request through setup (gating)", async () => {
@@ -182,6 +183,9 @@ describe("catalog usableOnly gating", () => {
     globalThis.fetch = (async (url: unknown) => {
       const href = String(url);
       seen.push(href);
+      if (href.includes("/api/combos")) {
+        return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
+      }
       return {
         ok: true,
         status: 200,
@@ -246,6 +250,12 @@ describe("catalog usableOnly gating", () => {
       const origFetch = globalThis.fetch;
       globalThis.fetch = (async (url: unknown) => {
         const href = String(url);
+        if (href.includes("/api/combos/auto")) {
+          return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
+        }
+        if (href.includes("/api/combos")) {
+          return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
+        }
         return {
           ok: true,
           status: 200,

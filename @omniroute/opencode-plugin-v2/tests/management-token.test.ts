@@ -4,7 +4,7 @@ import plugin from "../src/index.js";
 import { collectCatalog } from "../src/catalog.js";
 
 const MODELS_URL = "https://gw.example.com/v1/models";
-const PROVIDERS_URL = "https://gw.example.com/api/providers";
+const COMBOS_URL = "https://gw.example.com/api/combos";
 
 function silence() {
   const warns: string[] = [];
@@ -60,14 +60,14 @@ function stubDraft() {
 }
 
 describe("plugin-v2 managementReadToken wiring (F1)", () => {
-  it("providers fetch uses managementReadToken while models use apiKey", async () => {
+  it("combos fetch uses managementReadToken while models use apiKey", async () => {
     const seen = new Map<string, string>();
     const origFetch = globalThis.fetch;
     globalThis.fetch = (async (url: unknown, init?: { headers?: Record<string, string> }) => {
       const href = String(url);
       seen.set(href, String(init?.headers?.Authorization ?? ""));
-      if (href.includes("/api/providers")) {
-        return { ok: true, status: 200, statusText: "OK", json: async () => ({ connections: [] }) };
+      if (href.includes("/api/combos")) {
+        return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
       }
       return {
         ok: true,
@@ -83,14 +83,13 @@ describe("plugin-v2 managementReadToken wiring (F1)", () => {
         providerId: "omniroute",
         apiKey: "chat-key",
         managementReadToken: "mgmt-key",
-        usableOnly: true,
       });
       await (plugin as unknown as { setup: (ctx: unknown) => Promise<void> }).setup(ctx);
       const ids = (added as Array<{ models: Array<{ id: string }> }>).flatMap((a) =>
         a.models.map((m) => m.id)
       );
       assert.ok(ids.includes("m1"));
-      assert.equal(seen.get(PROVIDERS_URL), "Bearer mgmt-key");
+      assert.equal(seen.get(COMBOS_URL), "Bearer mgmt-key");
       assert.equal(seen.get(MODELS_URL), "Bearer chat-key");
     } finally {
       globalThis.fetch = origFetch;
@@ -98,14 +97,14 @@ describe("plugin-v2 managementReadToken wiring (F1)", () => {
     }
   });
 
-  it("providers fetch falls back to apiKey when managementReadToken is absent", async () => {
+  it("combos fetch falls back to apiKey when managementReadToken is absent", async () => {
     const seen = new Map<string, string>();
     const origFetch = globalThis.fetch;
     globalThis.fetch = (async (url: unknown, init?: { headers?: Record<string, string> }) => {
       const href = String(url);
       seen.set(href, String(init?.headers?.Authorization ?? ""));
-      if (href.includes("/api/providers")) {
-        return { ok: true, status: 200, statusText: "OK", json: async () => ({ connections: [] }) };
+      if (href.includes("/api/combos")) {
+        return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
       }
       return {
         ok: true,
@@ -120,17 +119,16 @@ describe("plugin-v2 managementReadToken wiring (F1)", () => {
         baseURL: "https://gw.example.com",
         providerId: "omniroute",
         apiKey: "chat-key",
-        usableOnly: true,
       });
       await (plugin as unknown as { setup: (ctx: unknown) => Promise<void> }).setup(ctx);
-      assert.equal(seen.get(PROVIDERS_URL), "Bearer chat-key");
+      assert.equal(seen.get(COMBOS_URL), "Bearer chat-key");
     } finally {
       globalThis.fetch = origFetch;
       guard.restore();
     }
   });
 
-  it("collectCatalog routes providersFetcher to managementReadToken, models to apiKey", async () => {
+  it("collectCatalog routes combosFetcher to managementReadToken, models to apiKey", async () => {
     const calls: Array<[string, string]> = [];
     const collected = await collectCatalog(
       {
@@ -140,25 +138,24 @@ describe("plugin-v2 managementReadToken wiring (F1)", () => {
         managementReadToken: "mgmt-key",
         timeoutMs: 1000,
         modelCacheTtlMs: 300000,
-        usableOnly: true,
-        enrichment: new Map(),
+        usableOnly: false,
       },
       {
-        fetcher: async (_baseURL: string, token: string) => {
+        fetcher: async (_baseURL, token) => {
           calls.push(["models", token]);
           return [{ id: "m1", capabilities: { tool_calling: true } }];
         },
-        providersFetcher: async (_baseURL: string, token: string) => {
-          calls.push(["providers", token]);
+        combosFetcher: async (_baseURL, token) => {
+          calls.push(["combos", token]);
           return [];
         },
       }
     );
     const res = collected.counts;
-    assert.deepEqual(res, { models: 1 });
+    assert.deepEqual(res, { models: 1, combos: 0 });
     assert.deepEqual(calls, [
       ["models", "chat-key"],
-      ["providers", "mgmt-key"],
+      ["combos", "mgmt-key"],
     ]);
   });
 });
@@ -175,6 +172,9 @@ describe("plugin-v2 fail-closed models (F2)", () => {
     const origFetch = globalThis.fetch;
     globalThis.fetch = (async (url: unknown) => {
       const href = String(url);
+      if (href.includes("/api/combos")) {
+        return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
+      }
       modelsCall += 1;
       if (modelsCall === 1) {
         return {

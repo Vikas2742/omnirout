@@ -48,10 +48,21 @@ function enrichmentOf(...pairs: Array<[string, string]>) {
 }
 
 const stubModels = async () => [{ id: "cc/a" }, { id: "alpha/b" }];
+const stubCombos = async () => [
+  {
+    id: "mix",
+    name: "Mix",
+    models: [
+      { kind: "model", model: "cc/a" },
+      { kind: "model", model: "alpha/b" },
+    ],
+  },
+];
 
 function baseFetchers() {
   return {
     models: stubModels,
+    combos: stubCombos,
     providers: async () => [],
     enrichment: async () => enrichmentOf(["cc", "claude"], ["alpha", "alpha"]),
   };
@@ -68,7 +79,8 @@ describe("provider filter integration (real option resolution)", () => {
         baseFetchers()
       );
       assert.equal(collected.counts.models, 2);
-      assert.deepEqual(collected.counts, { models: 2 });
+      assert.equal(collected.counts.combos, 1);
+      assert.deepEqual(collected.counts, { models: 2, combos: 1 });
       assert.equal(
         warns.filter((w) => w.includes("providersAllow") || w.includes("provider filter")).length,
         0
@@ -76,7 +88,7 @@ describe("provider filter integration (real option resolution)", () => {
     }
   });
 
-  it("single provider keeps only its models via alias", async () => {
+  it("single provider keeps only its models and combos via alias", async () => {
     const warns: string[] = [];
     const collected = await collectCatalog(
       resolvedWith({ providersAllow: ["claude"] }, warns, {
@@ -86,7 +98,9 @@ describe("provider filter integration (real option resolution)", () => {
     );
     assert.equal(collected.counts.models, 1);
     assert.ok([...collected.entries.keys()].some((k) => k.endsWith("/cc/a")));
-    assert.deepEqual(collected.counts, { models: 1 });
+    // Mixed combo survives: one member resolves through the alias.
+    assert.equal(collected.counts.combos, 1);
+    assert.deepEqual(collected.counts, { models: 1, combos: 1 });
   });
 
   it("keeps the full catalog when the allowlist names nothing known", async () => {
@@ -101,7 +115,8 @@ describe("provider filter integration (real option resolution)", () => {
     });
     const first = await collectCatalog(opts, baseFetchers());
     assert.equal(first.counts.models, 2);
-    assert.deepEqual(first.counts, { models: 2 });
+    assert.equal(first.counts.combos, 1);
+    assert.deepEqual(first.counts, { models: 2, combos: 1 });
     assert.equal(warns.filter((w) => w.includes("unknown provider")).length, 1);
     const second = await collectCatalog(opts, baseFetchers());
     assert.equal(second.counts.models, 2);
@@ -119,7 +134,8 @@ describe("provider filter integration (real option resolution)", () => {
     });
     const first = await collectCatalog(opts, baseFetchers());
     assert.equal(first.counts.models, 1);
-    assert.deepEqual(first.counts, { models: 1 });
+    assert.equal(first.counts.combos, 1);
+    assert.deepEqual(first.counts, { models: 1, combos: 1 });
     assert.equal(warns.filter((w) => w.includes("unknown provider")).length, 1);
     const second = await collectCatalog(opts, baseFetchers());
     assert.equal(second.counts.models, 1);
@@ -137,6 +153,7 @@ describe("provider filter integration (real option resolution)", () => {
       }),
       {
         models: async () => [{ id: "cc/a" }],
+        combos: async () => [],
         providers: async () => [],
         enrichment: async () => enrichmentOf(["cc", "claude"], ["alpha", "alpha"]),
       }
@@ -145,7 +162,7 @@ describe("provider filter integration (real option resolution)", () => {
     assert.ok(warns.some((w) => w.includes("matched nothing")));
   });
 
-  it("drops a model whose provider is excluded", async () => {
+  it("drops a combo whose only member is excluded", async () => {
     const warns: string[] = [];
     const collected = await collectCatalog(
       resolvedWith({ providersAllow: ["alpha"] }, warns, {
@@ -153,29 +170,34 @@ describe("provider filter integration (real option resolution)", () => {
       }),
       {
         models: async () => [{ id: "cc/a" }, { id: "alpha/b" }],
+        combos: async () => [
+          { id: "cc-only", name: "CcOnly", models: [{ kind: "model", model: "cc/a" }] },
+        ],
         providers: async () => [],
         enrichment: async () => enrichmentOf(["cc", "claude"], ["alpha", "alpha"]),
       }
     );
-    assert.equal(collected.counts.models, 1);
+    assert.equal(collected.counts.combos, 0);
     assert.ok([...collected.entries.keys()].some((k) => k.endsWith("/alpha/b")));
-    assert.ok(![...collected.entries.keys()].some((k) => k.endsWith("/cc/a")));
   });
 
-  it("keeps a server-provided combo row matching the filter", async () => {
+  it("combo-ref-only combos survive the filter", async () => {
     const warns: string[] = [];
     const collected = await collectCatalog(
       resolvedWith({ providersAllow: ["claude"] }, warns, {
         enrichment: enrichmentOf(["cc", "claude"]),
       }),
       {
-        models: async () => [{ id: "cc/a" }, { id: "cc/team-combo", owned_by: "combo" }],
+        models: async () => [{ id: "cc/a" }],
+        combos: async () => [
+          { id: "child", name: "Child", models: [{ kind: "model", model: "cc/a" }] },
+          { id: "parent", name: "Parent", models: [{ kind: "combo-ref", comboName: "Child" }] },
+        ],
         providers: async () => [],
         enrichment: async () => enrichmentOf(["cc", "claude"]),
       }
     );
-    assert.equal(collected.counts.models, 2);
-    assert.ok([...collected.entries.keys()].some((k) => k.endsWith("/cc/team-combo")));
+    assert.equal(collected.counts.combos, 2);
   });
 
   it("composes with visibleModels by AND (provider applies last)", async () => {
@@ -198,6 +220,7 @@ describe("provider filter integration (real option resolution)", () => {
       }),
       {
         models: async () => [],
+        combos: async () => [],
         providers: async () => [],
         enrichment: async () => enrichmentOf(["cc", "claude"]),
       }
@@ -214,6 +237,7 @@ describe("provider filter integration (real option resolution)", () => {
       resolvedWith({ providersAllow: ["alpha"] }, warns, { enrichment: new Map() }),
       {
         models: async () => [{ id: "cc/a" }, { id: "alpha/b" }],
+        combos: async () => [],
         providers: async () => [],
         enrichment: async () => new Map(),
       }
@@ -231,13 +255,14 @@ describe("provider filter integration (real option resolution)", () => {
       }),
       {
         models: async () => [{ id: "cc/a" }],
+        combos: async () => [],
         autoCombos: async () => [{ id: "auto", candidatePool: ["alpha"] }],
         providers: async () => [],
         enrichment: async () => enrichmentOf(["cc", "claude"], ["alpha", "alpha"]),
       } as never
     );
     assert.equal(collected.counts.models, 1);
-    assert.deepEqual(collected.counts, { models: 1 });
+    assert.deepEqual(collected.counts, { models: 1, combos: 0 });
   });
 
   it("scales N+N models through the real pipeline", async () => {
@@ -253,6 +278,7 @@ describe("provider filter integration (real option resolution)", () => {
       }),
       {
         models: async () => models,
+        combos: async () => [],
         providers: async () => [],
         enrichment: async () => enrichmentOf(["cc", "claude"], ["alpha", "alpha"]),
       }

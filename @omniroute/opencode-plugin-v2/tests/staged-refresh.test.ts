@@ -67,10 +67,7 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
    * signal — the shape of a gateway that accepts the connection and then
    * goes quiet.
    */
-  function stubFetch(opts: {
-    enrichmentHangs?: boolean;
-    enrichmentDelayMs?: number;
-  }): typeof fetch {
+  function stubFetch(opts: { combosHangs?: boolean; enrichmentDelayMs?: number }): typeof fetch {
     return (async (url: unknown) => {
       const href = String(url);
       const ok = (body: unknown) => ({
@@ -79,10 +76,13 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
         statusText: "OK",
         json: async () => body,
       });
-      if (href.includes("/api/pricing/models")) {
+      if (href.includes("/api/combos")) {
         // A gateway that accepts the connection and then goes quiet on the
-        // overlay endpoint: models must still publish without waiting for it.
-        if (opts.enrichmentHangs) return await new Promise(() => {});
+        // combos endpoint: models must still publish without waiting for it.
+        if (opts.combosHangs) return await new Promise(() => {});
+        return ok({ combos: [] });
+      }
+      if (href.includes("/api/pricing/models")) {
         if (opts.enrichmentDelayMs !== undefined) {
           await new Promise((r) => setTimeout(r, opts.enrichmentDelayMs));
         }
@@ -114,10 +114,10 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
     }
   }
 
-  it("publishes models while an optional source is still hanging", async () => {
+  it("publishes models while the combos source is still hanging", async () => {
     const restoreDisk = await isolateDisk();
     const origFetch = globalThis.fetch;
-    globalThis.fetch = stubFetch({ enrichmentHangs: true });
+    globalThis.fetch = stubFetch({ combosHangs: true });
     const reloads = { count: 0 };
     const { added, ctx } = setupCtx("staged-hang", reloads);
     try {
@@ -209,6 +209,7 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
         statusText: "OK",
         json: async () => body,
       });
+      if (href.includes("/api/combos")) return ok({ combos: [] });
       if (href.includes("/api/pricing/models")) {
         enrichCalls += 1;
         if (enrichCalls > 1) {
@@ -249,33 +250,35 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
     }
   });
 
-  it("never requests the retired combos route", async () => {
+  it("publishes models while a hanging /api/combos holds nothing back", async () => {
+    // Combos used to sit on the critical path (Promise.all with models), so a
+    // gateway slow on /api/combos held the whole picker back. Regression pin:
+    // models publish even when combos never answers.
     const restoreDisk = await isolateDisk();
     const origFetch = globalThis.fetch;
-    const requested: string[] = [];
-    globalThis.fetch = (async (url: unknown) => {
-      const href = String(url);
-      requested.push(new URL(href).pathname);
-      const ok = (body: unknown) => ({
-        ok: true,
-        status: 200,
-        statusText: "OK",
-        json: async () => body,
-      });
-      if (href.includes("/api/pricing") || href.includes("/api/free-tier"))
-        return ok({}) as unknown as Response;
-      return ok({ data: [{ id: "m1" }] }) as unknown as Response;
-    }) as unknown as typeof fetch;
+    globalThis.fetch = stubFetch({ combosHangs: true });
     const reloads = { count: 0 };
-    const { added, ctx } = setupCtx("staged-retired-route", reloads);
+    const { added, ctx } = setupCtx("staged-combos-hang", reloads);
     try {
       await withSilentConsole(async () => {
-        await (plugin as unknown as { setup: (c: unknown) => Promise<void> }).setup(ctx);
-        assert.ok([...publishedOf(added).keys()].some((k) => k.endsWith("/m1")));
+        const done = (plugin as unknown as { setup: (c: unknown) => Promise<void> }).setup(ctx);
+        const raced = await Promise.race([
+          done.then(() => "published" as const),
+          new Promise<"timeout">((r) => setTimeout(() => r("timeout"), 1500)),
+        ]);
         assert.equal(
-          requested.filter((p) => p === "/api/combos").length,
+          raced,
+          "published",
+          "models must publish without waiting for a hanging /api/combos"
+        );
+        assert.ok([...publishedOf(added).keys()].some((k) => k.endsWith("/m1")));
+        // "staged-combos-hang" contains "combo" as a substring — filter on the
+        // model id suffix instead: no published model id may start with a
+        // combo prefix.
+        assert.equal(
+          [...publishedOf(added).keys()].filter((k) => /\/combo/i.test(k)).length,
           0,
-          `retired route must never be requested, got ${JSON.stringify(requested)}`
+          `no combos known yet — models-only on the first publish is correct, got ${JSON.stringify([...publishedOf(added).keys()])}`
         );
       });
     } finally {
@@ -302,6 +305,7 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
         statusText: "OK",
         json: async () => body,
       });
+      if (href.includes("/api/combos")) return ok({ combos: [] });
       if (href.includes("/api/pricing/models")) {
         enrichCalls += 1;
         if (enrichCalls > 1) {
@@ -367,6 +371,7 @@ describe("plugin-v2 staged refresh: optional sources never gate the publish", ()
         statusText: "OK",
         json: async () => body,
       });
+      if (href.includes("/api/combos")) return ok({ combos: [] });
       if (href.includes("/api/pricing") || href.includes("/api/free-tier")) return ok({});
       modelCalls += 1;
       if (down) {

@@ -34,6 +34,7 @@ describe("warm snapshot is read under the credential actually in use", () => {
         "warmid",
         {
           models: [{ id: "m-snap", capabilities: { tool_calling: true } }],
+          combos: [],
           providers: [],
           fetchedAt: Date.now(),
         } as never,
@@ -90,11 +91,12 @@ describe("warm snapshot is read under the credential actually in use", () => {
         },
         {
           models: async () => [{ id: "m-snap" }],
+          combos: async () => [],
           providers: async () => [],
           enrichment: async () => new Map(),
         }
       );
-      assert.deepEqual(collected.counts, { models: 1 });
+      assert.deepEqual(collected.counts, { models: 1, combos: 0 });
     } finally {
       globalThis.fetch = origFetch;
       console.warn = warn;

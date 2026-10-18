@@ -19,6 +19,7 @@ const rawModel = {
 async function publish() {
   const collected = await collectCatalog(baseOpts, {
     fetcher: async () => [rawModel],
+    combosFetcher: async () => [],
   });
   const payload = buildProviderPayload(collected, baseOpts);
   assert.equal(collected.counts.models, 1);
@@ -39,10 +40,7 @@ describe("stable payload", () => {
   it("publishes each model with package, endpoint, variants", async () => {
     const { model } = await publish();
     assert.equal(model.package, "@opencode/ai/providers/openai-compatible");
-    assert.equal(
-      (model.settings as Record<string, unknown>).baseURL,
-      "https://gw.example.com/v1"
-    );
+    assert.equal((model.settings as Record<string, unknown>).baseURL, "https://gw.example.com/v1");
     assert.ok(model.headers !== undefined);
     const variants = model.variants as Array<{
       id: string;

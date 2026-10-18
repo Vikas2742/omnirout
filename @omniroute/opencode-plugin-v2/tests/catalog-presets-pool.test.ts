@@ -101,9 +101,10 @@ describe("capability presets pick from the whole catalog", () => {
       {
         fetcher: async () => ids.map((id, i) => ({ id, owned_by: "ac", context_length: 1000 + i })),
         enrichmentFetcher: async () => freeOverlay(["ac/m0", "ac/m1"]),
+        combosFetcher: async () => [],
       }
     );
-    assert.deepEqual(res, { models: 2 });
+    assert.equal(res.models, 2);
     assert.ok(draft.models.has("omniroute/ac/m0"));
     assert.ok(draft.models.has("omniroute/ac/m1"));
     assert.ok(!draft.models.has("omniroute/ac/m29"));
@@ -118,9 +119,10 @@ describe("capability presets pick from the whole catalog", () => {
       {
         fetcher: async () => ids.map((id, i) => ({ id, owned_by: "ac", context_length: 1000 + i })),
         enrichmentFetcher: async () => new Map(),
+        combosFetcher: async () => [],
       }
     );
-    assert.deepEqual(res, { models: 10 });
+    assert.equal(res.models, 10);
     assert.ok(draft.models.has("omniroute/ac/m29"));
     assert.ok(!draft.models.has("omniroute/ac/m0"));
   });
@@ -143,9 +145,10 @@ describe("capability presets pick from the whole catalog", () => {
                 : { capabilities: { tool_calling: true } }),
             })),
           enrichmentFetcher: async () => new Map(),
+          combosFetcher: async () => [],
         }
       );
-      assert.deepEqual(res, { models: 10 });
+      assert.equal(res.models, 10);
       assert.ok(!draft.models.has("omniroute/tl/m27"));
       assert.ok(!draft.models.has("omniroute/tl/m28"));
       assert.ok(!draft.models.has("omniroute/tl/m29"));
@@ -168,9 +171,10 @@ describe("capability presets pick from the whole catalog", () => {
               ...(i < 3 ? {} : { capabilities: { tool_calling: true } }),
             })),
           enrichmentFetcher: async () => new Map(),
+          combosFetcher: async () => [],
         }
       );
-      assert.deepEqual(res, { models: 10 });
+      assert.equal(res.models, 10);
       assert.ok(!draft.models.has("omniroute/tb0"));
       assert.ok(!draft.models.has("omniroute/tb1"));
       assert.ok(!draft.models.has("omniroute/tb2"));
@@ -186,159 +190,254 @@ describe("capability presets pick from the whole catalog", () => {
       {
         fetcher: async () => [{ id: "v0" }, { id: "v1" }, { id: "v2" }, { id: "v3" }, { id: "v4" }],
         enrichmentFetcher: async () => freeOverlay(["v0", "v1", "v2"]),
+        combosFetcher: async () => [],
       }
     );
-    assert.deepEqual(res, { models: 3 });
+    assert.equal(res.models, 3);
     assert.ok(draft.models.has("omniroute/v0"));
     assert.ok(!draft.models.has("omniroute/v3"));
   });
 
-  it("freeOnly publishes a combo row with a free-tier entry", async () => {
+  it("freeOnly publishes a combo whose three members are free", async () => {
     const draft = fakeDraft();
     const res = await publishCatalog(
       draft,
       { ...baseOpts, freeOnly: true },
       {
-        fetcher: async () => [
-          { id: "k1" },
-          { id: "k2" },
-          { id: "k3" },
-          { id: "trio", owned_by: "combo" },
+        fetcher: async () => [{ id: "k1" }, { id: "k2" }, { id: "k3" }],
+        enrichmentFetcher: async () => freeOverlay(["k1", "k2", "k3"]),
+        combosFetcher: async () => [
+          {
+            id: "trio",
+            name: "Trio",
+            models: [
+              { kind: "model", model: "k1" } as never,
+              { kind: "model", model: "k2" } as never,
+              { kind: "model", model: "k3" } as never,
+            ],
+          },
         ],
-        enrichmentFetcher: async () => freeOverlay(["k1", "k2", "k3", "trio"]),
       }
     );
-    assert.deepEqual(res, { models: 4 });
-    assert.ok(draft.models.has("omniroute/trio"));
+    assert.equal(res.combos, 1);
+    assert.ok(draft.models.has("omniroute/Trio"));
   });
 
-  it("freeOnly drops a combo row without a free-tier entry and keeps the listed one", async () => {
+  it("freeOnly drops a combo with a paid member and keeps the all-free one", async () => {
     const draft = fakeDraft();
     const res = await publishCatalog(
       draft,
       { ...baseOpts, freeOnly: true },
       {
-        fetcher: async () => [
-          { id: "g1" },
-          { id: "g2" },
-          { id: "g3" },
-          { id: "trio", owned_by: "combo" },
-          { id: "mixed", owned_by: "combo" },
+        fetcher: async () => [{ id: "g1" }, { id: "g2" }, { id: "g3" }, { id: "p1" }],
+        enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3"]),
+        combosFetcher: async () => [
+          {
+            id: "trio",
+            name: "GoodTrio",
+            models: [
+              { kind: "model", model: "g1" } as never,
+              { kind: "model", model: "g2" } as never,
+              { kind: "model", model: "g3" } as never,
+            ],
+          },
+          {
+            id: "mixed",
+            name: "Mixed",
+            models: [
+              { kind: "model", model: "g1" } as never,
+              { kind: "model", model: "p1" } as never,
+            ],
+          },
         ],
-        enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3", "trio"]),
       }
     );
-    assert.deepEqual(res, { models: 4 });
-    assert.ok(draft.models.has("omniroute/trio"));
-    assert.ok(!draft.models.has("omniroute/mixed"));
+    assert.equal(res.combos, 1);
+    assert.ok(draft.models.has("omniroute/GoodTrio"));
+    assert.ok(!draft.models.has("omniroute/Mixed"));
   });
 
-  it("freeOnly drops a combo row without a free-tier entry and keeps the listed one", async () => {
+  it("freeOnly drops a combo without members and keeps the all-free one", async () => {
     const draft = fakeDraft();
     const res = await publishCatalog(
       draft,
       { ...baseOpts, freeOnly: true },
       {
-        fetcher: async () => [
-          { id: "g1" },
-          { id: "g2" },
-          { id: "g3" },
-          { id: "trio", owned_by: "combo" },
-          { id: "empty", owned_by: "combo" },
+        fetcher: async () => [{ id: "g1" }, { id: "g2" }, { id: "g3" }],
+        enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3"]),
+        combosFetcher: async () => [
+          {
+            id: "trio",
+            name: "GoodTrio",
+            models: [
+              { kind: "model", model: "g1" } as never,
+              { kind: "model", model: "g2" } as never,
+              { kind: "model", model: "g3" } as never,
+            ],
+          },
+          { id: "empty", name: "Empty", models: [] },
         ],
-        enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3", "trio"]),
       }
     );
-    assert.deepEqual(res, { models: 4 });
-    assert.ok(draft.models.has("omniroute/trio"));
-    assert.ok(!draft.models.has("omniroute/empty"));
+    assert.equal(res.combos, 1);
+    assert.ok(draft.models.has("omniroute/GoodTrio"));
+    assert.ok(!draft.models.has("omniroute/Empty"));
   });
 
-  it("freeOnly publishes two served combo rows with free-tier entries", async () => {
+  it("freeOnly publishes a combo over a free combo and the free combo itself", async () => {
     const draft = fakeDraft();
     const res = await publishCatalog(
       draft,
       { ...baseOpts, freeOnly: true },
       {
-        fetcher: async () => [
-          { id: "c1" },
-          { id: "child", owned_by: "combo" },
-          { id: "parent", owned_by: "combo" },
+        fetcher: async () => [{ id: "c1" }],
+        enrichmentFetcher: async () => freeOverlay(["c1"]),
+        combosFetcher: async () => [
+          {
+            id: "parent",
+            name: "Parent",
+            models: [
+              { kind: "combo-ref", comboName: "Child" } as never,
+              { kind: "model", model: "c1" } as never,
+            ],
+          },
+          {
+            id: "child",
+            name: "Child",
+            models: [{ kind: "model", model: "c1" } as never],
+          },
         ],
-        enrichmentFetcher: async () => freeOverlay(["c1", "child", "parent"]),
       }
     );
-    assert.deepEqual(res, { models: 3 });
-    assert.ok(draft.models.has("omniroute/child"));
-    assert.ok(draft.models.has("omniroute/parent"));
+    assert.equal(res.combos, 2);
+    assert.ok(draft.models.has("omniroute/Child"));
+    assert.ok(draft.models.has("omniroute/Parent"));
   });
 
-  it("freeOnly drops combo rows without free-tier entries", async () => {
+  it("freeOnly drops a combo over a dropped combo and warns on the never-resolving ref", async () => {
+    const draft = fakeDraft();
+    const { warns, restore } = captureWarns();
+    try {
+      const res = await publishCatalog(
+        draft,
+        { ...baseOpts, freeOnly: true },
+        {
+          fetcher: async () => [{ id: "g1" }, { id: "g2" }, { id: "g3" }, { id: "p1" }],
+          enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3"]),
+          combosFetcher: async () => [
+            {
+              id: "trio",
+              name: "GoodTrio",
+              models: [
+                { kind: "model", model: "g1" } as never,
+                { kind: "model", model: "g2" } as never,
+                { kind: "model", model: "g3" } as never,
+              ],
+            },
+            {
+              id: "mixed",
+              name: "Mixed",
+              models: [
+                { kind: "model", model: "g1" } as never,
+                { kind: "model", model: "p1" } as never,
+              ],
+            },
+            {
+              id: "parent",
+              name: "ParentOfDropped",
+              models: [
+                { kind: "combo-ref", comboName: "Mixed" } as never,
+                { kind: "model", model: "g1" } as never,
+              ],
+            },
+            {
+              id: "orphan",
+              name: "Orphan",
+              models: [
+                { kind: "combo-ref", comboName: "Nobody" } as never,
+                { kind: "model", model: "g1" } as never,
+              ],
+            },
+          ],
+        }
+      );
+      assert.equal(res.combos, 1);
+      assert.ok(draft.models.has("omniroute/GoodTrio"));
+      assert.ok(!draft.models.has("omniroute/ParentOfDropped"));
+      assert.ok(!draft.models.has("omniroute/Orphan"));
+    } finally {
+      restore();
+    }
+    assert.ok(warns.some((w) => /could not resolve all nested combo-refs/.test(w)));
+  });
+
+  it("freeOnly drops a combo with an unknown member and keeps the all-free one", async () => {
     const draft = fakeDraft();
     const res = await publishCatalog(
       draft,
       { ...baseOpts, freeOnly: true },
       {
-        fetcher: async () => [
-          { id: "g1" },
-          { id: "g2" },
-          { id: "g3" },
-          { id: "trio", owned_by: "combo" },
-          { id: "mixed", owned_by: "combo" },
-          { id: "parent", owned_by: "combo" },
-          { id: "orphan", owned_by: "combo" },
+        fetcher: async () => [{ id: "g1" }, { id: "g2" }, { id: "g3" }],
+        enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3"]),
+        combosFetcher: async () => [
+          {
+            id: "trio",
+            name: "GoodTrio",
+            models: [
+              { kind: "model", model: "g1" } as never,
+              { kind: "model", model: "g2" } as never,
+              { kind: "model", model: "g3" } as never,
+            ],
+          },
+          {
+            id: "ghost",
+            name: "Ghost",
+            models: [
+              { kind: "model", model: "g1" } as never,
+              { kind: "model", model: "no-such-model" } as never,
+            ],
+          },
         ],
-        enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3", "trio"]),
       }
     );
-    assert.deepEqual(res, { models: 4 });
-    assert.ok(draft.models.has("omniroute/trio"));
-    assert.ok(!draft.models.has("omniroute/mixed"));
-    assert.ok(!draft.models.has("omniroute/parent"));
-    assert.ok(!draft.models.has("omniroute/orphan"));
+    assert.equal(res.combos, 1);
+    assert.ok(draft.models.has("omniroute/GoodTrio"));
+    assert.ok(!draft.models.has("omniroute/Ghost"));
   });
 
-  it("freeOnly drops a combo row without a free-tier entry and keeps the listed one", async () => {
-    const draft = fakeDraft();
-    const res = await publishCatalog(
-      draft,
-      { ...baseOpts, freeOnly: true },
-      {
-        fetcher: async () => [
-          { id: "g1" },
-          { id: "g2" },
-          { id: "g3" },
-          { id: "trio", owned_by: "combo" },
-          { id: "ghost", owned_by: "combo" },
-        ],
-        enrichmentFetcher: async () => freeOverlay(["g1", "g2", "g3", "trio"]),
-      }
-    );
-    assert.deepEqual(res, { models: 4 });
-    assert.ok(draft.models.has("omniroute/trio"));
-    assert.ok(!draft.models.has("omniroute/ghost"));
-  });
-
-  it("without a preset every served row publishes, combo rows included", async () => {
+  it("without a preset every resolving combo publishes, dropped or unknown members included", async () => {
     const draft = fakeDraft();
     const res = await publishCatalog(
       draft,
       { ...baseOpts },
       {
-        fetcher: async () => [
-          { id: "g1" },
-          { id: "p1" },
-          { id: "mixed", owned_by: "combo" },
-          { id: "empty", owned_by: "combo" },
-          { id: "ghost", owned_by: "combo" },
-        ],
+        fetcher: async () => [{ id: "g1" }, { id: "p1" }],
         enrichmentFetcher: async () => new Map(),
+        combosFetcher: async () => [
+          {
+            id: "mixed",
+            name: "Mixed",
+            models: [
+              { kind: "model", model: "g1" } as never,
+              { kind: "model", model: "p1" } as never,
+            ],
+          },
+          { id: "empty", name: "Empty", models: [] },
+          {
+            id: "ghost",
+            name: "Ghost",
+            models: [
+              { kind: "model", model: "g1" } as never,
+              { kind: "model", model: "no-such-model" } as never,
+            ],
+          },
+        ],
       }
     );
-    assert.deepEqual(res, { models: 5 });
-    assert.ok(draft.models.has("omniroute/mixed"));
-    assert.ok(draft.models.has("omniroute/empty"));
-    assert.ok(draft.models.has("omniroute/ghost"));
+    assert.equal(res.combos, 3);
+    assert.ok(draft.models.has("omniroute/Mixed"));
+    assert.ok(draft.models.has("omniroute/Empty"));
+    assert.ok(draft.models.has("omniroute/Ghost"));
   });
 
   it("freeOnly does not restore a paid entry named by usage memory", async () => {
@@ -354,10 +453,11 @@ describe("capability presets pick from the whole catalog", () => {
           { id: "zzz/old-paid", owned_by: "zzz", context_length: 1000 },
         ],
         enrichmentFetcher: async () => freeOverlay(["zzz/f0", "zzz/f1"]),
+        combosFetcher: async () => [],
         usageFetcher: async () => ["zzz/old-paid"],
       }
     );
-    assert.deepEqual(collected.counts, { models: 2 });
+    assert.equal(collected.counts.models, 2);
     assert.ok(collected.entries.has("omniroute/zzz/f0"));
     assert.ok(!collected.entries.has("omniroute/zzz/old-paid"));
   });

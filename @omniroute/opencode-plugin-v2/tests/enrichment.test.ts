@@ -66,9 +66,10 @@ describe("catalog enrichment source", () => {
     ]);
     const res = await publishCatalog(draft, baseOpts, {
       fetcher: stubModels,
+      combosFetcher: async () => [],
       enrichmentFetcher: async () => enrichment,
     });
-    assert.deepEqual(res, { models: 1 });
+    assert.deepEqual(res, { models: 1, combos: 0 });
     const m = models.get("omniroute/cc/m1");
     assert.ok(m);
     assert.equal(m?.name, "Model One");
@@ -86,11 +87,12 @@ describe("catalog enrichment source", () => {
     try {
       const res = await publishCatalog(draft, baseOpts, {
         fetcher: stubModels,
+        combosFetcher: async () => [],
         enrichmentFetcher: async () => {
           throw new Error("pricing down");
         },
       });
-      assert.deepEqual(res, { models: 1 });
+      assert.deepEqual(res, { models: 1, combos: 0 });
       assert.ok(models.get("omniroute/cc/m1"));
     } finally {
       console.warn = origWarn;
@@ -106,6 +108,7 @@ describe("catalog enrichment source", () => {
       { ...baseOpts, timeouts: { enrichment: 4321 } },
       {
         fetcher: stubModels,
+        combosFetcher: async () => [],
         enrichmentFetcher: async (_base, _key, timeout) => {
           seenTimeout = timeout;
           return new Map();
@@ -121,6 +124,7 @@ describe("catalog enrichment source", () => {
       { ...baseOpts, enrichment: false },
       {
         fetcher: stubModels,
+        combosFetcher: async () => [],
         enrichmentFetcher: async () => {
           called += 1;
           return new Map();

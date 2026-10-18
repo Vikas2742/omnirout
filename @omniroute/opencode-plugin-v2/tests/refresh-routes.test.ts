@@ -19,11 +19,12 @@ function virtualIds(): string[] {
 }
 
 describe("refresh route table (closed set)", () => {
-  it("declares exactly the five refresh routes", () => {
+  it("declares exactly the six refresh routes", () => {
     assert.deepEqual(
       [...DECLARED_REFRESH_ROUTES],
       [
         "/v1/models",
+        "/api/combos",
         "/api/providers",
         "/api/pricing/models",
         "/api/pricing",
@@ -32,9 +33,8 @@ describe("refresh route table (closed set)", () => {
     );
   });
 
-  it("matches declared paths by exact equality, never the removed routes", () => {
+  it("matches declared paths by exact equality, never the removed route", () => {
     for (const route of DECLARED_REFRESH_ROUTES) assert.equal(isDeclaredRefreshPath(route), true);
-    assert.equal(isDeclaredRefreshPath("/api/combos"), false);
     assert.equal(isDeclaredRefreshPath("/api/combos/auto"), false);
     assert.equal(isDeclaredRefreshPath("/api/combos/auto/extra"), false);
     assert.equal(isDeclaredRefreshPath("/v1/models/extra"), false);
@@ -43,10 +43,11 @@ describe("refresh route table (closed set)", () => {
   it("collects the catalog without publishing retired virtual entries", async () => {
     const collected = await collectCatalog(baseOpts, {
       models: async () => [{ id: "m1" }],
+      combos: async () => [],
       providers: async () => [],
       enrichment: async () => new Map(),
     } as never);
-    assert.deepEqual(collected.counts, { models: 1 });
+    assert.deepEqual(collected.counts, { models: 1, combos: 0 });
     const keys = [...collected.entries.keys()];
     for (const id of virtualIds()) {
       assert.equal(
@@ -60,11 +61,12 @@ describe("refresh route table (closed set)", () => {
   it("ignores a legacy fetcher entry the refresh no longer reads", async () => {
     const collected = await collectCatalog(baseOpts, {
       models: async () => [{ id: "m1" }],
+      combos: async () => [],
       autoCombos: async () => [{ id: "auto" }, { id: "auto/coding" }],
       providers: async () => [],
       enrichment: async () => new Map(),
     } as never);
-    assert.deepEqual(collected.counts, { models: 1 });
+    assert.deepEqual(collected.counts, { models: 1, combos: 0 });
     const keys = [...collected.entries.keys()];
     for (const id of ["auto", "auto/coding"]) {
       assert.equal(
@@ -78,6 +80,7 @@ describe("refresh route table (closed set)", () => {
   it("keeps server-provided auto entries published with their own limits", async () => {
     const collected = await collectCatalog(baseOpts, {
       models: async () => [{ id: "auto/coding", context_length: 64000, max_output_tokens: 4000 }],
+      combos: async () => [],
       providers: async () => [],
       enrichment: async () => new Map(),
     } as never);
@@ -100,7 +103,7 @@ describe("refresh route table (closed set)", () => {
     try {
       await writeDiskSnapshot(
         "legacy-tolerant",
-        { models: [{ id: "m-a" }], providers: [], fetchedAt: Date.now() } as never,
+        { models: [{ id: "m-a" }], combos: [], providers: [], fetchedAt: Date.now() } as never,
         "fp-legacy"
       );
       const file = diskSnapshotPath("legacy-tolerant");
@@ -132,6 +135,6 @@ describe("refresh route table (closed set)", () => {
       baseURL: "https://gw.example.com",
       timeouts: { models: 1111, autoCombos: 3333 },
     });
-    assert.deepEqual(resolveTimeouts(parsed), { models: 1111, enrichment: 10000 });
+    assert.deepEqual(resolveTimeouts(parsed), { models: 1111, combos: 10000, enrichment: 10000 });
   });
 });

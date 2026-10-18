@@ -6,6 +6,7 @@ import type {
   OmniRouteEnrichmentEntry,
   OmniRouteEnrichmentMap,
   OmniRouteProviderConnection,
+  OmniRouteRawCombo,
   OmniRouteRawModelEntry,
 } from "./shared/index.js";
 import { isHttpUrl } from "./shared/index.js";
@@ -22,6 +23,7 @@ export const UNREACHABLE_COOLDOWN_MS = 15_000 as const;
 
 export interface CatalogSnapshot {
   models: OmniRouteRawModelEntry[];
+  combos: OmniRouteRawCombo[];
   providers?: OmniRouteProviderConnection[];
   enrichment?: OmniRouteEnrichmentMap;
   fetchedAt: number;
@@ -56,6 +58,7 @@ interface DiskSnapshotV2 {
   v: 2;
   identityFingerprint: string;
   models: OmniRouteRawModelEntry[];
+  combos: OmniRouteRawCombo[];
   providers?: OmniRouteProviderConnection[];
   /**
    * Display names, provider labels, pricing and free-tier budgets, as
@@ -133,10 +136,8 @@ export async function readDiskSnapshot(
     // never read back, so legacy snapshots load with it ignored.
     const parsed = JSON.parse(body) as Partial<DiskSnapshotV2> & {
       autoCombos?: unknown;
-      combos?: unknown;
     };
     void (parsed as { autoCombos?: unknown }).autoCombos;
-    void (parsed as { combos?: unknown }).combos;
     if (
       !parsed ||
       typeof parsed.v !== "number" ||
@@ -146,7 +147,11 @@ export async function readDiskSnapshot(
     ) {
       return undefined;
     }
-    if (!Array.isArray(parsed.models) || parsed.models.length === 0) {
+    if (
+      !Array.isArray(parsed.models) ||
+      parsed.models.length === 0 ||
+      !Array.isArray(parsed.combos)
+    ) {
       return undefined;
     }
     const stale = (parsed.models as unknown[]).filter(isStaleSnapshotModel).length;
@@ -161,6 +166,7 @@ export async function readDiskSnapshot(
     if (models.length === 0) return undefined;
     return {
       models,
+      combos: parsed.combos as OmniRouteRawCombo[],
       providers: Array.isArray(parsed.providers)
         ? (parsed.providers as OmniRouteProviderConnection[])
         : [],
@@ -196,6 +202,7 @@ export async function writeDiskSnapshot(
       v: 2,
       identityFingerprint,
       models: snapshot.models,
+      combos: snapshot.combos,
       providers: snapshot.providers ?? [],
       enrichment: snapshot.enrichment ? [...snapshot.enrichment.entries()] : undefined,
       writtenAt: Date.now(),

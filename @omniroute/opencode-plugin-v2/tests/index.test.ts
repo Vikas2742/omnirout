@@ -120,10 +120,8 @@ describe("plugin-v2 entrypoint", () => {
 
   it("setup publishes the provider payload through editor.add", async () => {
     const origFetch = globalThis.fetch;
-    const seenUrls: string[] = [];
     globalThis.fetch = (async (url: unknown) => {
       const href = String(url);
-      seenUrls.push(href);
       if (href.includes("/v1/models")) {
         return {
           ok: true,
@@ -132,7 +130,7 @@ describe("plugin-v2 entrypoint", () => {
           json: async () => ({ data: [{ id: "m1" }] }),
         };
       }
-      return { ok: true, status: 200, statusText: "OK", json: async () => ({ data: [] }) };
+      return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
     }) as typeof fetch;
     const added: Array<{ info: Record<string, unknown>; models: unknown[] }> = [];
     const ctx = {
@@ -162,10 +160,6 @@ describe("plugin-v2 entrypoint", () => {
     }
     assert.equal(added.length, 1);
     assert.equal(added[0]?.info.id, "payload-add");
-    assert.ok(
-      !seenUrls.some((u) => u.includes("/api/combos")),
-      `retired combos route must stay untouched, got: ${JSON.stringify(seenUrls)}`
-    );
   });
 
   it("declares key plus env methods and no oauth in the integration transform", async () => {
@@ -248,13 +242,11 @@ describe("plugin-v2 entrypoint", () => {
     const prevDataDir = process.env.OPENCODE_DATA_DIR;
     process.env.OPENCODE_DATA_DIR = dir;
     let modelsCall = 0;
-    const seenUrls: string[] = [];
     const origFetch = globalThis.fetch;
     globalThis.fetch = (async (url: unknown) => {
       const href = String(url);
-      seenUrls.push(href);
       if (!href.includes("/v1/models")) {
-        return { ok: true, status: 200, statusText: "OK", json: async () => ({ data: [] }) };
+        return { ok: true, status: 200, statusText: "OK", json: async () => ({ combos: [] }) };
       }
       modelsCall += 1;
       const ids = modelsCall <= 1 ? [{ id: "m1" }] : [{ id: "m1" }, { id: "m2" }];
@@ -297,15 +289,11 @@ describe("plugin-v2 entrypoint", () => {
       }
       assert.equal(reloads, 0, "the first publish sets the baseline, it does not reload");
       assert.equal(modelsCall, 1);
-      // The optional tier lands after that first publish and brings the provider
-      // and enrichment overlay with it — one reload, so the picker shows them
-      // without waiting for the next refresh.
+      // The optional tier lands after that first publish and brings combos and
+      // the overlay with it — one reload, so the picker shows them without
+      // waiting for the next refresh.
       const afterFirstUpgrade = await settle(() => reloads);
       assert.ok(afterFirstUpgrade <= 1, `at most one reload for the first upgrade, got ${reloads}`);
-      assert.ok(
-        !seenUrls.some((u) => u.includes("/api/combos")),
-        `retired combos route must stay untouched, got: ${JSON.stringify(seenUrls)}`
-      );
       if (prevDataDir === undefined) delete process.env.OPENCODE_DATA_DIR;
       else process.env.OPENCODE_DATA_DIR = prevDataDir;
     } finally {

@@ -75,8 +75,9 @@ describe("catalog refresh summary", () => {
       const res = await publishCatalog(d, baseOpts, {
         fetcher: async () => [{ id: "m1" }, { id: "m2" }],
         enrichmentFetcher: async () => new Map(),
+        combosFetcher: async () => [],
       });
-      assert.deepEqual(res, { models: 2 });
+      assert.deepEqual(res, { models: 2, combos: 0 });
     } finally {
       restore();
     }
@@ -103,9 +104,10 @@ describe("catalog refresh summary", () => {
         {
           fetcher: async () => [{ id: "m1" }, { id: "m2" }, { id: "m3" }, { id: "m4" }],
           enrichmentFetcher: async () => overlay,
+          combosFetcher: async () => [],
         }
       );
-      assert.deepEqual(res, { models: 4 });
+      assert.deepEqual(res, { models: 4, combos: 0 });
     } finally {
       restore();
     }
@@ -127,9 +129,10 @@ describe("catalog refresh summary", () => {
         {
           fetcher: async () => [{ id: "m1" }, { id: "m2" }],
           enrichmentFetcher: async () => new Map(),
+          combosFetcher: async () => [],
         }
       );
-      assert.deepEqual(res, { models: 0 });
+      assert.deepEqual(res, { models: 0, combos: 0 });
     } finally {
       restore();
     }
@@ -156,9 +159,10 @@ describe("catalog refresh summary", () => {
               ["m1", { freeType: "keyless" as const }],
               ["m2", { freeType: "keyless" as const }],
             ]),
+          combosFetcher: async () => [],
         }
       );
-      assert.deepEqual(res, { models: 2 });
+      assert.deepEqual(res, { models: 2, combos: 0 });
     } finally {
       restore();
     }
@@ -180,8 +184,9 @@ describe("catalog refresh summary", () => {
             ["m1", { freeType: "keyless" as const }],
             ["other", { freeType: "keyless" as const }],
           ]),
+        combosFetcher: async () => [],
       });
-      assert.deepEqual(res, { models: 1 });
+      assert.deepEqual(res, { models: 1, combos: 0 });
     } finally {
       restore();
     }

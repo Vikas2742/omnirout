@@ -71,6 +71,7 @@ describe("the library path reports too, not only the plugin", () => {
         return { ok: false, status: 403, statusText: "Forbidden", json: async () => ({}) };
       if (href.includes("/api/pricing") || href.includes("/api/free-tier"))
         return { ok: false, status: 403, statusText: "Forbidden", json: async () => ({}) };
+      if (href.includes("/api/combos")) return ok({ combos: [] });
       return ok({ data: [{ id: "m1" }] });
     }) as unknown as typeof fetch;
     const draft = {

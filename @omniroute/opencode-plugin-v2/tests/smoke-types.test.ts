@@ -53,6 +53,7 @@ describe("stable contract smoke", () => {
       },
       {
         models: async () => [{ id: "m1", context_length: 1000 }],
+        combos: async () => [],
       }
     );
     assert.equal(collected.counts.models, 1);
