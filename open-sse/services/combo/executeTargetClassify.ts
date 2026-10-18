@@ -6,7 +6,11 @@
  */
 import { isInputBoundRequestFailure } from "./comboPredicates.ts";
 import { comboTargetDecision } from "./statusDecisionTable.ts";
-import { errorResponse, errorResponseWithComboDiagnostics } from "../../utils/error.ts";
+import {
+  errorResponse,
+  errorResponseWithComboDiagnostics,
+  isContentPolicyRefusalComboStopEnabled,
+} from "../../utils/error.ts";
 import { isContentPolicyRefusal } from "../../utils/contentPolicyError.ts";
 import { buildRedactedSummary } from "./comboErrorAggregation.ts";
 import type { ComboDiagnostics } from "../../utils/error.ts";
@@ -169,11 +173,11 @@ export function shouldAbortOnInputBoundFailure(opts: {
 }): boolean {
   const structured = opts.structuredError as
     { code?: string | null; type?: string | null } | undefined;
-  // Never route around a content-policy refusal, including heterogeneous combos.
-  return (
-    isContentPolicyRefusal(structured) ||
-    (isInputBoundRequestFailure(structured) && opts.remainderIsHomogeneous)
-  );
+  // #15917: stopping the combo on a content-policy refusal — even with different models
+  // remaining — instead of routing around the provider's policy is opt-in via
+  // CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED; off keeps the release routing.
+  if (isContentPolicyRefusal(structured) && isContentPolicyRefusalComboStopEnabled()) return true;
+  return isInputBoundRequestFailure(structured) && opts.remainderIsHomogeneous;
 }
 
 /**

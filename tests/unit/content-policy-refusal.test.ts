@@ -24,7 +24,8 @@ test.after(() => {
 
 const message = "Synthetic request refused by content policy";
 const noop = () => {};
-const log = { info: noop, warn: noop, debug: noop, error: noop };
+const dbg = process.env.POLICY_DEBUG ? (...a: unknown[]) => console.error(...a) : noop;
+const log = { info: dbg, warn: dbg, debug: noop, error: dbg };
 
 test("policy classification uses exact structured identifiers, not message text", () => {
   for (const code of ["cyber_policy", "content_policy_violation"]) {
@@ -75,6 +76,70 @@ function failedEvent(code: string) {
     type: "response.failed",
     response: { object: "response", status: "failed", output: [], error: { code, message } },
   };
+}
+
+// #15917 — CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED (default off) gates stopping a combo on a
+// content-policy refusal (heterogeneous or not); the no-cooldown / no-breaker classification
+// and the public identifiers are on by default.
+const COMBO_STOP_FLAG = "CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED";
+function setComboStop(enabled: boolean | null) {
+  if (enabled === null) delete process.env[COMBO_STOP_FLAG];
+  else process.env[COMBO_STOP_FLAG] = enabled ? "true" : "false";
+}
+test.afterEach(() => setComboStop(null));
+
+async function runPolicyCombo(
+  code: string,
+  stream: boolean,
+  shape: "heterogeneous" | "homogeneous"
+) {
+  const attempted: string[] = [];
+  const second = shape === "heterogeneous" ? "openai/other-model" : "codex/test-model";
+  const result = await handleComboChat({
+    body: { model: "policy-test", stream, messages: [{ role: "user", content: "synthetic" }] },
+    combo: {
+      name: `policy-${code}-${stream}-${shape}-${Math.random().toString(36).slice(2)}`,
+      strategy: "priority",
+      models: [{ model: "codex/test-model" }, { model: second }],
+      config: { maxRetries: 1, retryDelayMs: 0 },
+    },
+    handleSingleModel: async (_body: unknown, model: string) => {
+      attempted.push(model);
+      if (model === "openai/other-model") {
+        return stream
+          ? new Response(
+              `data: ${JSON.stringify({ id: "x", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "served by the next model" }, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`,
+              { headers: { "Content-Type": "text/event-stream" } }
+            )
+          : new Response(
+              JSON.stringify({
+                id: "x",
+                object: "chat.completion",
+                choices: [
+                  {
+                    index: 0,
+                    message: { role: "assistant", content: "served by the next model" },
+                    finish_reason: "stop",
+                  },
+                ],
+              }),
+              { status: 200, headers: { "Content-Type": "application/json" } }
+            );
+      }
+      return stream
+        ? new Response(`event: response.failed\ndata: ${JSON.stringify(failedEvent(code))}\n\n`, {
+            headers: { "Content-Type": "text/event-stream" },
+          })
+        : new Response(JSON.stringify({ error: { code, message } }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+    },
+    log,
+    settings: {},
+    allCombos: [],
+  });
+  return { attempted, result };
 }
 
 for (const code of ["cyber_policy", "content_policy_violation"]) {
@@ -157,41 +222,40 @@ for (const code of ["cyber_policy", "content_policy_violation"]) {
   }
 
   for (const stream of [false, true]) {
-    test(`${code}: combo stops without retrying or falling back (stream=${stream})`, async () => {
-      const attempted: string[] = [];
-      const result = await handleComboChat({
-        body: { model: "policy-test", stream, messages: [{ role: "user", content: "synthetic" }] },
-        combo: {
-          name: `policy-${code}-${stream}`,
-          strategy: "priority",
-          models: [{ model: "codex/test-model" }, { model: "openai/other-model" }],
-          config: { maxRetries: 1, retryDelayMs: 0 },
-        },
-        handleSingleModel: async (_body: unknown, model: string) => {
-          attempted.push(model);
-          return stream
-            ? new Response(
-                `event: response.failed\ndata: ${JSON.stringify(failedEvent(code))}\n\n`,
-                {
-                  headers: { "Content-Type": "text/event-stream" },
-                }
-              )
-            : new Response(JSON.stringify({ error: { code, message } }), {
-                status: 400,
-                headers: { "Content-Type": "application/json" },
-              });
-        },
-        log,
-        settings: {},
-        allCombos: [],
-      });
+    test(`${code}: [flag on] heterogeneous combo stops without retrying or falling back (stream=${stream})`, async () => {
+      setComboStop(true);
+      const { attempted, result } = await runPolicyCombo(code, stream, "heterogeneous");
       assert.deepEqual(attempted, ["codex/test-model"]);
       assert.equal(result.status, 400);
       const body = await result.json();
       assert.equal(body.error.code, code);
       assert.ok(body.error.message.includes(message));
     });
+
+    test(`${code}: [flag off] heterogeneous combo still advances to the next model (stream=${stream})`, async () => {
+      const { attempted, result } = await runPolicyCombo(code, stream, "heterogeneous");
+      assert.deepEqual(attempted, ["codex/test-model", "openai/other-model"]);
+      assert.equal(result.status, 200);
+      assert.ok((await result.text()).includes("served by the next model"));
+    });
   }
+
+  test(`${code}: [flag on] same-model remainder stops on the refusal (stream=false)`, async () => {
+    setComboStop(true);
+    const { attempted, result } = await runPolicyCombo(code, false, "homogeneous");
+    assert.deepEqual(attempted, ["codex/test-model"]);
+    assert.equal(result.status, 400);
+    const body = await result.json();
+    assert.equal(body.error.code, code);
+  });
+
+  test(`${code}: [flag off] same-model remainder keeps the release routing (stream=false)`, async () => {
+    const { attempted, result } = await runPolicyCombo(code, false, "homogeneous");
+    assert.deepEqual(attempted, ["codex/test-model", "codex/test-model"]);
+    assert.equal(result.status, 400);
+    const body = await result.json();
+    assert.equal(body.error.code, code);
+  });
 }
 
 test("real rate limits and server errors retain retry/cooldown behavior", () => {

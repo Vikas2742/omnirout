@@ -19,6 +19,7 @@ import {
 } from "../accountFallback.ts";
 import {
   errorResponse,
+  isContentPolicyRefusalComboStopEnabled,
   logRetryHintUnreadable,
   parseRetryAfterHeader,
   readProseRetryAfter,
@@ -437,7 +438,11 @@ export async function executeTargetAttempt(
         });
         state.observeFailure(false, target.executionKey);
         if (handlePreContentStreamRetry(quality, retry, deps, modelStr)) continue;
-        if (isContentPolicyRefusal(quality.upstreamFailure))
+        // #15917 (opt-in): return a content-policy refusal instead of routing around it.
+        if (
+          isContentPolicyRefusal(quality.upstreamFailure) &&
+          isContentPolicyRefusalComboStopEnabled()
+        )
           return qualityValidationFailure(quality);
         familyTried.add(modelStr);
         const familyNext = await getNextComboFamilyFallback({
@@ -846,8 +851,8 @@ export async function executeTargetAttempt(
     // let that case fall through, so only short-circuit when every remaining
     // target is the same model (the "retrying will fail identically" premise
     // only holds within a homogeneous same-model pool).
-    // Content-policy refusals are terminal even with different models remaining:
-    // return the refusal rather than routing around the provider's policy.
+    // #15917: with CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED on, a content-policy refusal
+    // stops the combo even with different models remaining.
     const remainderHomogeneous = remainderIsHomogeneous(state.orderedTargets, i, modelStr);
     const isInputBoundFailure = shouldAbortOnInputBoundFailure({
       structuredError,

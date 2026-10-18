@@ -713,6 +713,20 @@ export function isRetryAfterProvenanceEnabled(): boolean {
 }
 
 /**
+ * #15917 — opt-in CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED (default off): stop a combo on an
+ * exact content-policy refusal even when the remaining targets are different models. Lives
+ * here because this module already reads feature flags (no new open-sse → src edge). Fails
+ * closed to the default (heterogeneous combos advance) when the flag store cannot be read.
+ */
+export function isContentPolicyRefusalComboStopEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED");
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Seconds until a concrete FUTURE retry time, or null when there is none: absent,
  * non-positive or invalid values, numeric strings, and dates that already elapsed.
  * Unlike normalizeRetryAfterSeconds it never invents a 1s wait; when it returns a
