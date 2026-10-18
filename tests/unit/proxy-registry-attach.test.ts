@@ -248,7 +248,7 @@ test("an attached row joins the pool on the next apply", async () => {
   }
 });
 
-test("stale cleanup detaches a manual row and deletes a subscription row", async () => {
+test("a sync keeps an attached manual row attached and still prunes stale synced rows", async () => {
   reset();
   const manual = await proxies.createProxy({
     name: "manual",
@@ -256,15 +256,39 @@ test("stale cleanup detaches a manual row and deletes a subscription row", async
     host: "127.0.0.1",
     port: nextPort(),
   });
+  await proxies.updateProxyAndAssign(
+    manual.id,
+    { notes: "keep" },
+    { scope: "global", scopeId: null }
+  );
   const server = await startFeedServer(feed("node", nextPort()));
   try {
     insertSubscription("sub-stale", server.url);
     await attachProxy(manual.id, "sub-stale");
-    await sub.syncSubscription("sub-stale");
-    const kept = await proxies.getProxyById(manual.id);
-    assert.equal(kept?.subscriptionId, null);
-    assert.equal(kept?.source, "manual");
+    const staleSynced = await proxies.createProxy({
+      name: "gone-from-feed",
+      type: "http",
+      host: "127.0.0.1",
+      port: nextPort(),
+      subscriptionId: "sub-stale",
+      source: "subscription",
+    });
 
+    // Non-empty keptIds branch: the feed node is upserted, the manual row is not kept.
+    const result = await sub.syncSubscription("sub-stale");
+    assert.equal(result.boundProxies, 1);
+    let kept = await proxies.getProxyById(manual.id);
+    assert.equal(kept?.subscriptionId, "sub-stale");
+    assert.equal(kept?.source, "manual");
+    assert.equal((await proxies.getProxyAssignments({ proxyId: manual.id })).length, 1);
+    assert.equal(await proxies.getProxyById(staleSynced.id), null);
+
+    // A second sync is idempotent for the manual row.
+    await sub.syncSubscription("sub-stale");
+    kept = await proxies.getProxyById(manual.id);
+    assert.equal(kept?.subscriptionId, "sub-stale");
+
+    // Empty keptIds branch: only synced rows are removed.
     const synced = await proxies.createProxy({
       name: "synced",
       type: "http",
@@ -275,9 +299,73 @@ test("stale cleanup detaches a manual row and deletes a subscription row", async
     });
     await stale.removeStaleSubscriptionNodes(core.getDbInstance(), "sub-stale", []);
     assert.equal(await proxies.getProxyById(synced.id), null);
+    kept = await proxies.getProxyById(manual.id);
+    assert.equal(kept?.subscriptionId, "sub-stale");
+    assert.equal(kept?.source, "manual");
   } finally {
     await server.close();
   }
+});
+
+test("a feed node matching an attached manual row does not convert it into a synced row", async () => {
+  reset();
+  const port = nextPort();
+  const manual = await proxies.createProxy({
+    name: "manual",
+    type: "https",
+    host: "127.0.0.1",
+    port,
+    password: "manual-pass",
+  });
+  const server = await startFeedServer(feed("feed-node", port));
+  try {
+    insertSubscription("sub-same", server.url);
+    await attachProxy(manual.id, "sub-same");
+    const before = await proxies.getProxyById(manual.id, { includeSecrets: true });
+
+    await sub.syncSubscription("sub-same");
+    assert.deepEqual(await proxies.getProxyById(manual.id, { includeSecrets: true }), before);
+
+    // Even after the feed drops the node, the manual row stays put.
+    await stale.removeStaleSubscriptionNodes(core.getDbInstance(), "sub-same", []);
+    const kept = await proxies.getProxyById(manual.id);
+    assert.equal(kept?.source, "manual");
+    assert.equal(kept?.subscriptionId, "sub-same");
+  } finally {
+    await server.close();
+  }
+});
+
+test("the update route rejects an empty subscription id and answers 404 for an unknown one", async () => {
+  reset();
+  const manual = await proxies.createProxy({
+    name: "manual",
+    type: "http",
+    host: "127.0.0.1",
+    port: nextPort(),
+  });
+  const patch = (body: unknown) =>
+    handleProxyUpdate(
+      new Request("http://localhost/api/v1/management/proxies", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      })
+    );
+
+  const invalid = await patch({ id: manual.id, subscriptionId: "" });
+  assert.equal(invalid.status, 400);
+  await invalid.body?.cancel();
+
+  const wrongType = await patch({ id: manual.id, subscriptionId: 42 });
+  assert.equal(wrongType.status, 400);
+  await wrongType.body?.cancel();
+
+  const unknown = await patch({ id: manual.id, subscriptionId: "no-such-sub" });
+  assert.equal(unknown.status, 404);
+  const body = (await unknown.json()) as { error?: { message?: string } };
+  assert.ok(!String(body.error?.message ?? "").includes("at /"));
+  assert.equal((await proxies.getProxyById(manual.id))?.subscriptionId, null);
 });
 
 test("deleting a subscription detaches a manual row and deletes a subscription row", async () => {

@@ -358,8 +358,9 @@ export async function createProxy(payload: ProxyPayload) {
  * so a write that omits it never revives a proxy the operator or auto-disable turned off.
  *
  * `claimOwnership: false` is reserved for subscription sync: a matched row whose
- * subscription_id differs from the payload's (manual rows included) is not written
- * at all and the call returns `action: "skipped"`. The sync always sends its subscriptionId:
+ * subscription_id differs from the payload's (manual rows included), or whose source
+ * differs from the payload's (a manual row attached to the subscription by id), is not
+ * written at all and the call returns `action: "skipped"`. The sync always sends its subscriptionId:
  * a caller that omits it would find manual rows (null === null) counted as owned.
  */
 export async function upsertProxy(
@@ -380,14 +381,20 @@ export async function upsertProxy(
 
   const existing = db
     .prepare(
-      "SELECT id, subscription_id FROM proxy_registry WHERE host = ? AND port = ? AND username = ? LIMIT 1"
+      "SELECT id, subscription_id, source FROM proxy_registry WHERE host = ? AND port = ? AND username = ? LIMIT 1"
     )
-    .get(host, port, username) as { id?: string; subscription_id?: string | null } | undefined;
+    .get(host, port, username) as
+    { id?: string; subscription_id?: string | null; source?: string | null } | undefined;
 
   if (existing?.id) {
     const claimOwnership = options.claimOwnership ?? true;
     const ownerChanged = (existing.subscription_id ?? null) !== (payload.subscriptionId ?? null);
-    if (!claimOwnership && ownerChanged) {
+    // A manual row attached to the subscription by id shares its owner but not its
+    // source: the sync must not rewrite it into a synced row (which a later feed
+    // omission would then delete).
+    const sourceChanged =
+      payload.source !== undefined && (existing.source ?? "manual") !== payload.source;
+    if (!claimOwnership && (ownerChanged || sourceChanged)) {
       return { proxy: null, action: "skipped" };
     }
     const { status, ...rest } = payload;
