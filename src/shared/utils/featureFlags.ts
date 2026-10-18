@@ -171,6 +171,22 @@ export function isDisableThinkingLevelVariantsEnabled(): boolean {
   }
 }
 
+/**
+ * models.dev effort-tier fallback (#15944). Fail closed: an unreadable flag store keeps the
+ * previous catalog/resolver behavior (no synced fallback, empty list = unknown).
+ */
+export function isModelsDevEffortTiersEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("MODELS_DEV_EFFORT_TIERS_ENABLED");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve MODELS_DEV_EFFORT_TIERS_ENABLED, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
+
 export function isArenaEloSyncEnabled(): boolean {
   return isFeatureFlagEnabled("ARENA_ELO_SYNC_ENABLED");
 }

@@ -898,6 +898,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     requiresRestart: false,
     warningLevel: "info",
   },
+  {
+    key: "MODELS_DEV_EFFORT_TIERS_ENABLED",
+    label: "models.dev Effort Tiers",
+    description:
+      'Use the reasoning effort tiers models.dev publishes (narrowed to the known effort vocabulary) when neither an operator override nor the provider registry declares any, and treat a declared empty tier list as "no tiers" in /v1/models effort_tiers and combo tier intersections. Off by default: effort_tiers and resolved supportedThinkingEfforts stay exactly as before.',
+    descriptionI18nKey: "featureFlagModelsDevEffortTiersEnabledDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "info",
+  },
 
   // ──────────────── CLI (5) ────────────────
   {
