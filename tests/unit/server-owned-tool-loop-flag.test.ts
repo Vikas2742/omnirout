@@ -78,9 +78,9 @@ describe("feature-flags-settings count update", () => {
     // (#13505, default off) to 85; KIRO_TOOL_CALL_REPAIR_ENABLED (default on) to 86;
     // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87;
     // CATALOG_MIRROR_REFINEMENTS_ENABLED (#16255, default off) to 88.
-    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 105);
+    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 106);
     // OPENCODE_V2_CLIENT_FINGERPRINT_ENABLED (#16571, default off) to 87.
-    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 105);
+    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 106);
     // COMBO_EMPTY_POOL_NO_ELIGIBLE_TARGETS_ENABLED (#16256, default off) to 87.
     // OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED (#16797, default off) to 87;
     // OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED + CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED
