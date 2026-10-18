@@ -407,7 +407,7 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "info",
   },
 
-  // ──────────────── Policies (6) ────────────────
+  // ──────────────── Policies (7) ────────────────
   {
     key: "TOOL_POLICY_MODE",
     label: "Tool Policy Mode",
@@ -478,6 +478,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     type: "boolean",
     requiresRestart: false,
     warningLevel: "info",
+  },
+  {
+    key: "MODEL_ENDPOINT_CAPABILITY_GATE_ENABLED",
+    label: "Model Endpoint Capability Gate",
+    description:
+      "Enforce trusted model endpoint tags (declared by the provider catalog, inferred from a specialty model id, or set by the operator): reject a request sent to an endpoint the model does not serve with HTTP 400 before dispatch on /v1/chat/completions, /v1/embeddings, /v1/rerank, /v1/images/generations, /v1/videos/generations, /v1/music/generations and /v1/audio/*; hide models whose tagged endpoints have no OmniRoute adapter from /v1/models; and answer the dashboard model test with 422 for such models. Off by default: endpoint tags stay informational and requests are dispatched exactly as before.",
+    descriptionI18nKey: "featureFlagModelEndpointCapabilityGateEnabledDescription",
+    category: "policies",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
   },
 
   // ──────────────── Runtime (18) ────────────────
