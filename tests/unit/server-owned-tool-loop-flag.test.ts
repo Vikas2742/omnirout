@@ -76,8 +76,13 @@ describe("feature-flags-settings count update", () => {
     // default off) to 82; USAGE_LIMIT_IGNORE_UNPRICED (#14799, default off) to 83;
     // REASONING_REPLAY_ENABLED (#12486, default on) to 84; COMBO_AUTO_PRUNE_STALE_STEPS
     // (#13505, default off) to 85; KIRO_TOOL_CALL_REPAIR_ENABLED (default on) to 86;
-    // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87.
-    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 87);
+    // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87;
+    // CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED (#16190, default off) to 88.
+    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 96);
+    // CREDENTIAL_GATE_AUTH_DIAGNOSES_ONLY (#16599, default off) to 88.
+    // STREAM_LATE_OUTPUT_PROBE_ENABLED (#16927 late-output stream probe, default off) to 88.
+    // LMARENA_SYNTHESIZED_CX_ENABLED (#16895, default off) to 88.
+    // NATIVE_CODEX_REACTIVE_COMPACTION_ENABLED (#16632, default off) to 88.
   });
 });
 
