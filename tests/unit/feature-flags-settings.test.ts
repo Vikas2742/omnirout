@@ -56,16 +56,14 @@ const {
 // REASONING_REPLAY_ENABLED (#12486, default on) to 84; COMBO_AUTO_PRUNE_STALE_STEPS
 // (#13505, default off) to 85; KIRO_TOOL_CALL_REPAIR_ENABLED (one-shot Kiro
 // tool_call wrapper repair, default on) to 86.
-const EXPECTED_FEATURE_FLAG_COUNT = 107;
 // OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED (#16798, OpenCode model surface from the
 // published catalog, default off) takes it to 87.
+const EXPECTED_FEATURE_FLAG_COUNT = 107;
 // tool_call wrapper repair, default on) to 86; OPENCODE_V2_CLIENT_FINGERPRINT_ENABLED
 // (#16571, OpenCode v2 client fingerprint, default off) to 87.
 // tool_call wrapper repair, default on) to 86; CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED
 // (#17003, lets Claude OAuth drop the redact-thinking beta for summarized thinking,
-// default off) to 87; EMPTY_STREAM_SIBLING_RECOVERY_ENABLED
-// (#16438 empty-stream sibling recovery, default off) to 88.
-const EXPECTED_FEATURE_FLAG_COUNT = 107;
+// default off) to 87.
 // MODEL_ENDPOINT_CAPABILITY_GATE_ENABLED (#16929/#16956, default off) takes it to 88.
 // ANTHROPIC_COMPATIBLE_MID_CONVERSATION_SYSTEM (#16236, default off) takes it to 88.
 // MODELS_DEV_EFFORT_TIERS_ENABLED (#15944, default off) takes it to 88.
