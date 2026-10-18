@@ -59,7 +59,7 @@ const {
 // (#17003, lets Claude OAuth drop the redact-thinking beta for summarized thinking,
 // default off) to 87; AUTO_REQUEST_RESOLVED_CAPABILITIES (#16419, resolved-capability
 // scoring inputs on the auto/* request path, default off) to 88.
-const EXPECTED_FEATURE_FLAG_COUNT = 88;
+const EXPECTED_FEATURE_FLAG_COUNT = 97;
 // default off) to 87; CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED (#16190, retest of
 // gateway-disabled connections, default off) to 88.
 // CREDENTIAL_GATE_AUTH_DIAGNOSES_ONLY (#16599, default off) to 88.
