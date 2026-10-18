@@ -232,3 +232,31 @@ test("with login disabled, a manage-scoped key keeps the machine ceiling: write 
   const minted = accessTokensDb.listAccessTokens().map((t) => t.scope);
   assert.deepEqual(minted, ["write"]);
 });
+
+test("creating a key still applies its create-time permission flags", async () => {
+  const response = await keysRoute.POST(
+    anonymous(KEYS_URL, "POST", {
+      name: "flags",
+      noLog: true,
+      allowUsageCommand: true,
+      usageLimitEnabled: true,
+      dailyUsageLimitUsd: 5,
+      weeklyUsageLimitUsd: 20,
+      chaosModeEnabled: true,
+    })
+  );
+  assert.equal(response.status, 201);
+  const stored = await apiKeysDb.getApiKeyById(((await response.json()) as { id: string }).id);
+  assert.equal(Boolean(stored?.noLog), true);
+  assert.equal(Boolean(stored?.allowUsageCommand), true);
+  assert.equal(Boolean(stored?.usageLimitEnabled), true);
+  assert.equal(Number(stored?.dailyUsageLimitUsd), 5);
+  assert.equal(Number(stored?.weeklyUsageLimitUsd), 20);
+  assert.equal(Boolean(stored?.chaosModeEnabled), true);
+
+  const plain = await keysRoute.POST(anonymous(KEYS_URL, "POST", { name: "plain" }));
+  const defaults = await apiKeysDb.getApiKeyById(((await plain.json()) as { id: string }).id);
+  assert.equal(Boolean(defaults?.noLog), false);
+  assert.equal(Boolean(defaults?.usageLimitEnabled), false);
+  assert.equal(Boolean(defaults?.chaosModeEnabled), false);
+});

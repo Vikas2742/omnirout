@@ -33,6 +33,31 @@ function parsePagination(request: Request) {
   return { limit, offset };
 }
 
+/**
+ * The permission flags a create request sets on top of the defaults, or `null` when it sets none
+ * (the key then keeps the defaults and no follow-up update runs).
+ */
+function createPermissionOverrides(data: {
+  noLog?: boolean;
+  allowUsageCommand?: boolean;
+  usageLimitEnabled?: boolean;
+  dailyUsageLimitUsd?: number | null;
+  weeklyUsageLimitUsd?: number | null;
+  chaosModeEnabled?: boolean;
+}) {
+  const overrides = {
+    ...(data.noLog === true && { noLog: true }),
+    ...(data.allowUsageCommand === true && { allowUsageCommand: true }),
+    ...(data.usageLimitEnabled === true && { usageLimitEnabled: true }),
+    ...(data.dailyUsageLimitUsd !== undefined && { dailyUsageLimitUsd: data.dailyUsageLimitUsd }),
+    ...(data.weeklyUsageLimitUsd !== undefined && {
+      weeklyUsageLimitUsd: data.weeklyUsageLimitUsd,
+    }),
+    ...(data.chaosModeEnabled === true && { chaosModeEnabled: true }),
+  };
+  return Object.keys(overrides).length > 0 ? overrides : null;
+}
+
 // GET /api/keys - List API keys
 export async function GET(request: Request) {
   const authError = await requireManagementAuth(request);
@@ -101,23 +126,8 @@ export async function POST(request) {
       allowedConnections,
       expiresAt,
     });
-    if (
-      noLog === true ||
-      allowUsageCommand === true ||
-      usageLimitEnabled === true ||
-      dailyUsageLimitUsd !== undefined ||
-      weeklyUsageLimitUsd !== undefined ||
-      chaosModeEnabled === true
-    ) {
-      await updateApiKeyPermissions(apiKey.id, {
-        ...(noLog === true && { noLog: true }),
-        ...(allowUsageCommand === true && { allowUsageCommand: true }),
-        ...(usageLimitEnabled === true && { usageLimitEnabled: true }),
-        ...(dailyUsageLimitUsd !== undefined && { dailyUsageLimitUsd }),
-        ...(weeklyUsageLimitUsd !== undefined && { weeklyUsageLimitUsd }),
-        ...(chaosModeEnabled === true && { chaosModeEnabled: true }),
-      });
-    }
+    const permissionOverrides = createPermissionOverrides(validation.data);
+    if (permissionOverrides) await updateApiKeyPermissions(apiKey.id, permissionOverrides);
 
     // Auto sync to Cloud if enabled — fire-and-forget. Cloud sync is a
     // background side-effect, not part of the key-creation contract, and it
