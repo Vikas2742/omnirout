@@ -361,7 +361,6 @@ test("every bespoke quota fetcher registers an invalidator for all of its provid
     "moonshot",
     "kimi",
     "opencode-go",
-    "opencode",
     "opencode-zen",
     "openrouter",
     "qwen-cloud-token-plan",
