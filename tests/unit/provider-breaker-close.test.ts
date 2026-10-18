@@ -33,6 +33,7 @@ test("closing a half-open connection breaker emits one close line", async () => 
     assert.equal(connectionBreaker.state, "CLOSED");
     assert.equal(logged.length, 1);
     assert.match(String(logged[0][0]), /circuit breaker closed/);
+    assert.ok(String(logged[0][0]).includes(`${provider}/${connectionId}`), "names the connection");
   } finally {
     resetAllCircuitBreakers();
   }
@@ -51,6 +52,51 @@ test("provider OPEN without a probe lease stays silent", () => {
       },
     });
     assert.equal(breaker.state, "OPEN");
+    assert.equal(logged.length, 0);
+  } finally {
+    resetAllCircuitBreakers();
+  }
+});
+
+test("provider-level HALF_OPEN is not settled here and logs nothing (connection-only close log)", async () => {
+  const provider = unique("provider-half-open");
+  const breaker = getCircuitBreaker(provider, { failureThreshold: 1, resetTimeout: 80 });
+  breaker._onFailure();
+  await new Promise((r) => setTimeout(r, 120));
+  breaker.canExecute();
+  assert.equal(breaker.state, "HALF_OPEN");
+  const logged: unknown[][] = [];
+  try {
+    recordProviderSuccess(provider, undefined, undefined, {
+      info: (...args: unknown[]) => {
+        logged.push(args);
+      },
+    });
+    // The provider breaker closes in its own execute() probe or the chat success settle;
+    // recordProviderSuccess must neither close it nor claim it closed.
+    assert.equal(breaker.state, "HALF_OPEN");
+    assert.equal(logged.length, 0);
+  } finally {
+    resetAllCircuitBreakers();
+  }
+});
+
+test("a success on an already CLOSED connection breaker logs nothing", () => {
+  const provider = unique("closed");
+  const connectionId = "conn-closed";
+  const connectionBreaker = getCircuitBreaker(
+    connectionCircuitBreakerName(provider, connectionId),
+    { failureThreshold: 5, resetTimeout: 60_000 }
+  );
+  assert.equal(connectionBreaker.state, "CLOSED");
+  const logged: unknown[][] = [];
+  try {
+    recordProviderSuccess(provider, connectionId, undefined, {
+      info: (...args: unknown[]) => {
+        logged.push(args);
+      },
+    });
+    assert.equal(connectionBreaker.state, "CLOSED");
     assert.equal(logged.length, 0);
   } finally {
     resetAllCircuitBreakers();

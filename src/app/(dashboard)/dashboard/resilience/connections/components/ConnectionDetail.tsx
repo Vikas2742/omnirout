@@ -12,11 +12,13 @@ interface ConnectionDetailProps {
   onClose: () => void;
 }
 
+/** "<ISO time> · <from> (<reason>)" for the breaker's last close, like lastErrorAt's ISO time. */
 function formatLastClose(breaker: ConnectionState["breaker"], never: string): string | null {
   if (!breaker) return null;
   const lastClose = breaker.lastClose ?? null;
   if (!lastClose) return never;
-  return `${lastClose.from} (${lastClose.reason ?? never})`;
+  const at = Number.isFinite(lastClose.at) ? new Date(lastClose.at).toISOString() : never;
+  return `${at} · ${lastClose.from} (${lastClose.reason ?? never})`;
 }
 
 export default function ConnectionDetail({

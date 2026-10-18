@@ -1310,12 +1310,13 @@ export function recordProviderSuccess(
     }
   }
   breaker._onSuccess();
-  if (
-    (breakerState === "OPEN" || breakerState === "HALF_OPEN") &&
-    breaker.getStatus().state === "CLOSED"
-  ) {
+  // Only a connection-scoped breaker can close here: OPEN (either scope) and a provider-level
+  // HALF_OPEN return early above. A provider-level breaker closes inside its own execute()
+  // probe or the chat handler's success settle, and its close is still recorded in the
+  // breaker's transitionHistory, which the resilience views read.
+  if (breakerState === "HALF_OPEN" && breaker.getStatus().state === "CLOSED") {
     log?.info?.(
-      `[ProviderSuccess] ${provider}: circuit breaker closed (${breakerState} -> CLOSED)`
+      `[ProviderSuccess] ${provider}/${connectionId}: connection circuit breaker closed (HALF_OPEN -> CLOSED)`
     );
   }
 }

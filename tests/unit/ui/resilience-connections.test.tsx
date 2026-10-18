@@ -345,6 +345,7 @@ describe("ConnectionsTable", () => {
   });
 
   it("ConnectionDetail shows the last close verdict beside the failure kind", async () => {
+    const CLOSE_AT = Date.UTC(2026, 9, 18, 12, 34, 56);
     const { default: Table } =
       await import("../../../src/app/(dashboard)/dashboard/resilience/connections/components/ConnectionsTable");
     const conn = makeConnection({
@@ -353,7 +354,7 @@ describe("ConnectionsTable", () => {
         failureCount: 0,
         retryAfterMs: 0,
         lastFailureKind: null,
-        lastClose: { at: Date.now(), from: "HALF_OPEN", reason: "probe-success" },
+        lastClose: { at: CLOSE_AT, from: "HALF_OPEN", reason: "probe-success" },
       },
       lockouts: [],
     });
@@ -371,6 +372,8 @@ describe("ConnectionsTable", () => {
     await waitFor(() => el!.textContent?.includes("detail.title"));
     expect(el!.textContent).toContain("HALF_OPEN");
     expect(el!.textContent).toContain("probe-success");
+    // The close time is shown too, not just the verdict.
+    expect(el!.textContent).toContain(new Date(CLOSE_AT).toISOString());
   });
 
   it("selected connection deleted -> ConnectionDetail closes gracefully", async () => {
