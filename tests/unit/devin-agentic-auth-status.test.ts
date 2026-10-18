@@ -18,10 +18,7 @@ test("Devin auth status parser distinguishes authenticated and logged-out output
     parseDevinAuthStatus("Logged in (via Devin).\nUser: private@example.test"),
     "authenticated"
   );
-  assert.equal(
-    parseDevinAuthStatus("Not logged in.\nRun devin auth login."),
-    "unauthenticated"
-  );
+  assert.equal(parseDevinAuthStatus("Not logged in.\nRun devin auth login."), "unauthenticated");
   assert.equal(parseDevinAuthStatus("CLI failed to start"), "unavailable");
 });
 
