@@ -770,7 +770,8 @@ export class DevinDesktopExecutor extends BaseExecutor {
         let roleEmitted = false;
         let stopReason = 0;
         const toolCallIndexes = new Map<string, number>();
-        let lastToolCallIndex = 0;
+        let lastToolCallIndex: number | undefined;
+        let orphanArguments = "";
         let usage: DevinUsage | null = null;
         let trailerError: ConnectTrailerError | null = null;
         let sawEndStream = false;
@@ -803,6 +804,13 @@ export class DevinDesktopExecutor extends BaseExecutor {
             if (response.thinking) emitChunk({ reasoning_content: response.thinking });
             if (response.text) emitChunk({ content: response.text });
             for (const toolCall of response.toolCalls) {
+              // A fragment that arrives before any id'd call has nothing to continue:
+              // hold it and prepend it to the first call instead of emitting an
+              // index-0 delta with no id or name.
+              if (!toolCall.id && lastToolCallIndex === undefined) {
+                orphanArguments += toolCall.arguments;
+                continue;
+              }
               // Argument fragments have no id: they continue the previous tool
               // call and must be emitted as deltas on that same index.
               const existingIndex = toolCall.id
@@ -816,7 +824,9 @@ export class DevinDesktopExecutor extends BaseExecutor {
               }
               const functionDelta: Record<string, string> = {};
               if (toolCall.name) functionDelta.name = toolCall.name;
-              if (toolCall.arguments) functionDelta.arguments = toolCall.arguments;
+              const args = firstDelta ? orphanArguments + toolCall.arguments : toolCall.arguments;
+              if (firstDelta) orphanArguments = "";
+              if (args) functionDelta.arguments = args;
               emitChunk({
                 tool_calls: [
                   {
