@@ -449,6 +449,25 @@ export function shouldClearErrorStateOnValidProbe(
  * window elapses, the next probe clears the state normally.
  */
 
+/**
+ * A weekly reset event cannot release an unrelated Claude RPM or monthly-spend
+ * cooldown. Require weekly provenance from the persisted upstream error: either
+ * a named weekly window or Claude's native account-rate-limit quota wording.
+ */
+export function isClaudeWeeklyQuota429Signal(errorText: string | null | undefined): boolean {
+  if (!errorText) return false;
+  const lower = errorText.toLowerCase();
+  return (
+    lower.includes("weekly") ||
+    lower.includes("seven_day") ||
+    lower.includes("seven day") ||
+    lower.includes("7-day") ||
+    lower.includes("7d") ||
+    (lower.includes("would exceed your account's rate limit") &&
+      isExplicitClaudeQuota429Text(errorText))
+  );
+}
+
 /** A reset event must not make one full/unknown governing window disappear. */
 export function everyQuotaWindowReplenished(usage: JsonRecord): boolean {
   if (usage.message || usage._stale || !isRecord(usage.quotas)) return false;
@@ -486,10 +505,10 @@ export async function maybeClearRecoveredQuotaState(
       connection.provider === "claude" &&
       (connection.lastErrorType === "quota_exhausted" ||
         // Older 429 records used the generic RPM classifier for Claude's
-        // weekly-quota text. Preserve recovery of those rows, but never
-        // release a generic short-lived 429 based on a weekly reset.
-        (connection.lastErrorType === "rate_limited" &&
-          isExplicitClaudeQuota429Text(connection.lastError ?? ""))) &&
+        // weekly-quota text. Only admit such a record with the full positive
+        // reset evidence and an explicit long-window signal.
+        connection.lastErrorType === "rate_limited") &&
+      isClaudeWeeklyQuota429Signal(connection.lastError) &&
       connection.lastErrorSource !== "extra_usage" &&
       Number(connection.errorCode) === 429 &&
       hasObservedClaudeQuotaResetAfter(connection.id, connection.lastErrorAt) &&
