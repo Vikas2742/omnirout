@@ -1037,3 +1037,36 @@ test("#17043: only a complete live quota observation can authorize a reset", () 
     quotas: { session: { remainingPercentage: 98 }, weekly: { fractionReported: false, remainingPercentage: 100 } },
   }), false);
 });
+
+test("#17043: model-scoped quota evidence distinguishes a real block from a predictive warning", () => {
+  const baseQuota = {
+    claudeQuota: {
+      kind: "weekly_scoped" as const,
+      active: true,
+      severity: "critical",
+      scopeKey: "model:claude-opus-5-5",
+      modelId: "claude-opus-5-5",
+      modelDisplayName: null,
+    },
+  };
+  const usageWith = (window: Record<string, unknown>) => ({
+    modelQuotas: { "weekly opus (7d)": { ...baseQuota, ...window } },
+  });
+  assert.equal(providerLimits.hasBlockingClaudeModelQuota(
+    usageWith({ remainingPercentage: 0 }), "claude-opus-5-5"
+  ), true);
+  assert.equal(providerLimits.hasBlockingClaudeModelQuota(
+    usageWith({ fractionReported: false, remainingPercentage: 100 }), "claude-opus-5-5"
+  ), true);
+  assert.equal(providerLimits.hasBlockingClaudeModelQuota(
+    usageWith({ remainingPercentage: 20 }), "claude-opus-5-5"
+  ), false, "critical-but-positive capacity is a warning, not an exhaustion");
+  assert.equal(providerLimits.hasBlockingClaudeModelQuota(
+    usageWith({ remainingPercentage: 0 }), "claude-sonnet-5"
+  ), false, "a different model's weekly quota must not block a sibling");
+  assert.equal(providerLimits.hasBlockingClaudeModelQuota(
+    { modelQuotas: { disabled: { ...baseQuota, remainingPercentage: 0,
+      claudeQuota: { ...baseQuota.claudeQuota, active: false } } } },
+    "claude-opus-5-5"
+  ), false);
+});
