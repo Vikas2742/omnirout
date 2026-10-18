@@ -14,7 +14,7 @@
  * as JSON lines to the file specified by APP_LOG_FILE_PATH.
  */
 import pino from "pino";
-import { Writable } from "stream";
+import { EventEmitter } from "events";
 import { resolve } from "path";
 import { getLogConfig, initLogRotation, onLogRotation } from "@/lib/logRotation";
 import { getAppLogLevel } from "@/lib/logEnv";
@@ -66,140 +66,28 @@ function getTransportCompatibleConfig(): pino.LoggerOptions {
  * vanished, so failed writes are dropped (best-effort stderr notice) instead of
  * escalating.
  */
-function buildTransportStream(
-  targets: NonNullable<pino.TransportMultiOptions["targets"]>,
-  attachErrorHandler = true
-) {
+function reportTransportWriteFailure(err: unknown): void {
+  try {
+    process.stderr.write(
+      `[logger] log transport write failed, dropping log line: ${(err as Error)?.message || err}\n`
+    );
+  } catch {
+    // Nothing more we can do — never let a logging failure crash the process.
+  }
+}
+
+function buildTransportStream(targets: NonNullable<pino.TransportMultiOptions["targets"]>) {
   const stream = pino.transport({ targets });
-  if (!attachErrorHandler) return stream;
-  stream.on("error", (err: unknown) => {
-    try {
-      process.stderr.write(
-        `[logger] log transport write failed, dropping log line: ${(err as Error)?.message || err}\n`
-      );
-    } catch {
-      // Nothing more we can do — never let a logging failure crash the process.
-    }
-  });
+  stream.on("error", reportTransportWriteFailure);
   return stream;
 }
 
+type TransportStream = ReturnType<typeof buildTransportStream>;
+
 interface OwnedLogStream {
   flushSync?: () => void;
-  flush?: (done: () => void) => void;
-  write?: (chunk: unknown) => unknown;
   end?: () => void;
   once?: (event: string, listener: () => void) => unknown;
-  on?: (event: string, listener: (...args: unknown[]) => void) => unknown;
-}
-
-/** SonicBoom sync destinations expose reopen(); other streams lack it. */
-interface ReopenableSyncDestination extends OwnedLogStream {
-  reopen?: () => void;
-}
-
-/**
- * A stable Writable that forwards every write to a replaceable target stream.
- *
- * Pino keeps the stream it receives at construction (children included), and
- * the worker-thread file transport exposes no `reopen()`. Swapping the whole
- * logger would orphan every `logger.child()` created so far, so rotation
- * rebuilds the file transport and switches this proxy's target instead: the
- * object pino holds never changes, only the file descriptor behind it.
- */
-class SwitchableTargetStream extends Writable {
-  private target: OwnedLogStream | null;
-  private closedTargets = new Set<OwnedLogStream>();
-  private ended = false;
-
-  constructor(initialTarget: OwnedLogStream | null) {
-    super({ decodeStrings: false });
-    this.target = initialTarget;
-    // The stream pino holds must itself carry an error listener: the 6360
-    // guard reads listenerCount("error") on streamSym, and an unlistened
-    // worker failure would re-throw as an uncaught exception.
-    // Errors from the current target arrive through attachErrorRelay below,
-    // which re-emits them here: a single sink on this proxy (see
-    // createFileLogger) therefore runs exactly once per transport failure,
-    // with the original arguments intact.
-    this.on("error", () => {
-      // Handled by relayed listeners below; this keeps the emitter safe.
-    });
-    if (initialTarget) this.attachErrorRelay(initialTarget);
-  }
-
-  setTarget(next: OwnedLogStream | null): void {
-    if (this.target && next) this.closedTargets.add(this.target);
-    this.target = next;
-    if (next) this.attachErrorRelay(next);
-  }
-
-  markTargetClosed(target: OwnedLogStream | null): void {
-    if (target) this.closedTargets.add(target);
-  }
-
-  private attachErrorRelay(target: OwnedLogStream): void {
-    try {
-      target.on?.("error", (...args: unknown[]) => {
-        try {
-          this.emit("error", ...args);
-        } catch {
-          // Never let a logging failure crash the process.
-        }
-      });
-    } catch {
-      // Targets without an emitter simply carry no relay.
-    }
-  }
-
-  override on(event: string, listener: (...args: unknown[]) => void): this {
-    return super.on(event, listener as (...args: unknown[]) => void);
-  }
-
-  override once(event: string, listener: (...args: unknown[]) => void): this {
-    return super.once(event, listener as (...args: unknown[]) => void);
-  }
-
-  _write(
-    chunk: unknown,
-    _encoding: BufferEncoding,
-    callback: (error?: Error | null) => void
-  ): void {
-    const target = this.target;
-    if (!target?.write) {
-      callback();
-      return;
-    }
-    try {
-      const result = target.write(chunk);
-      if (result === false && typeof target.once === "function") {
-        target.once("drain", () => callback());
-      } else {
-        callback();
-      }
-    } catch (error) {
-      callback(error instanceof Error ? error : new Error(String(error)));
-    }
-  }
-
-  _final(callback: (error?: Error | null) => void): void {
-    if (this.ended) {
-      callback();
-      return;
-    }
-    this.ended = true;
-    const target = this.target;
-    if (!target || this.closedTargets.has(target)) {
-      callback();
-      return;
-    }
-    try {
-      target.end?.();
-      callback();
-    } catch (error) {
-      callback(error instanceof Error ? error : new Error(String(error)));
-    }
-  }
 }
 
 async function closeOwnedStream(stream: OwnedLogStream | null): Promise<void> {
@@ -250,128 +138,125 @@ function createLoggerResource(
   };
 }
 
-/** Targets shared by the dev and production file transports (stdout + file). */
-function fileTransportTargets(
-  absLogPath: string,
-  logLevel: string,
-  pretty: boolean
-): NonNullable<pino.TransportMultiOptions["targets"]> {
-  if (pretty) {
-    return [
-      {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "HH:MM:ss.l",
-          ignore: "pid,hostname,service",
-          messageFormat: "[{module}] {msg}",
-          destination: 1,
-        },
-        level: logLevel,
-      },
-      {
-        target: "pino/file",
-        options: { destination: absLogPath, mkdir: true },
-        level: logLevel,
-      },
-    ];
+function reportReopenFailure(err: unknown): void {
+  try {
+    process.stderr.write(
+      `[logger] failed to reopen log file after rotation, continuing on rotated file: ${(err as Error)?.message || err}\n`
+    );
+  } catch {
+    // Nothing more we can do — never let a logging failure crash the process.
   }
-  return [
-    {
-      target: "pino/file",
-      options: { destination: 1 }, // stdout
-      level: logLevel,
-    },
-    {
-      target: "pino/file",
-      options: { destination: absLogPath, mkdir: true },
-      level: logLevel,
-    },
-  ];
-}
-
-interface FileLoggerHandle {
-  logger: pino.Logger;
-  stream: OwnedLogStream;
-  proxy: SwitchableTargetStream;
-  reopen: () => Promise<void>;
-  close: () => Promise<void>;
 }
 
 /**
- * Build a standalone file logger whose stream reopens the current path after
- * a log rotation. Used by the shared logger and covered by the rotation
- * tests: entries queue in the proxy while the fresh transport starts, then
- * the old transport (still pointing at the rotated file) closes.
+ * The stable stream pino holds for the file transport; the worker-thread
+ * transport behind it can be rebuilt after a log rotation.
+ *
+ * pino keeps the stream it was built with (children included) and the
+ * `pino.transport()` worker keeps the descriptor of the file it opened, so after
+ * `rotateIfNeeded()` renames app.log it would keep appending to the rotated file.
+ * `reopen()` builds a fresh transport (which opens the configured path again),
+ * makes it current, then flushes and ends the previous one: lines written before
+ * the swap stay in the rotated file, lines written after it reach app.log.
+ *
+ * Every call delegates synchronously to the current transport — this class
+ * buffers nothing of its own — so backpressure (`write()`'s return value and the
+ * current transport's "drain"), `flushSync()`/`flush()`, and pino's exit-time
+ * flush of the live transport (registered by `pino.transport()` itself) behave
+ * exactly as with the bare transport.
  */
-export function createFileLogger(
-  filePath: string,
-  options?: { level?: string; pretty?: boolean }
-): FileLoggerHandle {
-  const logLevel = options?.level ?? ((baseConfig.level as string) || "info");
-  const pretty = options?.pretty ?? isDev;
-  const absLogPath = resolve(filePath);
-  const transportConfig = getTransportCompatibleConfig();
+export class ReopenableTransportStream extends EventEmitter {
+  private current: TransportStream;
+  private ended = false;
+  private configMessage: unknown[] | null = null;
 
-  let stream = buildTransportStream(fileTransportTargets(absLogPath, logLevel, pretty), false);
-  let current: OwnedLogStream = stream;
-  const proxy = new SwitchableTargetStream(stream);
-  // Single error sink for every generation of the file transport: worker
-  // write failures are dropped with a stderr notice instead of escalating.
-  proxy.on("error", (err: unknown) => {
-    try {
-      process.stderr.write(
-        `[logger] log transport write failed, dropping log line: ${(err as Error)?.message || err}\n`
-      );
-    } catch {
-      // Nothing more we can do — never let a logging failure crash the process.
-    }
-  });
-  const logger = pino(transportConfig, proxy);
-  let closed = false;
-
-  const reopen = async (): Promise<void> => {
-    if (closed) return;
-    const next = buildTransportStream(fileTransportTargets(absLogPath, logLevel, pretty), false);
-    const previous = current;
-    current = next;
-    proxy.setTarget(next);
-    proxy.markTargetClosed(previous);
-    await closeOwnedStream(previous);
-  };
-
-  const close = async (): Promise<void> => {
-    if (closed) return;
-    closed = true;
-    proxy.markTargetClosed(current);
-    await closeOwnedStream(current);
-  };
-
-  return { logger, stream: proxy, proxy, reopen, close };
-}
-
-/**
- * Subscribe a file logger to log rotations: after each rotation affecting its
- * path, rebuild the file transport so new lines reach the current file.
- * Failures stay best-effort (stderr notice) — logging must never crash its host.
- */
-export function subscribeFileLoggerToRotation(
-  handle: FileLoggerHandle,
-  filePath: string
-): () => void {
-  const expected = resolve(filePath);
-  return onLogRotation((currentPath: string) => {
-    if (resolve(currentPath) !== expected) return;
-    handle.reopen().catch((error: unknown) => {
-      try {
-        process.stderr.write(
-          `[logger] failed to reopen log file after rotation, continuing on rotated file: ${(error as Error)?.message || error}\n`
-        );
-      } catch {
-        // Nothing more we can do — never let a logging failure crash the process.
-      }
+  constructor(private readonly build: () => TransportStream) {
+    super();
+    // Keep the #6360 guarantee on the object pino holds: an "error" emitted on it
+    // is reported, never re-thrown as an uncaught exception. Each transport
+    // generation keeps its own listener from buildTransportStream().
+    this.on("error", reportTransportWriteFailure);
+    // pino announces its level/message-key config with a "message" event; a
+    // pino.transport() stream forwards that to its worker. Forward it to the
+    // current transport and replay it to every reopened one.
+    this.on("message", (...args: unknown[]) => {
+      this.configMessage = args;
+      this.current.emit("message", ...args);
     });
+    this.current = this.adopt(build());
+  }
+
+  private adopt(stream: TransportStream): TransportStream {
+    stream.on("drain", () => {
+      if (stream === this.current) this.emit("drain");
+    });
+    stream.on("close", () => {
+      if (stream === this.current) this.emit("close");
+    });
+    return stream;
+  }
+
+  write(chunk: string): boolean {
+    return this.current.write(chunk);
+  }
+
+  flushSync(): void {
+    this.current.flushSync();
+  }
+
+  flush(callback: (err?: Error | null) => void): void {
+    // thread-stream implements flush(cb) at runtime but omits it from its typings.
+    const target = this.current as unknown as { flush?: (cb: typeof callback) => void };
+    if (typeof target.flush === "function") target.flush(callback);
+    else callback();
+  }
+
+  end(): void {
+    this.ended = true;
+    this.current.end();
+  }
+
+  /** Swap in a fresh transport for the configured path; no-op once ended. */
+  async reopen(): Promise<void> {
+    if (this.ended) return;
+    let next: TransportStream;
+    try {
+      next = this.build();
+    } catch (err) {
+      reportReopenFailure(err);
+      return;
+    }
+    if (this.configMessage) next.emit("message", ...this.configMessage);
+    const previous = this.current;
+    this.current = this.adopt(next);
+    await closeOwnedStream(previous);
+  }
+}
+
+/**
+ * Logger resource whose file writer reopens the configured path after each
+ * rotation of that path. Reopen failures are best-effort (stderr notice): the
+ * writer keeps its previous descriptor, exactly as before rotation support.
+ */
+function createRotationAwareLoggerResource(
+  logger: pino.Logger,
+  stream: OwnedLogStream,
+  absLogPath: string,
+  reopen: () => void | Promise<void>
+): SharedLoggerResource {
+  const unsubscribe = onLogRotation((currentPath: string) => {
+    if (resolve(currentPath) !== absLogPath) return;
+    Promise.resolve()
+      .then(reopen)
+      .catch((err: unknown) => reportReopenFailure(err));
   });
+  return {
+    logger,
+    close: async () => {
+      unsubscribe();
+      await closeOwnedStream(stream);
+    },
+  };
 }
 
 /**
@@ -391,15 +276,60 @@ function buildLoggerResource(): SharedLoggerResource {
 
       // Resolve to absolute path for pino worker threads
       const absLogPath = resolve(logConfig.logFilePath);
-      const handle = createFileLogger(logConfig.logFilePath, { pretty: isDev });
-      const unsubscribe = subscribeFileLoggerToRotation(handle, absLogPath);
-      return {
-        logger: handle.logger,
-        close: async () => {
-          unsubscribe();
-          await handle.close();
-        },
-      };
+
+      if (isDev) {
+        // Dev: pino-pretty → stdout, JSON → file
+        const stream = new ReopenableTransportStream(() =>
+          buildTransportStream([
+            {
+              target: "pino-pretty",
+              options: {
+                colorize: true,
+                translateTime: "HH:MM:ss.l",
+                ignore: "pid,hostname,service",
+                messageFormat: "[{module}] {msg}",
+                destination: 1,
+              },
+              level: logLevel,
+            },
+            {
+              target: "pino/file",
+              options: { destination: absLogPath, mkdir: true },
+              level: logLevel,
+            },
+          ])
+        );
+        return createRotationAwareLoggerResource(
+          pino(transportConfig, stream),
+          stream,
+          absLogPath,
+          () => stream.reopen()
+        );
+      }
+
+      // Production: JSON → stdout + JSON → file
+      {
+        const stream = new ReopenableTransportStream(() =>
+          buildTransportStream([
+            {
+              target: "pino/file",
+              options: { destination: 1 }, // stdout
+              level: logLevel,
+            },
+            {
+              target: "pino/file",
+              options: { destination: absLogPath, mkdir: true },
+              level: logLevel,
+            },
+          ])
+        );
+        return createRotationAwareLoggerResource(
+          pino(transportConfig, stream),
+          stream,
+          absLogPath,
+          () => stream.reopen()
+        );
+      }
     } catch (err) {
       // Log the actual error for diagnostics (issue #165)
       try {
@@ -423,41 +353,20 @@ function buildLoggerResource(): SharedLoggerResource {
           }
         });
 
-        const reopenSyncDestination = (): void => {
-          try {
-            const reopenable: ReopenableSyncDestination = fileDestination;
-            if (typeof reopenable.reopen === "function") {
-              reopenable.reopen();
-            }
-          } catch (error) {
-            try {
-              process.stderr.write(
-                `[logger] failed to reopen log file after rotation, continuing on rotated file: ${(error as Error)?.message || error}\n`
-              );
-            } catch {
-              // Nothing more we can do — never let a logging failure crash the process.
-            }
-          }
-        };
-        const unsubscribeSync = onLogRotation((currentPath: string) => {
-          if (resolve(currentPath) !== absLogPath) return;
-          reopenSyncDestination();
-        });
-
-        // Production fallback: JSON to both stdout and file via multistream
-        return {
-          logger: pino(
+        // Production fallback: JSON to both stdout and file via multistream.
+        // The sync destination reopens the configured path in place after rotation.
+        return createRotationAwareLoggerResource(
+          pino(
             baseConfig,
             pino.multistream([
               { stream: process.stdout, level: logLevel as pino.Level },
               { stream: fileDestination, level: logLevel as pino.Level },
             ])
           ),
-          close: async () => {
-            unsubscribeSync();
-            await closeOwnedStream(fileDestination);
-          },
-        };
+          fileDestination,
+          absLogPath,
+          () => fileDestination.reopen()
+        );
       } catch (fallbackErr) {
         try {
           process.stderr.write(
