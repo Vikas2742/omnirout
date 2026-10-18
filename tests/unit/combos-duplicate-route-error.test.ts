@@ -2,32 +2,22 @@
  * Unit tests for the 500 catch path of POST /api/combos/duplicate (issue #16969,
  * Hard Rule #12).
  *
- * The route's final catch returns `details: String(error.message)` raw (see
- * src/app/api/combos/duplicate/route.ts), leaking the raw exception message —
- * including absolute source paths — into the 500 body. This test forces that
- * path: auto-combo resolution imports getCachedProviderConnections from
- * "@/lib/db/readCache", which is mocked to throw a message embedding an absolute
- * source path. The regression asserts the emitted body never contains that path
- * or a stack-frame marker.
+ * Before the fix the route's final catch returned `details: String(error.message)`,
+ * leaking the raw exception message into the 500 body. This test forces that path
+ * through a real failure, with no module mocks: after the isolated DB is migrated it
+ * drops the `provider_connections` table, so the auto-combo resolution
+ * (prepareVirtualAutoComboInputs → getCachedProviderConnections) throws a genuine
+ * SQLite "no such table" error inside the route's try block. The auth gate only reads
+ * settings, so the request still reaches that catch.
  *
- * mock.module() requires --experimental-test-module-mocks, so like the sibling
- * precedents (tests/unit/repro-13999-mid-stream-error.test.ts and
- * tests/unit/issue-8674-alpha-search.test.ts) this file is a no-op skip under
- * the project's default suite and a real pass/fail under the flagged run.
- *
- * This MUST be a dedicated file (not added to combos-duplicate-route.test.ts):
- * module mocks only apply to modules loaded AFTER registration, and that file
- * already loads the route (and transitively virtualFactory) for earlier tests.
- *
- * Run with: node --experimental-test-module-mocks --import tsx/esm --test tests/unit/combos-duplicate-route-error.test.ts
+ * This is a dedicated file (not part of combos-duplicate-route.test.ts) because it
+ * destroys a table in its throwaway DATA_DIR.
  */
-import { test, mock } from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "os";
+import os from "node:os";
 import path from "node:path";
-
-// ── DB / auth setup ───────────────────────────────────────────────────────────
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-combos-dup-err-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
@@ -35,6 +25,7 @@ process.env.API_KEY_SECRET = process.env.API_KEY_SECRET ?? "combos-duplicate-err
 
 const core = await import("../../src/lib/db/core.ts");
 const settingsDb = await import("../../src/lib/db/settings.ts");
+const duplicateRoute = await import("../../src/app/api/combos/duplicate/route.ts");
 
 test.after(() => {
   core.resetDbInstance();
@@ -45,58 +36,26 @@ test.after(() => {
   }
 });
 
-function makePostRequest(url: string, body: unknown): Request {
-  return new Request(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-}
+test("#16969: a 500 from POST /api/combos/duplicate must not leak the raw exception message", async () => {
+  await settingsDb.updateSettings({ requireLogin: false });
+  // Real failure seam: the connection lookup now fails with a raw SQLite error.
+  core.getDbInstance().exec("DROP TABLE provider_connections");
 
-if (typeof mock.module !== "function") {
-  test("(skipped) requires --experimental-test-module-mocks", () => {
-    assert.ok(true);
-  });
-} else {
-  // Mock the DB-layer module the route (via virtualFactory) imports from, so
-  // prepareVirtualAutoComboInputs() throws a message embedding an absolute source
-  // path — exactly the failure mode #16969 reports. Registered BEFORE the route
-  // is imported (module mocks only apply to modules loaded after registration).
-  const LEAK = "/var/lib/omniroute/secret/db/combos.ts:42";
+  const res = await duplicateRoute.POST(
+    new Request("http://localhost/api/combos/duplicate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "auto/best-coding" }),
+    }) as never
+  );
+  const body = (await res.json()) as { error?: string; details?: unknown };
+  const serialized = JSON.stringify(body);
 
-  const actualReadCache = await import("@/lib/db/readCache");
-  mock.module("@/lib/db/readCache", {
-    namedExports: {
-      ...actualReadCache,
-      getCachedProviderConnections: async () => {
-        throw new Error(`SQLITE_CONSTRAINT: INSERT failed at ${LEAK}`);
-      },
-    },
-  });
-
-  const duplicateRoute = await import("../../src/app/api/combos/duplicate/route.ts");
-
-  test("#16969: a 500 from POST /api/combos/duplicate must not leak the raw exception message", async () => {
-    await settingsDb.updateSettings({ requireLogin: false });
-
-    const req = makePostRequest("http://localhost/api/combos/duplicate", {
-      name: "auto/best-coding",
-    });
-    const res = await duplicateRoute.POST(req as never);
-    const body = (await res.json()) as { error?: string; details?: unknown };
-
-    // A silent mock no-op would resolve real (empty) connections and return 422
-    // "No connected providers/models match this auto-combo template".
-    assert.equal(
-      res.status,
-      500,
-      `expected 500, got ${res.status} — a silent mock no-op would yield 422`
-    );
-    assert.equal(body.error, "Failed to duplicate auto-combo");
-    assert.ok(
-      !JSON.stringify(body).includes(LEAK),
-      `500 body must not leak the raw exception message (got: ${JSON.stringify(body)})`
-    );
-    assert.ok(!JSON.stringify(body).includes("at "), "error response must not leak stack traces");
-  });
-}
+  // With the table present (and no connections) the route answers 422 instead.
+  assert.equal(res.status, 500, `expected 500, got ${res.status}: ${serialized}`);
+  assert.equal(body.error, "Failed to duplicate auto-combo");
+  assert.equal(body.details, undefined, `500 body must not carry raw details: ${serialized}`);
+  assert.ok(!/no such table/i.test(serialized), `raw SQLite error leaked: ${serialized}`);
+  assert.ok(!serialized.includes("provider_connections"), `table name leaked: ${serialized}`);
+  assert.ok(!serialized.includes("at /"), "error response must not leak stack traces");
+});
