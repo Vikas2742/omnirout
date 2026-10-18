@@ -857,3 +857,134 @@ test("#17043: old event, exhausted window, stale poll and terminal status cannot
     ...base, testStatus: "banned",
   }, recovered)).rateLimitedUntil);
 });
+
+test("#17043: a weekly refill never clears an ordinary per-minute 429", async () => {
+  const now = Date.now();
+  const errorAt = new Date(now - 30_000).toISOString();
+  const weeklyReset = new Date(now + 86_400_000).toISOString();
+  const created = await providersDb.createProviderConnection({
+    provider: "claude",
+    authType: "oauth",
+    accessToken: "token-rpm-17043",
+    refreshToken: "refresh-rpm-17043",
+    testStatus: "unavailable",
+    isActive: true,
+    lastError: "Too many requests per minute",
+    lastErrorType: "rate_limited",
+    lastErrorSource: "executor",
+    lastErrorAt: errorAt,
+    errorCode: 429,
+    rateLimitedUntil: weeklyReset,
+  });
+  const id = (created as { id: string }).id;
+  const event = await import("../../src/lib/db/quotaResetEvents.ts");
+  event.recordProviderQuotaResetEventIfChanged({
+    provider: "claude",
+    connectionId: id,
+    windowKey: "weekly (7d)",
+    currentResetAt: weeklyReset,
+    currentRemainingPercentage: 100,
+    previousObservation: { resetAt: weeklyReset, remainingPercentage: 0 },
+    observedAt: new Date(now - 10_000).toISOString(),
+  });
+  const result = await providerLimits.maybeClearRecoveredQuotaState(
+    await providersDb.getProviderConnectionById(id),
+    {
+      quotas: {
+        session: { remainingPercentage: 99 },
+        weekly: { remainingPercentage: 99 },
+      },
+    }
+  );
+  assert.ok(result.rateLimitedUntil, "RPM lock must not be linked to the weekly reset");
+  assert.ok((await providersDb.getProviderConnectionById(id)).rateLimitedUntil);
+});
+
+test("#17043: a concurrent new 429 defeats the stale recovery CAS and keeps model locks", async () => {
+  const now = Date.now();
+  const firstErrorAt = new Date(now - 60_000).toISOString();
+  const observedAt = new Date(now - 30_000).toISOString();
+  const weeklyReset = new Date(now + 86_400_000).toISOString();
+  const created = await providersDb.createProviderConnection({
+    provider: "claude",
+    authType: "oauth",
+    accessToken: "token-race-17043",
+    refreshToken: "refresh-race-17043",
+    testStatus: "unavailable",
+    isActive: true,
+    lastError: "This request would exceed your account's rate limit",
+    lastErrorType: "quota_exhausted",
+    lastErrorSource: "executor",
+    lastErrorAt: firstErrorAt,
+    errorCode: 429,
+    rateLimitedUntil: weeklyReset,
+  });
+  const id = (created as { id: string }).id;
+  const event = await import("../../src/lib/db/quotaResetEvents.ts");
+  const fallback = await import("../../open-sse/services/accountFallback.ts");
+  const { RateLimitReason } = await import("../../open-sse/config/constants.ts");
+  event.recordProviderQuotaResetEventIfChanged({
+    provider: "claude",
+    connectionId: id,
+    windowKey: "weekly (7d)",
+    currentResetAt: weeklyReset,
+    currentRemainingPercentage: 100,
+    previousObservation: { resetAt: weeklyReset, remainingPercentage: 0 },
+    observedAt,
+  });
+  fallback.clearAllModelLockouts();
+  try {
+    fallback.lockModel("claude", id, "claude-sonnet-5", RateLimitReason.QUOTA_EXHAUSTED, 120_000);
+    const snapshotBeforeNew429 = await providersDb.getProviderConnectionById(id);
+    const newErrorAt = new Date(now - 5_000).toISOString();
+    await providersDb.updateProviderConnection(id, {
+      lastErrorAt: newErrorAt,
+      lastError: "second 429 during quota refresh",
+      rateLimitedUntil: new Date(now + 2 * 86_400_000).toISOString(),
+      backoffLevel: 3,
+    });
+    const recovered = await providerLimits.maybeClearRecoveredQuotaState(
+      snapshotBeforeNew429,
+      {
+        quotas: {
+          session: { remainingPercentage: 90 },
+          weekly: { remainingPercentage: 92 },
+        },
+      }
+    );
+    assert.ok(recovered.rateLimitedUntil, "CAS mismatch must retain the old snapshot");
+    const current = await providersDb.getProviderConnectionById(id);
+    assert.equal(current.lastErrorAt, newErrorAt);
+    assert.equal(current.testStatus, "unavailable");
+    assert.equal(current.backoffLevel, 3);
+    assert.equal(fallback.isModelLocked("claude", id, "claude-sonnet-5"), true);
+    // A second attempt with the NEW timestamp must not reuse the old event.
+    assert.ok((await providerLimits.maybeClearRecoveredQuotaState(current, {
+      quotas: { session: { remainingPercentage: 90 }, weekly: { remainingPercentage: 92 } },
+    })).rateLimitedUntil);
+  } finally {
+    fallback.clearAllModelLockouts();
+  }
+});
+
+test("#17043: only a complete live quota observation can authorize a reset", () => {
+  const valid = {
+    quotas: {
+      session: { remainingPercentage: 98 },
+      weekly: { remainingPercentage: 93 },
+    },
+  };
+  assert.equal(providerLimits.everyQuotaWindowReplenished(valid), true);
+  assert.equal(providerLimits.everyQuotaWindowReplenished({ ...valid, _stale: true }), false);
+  assert.equal(providerLimits.everyQuotaWindowReplenished({ ...valid, message: "fetch failed" }), false);
+  assert.equal(providerLimits.everyQuotaWindowReplenished({ quotas: {} }), false);
+  assert.equal(providerLimits.everyQuotaWindowReplenished({
+    quotas: { session: { remainingPercentage: 98 }, weekly: { remainingPercentage: 0 } },
+  }), false);
+  assert.equal(providerLimits.everyQuotaWindowReplenished({
+    quotas: { session: { remainingPercentage: 98 }, weekly: {} },
+  }), false);
+  assert.equal(providerLimits.everyQuotaWindowReplenished({
+    quotas: { session: { remainingPercentage: 98 }, weekly: { unlimited: true } },
+  }), false);
+});
