@@ -39,7 +39,6 @@ export function poolIds(account: HealthAccount): string[] {
     .filter((id): id is string => !!id)
     .sort();
 }
-/** Same applicableModel fallback as the original family projection. Unknown mappings stay visible. */
 function applicableModel(model: string, id: string, account: HealthAccount) {
   if (account.quotaPools?.find((g) => g.id === id)?.models?.includes(model)) return true;
   if (["agy", "antigravity"].includes(account.connection.provider)) {
@@ -48,93 +47,88 @@ function applicableModel(model: string, id: string, account: HealthAccount) {
   }
   return true;
 }
-function project(account: HealthAccount, now: number, poolId?: string): DisplayAccount {
-  const cells = poolId
-    ? account.cells.filter((c) =>
-        c.scope === "group"
-          ? c.scopeId === poolId
-          : c.scope === "scoped" && applicableModel(c.name, poolId, account)
+function selectDisplayCells(account: HealthAccount, poolId?: string) {
+  return poolId
+    ? account.cells.filter((cell) =>
+        cell.scope === "group"
+          ? cell.scopeId === poolId
+          : cell.scope === "scoped" && applicableModel(cell.name, poolId, account)
       )
     : account.cells;
-  const reasons = account.reasons.filter(
-    (r) =>
-      (r.type !== "cooldown" || parseRuntimeTimestamp(r.resetAt || "") > now) &&
+}
+function selectDisplayReasons(account: HealthAccount, poolId: string | undefined, now: number) {
+  return account.reasons.filter(
+    (reason) =>
+      (reason.type !== "cooldown" || parseRuntimeTimestamp(reason.resetAt || "") > now) &&
       (!poolId ||
-        (r.type === "lockout" || r.scope === "scoped"
-          ? applicableModel(r.window || "", poolId, account)
-          : r.scope !== "group" || r.scopeId === poolId))
+        (reason.type === "lockout" || reason.scope === "scoped"
+          ? applicableModel(reason.window || "", poolId, account)
+          : reason.scope !== "group" || reason.scopeId === poolId))
   );
+}
+function displayDecision(account: HealthAccount, now: number, poolId?: string) {
   const server =
     (account.quotaAvailabilityValidUntil ?? -Infinity) >= now
       ? account.quotaAvailability
       : undefined;
-  const decision = poolId
-    ? server?.scopes.find((s) => s.kind === "group" && s.id === poolId)?.decision
-    : server?.account;
-  const accountBlocked = decision?.usable === false;
-  const quotaBlocked = false;
-  const terminal = reasons.some((r) => r.type === "terminal");
-  const cooldown = reasons.filter((r) => r.type === "cooldown");
-  let kind: DisplayKind = account.status === "paused" ? "paused" : terminal ? "act" : "ok";
-  const recoveryBlockers = decision?.recoveryWindow
-    ? [decision.recoveryWindow]
-    : decision?.blockers || [];
-  const constraints: HealthReason[] = [
-    ...recoveryBlockers.map((b) => ({
-      type: "quota" as const,
-      window: b.name,
-      resetAt: b.resetAt,
-    })),
-    ...cooldown,
-  ];
-  let recoverAt: string | undefined;
-  let waitMs: number | null = null;
-  let waitDuration = WEEK;
-  if (kind === "ok" && (accountBlocked || quotaBlocked || cooldown.length)) {
-    const classify = (r: HealthReason): "cd5" | "cdw" => {
-      if (r.type === "quota") {
-        return recoveryBlockers.find((b) => b.name === r.window)?.kind === "fiveHour"
-          ? "cd5"
-          : "cdw";
-      }
-      return (r.durationMs ?? Infinity) <= FIVE_HOURS ? "cd5" : "cdw";
-    };
-    const unknown = constraints.filter(
-      (r) => !Number.isFinite(parseRuntimeTimestamp(r.resetAt || ""))
-    );
-    // An unknown constraint cannot promise a recovery; unknown long windows outrank short ones.
-    const latest = [...constraints].sort(
-      (a, b) =>
-        (unknown.length
-          ? 0
-          : parseRuntimeTimestamp(b.resetAt!) - parseRuntimeTimestamp(a.resetAt!)) ||
-        Number(classify(b) === "cdw") - Number(classify(a) === "cdw")
-    )[0];
-    kind = latest ? classify(latest) : "cdw";
-    waitDuration =
-      latest?.type === "cooldown" && latest.durationMs !== undefined && latest.durationMs > 0
-        ? latest.durationMs
-        : kind === "cd5"
-          ? FIVE_HOURS
-          : WEEK;
-    if (!unknown.length && latest) {
-      recoverAt = latest.resetAt || undefined;
-      waitMs = Math.max(0, parseRuntimeTimestamp(recoverAt!) - now);
-    }
+  return {
+    server,
+    decision: poolId
+      ? server?.scopes.find((scope) => scope.kind === "group" && scope.id === poolId)?.decision
+      : server?.account,
+  };
+}
+function constraintKind(
+  reason: HealthReason,
+  blockers: NonNullable<ReturnType<typeof displayDecision>["decision"]>["blockers"]
+): "cd5" | "cdw" {
+  if (reason.type === "quota") {
+    return blockers.find((blocker) => blocker.name === reason.window)?.kind === "fiveHour"
+      ? "cd5"
+      : "cdw";
   }
-  const partial =
-    kind === "ok" &&
-    ((server?.scopes.some((s) => s.decision.usable !== true) ?? false) ||
-      reasons.some((r) => r.type === "lockout"));
-  if (kind === "ok" && (decision?.usable !== true || reasons.some((r) => r.type === "noRuntime")))
-    kind = "empty";
-  // Water level is display-only, never an eligibility test.
-  const locallyLimited = cells.filter((c) => !c.quotaIgnored);
-  const bypassed = cells.some((c) => c.quotaIgnored);
+  return (reason.durationMs ?? Infinity) <= FIVE_HOURS ? "cd5" : "cdw";
+}
+function resolveRecovery(
+  constraints: HealthReason[],
+  blockers: NonNullable<ReturnType<typeof displayDecision>["decision"]>["blockers"],
+  kind: DisplayKind,
+  now: number
+) {
+  const unknown = constraints.filter(
+    (reason) => !Number.isFinite(parseRuntimeTimestamp(reason.resetAt || ""))
+  );
+  const latest = [...constraints].sort(
+    (a, b) =>
+      (unknown.length
+        ? 0
+        : parseRuntimeTimestamp(b.resetAt!) - parseRuntimeTimestamp(a.resetAt!)) ||
+      Number(constraintKind(b, blockers) === "cdw") - Number(constraintKind(a, blockers) === "cdw")
+  )[0];
+  const displayKind = latest ? constraintKind(latest, blockers) : "cdw";
+  const duration =
+    latest?.type === "cooldown" && latest.durationMs !== undefined && latest.durationMs > 0
+      ? latest.durationMs
+      : displayKind === "cd5"
+        ? FIVE_HOURS
+        : WEEK;
+  return {
+    kind: kind === "ok" ? displayKind : kind,
+    recoverAt: !unknown.length && latest ? latest.resetAt || undefined : undefined,
+    waitMs:
+      !unknown.length && latest ? Math.max(0, parseRuntimeTimestamp(latest.resetAt!) - now) : null,
+    waitDuration: duration,
+  };
+}
+function selectWaterPercentages(
+  cells: HealthAccount["cells"],
+  decision: ReturnType<typeof displayDecision>["decision"],
+  poolId?: string
+) {
+  const locallyLimited = cells.filter((cell) => !cell.quotaIgnored);
+  const bypassed = cells.some((cell) => cell.quotaIgnored);
   const waterCells =
-    poolId || bypassed ? locallyLimited : locallyLimited.filter((c) => c.scope !== "scoped");
-  // Alternative budgets share one meter; the server supplies each display threshold.
-  // This selection affects fill only, never kind, partial, reasons or eligibility.
+    poolId || bypassed ? locallyLimited : locallyLimited.filter((cell) => cell.scope !== "scoped");
   const alternatives = new Map<string, typeof waterCells>();
   for (const cell of waterCells) {
     const base = cell.name.replace(/_freetrial$/, "");
@@ -144,32 +138,96 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
   const percentages = [...alternatives.values()].map(
     (entries) =>
       [...entries].sort((a, b) => {
-        const above = (c: typeof a) =>
-          Number(c.percent > (decision?.displayCutoffs?.[c.name] ?? 0) + 1e-9);
+        const above = (cell: typeof a) =>
+          Number(cell.percent > (decision?.displayCutoffs?.[cell.name] ?? 0) + 1e-9);
         return above(b) - above(a) || b.percent - a.percent;
       })[0].percent
   );
+  return { percentages, bypassed };
+}
+function resolveDisplayState(
+  account: HealthAccount,
+  decision: ReturnType<typeof displayDecision>["decision"],
+  server: ReturnType<typeof displayDecision>["server"],
+  reasons: HealthReason[],
+  recoveryBlockers: NonNullable<ReturnType<typeof displayDecision>["decision"]>["blockers"],
+  constraints: HealthReason[],
+  now: number
+) {
+  const accountBlocked = decision?.usable === false;
+  const terminal = reasons.some((reason) => reason.type === "terminal");
+  const cooldown = reasons.filter((reason) => reason.type === "cooldown");
+  let kind: DisplayKind = account.status === "paused" ? "paused" : terminal ? "act" : "ok";
+  let recoverAt: string | undefined;
+  let waitMs: number | null = null;
+  let waitDuration = WEEK;
+  if (kind === "ok" && (accountBlocked || cooldown.length)) {
+    const recovery = resolveRecovery(constraints, recoveryBlockers, kind, now);
+    kind = recovery.kind;
+    recoverAt = recovery.recoverAt;
+    waitMs = recovery.waitMs;
+    waitDuration = recovery.waitDuration;
+  }
+  const partial =
+    kind === "ok" &&
+    ((server?.scopes.some((scope) => scope.decision.usable !== true) ?? false) ||
+      reasons.some((reason) => reason.type === "lockout"));
+  if (
+    kind === "ok" &&
+    (decision?.usable !== true || reasons.some((reason) => reason.type === "noRuntime"))
+  )
+    kind = "empty";
+  return { kind, partial, recoverAt, waitMs, waitDuration };
+}
+function displayFill(
+  kind: DisplayKind,
+  remainingPct: number | null,
+  waitMs: number | null,
+  waitDuration: number
+) {
+  if (kind === "ok") return remainingPct;
+  if (kind !== "cd5" && kind !== "cdw") return null;
+  return waitMs === null ? 0 : Math.max(0, Math.min(100, (1 - waitMs / waitDuration) * 100));
+}
+function project(account: HealthAccount, now: number, poolId?: string): DisplayAccount {
+  const cells = selectDisplayCells(account, poolId);
+  const reasons = selectDisplayReasons(account, poolId, now);
+  const { server, decision } = displayDecision(account, now, poolId);
+  const recoveryBlockers = decision?.recoveryWindow
+    ? [decision.recoveryWindow]
+    : decision?.blockers || [];
+  const constraints: HealthReason[] = [
+    ...recoveryBlockers.map((blocker) => ({
+      type: "quota" as const,
+      window: blocker.name,
+      resetAt: blocker.resetAt,
+    })),
+    ...reasons.filter((reason) => reason.type === "cooldown"),
+  ];
+  const state = resolveDisplayState(
+    account,
+    decision,
+    server,
+    reasons,
+    recoveryBlockers,
+    constraints,
+    now
+  );
+  const { percentages, bypassed } = selectWaterPercentages(cells, decision, poolId);
   const remainingPct = percentages.length ? Math.min(...percentages) : bypassed ? 100 : null;
-  const fill =
-    kind === "ok"
-      ? remainingPct
-      : kind === "cd5" || kind === "cdw"
-        ? waitMs === null
-          ? 0
-          : Math.max(0, Math.min(100, (1 - waitMs / waitDuration) * 100))
-        : null;
+  const fill = displayFill(state.kind, remainingPct, state.waitMs, state.waitDuration);
   return {
     ...account,
     cells,
     reasons,
-    kind,
-    partial,
+    kind: state.kind,
+    partial: state.partial,
     fill,
     remainingPct,
-    waitMs,
-    recoverAt,
+    waitMs: state.waitMs,
+    recoverAt: state.recoverAt,
     poolId,
-    status: displayStatus({ kind, partial }),
+    status: displayStatus({ kind: state.kind, partial: state.partial }),
   };
 }
 export function displayAccount(account: HealthAccount, now = Date.now()): DisplayAccount {

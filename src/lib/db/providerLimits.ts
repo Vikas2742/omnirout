@@ -59,26 +59,13 @@ function sanitizeCacheEntryForStorage(entry: ProviderLimitsCacheEntry): Provider
   return billing ? { ...rest, billing } : rest;
 }
 
-function normalizeCacheEntry(value: unknown): ProviderLimitsCacheEntry | null {
-  const record = toRecord(value);
-  if (!record) return null;
-
-  const fetchedAt =
-    typeof record.fetchedAt === "string" && record.fetchedAt.trim() ? record.fetchedAt : null;
-  if (!fetchedAt) return null;
-
+function normalizeOptionalCacheFields(record: JsonRecord): Partial<ProviderLimitsCacheEntry> {
   const bankedResetCredits = Number(record.bankedResetCredits);
   const paidCredits = parseCodexPaidCredits(record.paidCredits);
   const billing = sanitizeProviderBillingStatus(record.billing);
   const modelQuotas = toRecord(record.modelQuotas);
-
   return {
-    quotas: toRecord(record.quotas),
     ...(modelQuotas ? { modelQuotas } : {}),
-    plan: record.plan ?? null,
-    message: typeof record.message === "string" ? record.message : null,
-    fetchedAt,
-    source: typeof record.source === "string" ? record.source : null,
     ...(typeof record.limitReached === "boolean" ? { limitReached: record.limitReached } : {}),
     ...(typeof record.sparkLimitReached === "boolean"
       ? { sparkLimitReached: record.sparkLimitReached }
@@ -92,6 +79,23 @@ function normalizeCacheEntry(value: unknown): ProviderLimitsCacheEntry | null {
     ...(Array.isArray(record.quotaGroups)
       ? { quotaGroups: record.quotaGroups as Array<Record<string, unknown>> }
       : {}),
+  };
+}
+function normalizeCacheEntry(value: unknown): ProviderLimitsCacheEntry | null {
+  const record = toRecord(value);
+  if (!record) return null;
+
+  const fetchedAt =
+    typeof record.fetchedAt === "string" && record.fetchedAt.trim() ? record.fetchedAt : null;
+  if (!fetchedAt) return null;
+
+  return {
+    quotas: toRecord(record.quotas),
+    ...normalizeOptionalCacheFields(record),
+    plan: record.plan ?? null,
+    message: typeof record.message === "string" ? record.message : null,
+    fetchedAt,
+    source: typeof record.source === "string" ? record.source : null,
   };
 }
 

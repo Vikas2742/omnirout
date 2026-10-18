@@ -113,7 +113,180 @@ function allowances(
   return reasons;
 }
 
-/** Actual routing predicates, evaluated over a private cache view. No fetcher is consulted. */
+function readCachedUsage(
+  id: string,
+  provider: string,
+  connection: ReturnType<typeof toProviderConnection>,
+  persistedUsage: Usage | undefined,
+  requestedModel: string | null
+): Usage & { cached?: ReturnType<typeof getQuotaCache> } {
+  getQuotaSnapshotFetchedAt(id);
+  seedReadView(id, provider, persistedUsage || {});
+  hydrateCodexQuotaCacheForRequest(connection, requestedModel);
+  const cached = getQuotaCache(id);
+  return {
+    ...(persistedUsage ||
+      (cached
+        ? {
+            quotas: cached.quotas,
+            modelQuotas: cached.modelQuotas,
+            fetchedAt: timestamp(cached.fetchedAt)!,
+          }
+        : {})),
+    cached,
+  };
+}
+function appendLimitPolicyBlockers(
+  blockers: QuotaAvailabilityWindow[],
+  id: string,
+  provider: string,
+  requestedModel: string | null,
+  usage: Usage,
+  connection: ReturnType<typeof toProviderConnection>
+) {
+  const local = resolveQuotaLimitPolicy(provider, connection.providerSpecificData);
+  for (const key of local.windows) {
+    const name = provider === "codex" ? toCodexScopedQuotaWindowName(key, requestedModel) : key;
+    const status = getQuotaWindowStatus(id, name, local.thresholdPercent);
+    if (status?.reachedThreshold)
+      blockers.push(
+        blockingWindow(
+          name,
+          status.resetAt,
+          usage,
+          status.remainingPercentage,
+          100 - local.thresholdPercent
+        )
+      );
+  }
+}
+function appendCutoffBlockers(
+  blockers: QuotaAvailabilityWindow[],
+  quota: ReturnType<typeof convertCachedUsageToQuotaInfo>,
+  cutoff: ReturnType<typeof evaluateQuotaCutoff>,
+  provider: string,
+  connection: ReturnType<typeof toProviderConnection>,
+  policy: QuotaPreflightPolicy,
+  requestedModel: string | null,
+  id: string,
+  usage: Usage
+) {
+  const complete = cutoffBlockingWindows(
+    quota,
+    {
+      resolveMinRemainingPercent: (name) =>
+        resolveMinRemainingPercent(provider, connection, policy, name),
+    },
+    {
+      provider,
+      requestedModel,
+      providerSpecificData: connection.providerSpecificData,
+      connectionId: id,
+    }
+  );
+  for (const result of complete.length ? complete : [cutoff])
+    blockers.push(
+      blockingWindow(
+        result.windowName || "quota",
+        result.resetAt ?? null,
+        usage,
+        result.quotaPercent === undefined ? undefined : (1 - result.quotaPercent) * 100,
+        resolveMinRemainingPercent(provider, connection, policy, result.windowName ?? null)
+      )
+    );
+}
+function appendExhaustedBlockers(
+  blockers: QuotaAvailabilityWindow[],
+  id: string,
+  provider: string,
+  requestedModel: string | null,
+  providerSpecificData: unknown,
+  usage: Usage,
+  cached: ReturnType<typeof getQuotaCache>
+) {
+  for (const quota of exhaustedBlockingWindows(id, provider, requestedModel, providerSpecificData))
+    if (!blockers.some((blocker) => blocker.name === quota.name))
+      blockers.push(blockingWindow(quota.name, quota.resetAt, usage, quota.remainingPercentage, 0));
+  if (!blockers.some((blocker) => !blocker.reason))
+    blockers.push(blockingWindow("quota", cached?.nextResetAt ?? null, usage));
+}
+
+function evaluateCachedPredicates(
+  id: string,
+  provider: string,
+  connection: ReturnType<typeof toProviderConnection>,
+  usage: Usage,
+  policy: QuotaPreflightPolicy,
+  requestedModel: string | null
+) {
+  const limitPolicy = evaluateQuotaLimitPolicy(provider, connection, requestedModel);
+  const exhausted = isQuotaExhaustedForRequest(
+    id,
+    provider,
+    requestedModel,
+    connection.providerSpecificData
+  );
+  const cutoffEnabled = shouldApplyQuotaCutoff(provider, connection, policy, requestedModel);
+  const cutoffEvaluated = !cutoffEnabled || canEvaluateCachedCutoff(provider, connection);
+  const quota =
+    cutoffEnabled && cutoffEvaluated
+      ? convertCachedUsageToQuotaInfo(provider, usage, requestedModel)
+      : null;
+  const cutoff =
+    cutoffEnabled && cutoffEvaluated
+      ? evaluateQuotaCutoff(
+          quota,
+          {
+            resolveMinRemainingPercent: (name) =>
+              resolveMinRemainingPercent(provider, connection, policy, name),
+          },
+          {
+            provider,
+            requestedModel,
+            providerSpecificData: connection.providerSpecificData,
+            connectionId: id,
+          }
+        )
+      : { proceed: true };
+  return { limitPolicy, exhausted, cutoffEnabled, cutoffEvaluated, quota, cutoff };
+}
+function appendCachedBlockers(
+  blockers: QuotaAvailabilityWindow[],
+  predicates: ReturnType<typeof evaluateCachedPredicates>,
+  id: string,
+  provider: string,
+  connection: ReturnType<typeof toProviderConnection>,
+  policy: QuotaPreflightPolicy,
+  requestedModel: string | null,
+  usage: Usage,
+  cached: ReturnType<typeof getQuotaCache>
+) {
+  if (predicates.limitPolicy.blocked)
+    appendLimitPolicyBlockers(blockers, id, provider, requestedModel, usage, connection);
+  if (!predicates.cutoff.proceed)
+    appendCutoffBlockers(
+      blockers,
+      predicates.quota,
+      predicates.cutoff,
+      provider,
+      connection,
+      policy,
+      requestedModel,
+      id,
+      usage
+    );
+  if (predicates.exhausted)
+    appendExhaustedBlockers(
+      blockers,
+      id,
+      provider,
+      requestedModel,
+      connection.providerSpecificData,
+      usage,
+      cached
+    );
+}
+
 export function evaluateCachedQuotaAvailability(
   input: unknown,
   persistedUsage: Usage | undefined,
@@ -123,94 +296,41 @@ export function evaluateCachedQuotaAvailability(
   return withQuotaCacheReadView(() => {
     const connection = toProviderConnection(input);
     const { id, provider, providerSpecificData } = connection;
-    // The same snapshot hydration as selection, before falling back to ProviderLimits.
-    getQuotaSnapshotFetchedAt(id);
-    seedReadView(id, provider, persistedUsage || {});
-    hydrateCodexQuotaCacheForRequest(connection, requestedModel);
-    const cached = getQuotaCache(id);
-    const usage: Usage =
-      persistedUsage ||
-      (cached
-        ? {
-            quotas: cached.quotas,
-            modelQuotas: cached.modelQuotas,
-            fetchedAt: timestamp(cached.fetchedAt)!,
-          }
-        : {});
-    const limitPolicy = evaluateQuotaLimitPolicy(provider, connection, requestedModel);
-    const exhausted = isQuotaExhaustedForRequest(
+    const { cached, ...readUsage } = readCachedUsage(
       id,
       provider,
-      requestedModel,
-      providerSpecificData
+      connection,
+      persistedUsage,
+      requestedModel
     );
-    const cutoffEnabled = shouldApplyQuotaCutoff(provider, connection, policy, requestedModel);
-    const cutoffEvaluated = !cutoffEnabled || canEvaluateCachedCutoff(provider, connection);
-    const quota =
-      cutoffEnabled && cutoffEvaluated
-        ? convertCachedUsageToQuotaInfo(provider, usage, requestedModel)
-        : null;
-    const cutoff =
-      cutoffEnabled && cutoffEvaluated
-        ? evaluateQuotaCutoff(
-            quota,
-            {
-              resolveMinRemainingPercent: (name) =>
-                resolveMinRemainingPercent(provider, connection, policy, name),
-            },
-            { provider, requestedModel, providerSpecificData, connectionId: id }
-          )
-        : { proceed: true };
+    const usage: Usage = readUsage;
+    const predicates = evaluateCachedPredicates(
+      id,
+      provider,
+      connection,
+      usage,
+      policy,
+      requestedModel
+    );
     const routerBlockers = savedRouterBlockers(connection, requestedModel);
     const blockers: QuotaAvailabilityWindow[] = [...routerBlockers];
-    if (limitPolicy.blocked) {
-      const local = resolveQuotaLimitPolicy(provider, providerSpecificData);
-      for (const key of local.windows) {
-        const name = provider === "codex" ? toCodexScopedQuotaWindowName(key, requestedModel) : key;
-        const status = getQuotaWindowStatus(id, name, local.thresholdPercent);
-        if (status?.reachedThreshold)
-          blockers.push(
-            blockingWindow(
-              name,
-              status.resetAt,
-              usage,
-              status.remainingPercentage,
-              100 - local.thresholdPercent
-            )
-          );
-      }
-    }
-    if (!cutoff.proceed) {
-      const complete = cutoffBlockingWindows(
-        quota,
-        {
-          resolveMinRemainingPercent: (name) =>
-            resolveMinRemainingPercent(provider, connection, policy, name),
-        },
-        { provider, requestedModel, providerSpecificData, connectionId: id }
-      );
-      for (const result of complete.length ? complete : [cutoff])
-        blockers.push(
-          blockingWindow(
-            result.windowName || "quota",
-            result.resetAt ?? null,
-            usage,
-            result.quotaPercent === undefined ? undefined : (1 - result.quotaPercent) * 100,
-            resolveMinRemainingPercent(provider, connection, policy, result.windowName ?? null)
-          )
-        );
-    }
-    // These rows explain an already-made domain decision; they never decide eligibility.
-    if (exhausted) {
-      for (const q of exhaustedBlockingWindows(id, provider, requestedModel, providerSpecificData))
-        if (!blockers.some((b) => b.name === q.name))
-          blockers.push(blockingWindow(q.name, q.resetAt, usage, q.remainingPercentage, 0));
-      if (!blockers.some((blocker) => !blocker.reason))
-        blockers.push(blockingWindow("quota", cached?.nextResetAt ?? null, usage));
-    }
+    appendCachedBlockers(
+      blockers,
+      predicates,
+      id,
+      provider,
+      connection,
+      policy,
+      requestedModel,
+      usage,
+      cached
+    );
     const observed = timestamp(usage.fetchedAt) || timestamp(cached?.fetchedAt);
     const blocked =
-      routerBlockers.length > 0 || limitPolicy.blocked || exhausted || !cutoff.proceed;
+      routerBlockers.length > 0 ||
+      predicates.limitPolicy.blocked ||
+      predicates.exhausted ||
+      !predicates.cutoff.proceed;
     return {
       usable: blocked ? false : observed ? true : null,
       blockers,
@@ -221,10 +341,12 @@ export function evaluateCachedQuotaAvailability(
       displayCutoffs: Object.fromEntries(
         Object.keys(usage.quotas || {}).map((name) => [
           name,
-          cutoffEnabled ? resolveMinRemainingPercent(provider, connection, policy, name) : 0,
+          predicates.cutoffEnabled
+            ? resolveMinRemainingPercent(provider, connection, policy, name)
+            : 0,
         ])
       ),
-      ...(cutoffEnabled ? { cutoffEvaluated } : {}),
+      ...(predicates.cutoffEnabled ? { cutoffEvaluated: predicates.cutoffEvaluated } : {}),
     };
   });
 }

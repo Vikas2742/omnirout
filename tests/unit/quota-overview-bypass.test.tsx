@@ -85,18 +85,18 @@ for (const locale of ["en", "zh-CN"])
       expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("0");
       expect(screen.getAllByText(messages.usage.healthAvailable)).toHaveLength(2);
     });
-it("all 67 catalogs translate bypass reasons with the same empty ICU argument set", () => {
-  const directory = path.resolve("src/i18n/messages");
-  const files = fs.readdirSync(directory).filter((file) => file.endsWith(".json"));
-  expect(files.length).toBe(67);
-  for (const file of files) {
-    const usage = JSON.parse(fs.readFileSync(path.join(directory, file), "utf8")).usage;
-    for (const { key } of cases) {
-      expect(typeof usage[key], `${file}:${key}`).toBe("string");
-      expect(usage[key].startsWith("__MISSING__:")).toBe(false);
-      expect(usage[key].match(/[{}]/g)).toBeNull();
-      expect(parse(usage[key]).every((node) => node.type === 0)).toBe(true);
-      if (file !== "en.json") expect(usage[key]).not.toBe(en.usage[key]);
+for (const row of cases) {
+  it(`all 67 catalogs translate ${row.key} with the same empty ICU argument set`, () => {
+    const directory = path.resolve("src/i18n/messages");
+    const files = fs.readdirSync(directory).filter((file) => file.endsWith(".json"));
+    expect(files.length).toBe(67);
+    for (const file of files) {
+      const usage = JSON.parse(fs.readFileSync(path.join(directory, file), "utf8")).usage;
+      expect(typeof usage[row.key], `${file}:${row.key}`).toBe("string");
+      expect(usage[row.key].startsWith("__MISSING__:")).toBe(false);
+      expect(usage[row.key].match(/[{}]/g)).toBeNull();
+      expect(parse(usage[row.key]).every((node) => node.type === 0)).toBe(true);
+      if (file !== "en.json") expect(usage[row.key]).not.toBe(en.usage[row.key]);
     }
-  }
-});
+  });
+}

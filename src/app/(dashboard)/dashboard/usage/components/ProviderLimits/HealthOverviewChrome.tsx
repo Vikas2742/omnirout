@@ -52,6 +52,54 @@ export function HealthLegend({ id, hidden }: { id: string; hidden: boolean }) {
     </div>
   );
 }
+function legendDescription(
+  kind: "ok" | "cd5" | "cdw" | "act" | "partial" | "paused" | "empty",
+  t: ReturnType<typeof useHealthText>["t"],
+  format: ReturnType<typeof useHealthText>["format"]
+) {
+  if (kind === "ok") return t("healthLegendOk");
+  if (kind === "cd5") return t("healthLegendCooldown", { window: t("healthFiveHour") });
+  if (kind === "cdw")
+    return t("healthLegendCooldown", {
+      window: `${t("weekly")} · ${format.number(7, { style: "unit", unit: "day", unitDisplay: "long" })}`,
+    });
+  if (kind === "act") return t("healthLegendAction");
+  if (kind === "partial") return t("healthLegendPartial");
+  return "";
+}
+function LegendItem({
+  kind,
+  t,
+  all,
+  format,
+}: {
+  kind: "ok" | "cd5" | "cdw" | "act" | "partial" | "paused" | "empty";
+  t: ReturnType<typeof useHealthText>["t"];
+  all: ReturnType<typeof useHealthText>["all"];
+  format: ReturnType<typeof useHealthText>["format"];
+}) {
+  const displayKind: DisplayKind = kind === "partial" ? "ok" : kind;
+  const description = legendDescription(kind, t, format);
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span
+        aria-hidden
+        className={`${CAPSULE_CLASS} !h-[22px] !w-[8px] ${displayKind === "empty" ? "border border-dashed border-text-muted" : ""}`}
+        style={capsuleStyle(displayKind)}
+      >
+        <CapsuleWater
+          kind={displayKind}
+          fill={["ok", "cd5", "cdw"].includes(displayKind) ? 65 : null}
+          partial={kind === "partial"}
+        />
+      </span>
+      <span>
+        <b>{kind === "partial" ? t("healthRestricted") : all(DISPLAY_LABELS[kind])}</b>{" "}
+        <span className="text-text-muted">{description}</span>
+      </span>
+    </div>
+  );
+}
 function LegendItems() {
   const { t, all, format } = useHealthText();
   return (
@@ -59,43 +107,9 @@ function LegendItems() {
       data-legend
       className="grid min-w-0 grid-cols-1 gap-x-5 gap-y-2 border-b border-border px-[18px] py-3 text-xs sm:grid-cols-2 xl:grid-cols-3"
     >
-      {(["ok", "cd5", "cdw", "act", "partial", "paused", "empty"] as const).map((k) => {
-        const kind: DisplayKind = k === "partial" ? "ok" : k;
-        return (
-          <div key={k} className="flex min-w-0 items-center gap-2">
-            <span
-              aria-hidden
-              className={`${CAPSULE_CLASS} !h-[22px] !w-[8px] ${kind === "empty" ? "border border-dashed border-text-muted" : ""}`}
-              style={capsuleStyle(kind)}
-            >
-              <CapsuleWater
-                kind={kind}
-                fill={["ok", "cd5", "cdw"].includes(kind) ? 65 : null}
-                partial={k === "partial"}
-              />
-            </span>
-            <span>
-              <b>{k === "partial" ? t("healthRestricted") : all(DISPLAY_LABELS[k])}</b>{" "}
-              <span className="text-text-muted">
-                {k === "ok"
-                  ? t("healthLegendOk")
-                  : k === "cd5" || k === "cdw"
-                    ? t("healthLegendCooldown", {
-                        window:
-                          k === "cd5"
-                            ? t("healthFiveHour")
-                            : `${t("weekly")} · ${format.number(7, { style: "unit", unit: "day", unitDisplay: "long" })}`,
-                      })
-                    : k === "act"
-                      ? t("healthLegendAction")
-                      : k === "partial"
-                        ? t("healthLegendPartial")
-                        : ""}
-              </span>
-            </span>
-          </div>
-        );
-      })}
+      {(["ok", "cd5", "cdw", "act", "partial", "paused", "empty"] as const).map((kind) => (
+        <LegendItem key={kind} kind={kind} t={t} all={all} format={format} />
+      ))}
     </div>
   );
 }

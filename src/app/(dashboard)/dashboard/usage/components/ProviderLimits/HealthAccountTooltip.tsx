@@ -10,6 +10,177 @@ import {
   type DisplayAccount,
 } from "./availabilityDisplay";
 import { useHealthText } from "./useHealthText";
+
+function tooltipMessage(
+  account: DisplayAccount,
+  cooling: boolean,
+  thresholdBlocked: boolean,
+  t: ReturnType<typeof useHealthText>["t"],
+  all: ReturnType<typeof useHealthText>["all"],
+  format: ReturnType<typeof useHealthText>["format"],
+  recovery: ReturnType<typeof useHealthText>["recovery"]
+) {
+  if (account.kind === "act") return t("healthLegendAction");
+  if (account.partial && !cooling) return t("healthLegendPartial");
+  if (!cooling) return all(DISPLAY_LABELS[account.kind]);
+  const quotaKey = thresholdBlocked
+    ? "quotaThresholdLabel"
+    : account.reasons.some((reason) => reason.type === "quota")
+      ? "healthQuotaExhausted"
+      : "healthCooldown";
+  const wait = account.recoverAt
+    ? t("healthWait", {
+        duration: recovery(account.recoverAt),
+        time: format.dateTime(new Date(account.recoverAt), { hour: "2-digit", minute: "2-digit" }),
+      })
+    : t("healthRecoveryUnknown");
+  return `${t(quotaKey)} · ${wait}`;
+}
+
+function TooltipStatus({ account }: { account: DisplayAccount }) {
+  const { t, all, format, recovery } = useHealthText();
+  const cooling = account.kind === "cd5" || account.kind === "cdw";
+  const thresholdBlocked = account.reasons.some(
+    (reason) =>
+      reason.type === "quota" && (reason.percent ?? 0) > 0 && Number.isFinite(reason.cutoff)
+  );
+  const message = tooltipMessage(account, cooling, thresholdBlocked, t, all, format, recovery);
+  return (
+    <>
+      <p>
+        {cooling && <>{t("healthRecovery")}: </>}
+        {message}
+      </p>
+      {cooling && (
+        <p>
+          {t("healthWaited", {
+            percent: format.number((account.fill || 0) / 100, {
+              style: "percent",
+              maximumFractionDigits: 0,
+            }),
+          })}
+        </p>
+      )}
+    </>
+  );
+}
+
+function TooltipReasons({ account }: { account: DisplayAccount }) {
+  const { reason } = useHealthText();
+  return (
+    <>
+      {account.reasons
+        .filter((r) =>
+          r.type === "quota"
+            ? Number.isFinite(r.percent) && Number.isFinite(r.cutoff)
+            : !["cooldown", "terminal"].includes(r.type)
+        )
+        .map((r, i) => (
+          <p key={i} className="mt-0.5 text-text-muted">
+            {reason(r, account)}
+          </p>
+        ))}
+    </>
+  );
+}
+
+function TooltipPools({ pools }: { pools: DisplayAccount[] | undefined }) {
+  const { t, all, format, poolLabel } = useHealthText();
+  return (
+    <>
+      {pools?.map((pool) => (
+        <p data-other-pool key={pool.poolId} className="mt-1 text-text-muted">
+          {t("healthOtherPool", {
+            pool: poolLabel(pool.poolId!),
+            status: all(DISPLAY_LABELS[pool.kind]),
+            remaining:
+              pool.remainingPct === null
+                ? t("tierUnknown")
+                : format.number(pool.remainingPct / 100, {
+                    style: "percent",
+                    maximumFractionDigits: 1,
+                  }),
+          })}
+        </p>
+      ))}
+    </>
+  );
+}
+
+function TooltipCells({ account }: { account: DisplayAccount }) {
+  const { t, format, recovery, windowLabel } = useHealthText();
+  return (
+    <div className="mt-2 space-y-[6px]">
+      {account.cells.map((cell) => (
+        <div key={cell.name}>
+          <div className="flex flex-wrap justify-between gap-2">
+            <span>{windowLabel(cell)}</span>
+            <span>
+              {format.number(cell.percent / 100, { style: "percent", maximumFractionDigits: 1 })}
+              {cell.resetAt
+                ? ` · ${t("resetsIn")} ${recovery(cell.resetAt)}`
+                : ` · ${t("healthRecoveryUnknown")}`}
+            </span>
+          </div>
+          <div
+            role="progressbar"
+            aria-label={windowLabel(cell)}
+            aria-valuenow={cell.percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-1 h-[6px] overflow-hidden rounded-full bg-border/60"
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${cell.percent}%`,
+                background: cell.percent > 0 ? "#22c55e" : DISPLAY_COLORS[account.kind],
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TooltipContent({
+  account,
+  label,
+  pools,
+}: {
+  account: DisplayAccount;
+  label: string;
+  pools?: DisplayAccount[];
+}) {
+  const { t, all, relative } = useHealthText();
+  return (
+    <>
+      <div className="mb-[6px] flex items-center justify-between gap-2">
+        <b>{label}</b>
+        <span
+          className="shrink-0 rounded-full px-2 py-px text-[11px]"
+          style={{
+            color: DISPLAY_COLORS[account.kind],
+            background: `color-mix(in srgb, ${DISPLAY_COLORS[account.kind]} 13%, transparent)`,
+          }}
+        >
+          {all(DISPLAY_LABELS[account.kind])}
+        </span>
+      </div>
+      <TooltipStatus account={account} />
+      <TooltipPools pools={pools} />
+      <TooltipReasons account={account} />
+      <TooltipCells account={account} />
+      <p className="mt-2 text-[11px] text-text-muted">
+        {t("healthQuotaObserved", { time: relative(account.quotaObservedAt) })} ·{" "}
+        {t("healthRuntimeObserved", { time: relative(account.runtimeObservedAt) })} ·{" "}
+        {t("healthDetailsHint")}
+      </p>
+    </>
+  );
+}
+
 export default function HealthAccountTooltip({
   id,
   account,
@@ -24,7 +195,6 @@ export default function HealthAccountTooltip({
   otherPools?: DisplayAccount[];
 }) {
   const card = useRef<HTMLDivElement>(null);
-  const { t, all, format, relative, recovery, reason, windowLabel, poolLabel } = useHealthText();
   const a = "kind" in account ? account : displayAccount(account);
   useLayoutEffect(() => {
     const position = () => {
@@ -42,10 +212,6 @@ export default function HealthAccountTooltip({
       window.removeEventListener("scroll", position, true);
     };
   }, [anchor, account]);
-  const cooling = a.kind === "cd5" || a.kind === "cdw";
-  const thresholdBlocked = a.reasons.some(
-    (r) => r.type === "quota" && (r.percent ?? 0) > 0 && Number.isFinite(r.cutoff)
-  );
   return createPortal(
     <div
       ref={card}
@@ -53,100 +219,7 @@ export default function HealthAccountTooltip({
       role="tooltip"
       className="pointer-events-none fixed z-50 max-h-[calc(100vh-16px)] w-[330px] max-w-[calc(100vw-16px)] overflow-y-auto break-words rounded-[10px] border border-border bg-surface/95 px-3 py-[10px] text-xs text-text-main shadow-xl"
     >
-      <div className="mb-[6px] flex items-center justify-between gap-2">
-        <b>{label}</b>
-        <span
-          className="shrink-0 rounded-full px-2 py-px text-[11px]"
-          style={{
-            color: DISPLAY_COLORS[a.kind],
-            background: `color-mix(in srgb, ${DISPLAY_COLORS[a.kind]} 13%, transparent)`,
-          }}
-        >
-          {all(DISPLAY_LABELS[a.kind])}
-        </span>
-      </div>
-      <p>
-        {cooling && <>{t("healthRecovery")}: </>}
-        {a.kind === "act"
-          ? t("healthLegendAction")
-          : cooling
-            ? `${t(thresholdBlocked ? "quotaThresholdLabel" : a.reasons.some((r) => r.type === "quota") ? "healthQuotaExhausted" : "healthCooldown")} · ${a.recoverAt ? t("healthWait", { duration: recovery(a.recoverAt), time: format.dateTime(new Date(a.recoverAt), { hour: "2-digit", minute: "2-digit" }) }) : t("healthRecoveryUnknown")}`
-            : a.partial
-              ? t("healthLegendPartial")
-              : all(DISPLAY_LABELS[a.kind])}
-      </p>
-      {cooling && (
-        <p>
-          {t("healthWaited", {
-            percent: format.number((a.fill || 0) / 100, {
-              style: "percent",
-              maximumFractionDigits: 0,
-            }),
-          })}
-        </p>
-      )}
-      {otherPools?.map((pool) => (
-        <p data-other-pool key={pool.poolId} className="mt-1 text-text-muted">
-          {t("healthOtherPool", {
-            pool: poolLabel(pool.poolId!),
-            status: all(DISPLAY_LABELS[pool.kind]),
-            remaining:
-              pool.remainingPct === null
-                ? t("tierUnknown")
-                : format.number(pool.remainingPct / 100, {
-                    style: "percent",
-                    maximumFractionDigits: 1,
-                  }),
-          })}
-        </p>
-      ))}
-      {a.reasons
-        .filter((r) =>
-          r.type === "quota"
-            ? Number.isFinite(r.percent) && Number.isFinite(r.cutoff)
-            : !["cooldown", "terminal"].includes(r.type)
-        )
-        .map((r, i) => (
-          <p key={i} className="mt-0.5 text-text-muted">
-            {reason(r, a)}
-          </p>
-        ))}
-      <div className="mt-2 space-y-[6px]">
-        {a.cells.map((cell) => (
-          <div key={cell.name}>
-            <div className="flex flex-wrap justify-between gap-2">
-              <span>{windowLabel(cell)}</span>
-              <span>
-                {format.number(cell.percent / 100, { style: "percent", maximumFractionDigits: 1 })}
-                {cell.resetAt
-                  ? ` · ${t("resetsIn")} ${recovery(cell.resetAt)}`
-                  : ` · ${t("healthRecoveryUnknown")}`}
-              </span>
-            </div>
-            <div
-              role="progressbar"
-              aria-label={windowLabel(cell)}
-              aria-valuenow={cell.percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              className="mt-1 h-[6px] overflow-hidden rounded-full bg-border/60"
-            >
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${cell.percent}%`,
-                  background: cell.percent > 0 ? "#22c55e" : DISPLAY_COLORS[a.kind],
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-      <p className="mt-2 text-[11px] text-text-muted">
-        {t("healthQuotaObserved", { time: relative(a.quotaObservedAt) })} ·{" "}
-        {t("healthRuntimeObserved", { time: relative(a.runtimeObservedAt) })} ·{" "}
-        {t("healthDetailsHint")}
-      </p>
+      <TooltipContent account={a} label={label} pools={otherPools} />
     </div>,
     document.body
   );

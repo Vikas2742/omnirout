@@ -134,6 +134,53 @@ const QUOTA_TONE_CLASSES = {
 
 const getQuotaToneClasses = (pct: number) => QUOTA_TONE_CLASSES[quotaStatusLevel(pct)];
 
+async function requestQuota(connectionId: string) {
+  const response = await fetch(`/api/usage/${connectionId}`);
+  if (response.ok) return { data: await response.json() };
+  const errorData = await response.json().catch(() => ({}));
+  const errorMsg = errorData.error || response.statusText;
+  if (response.status === 404) return { notFound: true };
+  if (response.status === 401) {
+    const error = /re-?authenticat|sign in|log in/i.test(errorMsg)
+      ? errorMsg
+      : `${errorMsg} — re-authenticate this account.`;
+    return { error };
+  }
+  throw new Error(`HTTP ${response.status}: ${errorMsg}`);
+}
+function passesQuotaStatusFilter(
+  conn: any,
+  statusFilter: DisplayFilter,
+  availabilityAccounts: Record<string, any>
+) {
+  if (statusFilter === "all") return true;
+  const account = availabilityAccounts[conn.id];
+  return !!account && matchesDisplayFilter(displayAccount(account), statusFilter);
+}
+function matchesVisibleQuotaConnection(
+  conn: any,
+  providerFilter: string,
+  tierFilter: string,
+  purchaseTypeFilter: PurchaseTypeKey,
+  statusFilter: DisplayFilter,
+  envFilter: string,
+  tierByConnection: Record<string, { key?: string }>,
+  purchaseTypeByConnection: Record<string, PurchaseTypeKey>,
+  availabilityAccounts: Record<string, any>
+) {
+  if (!matchesProviderFilter(conn, providerFilter)) return false;
+  const tierKey = tierByConnection[conn.id]?.key || "unknown";
+  if (tierFilter !== "all" && tierKey !== tierFilter) return false;
+  if (purchaseTypeFilter !== "all" && purchaseTypeByConnection[conn.id] !== purchaseTypeFilter)
+    return false;
+  if (!passesQuotaStatusFilter(conn, statusFilter, availabilityAccounts)) return false;
+  if (envFilter !== "all") {
+    const tag = (conn.providerSpecificData?.tag as string | undefined)?.trim() || "";
+    if (tag !== envFilter) return false;
+  }
+  return true;
+}
+
 // Worst aggregate across a list of statuses — drives the group header dot.
 function aggregateWorst(statuses: StatusKey[]): "critical" | "alert" | "ok" | "empty" {
   let worst: "ok" | "alert" | "empty" = "empty";
@@ -361,28 +408,17 @@ export default function ProviderLimits({
       setLoading((prev) => ({ ...prev, [connectionId]: true }));
       setErrors((prev) => ({ ...prev, [connectionId]: null }));
       try {
-        const response = await fetch(`/api/usage/${connectionId}`);
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMsg = errorData.error || response.statusText;
-          if (response.status === 404) return;
-          if (response.status === 401) {
-            // The on-demand path already attempts a forced, serialized re-mint
-            // before surfacing a 401, so a 401 here means the token is genuinely
-            // dead — make that actionable instead of a silent empty card.
-            const reauthMsg = /re-?authenticat|sign in|log in/i.test(errorMsg)
-              ? errorMsg
-              : `${errorMsg} — re-authenticate this account.`;
-            setQuotaData((prev) => ({
-              ...prev,
-              [connectionId]: { ...(prev[connectionId] || { quotas: [] }), message: reauthMsg },
-            }));
-            setErrors((prev) => ({ ...prev, [connectionId]: reauthMsg }));
-            return;
-          }
-          throw new Error(`HTTP ${response.status}: ${errorMsg}`);
+        const result = await requestQuota(connectionId);
+        if (result.notFound) return;
+        if (result.error) {
+          setQuotaData((prev) => ({
+            ...prev,
+            [connectionId]: { ...(prev[connectionId] || { quotas: [] }), message: result.error },
+          }));
+          setErrors((prev) => ({ ...prev, [connectionId]: result.error }));
+          return;
         }
-        const data = await response.json();
+        const data = result.data;
         const parsedQuotas = parseQuotaData(provider, data);
 
         const hasStaleAfterReset = parsedQuotas.some((q: any) => q?.staleAfterReset === true);
@@ -612,24 +648,19 @@ export default function ProviderLimits({
   }, [sortedConnections]);
 
   const visibleConnections = useMemo(() => {
-    const filtered = sortedConnections.filter((conn) => {
-      if (!matchesProviderFilter(conn, providerFilter)) return false;
-      const tierKey = tierByConnection[conn.id]?.key || "unknown";
-      if (tierFilter !== "all" && tierKey !== tierFilter) return false;
-      if (purchaseTypeFilter !== "all" && purchaseTypeByConnection[conn.id] !== purchaseTypeFilter)
-        return false;
-      if (
-        statusFilter !== "all" &&
-        (!availabilityAccounts[conn.id] ||
-          !matchesDisplayFilter(displayAccount(availabilityAccounts[conn.id]), statusFilter))
+    const filtered = sortedConnections.filter((conn) =>
+      matchesVisibleQuotaConnection(
+        conn,
+        providerFilter,
+        tierFilter,
+        purchaseTypeFilter,
+        statusFilter,
+        envFilter,
+        tierByConnection,
+        purchaseTypeByConnection,
+        availabilityAccounts
       )
-        return false;
-      if (envFilter !== "all") {
-        const tag = (conn.providerSpecificData?.tag as string | undefined)?.trim() || "";
-        if (tag !== envFilter) return false;
-      }
-      return true;
-    });
+    );
 
     // Provider rank stays the outer sort key so each group keeps its fixed
     // slot (mirrors dashboard/providers determinism); "critical first, then

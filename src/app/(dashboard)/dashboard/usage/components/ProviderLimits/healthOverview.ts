@@ -3,18 +3,10 @@ import { parseRuntimeTimestamp, runtimeCooldownEvidence } from "./runtimeCooldow
 import type { CodexPaidCredits } from "@/lib/providers/codexPaidCredits";
 import { quotaPercentage, type QuotaBypass } from "./quotaEligibility";
 import type { ConnectionQuotaAvailability } from "@/lib/usage/availabilityTypes";
-export { runtimeCooldownUntil } from "./runtimeCooldown";
 
 // Retain persisted filter identifiers; every layout uses the same account projection.
 export type HealthStatus = "critical" | "alert" | "ok" | "paused" | "empty";
 export type QuotaLayout = "overview" | "full" | "compact";
-export const AVAILABILITY_LABELS = {
-  critical: "usage.healthUnavailable",
-  alert: "usage.healthRestricted",
-  ok: "usage.healthAvailable",
-  empty: "usage.tierUnknown",
-  paused: "common.paused",
-} as const;
 export interface HealthQuota {
   name: string;
   displayName?: string;
@@ -177,7 +169,146 @@ export function normalizeHealthWindow(
   const duration = Date.parse(quota.resetAt || "") - Date.parse(fetchedAt || "");
   return named === "fiveHour" && duration > 5 * 3_600_000 + 60_000 ? "overall" : named;
 }
-// Explicit frontend scope contracts only; all unproven names are account-wide.
+function buildHealthQuotaMap(data: HealthData | undefined) {
+  const quotas = new Map<string, HealthQuota>();
+  for (const quota of data?.quotas || []) quotas.set(quota.name, quota);
+  for (const [name, quota] of Object.entries(data?.raw?.quotas || {}))
+    quotas.set(name, { ...quotas.get(name), ...quota, name });
+  for (const group of data?.raw?.quotaGroups || [])
+    for (const [window, quota] of Object.entries(group.windows || {})) {
+      const name = `${group.id}_${window}`;
+      quotas.set(name, { ...quotas.get(name), ...quota, name, window, quotaGroupId: group.id });
+    }
+  return quotas;
+}
+function availabilityDecisions(availability: ConnectionQuotaAvailability | undefined) {
+  return availability
+    ? [
+        { scope: "account" as const, scopeId: undefined, decision: availability.account },
+        ...availability.scopes.map((scope) => ({
+          scope: scope.kind,
+          scopeId: scope.id,
+          decision: scope.decision,
+        })),
+      ]
+    : [];
+}
+function appendDecisionBlockers(
+  decision: ReturnType<typeof availabilityDecisions>[number],
+  blocked: HealthReason[]
+) {
+  if (decision.decision.usable !== false) return;
+  for (const blocker of decision.decision.blockers)
+    blocked.push({
+      type: blocker.reason === "modelLockout" ? "lockout" : blocker.reason || "quota",
+      scope: decision.scope,
+      scopeId: decision.scopeId,
+      window: blocker.name,
+      resetAt: blocker.resetAt,
+      percent: blocker.remainingPercent,
+      cutoff: blocker.cutoffPercent,
+    });
+}
+function appendDecisionReasons(
+  decision: ReturnType<typeof availabilityDecisions>[number],
+  reasons: HealthReason[]
+) {
+  if (
+    decision.decision.cutoffEvaluated === false &&
+    !reasons.some((reason) => reason.type === "cutoffNotEvaluated")
+  )
+    reasons.push({ type: "cutoffNotEvaluated" });
+  for (const bypass of decision.decision.allowanceReasons)
+    if (!reasons.some((reason) => reason.type === "quotaBypass" && reason.bypass === bypass))
+      reasons.push({ type: "quotaBypass", bypass });
+}
+function collectAvailabilityReasons(
+  decisions: ReturnType<typeof availabilityDecisions>,
+  reasons: HealthReason[],
+  blocked: HealthReason[]
+) {
+  for (const decision of decisions) {
+    appendDecisionReasons(decision, reasons);
+    appendDecisionBlockers(decision, blocked);
+  }
+}
+function quotaScope(
+  connection: HealthConnection,
+  quota: HealthQuota
+): { scope: HealthScope; scopeId?: string } {
+  if (quota.quotaGroupId) return { scope: "group", scopeId: quota.quotaGroupId };
+  if (connection.provider === "claude" && quota.modelScoped === true)
+    return { scope: "scoped", scopeId: quota.name };
+  if (["antigravity", "agy"].includes(connection.provider) && quota.modelKey)
+    return { scope: "scoped", scopeId: quota.modelKey };
+  if (connection.provider === "openrouter" && ["free_daily", "free_rpm"].includes(quota.name))
+    return { scope: "scoped", scopeId: ":free" };
+  if (connection.provider === "codex" && Object.hasOwn(CODEX_SCOPED_WINDOWS, quota.name))
+    return { scope: "scoped", scopeId: CODEX_SCOPED_WINDOWS[quota.name] };
+  return { scope: "account" };
+}
+function shouldDisplayQuota(connection: HealthConnection, quota: HealthQuota): boolean {
+  if (quota.isCredits || quota.isResetCredits || quota.fractionReported === false) return false;
+  if (connection.provider === "codex" && ["reserve_session", "reserve_weekly"].includes(quota.name))
+    return false;
+  if (/^(extra_usage|banked_reset_credits)$/.test(quota.name)) return false;
+  return (
+    quota.name !== "credits" ||
+    (connection.provider === "openrouter" && (quota.total ?? 0) > 0 && !quota.unlimited)
+  );
+}
+function buildHealthCell(
+  connection: HealthConnection,
+  quota: HealthQuota,
+  data: HealthData | undefined,
+  decisions: ReturnType<typeof availabilityDecisions>,
+  reasons: HealthReason[],
+  groups: Set<string>,
+  now: number
+): HealthCell | null {
+  if (!shouldDisplayQuota(connection, quota)) return null;
+  const percent = quotaPercentage(quota);
+  if (percent === null) return null;
+  const { scope, scopeId } = quotaScope(connection, quota);
+  if (scope === "group" && scopeId) groups.add(scopeId);
+  const awaitingSync = !!quota.staleAfterReset || Date.parse(quota.resetAt || "") <= now;
+  if (awaitingSync) reasons.push({ type: "awaitingSync", window: quota.name });
+  return {
+    name: quota.name,
+    displayName: quota.displayName,
+    percent,
+    resetAt: quota.resetAt || null,
+    scope,
+    scopeId: scopeId || undefined,
+    window: normalizeHealthWindow(quota, data?.raw?.fetchedAt),
+    awaitingSync,
+    quotaIgnored: decisions.some(({ decision }) =>
+      decision.allowanceReasons.some(
+        (reason) =>
+          reason === "extraUsage" ||
+          reason === "filteringDisabled" ||
+          (reason === "paidCredits" && scopeId !== "spark")
+      )
+    ),
+  };
+}
+function collectHealthCells(
+  connection: HealthConnection,
+  data: HealthData | undefined,
+  quotas: Map<string, HealthQuota>,
+  decisions: ReturnType<typeof availabilityDecisions>,
+  reasons: HealthReason[],
+  groups: Set<string>,
+  now: number
+) {
+  const cells: HealthCell[] = [];
+  for (const quota of quotas.values()) {
+    const cell = buildHealthCell(connection, quota, data, decisions, reasons, groups, now);
+    if (cell) cells.push(cell);
+  }
+  return cells;
+}
+
 // src/domain/quotaCache.ts:isCodexQuotaExhausted uses the model filter in
 // open-sse/config/codexQuotaScopes.ts; usage keys come from services/codexUsageQuotas.ts.
 // Display-only reserve windows are excluded below, as in quotaCache.ts:setQuotaCache.
@@ -201,142 +332,14 @@ export function aggregateAvailability(statuses: HealthStatus[]): HealthStatus {
   if (active.some((s) => s === "critical" || s === "alert")) return "alert";
   return "empty";
 }
-/** Availability ignores ALL display hiding. Raw values also prevent reset-adjusted display 100% from fabricating a recovery. */
-export function buildHealthAccount(
-  connection: HealthConnection,
-  data: HealthData | undefined,
-  _visibility: Record<string, { hidden?: string[] }> = {},
-  now = Date.now(),
-  evidence: AvailabilityEvidence = {}
-): HealthAccount {
-  const quotas = new Map<string, HealthQuota>();
-  for (const q of data?.quotas || []) quotas.set(q.name, q);
-  for (const [name, q] of Object.entries(data?.raw?.quotas || {}))
-    quotas.set(name, { ...quotas.get(name), ...q, name });
-  for (const g of data?.raw?.quotaGroups || []) {
-    for (const [window, q] of Object.entries(g.windows || {})) {
-      const name = `${g.id}_${window}`;
-      quotas.set(name, { ...quotas.get(name), ...q, name, window, quotaGroupId: g.id });
-    }
-  }
-  const cells: HealthCell[] = [];
-  const reasons: HealthReason[] = [];
-  const blocked: HealthReason[] = [];
-  // Explicit groups describe independent pools; a scoped model never becomes an extra account.
-  const groups = new Set((data?.raw?.quotaGroups || []).map((g) => g.id));
-  // Every quota below is display-only; constraints come exclusively from the server.
-  const availabilityUntil = parseRuntimeTimestamp(evidence.availabilityObservedAt) + 90_000;
-  const availability = availabilityUntil >= now ? evidence.availability : undefined;
-  const decisions = availability
-    ? [
-        { scope: "account" as const, scopeId: undefined, decision: availability.account },
-        ...availability.scopes.map((s) => ({ scope: s.kind, scopeId: s.id, decision: s.decision })),
-      ]
-    : [];
-  for (const { scope, scopeId, decision } of decisions) {
-    if (decision.cutoffEvaluated === false && !reasons.some((r) => r.type === "cutoffNotEvaluated"))
-      reasons.push({ type: "cutoffNotEvaluated" });
-    if (decision.usable === false)
-      for (const blocker of decision.blockers)
-        blocked.push({
-          type: blocker.reason === "modelLockout" ? "lockout" : blocker.reason || "quota",
-          scope,
-          scopeId,
-          window: blocker.name,
-          resetAt: blocker.resetAt,
-          percent: blocker.remainingPercent,
-          cutoff: blocker.cutoffPercent,
-        });
-    for (const bypass of decision.allowanceReasons) {
-      if (!reasons.some((r) => r.type === "quotaBypass" && r.bypass === bypass))
-        reasons.push({ type: "quotaBypass", bypass });
-    }
-  }
-  for (const q of quotas.values()) {
-    if (
-      q.isCredits ||
-      q.isResetCredits ||
-      // quotaCache.ts:setQuotaCache omits these display-only Codex reserve windows.
-      (connection.provider === "codex" && ["reserve_session", "reserve_weekly"].includes(q.name)) ||
-      q.fractionReported === false ||
-      /^(extra_usage|banked_reset_credits)$/.test(q.name) ||
-      (q.name === "credits" &&
-        !(connection.provider === "openrouter" && (q.total ?? 0) > 0 && !q.unlimited))
-    )
-      continue;
-    const percent = quotaPercentage(q);
-    if (percent === null) continue;
-    const window = normalizeHealthWindow(q, data?.raw?.fetchedAt);
-    // usage/antigravity.ts and antigravityWeeklyQuota.ts identify independent pools.
-    // Claude provenance is marked by parseClaude from usage/claudeQuota.ts:modelQuotas.
-    // AGY exact-model windows: services/antigravityQuotaFamily.ts:selectAntigravityQuotaWindowNames
-    // is used by src/domain/quotaCache.ts:isAntigravityQuotaExhausted. modelKey comes from parseAntigravity.
-    // OpenRouter: services/openrouterQuotaFetcher.ts:checkFreeWindowExhausted and
-    // executors/base.ts recordFreeWindowAttempt only apply these counters to :free models.
-    const scopeId =
-      q.quotaGroupId ||
-      (connection.provider === "claude" && q.modelScoped === true
-        ? q.name
-        : ["antigravity", "agy"].includes(connection.provider) && q.modelKey
-          ? q.modelKey
-          : connection.provider === "openrouter" && ["free_daily", "free_rpm"].includes(q.name)
-            ? ":free"
-            : connection.provider === "codex" && Object.hasOwn(CODEX_SCOPED_WINDOWS, q.name)
-              ? CODEX_SCOPED_WINDOWS[q.name]
-              : undefined);
-    const scope: HealthScope = q.quotaGroupId ? "group" : scopeId ? "scoped" : "account";
-    if (scope === "group" && scopeId) groups.add(scopeId);
-    const awaitingSync = !!q.staleAfterReset || Date.parse(q.resetAt || "") <= now;
-    if (awaitingSync) reasons.push({ type: "awaitingSync", window: q.name });
-    cells.push({
-      name: q.name,
-      displayName: q.displayName,
-      percent,
-      resetAt: q.resetAt || null,
-      scope,
-      scopeId: scopeId || undefined,
-      window,
-      awaitingSync,
-      // Meter selection only: allowance reasons never override the server's usable field.
-      quotaIgnored: decisions.some(({ decision }) =>
-        decision.allowanceReasons.some(
-          (reason) =>
-            reason === "extraUsage" ||
-            reason === "filteringDisabled" ||
-            (reason === "paidCredits" && scopeId !== "spark")
-        )
-      ),
-    });
-  }
-  if (!availability || availability.account.usable === null)
-    reasons.push({ type: "verdictUnavailable" });
-  if (cells.length && (data?.stale || data?.raw?._stale || evidence.error))
-    reasons.push({ type: "previousSnapshot" });
-  if (!cells.length)
-    reasons.push(
-      evidence.error ? { type: "quotaError", error: evidence.error } : { type: "noQuota" }
-    );
-  const {
-    row,
-    runtime: selectedRuntime,
-    summaryTime,
-    lockouts,
-    until: reportedUntil,
-    isActive,
-  } = runtimeCooldownEvidence(connection, evidence, now);
-  const runtime = {
-    ...selectedRuntime,
-    isActive,
-  };
-  const testStatus = runtime.testStatus?.trim().toLowerCase();
-  const runtimeAvailable =
-    !!row ||
-    [connection.isActive, connection.testStatus, connection.rateLimitedUntil].some(
-      (v) => v !== undefined
-    );
-  if (!runtimeAvailable) reasons.push({ type: "noRuntime" });
-  // Pause is a separate display state. Let the upstream classifier own terminal
-  // membership and freshness; STALE_TERMINAL still needs attention, never a timer.
+function resolveRuntimeDecision(
+  runtime: ReturnType<typeof runtimeCooldownEvidence>["runtime"],
+  evidence: AvailabilityEvidence,
+  testStatus: string | undefined,
+  now: number,
+  reasons: HealthReason[],
+  reportedUntil: number
+) {
   const until = evidence.cooldownDeadline ?? reportedUntil;
   const errorAt = parseRuntimeTimestamp(runtime.lastErrorAt);
   const runtimeAvailability = resolveProviderAvailability(
@@ -373,47 +376,157 @@ export function buildHealthAccount(
         }
       : null;
   if (testStatus === "unavailable" && !cooldown) reasons.push({ type: "previousFailure" });
-  const locks: HealthReason[] = lockouts.flatMap((l) => {
-    const end = summaryTime + l.remainingMs;
+  return { runtimeAvailability, terminal, cooldown };
+}
+function runtimeLocks(
+  lockouts: HealthCooldown["lockouts"],
+  summaryTime: number,
+  now: number
+): HealthReason[] {
+  return lockouts.flatMap((lock) => {
+    const end = summaryTime + lock.remainingMs;
     return summaryTime && end > now
       ? [
           {
             type: "lockout" as const,
             scope: "scoped" as const,
-            window: l.model,
+            window: lock.model,
             resetAt: new Date(end).toISOString(),
           },
         ]
       : [];
   });
+}
+function resolveRuntimeFacts(
+  connection: HealthConnection,
+  evidence: AvailabilityEvidence,
+  reasons: HealthReason[],
+  now: number
+) {
+  const {
+    row,
+    runtime: selectedRuntime,
+    summaryTime,
+    lockouts,
+    until: reportedUntil,
+    isActive,
+  } = runtimeCooldownEvidence(connection, evidence, now);
+  const runtime = { ...selectedRuntime, isActive };
+  const testStatus = runtime.testStatus?.trim().toLowerCase();
+  const runtimeAvailable =
+    !!row ||
+    [connection.isActive, connection.testStatus, connection.rateLimitedUntil].some(
+      (value) => value !== undefined
+    );
+  if (!runtimeAvailable) reasons.push({ type: "noRuntime" });
+  const decision = resolveRuntimeDecision(
+    runtime,
+    evidence,
+    testStatus,
+    now,
+    reasons,
+    reportedUntil
+  );
+  const locks = runtimeLocks(lockouts, summaryTime, now);
+  return {
+    row,
+    runtime,
+    summaryTime,
+    runtimeAvailable,
+    runtimeAvailability: decision.runtimeAvailability,
+    terminal: decision.terminal,
+    cooldown: decision.cooldown,
+    locks,
+  };
+}
+function resolveHealthStatus(
+  runtime: ReturnType<typeof resolveRuntimeFacts>,
+  availability: ConnectionQuotaAvailability | undefined,
+  groups: Set<string>,
+  blocked: HealthReason[]
+): HealthStatus {
   const allGroupsBlocked =
     groups.size > 0 &&
-    [...groups].every((g) => blocked.some((r) => r.scope === "group" && r.scopeId === g));
-  let status: HealthStatus;
-  if (runtime.isActive === false) status = "paused";
-  else if (terminal || cooldown || availability?.account.usable === false || allGroupsBlocked)
-    status = "critical";
-  else if (!availability || availability.account.usable === null) status = "empty";
-  else if (blocked.length || locks.length) status = "alert";
-  else if (!runtimeAvailable) status = "empty";
-  else status = "ok";
+    [...groups].every((group) =>
+      blocked.some((reason) => reason.scope === "group" && reason.scopeId === group)
+    );
+  if (runtime.runtime.isActive === false) return "paused";
+  if (
+    runtime.terminal ||
+    runtime.cooldown ||
+    availability?.account.usable === false ||
+    allGroupsBlocked
+  )
+    return "critical";
+  if (!availability || availability.account.usable === null) return "empty";
+  if (blocked.length || runtime.locks.length) return "alert";
+  if (!runtime.runtimeAvailable) return "empty";
+  return "ok";
+}
+function healthRecoveryAt(
+  status: HealthStatus,
+  constraints: HealthReason[],
+  now: number
+): string | undefined {
+  const times = constraints.map((reason) =>
+    Date.parse("resetAt" in reason ? reason.resetAt || "" : "")
+  );
+  return ["critical", "alert"].includes(status) && times.length && times.every((time) => time > now)
+    ? new Date(Math.max(...times)).toISOString()
+    : undefined;
+}
+function appendQuotaEvidenceReasons(
+  availability: ConnectionQuotaAvailability | undefined,
+  cells: HealthCell[],
+  data: HealthData | undefined,
+  evidence: AvailabilityEvidence,
+  reasons: HealthReason[]
+) {
+  if (!availability || availability.account.usable === null)
+    reasons.push({ type: "verdictUnavailable" });
+  if (cells.length && (data?.stale || data?.raw?._stale || evidence.error))
+    reasons.push({ type: "previousSnapshot" });
+  if (!cells.length)
+    reasons.push(
+      evidence.error ? { type: "quotaError", error: evidence.error } : { type: "noQuota" }
+    );
+}
+function prependRuntimeReasons(
+  status: HealthStatus,
+  runtime: ReturnType<typeof resolveRuntimeFacts>,
+  reasons: HealthReason[],
+  blocked: HealthReason[]
+) {
   if (status === "paused") reasons.unshift({ type: "paused" });
-  if (cooldown) reasons.unshift(cooldown);
-  if (terminal) reasons.unshift(terminal);
-  reasons.push(...blocked, ...locks);
-  const constraints = [
+  if (runtime.cooldown) reasons.unshift(runtime.cooldown);
+  if (runtime.terminal) reasons.unshift(runtime.terminal);
+  reasons.push(...blocked, ...runtime.locks);
+}
+function healthConstraints(
+  runtime: ReturnType<typeof resolveRuntimeFacts>,
+  blocked: HealthReason[]
+) {
+  return [
     ...blocked,
-    ...locks,
-    ...(cooldown ? [cooldown] : []),
-    ...(terminal ? [terminal] : []),
+    ...runtime.locks,
+    ...(runtime.cooldown ? [runtime.cooldown] : []),
+    ...(runtime.terminal ? [runtime.terminal] : []),
   ];
-  const times = constraints.map((r) => Date.parse("resetAt" in r ? r.resetAt || "" : ""));
-  const recoverAt =
-    ["critical", "alert"].includes(status) && times.length && times.every((t) => t > now)
-      ? new Date(Math.max(...times)).toISOString()
-      : undefined;
+}
+function buildHealthAccountResult(
+  connection: HealthConnection,
+  data: HealthData | undefined,
+  cells: HealthCell[],
+  reasons: HealthReason[],
+  status: HealthStatus,
+  recoverAt: string | undefined,
+  availability: ConnectionQuotaAvailability | undefined,
+  availabilityUntil: number,
+  runtime: ReturnType<typeof resolveRuntimeFacts>
+): HealthAccount {
   return {
-    runtimeAvailability: runtime.isActive === false ? { state: "DISABLED" } : runtimeAvailability,
+    runtimeAvailability:
+      runtime.runtime.isActive === false ? { state: "DISABLED" } : runtime.runtimeAvailability,
     quotaPools: data?.raw?.quotaGroups?.map(({ id, models }) => ({ id, models })),
     connection,
     cells,
@@ -422,12 +535,50 @@ export function buildHealthAccount(
     recoverAt,
     quotaAvailability: availability,
     quotaAvailabilityValidUntil: availabilityUntil,
-    partial: !row || !availability,
+    partial: !runtime.row || !availability,
     quotaObservedAt: availability?.account.fetchedAt || undefined,
-    runtimeObservedAt: row
-      ? new Date(summaryTime).toISOString()
+    runtimeObservedAt: runtime.row
+      ? new Date(runtime.summaryTime).toISOString()
       : connection.runtimeObservedAt || connection.updatedAt,
   };
+}
+/** Availability ignores ALL display hiding. Raw values also prevent reset-adjusted display 100% from fabricating a recovery. */
+export function buildHealthAccount(
+  connection: HealthConnection,
+  data: HealthData | undefined,
+  _visibility: Record<string, { hidden?: string[] }> = {},
+  now = Date.now(),
+  evidence: AvailabilityEvidence = {}
+): HealthAccount {
+  const quotas = buildHealthQuotaMap(data);
+  const cells: HealthCell[] = [];
+  const reasons: HealthReason[] = [];
+  const blocked: HealthReason[] = [];
+  // Explicit groups describe independent pools; a scoped model never becomes an extra account.
+  const groups = new Set((data?.raw?.quotaGroups || []).map((group) => group.id));
+  // Every quota below is display-only; constraints come exclusively from the server.
+  const availabilityUntil = parseRuntimeTimestamp(evidence.availabilityObservedAt) + 90_000;
+  const availability = availabilityUntil >= now ? evidence.availability : undefined;
+  const decisions = availabilityDecisions(availability);
+  collectAvailabilityReasons(decisions, reasons, blocked);
+  cells.push(...collectHealthCells(connection, data, quotas, decisions, reasons, groups, now));
+  appendQuotaEvidenceReasons(availability, cells, data, evidence, reasons);
+  const runtime = resolveRuntimeFacts(connection, evidence, reasons, now);
+  const status = resolveHealthStatus(runtime, availability, groups, blocked);
+  prependRuntimeReasons(status, runtime, reasons, blocked);
+  const constraints = healthConstraints(runtime, blocked);
+  const recoverAt = healthRecoveryAt(status, constraints, now);
+  return buildHealthAccountResult(
+    connection,
+    data,
+    cells,
+    reasons,
+    status,
+    recoverAt,
+    availability,
+    availabilityUntil,
+    runtime
+  );
 }
 /** Provider-only groups, exactly one row per account; no family or window buckets. */
 export function buildHealthGroups(

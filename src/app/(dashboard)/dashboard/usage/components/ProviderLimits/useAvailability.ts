@@ -40,24 +40,13 @@ function validCooldown(row: HealthCooldown): boolean {
     )
   );
 }
-/** Read-only state summaries. The ticking projection never sends model requests or fetches quotas. */
-export function useAvailability(
-  connections: HealthConnection[],
-  quotaData: Record<string, HealthData>,
-  errors: Record<string, string | null>,
-  activeConfirmations: Record<string, AvailabilityEvidence["activeConfirmation"]> = {}
-) {
-  const [snapshot, setSnapshot] = useState<{
-    rows: Record<string, { cooldown: HealthCooldown; observedAt: string | number }>;
-    observedAt?: string | number;
-    receivedAt?: number;
-  }>({ rows: {} });
-  const [availability, setAvailability] = useState<QuotaAvailabilitySummary>();
-  const [now, setNow] = useState(() => Date.now());
-  // Local to this mounted consumer, never persisted or shared across accounts.
-  const [cooldownObservations, setCooldownObservations] = useState(
-    () => new Map<string, CooldownObservation>()
-  );
+type CooldownSnapshot = {
+  rows: Record<string, { cooldown: HealthCooldown; observedAt: string | number }>;
+  observedAt?: string | number;
+  receivedAt?: number;
+};
+function useCooldownSummary(setNow: (value: number) => void) {
+  const [snapshot, setSnapshot] = useState<CooldownSnapshot>({ rows: {} });
   const readCooldowns = useCallback(async () => {
     try {
       const data = await readSummary("/api/resilience/cooldowns");
@@ -69,25 +58,22 @@ export function useAvailability(
         throw new Error("Invalid cooldown summary");
       const receivedAt = Date.now();
       setSnapshot((previous) => {
-        // Neither an out-of-order response nor an omitted row proves recovery.
         if (parseRuntimeTimestamp(data.generatedAt) <= parseRuntimeTimestamp(previous.observedAt))
           return previous;
-        const rows: Record<string, { cooldown: HealthCooldown; observedAt: string | number }> =
-          Object.fromEntries(
-            (data.connections as HealthCooldown[]).map((cooldown) => [
-              cooldown.id,
-              {
-                cooldown: {
-                  ...cooldown,
-                  isActive: typeof cooldown.isActive === "boolean" ? cooldown.isActive : undefined,
-                },
-                observedAt: data.generatedAt as string | number,
+        const rows: CooldownSnapshot["rows"] = Object.fromEntries(
+          (data.connections as HealthCooldown[]).map((cooldown) => [
+            cooldown.id,
+            {
+              cooldown: {
+                ...cooldown,
+                isActive: typeof cooldown.isActive === "boolean" ? cooldown.isActive : undefined,
               },
-            ])
-          );
-        for (const [id, entry] of Object.entries(previous.rows)) {
+              observedAt: data.generatedAt as string | number,
+            },
+          ])
+        );
+        for (const [id, entry] of Object.entries(previous.rows))
           if (!rows[id] && hasTerminalStatus(entry.cooldown)) rows[id] = entry;
-        }
         return { rows, observedAt: data.generatedAt, receivedAt };
       });
     } catch {
@@ -95,8 +81,14 @@ export function useAvailability(
     } finally {
       setNow(Date.now());
     }
-  }, []);
-  const refreshCooldowns = useMemo(() => queueSummaryRefresh(readCooldowns), [readCooldowns]);
+  }, [setNow]);
+  return {
+    snapshot,
+    refreshCooldowns: useMemo(() => queueSummaryRefresh(readCooldowns), [readCooldowns]),
+  };
+}
+function useQuotaSummary(setNow: (value: number) => void) {
+  const [availability, setAvailability] = useState<QuotaAvailabilitySummary>();
   const readQuota = useCallback(async () => {
     try {
       const data = (await readSummary("/api/usage/availability")) as QuotaAvailabilitySummary;
@@ -108,12 +100,12 @@ export function useAvailability(
             typeof row.id === "string" &&
             row.account &&
             Array.isArray(row.scopes) &&
-            [row.account, ...row.scopes.map((s) => s.decision)].every(
-              (d) =>
-                d &&
-                (d.usable === null || typeof d.usable === "boolean") &&
-                Array.isArray(d.blockers) &&
-                Array.isArray(d.allowanceReasons)
+            [row.account, ...row.scopes.map((scope) => scope.decision)].every(
+              (decision) =>
+                decision &&
+                (decision.usable === null || typeof decision.usable === "boolean") &&
+                Array.isArray(decision.blockers) &&
+                Array.isArray(decision.allowanceReasons)
             )
         )
       )
@@ -129,44 +121,21 @@ export function useAvailability(
     } finally {
       setNow(Date.now());
     }
-  }, []);
-  const refreshQuota = useMemo(() => queueSummaryRefresh(readQuota), [readQuota]);
-  const refreshAvailability = useCallback(async () => {
-    await Promise.all([refreshCooldowns(), refreshQuota()]);
-  }, [refreshCooldowns, refreshQuota]);
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void refreshAvailability();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [refreshAvailability]);
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    const poll = window.setInterval(() => {
-      if (document.visibilityState === "visible") void refreshAvailability();
-    }, 30_000);
-    const visible = () => {
-      setNow(Date.now());
-      if (document.visibilityState === "visible") void refreshAvailability();
-    };
-    document.addEventListener("visibilitychange", visible);
-    return () => {
-      window.clearInterval(timer);
-      window.clearInterval(poll);
-      document.removeEventListener("visibilitychange", visible);
-    };
-  }, [refreshAvailability]);
-  const summaryFailed =
-    snapshot.receivedAt === undefined ||
-    now - snapshot.receivedAt > SUMMARY_FRESHNESS_MS ||
-    now - parseRuntimeTimestamp(snapshot.observedAt) > SUMMARY_FRESHNESS_MS;
+  }, [setNow]);
+  return { availability, refreshQuota: useMemo(() => queueSummaryRefresh(readQuota), [readQuota]) };
+}
+function useCooldownObservations(
+  connections: HealthConnection[],
+  snapshot: CooldownSnapshot,
+  summaryFailed: boolean,
+  setNow: (value: number) => void
+) {
+  const [observations, setObservations] = useState(() => new Map<string, CooldownObservation>());
   useEffect(() => {
     const observedAt = Date.now();
-    // Capture evidence at effect time, then publish on the next task (like the
-    // initial summary read above), without mutating refs during projection.
     const timer = window.setTimeout(() => {
       setNow(observedAt);
-      setCooldownObservations((previous) => {
+      setObservations((previous) => {
         const next = new Map<string, CooldownObservation>();
         for (const connection of connections) {
           const cooldown = runtimeCooldownEvidence(
@@ -198,7 +167,52 @@ export function useAvailability(
       });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [connections, snapshot, summaryFailed]);
+  }, [connections, snapshot, summaryFailed, setNow]);
+  return observations;
+}
+/** Read-only state summaries. The ticking projection never sends model requests or fetches quotas. */
+export function useAvailability(
+  connections: HealthConnection[],
+  quotaData: Record<string, HealthData>,
+  errors: Record<string, string | null>,
+  activeConfirmations: Record<string, AvailabilityEvidence["activeConfirmation"]> = {}
+) {
+  const [now, setNow] = useState(() => Date.now());
+  const { snapshot, refreshCooldowns } = useCooldownSummary(setNow);
+  const { availability, refreshQuota } = useQuotaSummary(setNow);
+  const summaryFailed =
+    snapshot.receivedAt === undefined ||
+    now - snapshot.receivedAt > SUMMARY_FRESHNESS_MS ||
+    now - parseRuntimeTimestamp(snapshot.observedAt) > SUMMARY_FRESHNESS_MS;
+  const cooldownObservations = useCooldownObservations(
+    connections,
+    snapshot,
+    summaryFailed,
+    setNow
+  );
+  const refreshAvailability = useCallback(async () => {
+    await Promise.all([refreshCooldowns(), refreshQuota()]);
+  }, [refreshCooldowns, refreshQuota]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void refreshAvailability(), 0);
+    return () => window.clearTimeout(timer);
+  }, [refreshAvailability]);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshAvailability();
+    }, 30_000);
+    const visible = () => {
+      setNow(Date.now());
+      if (document.visibilityState === "visible") void refreshAvailability();
+    };
+    document.addEventListener("visibilitychange", visible);
+    return () => {
+      window.clearInterval(timer);
+      window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", visible);
+    };
+  }, [refreshAvailability]);
   const accounts = useMemo(
     () =>
       Object.fromEntries(
