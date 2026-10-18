@@ -68,7 +68,19 @@ describe("workbuddy registry entry", () => {
     assert.ok(entry, "workbuddy must be registered");
     assert.equal(entry.strictChatHistory, true);
     assert.equal(entry.forceStream, true);
+    // #17046 (WorkBuddy gateway compliance) extended the list: the gateway now also
+    // rejects Claude Code / Codex self-descriptions and the billing header line.
     assert.deepEqual(entry.bodyStringReplacements, [
+      ["x-anthropic-billing-header:", ""],
+      [
+        "You are Claude Code, Anthropic's official CLI for Claude",
+        "You are Claude Code, Anthropic's CLI for Claude",
+      ],
+      ["Main branch (you will usually use this for PRs)", "Main branch (usually the base for PRs)"],
+      [
+        "Codex CLI is an open source project led by OpenAI.",
+        "The Codex CLI is an open source project led by OpenAI.",
+      ],
       ["Codex CLI", "the assistant"],
       ["codex_cli_rs", "assistant"],
       ["OpenAI", "the provider"],
