@@ -63,7 +63,11 @@ export function extractJsonErrorFields(
 ): { message: unknown; errorCode: unknown; errorType: unknown } {
   const record = asRecord(json) ?? {};
   const tencent = unwrapTencentEnvelope(record);
-  const errorObj = asRecord(record.error);
+  const rootError = asRecord(record.error);
+  const errorObj =
+    rootError && Object.keys(rootError).length > 0
+      ? rootError
+      : asRecord(asRecord(record.response)?.error);
   return {
     message:
       envelopeMessage ||

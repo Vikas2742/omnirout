@@ -6,6 +6,10 @@
  */
 
 import { errorResponse, errorResponseWithComboDiagnostics } from "../utils/error.ts";
+import { classifyProviderSafetyError } from "../utils/providerSafety.ts";
+import { extractJsonErrorFields } from "../utils/tencentEnvelope.ts";
+import { COMBO_HEDGE_CANCELLED_REASON } from "./combo/comboAbortReasons.ts";
+import { createChaosHeaderBarrier } from "./combo/chaosHeaderBarrier.ts";
 
 import { recordComboFailure } from "./combo/failureTracker.ts";
 import { buildRecoveryHint } from "./combo/pinRecovery.ts";
@@ -114,7 +118,12 @@ import {
   resolveComboRuntimeUnits,
   resolveComboTargets,
 } from "./combo/comboStructure.ts";
-import { createInvocationId, getComboTrace, startComboTrace } from "./combo/decisionTrace.ts";
+import {
+  createInvocationId,
+  finishComboTrace,
+  getComboTrace,
+  startComboTrace,
+} from "./combo/decisionTrace.ts";
 import {
   QUOTA_SOFT_DEPRIORITIZE_FACTOR,
   setCandidateQuotaSoftPenalty,
@@ -673,7 +682,66 @@ export async function handleComboChat(options: HandleComboChatOptions): Promise<
     (typeof comboInvocationId === "string" && comboInvocationId.length > 0
       ? comboInvocationId
       : createInvocationId());
-  const response = await handleComboChatInner({ ...options, invocationId: traceInvocationId });
+  // Latch before strategy code sees the response, so neither retries nor intentional
+  // sibling cancellation can replace a refusal. State is local to this invocation.
+  const terminalController = new AbortController();
+  const signal = options.signal
+    ? AbortSignal.any([options.signal, terminalController.signal])
+    : terminalController.signal;
+  let safetyResponse: Response | null = null;
+  const handleSingleModel: HandleComboChatOptions["handleSingleModel"] = async (
+    body,
+    model,
+    target
+  ) => {
+    if (safetyResponse) return safetyResponse.clone();
+    signal.throwIfAborted();
+    const modelAbortSignal = target?.modelAbortSignal
+      ? AbortSignal.any([signal, target.modelAbortSignal])
+      : signal;
+    const result = await options.handleSingleModel(body, model, { ...target, modelAbortSignal });
+    if (!safetyResponse && (result.status === 400 || result.status === 403)) {
+      let parsed: unknown;
+      try {
+        parsed = await result.clone().json();
+      } catch {
+        // Non-JSON errors retain ordinary routing behavior.
+      }
+      const error = extractJsonErrorFields(parsed);
+      if (
+        !safetyResponse &&
+        classifyProviderSafetyError({
+          code: error.errorCode,
+          type: error.errorType,
+          message: error.message,
+          status: result.status,
+        })
+      ) {
+        safetyResponse = result.clone();
+        terminalController.abort(new Error(COMBO_HEDGE_CANCELLED_REASON));
+      }
+    }
+    return result;
+  };
+  let response: Response;
+  try {
+    response = await handleComboChatInner({
+      ...options,
+      invocationId: traceInvocationId,
+      handleSingleModel,
+      signal,
+    });
+  } catch (error) {
+    if (!safetyResponse) throw error;
+    response = safetyResponse;
+  }
+  if (safetyResponse) {
+    response = safetyResponse;
+    finishComboTrace(traceInvocationId, {
+      status: response.status,
+      errorClass: "safety_rejection",
+    });
+  }
   response.headers.set("X-OmniRoute-Combo-Trace", traceInvocationId);
   const trace = getComboTrace(traceInvocationId);
   options.log.info(
@@ -789,6 +857,11 @@ async function handleComboChatInner({
 
   // Chaos mode (parallel multi-model dispatch): detection + dispatch live in
   // chaosEngine.ts (dispatchChaosFromCombo), returning null when not chaos-enabled.
+  // Chaos otherwise commits a synthetic SSE 200 before its panel returns headers.
+  const chaosHeaders =
+    body.stream === true
+      ? createChaosHeaderBarrier(handleSingleModelWithTimeout, perTargetAdmission, signal)
+      : null;
   const chaosDispatch = dispatchChaosFromCombo({
     cfg,
     comboModels: resolveComboTargets(
@@ -799,11 +872,15 @@ async function handleComboChatInner({
     ).map((target) => target.modelStr),
     comboName: combo.name,
     body,
-    handleSingleModel: handleSingleModelWithTimeout,
+    handleSingleModel: chaosHeaders?.handleSingleModel ?? handleSingleModelWithTimeout,
     log,
-    perTargetAdmission,
+    perTargetAdmission: chaosHeaders?.perTargetAdmission ?? perTargetAdmission,
   });
-  if (chaosDispatch) return chaosDispatch;
+  if (chaosDispatch) {
+    const response = await chaosDispatch;
+    await chaosHeaders?.wait();
+    return response;
+  }
 
   const pipelineDispatch = await tryPipelineDispatch({
     body,

@@ -1,0 +1,1 @@
+- **fix(sse):** Preserve explicit provider safety-stop codes through HTTP, WebSocket and completed-stream diagnostics; stop combo retries and cancel admitted siblings without treating a refusal as successful fallback. Legacy stops retain a local classification without inventing an upstream detector. Genuine provider stops remain stopped.
