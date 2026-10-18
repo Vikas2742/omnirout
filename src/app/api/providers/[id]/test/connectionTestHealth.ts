@@ -95,6 +95,8 @@ export async function persistConnectionTestHealth({
       updateData.expiresAt = new Date(Date.now() + result.newTokens.expiresIn * 1000).toISOString();
   }
   const saved = await persist(connectionId, updateData);
-  if (saved === null) throw new Error("Connection no longer exists");
+  // A connection deleted mid-test (persist → null) keeps the release flow (no throw), but it
+  // must not advertise recovered credentials.
+  if (saved === null) return;
   if (result.valid) setCredentialHealth(connectionId, provider, "active");
 }

@@ -99,10 +99,8 @@ test(
       "Rejected",
       "upstream_auth_error"
     );
-    await assert.rejects(
-      persistConnectionTestHealth({ ...input, persist: async () => null }),
-      /Connection no longer exists/
-    );
+    // Release flow is preserved: the helper does not throw for a vanished row.
+    await persistConnectionTestHealth({ ...input, persist: async () => null });
     assert.equal(isCredentialHealthy(input.connectionId), false);
   }
 );
