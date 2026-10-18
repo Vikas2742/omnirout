@@ -50,6 +50,10 @@ const core = await import("../../src/lib/db/core.ts");
 const settingsDb = await import("../../src/lib/db/settings.ts");
 const virtualFactory = await import("../../open-sse/services/autoCombo/virtualFactory.ts");
 const devinStatus = await import("../../src/lib/providers/devinAgenticAuthStatus.ts");
+const noAuthReadiness = await import("../../open-sse/services/autoCombo/noAuthReadiness.ts");
+const readinessBoot = await import("../../src/lib/providers/noAuthAutoRoutingReadiness.ts");
+// What registerNodejs() does at server boot: register the app-layer Devin probe.
+readinessBoot.registerNoAuthAutoRoutingReadiness();
 
 async function resetStorage() {
   core.resetDbInstance();
@@ -86,11 +90,7 @@ test.after(async () => {
 
 // Emulated-tool-calling providers expected on a fresh install. Devin is emulated too,
 // but its local CLI readiness gate keeps it out until authentication is confirmed.
-const ALLOWED_NOAUTH_PROVIDERS = [
-  "cloudflare-playground",
-  "duckduckgo-web",
-  "uncloseai",
-];
+const ALLOWED_NOAUTH_PROVIDERS = ["cloudflare-playground", "duckduckgo-web", "uncloseai"];
 // Keyless providers that never opted in — must stay out of every auto/* pool.
 const EXCLUDED_NOAUTH_PROVIDERS = [
   "aihorde",
@@ -223,5 +223,38 @@ test("Devin CLI logged in: devin-cli-agentic joins the auto-combo pool on the no
     assert.ok(combo.autoConfig.candidatePool.includes("devin-cli-agentic"));
   } finally {
     restore();
+  }
+});
+
+// ── readiness registry: unregistered or failing probes fail closed ──
+
+test("no registered Devin probe: devin-cli-agentic stays out even when the CLI is logged in", async () => {
+  const restore = withFakeDevinCli("Logged in (via Devin).");
+  try {
+    await primeDevinStatus();
+    assert.equal(devinStatus.peekDevinAgenticAuthStatus(), "authenticated");
+    noAuthReadiness.__resetNoAuthReadinessForTests();
+    assert.equal(noAuthReadiness.isNoAuthProviderReadyForAutoRouting("devin-cli-agentic"), false);
+    assert.ok(!(await poolProviders()).includes("devin-cli-agentic"));
+    // Providers without a readiness requirement are unaffected by the registry.
+    assert.equal(noAuthReadiness.isNoAuthProviderReadyForAutoRouting("duckduckgo-web"), true);
+  } finally {
+    readinessBoot.registerNoAuthAutoRoutingReadiness();
+    restore();
+  }
+});
+
+test("a throwing readiness probe keeps the provider out instead of breaking the pool", async () => {
+  noAuthReadiness.registerNoAuthReadiness("devin-cli-agentic", () => {
+    throw new Error("probe exploded");
+  });
+  try {
+    const providers = await poolProviders();
+    assert.ok(!providers.includes("devin-cli-agentic"));
+    for (const allowed of ALLOWED_NOAUTH_PROVIDERS) {
+      assert.ok(providers.includes(allowed), `${allowed} must stay in the pool`);
+    }
+  } finally {
+    readinessBoot.registerNoAuthAutoRoutingReadiness();
   }
 });

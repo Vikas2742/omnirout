@@ -55,7 +55,7 @@ import { isModelExcludedByConnection } from "@/domain/connectionModelRules";
 import { resolveProviderAlias } from "../model.ts";
 import { filterExcludedCandidates } from "./candidateOverrides";
 import { getExcludedConnectionIds } from "@/lib/db/autoCandidateOverrides";
-import { isNoAuthProviderReadyForAutoRouting } from "@/lib/providers/noAuthAutoRoutingReadiness";
+import { isNoAuthProviderReadyForAutoRouting } from "./noAuthReadiness";
 import {
   filterResilienceBlockedCandidates,
   buildConnectionResilienceMap,
