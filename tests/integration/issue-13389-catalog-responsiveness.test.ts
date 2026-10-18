@@ -45,8 +45,8 @@ type Observation = {
 
 const providerId = "openai-compatible-13389";
 const prefix = "catalog13389";
-// Base 02f2 publishes 246 other built-in rows. Together with 185 synthetic
-// Horde rows and 919 custom-provider/combo rows this makes 1,350 published IDs.
+// The built-in model inventory changes as providers are added or removed.
+// Assert all synthetic fixture IDs while keeping size and performance checks dynamic.
 const syncedCount = 889;
 const customEnd = syncedCount + 10;
 const aliasEnd = customEnd + 19;
@@ -224,7 +224,7 @@ async function observe(label: string, concurrency = 1): Promise<Observation> {
 }
 
 test(
-  "#13389 catalog 1350-model cold, warm and concurrent budgets",
+  "#13389 large-catalog cold, warm and concurrent budgets",
   { timeout: 120_000 },
   async (t) => {
     await seedFixture();
