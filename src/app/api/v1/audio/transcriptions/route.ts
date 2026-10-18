@@ -108,7 +108,10 @@ async function transcribeWithModel(
     "audio-transcriptions"
   );
 
-  const endpointMismatch = await getRequestedModelEndpointMismatch(modelStr, "audio-transcriptions");
+  const endpointMismatch = await getRequestedModelEndpointMismatch(
+    modelStr,
+    "audio-transcriptions"
+  );
   if (endpointMismatch) return errorResponse(HTTP_STATUS.BAD_REQUEST, endpointMismatch);
 
   const parsed = parseTranscriptionModel(modelStr, dynamicProviders);

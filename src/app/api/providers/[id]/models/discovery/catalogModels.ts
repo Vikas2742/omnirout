@@ -14,7 +14,9 @@ export function toDiscoveryCatalogModel(model: CatalogModel, ownedBy?: string) {
     name: model.name || model.id,
     ...(model.apiFormat ? { apiFormat: model.apiFormat } : {}),
     ...(model.supportedEndpoints ? { supportedEndpoints: model.supportedEndpoints } : {}),
-    ...(model.endpointCapabilitySource ? { endpointCapabilitySource: model.endpointCapabilitySource } : {}),
+    ...(model.endpointCapabilitySource
+      ? { endpointCapabilitySource: model.endpointCapabilitySource }
+      : {}),
     ...(typeof model.supportsVision === "boolean" ? { supportsVision: model.supportsVision } : {}),
     ...(ownedBy ? { owned_by: ownedBy } : {}),
   };

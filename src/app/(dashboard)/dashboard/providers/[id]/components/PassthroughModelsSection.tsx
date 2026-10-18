@@ -460,10 +460,18 @@ export default function PassthroughModelsSection({
                   const selected = customModelMap.get(modelId);
                   const catalog = catalogModels.find((row) => row.id === modelId);
                   return {
-                    supportedEndpoints: selected?.supportedEndpoints ?? discovered?.supportedEndpoints ?? catalog?.supportedEndpoints,
-                    endpointCapabilitySource: selected?.endpointCapabilitySource ?? discovered?.endpointCapabilitySource ?? catalog?.endpointCapabilitySource,
+                    supportedEndpoints:
+                      selected?.supportedEndpoints ??
+                      discovered?.supportedEndpoints ??
+                      catalog?.supportedEndpoints,
+                    endpointCapabilitySource:
+                      selected?.endpointCapabilitySource ??
+                      discovered?.endpointCapabilitySource ??
+                      catalog?.endpointCapabilitySource,
                     discoveredEndpoints: discovered?.supportedEndpoints,
-                    resettable: Boolean(discovered && selected?.endpointCapabilitySource === "operator"),
+                    resettable: Boolean(
+                      discovered && selected?.endpointCapabilitySource === "operator"
+                    ),
                     onChanged: onModelsChanged,
                     adapterStatuses: endpointAdapters,
                   };

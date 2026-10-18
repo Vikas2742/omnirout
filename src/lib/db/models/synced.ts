@@ -95,8 +95,13 @@ function normalizeSyncedAvailableModel(model: unknown): SyncedAvailableModel | n
       ? { upstreamProtocol: toNonEmptyString(record.upstreamProtocol)! }
       : {}),
     ...(supportedEndpoints && supportedEndpoints.length > 0 ? { supportedEndpoints } : {}),
-    ...(["declared", "inferred", "defaulted", "operator"].includes(String(record.endpointCapabilitySource))
-      ? { endpointCapabilitySource: record.endpointCapabilitySource as SyncedAvailableModel["endpointCapabilitySource"] }
+    ...(["declared", "inferred", "defaulted", "operator"].includes(
+      String(record.endpointCapabilitySource)
+    )
+      ? {
+          endpointCapabilitySource:
+            record.endpointCapabilitySource as SyncedAvailableModel["endpointCapabilitySource"],
+        }
       : {}),
     ...(Array.isArray(record.supportedThinkingEfforts)
       ? {

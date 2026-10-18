@@ -45,7 +45,13 @@ export interface ProviderModelsSectionProps {
   allowModelImport: boolean;
 
   // Models data
-  models: Array<{ id: string; name?: string; source?: string; supportedEndpoints?: string[]; endpointCapabilitySource?: string }>;
+  models: Array<{
+    id: string;
+    name?: string;
+    source?: string;
+    supportedEndpoints?: string[];
+    endpointCapabilitySource?: string;
+  }>;
   modelMeta: {
     customModels: any[];
     modelCompatOverrides?: any[];
@@ -277,7 +283,7 @@ export default function ProviderModelsSection({
           syncedCatalogAuthoritative={syncedCatalogAuthoritative}
           customModels={modelMeta.customModels}
           fallbackModels={compatibleFallbackModels}
-          endpointAdapters={(modelMeta.endpointAdapters ?? {})}
+          endpointAdapters={modelMeta.endpointAdapters ?? {}}
           description={description}
           inputLabel={inputLabel}
           inputPlaceholder={inputPlaceholder}
@@ -359,7 +365,7 @@ export default function ProviderModelsSection({
           syncedCatalogAuthoritative={syncedCatalogAuthoritative}
           availableModels={syncedAvailableModels}
           customModels={modelMeta.customModels}
-          endpointAdapters={(modelMeta.endpointAdapters ?? {})}
+          endpointAdapters={modelMeta.endpointAdapters ?? {}}
           description={passthroughDescription}
           inputLabel={passthroughInputLabel}
           inputPlaceholder={passthroughInputPlaceholder}
@@ -514,10 +520,18 @@ export default function ProviderModelsSection({
                 const discovered = syncedAvailableModels.find((row) => row.id === model.id);
                 const operator = modelMeta.customModels.find((row) => row.id === model.id);
                 return {
-                  supportedEndpoints: operator?.supportedEndpoints ?? model.supportedEndpoints ?? discovered?.supportedEndpoints,
-                  endpointCapabilitySource: operator?.endpointCapabilitySource ?? model.endpointCapabilitySource ?? discovered?.endpointCapabilitySource,
+                  supportedEndpoints:
+                    operator?.supportedEndpoints ??
+                    model.supportedEndpoints ??
+                    discovered?.supportedEndpoints,
+                  endpointCapabilitySource:
+                    operator?.endpointCapabilitySource ??
+                    model.endpointCapabilitySource ??
+                    discovered?.endpointCapabilitySource,
                   discoveredEndpoints: discovered?.supportedEndpoints,
-                  resettable: Boolean(discovered && operator?.endpointCapabilitySource === "operator"),
+                  resettable: Boolean(
+                    discovered && operator?.endpointCapabilitySource === "operator"
+                  ),
                   onChanged: fetchProviderModelMeta,
                   adapterStatuses: modelMeta.endpointAdapters ?? {},
                 };

@@ -134,7 +134,9 @@ export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
         supportedEndpoints: [...endpoints],
         endpointCapabilitySource: inferredById
           ? "inferred"
-          : methods.some((method) => ["embedContent", "predict", "predictLongRunning"].includes(method))
+          : methods.some((method) =>
+                ["embedContent", "predict", "predictLongRunning"].includes(method)
+              )
             ? "declared"
             : "defaulted",
         ...(typeof m.inputTokenLimit === "number" ? { inputTokenLimit: m.inputTokenLimit } : {}),

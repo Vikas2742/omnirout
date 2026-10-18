@@ -362,7 +362,9 @@ export default function ModelRow({
           {fullModel}
         </code>
         <ModelSourceBadge source={model.source} />
-        {endpointInfo && <ModelEndpointTagsEditor provider={provider} modelId={model.id} t={t} {...endpointInfo} />}
+        {endpointInfo && (
+          <ModelEndpointTagsEditor provider={provider} modelId={model.id} t={t} {...endpointInfo} />
+        )}
         {onSetAlias && (
           <span className="flex min-w-0 items-center text-[9px] gap-1">
             {editing ? (

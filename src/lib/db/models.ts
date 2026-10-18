@@ -175,7 +175,8 @@ export async function addCustomModel(
     source,
     apiFormat,
     supportedEndpoints,
-    endpointCapabilitySource: extraMeta?.endpointCapabilitySource || (source === "manual" ? "operator" : "defaulted"),
+    endpointCapabilitySource:
+      extraMeta?.endpointCapabilitySource || (source === "manual" ? "operator" : "defaulted"),
     ...(targetFormat ? { targetFormat } : {}),
     ...(tokenLimits.inputTokenLimit != null
       ? { inputTokenLimit: tokenLimits.inputTokenLimit }
@@ -258,12 +259,16 @@ export async function replaceCustomModels(
       name: m.name || m.id,
       source: m.source || "auto-sync",
       apiFormat: m.apiFormat || (prev as any)?.apiFormat || "chat-completions",
-      supportedEndpoints: (prev as any)?.endpointCapabilitySource === "operator"
-        ? (prev as any).supportedEndpoints
-        : m.supportedEndpoints || (prev as any)?.supportedEndpoints || ["chat"],
-      endpointCapabilitySource: (prev as any)?.endpointCapabilitySource === "operator"
-        ? "operator"
-        : (m as any).endpointCapabilitySource || (prev as any)?.endpointCapabilitySource || "defaulted",
+      supportedEndpoints:
+        (prev as any)?.endpointCapabilitySource === "operator"
+          ? (prev as any).supportedEndpoints
+          : m.supportedEndpoints || (prev as any)?.supportedEndpoints || ["chat"],
+      endpointCapabilitySource:
+        (prev as any)?.endpointCapabilitySource === "operator"
+          ? "operator"
+          : (m as any).endpointCapabilitySource ||
+            (prev as any)?.endpointCapabilitySource ||
+            "defaulted",
       // #2905: preserve a per-model targetFormat override (new value wins, else prev).
       ...(m.targetFormat
         ? { targetFormat: m.targetFormat }
@@ -910,7 +915,9 @@ export async function resetModelEndpointOverride(
     };
   }
   if (rows.length === 0) {
-    db.prepare("DELETE FROM key_value WHERE namespace = 'customModels' AND key = ?").run(providerId);
+    db.prepare("DELETE FROM key_value WHERE namespace = 'customModels' AND key = ?").run(
+      providerId
+    );
   } else {
     db.prepare(
       "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES ('customModels', ?, ?)"

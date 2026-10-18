@@ -236,19 +236,32 @@ test("#16929: batched /v1/models source honors same-id operator endpoints", asyn
   assert.ok(original, "synced row must be visible before operator override");
 
   const { updateCustomModel } = await import("../../src/lib/db/models.ts");
-  const savedOverride = await updateCustomModel(PROVIDER, LIVE_MODEL, {
-    supportedEndpoints: ["embeddings"],
-  }, { createIfMissing: true });
-  assert.equal(savedOverride?.source, "endpoint-override",
-    "a synced-only model needs an explicit virtual endpoint override");
+  const savedOverride = await updateCustomModel(
+    PROVIDER,
+    LIVE_MODEL,
+    {
+      supportedEndpoints: ["embeddings"],
+    },
+    { createIfMissing: true }
+  );
+  assert.equal(
+    savedOverride?.source,
+    "endpoint-override",
+    "a synced-only model needs an explicit virtual endpoint override"
+  );
   const [withOverride] = (await getAllActiveSyncedModels())[PROVIDER] || [];
   assert.deepEqual(withOverride.supportedEndpoints, ["embeddings"]);
   assert.equal(withOverride.endpointCapabilitySource, "operator");
 
   // A fresh discovery does not wipe the operator's choice.
   await replaceSyncedAvailableModelsForConnection(PROVIDER, CONNECTION_ID, [
-    { id: LIVE_MODEL, name: LIVE_MODEL, source: "imported",
-      supportedEndpoints: ["chat"], endpointCapabilitySource: "declared" },
+    {
+      id: LIVE_MODEL,
+      name: LIVE_MODEL,
+      source: "imported",
+      supportedEndpoints: ["chat"],
+      endpointCapabilitySource: "declared",
+    },
   ]);
   const [afterSync] = (await getAllActiveSyncedModels())[PROVIDER] || [];
   assert.deepEqual(afterSync.supportedEndpoints, ["embeddings"]);

@@ -11,37 +11,79 @@ test("#16929: declared specialty tags reject the wrong endpoint locally", () => 
 });
 
 test("#16929: defaulted and legacy endpoint tags never gate dispatch", () => {
-  assert.equal(getModelEndpointMismatchMessage("p/m", {
-    supportedEndpoints: ["chat"], endpointCapabilitySource: "defaulted",
-  }, "embeddings"), null);
-  assert.equal(getModelEndpointMismatchMessage("p/m", {
-    supportedEndpoints: ["embeddings"],
-  }, "chat"), null);
+  assert.equal(
+    getModelEndpointMismatchMessage(
+      "p/m",
+      {
+        supportedEndpoints: ["chat"],
+        endpointCapabilitySource: "defaulted",
+      },
+      "embeddings"
+    ),
+    null
+  );
+  assert.equal(
+    getModelEndpointMismatchMessage(
+      "p/m",
+      {
+        supportedEndpoints: ["embeddings"],
+      },
+      "chat"
+    ),
+    null
+  );
 });
 
 test("#16929: operator and inferred tags reject an incorrect route, allow exact match", () => {
   const transcription = {
-    supportedEndpoints: ["audio-transcriptions"], endpointCapabilitySource: "inferred",
+    supportedEndpoints: ["audio-transcriptions"],
+    endpointCapabilitySource: "inferred",
   };
-  const bad = getModelEndpointMismatchMessage("gemini/gemini-3.5-transcribe", transcription, "chat");
+  const bad = getModelEndpointMismatchMessage(
+    "gemini/gemini-3.5-transcribe",
+    transcription,
+    "chat"
+  );
   assert.match(bad || "", /\/v1\/audio\/transcriptions/);
-  assert.equal(getModelEndpointMismatchMessage(
-    "gemini/gemini-3.5-transcribe", transcription, "audio-transcriptions"
-  ), null);
-  assert.match(getModelEndpointMismatchMessage("p/m", {
-    supportedEndpoints: ["videos"], endpointCapabilitySource: "operator",
-  }, "images") || "", /\/v1\/videos\/generations/);
+  assert.equal(
+    getModelEndpointMismatchMessage(
+      "gemini/gemini-3.5-transcribe",
+      transcription,
+      "audio-transcriptions"
+    ),
+    null
+  );
+  assert.match(
+    getModelEndpointMismatchMessage(
+      "p/m",
+      {
+        supportedEndpoints: ["videos"],
+        endpointCapabilitySource: "operator",
+      },
+      "images"
+    ) || "",
+    /\/v1\/videos\/generations/
+  );
 });
 
 test("#16929: multimodal chat models remain chat-selectable", () => {
   const model = {
-    supportedEndpoints: ["chat", "images"], endpointCapabilitySource: "declared",
+    supportedEndpoints: ["chat", "images"],
+    endpointCapabilitySource: "declared",
   };
   assert.equal(getModelEndpointMismatchMessage("p/m", model, "chat"), null);
   assert.equal(getModelEndpointMismatchMessage("p/m", model, "images"), null);
-  assert.equal(getModelEndpointMismatchMessage("p/m", {
-    supportedEndpoints: ["responses"], endpointCapabilitySource: "declared",
-  }, "chat"), null);
+  assert.equal(
+    getModelEndpointMismatchMessage(
+      "p/m",
+      {
+        supportedEndpoints: ["responses"],
+        endpointCapabilitySource: "declared",
+      },
+      "chat"
+    ),
+    null
+  );
 });
 
 test("#16929: normalize legacy image alias and preserve trusted multi-endpoint route checks", () => {

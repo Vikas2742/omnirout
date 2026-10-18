@@ -559,7 +559,11 @@ export async function DELETE(request) {
 
     if (resetEndpoints) {
       const restored = await resetModelEndpointOverride(provider, modelId);
-      if (!restored) return Response.json({ error: { message: "No endpoint override to reset", type: "not_found" } }, { status: 404 });
+      if (!restored)
+        return Response.json(
+          { error: { message: "No endpoint override to reset", type: "not_found" } },
+          { status: 404 }
+        );
       return Response.json({ restored: true, resetEndpoints: true });
     }
 
