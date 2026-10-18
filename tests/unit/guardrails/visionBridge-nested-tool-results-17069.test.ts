@@ -142,3 +142,39 @@ test("#17069: native vision models still retain the original nested image", asyn
   assert.equal(calls, 0);
   assert.equal(containsMediaKind(request.messages, "image"), true);
 });
+
+test("#17069: the /v1/messages guardrail result is safe after Claude-to-OpenAI translation", async () => {
+  const { translateRequest } = await import("../../../open-sse/translator/index.ts");
+  const { FORMATS } = await import("../../../open-sse/translator/formats.ts");
+  const payload = makeRequest([imagePart()]);
+  const result = await guardrail(10, async () => "A status indicator reading PASS.").preCall(
+    payload,
+    context()
+  );
+  assert.equal(result.block, false);
+  assert.ok(result.modifiedPayload);
+
+  const translated = translateRequest(
+    FORMATS.CLAUDE,
+    FORMATS.OPENAI,
+    "glm-5.3",
+    result.modifiedPayload,
+    false,
+    null,
+    "glm"
+  ) as { messages: Array<{ role: string; content: unknown }> };
+
+  const serialized = JSON.stringify(translated.messages);
+  assert.equal(serialized.includes("base64"), false);
+  assert.equal(serialized.includes(DATA), false);
+  assert.match(serialized, /PASS/);
+  assert.ok(
+    translated.messages.some((message) => message.role === "tool"),
+    "the matching Read tool result must survive conversion"
+  );
+  assert.equal(
+    containsMediaKind(translated.messages as Array<{ content: unknown }>, "image"),
+    false,
+    "OpenAI translation must never reintroduce an image into a text-only request"
+  );
+});
