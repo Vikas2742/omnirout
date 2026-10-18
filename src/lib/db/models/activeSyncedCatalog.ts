@@ -449,6 +449,18 @@ export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedA
 
     const result: Record<string, SyncedAvailableModel[]> = {};
 
+    // #16929: one customModels read for the whole listing (not one per provider).
+    let customModelsByProvider: Record<string, unknown> = {};
+    try {
+      const all = await getCustomModels();
+      if (all && typeof all === "object" && !Array.isArray(all)) {
+        customModelsByProvider = all as Record<string, unknown>;
+      }
+    } catch {
+      // An unavailable custom overlay must not empty the entire live model
+      // catalog: keep the raw synced entries just as dispatch does.
+    }
+
     await Promise.all(
       Array.from(connectionIdsByProvider.entries()).map(async ([providerId, connectionIds]) => {
         const modelsByConnection = await getSyncedAvailableModelsByConnection(providerId);
@@ -465,32 +477,34 @@ export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedA
         // edited from chat to embeddings disappears from dispatch but keeps
         // advertising chat in the public catalog. Overlay ONLY same-id rows:
         // entirely new operator models are still handled by the custom loop.
-        let overrides: Array<{
+        const candidates = customModelsByProvider[providerId];
+        const overrides: Array<{
           id?: string;
           supportedEndpoints?: string[];
           endpointCapabilitySource?: string;
-        }> = [];
-        try {
-          const candidates = await getCustomModels(providerId);
-          if (Array.isArray(candidates)) overrides = candidates;
-        } catch {
-          // An unavailable custom overlay must not empty the entire live model
-          // catalog: keep the raw synced entries just as dispatch does.
-        }
+        }> = Array.isArray(candidates) ? candidates : [];
         const endpointsById = new Map(
-          overrides.filter((row) =>
-            row?.endpointCapabilitySource === "operator" &&
-            typeof row.id === "string" &&
-            Array.isArray(row.supportedEndpoints) &&
-            row.supportedEndpoints.length > 0
-          ).map((row) => [row.id!, row.supportedEndpoints!])
+          overrides
+            .filter(
+              (row) =>
+                row?.endpointCapabilitySource === "operator" &&
+                typeof row.id === "string" &&
+                Array.isArray(row.supportedEndpoints) &&
+                row.supportedEndpoints.length > 0
+            )
+            .map((row) => [row.id!, row.supportedEndpoints!])
         );
         const models = enrichCursorCatalog(
           providerId,
-          syncedRows.map((row) => endpointsById.has(row.id)
-            ? { ...row, supportedEndpoints: endpointsById.get(row.id)!,
-                endpointCapabilitySource: "operator" as const }
-            : row)
+          syncedRows.map((row) =>
+            endpointsById.has(row.id)
+              ? {
+                  ...row,
+                  supportedEndpoints: endpointsById.get(row.id)!,
+                  endpointCapabilitySource: "operator" as const,
+                }
+              : row
+          )
         );
 
         if (models.length > 0) {

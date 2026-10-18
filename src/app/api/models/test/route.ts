@@ -3,7 +3,8 @@ import { z } from "zod";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { DEFAULT_MODEL_TEST_TIMEOUT_MS, runSingleModelTest } from "@/lib/api/modelTestRunner";
 import { getActiveSyncedCatalog } from "@/lib/db/models/activeSyncedCatalog";
-import { getRegisteredEndpointAdapterStatuses } from "@/lib/providerModels/endpointAdapterAvailability";
+import { hasNoRunnableEndpointAdapter } from "@/lib/providerModels/endpointAdapterAvailability";
+import { isModelEndpointCapabilityGateEnabled } from "@/lib/providerModels/endpointCapabilityGateFlag";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
 import { getSettings } from "@/lib/db/settings";
 import { isFreeModel, providerHasFreeModels } from "@/shared/utils/freeModels";
@@ -42,13 +43,24 @@ export async function POST(request: Request) {
       );
     }
     const { providerId, modelId, connectionId } = validation.data;
-    const catalog = await getActiveSyncedCatalog(providerId);
-    const model = catalog.models.find((row) => row.id === modelId);
-    const statuses = getRegisteredEndpointAdapterStatuses(providerId);
-    const declared = model?.supportedEndpoints || [];
-    if (model?.endpointCapabilitySource !== "defaulted" && declared.length > 0 &&
-      declared.every((endpoint) => statuses[endpoint] === "unavailable")) {
-      return NextResponse.json({ status: "error", error: "Provider has no runnable adapter for this model\u0027s endpoint." }, { status: 422 });
+    // #16929 (opt-in): a trusted endpoint tag with no provider adapter is answered
+    // locally with 422 instead of dispatching a doomed test. The flag is read first so
+    // the default path does no extra catalog read.
+    if (isModelEndpointCapabilityGateEnabled()) {
+      let unrunnable = false;
+      try {
+        const catalog = await getActiveSyncedCatalog(providerId);
+        const model = catalog.models.find((row) => row.id === modelId);
+        unrunnable = hasNoRunnableEndpointAdapter(providerId, model);
+      } catch {
+        // Fail open: a catalog read miss keeps the normal test dispatch.
+      }
+      if (unrunnable) {
+        return NextResponse.json(
+          { status: "error", error: "Provider has no runnable adapter for this model's endpoint." },
+          { status: 422 }
+        );
+      }
     }
 
     // #6328 (follow-up to #6495): REMOVE — not just hide — paid Test dispatches

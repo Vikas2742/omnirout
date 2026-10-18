@@ -94,3 +94,18 @@ export function defaultEndpointsForProviderNodeApiType(
       return ["chat"];
   }
 }
+
+/**
+ * Endpoint-tag provenances trusted enough to gate dispatch or catalog listing
+ * (#16929): provider-declared, inferred from a specialty model id, or set by the
+ * operator. Missing (legacy) and "defaulted" tags are informational only.
+ */
+const TRUSTED_ENDPOINT_CAPABILITY_SOURCES: ReadonlySet<string> = new Set([
+  "declared",
+  "operator",
+  "inferred",
+]);
+
+export function isTrustedEndpointCapabilitySource(source: unknown): boolean {
+  return typeof source === "string" && TRUSTED_ENDPOINT_CAPABILITY_SOURCES.has(source);
+}
