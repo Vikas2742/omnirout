@@ -465,6 +465,7 @@ export async function maybeClearRecoveredQuotaState(
 ): Promise<ProviderConnectionLike> {
   if (!hasUsableQuota(usage)) return connection;
   if (isTerminalStatusForQuotaRecovery(connection.testStatus)) return connection;
+  let verifiedResetRecovery = false;
   if (hasActiveCooldown(connection)) {
     // A future rateLimitedUntil written from a real upstream signal is a hard
     // statement no poller may overrule (#11277) — executor-sourced rate limits
@@ -487,6 +488,7 @@ export async function maybeClearRecoveredQuotaState(
       hasObservedClaudeQuotaResetAfter(connection.id, connection.lastErrorAt) &&
       everyQuotaWindowReplenished(usage);
     if (!syntheticRecoveryOverride && !observedResetOverride) return connection;
+    verifiedResetRecovery = observedResetOverride;
   }
 
   const hasTransientState =
@@ -524,7 +526,7 @@ export async function maybeClearRecoveredQuotaState(
     return connection;
   }
 
-  if (cleared && connection.provider === "claude") {
+  if (cleared && verifiedResetRecovery) {
     // Only quota-family locks belong to this reset. Preserve auth, capacity,
     // missing-model, and generic RPM locks for their own recovery path.
     for (const lock of getAllModelLockouts()) {
