@@ -49,11 +49,9 @@ import {
   getCustomModels,
   getHiddenModelsByProvider,
   getModelVisibilityAllowlists,
-} from "../../../src/lib/db/models";
-import {
   isAdmittedByModelVisibilityAllowlist,
   isHiddenByModelVisibilityList,
-} from "../../../src/shared/utils/modelVisibility";
+} from "../../../src/lib/db/models";
 import { getProviderModels } from "../../config/providerModels.ts";
 import {
   getConnectionRoutingTags,
