@@ -38,10 +38,20 @@ test("Kimi Coding retains its refresh token across failed sweeps (#16984)", asyn
       typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     assert.equal(url, tokenUrl, "mock must intercept the actual Kimi refresh endpoint");
     refreshCalls += 1;
-    return new Response(JSON.stringify({ error: "invalid_grant" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
+    if (refreshCalls === 1) {
+      return new Response(JSON.stringify({ error: "invalid_grant" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return new Response(
+      JSON.stringify({
+        access_token: "at-kimi-recovered",
+        refresh_token: "rt-kimi-recovered",
+        expires_in: 900,
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
   }) as typeof fetch;
 
   try {
@@ -85,13 +95,11 @@ test("Kimi Coding retains its refresh token across failed sweeps (#16984)", asyn
     const beforeSecond = await providersDb.getProviderConnectionById(id);
     await health.checkConnection({ ...beforeSecond, lastHealthCheckAt: staleCheck });
     const second = await providersDb.getProviderConnectionById(id);
-    const secondPsd = second?.providerSpecificData as
-      | { expiredRetry?: { count?: number } }
-      | undefined;
-
-    assert.equal(refreshCalls, 2, "a second sweep must be able to retry using the stored token");
-    assert.equal(secondPsd?.expiredRetry?.count, 2, "the retry budget must be spendable");
-    assert.equal(second?.refreshToken, "rt-kimi-test");
+    assert.equal(refreshCalls, 2, "a second sweep must retry using the preserved credential");
+    assert.equal(second?.testStatus, "active", "a successful retry restores the connection");
+    assert.equal(second?.accessToken, "at-kimi-recovered");
+    assert.equal(second?.refreshToken, "rt-kimi-recovered");
+    assert.ok(Date.parse(second?.expiresAt || "") > Date.now());
   } finally {
     globalThis.fetch = priorFetch;
   }
