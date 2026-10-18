@@ -875,6 +875,9 @@ test("#17043: old event, exhausted window, stale poll and terminal status cannot
   assert.ok((await providerLimits.maybeClearRecoveredQuotaState(base, {
     ...recovered, _stale: true,
   })).rateLimitedUntil);
+  assert.ok((await providerLimits.maybeClearRecoveredQuotaState(base, {
+    quotas: { session: { remainingPercentage: 98 } },
+  })).rateLimitedUntil, "a session-only successful poll cannot prove weekly quota recovery");
   for (const testStatus of ["banned", "expired", "deactivated", "credits_exhausted"]) {
     assert.ok(
       (await providerLimits.maybeClearRecoveredQuotaState(
@@ -1020,6 +1023,16 @@ test("#17043: only a complete live quota observation can authorize a reset", () 
   assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Too many requests per minute"), false);
   assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Monthly spend limit reached"), false);
   assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Generic usage limit reached"), false);
+  assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow(valid), true);
+  assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
+    quotas: { session: { remainingPercentage: 90 } },
+  }), false);
+  assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
+    quotas: { weekly: { remainingPercentage: 0 } },
+  }), false);
+  assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
+    quotas: { weekly: { remainingPercentage: 99, fractionReported: false } },
+  }), false);
   assert.equal(providerLimits.everyQuotaWindowReplenished(valid), true);
   assert.equal(providerLimits.everyQuotaWindowReplenished({ ...valid, _stale: true }), false);
   assert.equal(providerLimits.everyQuotaWindowReplenished({ ...valid, message: "fetch failed" }), false);
