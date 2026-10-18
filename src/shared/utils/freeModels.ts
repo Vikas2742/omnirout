@@ -123,6 +123,7 @@ export interface FreeBadgeCandidate {
   name?: string | null;
   free?: unknown;
   isFree?: unknown;
+  is_free?: unknown;
   pricing?: unknown;
   tags?: unknown;
 }
@@ -160,6 +161,7 @@ export function isModelFreeBadge(
       pricing: model.pricing,
       free: model.free,
       isFree: typeof model.isFree === "boolean" ? model.isFree : undefined,
+      is_free: model.is_free,
       tags: model.tags,
     });
   }
