@@ -481,6 +481,24 @@ export function everyQuotaWindowReplenished(usage: JsonRecord): boolean {
   });
 }
 
+/** A partial session-only poll is not proof of a recovered weekly allowance. */
+export function hasRecoveredClaudeWeeklyWindow(usage: JsonRecord): boolean {
+  if (!isRecord(usage.quotas)) return false;
+  return Object.entries(usage.quotas).some(([key, value]) => {
+    const lower = key.toLowerCase();
+    if ((!lower.includes("weekly") && !lower.includes("7d")) || lower.includes("sonnet")) {
+      return false;
+    }
+    if (!isRecord(value) || value.fractionReported === false || value.unlimited === true) {
+      return false;
+    }
+    const remaining = typeof value.remainingPercentage === "number"
+      ? value.remainingPercentage
+      : typeof value.remaining === "number" ? value.remaining : null;
+    return remaining !== null && Number.isFinite(remaining) && remaining > 0;
+  });
+}
+
 /**
  * Resetting the account-wide weekly bucket is not proof that a model-scoped
  * weekly bucket has reopened. Leave that model's existing lock alone while
@@ -537,7 +555,8 @@ export async function maybeClearRecoveredQuotaState(
       connection.lastErrorSource !== "extra_usage" &&
       Number(connection.errorCode) === 429 &&
       hasObservedClaudeQuotaResetAfter(connection.id, connection.lastErrorAt) &&
-      everyQuotaWindowReplenished(usage);
+      everyQuotaWindowReplenished(usage) &&
+      hasRecoveredClaudeWeeklyWindow(usage);
     if (!syntheticRecoveryOverride && !observedResetOverride) return connection;
     verifiedResetRecovery = observedResetOverride;
   }
