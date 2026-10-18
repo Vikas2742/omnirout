@@ -59,7 +59,7 @@ const {
 // (#17003, lets Claude OAuth drop the redact-thinking beta for summarized thinking,
 // default off) to 87.
 // MODELS_DEV_EFFORT_TIERS_ENABLED (#15944, default off) takes it to 88.
-const EXPECTED_FEATURE_FLAG_COUNT = 88;
+const EXPECTED_FEATURE_FLAG_COUNT = 98;
 // default off) to 87; AUTO_REQUEST_RESOLVED_CAPABILITIES (#16419, resolved-capability
 // scoring inputs on the auto/* request path, default off) to 88.
 // default off) to 87; CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED (#16190, retest of
