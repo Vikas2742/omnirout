@@ -141,12 +141,17 @@ export async function readRefreshErrorBody(
 }
 
 /**
+ * Shared, frozen sentinel an executor returns when a connection has nothing to
+ * refresh (API-key auth, no refresh token). Compared by identity, so it must
+ * never be mutated or cloned.
+ */
+export const NO_REFRESH_NEEDED = Object.freeze({ error: "no_refresh_needed" as const });
+
+/**
  * Check if a refresh result indicates an unrecoverable error
  * (e.g. the refresh token was already consumed and cannot be reused).
  * Callers should stop retrying and request re-authentication.
  */
-export const NO_REFRESH_NEEDED = { error: "no_refresh_needed" };
-
 export function isUnrecoverableRefreshError(result) {
   return (
     result &&
