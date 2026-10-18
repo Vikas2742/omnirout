@@ -898,6 +898,16 @@ test("#17043: a weekly refill never clears an ordinary per-minute 429", async ()
   );
   assert.ok(result.rateLimitedUntil, "RPM lock must not be linked to the weekly reset");
   assert.ok((await providersDb.getProviderConnectionById(id)).rateLimitedUntil);
+  // A monthly spend cap may be classified quota_exhausted, but the same weekly
+  // reset event does not satisfy its billing-window restriction.
+  await providersDb.updateProviderConnection(id, {
+    lastError: "Your monthly spend limit has been reached",
+    lastErrorType: "quota_exhausted",
+  });
+  assert.ok((await providerLimits.maybeClearRecoveredQuotaState(
+    await providersDb.getProviderConnectionById(id),
+    { quotas: { session: { remainingPercentage: 99 }, weekly: { remainingPercentage: 99 } } }
+  )).rateLimitedUntil, "a weekly reset must not unlock an unrelated monthly spend cap");
 });
 
 test("#17043: a concurrent new 429 defeats the stale recovery CAS and keeps model locks", async () => {
@@ -974,6 +984,14 @@ test("#17043: only a complete live quota observation can authorize a reset", () 
       weekly: { remainingPercentage: 93 },
     },
   };
+  assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Weekly quota exhausted"), true);
+  assert.equal(
+    providerLimits.isClaudeWeeklyQuota429Signal("This request would exceed your account's rate limit"),
+    true
+  );
+  assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Too many requests per minute"), false);
+  assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Monthly spend limit reached"), false);
+  assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Generic usage limit reached"), false);
   assert.equal(providerLimits.everyQuotaWindowReplenished(valid), true);
   assert.equal(providerLimits.everyQuotaWindowReplenished({ ...valid, _stale: true }), false);
   assert.equal(providerLimits.everyQuotaWindowReplenished({ ...valid, message: "fetch failed" }), false);
