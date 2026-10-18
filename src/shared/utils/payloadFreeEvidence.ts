@@ -85,7 +85,13 @@ export function hasPayloadPaidEvidence(entry: unknown): boolean {
   const record = asRecord(entry);
   if (!record) return false;
   const pricing = asRecord(record.pricing);
-  return explicitFreeFlag(record, pricing) === false || (pricing !== null && hasPositivePrice(pricing));
+  // A contradictory pair of flags must fail closed even if another field says
+  // isFree=true. The normal free predicate preserves its historical precedence;
+  // the paid veto used by billing-sensitive providers examines every flag.
+  const explicitlyPaid = [record, pricing].some(
+    (source) => source && FREE_FLAG_KEYS.some((key) => source[key] === false)
+  );
+  return explicitlyPaid || (pricing !== null && hasPositivePrice(pricing));
 }
 
 export function hasPayloadFreeEvidence(entry: unknown): boolean {
