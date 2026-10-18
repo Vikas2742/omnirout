@@ -65,8 +65,8 @@ function guardrail(maxImages: number, callVisionModel: (ref: string) => Promise<
         modalityBridgeCacheEnabled: false,
       }),
       callVisionModel,
-      // Avoid a live SQLite lookup, keeping the exact Claude Read sample deterministic.
-      checkModelHasComboMapping: async (model) => model === TEXT_ONLY_MODEL,
+      // Exercise the exact non-combo path without a live SQLite lookup.
+      resolveComboVisionDecision: async () => "not-combo",
       hasUsableCredentials: async () => true,
     },
   });
@@ -176,5 +176,22 @@ test("#17069: the /v1/messages guardrail result is safe after Claude-to-OpenAI t
     containsMediaKind(translated.messages as Array<{ content: unknown }>, "image"),
     false,
     "OpenAI translation must never reintroduce an image into a text-only request"
+  );
+});
+
+test("#17069: unknown vision metadata retains a nested image when captioning fails", async () => {
+  const model = "unknown-provider/unknown-vision-model";
+  const payload = { ...makeRequest([imagePart()]), model };
+  let calls = 0;
+  const result = await guardrail(10, async () => {
+    calls++;
+    throw new Error("vision provider unavailable");
+  }).preCall(payload, { ...context(), model });
+  assert.equal(result.block, false);
+  assert.equal(calls, 1);
+  assert.equal(
+    containsMediaKind((result.modifiedPayload as typeof payload).messages, "image"),
+    true,
+    "unknown native-vision capability must retain original bytes"
   );
 });
