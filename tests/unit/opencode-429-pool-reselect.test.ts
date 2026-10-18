@@ -128,7 +128,7 @@ async function runWith(
   ambientPort: number,
   count: number,
   first429s: number,
-  provider = "opencode"
+  provider = "opencode-go"
 ) {
   installFetch(first429s);
   const exec = new OpencodeExecutor(provider);
@@ -177,7 +177,7 @@ describe("opencode 429 pool re-selection per attempt", () => {
       error() {},
     };
     installFetch(1);
-    const exec = new OpencodeExecutor("opencode");
+    const exec = new OpencodeExecutor("opencode-go");
     const sink: Record<string, unknown> = {
       proxy: null,
       reselectPoolMember: async () => memberB(),
@@ -220,24 +220,11 @@ describe("opencode 429 pool re-selection per attempt", () => {
       ports[0],
       2,
       1,
-      "openai"
-    )) as { response: Response };
-    assert.strictEqual(result.response.status, 200);
-    assert.ok(observed.length >= 2, `expected 2 dispatches, got ${observed.length}`);
-    for (const port of observed) assert.strictEqual(String(port), String(ports[0]));
-  });
-
-  it("reselects after an egress-bucketed 429 for opencode-zen", async () => {
-    const result = (await runWith(
-      { reselectPoolMember: async () => memberB() },
-      ports[0],
-      2,
-      1,
       "opencode-zen"
     )) as { response: Response };
     assert.strictEqual(result.response.status, 200);
     assert.ok(observed.length >= 2, `expected 2 dispatches, got ${observed.length}`);
-    assert.strictEqual(String(observed[1]), String(ports[1]));
+    for (const port of observed) assert.strictEqual(String(port), String(ports[0]));
   });
 
   it("keeps the same member when the pool offers nothing (null resolver result)", async () => {
@@ -273,7 +260,7 @@ describe("opencode 429 pool re-selection per attempt", () => {
       error() {},
     };
     installFetch(1);
-    const exec = new OpencodeExecutor("opencode");
+    const exec = new OpencodeExecutor("opencode-go");
     // Resolver hands back the ambient member itself (same host and port as
     // the request egressed through): reselectedProxy stays unset and no
     // "pool re-selected" line is logged. The sink's recorded proxy is the
@@ -309,7 +296,7 @@ describe("opencode 429 pool re-selection per attempt", () => {
 
   it("keeps an account's own proxy even when the pool re-selected a member", async () => {
     installFetch(1);
-    const exec = new OpencodeExecutor("opencode");
+    const exec = new OpencodeExecutor("opencode-go");
     const sink: Record<string, unknown> = {
       proxy: null,
       reselectPoolMember: async () => memberB(),

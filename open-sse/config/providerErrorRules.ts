@@ -321,7 +321,7 @@ function buildAgentrouterRules(): ProviderErrorRule[] {
 }
 
 /** Providers sharing the opencode upstream envelope, hence the opencode catalog rules. */
-const OPENCODE_RULE_FAMILY = ["opencode", "opencode-zen", "opencode-go", "opencode-cli"];
+const OPENCODE_RULE_FAMILY = ["opencode-zen", "opencode-go", "opencode-cli"];
 
 /**
  * Global registry. Provider name → ordered list of rules (first match wins).
@@ -383,8 +383,6 @@ export function honorsRuleLockScope(provider: string | null | undefined): boolea
 // Static default as a plain lookup table; the runtime set is env-derived
 // (dynamic membership), so a Set is the right structure there.
 const EGRESS_BUCKETED_LOCK_PROVIDERS_DEFAULT: Record<string, true> = {
-  opencode: true,
-  "opencode-zen": true,
   "opencode-go": true,
   "opencode-cli": true,
 };
@@ -443,11 +441,8 @@ export function egressBucketedLockProviders(): string[] {
  * `hasOperatorRuleForProvider`): the operator's `match` is a literal substring
  * of the error body by construction, so a rule that never sees body text could
  * never match anything, defeating the point of declaring it.
- *
- * A provider joins this set only when its catalog rules match on body-text
- * markers — adding one is an explicit opt-in, never an open mode.
  */
-const FULL_TEXT_RULE_PROVIDERS = new Set(["agentrouter", ...OPENCODE_RULE_FAMILY, "cloudflare-ai"]);
+const FULL_TEXT_RULE_PROVIDERS = new Set(["agentrouter"]);
 
 /**
  * True when an operator has declared at least one rule for this provider via
