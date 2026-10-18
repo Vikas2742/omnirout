@@ -146,6 +146,7 @@ used when neither a DB override nor an environment variable is present.
 | `CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED` | boolean | `false` |         | Let a Claude OAuth request that asks for readable thinking (`thinking.display: "summarized"`) drop the `redact-thinking-2026-02-12` Anthropic beta, which otherwise makes Anthropic return empty, signature-only thinking blocks. Off by default: that beta is part of the Claude Code OAuth wire fingerprint, so OAuth requests keep it unchanged. API-key Claude requests already honor summarized thinking without this flag; `OMNIROUTE_REDACT_THINKING=false` also reaches OAuth only when this flag is on.                                                                                                                                |
 | `KIRO_TOOL_CALL_REPAIR_ENABLED`               | boolean | `true`  |         | When a streaming Kiro response emits a malformed `tool_call` wrapper (missing `input.name` or `input.arguments`) before any visible output, suppress it and re-send the request once with a corrective instruction instead of ending the turn with `invalid_kiro_tool_call`. The retry costs one extra Kiro request; a second failure ends the turn with `kiro_tool_call_repair_retry_failed`. On by default. Set to `false` to fail the turn on the first malformed wrapper.                                                                                                                                                                   |
 | `QUOTA_WINDOW_BOUNDED_PARK`                   | boolean | `false` |         | Let the per-window quota policy (session/weekly thresholds used by account selection) honour the bounded exhaustion park (#17000): once the capped park deadline has passed, or the cached observation is older than the park cap, the window stops excluding the account until a fresh quota fetch. Off by default: a cached window keeps blocking on its last reported percentage until its own reset time.                                                                                                                                                                                                                                   |
+| `IMAGE_GENERATION_LONG_JOBS`                  | boolean | `false` |         | For OpenAI-compatible image generation (#16260): use the connection timeout (`providerSpecificData.timeoutMs`), else the central upstream fetch timeout (`FETCH_TIMEOUT_MS` → `REQUEST_TIMEOUT_MS` → default 600 s) instead of the fixed 120 s image budget; answer 499 when the caller cancels; let the Playground receive long image jobs as an SSE stream with keepalive heartbeats. Off by default: the fixed budget applies and caller cancellation is not propagated. The deadline covering the response body read is always on.                                                                                                          |
 
 ### CLI (5)
 
@@ -228,7 +229,7 @@ Returns every flag with its effective value, source, and a summary.
       "requiresRestart": false,
       "warningLevel": "caution",
     },
-    // ... all 77 flags
+    // ... all 88 flags
   ],
   "summary": {
     "total": 56,
