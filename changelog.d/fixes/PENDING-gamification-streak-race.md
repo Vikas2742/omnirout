@@ -1,1 +1,0 @@
-- **fix(gamification):** `advanceStreak` read the stored streak with an `await` before writing it back, so two overlapping first-of-day calls both saw yesterday's date, and both reported `extended: true` (the caller pays the streak bonus on that flag); the read and the write now have no `await` between them.
