@@ -79,6 +79,9 @@ describe("feature-flags-settings count update", () => {
     // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87;
     // EMPTY_STREAM_SIBLING_RECOVERY_ENABLED (#16438 empty-stream sibling recovery, default off) to 88.
     assert.equal(FEATURE_FLAG_DEFINITIONS.length, 105);
+    // OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED (#16798, default off) to 87.
+    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 106);
+    // OPENCODE_V2_CLIENT_FINGERPRINT_ENABLED (#16571, default off) to 87.
     // COMBO_EMPTY_POOL_NO_ELIGIBLE_TARGETS_ENABLED (#16256, default off) to 87.
     // OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED (#16797, default off) to 87;
     // OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED + CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED

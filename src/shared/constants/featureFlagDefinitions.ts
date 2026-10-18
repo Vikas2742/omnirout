@@ -385,6 +385,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "OPENCODE_V2_CLIENT_FINGERPRINT_ENABLED",
+    label: "OpenCode v2 Client Fingerprint",
+    description:
+      'Send the OpenCode v2 CLI client fingerprint on OpenCode Zen/Go requests (#16571): User-Agent opencode/latest/<2.x>/cli and x-opencode-client cli, a client User-Agent kept only when it is a 2.x OpenCode client, and on gated free-tier requests no x-opencode-request, the session mirrored onto x-opencode-session-id/x-session-affinity/x-session-id, the v2 CLI read/shell schemas on injected placeholder tools and a tool_choice of "none" dropped. Off by default: every OpenCode request keeps the current identity, headers and body byte for byte.',
+    descriptionI18nKey: "featureFlagOpencodeV2ClientFingerprintEnabledDescription",
+    category: "network",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "caution",
+  },
+  {
     key: "OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED",
     label: "OpenCode Zen Egress-IP Lockout",
     description:
@@ -1208,6 +1220,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     type: "boolean",
     requiresRestart: false,
     warningLevel: "caution",
+  },
+  {
+    key: "OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED",
+    label: "OpenCode Published Catalog Routing",
+    description:
+      "Let OpenCode Zen and OpenCode Go models without an explicit registry endpoint take their request surface (Responses for @ai-sdk/openai, Messages for @ai-sdk/anthropic) from the published models.opencode.ai catalog, read in the background every 6 h. Off by default: the endpoint comes from the registry heuristics exactly as before and the catalog is never fetched.",
+    descriptionI18nKey: "featureFlagOpencodePublishedCatalogRoutingEnabledDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "info",
   },
   {
     key: "AUTO_REQUEST_RESOLVED_CAPABILITIES",
