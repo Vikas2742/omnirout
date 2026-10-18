@@ -18,7 +18,8 @@ function frameBoundary(buffer: string): { index: number; length: number } | null
   return { index: lf, length: 2 };
 }
 
-function parseResultFrame(frame: string): PlaygroundImageResult | null {
+/** Split one SSE frame into its event name (default "message") and joined data lines. */
+function readSseFrame(frame: string): { event: string; data: string } {
   let event = "message";
   const data: string[] = [];
   for (const line of frame.split(/\r?\n/)) {
@@ -26,11 +27,16 @@ function parseResultFrame(frame: string): PlaygroundImageResult | null {
     if (line.startsWith("event:")) event = line.slice(6).trim();
     if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
   }
+  return { event, data: data.join("\n") };
+}
+
+function parseResultFrame(frame: string): PlaygroundImageResult | null {
+  const { event, data } = readSseFrame(frame);
   if (event !== PLAYGROUND_IMAGE_RESULT_EVENT) return null;
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(data.join("\n"));
+    parsed = JSON.parse(data);
   } catch {
     throw new Error("Playground image stream returned an invalid result");
   }

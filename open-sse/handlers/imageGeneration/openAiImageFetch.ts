@@ -77,6 +77,25 @@ async function readImageResponse(
   return buildImageEndpointSuccess(data, items);
 }
 
+/** Map a failed image fetch (network error, header/body deadline) to a 502/504 result. */
+function imageFetchFailure(
+  error: unknown,
+  ctx: { url: string; provider: string; log: ImageFetchLog; timedOut: boolean; timeoutMs: number }
+): ImageEndpointResult {
+  const message = ctx.timedOut
+    ? `Request to ${ctx.url} timed out after ${ctx.timeoutMs}ms`
+    : error instanceof Error
+      ? error.message
+      : String(error);
+  ctx.log?.error?.("IMAGE", `${ctx.provider} fetch error: ${message}`);
+  return {
+    success: false,
+    status:
+      ctx.timedOut || isAbortError(error) ? HTTP_STATUS.GATEWAY_TIMEOUT : HTTP_STATUS.BAD_GATEWAY,
+    error: `Image provider error: ${sanitizeErrorMessage(message || error)}`,
+  };
+}
+
 /**
  * Fetch a single OpenAI-compatible image endpoint and normalize the response.
  *
@@ -121,18 +140,7 @@ export async function fetchImageEndpoint(
     return signal?.aborted ? cancelledImageResult(provider, log) : result;
   } catch (error: unknown) {
     if (signal?.aborted) return cancelledImageResult(provider, log);
-    const message = timedOut
-      ? `Request to ${url} timed out after ${timeoutMs}ms`
-      : error instanceof Error
-        ? error.message
-        : String(error);
-    log?.error?.("IMAGE", `${provider} fetch error: ${message}`);
-    return {
-      success: false,
-      status:
-        timedOut || isAbortError(error) ? HTTP_STATUS.GATEWAY_TIMEOUT : HTTP_STATUS.BAD_GATEWAY,
-      error: `Image provider error: ${sanitizeErrorMessage(message || error)}`,
-    };
+    return imageFetchFailure(error, { url, provider, log, timedOut, timeoutMs });
   } finally {
     if (timeoutId !== undefined) globalThis.clearTimeout(timeoutId);
     signal?.removeEventListener("abort", abortFromCaller);
