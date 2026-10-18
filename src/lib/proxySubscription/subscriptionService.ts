@@ -286,41 +286,22 @@ function mapSubscriptionRow(row: unknown): ProxySubscriptionRecord {
 
 export async function listSubscriptions(): Promise<ProxySubscriptionRecord[]> {
   const db = getDbInstance();
-  try {
-    const rows = db
-      .prepare(
-        "SELECT id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, selector_last_switch_by_selector, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at FROM proxy_subscriptions ORDER BY datetime(updated_at) DESC, name ASC"
-      )
-      .all();
-    return rows.map(mapSubscriptionRow);
-  } catch {
-    // Old DB without the per-selector column: fall back to the summary row.
-    const rows = db
-      .prepare(
-        "SELECT id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at FROM proxy_subscriptions ORDER BY datetime(updated_at) DESC, name ASC"
-      )
-      .all();
-    return rows.map(mapSubscriptionRow);
-  }
+  const rows = db
+    .prepare(
+      "SELECT id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, selector_last_switch_by_selector, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at FROM proxy_subscriptions ORDER BY datetime(updated_at) DESC, name ASC"
+    )
+    .all();
+  return rows.map(mapSubscriptionRow);
 }
 
 export async function getSubscriptionById(id: string): Promise<ProxySubscriptionRecord | null> {
   const db = getDbInstance();
-  try {
-    const row = db
-      .prepare(
-        "SELECT id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, selector_last_switch_by_selector, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at FROM proxy_subscriptions WHERE id = ?"
-      )
-      .get(id);
-    return row ? mapSubscriptionRow(row) : null;
-  } catch {
-    const row = db
-      .prepare(
-        "SELECT id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at FROM proxy_subscriptions WHERE id = ?"
-      )
-      .get(id);
-    return row ? mapSubscriptionRow(row) : null;
-  }
+  const row = db
+    .prepare(
+      "SELECT id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, selector_last_switch_by_selector, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at FROM proxy_subscriptions WHERE id = ?"
+    )
+    .get(id);
+  return row ? mapSubscriptionRow(row) : null;
 }
 
 export async function createSubscription(
@@ -1143,31 +1124,21 @@ export async function recordSelectorSwitchOutcome(args: {
     } catch {
       merged = null;
     }
-    try {
-      db.prepare(
-        `UPDATE proxy_subscriptions
-            SET selector_last_switch_at = ?, selector_last_switch_result = ?,
-                selector_last_switch_member = ?, selector_last_switch_kind = ?,
-                selector_last_switch_by_selector = ?, updated_at = ?
-          WHERE id = ?`
-      ).run(
-        now,
-        args.result,
-        args.member ?? null,
-        args.kind ?? null,
-        merged,
-        now,
-        args.subscriptionId
-      );
-    } catch {
-      // Old DB without the per-selector column: keep the summary write.
-      db.prepare(
-        `UPDATE proxy_subscriptions
-            SET selector_last_switch_at = ?, selector_last_switch_result = ?,
-                selector_last_switch_member = ?, selector_last_switch_kind = ?, updated_at = ?
-          WHERE id = ?`
-      ).run(now, args.result, args.member ?? null, args.kind ?? null, now, args.subscriptionId);
-    }
+    db.prepare(
+      `UPDATE proxy_subscriptions
+          SET selector_last_switch_at = ?, selector_last_switch_result = ?,
+              selector_last_switch_member = ?, selector_last_switch_kind = ?,
+              selector_last_switch_by_selector = ?, updated_at = ?
+        WHERE id = ?`
+    ).run(
+      now,
+      args.result,
+      args.member ?? null,
+      args.kind ?? null,
+      merged,
+      now,
+      args.subscriptionId
+    );
     if (args.result !== "ok" && args.result !== "throttled") {
       db.prepare(
         `UPDATE proxy_subscriptions SET error = ?, updated_at = ? WHERE id = ? AND status = 'ok'`
