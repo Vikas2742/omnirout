@@ -1,15 +1,15 @@
 ---
 title: "Guardrails"
 version: 3.8.52
-lastUpdated: 2026-10-16
+lastUpdated: 2026-10-17
 ---
 
 # Guardrails
 
 > **Source of truth:** `src/lib/guardrails/`
-> **Last updated:** 2026-10-16 — v3.8.52 (added [Coverage and limits](#coverage-and-limits):
-> which routes and response paths the hooks reach, the #16412 header caveat, injection block mode
-> as a mandatory boundary (#16413), and what sees a response before post-call)
+> **Last updated:** 2026-10-17 — v3.8.52 (added [Coverage and limits](#coverage-and-limits):
+> which routes and response paths the hooks reach, the merged disable headers (#16412), injection
+> block mode as a mandatory boundary (#16413), and what sees a response before post-call)
 
 Guardrails enforce safety, policy, and content transformations at the boundary
 between OmniRoute and upstream providers. Each guardrail can inspect (and
@@ -848,8 +848,8 @@ useful for tracing.
 
 `resolveDisabledGuardrails({ apiKeyInfo, body, headers })` aggregates a
 de-duplicated list of guardrail names that should be skipped for the current
-request. There are five channels, read in this order (first occurrence wins
-when de-duplicating):
+request. There are five channels, read in this order and merged into one list
+(first occurrence wins when de-duplicating):
 
 1. `apiKeyInfo.disabledGuardrails`
 2. Request body `disabledGuardrails` (top-level)
@@ -857,9 +857,11 @@ when de-duplicating):
 4. Header `x-omniroute-disabled-guardrails`
 5. Legacy header `x-disabled-guardrails`
 
-Channels 1–4 are merged. The two headers are **either/or**: the legacy header is
-read only when `x-omniroute-disabled-guardrails` is absent, so sending both drops
-the legacy list ([#16412](https://github.com/diegosouzapw/OmniRoute/issues/16412)).
+All five channels are merged, the two headers included: sending both
+`x-omniroute-disabled-guardrails` and `x-disabled-guardrails` skips the union of
+their lists, and an empty modern header no longer hides the legacy one
+([#16412](https://github.com/diegosouzapw/OmniRoute/issues/16412), fixed in
+[#16805](https://github.com/diegosouzapw/OmniRoute/pull/16805)).
 
 Values may be arrays of strings or a comma-separated string; names are trimmed
 and normalized to lowercase kebab-case (`pii_masker` → `pii-masker`), and empty
@@ -868,13 +870,16 @@ to the registry, which skips matching guardrails (`skipped: true` in `results`).
 
 The disable list only affects the **registry**. Prompt-injection `block` mode is
 a mandatory boundary: the injection-guard middleware
-(`src/middleware/promptInjectionGuard.ts`) does not read any disable channel, so
-a request that disables `prompt-injection` is still rejected in `block` mode.
-This is by design. The disable channels are caller-controlled (request body,
+(`src/middleware/promptInjectionGuard.ts`) builds a body-only disable list with
+`resolveDisabledGuardrails({ body })` and hands it to `evaluatePromptInjection()`,
+but `evaluatePromptInjection()` never reads `context.disabledGuardrails`, so the
+list has no effect and a request that disables `prompt-injection` is still
+rejected in `block` mode (removing that dead call is tracked in
+[#16934](https://github.com/diegosouzapw/OmniRoute/pull/16934)). This is by design. The disable channels are caller-controlled (request body,
 metadata, headers), and a caller must not be able to switch off a security
 control the operator set
-([#16413](https://github.com/diegosouzapw/OmniRoute/issues/16413)). The planned
-union of the two headers ([#16412](https://github.com/diegosouzapw/OmniRoute/issues/16412))
+([#16413](https://github.com/diegosouzapw/OmniRoute/issues/16413)). The header
+union from [#16412](https://github.com/diegosouzapw/OmniRoute/issues/16412)
 changes only which registry guardrails are skipped; it does not let a client
 bypass the middleware. Mandatory per-key and per-group guardrail policies are
 tracked in the v4 RFC [#16417](https://github.com/diegosouzapw/OmniRoute/issues/16417).
@@ -931,8 +936,8 @@ deliberately when the behavior changes.
   transform applies (when `PII_RESPONSE_SANITIZATION` is on). A credential
   echoed back in a streamed response is not redacted.
 - **Disable channels vs. the middleware (by design):** the middleware evaluates
-  prompt injection with its own call to `evaluatePromptInjection()` and does not
-  read the disable list. `block` mode is a mandatory boundary that
+  prompt injection with its own call to `evaluatePromptInjection()`, which
+  ignores the body-only disable list the middleware passes it. `block` mode is a mandatory boundary that
   caller-controlled disables cannot bypass, on chat-family routes included
   ([#16413](https://github.com/diegosouzapw/OmniRoute/issues/16413)). Disabling
   `prompt-injection` only skips the registry guardrail.
@@ -1063,9 +1068,9 @@ Text extraction (`extractMessageContents`) covers `messages`/`input`/`prompt`/`q
 
 **Red-team (nightly, `nightly-llm-security.yml`):** promptfoo validates that each route blocks
 the OWASP-LLM corpus in `INJECTION_GUARD_MODE=block`; garak runs probes (skips without secret).
-`moderations` is included for consistency. Block mode is a mandatory boundary: the middleware
-does not read the per-request disable channels, so `disabledGuardrails` does **not** exempt a
-route from it ([#16413](https://github.com/diegosouzapw/OmniRoute/issues/16413)).
+`moderations` is included for consistency. Block mode is a mandatory boundary: `evaluatePromptInjection()`
+ignores the per-request disable list the middleware passes it, so `disabledGuardrails` does
+**not** exempt a route from it ([#16413](https://github.com/diegosouzapw/OmniRoute/issues/16413)).
 
 The nightly workflow (`.github/workflows/nightly-llm-security.yml`, cron + manual
 dispatch) has two jobs:
