@@ -1,9 +1,33 @@
 import { formatRetryAfter } from "@omniroute/open-sse/services/accountFallback.ts";
 import { resolveResilienceSettings } from "@/lib/resilience/settings";
+import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 
 const MAX_REQUEST_RETRY = 10;
 const MAX_RETRY_INTERVAL_SEC = 300;
 const MAX_BUDGET_MS = 5 * 60 * 1000;
+
+/**
+ * #16305 — opt-in: a 403 (access refused) or 410 (gone) cooldown is no shorter path to a
+ * success than a 401, so waiting it out only re-sends the request into the same refusal.
+ * Off by default (the wait/retry policy stays as it was: only 401 skips the wait). Fails
+ * closed: any error resolving the flag keeps the default behavior.
+ */
+export const COOLDOWN_RETRY_SKIP_REFUSALS_FLAG = "COOLDOWN_RETRY_SKIP_REFUSALS_ENABLED";
+
+export function isCooldownRetrySkipRefusalsEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled(COOLDOWN_RETRY_SKIP_REFUSALS_FLAG);
+  } catch {
+    return false;
+  }
+}
+
+function isNonRetryableCooldownCode(lastErrorCode: unknown): boolean {
+  const code = Number(lastErrorCode);
+  if (code === 401) return true;
+  if (code !== 403 && code !== 410) return false;
+  return isCooldownRetrySkipRefusalsEnabled();
+}
 
 export interface CooldownAwareRetrySettings {
   enabled: boolean;
@@ -124,8 +148,9 @@ export function getCooldownAwareRetryDecision({
   /**
    * errorCode of the connection whose cooldown ends first. An auth cooldown (401) has no
    * known end: waiting for it re-sends the request into the same 401 and another token
-   * refresh on every retry, turning a ~3 s failure into minutes. The same holds for a
-   * 403 (access refused) or a 410 (model retired): no wait re-opens them.
+   * refresh on every retry, turning a ~3 s failure into minutes. With
+   * COOLDOWN_RETRY_SKIP_REFUSALS_ENABLED on, a 403 (access refused) or a 410 (gone) skips
+   * the wait the same way (#16305).
    */
   lastErrorCode?: unknown;
 }): {
@@ -136,16 +161,13 @@ export function getCooldownAwareRetryDecision({
 } {
   const closest = computeClosestRetryAfter(retryAfter);
   const effectiveBudgetLeftMs = budgetLeftMs ?? settings.budgetMs;
-  const lastCode = Number(lastErrorCode);
   if (
     !settings.enabled ||
     settings.maxRetries <= 0 ||
     settings.maxRetryWaitMs <= 0 ||
     attempt >= settings.maxRetries ||
     closest.waitMs === null ||
-    lastCode === 401 ||
-    lastCode === 403 ||
-    lastCode === 410
+    isNonRetryableCooldownCode(lastErrorCode)
   ) {
     return {
       shouldRetry: false,

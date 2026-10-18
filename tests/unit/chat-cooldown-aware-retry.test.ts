@@ -450,37 +450,85 @@ test("#15789: requestRetry=3 dispatches upstream exactly 4 times and never logs 
   }
 });
 
-test("handleChat returns a persistent 403 without waiting or retrying once every account cools down", async () => {
-  const connection = await seedConnection("glm", {
-    name: "glm-refused",
-    apiKey: "sk-glm-refused",
-  });
+// #16305 — COOLDOWN_RETRY_SKIP_REFUSALS_ENABLED (default off) lets a 403/410 cooldown skip the
+// cooldown-aware wait like a 401, and persists a renewing agentrouter quota 403 as 429.
+const SKIP_REFUSALS_FLAG = "COOLDOWN_RETRY_SKIP_REFUSALS_ENABLED";
+function setSkipRefusals(enabled: boolean | null) {
+  if (enabled === null) delete process.env[SKIP_REFUSALS_FLAG];
+  else process.env[SKIP_REFUSALS_FLAG] = enabled ? "true" : "false";
+}
+test.afterEach(() => setSkipRefusals(null));
+
+const decisionSettings = {
+  enabled: true,
+  maxRetries: 3,
+  maxRetryWaitSec: 10,
+  maxRetryWaitMs: 10_000,
+  budgetMs: 300_000,
+};
+function shouldRetryAfterCooldown(lastErrorCode: unknown): boolean {
+  const retryAfter = new Date(Date.now() + 1_500).toISOString();
+  return getCooldownAwareRetryDecision({
+    retryAfter,
+    settings: decisionSettings,
+    attempt: 0,
+    lastErrorCode,
+  }).shouldRetry;
+}
+
+async function seedCooledConnection(
+  provider: string,
+  name: string,
+  errorCode: number,
+  lastError: string
+) {
+  const connection = await seedConnection(provider, { name, apiKey: `sk-${name}` });
   await updateProviderConnection((connection as unknown as { id: string }).id, {
     rateLimitedUntil: new Date(Date.now() + 1_500).toISOString(),
-    lastError: "forbidden",
-    errorCode: 403,
+    lastError,
+    errorCode,
     testStatus: "unavailable",
   });
   await settingsDb.updateSettings({ requestRetry: 3, maxRetryIntervalSec: 3 });
+  return connection;
+}
 
+async function runCooledRequest(model: string, content: string) {
   let fetchCalls = 0;
   globalThis.fetch = async () => {
     fetchCalls += 1;
-    return buildOpenAIResponse("must not be dispatched");
+    return buildOpenAIResponse("served after the cooldown");
   };
-
   const startedAt = Date.now();
   const response = await handleChat(
     buildRequest({
-      body: {
-        model: "glm/glm-5.1",
-        stream: false,
-        messages: [{ role: "user", content: "refused on every account" }],
-      },
+      body: { model, stream: false, messages: [{ role: "user", content }] },
     })
   );
   const elapsedMs = Date.now() - startedAt;
+  return { response, fetchCalls, elapsedMs };
+}
 
+test("[flag off] a short 403 cooldown is still waited out and the request re-sent (default)", async () => {
+  await seedCooledConnection("glm", "glm-refused-off", 403, "forbidden");
+  const { response, fetchCalls, elapsedMs } = await runCooledRequest(
+    "glm/glm-5.1",
+    "refused on every account"
+  );
+  await response.body?.cancel();
+  assert.equal(response.status, 200);
+  assert.equal(fetchCalls, 1);
+  assert.ok(elapsedMs >= 1_000, `default policy waits out the cooldown, got ${elapsedMs}ms`);
+});
+
+test("[flag on] handleChat returns a persistent 403 without waiting or retrying once every account cools down", async () => {
+  setSkipRefusals(true);
+  await seedCooledConnection("glm", "glm-refused", 403, "forbidden");
+  const { response, fetchCalls, elapsedMs } = await runCooledRequest(
+    "glm/glm-5.1",
+    "refused on every account"
+  );
+  await response.body?.cancel();
   assert.equal(fetchCalls, 0);
   assert.equal(response.status, 403);
   assert.ok(
@@ -489,128 +537,87 @@ test("handleChat returns a persistent 403 without waiting or retrying once every
   );
 });
 
-test("handleChat returns a persistent 410 without waiting or retrying once every account cools down", async () => {
-  const connection = await seedConnection("openai", {
-    name: "openai-retired",
-    apiKey: "sk-openai-retired",
-  });
-  await updateProviderConnection((connection as unknown as { id: string }).id, {
-    rateLimitedUntil: new Date(Date.now() + 1_500).toISOString(),
-    lastError: "model has reached its end of life and is no longer available",
-    errorCode: 410,
-    testStatus: "unavailable",
-  });
-  await settingsDb.updateSettings({ requestRetry: 3, maxRetryIntervalSec: 3 });
-
-  let fetchCalls = 0;
-  globalThis.fetch = async () => {
-    fetchCalls += 1;
-    return buildOpenAIResponse("must not be dispatched");
-  };
-
-  const startedAt = Date.now();
-  const response = await handleChat(
-    buildRequest({
-      body: {
-        model: "openai/gpt-4.1",
-        stream: false,
-        messages: [{ role: "user", content: "retired model on every account" }],
-      },
-    })
+test("[flag on] handleChat returns a persistent 410 without waiting or retrying once every account cools down", async () => {
+  setSkipRefusals(true);
+  await seedCooledConnection(
+    "openai",
+    "openai-retired",
+    410,
+    "model has reached its end of life and is no longer available"
   );
-  const elapsedMs = Date.now() - startedAt;
-
+  const { response, fetchCalls, elapsedMs } = await runCooledRequest(
+    "openai/gpt-4.1",
+    "retired model on every account"
+  );
+  await response.body?.cancel();
   assert.equal(fetchCalls, 0);
   assert.equal(response.status, 410);
   assert.ok(elapsedMs < 1_000, `retired model must not wait out the cooldown, got ${elapsedMs}ms`);
 });
 
-test("a persistent 403 or 410 skips the cooldown wait while a 429 stays retryable", async () => {
-  const settings = {
-    enabled: true,
-    maxRetries: 3,
-    maxRetryWaitSec: 3,
-    maxRetryWaitMs: 3_000,
-    budgetMs: 300_000,
-  };
-  const retryAfter = new Date(Date.now() + 1_500).toISOString();
-  const decide = (lastErrorCode: unknown) =>
-    getCooldownAwareRetryDecision({ retryAfter, settings, attempt: 0, lastErrorCode }).shouldRetry;
+test("cooldown-aware retry decision: 403/410 retry by default, skip only with the flag on", () => {
+  // Flag off (default): only 401 skips the wait.
+  assert.equal(shouldRetryAfterCooldown(401), false);
+  assert.equal(shouldRetryAfterCooldown(403), true);
+  assert.equal(shouldRetryAfterCooldown(410), true);
+  assert.equal(shouldRetryAfterCooldown(429), true);
 
-  assert.equal(decide(403), false);
-  assert.equal(decide(410), false);
-  assert.equal(decide(401), false);
-  assert.equal(decide(429), true);
+  setSkipRefusals(true);
+  assert.equal(shouldRetryAfterCooldown(401), false);
+  assert.equal(shouldRetryAfterCooldown(403), false);
+  assert.equal(shouldRetryAfterCooldown("403"), false);
+  assert.equal(shouldRetryAfterCooldown(410), false);
+  assert.equal(shouldRetryAfterCooldown(429), true);
+  assert.equal(shouldRetryAfterCooldown(null), true);
 });
 
-test("a connection-scoped agentrouter quota 403 persists as 429 and stays retryable", async () => {
+async function markAgentrouterQuota403() {
   const connection = await seedConnection("agentrouter", { apiKey: "sk-agentrouter-quota" });
-
+  const id = (connection as unknown as { id: string }).id;
   const result = await auth.markAccountUnavailable(
-    (connection as unknown as { id: string }).id,
+    id,
     403,
     '{"error":{"message":"账户额度不足，请充值后重试"}}',
     "agentrouter",
     "claude-opus-5"
   );
+  const updated = (await getProviderConnectionById(id)) as unknown as Record<string, unknown>;
+  return { result, updated };
+}
 
+test("[flag off] a connection-scoped agentrouter quota 403 keeps its persisted 403 (default)", async () => {
+  const { result, updated } = await markAgentrouterQuota403();
   assert.equal(result.shouldFallback, true);
   assert.ok(result.cooldownMs > 0);
-
-  const updated = (await getProviderConnectionById(
-    (connection as unknown as { id: string }).id
-  )) as unknown as Record<string, unknown>;
-  assert.equal(Number(updated.errorCode), 429);
-
-  const settings = {
-    enabled: true,
-    maxRetries: 3,
-    maxRetryWaitSec: 10,
-    maxRetryWaitMs: 10_000,
-    budgetMs: 300_000,
-  };
-  const retryAfter = new Date(Date.now() + 1_500).toISOString();
-  assert.equal(
-    getCooldownAwareRetryDecision({ retryAfter, settings, attempt: 0, lastErrorCode: 429 })
-      .shouldRetry,
-    true
-  );
+  assert.equal(Number(updated.errorCode), 403);
+  // Default policy: the 403 cooldown is still waited out.
+  assert.equal(shouldRetryAfterCooldown(updated.errorCode), true);
 });
 
-test("a generic apikey 403 keeps its 403 error code and skips the cooldown wait", async () => {
+test("[flag on] a connection-scoped agentrouter quota 403 persists as 429 and stays retryable", async () => {
+  setSkipRefusals(true);
+  const { result, updated } = await markAgentrouterQuota403();
+  assert.equal(result.shouldFallback, true);
+  assert.ok(result.cooldownMs > 0);
+  assert.equal(Number(updated.errorCode), 429);
+  assert.equal(shouldRetryAfterCooldown(updated.errorCode), true);
+});
+
+test("[flag on] a generic apikey 403 keeps its 403 error code and skips the cooldown wait", async () => {
+  setSkipRefusals(true);
   const connection = await seedConnection("glm", { apiKey: "sk-glm-generic-403" });
+  const id = (connection as unknown as { id: string }).id;
 
-  const result = await auth.markAccountUnavailable(
-    (connection as unknown as { id: string }).id,
-    403,
-    "forbidden",
-    "glm",
-    "glm-5.1"
-  );
-
+  const result = await auth.markAccountUnavailable(id, 403, "forbidden", "glm", "glm-5.1");
   assert.equal(result.shouldFallback, true);
 
-  const updated = (await getProviderConnectionById(
-    (connection as unknown as { id: string }).id
-  )) as unknown as Record<string, unknown>;
+  const updated = (await getProviderConnectionById(id)) as unknown as Record<string, unknown>;
   assert.equal(Number(updated.errorCode), 403);
-
-  const settings = {
-    enabled: true,
-    maxRetries: 3,
-    maxRetryWaitSec: 10,
-    maxRetryWaitMs: 10_000,
-    budgetMs: 300_000,
-  };
-  const retryAfter = new Date(Date.now() + 1_500).toISOString();
-  assert.equal(
-    getCooldownAwareRetryDecision({ retryAfter, settings, attempt: 0, lastErrorCode: 403 })
-      .shouldRetry,
-    false
-  );
+  assert.equal(shouldRetryAfterCooldown(updated.errorCode), false);
 });
 
-test("handleChat still retries after a short cooldown when the earliest cooldown is a 429", async () => {
+test("[flag on] handleChat still retries after a short cooldown when the earliest cooldown is a 429", async () => {
+  setSkipRefusals(true);
   const first = await seedConnection("openai", {
     name: "openai-mixed-first",
     apiKey: "sk-openai-mixed-first",
