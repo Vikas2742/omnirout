@@ -44,7 +44,8 @@ function validCooldown(row: HealthCooldown): boolean {
 export function useAvailability(
   connections: HealthConnection[],
   quotaData: Record<string, HealthData>,
-  errors: Record<string, string | null>
+  errors: Record<string, string | null>,
+  activeConfirmations: Record<string, AvailabilityEvidence["activeConfirmation"]> = {}
 ) {
   const [snapshot, setSnapshot] = useState<{
     rows: Record<string, { cooldown: HealthCooldown; observedAt: string | number }>;
@@ -203,6 +204,7 @@ export function useAvailability(
       Object.fromEntries(
         connections.map((connection) => {
           const evidence: AvailabilityEvidence = {
+            activeConfirmation: activeConfirmations[connection.id],
             availability: availability?.connections.find((row) => row.id === connection.id),
             availabilityObservedAt: availability?.generatedAt,
             cooldown: snapshot.rows[connection.id]?.cooldown,
@@ -224,6 +226,7 @@ export function useAvailability(
       ),
     [
       connections,
+      activeConfirmations,
       quotaData,
       errors,
       availability,

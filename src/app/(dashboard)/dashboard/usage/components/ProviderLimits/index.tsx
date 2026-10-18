@@ -167,27 +167,19 @@ export default function ProviderLimits({
   const [quotaData, setQuotaData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [activeConfirmations, setActiveConfirmations] = useState<
+    Record<string, { isActive: boolean; confirmedAt: string }>
+  >({});
   const {
     accounts: availabilityAccounts,
     refreshAvailability,
     summaryFailed,
-  } = useAvailability(connections, quotaData, errors);
-  const confirmAvailabilityChange = useConfirmedAvailabilityChange(
-    setConnections,
-    refreshAvailability
-  );
+  } = useAvailability(connections, quotaData, errors, activeConfirmations);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Record<string, string>>({});
   const [refreshingAll, setRefreshingAll] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [tierFilter, setTierFilter] = useState("all");
   const { quotaVisibility, handleHideQuota, handleShowQuota } = useQuotaVisibility(tr, notify);
-  const resetCreditRedemption = useCodexResetCreditRedemption(
-    tr,
-    setErrors,
-    setQuotaData,
-    setLastRefreshedAt,
-    confirmAvailabilityChange
-  );
 
   const [purchaseTypeFilter, setPurchaseTypeFilter] = useState<PurchaseTypeKey>(() => {
     if (typeof window === "undefined") return "all";
@@ -244,8 +236,6 @@ export default function ProviderLimits({
     };
   }, []);
 
-  const saveQuotaWindowThresholds = useSaveQuotaWindowThresholds(confirmAvailabilityChange);
-
   const fetchConnections = useCallback(async () => {
     try {
       const response = await fetchWithTimeout("/api/providers/client", {
@@ -255,10 +245,7 @@ export default function ProviderLimits({
       });
       if (!response.ok) throw new Error("Failed");
       const data = await response.json();
-      const list = (data.connections || []).map((c) => ({
-        ...c,
-        runtimeObservedAt: new Date().toISOString(),
-      }));
+      const list = data.connections || [];
       setConnections(list);
       return list;
     } catch {
@@ -266,9 +253,20 @@ export default function ProviderLimits({
     }
   }, []);
 
-  // Toggle a connection's active state straight from the quota overview, so an
-  // operator can park an account that is being routed to despite low quota.
-  // Mirrors saveQuotaWindowThresholds: PUT /api/providers/[id] + optimistic state.
+  const confirmAvailabilityChange = useConfirmedAvailabilityChange(
+    fetchConnections,
+    refreshAvailability
+  );
+  const saveQuotaWindowThresholds = useSaveQuotaWindowThresholds(confirmAvailabilityChange);
+  const resetCreditRedemption = useCodexResetCreditRedemption(
+    tr,
+    setErrors,
+    setQuotaData,
+    setLastRefreshedAt,
+    confirmAvailabilityChange
+  );
+
+  // Only the active field is confirmed by this write; all other runtime evidence is retained.
   const handleToggleActive = useCallback(
     async (connectionId: string, nextActive: boolean) => {
       setTogglingActiveId(connectionId);
@@ -279,7 +277,15 @@ export default function ProviderLimits({
           body: JSON.stringify({ isActive: nextActive }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        confirmAvailabilityChange(connectionId, { isActive: nextActive });
+        setConnections((previous) =>
+          previous.map((c) => (c.id === connectionId ? { ...c, isActive: nextActive } : c))
+        );
+        const confirmedAt = new Date().toISOString();
+        setActiveConfirmations((previous) => ({
+          ...previous,
+          [connectionId]: { isActive: nextActive, confirmedAt },
+        }));
+        void refreshAvailability();
         notify.success(
           nextActive
             ? tr("accountActivated", "Account activated")
@@ -291,7 +297,7 @@ export default function ProviderLimits({
         setTogglingActiveId(null);
       }
     },
-    [notify, tr, confirmAvailabilityChange]
+    [notify, tr, refreshAvailability]
   );
 
   const applyCachedQuotaState = useCallback(

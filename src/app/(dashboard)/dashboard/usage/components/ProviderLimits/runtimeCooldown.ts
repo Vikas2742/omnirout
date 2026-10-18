@@ -51,7 +51,23 @@ export function runtimeCooldownEvidence(
       ? summaryTime + row.cooldownRemainingMs
       : 0;
   const lockouts: HealthCooldown["lockouts"] = fresh ? summary?.lockouts || [] : [];
-  return { row, runtime, summaryTime, derived, until, lockouts };
+  return {
+    row,
+    runtime,
+    summaryTime,
+    derived,
+    until,
+    lockouts,
+    isActive:
+      evidence.activeConfirmation &&
+      parseRuntimeTimestamp(evidence.activeConfirmation.confirmedAt) >
+        Math.max(
+          Number.isFinite(connectionTime) ? connectionTime : 0,
+          summary?.isActive !== undefined ? summaryTime : 0
+        )
+        ? evidence.activeConfirmation.isActive
+        : (runtime.isActive ?? connection.isActive),
+  };
 }
 /** The same absolute runtime deadline is used by capture and projection. */
 export function runtimeCooldownUntil(

@@ -163,7 +163,7 @@ it("a failed earlier summary cannot suppress the next confirmed refresh", async 
 });
 
 for (const ok of [true, false])
-  it(`threshold write ${ok ? "success" : "failure"} only advances confirmed evidence`, async () => {
+  it(`threshold write ${ok ? "success" : "failure"} refreshes without local runtime timestamps`, async () => {
     const refresh = vi.fn(async () => {});
     vi.stubGlobal(
       "fetch",
@@ -181,10 +181,17 @@ for (const ok of [true, false])
           quotaWindowThresholds: null as Record<string, number> | null,
         },
       ]);
-      const confirm = useConfirmedAvailabilityChange(setConnections, refresh);
+      const fetchConnections = async () => {
+        setConnections((previous) =>
+          previous.map((connection) => ({
+            ...connection,
+            quotaWindowThresholds: { session: 50 },
+          }))
+        );
+      };
+      const confirm = useConfirmedAvailabilityChange(fetchConnections, refresh);
       return { connections, save: useSaveQuotaWindowThresholds(confirm) };
     });
-    const before = Date.now();
     await act(async () => {
       if (ok) await result.current.save("synthetic", { session: 50 });
       else
@@ -194,7 +201,7 @@ for (const ok of [true, false])
     expect(result.current.connections[0].quotaWindowThresholds).toEqual(
       ok ? { session: 50 } : null
     );
-    expect(Date.parse(result.current.connections[0].runtimeObservedAt) >= before).toBe(ok);
+    expect(result.current.connections[0].runtimeObservedAt).toBe("2000-01-01T00:00:00Z");
   });
 
 for (const outcome of ["usage", "pending", "failure"])
@@ -216,13 +223,13 @@ for (const outcome of ["usage", "pending", "failure"])
       })
     );
     const { result } = renderHook(() => {
-      const [connections, setConnections] = useState([
+      const [connections] = useState([
         { id: "synthetic", runtimeObservedAt: "2000-01-01T00:00:00Z" },
       ]);
       const [, setErrors] = useState({});
       const [, setData] = useState({});
       const [, setTimes] = useState({});
-      const confirm = useConfirmedAvailabilityChange(setConnections, refresh);
+      const confirm = useConfirmedAvailabilityChange(async () => null, refresh);
       return {
         connections,
         ...useCodexResetCreditRedemption(
@@ -236,9 +243,8 @@ for (const outcome of ["usage", "pending", "failure"])
     });
     await act(async () => result.current.openCodexResetCredits("synthetic", "codex"));
     expect(result.current.resetCreditPicker).not.toBeNull();
-    const before = Date.now();
     await act(async () => result.current.redeemCodexResetCredit("synthetic-selection"));
     const committed = outcome !== "failure";
     expect(refresh).toHaveBeenCalledTimes(Number(committed));
-    expect(Date.parse(result.current.connections[0].runtimeObservedAt) >= before).toBe(committed);
+    expect(result.current.connections[0].runtimeObservedAt).toBe("2000-01-01T00:00:00Z");
   });

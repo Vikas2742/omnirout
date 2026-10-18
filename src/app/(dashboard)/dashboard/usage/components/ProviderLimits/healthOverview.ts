@@ -82,6 +82,7 @@ export interface HealthCooldown {
   lockouts: Array<{ model: string; remainingMs: number; reason: string }>;
 }
 export interface AvailabilityEvidence {
+  activeConfirmation?: { isActive: boolean; confirmedAt: string };
   availability?: ConnectionQuotaAvailability;
   availabilityObservedAt?: string | number;
   cooldown?: HealthCooldown;
@@ -321,11 +322,11 @@ export function buildHealthAccount(
     summaryTime,
     lockouts,
     until: reportedUntil,
+    isActive,
   } = runtimeCooldownEvidence(connection, evidence, now);
-  // Older summaries omit the active field; only an explicit boolean supersedes it.
   const runtime = {
     ...selectedRuntime,
-    isActive: selectedRuntime.isActive ?? connection.isActive,
+    isActive,
   };
   const testStatus = runtime.testStatus?.trim().toLowerCase();
   const runtimeAvailable =
