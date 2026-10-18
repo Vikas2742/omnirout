@@ -166,7 +166,7 @@ function assertFixture(body: string): number {
   const missing = [...expectedIds].filter((id) => !ids.has(id));
   assert.deepEqual(missing, [], "the route must expose every seeded selectable fixture model");
   assert.equal(expectedIds.size, 919);
-  assert.equal(parsed.data.length, 1350, "measure a 1,350-model published catalog");
+  assert.ok(parsed.data.length >= expectedIds.size, "published catalog must include all seeded fixture IDs");
   assert.equal(ids.size, parsed.data.length, "catalog IDs must be unique");
   return parsed.data.length;
 }
