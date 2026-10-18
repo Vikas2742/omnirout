@@ -1017,6 +1017,7 @@
   "featureFlagBatchAndFileAutoCleanupEnabledDescription": "ራስ-ሰር የማጽዳት ሂደቱ ከOMNIROUTE_BATCH_RETENTION_DAYS በላይ የቆዩ የተጠናቀቁ (completed/failed/cancelled/expired) Batch API ሥራዎችን ከየመስመራቸው ማረጋገጫ ነጥቦች ጋር እንዲሰርዝ እና የራሳቸው expires_at ያለፈባቸው የተሰቀሉ ፋይሎችን BLOB ይዘት እንዲያጸዳ ይፍቀዱ። በነባሪ የተሰናከለ ነው፦ ኦፕሬተር እስኪያነቃው ድረስ እያንዳንዱ ነባር ጭነት ይህን ውሂብ ልክ እንደበፊቱ ያቆያል። በኦፕሬተር የሚጀመረው DELETE /api/v1/batches/delete-completed መስመር በሁለቱም ሁኔታ አይነካም -- ይህ የተለየ፣ ቅድመ ሁኔታ የሌለው ይፋዊ API ውል ነው።",
   "featureFlagXaiOauthLiveModelDiscoveryDescription": "የቆመውን የማይለወጥ የመነሻ ዝርዝር ከመጠቀም ይልቅ፣ የOAuth bearer tokenን በመጠቀም ለxai-oauth ግንኙነቶች ቀጥታውን የxAI ሞዴል ካታሎግ ከhttps://api.x.ai/v1/models ያምጡ። በነባሪ የተሰናከለ ነው፦ xai-oauth ያልተለወጠውን የማይለወጥ የመነሻ ዝርዝር ማቅረቡን ይቀጥላል። በማንኛውም የመፍታት ስህተት ጊዜ፣ ግኝቱ ወደ መነሻ ዝርዝሩ ይመለሳል።",
   "featureFlagDbHealthcheckStartupDeferredEnabledDescription": "አገልጋዩ ጥያቄዎችን መቀበል ከጀመረ በኋላ የማስጀመሪያውን የውሂብ ጎታ ታማኝነት/ጤና ምርመራ ያስኪዱ፤ እስኪጠናቀቅ ድረስ ማስጀመርን አያግዱ። በነባሪ የተሰናከለ ነው፦ ማስጀመር ከዚህ ለውጥ በፊት እንደነበረው ልክ ምርመራውን ይጠብቃል፤ ስለዚህ የተበላሸ የውሂብ ጎታ የመጀመሪያው ጥያቄ ከመስተናገዱ በፊት አሁንም ይገኛል።",
+  "featureFlagCredentialHealthRetestAutoDisabledDescription": "የምስክርነት መረጃ ጤንነት ቅኝቱ፣ ጌትዌዩ በራሱ ያጠፋቸውን ግንኙነቶች (እያንዳንዳቸውን ቢበዛ በየ6 ሰዓቱ አንድ ጊዜ፣ በእያንዳንዱ ቅኝት 5) እንደገና እንዲፈትሽ እና ዳግም ፍተሻቸውን ሲያልፉ መልሶ እንዲያበራቸው ፍቀድ። በነባሪነት ጠፍቷል፦ እንዲህ ያሉ ግንኙነቶች ኦፕሬተር እርምጃ እስኪወስድ ድረስ ጠፍተው ይቆያሉ። በኦፕሬተር የተሰናከሉ እና በቋሚነት የታገዱ ግንኙነቶች ፈጽሞ ዳግም አይፈተሹም።",
   "sidebar": {
     "home": "መነሻ",
     "dashboard": "ዳሽቦርድ",
