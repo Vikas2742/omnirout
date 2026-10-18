@@ -310,7 +310,11 @@ for (const profile of ["ci", "quality"]) {
     assert.equal(verdict.name, policy.profiles[profile].checkName);
     assert.equal(verdict.if, "${{ always() }}");
     assert.deepEqual(workflow.on.pull_request.branches, ["main", "release/**"]);
-    assert.deepEqual(workflow.on.push.branches, ["main", "release/**"]);
+    // Push runs only for main since 2026-10-18: each change already ran the matrix on its
+    // PR and Release-Green validates the merged combination on release/** (the per-push
+    // runs there were cancelled by the next merge, 24 of 24 in a day, while holding up to
+    // 30 hosted slots). See tests/unit/build/push-storm-diet.test.ts.
+    assert.deepEqual(workflow.on.push.branches, ["main"]);
     assert.ok(workflow.on.merge_group.types.includes("checks_requested"));
     for (const job of Object.values(workflow.jobs)) {
       assert.ok(!String(job.if).includes("'hotfix'"), "a label cannot waive candidate evidence");
