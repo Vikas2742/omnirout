@@ -60,11 +60,7 @@ const ROTATING_REFRESH_PROVIDERS = new Set([
 
 export function shouldNullRefreshTokenAfterUnrecoverable(provider: unknown): boolean {
   const id = String(provider || "").toLowerCase();
-  // #16984: Kimi Coding can recover after an intermittently rejected refresh.
-  // Preserve its only recovery credential rather than permanently converting
-  // a retryable failure into no_refresh_token on the next health sweep.
-  if (id === "claude" || id === "kimi-coding") return false;
-  return ROTATING_REFRESH_PROVIDERS.has(id);
+  return ROTATING_REFRESH_PROVIDERS.has(id) && !preservesRefreshTokenOnUnrecoverable(id);
 }
 
 const EXPIRED_RETRY_BACKOFF_MIN = 5; // backoff between expired retries (minutes)
