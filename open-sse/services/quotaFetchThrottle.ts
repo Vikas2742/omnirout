@@ -71,9 +71,10 @@ export class MinIntervalThrottle {
       // After an idle period, restart the spacing window at the actual
       // acquisition time. Otherwise a stale scheduled timestamp permits the
       // next burst of requests to pass without the configured interval.
-      const startAt = this.lastStart === null
-        ? now
-        : Math.max(now, this.lastStart + this.minIntervalMs + this.nextJitter());
+      const startAt =
+        this.lastStart === null
+          ? now
+          : Math.max(now, this.lastStart + this.minIntervalMs + this.nextJitter());
       this.lastStart = startAt;
       const wait = startAt - now;
       if (wait > 0) await this.clock.sleep(wait);
