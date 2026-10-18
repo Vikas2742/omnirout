@@ -30,7 +30,7 @@ OmniRoute has three distinct but related resilience mechanisms. Each has a diffe
 **States:**
 
 - `CLOSED` — normal traffic allowed
-- `DEGRADED` — traffic still allowed, but elevated provider failures are being tracked
+- `DEGRADED` — traffic still allowed, but elevated provider failures are being tracked; returns to `CLOSED` on enough successes, on a valid connection test, or after the longest `OPEN` hold for the last failure kind (its `cooldownByKind` value, else `resetTimeout`, × `maxBackoffMultiplier`, at least one cooldown) without a new failure
 - `OPEN` — provider temporarily blocked; combo routing skips it
 - `HALF_OPEN` — reset timeout elapsed; probe request allowed
 
@@ -46,7 +46,7 @@ OmniRoute has three distinct but related resilience mechanisms. Each has a diffe
 
 **Trip codes:** only provider-level statuses `[408, 500, 502, 503, 504]`. Do NOT trip for account-level errors (most 401/403/429 — those belong to cooldown or lockout).
 
-**Lazy recovery:** when `OPEN` expires, `getStatus()`, `canExecute()`, `getRetryAfterMs()` refresh state to `HALF_OPEN`. No background timer needed.
+**Lazy recovery:** when `OPEN` expires, `getStatus()`, `canExecute()`, `getRetryAfterMs()` refresh state to `HALF_OPEN`. The same reads (and the next failure) decay a stale `DEGRADED` back to `CLOSED`. No background timer needed.
 
 ---
 
@@ -496,6 +496,37 @@ changes nothing — clear or update the persisted setting instead.
 Queue residence is bounded by `maxWaitMs`; `maxQueueDepth` below bounds how
 many callers may be queued at once.
 
+**Body-stated retries: pacing vs lockout.** A 429 body can name its own wait
+(Gemini `RetryInfo.retryDelay`, "retry after Ns" text), which
+`updateFromResponseBody` reads. A wait that fits the connection's `maxWaitMs`
+is pacing: the limiter empties its reservoir for that long and queued calls
+dispatch when it refills. A wait longer than `maxWaitMs` is not something the
+queue can sit out — Gemini answers an exhausted daily quota with
+`retryDelay: "86399s"`. The relayed `Retry-After` on the rebuilt 429 (#16528)
+already makes the fallback engine lock the model for that window, but pausing
+the limiter for it too would still stall any call that reaches the key early
+(after a resilience reset, for instance) for the whole `maxWaitMs`. When such a wait comes from a typed Google `RetryInfo`
+detail (the `google_rpc_retry_info` provenance) and the key's limiter is
+already scoped to the model (see `getLimiterKey`), the 429 becomes a model
+lockout on that connection instead (`lockModelForLongBodyRetry` in
+`open-sse/services/rateLimitManager/bodyRetryPause.ts`, capped at 24h), and the
+limiter is left unpaused. Account selection skips on that lock via
+`isModelLocked()`, and so does the combo pre-dispatch gate for targets pinned to
+the connection. On antigravity, whose limiter is per quota family, the lock is
+on the exact model, like its other quota locks. The name the client asked for
+is locked too when an alias resolved it to that model, because those checks use
+the requested name; it is locked exactly (`lockExactModel`), so an alias that
+crosses an antigravity quota family or a codex scope never locks its own. A
+prose hint, an untyped `retryDelay`, or a
+limiter shared by the whole connection keeps the pause. When the limiter the
+429 path just rebuilt does pause, a caller whose remaining queue time ends
+before the pause does is turned away at once with the queue-timeout code
+(`checkLimiterPause`) rather than waiting that time out; the recorded end is
+anchored before the limiter is built, where Bottleneck starts its refresh
+clock, and any later change to the reservoir forgets it. Covered by
+`tests/unit/rate-limit-long-body-retry-lockout.test.ts` and
+`tests/unit/rate-limit-body-retry-pause.test.ts`.
+
 **`maxQueueDepth` — opt-in admission cap (new).** `resilienceSettings.requestQueue.maxQueueDepth`
 bounds how many requests may sit queued (not yet dispatched) for one
 provider+connection at once. When the queue already holds `maxQueueDepth`
@@ -833,7 +864,7 @@ rate limit is the same signal as an exhausted quota. Honest limits:
 
 ## Other Resilience Features
 
-- **19 routing strategies** (priority, weighted, round-robin, context-relay, fill-first, p2c, random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp, context-optimized, cache-optimized, fusion, pipeline) — see [AUTO-COMBO.md](../routing/AUTO-COMBO.md).
+- **20 routing strategies** (priority, weighted, round-robin, context-relay, fill-first, p2c, random, least-used, cost-optimized, reset-aware, reset-window, headroom, quota-weighted, strict-random, auto, lkgp, context-optimized, cache-optimized, fusion, pipeline) — see [AUTO-COMBO.md](../routing/AUTO-COMBO.md).
 - **Reset-aware routing** (v3.8.0) — prioritizes connections by quota reset time.
 - **Background mode degradation** — Responses API `background: true` degraded to sync with warning.
 - **Dynamic tool limit detection** — backs off providers when tool count limits hit.

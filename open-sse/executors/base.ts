@@ -50,6 +50,7 @@ import {
   runWithOnPersist,
   getRefreshLeadMs,
   isUnrecoverableRefreshError,
+  NO_REFRESH_NEEDED,
 } from "../services/tokenRefresh.ts";
 import type { ProviderRequestDefaults } from "../services/providerRequestDefaults.ts";
 import { signRequestBody } from "../services/claudeCodeCCH.ts";
@@ -130,6 +131,7 @@ export type { ProviderCredentials, StrictValidationDispatch } from "./base/valid
 import { applyReasoningEffortRecovery } from "./base/reasoningEffortRecovery.ts";
 import { applyFieldDowngradeRecovery } from "./base/fieldDowngradeRecovery.ts";
 import { applyAdvisorUndecryptableRecovery } from "./base/advisorRecovery.ts";
+import { stripRedactThinkingBetaForVisibleThinking } from "./base/redactThinkingBeta.ts";
 
 function parseSerializedBody(bodyString: string): unknown {
   try {
@@ -766,7 +768,10 @@ export class BaseExecutor {
           this.refreshCredentials(credentials, log || null)
         );
 
-        if (refreshed && !proactivePersistRan) {
+        // API-key connections (no refresh token) answer with the shared
+        // NO_REFRESH_NEEDED sentinel: nothing was attempted, so there is
+        // nothing to classify, spread or warn about — keep the credentials.
+        if (refreshed && refreshed !== NO_REFRESH_NEEDED && !proactivePersistRan) {
           // ─────────────────────────────────────────────────────────────────────
           // ⚠️ SOURCE OF TRUTH — do not flip the proactive path back to
           //    "persist expired+inactive". Ask the operator first.
@@ -1404,6 +1409,13 @@ export class BaseExecutor {
           );
         }
 
+        // Explicit `thinking.display: "summarized"` must not be blanked by redact-thinking.
+        // Claude OAuth keeps its fingerprint beta unless the default-off
+        // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED flag is on.
+        stripRedactThinkingBetaForVisibleThinking(headers, transformedBody, clientHeaders, {
+          connectionOptedIn: ccRequestDefaults.redactThinking === true,
+          claudeOAuth: this.provider === "claude" && hasClaudeOAuthToken,
+        });
         stripInternalBodyFields(transformedBody);
 
         const shouldFingerprint =

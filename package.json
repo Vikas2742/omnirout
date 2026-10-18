@@ -1,7 +1,7 @@
 {
   "name": "omniroute",
   "version": "3.8.52",
-  "description": "Unified AI router with 374 providers, RTK+Caveman compression, auto fallback, MCP/A2A, desktop, PWA, and OpenAI-compatible APIs.",
+  "description": "Unified AI router with 375 providers, RTK+Caveman compression, auto fallback, MCP/A2A, desktop, PWA, and OpenAI-compatible APIs.",
   "type": "module",
   "bin": {
     "omniroute": "bin/omniroute.mjs",
@@ -360,7 +360,7 @@
     "ink-text-input": "^6.0.0",
     "ioredis": "^5.10.1",
     "jose": "^6.2.10",
-    "js-yaml": "^5.4.1",
+    "js-yaml": "^5.4.2",
     "jsonc-parser": "^3.3.1",
     "lowdb": "^7.0.1",
     "lucide-react": "^1.33.0",
@@ -578,7 +578,7 @@
       }
     },
     "@apidevtools/json-schema-ref-parser": {
-      "js-yaml": "^4.3.1"
+      "js-yaml": "^5.4.2"
     },
     "@eslint/eslintrc": {
       "js-yaml": "^4.3.1"
