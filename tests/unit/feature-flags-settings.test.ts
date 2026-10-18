@@ -59,7 +59,7 @@ const {
 // (#17003, lets Claude OAuth drop the redact-thinking beta for summarized thinking,
 // default off) to 87.
 // CREDENTIAL_GATE_AUTH_DIAGNOSES_ONLY (#16599, default off) to 88.
-const EXPECTED_FEATURE_FLAG_COUNT = 88;
+const EXPECTED_FEATURE_FLAG_COUNT = 95;
 // default off) to 87; STREAM_LATE_OUTPUT_PROBE_ENABLED
 // (#16927 late-output stream probe, default off) to 88.
 // LMARENA_SYNTHESIZED_CX_ENABLED (#16895, default off) to 88.

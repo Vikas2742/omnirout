@@ -78,7 +78,7 @@ describe("feature-flags-settings count update", () => {
     // (#13505, default off) to 85; KIRO_TOOL_CALL_REPAIR_ENABLED (default on) to 86;
     // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87.
     // CREDENTIAL_GATE_AUTH_DIAGNOSES_ONLY (#16599, default off) to 88.
-    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 88);
+    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 95);
     // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87;
     // STREAM_LATE_OUTPUT_PROBE_ENABLED (#16927 late-output stream probe, default off) to 88.
     // LMARENA_SYNTHESIZED_CX_ENABLED (#16895, default off) to 88.
