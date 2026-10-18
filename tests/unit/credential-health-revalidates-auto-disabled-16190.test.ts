@@ -30,6 +30,10 @@ process.env.DATA_DIR = TEST_DATA_DIR;
 process.env.API_KEY_SECRET = "revalidate-auto-disabled-test-secret";
 process.env.DISABLE_SQLITE_AUTO_BACKUP = "true";
 process.env.OMNIROUTE_DISABLE_CREDENTIAL_HEALTH_CHECK = "true";
+// The retest is opt-in (default off). Most tests below exercise it with the flag on; the
+// "flag off" tests clear it to prove the pre-#16190 behavior is untouched.
+const RETEST_FLAG = "CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED";
+process.env[RETEST_FLAG] = "true";
 
 const VALIDATION_HOST = "https://proxy.revalidate-16190.example.com";
 const VALIDATION_PATH = /^https:\/\/proxy\.revalidate-16190\.example\.com\/([a-z0-9-]+)\/v1\//;
@@ -67,11 +71,14 @@ const scheduler = await import("../../src/lib/credentialHealth/scheduler.ts");
 const operatorDisable = await import("../../src/lib/providers/operatorDisable.ts");
 const autopilot = await import("../../src/lib/monitoring/providerHealthAutopilot.ts");
 const settingsDb = await import("../../src/lib/db/settings.ts");
+const { maybeAutoDisableBannedAccount } =
+  await import("../../src/sse/services/autoDisableBannedAccount.ts");
 
 const OPERATOR_DISABLED_AT_KEY = operatorDisable.OPERATOR_DISABLED_AT_KEY;
 // Not imported from the module on purpose: the marker is persisted JSON, and the
 // name is part of the stored contract.
 const AUTO_DISABLED_AT_KEY = "autoDisabledAt";
+const BAN_DISABLED_AT_KEY = "banDisabledAt";
 const BASE_NOW = Date.now();
 
 async function readJsonObject(response: Response): Promise<Record<string, unknown>> {
@@ -180,6 +187,15 @@ async function applyAutopilotAction(
   assert.equal(result.status, 200, `autopilot ${type} failed: ${JSON.stringify(result.body)}`);
 }
 
+function readProvider(connectionId: string): string {
+  return (
+    core
+      .getDbInstance()
+      .prepare("SELECT provider FROM provider_connections WHERE id = ?")
+      .get(connectionId) as { provider: string }
+  ).provider;
+}
+
 function readRow(connectionId: string): {
   isActive: number;
   testStatus: string | null;
@@ -204,6 +220,15 @@ function readRow(connectionId: string): {
     lastTested: row.last_tested,
     psd: row.provider_specific_data ? JSON.parse(row.provider_specific_data) : {},
   };
+}
+
+async function withRetestFlagOff(fn: () => Promise<void>): Promise<void> {
+  delete process.env[RETEST_FLAG];
+  try {
+    await fn();
+  } finally {
+    process.env[RETEST_FLAG] = "true";
+  }
 }
 
 /** Run one credential-health sweep as if `offsetMs` had passed since the suite started. */
@@ -465,19 +490,127 @@ test("a sweep the operator turned off (intervalMinutes 0) retests nothing", asyn
   assert.equal(readRow(connectionId).isActive, 0);
 });
 
-test("the revalidation kill switch leaves gateway-disabled connections off", async () => {
-  const node = "kill-switch";
+test("flag off (default): an automated switch-off is not marked and the sweep retests nothing", async () => {
+  const node = "flag-off";
   const connectionId = await activeConnection(node);
-  await gatewayDisable(connectionId);
-  const before = probeCalls.get(node) ?? 0;
-
-  process.env.OMNIROUTE_DISABLE_AUTO_DISABLED_REVALIDATION = "1";
-  try {
+  await withRetestFlagOff(async () => {
+    await gatewayDisable(connectionId);
+    assert.equal(
+      AUTO_DISABLED_AT_KEY in readRow(connectionId).psd,
+      false,
+      "with the flag off the switch-off is persisted exactly as before (no marker)"
+    );
+    const before = probeCalls.get(node) ?? 0;
     await sweepAt(30 * HOUR_MS);
-  } finally {
-    delete process.env.OMNIROUTE_DISABLE_AUTO_DISABLED_REVALIDATION;
-  }
+    assert.equal(probeCalls.get(node) ?? 0, before, "no retest with the flag off");
+    assert.equal(readRow(connectionId).isActive, 0, "stays off with the flag off");
+  });
+});
 
+test("flag off (default): a row already carrying the marker is not retested either", async () => {
+  const node = "flag-off-marked";
+  const connectionId = await activeConnection(node);
+  // Marked while the flag was on...
+  await gatewayDisable(connectionId);
+  assert.equal(typeof readRow(connectionId).psd[AUTO_DISABLED_AT_KEY], "string");
+  const before = probeCalls.get(node) ?? 0;
+  // ...then the operator turned the flag off again.
+  await withRetestFlagOff(async () => {
+    await sweepAt(30 * HOUR_MS);
+  });
   assert.equal(probeCalls.get(node) ?? 0, before);
   assert.equal(readRow(connectionId).isActive, 0);
+});
+
+test("flag off (default): an autopilot switch-off writes isActive only, as before", async () => {
+  const connectionId = await activeConnection("flag-off-autopilot");
+  await updateProviderConnection(connectionId, {
+    testStatus: "unavailable",
+    lastError: "rate limited",
+    lastErrorType: "upstream_rate_limited",
+    errorCode: "429",
+    rateLimitedUntil: new Date(BASE_NOW + HOUR_MS).toISOString(),
+  });
+  await withRetestFlagOff(async () => {
+    await applyAutopilotAction(connectionId, "deactivate_connection");
+  });
+  const off = readRow(connectionId);
+  assert.equal(off.isActive, 0);
+  assert.equal(OPERATOR_DISABLED_AT_KEY in off.psd, false, "no operator marker with the flag off");
+  assert.equal(AUTO_DISABLED_AT_KEY in off.psd, false, "no automatic marker with the flag off");
+});
+
+test("an account the permanent-ban auto-disable switched off is never retested", async () => {
+  await settingsDb.updateSettings({ autoDisableBannedAccounts: true });
+  try {
+    for (const flagOnAtBan of [true, false]) {
+      const node = flagOnAtBan ? "ban-autodisable-on" : "ban-autodisable-off";
+      const controlNode = `${node}-control`;
+      const connectionId = await activeConnection(node);
+      const controlId = await activeConnection(controlNode);
+      // The row markAccountUnavailable leaves behind before the ban auto-disable runs: a
+      // recoverable-looking status, so only the ban marker keeps the sweep away from it.
+      const recoverableShape = {
+        testStatus: "unavailable",
+        lastError: "account suspended",
+        lastErrorType: "upstream_auth_error",
+        errorCode: "403",
+      };
+      await updateProviderConnection(connectionId, recoverableShape);
+      const ban = () =>
+        maybeAutoDisableBannedAccount({
+          connectionId,
+          provider: readProvider(connectionId),
+          authType: "apikey",
+          permanent: true,
+        });
+      if (flagOnAtBan) await ban();
+      else await withRetestFlagOff(ban);
+      const banned = readRow(connectionId);
+      assert.equal(banned.isActive, 0, `${node}: the ban auto-disable switched it off`);
+      assert.equal(typeof banned.psd[BAN_DISABLED_AT_KEY], "string", `${node}: ban marker`);
+      assert.equal(AUTO_DISABLED_AT_KEY in banned.psd, false, `${node}: never auto-marked`);
+
+      // Control: the same row shape switched off by any other automated path IS retested.
+      await updateProviderConnection(controlId, { ...recoverableShape, isActive: false });
+      const before = probeCalls.get(node) ?? 0;
+      const controlBefore = probeCalls.get(controlNode) ?? 0;
+
+      await sweepAt(30 * HOUR_MS);
+
+      assert.equal(probeCalls.get(node) ?? 0, before, `${node}: a banned account is never probed`);
+      assert.equal(readRow(connectionId).isActive, 0, `${node}: a banned account stays off`);
+      assert.ok(
+        (probeCalls.get(controlNode) ?? 0) > controlBefore,
+        `${node}: the control row (same shape, no ban) is retested`
+      );
+    }
+  } finally {
+    await settingsDb.updateSettings({ autoDisableBannedAccounts: false });
+  }
+});
+
+test("a ban-marked row is skipped by the selection even when it also carries the automatic marker", async () => {
+  const { selectAutoDisabledRevalidations } =
+    await import("../../src/lib/credentialHealth/autoDisabledRevalidation.ts");
+  const old = new Date(BASE_NOW - 30 * HOUR_MS).toISOString();
+  const row = {
+    id: "ban-and-auto",
+    provider: "openai",
+    authType: "apikey",
+    isActive: false,
+    testStatus: "unavailable",
+    lastErrorType: "upstream_auth_error",
+    providerSpecificData: { [AUTO_DISABLED_AT_KEY]: old, [BAN_DISABLED_AT_KEY]: old },
+  };
+  assert.deepEqual(selectAutoDisabledRevalidations([row], BASE_NOW), []);
+  const control = {
+    ...row,
+    id: "auto-only",
+    providerSpecificData: { [AUTO_DISABLED_AT_KEY]: old },
+  };
+  assert.deepEqual(
+    selectAutoDisabledRevalidations([control], BASE_NOW).map((c) => c.id),
+    ["auto-only"]
+  );
 });

@@ -36,11 +36,20 @@
  * MAX_REVALIDATIONS_PER_SWEEP connections are retested per sweep, oldest first.
  * The attempt log lives in memory, so after a restart an unverifiable
  * connection is tried once more on the first sweep (an unsupported validation
- * makes no upstream call). OMNIROUTE_DISABLE_AUTO_DISABLED_REVALIDATION turns
- * the pass off.
+ * makes no upstream call).
+ *
+ * The whole pass is opt-in: it runs only with the CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED
+ * feature flag on (default off), which is also what makes updateProviderConnection stamp
+ * AUTO_DISABLED_AT_KEY. A connection switched off by the permanent-ban auto-disable
+ * carries BAN_DISABLED_AT_KEY instead and is never retested, flag or not.
  */
 
-import { AUTO_DISABLED_AT_KEY, isAutoDisabled } from "@/lib/providers/operatorDisable";
+import { isRetestAutoDisabledEnabled } from "@/lib/credentialHealth/retestAutoDisabledFlag";
+import {
+  AUTO_DISABLED_AT_KEY,
+  isAutoDisabled,
+  isBanDisabled,
+} from "@/lib/providers/operatorDisable";
 import { SEARCH_VALIDATOR_CONFIGS } from "@/lib/providers/validation/searchProviders";
 import { isInRefreshBackoff } from "@/lib/tokenRefreshCircuit";
 import { isRecoverableInactiveConnection } from "@/sse/services/explicitInactiveProbe";
@@ -49,7 +58,6 @@ export const AUTO_DISABLED_REVALIDATION_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const MAX_REVALIDATIONS_PER_SWEEP = 5;
 const MAX_TRACKED_ATTEMPTS = 4096;
 const LOG_PREFIX = "[CredentialHealth]";
-const TRUE_ENV_VALUES = new Set(["1", "true", "yes", "on"]);
 const BAN_ERROR_TYPE = "forbidden";
 
 export interface RevalidationCandidate {
@@ -101,9 +109,9 @@ function lastTouchMs(connection: RevalidationCandidate): number {
   );
 }
 
+/** True unless the operator turned on CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED (default off). */
 export function isAutoDisabledRevalidationDisabled(): boolean {
-  const value = process.env.OMNIROUTE_DISABLE_AUTO_DISABLED_REVALIDATION;
-  return !!value && TRUE_ENV_VALUES.has(value.trim().toLowerCase());
+  return !isRetestAutoDisabledEnabled();
 }
 
 /** A gateway-disabled API key or OAuth connection whose health check is not turned off. */
@@ -112,6 +120,8 @@ function isRetestableConnection(
 ): connection is RevalidationCandidate {
   if (!connection || typeof connection.id !== "string" || connection.id.length === 0) return false;
   if (!isAutoDisabled(connection)) return false;
+  // Never probe an account the permanent-ban auto-disable switched off (ban risk).
+  if (isBanDisabled(connection)) return false;
   if (connection.authType !== "apikey" && connection.authType !== "oauth") return false;
   if (String(connection.provider ?? "") in SEARCH_VALIDATOR_CONFIGS) return false;
   return !(

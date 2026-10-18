@@ -28,6 +28,22 @@ export const OPERATOR_DISABLED_AT_KEY = "operatorDisabledAt";
  */
 export const AUTO_DISABLED_AT_KEY = "autoDisabledAt";
 
+/**
+ * Set when the permanent-ban auto-disable (autoDisableBannedAccount) switched a
+ * connection off, cleared when it is switched back on. A connection carrying it
+ * is never retested by the credential-health sweep: probing an account the
+ * upstream banned risks escalating the ban. Stamped whether or not the retest
+ * flag is on, so turning the flag on later cannot pick up an earlier ban.
+ */
+export const BAN_DISABLED_AT_KEY = "banDisabledAt";
+
+export interface AutomaticDisableMarkerOptions {
+  /** Stamp AUTO_DISABLED_AT_KEY on an automatic switch-off (the #16190 retest flag). */
+  stampAutomatic?: boolean;
+  /** The switch-off is the permanent-ban auto-disable: stamp BAN_DISABLED_AT_KEY instead. */
+  permanentBan?: boolean;
+}
+
 type JsonRecord = Record<string, unknown>;
 
 function asRecord(value: unknown): JsonRecord {
@@ -56,6 +72,7 @@ export function applyOperatorActivationIntent(
   delete psd[AUTO_DISABLED_AT_KEY];
   if (isActive) {
     delete psd[OPERATOR_DISABLED_AT_KEY];
+    delete psd[BAN_DISABLED_AT_KEY];
   } else {
     psd[OPERATOR_DISABLED_AT_KEY] = now;
   }
@@ -64,31 +81,56 @@ export function applyOperatorActivationIntent(
 
 /**
  * Returns the providerSpecificData to persist for an `isActive` write on an
- * existing connection. Switching an active connection off without the operator
- * marker is an automatic disable and stamps AUTO_DISABLED_AT_KEY; switching it
- * on clears that marker. Anything else (no isActive in the write, a connection
- * that was never activated, an operator switch-off, a non-object payload) is
- * returned untouched.
+ * existing connection.
+ *
+ * - Switching it on clears the automatic and permanent-ban markers.
+ * - A permanent-ban switch-off (`permanentBan`) stamps BAN_DISABLED_AT_KEY and
+ *   drops any automatic marker, so the row is never retested.
+ * - Any other switch-off of an active connection without the operator marker is
+ *   an automatic disable and stamps AUTO_DISABLED_AT_KEY, but only when
+ *   `stampAutomatic` is set (the CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED flag).
+ *
+ * Anything else (no isActive in the write, a connection that was never
+ * activated, an operator switch-off, a non-object payload) is returned untouched.
  */
 export function applyAutomaticDisableMarker(
   providerSpecificData: unknown,
   wasActive: unknown,
   isActive: unknown,
-  now: string = new Date().toISOString()
+  now: string = new Date().toISOString(),
+  options: AutomaticDisableMarkerOptions = {}
 ): unknown {
   if (typeof isActive !== "boolean") return providerSpecificData;
   if (providerSpecificData != null && typeof providerSpecificData !== "object") {
     return providerSpecificData;
   }
   if (isActive) {
-    if (!hasMarker(providerSpecificData, AUTO_DISABLED_AT_KEY)) return providerSpecificData;
+    if (
+      !hasMarker(providerSpecificData, AUTO_DISABLED_AT_KEY) &&
+      !hasMarker(providerSpecificData, BAN_DISABLED_AT_KEY)
+    ) {
+      return providerSpecificData;
+    }
     const psd = asRecord(providerSpecificData);
     delete psd[AUTO_DISABLED_AT_KEY];
+    delete psd[BAN_DISABLED_AT_KEY];
     return psd;
   }
+  if (options.permanentBan) {
+    const psd = asRecord(providerSpecificData);
+    delete psd[AUTO_DISABLED_AT_KEY];
+    return { ...psd, [BAN_DISABLED_AT_KEY]: now };
+  }
+  if (!options.stampAutomatic) return providerSpecificData;
   if (wasActive !== true && wasActive !== 1) return providerSpecificData;
   if (hasMarker(providerSpecificData, OPERATOR_DISABLED_AT_KEY)) return providerSpecificData;
+  if (hasMarker(providerSpecificData, BAN_DISABLED_AT_KEY)) return providerSpecificData;
   return { ...asRecord(providerSpecificData), [AUTO_DISABLED_AT_KEY]: now };
+}
+
+/** True when the permanent-ban auto-disable switched the connection off. */
+export function isBanDisabled(connection: { providerSpecificData?: unknown }): boolean {
+  return hasMarker(connection.providerSpecificData, BAN_DISABLED_AT_KEY);
 }
 
 /**
@@ -114,5 +156,6 @@ export function isAutoDisabled(connection: {
 }): boolean {
   if (connection.isActive === true || connection.isActive === 1) return false;
   if (isOperatorDisabled(connection)) return false;
+  if (isBanDisabled(connection)) return false;
   return hasMarker(connection.providerSpecificData, AUTO_DISABLED_AT_KEY);
 }
