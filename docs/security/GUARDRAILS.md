@@ -44,6 +44,14 @@ Lower priority numbers run **first**.
 
 ### Vision Bridge (`visionBridge.ts`) — Modality Bridge PR-1
 
+The GLM 5.3 base model and `glm-5.3-{low,high,max}` have explicit
+`supportsVision:false` registry/spec metadata. The GLM 5.3 Flash variants
+remain native-vision models. Claude Code's `/v1/messages` route enters the
+shared `handleChat` pre-call guardrail chain **before** Claude-to-OpenAI
+translation; nested `Read` tool-result images must be described or handled
+before that translation lifts them into OpenAI `image_url` content (#17069).
+
+
 Intercepts image-bearing requests aimed at **non-vision models** and either
 reroutes the whole request to a vision-capable model or replaces the image
 parts with text descriptions produced by a configurable vision model before
@@ -110,9 +118,11 @@ enforces that key's connection and model policy again. `enforceApiKeyPolicy()`
 honors that header only together with the self-loop bearer, so it can only
 narrow access, and an id that does not resolve is rejected.
 
-If no vision model is permitted for the key, the describe path steps aside and
-the request passes through unchanged, the same fail-open behavior as a disabled
-guardrail (meta `{ skipped: true, reason: "no_permitted_vision_model" }`).
+If no vision model is permitted for the key, a **confirmed text-only
+target** rejects the image request locally with a clear HTTP 400 instead of
+forwarding image bytes to an incapable upstream (#17069). For targets with
+unknown or native vision capability, the describe path retains its previous
+fail-open behavior (meta `{ skipped: true, reason: "no_permitted_vision_model" }`).
 Requests without a key, and keys without these restrictions, behave exactly as
 before.
 
