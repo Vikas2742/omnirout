@@ -56,6 +56,17 @@ export interface GeminiDiscoveryModel {
   [key: string]: unknown;
 }
 
+/** Keep specialty inference outside the catalog parsing hot path. */
+function inferGeminiAudioEndpoint(
+  lowerId: string,
+  methods: readonly string[]
+): "audio-transcriptions" | "audio-speech" | null {
+  if (!methods.includes("generateContent")) return null;
+  if (/-transcribe(?:-|$)/.test(lowerId)) return "audio-transcriptions";
+  if (/-tts(?:-|$)/.test(lowerId)) return "audio-speech";
+  return null;
+}
+
 export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
   return (data?.models || [])
     .map((m: Record<string, unknown>) => {
@@ -100,14 +111,11 @@ export function parseGeminiModelsList(data: any): GeminiDiscoveryModel[] {
       // Only override the method-derived chat tag, preserving any other
       // explicitly advertised endpoint. Image-capable Gemini chat models
       // intentionally remain chat-selectable.
-      if (methods.includes("generateContent") && /-transcribe(?:-|$)/.test(lowerId)) {
+      const audioEndpoint = inferGeminiAudioEndpoint(lowerId, methods);
+      if (audioEndpoint) {
         inferredById = true;
         endpoints.delete("chat");
-        endpoints.add("audio-transcriptions");
-      } else if (methods.includes("generateContent") && /-tts(?:-|$)/.test(lowerId)) {
-        inferredById = true;
-        endpoints.delete("chat");
-        endpoints.add("audio-speech");
+        endpoints.add(audioEndpoint);
       }
 
       if (
