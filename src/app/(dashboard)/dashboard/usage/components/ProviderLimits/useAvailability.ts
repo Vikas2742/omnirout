@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { queueSummaryRefresh } from "./queueSummaryRefresh";
 import { fetchWithTimeout } from "@/shared/utils/fetchTimeout";
 import {
   buildHealthAccount,
@@ -51,16 +52,12 @@ export function useAvailability(
     receivedAt?: number;
   }>({ rows: {} });
   const [availability, setAvailability] = useState<QuotaAvailabilitySummary>();
-  const quotaPending = useRef(false);
   const [now, setNow] = useState(() => Date.now());
-  const pending = useRef(false);
   // Local to this mounted consumer, never persisted or shared across accounts.
   const [cooldownObservations, setCooldownObservations] = useState(
     () => new Map<string, CooldownObservation>()
   );
-  const refreshCooldowns = useCallback(async () => {
-    if (pending.current) return;
-    pending.current = true;
+  const readCooldowns = useCallback(async () => {
     try {
       const data = await readSummary("/api/resilience/cooldowns");
       if (
@@ -95,13 +92,11 @@ export function useAvailability(
     } catch {
       // Keep the last successful snapshot; only nonterminal fields expire.
     } finally {
-      pending.current = false;
       setNow(Date.now());
     }
   }, []);
-  const refreshQuota = useCallback(async () => {
-    if (quotaPending.current) return;
-    quotaPending.current = true;
+  const refreshCooldowns = useMemo(() => queueSummaryRefresh(readCooldowns), [readCooldowns]);
+  const readQuota = useCallback(async () => {
     try {
       const data = (await readSummary("/api/usage/availability")) as QuotaAvailabilitySummary;
       if (
@@ -131,10 +126,10 @@ export function useAvailability(
     } catch {
       // Preserve the last successful conclusion for 90 seconds; never infer from meters.
     } finally {
-      quotaPending.current = false;
       setNow(Date.now());
     }
   }, []);
+  const refreshQuota = useMemo(() => queueSummaryRefresh(readQuota), [readQuota]);
   const refreshAvailability = useCallback(async () => {
     await Promise.all([refreshCooldowns(), refreshQuota()]);
   }, [refreshCooldowns, refreshQuota]);

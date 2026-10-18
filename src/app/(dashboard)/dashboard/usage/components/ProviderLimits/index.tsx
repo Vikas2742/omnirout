@@ -38,6 +38,10 @@ import {
   type DisplayFilter,
 } from "./availabilityDisplay";
 import { useAvailability } from "./useAvailability";
+import {
+  useConfirmedAvailabilityChange,
+  useSaveQuotaWindowThresholds,
+} from "./useConfirmedAvailabilityChange";
 import { useCachedQuotaPolling } from "./useCachedQuotaPolling";
 import { useAutomaticQuotaRequests } from "./useAutomaticQuotaRequests";
 import CodexResetCreditsModal from "./CodexResetCreditsModal";
@@ -168,6 +172,10 @@ export default function ProviderLimits({
     refreshAvailability,
     summaryFailed,
   } = useAvailability(connections, quotaData, errors);
+  const confirmAvailabilityChange = useConfirmedAvailabilityChange(
+    setConnections,
+    refreshAvailability
+  );
   const [lastRefreshedAt, setLastRefreshedAt] = useState<Record<string, string>>({});
   const [refreshingAll, setRefreshingAll] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -177,7 +185,8 @@ export default function ProviderLimits({
     tr,
     setErrors,
     setQuotaData,
-    setLastRefreshedAt
+    setLastRefreshedAt,
+    confirmAvailabilityChange
   );
 
   const [purchaseTypeFilter, setPurchaseTypeFilter] = useState<PurchaseTypeKey>(() => {
@@ -235,22 +244,7 @@ export default function ProviderLimits({
     };
   }, []);
 
-  const saveQuotaWindowThresholds = useCallback(
-    async (connectionId: string, patch: Record<string, number | null> | null) => {
-      const res = await fetch(`/api/providers/${connectionId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quotaWindowThresholds: patch }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const newValue = data?.connection?.quotaWindowThresholds ?? null;
-      setConnections((prev) =>
-        prev.map((c) => (c.id === connectionId ? { ...c, quotaWindowThresholds: newValue } : c))
-      );
-    },
-    []
-  );
+  const saveQuotaWindowThresholds = useSaveQuotaWindowThresholds(confirmAvailabilityChange);
 
   const fetchConnections = useCallback(async () => {
     try {
@@ -285,9 +279,7 @@ export default function ProviderLimits({
           body: JSON.stringify({ isActive: nextActive }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        setConnections((prev) =>
-          prev.map((c) => (c.id === connectionId ? { ...c, isActive: nextActive } : c))
-        );
+        confirmAvailabilityChange(connectionId, { isActive: nextActive });
         notify.success(
           nextActive
             ? tr("accountActivated", "Account activated")
@@ -299,7 +291,7 @@ export default function ProviderLimits({
         setTogglingActiveId(null);
       }
     },
-    [notify, tr]
+    [notify, tr, confirmAvailabilityChange]
   );
 
   const applyCachedQuotaState = useCallback(
