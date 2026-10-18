@@ -2962,16 +2962,15 @@ async function handleChatCoreInner({
       } catch {}
     }
 
-    if (headers) {
-      updateFromHeaders(provider, errorConnectionId, headers, statusCode, targetModel);
-    }
+    if (headers) updateFromHeaders(provider, errorConnectionId, headers, statusCode, targetModel);
     if (errorConnectionId && upstreamErrorBody !== null && upstreamErrorBody !== undefined) {
       updateFromResponseBody(
         provider,
         errorConnectionId,
         upstreamErrorBody,
         statusCode,
-        targetModel
+        targetModel,
+        model
       );
     }
   };
