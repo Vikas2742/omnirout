@@ -1,4 +1,5 @@
 import { FORMATS } from "../translator/formats.ts";
+import { isContentPolicyRefusal } from "./contentPolicyError.ts";
 import { buildErrorBody, sanitizeErrorMessage } from "./error.ts";
 import { classifyProviderSafetyError } from "./providerSafety.ts";
 import { projectResponsesFailureOutput } from "./responsesFailureOutput.ts";
@@ -205,6 +206,7 @@ export function normalizeStreamFailurePayload(payload: unknown): StreamFailurePa
               ? record.message
               : "Upstream failure";
   const requestScopedInputFailure =
+    isContentPolicyRefusal(error) ||
     type === "invalid_request" ||
     code === "invalid_request" ||
     type === "invalid_request_error" ||
