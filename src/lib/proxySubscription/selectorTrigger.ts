@@ -563,10 +563,8 @@ export async function maybeSwitchOnSetAside(
   opts?: { nowMs?: number; kind?: ProxyRefusalKind }
 ): Promise<SelectorTriggerResult> {
   try {
-    if (!isProxySkipRecentlyFailedEnabled()) {
-      noteSelectorEarlyReason("flag-off");
-      return { switched: false, reason: "flag-off" };
-    }
+    // Flag off: nothing touched, not even the in-memory skip counters.
+    if (!isProxySkipRecentlyFailedEnabled()) return { switched: false, reason: "flag-off" };
     if (anyControlUrlConfigured === false) {
       noteSelectorEarlyReason("no-control");
       return { switched: false, reason: "no-control" };

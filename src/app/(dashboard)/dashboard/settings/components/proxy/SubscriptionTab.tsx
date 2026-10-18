@@ -6,7 +6,7 @@ import { Button } from "@/shared/components";
 import { isNeedsCoreNode } from "@/lib/proxySubscription/needsCore";
 import { parseLocalCoreEndpoints } from "@/lib/proxySubscription/coreEndpoint";
 import { parseSelectorTag } from "@/lib/proxySubscription/selectorEndpoint";
-import type { SelectorEarlyReason } from "@/lib/proxySubscription/selectorEarlyReasons";
+import type { SelectorEarlyReasonCounts } from "@/lib/proxySubscription/selectorEarlyReasons";
 
 interface SelectorLastSwitchEntry {
   at: string;
@@ -159,7 +159,7 @@ function formatSwitchLine(
 
 type SubscriptionsFetchResult = {
   items?: SubscriptionRecord[];
-  earlyReasons?: Record<SelectorEarlyReason, number>;
+  earlyReasons?: Partial<SelectorEarlyReasonCounts>;
   error?: string;
 };
 
@@ -180,32 +180,42 @@ async function fetchSubscriptionsResult(
 }
 
 type EarlyReasonLabelKey =
-  "SELECTOR_EARLY_FLAG_OFF" | "SELECTOR_EARLY_NO_CONTROL" | "SELECTOR_EARLY_UNMAPPED";
+  | "proxySubscription.earlySkipsSinceRestart"
+  | "proxySubscription.error.SELECTOR_EARLY_NO_CONTROL"
+  | "proxySubscription.error.SELECTOR_EARLY_UNMAPPED";
 
-/** Global early-selector skip counts. Pure; renders nothing when no data yet. */
+/**
+ * Early selector-skip counts (in-memory, reset on restart). The server only
+ * sends counts > 0 that concern a configured selector; renders nothing
+ * otherwise. Pure.
+ */
 function EarlyReasonsSummary({
   reasons,
   text,
 }: {
-  reasons: Record<SelectorEarlyReason, number> | null;
+  reasons: Partial<SelectorEarlyReasonCounts> | null;
   text: (key: EarlyReasonLabelKey) => string;
 }) {
   if (!reasons) return null;
   const parts = (
     [
-      ["SELECTOR_EARLY_FLAG_OFF", reasons["flag-off"]],
-      ["SELECTOR_EARLY_NO_CONTROL", reasons["no-control"]],
-      ["SELECTOR_EARLY_UNMAPPED", reasons["unmapped"]],
+      ["proxySubscription.error.SELECTOR_EARLY_NO_CONTROL", reasons["no-control"]],
+      ["proxySubscription.error.SELECTOR_EARLY_UNMAPPED", reasons.unmapped],
     ] as const
-  ).map(([key, count]) => `${text(key)}: ${count}`);
-  return <p className="text-xs text-text-muted">{parts.join(" · ")}</p>;
+  )
+    .filter(([, count]) => typeof count === "number" && count > 0)
+    .map(([key, count]) => `${text(key)}: ${count}`);
+  if (parts.length === 0) return null;
+  return (
+    <p className="text-xs text-text-muted">
+      {text("proxySubscription.earlySkipsSinceRestart")} — {parts.join(" · ")}
+    </p>
+  );
 }
 
 export default function SubscriptionTab() {
   const [subs, setSubs] = useState<SubscriptionRecord[]>([]);
-  const [earlyReasons, setEarlyReasons] = useState<Record<SelectorEarlyReason, number> | null>(
-    null
-  );
+  const [earlyReasons, setEarlyReasons] = useState<Partial<SelectorEarlyReasonCounts> | null>(null);
   const [providers, setProviders] = useState<ProviderOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -682,10 +692,7 @@ export default function SubscriptionTab() {
       )}
 
       <div className="space-y-2">
-        <EarlyReasonsSummary
-          reasons={earlyReasons}
-          text={(key) => t(`proxySubscription.error.${key}`)}
-        />
+        <EarlyReasonsSummary reasons={earlyReasons} text={(key) => t(key)} />
         {loading && <p className="text-sm text-text-muted">{t("proxySubscription.loading")}</p>}
         {!loading && subs.length === 0 && (
           <p className="text-sm text-text-muted">{t("proxySubscription.noSubscriptions")}</p>
