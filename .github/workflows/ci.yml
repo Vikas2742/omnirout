@@ -2,7 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [main, "release/**"]
+    # Pushes to release/** no longer start this matrix (2026-10-18). Every change that
+    # reaches a release branch already ran it on its own PR, and the merged COMBINATION
+    # is validated by Release-Green (nightly-release-green.yml: --quick on every push to
+    # release/v*, full sweep 3×/day on its own runner slot). With ~10 merges/hour the push
+    # runs here were cancelled by the next push before finishing (24 of 24 in one day) while
+    # each held up to 30 of the account's 40 hosted job slots — the queue that made PR
+    # checks wait for hours. `main` keeps it: the release squash is the one push that
+    # lands code nobody validated as a PR into main.
+    branches: [main]
   pull_request:
     branches: [main, "release/**"]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]

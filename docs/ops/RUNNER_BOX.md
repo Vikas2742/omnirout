@@ -101,3 +101,35 @@ a time, only when idle**, with the idle check and the restart in the same comman
   `$RUNNER_TEMP` (on disk, per runner) — the 1.3 GB `next-build` artefact took 27–32
   minutes to land on the tmpfs and 2 minutes to upload from disk.
 - The `.15` VPS is homologation-only — never runs CI runners.
+
+## Hosted lane (GitHub-hosted runners)
+
+The account is on the **Pro** plan: **40 concurrent hosted jobs**, shared by every PR check,
+every push-triggered workflow and CodeQL's default setup. Measured on 2026-10-18 during a
+merge campaign (~10 merges/hour on `release/v3.8.52`): **2,500 workflow runs created in
+24 h**, 44 pushes to the branch in 6 h, **106 hosted jobs queued** while PR checks waited for
+hours and PRs were merged without them. Nine workflows fired on every push to the branch:
+
+| per push to `release/v*`                    | hosted jobs | outcome under the storm                                        | since 2026-10-18                                                         |
+| ------------------------------------------- | ----------: | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `ci.yml` (full matrix)                      |    up to 30 | cancelled by the next push, 24 of 24 in a day                  | not started on `release/**` pushes (PR run + Release-Green)              |
+| `quality.yml`                               |          ~6 | cancelled, 23 of 23                                            | not started on `release/**` pushes                                       |
+| `Release-Green` `--quick`                   |           0 | ran on `omni-build`, cancelled 97 of 100                       | `omni-release` slot, never cancelled, pending run collapses              |
+| `Lock released branch`, `OpenSSF Scorecard` |           2 | one queued run per push                                        | one run per ref (`tests/unit/build/hosted-lane-concurrency.test.ts`)     |
+| `Release acceptance` (shadow report)        |           1 | one hosted `npm ci` per push, never cancelled                  | unchanged — candidate for a `paths:` filter                              |
+| `Publish to Docker Hub` → `Deploy to VPS`   |           2 | cancelled per push; amd64 leg competes on `omni-build`         | unchanged — owner's deploy channel                                       |
+| CodeQL default setup (`dynamic`)            |           4 | `javascript-typescript`, `actions`, `c-cpp`, `python` per push | unchanged — Settings → Code security; `c-cpp`/`python` scan nothing here |
+
+`tests/unit/build/push-storm-diet.test.ts` pins the `main`-only push trigger of `ci.yml` and
+`quality.yml`. Side effect: Codecov no longer receives a base upload per release push (the
+step is informational and `continue-on-error`); the in-repo coverage gate and PR comment are
+unaffected.
+
+**More self-hosted capacity does not fix the hosted queue.** The devbox
+(`devbox-vm-06-dev002`, 24 vCPU / 54 GB) could host a runner, but the agent sessions already
+keep its load at 20–26, the agent container has no Docker daemon, and the saturated lane is
+the hosted one. The `.113` box had 71 GB free and load 5–8 at the same moment; its constraint
+is the per-listener memory budget above (ceiling 6 listeners), not CPU. The remaining levers
+are process ones: land campaign PRs through the Mergify queue (`label=queue`, batches share
+one `merge_group` CI run instead of one run per PR plus one per push), trim the CodeQL
+default-setup languages, and filter `release-acceptance.yml` by the files it reads.
