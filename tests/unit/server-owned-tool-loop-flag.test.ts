@@ -79,6 +79,7 @@ describe("feature-flags-settings count update", () => {
     // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87.
     // LMARENA_SYNTHESIZED_CX_ENABLED (#16895, default off) to 88.
     assert.equal(FEATURE_FLAG_DEFINITIONS.length, 88);
+    // NATIVE_CODEX_REACTIVE_COMPACTION_ENABLED (#16632, default off) to 88.
   });
 });
 
