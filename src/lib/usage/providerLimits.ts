@@ -19,6 +19,7 @@ import { clearRecoveredProviderState } from "@/sse/services/auth";
 import { hasObservedClaudeQuotaResetAfter } from "@/lib/db/quotaResetEvents";
 import { clearModelLock, getAllModelLockouts } from "@omniroute/open-sse/services/accountFallback.ts";
 import { RateLimitReason } from "@omniroute/open-sse/config/constants.ts";
+import { isExplicitClaudeQuota429Text } from "@omniroute/open-sse/services/usage/claudeQuota.ts";
 import { getMachineId } from "@/shared/utils/machine";
 import { supportsProviderQuota } from "@/shared/utils/providerQuotaVisibility";
 import { mergeProviderLimitsCacheEntry, toProviderLimitsCacheEntry } from "./providerLimitsCache";
@@ -482,7 +483,12 @@ export async function maybeClearRecoveredQuotaState(
     // release only a Claude quota-exhaustion lock with every live window open.
     const observedResetOverride =
       connection.provider === "claude" &&
-      connection.lastErrorType === "quota_exhausted" &&
+      (connection.lastErrorType === "quota_exhausted" ||
+        // Older 429 records used the generic RPM classifier for Claude's
+        // weekly-quota text. Preserve recovery of those rows, but never
+        // release a generic short-lived 429 based on a weekly reset.
+        (connection.lastErrorType === "rate_limited" &&
+          isExplicitClaudeQuota429Text(connection.lastError ?? ""))) &&
       connection.lastErrorSource !== "extra_usage" &&
       Number(connection.errorCode) === 429 &&
       hasObservedClaudeQuotaResetAfter(connection.id, connection.lastErrorAt) &&
@@ -529,9 +535,19 @@ export async function maybeClearRecoveredQuotaState(
   if (cleared && verifiedResetRecovery) {
     // Only quota-family locks belong to this reset. Preserve auth, capacity,
     // missing-model, and generic RPM locks for their own recovery path.
-    for (const lock of getAllModelLockouts()) {
-      if (lock.connectionId !== connection.id || lock.provider !== "claude") continue;
+    const accountLocks = getAllModelLockouts().filter(
+      (lock) => lock.connectionId === connection.id && lock.provider === "claude"
+    );
+    // clearModelLock removes *all* lock keys for a model. Never let quota
+    // recovery erase an unrelated capacity/auth/not-found lock on that model.
+    const unrelatedModels = new Set(
+      accountLocks
+        .filter((lock) => lock.reason !== RateLimitReason.QUOTA_EXHAUSTED)
+        .map((lock) => lock.model)
+    );
+    for (const lock of accountLocks) {
       if (lock.reason !== RateLimitReason.QUOTA_EXHAUSTED) continue;
+      if (unrelatedModels.has(lock.model)) continue;
       clearModelLock(lock.provider, lock.connectionId, lock.model);
     }
   }
