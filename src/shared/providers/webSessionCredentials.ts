@@ -227,10 +227,10 @@ export const WEB_SESSION_CREDENTIAL_REQUIREMENTS = {
   },
   "venice-web": {
     kind: "cookie",
-    credentialName: "session",
-    placeholder: "session=... or full Cookie header from venice.ai",
+    credentialName: "__client",
+    placeholder: "__client=... or full Cookie header from clerk.venice.ai",
     acceptsFullCookieHeader: true,
-    storageKeys: ["cookie", "session"],
+    storageKeys: ["cookie", "__client"],
   },
   "v0-vercel-web": {
     kind: "cookie",
@@ -355,6 +355,20 @@ export const WEB_SESSION_CREDENTIAL_REQUIREMENTS = {
     placeholder: "__Secure-better-auth.session_token=... or full Cookie header from conol.ai",
     acceptsFullCookieHeader: true,
     storageKeys: ["cookie", "__Secure-better-auth.session_token"],
+  },
+  twinmind: {
+    kind: "token",
+    credentialName: "Firebase stsTokenManager JSON (accessToken + refreshToken)",
+    placeholder: "Paste stsTokenManager JSON, or accessToken JWT + refreshToken",
+    acceptsFullCookieHeader: false,
+    storageKeys: ["token", "refreshToken", "refresh_token", "apiKey", "accessToken"],
+  },
+  syntx: {
+    kind: "token",
+    credentialName: "SYNTX.ai Bearer JWT",
+    placeholder: "Paste eyJ… JWT from Authorization: Bearer on api.syntx.ai",
+    acceptsFullCookieHeader: false,
+    storageKeys: ["token", "apiKey", "accessToken"],
   },
   maxai: {
     kind: "token",

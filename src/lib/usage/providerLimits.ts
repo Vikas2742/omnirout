@@ -61,6 +61,7 @@ const PROVIDER_LIMITS_APIKEY_PROVIDERS = new Set([
   "minimax-cn",
   "crof",
   "nanogpt",
+  "nan",
   "apmix",
   "deepseek",
   "xiaomi-mimo",
@@ -97,6 +98,8 @@ const PROVIDER_LIMITS_APIKEY_PROVIDERS = new Set([
   "command-code",
   "conol-web",
   "cnl",
+  "syntx",
+  "stx",
   // Alibaba Coding Plan (console API key) + Qwen personal Token Plan (console cookie) — #9603
   "bailian-coding-plan",
   "qwen-cloud-token-plan",

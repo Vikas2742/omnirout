@@ -75,7 +75,6 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   fb: () => import("./freebuff.ts").then((m) => new m.FreebuffExecutor()), // Alias
   "opencode-zen": () => import("./opencode.ts").then((m) => new m.OpencodeExecutor("opencode-zen")),
   "opencode-go": () => import("./opencode.ts").then((m) => new m.OpencodeExecutor("opencode-go")),
-  opencode: () => import("./opencode.ts").then((m) => new m.OpencodeExecutor("opencode-zen")), // Alias for opencode-zen
   vertex: () => import("./vertex.ts").then((m) => new m.VertexExecutor()),
   "vertex-partner": () => import("./vertex.ts").then((m) => new m.VertexExecutor()),
   cliproxyapi: () => import("./cliproxyapi.ts").then((m) => new m.CliproxyapiExecutor()),
@@ -168,6 +167,8 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   gc: () => import("./grok-cli.ts").then((m) => new m.GrokCliExecutor()), // Alias
   "codebuddy-cn": () => import("./codebuddy-cn.ts").then((m) => new m.CodeBuddyCnExecutor()),
   cbcn: () => import("./codebuddy-cn.ts").then((m) => new m.CodeBuddyCnExecutor()), // Alias for codebuddy-cn
+  "codebuddy-intl": () => import("./codebuddy-intl.ts").then((m) => new m.CodeBuddyIntlExecutor()),
+  cbai: () => import("./codebuddy-intl.ts").then((m) => new m.CodeBuddyIntlExecutor()), // Alias for codebuddy-intl
   "zenmux-free": () => import("./zenmux-free.ts").then((m) => new m.ZenmuxFreeExecutor()),
   "cloudflare-playground": () =>
     import("./cloudflare-playground.ts").then((m) => new m.CloudflarePlaygroundExecutor()),
@@ -184,6 +185,10 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
   "clova-studio": () => import("./clova-studio.ts").then((m) => new m.ClovaStudioExecutor()),
   "conol-web": () => import("./conol-web.ts").then((m) => new m.ConolWebExecutor()),
   cnl: () => import("./conol-web.ts").then((m) => new m.ConolWebExecutor()), // Alias
+  twinmind: () => import("./twinmind.ts").then((m) => new m.TwinmindExecutor()),
+  tm: () => import("./twinmind.ts").then((m) => new m.TwinmindExecutor()), // Alias
+  syntx: () => import("./syntx.ts").then((m) => new m.SyntxExecutor()),
+  stx: () => import("./syntx.ts").then((m) => new m.SyntxExecutor()), // Alias
   chatplayground: () => import("./chatplayground.ts").then((m) => new m.ChatPlaygroundExecutor()),
   cpl: () =>
     import("./chatplayground.ts").then((m) => new m.ChatPlaygroundExecutor("chatplayground")), // Alias
