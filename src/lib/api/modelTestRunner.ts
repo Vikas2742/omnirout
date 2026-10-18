@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { prepareConnectionModelTest } from "@/lib/providerModels/prepareConnectionModelTest";
 import { POST as postChatCompletion } from "@/app/api/v1/chat/completions/route";
+import { POST as postAudioSpeech } from "@/app/api/v1/audio/speech/route";
 import { POST as postAudioTranscription } from "@/app/api/v1/audio/transcriptions/route";
 import { handleValidatedEmbeddingRequestBody } from "@/app/api/v1/embeddings/route";
 import { POST as postRerank } from "@/app/api/v1/rerank/route";
@@ -24,6 +25,7 @@ import { looksLikeQuotaExhausted } from "@/shared/utils/classify429";
 import { getTrustedLocalRateLimitError } from "@omniroute/open-sse/services/rateLimitManager/errors";
 import { runAsProbe } from "@/shared/utils/probeOrigin";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
+import { resolveSelfLoopBearer } from "@/shared/middleware/chatAdmissionIdentity";
 
 const INTERNAL_ORIGIN = "http://omniroute.internal";
 export const DEFAULT_MODEL_TEST_TIMEOUT_MS = 30_000;
@@ -184,6 +186,13 @@ export function buildInternalChatRequest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      // In-process call: it never passes the authz proxy, and the /v1 handlers authenticate
+      // on their own (#16403). Present the per-process self-loop bearer so the test keeps
+      // working under REQUIRE_API_KEY=true for callers without a dashboard cookie.
+      Authorization: `Bearer ${resolveSelfLoopBearer()}`,
+      // The bearer gives the request a memory owner; a connection test must not receive
+      // injected memory/skills or feed memory extraction (same opt-out as #13139).
+      "x-omniroute-no-memory": "true",
       // Reuse the existing strict-mode internal bypass for live health checks.
       "X-Internal-Test": "combo-health-check",
       "X-OmniRoute-No-Cache": "true",
@@ -207,6 +216,9 @@ export function buildInternalResponsesRequest(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      // Same in-process authentication and memory opt-out as buildInternalChatRequest.
+      Authorization: `Bearer ${resolveSelfLoopBearer()}`,
+      "x-omniroute-no-memory": "true",
       "X-Internal-Test": "combo-health-check",
       "X-OmniRoute-No-Cache": "true",
       "X-OmniRoute-Compression": "off",
@@ -275,6 +287,26 @@ export function buildInternalAudioTranscriptionRequest(
   });
 }
 
+export function buildInternalAudioSpeechRequest(
+  model: string,
+  signal: AbortSignal,
+  connectionId?: string
+) {
+  return new Request(`${INTERNAL_ORIGIN}/v1/audio/speech`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Internal-Test": "combo-health-check",
+      "X-OmniRoute-No-Cache": "true",
+      "X-OmniRoute-Compression": "off",
+      "X-Request-Id": `model-test-${randomUUID()}`,
+      ...(connectionId ? { "X-OmniRoute-Connection": connectionId } : {}),
+    },
+    body: JSON.stringify({ model, input: "Hi", voice: "alloy", response_format: "mp3" }),
+    signal,
+  });
+}
+
 export function detectTestKind(modelStr: string, customModel: any, nodeApiType?: string) {
   const supportedEndpoints = Array.isArray(customModel?.supportedEndpoints)
     ? customModel.supportedEndpoints
@@ -287,17 +319,33 @@ export function detectTestKind(modelStr: string, customModel: any, nodeApiType?:
   // "All AI backends exhausted for chat".
   const nodeType = typeof nodeApiType === "string" ? nodeApiType : "";
   const lowerModel = modelStr.toLowerCase();
+  // Only the model's own endpoint metadata counts as an explicit chat signal. The node
+  // apiType / apiFormat are fallbacks and must not override per-model detection or the
+  // name heuristics below (an embedding model can live on a chat-typed node).
+  const isExplicitChat =
+    supportedEndpoints.includes("chat") || supportedEndpoints.includes("responses");
   const isAudioTranscription =
-    apiFormat === "audio-transcriptions" ||
-    nodeType === "audio-transcriptions" ||
-    supportedEndpoints.includes("audio-transcriptions");
+    !isExplicitChat &&
+    (apiFormat === "audio-transcriptions" ||
+      nodeType === "audio-transcriptions" ||
+      supportedEndpoints.includes("audio-transcriptions"));
+  const isAudioSpeech =
+    !isExplicitChat &&
+    !isAudioTranscription &&
+    (supportedEndpoints.includes("audio-speech") ||
+      apiFormat === "audio-speech" ||
+      nodeType === "audio-speech");
   const isRerank =
+    !isAudioSpeech &&
+    !isExplicitChat &&
     !isAudioTranscription &&
     (apiFormat === "rerank" ||
       nodeType === "rerank" ||
       supportedEndpoints.includes("rerank") ||
       lowerModel.includes("rerank"));
   const isEmbedding =
+    !isAudioSpeech &&
+    !isExplicitChat &&
     !isAudioTranscription &&
     !isRerank &&
     (apiFormat === "embeddings" ||
@@ -339,7 +387,14 @@ export function detectTestKind(modelStr: string, customModel: any, nodeApiType?:
       supportedEndpoints.includes("music") ||
       supportedEndpoints.includes("videos"));
 
-  return { isRerank, isEmbedding, isAudioTranscription, isResponses, isNonChatGeneration };
+  return {
+    isRerank,
+    isEmbedding,
+    isAudioTranscription,
+    isAudioSpeech,
+    isResponses,
+    isNonChatGeneration,
+  };
 }
 
 /**
@@ -408,9 +463,19 @@ export function classifyModelTestOutput(
 
 export async function extractModelTestResponseText(
   response: Response,
-  streamChat: boolean
+  streamChat: boolean,
+  isAudioSpeech = false
 ): Promise<ModelTestResponseText> {
   const contentType = (response.headers.get("content-type") || "").toLowerCase();
+  if (isAudioSpeech) {
+    const audio = await response.arrayBuffer();
+    return {
+      text:
+        contentType.startsWith("audio/") && audio.byteLength > 0
+          ? `Audio generated (${audio.byteLength} bytes)`
+          : "",
+    };
+  }
   if (streamChat && !contentType.includes("application/json")) {
     return extractComboTestStreamResult(await response.text());
   }
@@ -523,8 +588,14 @@ export async function runSingleModelTest(
     findCustomModelMetadata(providerId, fullModelStr),
     findProviderNodeApiType(providerId),
   ]);
-  const { isRerank, isEmbedding, isAudioTranscription, isResponses, isNonChatGeneration } =
-    detectTestKind(fullModelStr, customModel, nodeApiType);
+  const {
+    isRerank,
+    isEmbedding,
+    isAudioTranscription,
+    isAudioSpeech,
+    isResponses,
+    isNonChatGeneration,
+  } = detectTestKind(fullModelStr, customModel, nodeApiType);
 
   // #13376: Skip image/music/video generation models — dispatching them as
   // chat completions incurs real billable generations the operator never asked for.
@@ -542,7 +613,10 @@ export async function runSingleModelTest(
     };
   }
 
-  if (options.prompt !== undefined && (isEmbedding || isRerank || isAudioTranscription)) {
+  if (
+    options.prompt !== undefined &&
+    (isEmbedding || isRerank || isAudioTranscription || isAudioSpeech)
+  ) {
     return {
       modelId: fullModelStr,
       status: "error",
@@ -606,6 +680,10 @@ export async function runSingleModelTest(
     if (isRerank) {
       return postRerank(buildInternalRerankRequest(testBody, signal, connectionId));
     }
+    if (isAudioSpeech) {
+      return postAudioSpeech(buildInternalAudioSpeechRequest(fullModelStr, signal, connectionId));
+    }
+
     if (isAudioTranscription) {
       return postAudioTranscription(
         buildInternalAudioTranscriptionRequest(fullModelStr, signal, connectionId)
@@ -718,7 +796,11 @@ export async function runSingleModelTest(
       // deactivated") would run outside runAsProbe and could still reach
       // markAccountUnavailable (#9817).
       const parsedResponse = await runAsProbe(() =>
-        extractModelTestResponseText(res, !isEmbedding && !isRerank && !isResponses && streamChat)
+        extractModelTestResponseText(
+          res,
+          !isEmbedding && !isRerank && !isResponses && streamChat,
+          isAudioSpeech
+        )
       );
       responseText = parsedResponse.text;
       streamError = parsedResponse.error;
