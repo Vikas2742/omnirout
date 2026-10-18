@@ -79,7 +79,7 @@ describe("feature-flags-settings count update", () => {
     // OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED (#16797, default off) to 87;
     // OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED + CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED
     // (#16797, default off) to 89.
-    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 89);
+    assert.equal(FEATURE_FLAG_DEFINITIONS.length, 103);
     // CLAUDE_OAUTH_SUMMARIZED_THINKING_UNREDACTED (#17003, default off) to 87;
     // MODEL_ENDPOINT_CAPABILITY_GATE_ENABLED (#16929/#16956, default off) to 88.
     // ANTHROPIC_COMPATIBLE_MID_CONVERSATION_SYSTEM (#16236, default off) to 88.
