@@ -30,7 +30,7 @@ test.after(() => {
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
-test("Kimi Coding retries a rejected refresh without losing its stored token (#16984)", async () => {
+test("Kimi Coding retains its refresh token across failed sweeps (#16984)", async () => {
   const priorFetch = globalThis.fetch;
   let refreshCalls = 0;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
