@@ -1,6 +1,10 @@
 import type { ProviderCredentials } from "./base.ts";
 import { CodeBuddyBaseExecutor } from "./codebuddy/shared.ts";
 import { requiresReasoningReplay } from "../services/reasoningCache.ts";
+import { isRegisteredFeatureFlagEnabled } from "../utils/registeredFeatureFlag.ts";
+
+/** Default-off feature flag (#13632) that turns the <thought> inlining on. */
+export const CODEBUDDY_CN_INLINE_REASONING_FLAG = "CODEBUDDY_CN_INLINE_REASONING";
 
 // Mirrors reasoningCache.ts's MAX_ENTRY_BYTES cap — keep the inlined block from
 // unboundedly growing the outbound token count for very large reasoning traces.
@@ -44,7 +48,8 @@ function buildThoughtBlock(reasoning: string): string {
  * (`requiresReasoningReplay()` — DeepSeek-V4/Kimi-K2 thinking families that
  * CodeBuddy CN re-exports), so non-thinking models in the catalog are
  * untouched. Idempotent: skips messages whose content already starts with a
- * `<thought>` block.
+ * `<thought>` block. Off unless CODEBUDDY_CN_INLINE_REASONING is enabled: the
+ * inlined block is visible text the upstream model reads back, so it stays opt-in.
  */
 function injectAssistantReasoning(model: string, messages: unknown): unknown {
   if (!Array.isArray(messages)) return messages;
@@ -91,8 +96,8 @@ function injectAssistantReasoning(model: string, messages: unknown): unknown {
  *
  * CodeBuddy CN is an OpenAI-compatible Tencent gateway. Inherits all shared
  * CodeBuddy gateway behavior (forced stream, reasoning_summary, agent-prompt
- * sanitization, tool compaction), and additionally inlines replayed assistant
- * reasoning as a `<thought>` block (#13632).
+ * sanitization, tool compaction), and — with CODEBUDDY_CN_INLINE_REASONING on —
+ * inlines replayed assistant reasoning as a `<thought>` block (#13632).
  */
 export class CodeBuddyCnExecutor extends CodeBuddyBaseExecutor {
   constructor(providerId: string = "codebuddy-cn") {
@@ -111,8 +116,10 @@ export class CodeBuddyCnExecutor extends CodeBuddyBaseExecutor {
     }
     const out = transformed as Record<string, unknown>;
 
-    // --- Inline reasoning_content as a <thought> block (#13632) ---
-    out.messages = injectAssistantReasoning(model, out.messages);
+    // --- Inline reasoning_content as a <thought> block (#13632, opt-in) ---
+    if (isRegisteredFeatureFlagEnabled(CODEBUDDY_CN_INLINE_REASONING_FLAG)) {
+      out.messages = injectAssistantReasoning(model, out.messages);
+    }
 
     return out;
   }
