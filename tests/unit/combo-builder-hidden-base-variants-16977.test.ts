@@ -25,7 +25,7 @@ test.after(() => {
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
-const PROVIDER = "opencode";
+const PROVIDER = "aihorde";
 
 test("hidden base model: neither the base nor its generated effort variants appear", async () => {
   await modelsDb.replaceSyncedAvailableModelsForConnection(PROVIDER, "conn-16977", [
