@@ -642,6 +642,17 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
         { hasUsableCredentials: scopedCheckCreds }
       );
       if (!scopedModel) {
+        // A known text-only model must not receive the original image when the
+        // API-key scope forbids all available captioning routes. An explicit
+        // local rejection is safer than a guaranteed opaque upstream 400 and
+        // does not spend a provider's credit outside the caller's key policy.
+        if (!isAuto && (requestedModelVision === false || forceVisionBridge)) {
+          return {
+            block: true,
+            message: "No permitted vision model can describe images for this text-only target",
+            meta: { reason: "no_permitted_vision_model", requestedModel: model },
+          };
+        }
         context.log?.warn?.(
           "VISION_BRIDGE",
           `No vision model is permitted for this API key; passing ${detectedImageCount} image(s) through unchanged`
