@@ -213,13 +213,13 @@ function writeRefreshedTokens(
 async function discoverTokenEndpoint(
   issuer: string,
   signal: AbortSignal,
-  connectionId?: string | null
+  connectionId: string
 ): Promise<string> {
   const discoveryUrl = `${issuer.replace(/\/$/, "")}/.well-known/openid-configuration`;
   if (!isAllowedXaiUrl(discoveryUrl)) {
     throw new Error("invalid oidc issuer");
   }
-  const res = await fetchWithConnectionProxy(connectionId ?? "", discoveryUrl, {
+  const res = await fetchWithConnectionProxy(connectionId, discoveryUrl, {
     headers: { Accept: "application/json" },
     signal,
   });
@@ -234,7 +234,7 @@ async function discoverTokenEndpoint(
 async function refreshAccessToken(
   auth: ResolvedAuth,
   signal: AbortSignal,
-  connectionId?: string | null
+  connectionId: string
 ): Promise<ResolvedAuth> {
   if (!auth.refreshToken) {
     throw new Error("auth expired — run `grok login`");
@@ -244,7 +244,7 @@ async function refreshAccessToken(
   }
 
   const tokenEndpoint = await discoverTokenEndpoint(auth.issuer, signal, connectionId);
-  const res = await fetchWithConnectionProxy(connectionId ?? "", tokenEndpoint, {
+  const res = await fetchWithConnectionProxy(connectionId, tokenEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -302,10 +302,7 @@ function needsRefresh(auth: ResolvedAuth): boolean {
   return auth.expiresAtMs <= Date.now() + EXPIRY_SKEW_MS;
 }
 
-async function resolveAuth(
-  signal: AbortSignal,
-  connectionId?: string | null
-): Promise<ResolvedAuth> {
+async function resolveAuth(signal: AbortSignal, connectionId: string): Promise<ResolvedAuth> {
   const file = readAuthFile();
   if (!file) throw new Error("no grok auth — run `grok login`");
   const auth = pickAuthEntry(file);
@@ -348,8 +345,8 @@ function resetLocalLabel(endIso?: string): string {
  */
 export async function fetchGrokBillingWithToken(
   token: string,
-  signal?: AbortSignal,
-  connectionId?: string | null
+  signal: AbortSignal | undefined,
+  connectionId: string
 ): Promise<GrokBillingSnapshot> {
   const controller = signal ? null : new AbortController();
   const timeout = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
@@ -371,9 +368,9 @@ export function grokBillingSnapshotToQuotaInfo(snap: GrokBillingSnapshot): Quota
 async function fetchBilling(
   token: string,
   signal: AbortSignal,
-  connectionId?: string | null
+  connectionId: string
 ): Promise<UsageSnapshot> {
-  const res = await fetchWithConnectionProxy(connectionId ?? "", BILLING_URL, {
+  const res = await fetchWithConnectionProxy(connectionId, BILLING_URL, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,

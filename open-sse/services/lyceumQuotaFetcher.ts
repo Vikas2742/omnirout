@@ -38,6 +38,7 @@ import {
 } from "./quotaPreflight.ts";
 import { registerMonitorFetcher } from "./quotaMonitor.ts";
 import { throttleQuotaFetch } from "./quotaFetchThrottle.ts";
+import { fetchWithConnectionProxy } from "./connectionProxyFetch.ts";
 
 const LYCEUM_CONFIG = {
   creditsUrl: "https://api.lyceum.technology/api/v2/external/billing/credits",
@@ -154,11 +155,12 @@ export function buildLyceumQuota(fields: LyceumCreditsFields): LyceumQuota {
 // ─── Core Fetcher ────────────────────────────────────────────────────────────
 
 async function fetchJson(
+  connectionId: string,
   url: string,
   apiKey: string
 ): Promise<{ status: number; data: unknown } | null> {
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithConnectionProxy(connectionId, url, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -166,6 +168,7 @@ async function fetchJson(
       },
       signal: AbortSignal.timeout(8_000),
     });
+    if (!response) return null;
     if (!response.ok) return { status: response.status, data: null };
     const data = await response.json();
     return { status: response.status, data };
@@ -199,7 +202,7 @@ export async function fetchLyceumQuota(
   try {
     await throttleQuotaFetch();
 
-    const result = await fetchJson(LYCEUM_CONFIG.creditsUrl, apiKey);
+    const result = await fetchJson(connectionId, LYCEUM_CONFIG.creditsUrl, apiKey);
     if (!result || result.status !== 200) {
       quotaCache.delete(connectionId);
       return null;

@@ -49,6 +49,7 @@ import {
 } from "./quotaPreflight.ts";
 import { registerMonitorFetcher } from "./quotaMonitor.ts";
 import { throttleQuotaFetch } from "./quotaFetchThrottle.ts";
+import { fetchWithConnectionProxy } from "./connectionProxyFetch.ts";
 
 const LLMGATEWAY_CONFIG = {
   baseUrl: "https://api.llmgateway.io/v1",
@@ -226,11 +227,12 @@ export function buildLlmgatewayQuota(key: LlmgatewayKeyFields): LlmgatewayQuota 
 // ─── Core Fetcher ────────────────────────────────────────────────────────────
 
 async function fetchJson(
+  connectionId: string,
   url: string,
   apiKey: string
 ): Promise<{ status: number; data: unknown } | null> {
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithConnectionProxy(connectionId, url, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -238,6 +240,7 @@ async function fetchJson(
       },
       signal: AbortSignal.timeout(8_000),
     });
+    if (!response) return null;
     if (!response.ok) return { status: response.status, data: null };
     const data = await response.json();
     return { status: response.status, data };
@@ -273,6 +276,7 @@ export async function fetchLlmgatewayQuota(
     await throttleQuotaFetch();
 
     const keyResult = await fetchJson(
+      connectionId,
       `${LLMGATEWAY_CONFIG.baseUrl}${LLMGATEWAY_CONFIG.keyPath}`,
       apiKey
     );
