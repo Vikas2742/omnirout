@@ -19,7 +19,9 @@ test("#16979 Demon Route is available on the API-key provider dashboard", () => 
   assert.equal(entry.website, "https://demonroute.com");
   assert.equal(entry.passthroughModels, true);
   assert.ok(entry.serviceKinds.includes("llm"));
-  assert.ok(entry.serviceKinds.includes("embedding"));
+  // No embedding model is verified for this gateway yet, so it must not be
+  // advertised as an embedding provider.
+  assert.equal(entry.serviceKinds.includes("embedding"), false);
   // Free-lane access requires an account deposit; it is not an unconditional free tier.
   assert.notEqual(entry.hasFree, true);
   assert.match(entry.apiHint, /api\.demonroute\.com\/v1/);
@@ -47,8 +49,14 @@ test("#16979 Demon Route preserves slash-qualified model IDs", () => {
 
 test("#16979 Demon Route uses the default chat executor", async () => {
   assert.ok((await getExecutor("demonroute")) instanceof DefaultExecutor);
-  assert.equal(new DefaultExecutor("demonroute").buildUrl("TheDrummer/Cydonia-24B-v4.3", false), CHAT_URL);
-  assert.equal(new DefaultExecutor("demonroute").buildUrl("TheDrummer/Cydonia-24B-v4.3", true), CHAT_URL);
+  assert.equal(
+    new DefaultExecutor("demonroute").buildUrl("TheDrummer/Cydonia-24B-v4.3", false),
+    CHAT_URL
+  );
+  assert.equal(
+    new DefaultExecutor("demonroute").buildUrl("TheDrummer/Cydonia-24B-v4.3", true),
+    CHAT_URL
+  );
   assert.equal(AGGREGATOR_PROVIDER_IDS.has("demonroute"), true);
   assert.equal(PROVIDER_ENDPOINTS.demonroute, CHAT_URL);
 });
@@ -61,7 +69,8 @@ test("#16979 seed model IDs remain case-sensitive and unique", () => {
     "TheDrummer/Artemis-31B-v1.2",
     "huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated",
     "huihui-ai/Huihui-gemma-4-31B-it-abliterated-v2",
-  ]) assert.ok(ids.includes(id), `missing model id: ${id}`);
+  ])
+    assert.ok(ids.includes(id), `missing model id: ${id}`);
   assert.equal(new Set(ids).size, ids.length);
 });
 
@@ -77,10 +86,10 @@ test("#16979 derives embeddings without adding specialty models to chat seeds", 
   assert.ok(embedding);
   assert.equal(embedding.baseUrl, "https://api.demonroute.com/v1/embeddings");
   assert.equal(embedding.authHeader, "bearer");
-  assert.deepEqual(
-    parseEmbeddingModel("demonroute/org/namespaced-embedding"),
-    { provider: "demonroute", model: "org/namespaced-embedding" }
-  );
+  assert.deepEqual(parseEmbeddingModel("demonroute/org/namespaced-embedding"), {
+    provider: "demonroute",
+    model: "org/namespaced-embedding",
+  });
 });
 
 test("#16979 model passthrough keeps exact nested upstream IDs in request payload", () => {
@@ -117,18 +126,23 @@ test("#16979 dashboard model import uses the authenticated live OpenAI-style pat
   assert.ok(config);
   assert.equal(config.url, MODELS_URL);
   assert.equal(config.method, "GET");
-  assert.equal(assembleProviderModelsHeaders(config, "fake-unit-test-key").Authorization,
-    "Bearer fake-unit-test-key");
+  assert.equal(
+    assembleProviderModelsHeaders(config, "fake-unit-test-key").Authorization,
+    "Bearer fake-unit-test-key"
+  );
 
   const model = "huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated";
-  const normalized = normalizeOpenAiLikeModelsResponse({
-    object: "list",
-    data: [
-      { id: model, object: "model", owned_by: "huihui-ai" },
-      { id: "TheDrummer/Cydonia-24B-v4.3", name: "Cydonia", owned_by: "TheDrummer" },
-      { object: "model", name: "" },
-    ],
-  }, "demonroute");
+  const normalized = normalizeOpenAiLikeModelsResponse(
+    {
+      object: "list",
+      data: [
+        { id: model, object: "model", owned_by: "huihui-ai" },
+        { id: "TheDrummer/Cydonia-24B-v4.3", name: "Cydonia", owned_by: "TheDrummer" },
+        { object: "model", name: "" },
+      ],
+    },
+    "demonroute"
+  );
   assert.deepEqual(normalized, [
     { id: model, name: model, owned_by: "huihui-ai" },
     { id: "TheDrummer/Cydonia-24B-v4.3", name: "Cydonia", owned_by: "TheDrummer" },

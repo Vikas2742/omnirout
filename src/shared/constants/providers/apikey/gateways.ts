@@ -1598,12 +1598,10 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     apiHint:
       "Create an API key at https://seekai.cc, then paste it here as a Bearer token. OpenAI-compatible base URL: https://seekai.cc/v1.",
   },
-  // DaoXE (https://daoxe.com) — QuantumNous New-API gateway. OpenAI-compatible /v1;
-  // /v1/models is key-gated and account-scoped, so models are discovered live.
   // Demon Route: OpenAI-compatible, key-gated account model discovery.
   demonroute: {
     id: "demonroute",
-    serviceKinds: ["llm", "embedding"],
+    serviceKinds: ["llm"],
     alias: "demonroute",
     name: "Demon Route",
     icon: "hub",
@@ -1614,6 +1612,8 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     apiHint:
       "Create an API key at https://demonroute.com, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.demonroute.com/v1.",
   },
+  // DaoXE (https://daoxe.com) — QuantumNous New-API gateway. OpenAI-compatible /v1;
+  // /v1/models is key-gated and account-scoped, so models are discovered live.
   daoxe: {
     id: "daoxe",
     serviceKinds: ["llm"],

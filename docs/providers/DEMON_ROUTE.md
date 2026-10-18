@@ -52,14 +52,14 @@ Smoke requests are real upstream requests and may consume balance or daily quota
 
 ## Endpoint support and operational boundaries
 
-| Surface | Behavior |
-| --- | --- |
-| Chat Completions | `/v1/chat/completions`, JSON and SSE streaming |
-| Model discovery | `/v1/models`, **requires** the connected Bearer key; import the live per-key list |
-| Embeddings | `/v1/embeddings` via OmniRoute's existing generic embedding endpoint derivation; requires an embedding-capable model ID |
-| Responses, images, speech, video | Not advertised by this integration: no provider support is inferred merely because it resembles OpenAI |
-| Timing | 120-second request and first-byte cap in the built-in configuration; upstream advises clients to allow at least 120 seconds |
-| Balance / quotas | Prepaid gateway; `402` indicates insufficient credit, `429` indicates per-key rate limiting, and `401` indicates authentication trouble |
+| Surface                          | Behavior                                                                                                                                |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat Completions                 | `/v1/chat/completions`, JSON and SSE streaming                                                                                          |
+| Model discovery                  | `/v1/models`, **requires** the connected Bearer key; import the live per-key list                                                       |
+| Embeddings                       | Not declared: no embedding-capable model is verified for this gateway, so it is not listed as an embedding provider                     |
+| Responses, images, speech, video | Not advertised by this integration: no provider support is inferred merely because it resembles OpenAI                                  |
+| Timing                           | 120-second request and first-byte cap in the built-in configuration; upstream advises clients to allow at least 120 seconds             |
+| Balance / quotas                 | Prepaid gateway; `402` indicates insufficient credit, `429` indicates per-key rate limiting, and `401` indicates authentication trouble |
 
 Demon Route currently describes a conditional complimentary lane of up to 50 requests/day
 after a confirmed deposit, and claims failed requests are refunded. These are **provider
@@ -81,9 +81,8 @@ without disabling OmniRoute's normal outbound URL, proxy, or credential safeguar
 - **Before testing:** confirm the connection is enabled, its Bearer key belongs to the intended Demon Route account, and the selected model appears in that account's live catalog. Static seeds are not proof of access.
 - **Discovery:** use **Import from /models**, then check the imported identifiers without changing their case or the `vendor/model` slash. If the live request fails, distinguish the fallback seed from a successful sync.
 - **Chat:** issue a short non-streaming request first, then verify streaming returns valid SSE events and terminates. Client-side timeouts may need to exceed the built-in 120-second upstream timeout.
-- **Embeddings:** test only an upstream model that explicitly supports embeddings. Deriving the endpoint is not proof that an arbitrary chat model is embedding-capable.
 - **Routing:** check a direct model call before adding it to a combo. Then verify fallback behavior and that client-visible errors, traces, and logs do not disclose the stored provider key.
 - **Errors:** troubleshoot `401` by rechecking the key, `402` by checking prepaid balance, `429` by respecting the provider's rate limit, and `404` by re-importing the live model list. Avoid immediate unbounded retries.
-- **Costs:** successful live chat/embedding tests can be billable. No live account entitlement, upstream refund, quota, or pricing assertions are established by offline tests in this PR.
+- **Costs:** successful live chat tests can be billable. No live account entitlement, upstream refund, quota, or pricing assertions are established by offline tests in this PR.
 
 For broader provider and combo workflows, see the [User Guide](../guides/USER_GUIDE.md).

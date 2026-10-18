@@ -11,8 +11,8 @@ import { buildOpenAiCompatibleRegistryEntry } from "../../shared.ts";
  * live catalog for their own account. Do NOT hardcode prices or availability:
  * both vary by model and the provider can retire an ID.
  *
- * Chat Completions and embedding requests both use its OpenAI-compatible /v1
- * endpoint. The embedding handler derives /v1/embeddings from this chat URL;
+ * Chat Completions use its OpenAI-compatible /v1 endpoint. Embeddings are not
+ * declared (serviceKinds is chat-only) until an embedding model is verified;
  * do not put unverified embedding models in the static chat seed list.
  *
  * Source: https://demonroute.com/docs and issue #16979.
