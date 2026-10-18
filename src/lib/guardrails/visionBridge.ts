@@ -424,9 +424,9 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
       return { block: false };
     }
 
-    // 8. Check for images. Description mode can only replace top-level parts,
-    // while reroute mode preserves the entire body and therefore also supports
-    // images nested inside Responses function_call_output items.
+    // 8. Detect replaceable images in both top-level content and nested Claude
+    // tool_result parts. Responses function_call_output needs its separate
+    // detector for reroute mode (the output array is not message.content).
     const imageParts = extractImageParts(messages as Parameters<typeof extractImageParts>[0]);
     const nestedToolImageCount = countNestedToolOutputImages(messages as unknown[]);
     const detectedImageCount = imageParts.length + nestedToolImageCount;
@@ -748,8 +748,8 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
     // targets: they may still be able to consume the unmodified image bytes.
     const confirmedTextOnlyDirectTarget =
       !isAuto &&
-      comboVisionBridgeDecision === "not-combo" &&
-      (requestedModelVision === false || forceVisionBridge);
+      (requestedModelVision === false || forceVisionBridge) &&
+      comboVisionBridgeDecision !== "skip";
     const noVisionCombo = comboVisionBridgeDecision === "no-vision";
     if (
       confirmedTextOnlyDirectTarget ||
