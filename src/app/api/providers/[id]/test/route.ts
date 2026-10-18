@@ -29,9 +29,10 @@ import { shouldUseApiKeyConnectionTest } from "./webSessionTestDispatch";
 import { testCodexAppServerConnection, makeDiagnosis } from "./codexAppServerHealth";
 import { recoverKeyHealth } from "@omniroute/open-sse/services/apiKeyRotator.ts";
 import { lockModelIfPerModelQuota } from "@omniroute/open-sse/services/accountFallback.ts";
+import { clearTestedBreakers } from "@/lib/resilience/clearTestedBreakers";
 import { shouldClearErrorStateOnValidProbe } from "@/lib/usage/providerLimits";
 import { isConnectionUnavailableToAuxiliaryActivity } from "@/lib/exclusiveLeaseIsolation";
-import { buildApiKeyConnectionTestResult } from "./apiKeyTestResult";
+import * as apiKeyTestResult from "./apiKeyTestResult";
 import { classifyOAuthProbeInconclusive, OAUTH_TEST_CONFIG } from "./oauthTestConfig";
 import { isGeoBlockedError } from "@omniroute/open-sse/services/errorClassifier.ts";
 import * as retirement from "@/lib/providers/chatgptWebRetirementResponse";
@@ -72,7 +73,17 @@ function hasQoderToken(connection: any): boolean {
 
 // GHSA-jmq6-8j86-8xqj: getCliRuntimeStatus() spawns on the host (LOCAL_ONLY capability),
 // but these routes stay remote-reachable — only loopback/LAN callers and the scheduler probe.
-export type ConnectionTestOptions = { allowLocalRuntimeProbe?: boolean };
+export type ConnectionTestOptions = {
+  allowLocalRuntimeProbe?: boolean;
+  /**
+   * S-01 (#15159): whether a provider validator reached from this test may spawn a
+   * local child process (currently only the devin cloud-agent CLI fallback). These
+   * routes stay remote-reachable for legitimate dashboard use, so the spawn is gated
+   * here at its call site on the trusted peer-locality header — the same shape as
+   * allowLocalRuntimeProbe above. Defaults to permissive for the internal scheduler.
+   */
+  allowLocalSpawn?: boolean;
+};
 
 export async function getProviderRuntimeStatus(
   connection: any,
@@ -894,7 +905,7 @@ export async function testOAuthConnection(
 /**
  * Test API key connection
  */
-async function testApiKeyConnection(connection: any) {
+async function testApiKeyConnection(connection: any, allowLocalSpawn = true) {
   const requiresApiKey = !providerAllowsOptionalApiKey(connection.provider);
   if (requiresApiKey && !connection.apiKey) {
     const error = "Missing API key";
@@ -910,6 +921,7 @@ async function testApiKeyConnection(connection: any) {
       provider: connection.provider,
       apiKey: connection.apiKey,
       providerSpecificData: connection.providerSpecificData,
+      allowLocalSpawn,
     })
   );
 
@@ -928,7 +940,7 @@ async function testApiKeyConnection(connection: any) {
     ? makeDiagnosis("ok", "upstream", null, null)
     : classifyFailure({ error, statusCode: result.statusCode, provider: connection.provider });
 
-  return buildApiKeyConnectionTestResult(result, error, diagnosis);
+  return apiKeyTestResult.buildApiKeyConnectionTestResult(result, error, diagnosis);
 }
 
 /**
@@ -1018,7 +1030,7 @@ export async function testSingleConnection(
         }
       : connection;
     result = await runWithProxyContext(proxyInfo?.proxy || null, () =>
-      testApiKeyConnection(enrichedConnection)
+      testApiKeyConnection(enrichedConnection, options.allowLocalSpawn ?? true)
     );
   } else {
     result = await runWithProxyContext(proxyInfo?.proxy || null, () =>
@@ -1138,17 +1150,14 @@ export async function testSingleConnection(
         : result.valid
           ? connection.rateLimitedUntil || null
           : new Date(Date.now() + testFailureCooldownMs).toISOString(),
+    ...(clearErrorState ? { backoffLevel: 0 } : {}),
   };
-
-  if (clearErrorState) {
-    updateData.backoffLevel = 0;
-  }
 
   if (result.valid && (connection.apiKey || connection.accessToken)) {
     const recovered = recoverKeyHealth(connectionId, "primary", latest.providerSpecificData);
     if (recovered) updateData.providerSpecificData = recovered;
   }
-
+  apiKeyTestResult.applyDetectedControlUpdate(updateData, latest.providerSpecificData, result);
   if (result.refreshed && result.newTokens) {
     updateData.accessToken = result.newTokens.accessToken;
     if (result.newTokens.refreshToken) {
@@ -1161,6 +1170,8 @@ export async function testSingleConnection(
 
   // Update status in db
   await updateProviderConnection(connectionId, updateData);
+  // Once persisted, same gate as the error state: a valid probe also closes a DEGRADED breaker.
+  if (clearErrorState) clearTestedBreakers(provider, connectionId);
 
   // Sync to cloud if token was refreshed
   if (result.refreshed) {
@@ -1235,6 +1246,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const data = await testSingleConnection(id, validationModelId, {
       allowLocalRuntimeProbe: getRequestPeerLocality(request) !== "remote",
+      allowLocalSpawn: getRequestPeerLocality(request) !== "remote",
     });
 
     if (data.error === "Connection not found") {

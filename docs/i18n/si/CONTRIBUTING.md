@@ -298,66 +298,66 @@ CI හි වගකීමයි — ඒවා දේශීයව ධාවනය
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard පිටු (කොටස් 23ක්)
-│   ├── api/                # API routes (නාමාවලි 51ක්)
+│   ├── (dashboard)/        # උපකරණ පුවරු පිටු (කොටස් 23)
+│   ├── api/                # API මාර්ග (නාමාවලි 51)
 │   └── login/              # සත්යාපන පිටු (.tsx)
-├── domain/                 # ප්රතිපත්ති යන්ත්රය (policyEngine, comboResolver, costRules, ආදිය)
+├── domain/                 # ප්රතිපත්ති එන්ජිම (policyEngine, comboResolver, costRules, ආදිය)
 ├── lib/                    # මූලික ව්යාපාරික තර්කනය (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol ලේඛනාගාරය
-│   ├── compliance/         # අනුකූලතා ප්රතිපත්ති යන්ත්රය
-│   ├── db/                 # SQLite domain modules + migrations 130ක්
+│   ├── a2a/                # Agent-to-Agent v0.3 ප්රොටෝකෝල සේවාදායකය
+│   ├── acp/                # Agent Communication Protocol රෙජිස්ට්රිය
+│   ├── compliance/         # අනුකූලතා ප්රතිපත්ති එන්ජිම
+│   ├── db/                 # SQLite වසම් මොඩියුල + සංක්රමණ 130
 │   ├── memory/             # ස්ථිර සංවාද මතකය
-│   ├── oauth/              # OAuth providers, services සහ utilities
-│   ├── skills/             # පුළුල් කළ හැකි skill framework එක
-│   ├── usage/              # භාවිතය නිරීක්ෂණය සහ පිරිවැය ගණනය කිරීම
-│   └── localDb.ts          # නැවත export කරන ස්තරයක් පමණි — මෙහි කිසිවිටෙකත් තර්කනය එක් නොකරන්න
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (සහතික, DNS, ඉලක්ක routing)
+│   ├── oauth/              # OAuth සැපයුම්කරුවන්, සේවා සහ උපයෝගිතා
+│   ├── skills/             # විස්තීරණය කළ හැකි කුසලතා රාමුව
+│   ├── usage/              # භාවිතය හඹා යෑම සහ පිරිවැය ගණනය කිරීම
+│   └── localDb.ts          # නැවත නිර්යාත කිරීමේ ස්තරය පමණි — මෙහි කිසිවිටෙක තර්කනය එක් නොකරන්න
+├── middleware/              # ඉල්ලීම් මිඩ්ල්වෙයාර් (promptInjectionGuard)
+├── mitm/                   # MITM ප්රොක්සිය (සහතික, DNS, ඉලක්ක මාර්ගගත කිරීම)
 ├── shared/
 │   ├── components/         # React සංරචක (.tsx)
-│   ├── constants/          # Provider නිර්වචන (329), MCP scopes, routing උපායමාර්ග 19ක්
-│   ├── utils/              # Circuit breaker, sanitizer, සත්යාපන helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── constants/          # සැපයුම්කරු අර්ථදැක්වීම් (329), MCP විෂයපථ, මාර්ගගත කිරීමේ උපායමාර්ග 19
+│   ├── utils/              # පරිපථ බිඳුම, පවිත්රකාරකය, සත්යාපන සහායක
+│   └── validation/         # Zod v4 ස්කීමා
+└── sse/                    # SSE ප්රොක්සි නලමාර්ගය
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # executor ක්රියාත්මක කිරීමේ modules 89ක්
-├── handlers/               # request handlers 11ක් (chat, responses, embeddings, images, ආදිය)
-├── mcp-server/             # MCP server (අනන්ය tools 110ක්, transports 3ක්, scopes 33ක්)
-├── services/               # ඉහළ මට්ටමේ services 178ක් (combo, autoCombo, rateLimitManager, ආදිය)
+open-sse/                   # @omniroute/open-sse වැඩබිම
+├── executors/              # ක්රියාත්මකකාරක මොඩියුල 150 (ක්රියාත්මකකාරක පන්ති + එක් එක් සැපයුම්කරු සඳහා සහායක)
+├── handlers/               # ඉල්ලීම් හසුරුවන්නන් 11 (කතාබස්, ප්රතිචාර, එම්බෙඩින්, රූප, ආදිය)
+├── mcp-server/             # MCP සේවාදායකය (අනන්ය මෙවලම් 110, ප්රවාහන ක්රම 3, විෂයපථ 33)
+├── services/               # ඉහළ මට්ටමේ සේවා 178 (combo, autoCombo, rateLimitManager, ආදිය)
 ├── translator/             # ආකෘති පරිවර්තක (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # utility modules 22ක් (stream, TLS, proxy, logging)
+├── transformer/            # Responses API පරිණාමකය
+└── utils/                  # උපයෝගිතා මොඩියුල 22 (ප්රවාහය, TLS, ප්රොක්සි, ලොග්කරණය)
 
-electron/                   # Electron desktop app (බහු-වේදිකා)
+electron/                   # Electron ඩෙස්ක්ටොප් යෙදුම (හරස්-වේදිකා)
 
 tests/
-├── unit/                   # Node.js test runner (test ගොනු 1,574ක්)
-├── integration/            # ඒකාබද්ධතා tests
-├── e2e/                    # Playwright tests
-├── security/               # ආරක්ෂක tests
-├── translator/             # පරිවර්තකයට විශේෂිත tests
-└── load/                   # බර tests
+├── unit/                   # Node.js පරීක්ෂණ ධාවකය (පරීක්ෂණ ගොනු 1,574)
+├── integration/            # ඒකාබද්ධතා පරීක්ෂණ
+├── e2e/                    # Playwright පරීක්ෂණ
+├── security/               # ආරක්ෂක පරීක්ෂණ
+├── translator/             # පරිවර්තකයට විශේෂිත පරීක්ෂණ
+└── load/                   # භාර පරීක්ෂණ
 
 docs/
-├── adr/                     # වාස්තු විද්යාත්මක තීරණ වාර්තා
-├── architecture/            # පද්ධති වාස්තු විද්යාව සහ ප්රත්යස්ථතාව
+├── adr/                     # ගෘහනිර්මාණ තීරණ වාර්තා
+├── architecture/            # පද්ධති ගෘහනිර්මාණය සහ ප්රත්යස්ථතාව
 ├── comparison/              # OmniRoute සහ විකල්ප අතර සැසඳීම
 ├── compression/             # සම්පීඩන මාර්ගෝපදේශ සහ රීති
 ├── dev/                     # සංවර්ධන මාර්ගෝපදේශ
-├── diagrams/                # වාස්තු විද්යා රූප සටහන්
+├── diagrams/                # ගෘහනිර්මාණ රූපසටහන්
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # පරිශීලක මාර්ගෝපදේශය, Docker, පිහිටුවීම, දෝෂ නිරාකරණය
-├── i18n/                    # ජාත්යන්තරකරණය කළ README පරිවර්තන
+├── guides/                  # පරිශීලක මාර්ගෝපදේශය, Docker, සැකසුම, දෝෂ නිරාකරණය
+├── i18n/                    # ජාත්යන්තරීකරණය කළ README පරිවර්තන
 ├── marketing/               # අලෙවිකරණ ද්රව්ය
-├── ops/                     # යෙදවීම, proxy, coverage, releases
-├── providers/               # Provider-විශේෂිත ලේඛන
-├── reference/               # API යොමුව, env vars, CLI tools, නොමිලේ භාවිත මට්ටම්
+├── ops/                     # යෙදවීම, ප්රොක්සි, ආවරණය, නිකුතු
+├── providers/               # සැපයුම්කරුට විශේෂිත ලේඛන
+├── reference/               # API යොමුව, පරිසර විචල්ය, CLI මෙවලම්, නොමිලේ ස්තර
 ├── releases/                # නිකුතු සටහන්
-├── routing/                 # Auto-combo engine, reasoning replay
-├── screenshots/             # Dashboard තිර රූ
-├── security/                # Guardrails, අනුකූලතාව, stealth, tokens
+├── routing/                 # ස්වයංක්රීය සංයෝජන එන්ජිම, තර්කන නැවත ධාවනය
+├── screenshots/             # උපකරණ පුවරු තිර රූ
+├── security/                # ආරක්ෂණ සීමා, අනුකූලතාව, රහසිගතභාවය, ටෝකන
 └── specs/                   # සැලසුම් පිරිවිතර
 ```
 
@@ -402,19 +402,19 @@ docs/
 ## Pull Request පිරික්සුම් ලැයිස්තුව
 
 - [ ] පරීක්ෂණ සමත් වේ (`npm test`)
-- [ ] ලින්ට් කිරීම සමත් වේ (`npm run lint`)
-- [ ] ගොඩනැගීම සාර්ථක වේ (`npm run build`)
-- [ ] නව පොදු ශ්රිත සහ අතුරුමුහුණත් සඳහා TypeScript වර්ග එක් කර ඇත
-- [ ] දෘඪ-කේතනය කළ රහස් හෝ පෙරනිමි විකල්ප අගයන් නොමැත
-- [ ] පොදු ඉහළ මට්ටමේ අක්තපත්ර `resolvePublicCred()` හරහා කේතයට ඇතුළත් කර ඇත ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) බලන්න), කිසිවිටෙක ලිටරල ලෙස නොවේ
-- [ ] දෝෂ ප්රතිචාර `buildErrorBody()` / `sanitizeErrorMessage()` හරහා යොමු වේ — ප්රතිචාර බොඩි තුළ අමු ස්ටැක් ට්රේස් නොමැත ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) බලන්න)
-- [ ] Shell විධාන (`exec` / `spawn`) ධාවනකාල අගයන් තන්තු අන්තර්නිවේෂණය හරහා නොව `env` හරහා ලබා දෙයි
-- [ ] සියලු ආදාන Zod ස්කීමා මඟින් වලංගු කර ඇත
-- [ ] පරිශීලකයාට පෙනෙන වෙනස්කම් සඳහා `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` යටතේ වෙනස්කම් ලොග් **ඛණ්ඩයක්** එක් කර ඇත ([`changelog.d/README.md`](./changelog.d/README.md) බලන්න) — `CHANGELOG.md` සෘජුවම සංස්කරණය **නොකරන්න**; නිකුත් කිරීමේදී ඛණ්ඩ එක්රැස් කෙරෙන අතර ඒවා PR අතර කිසිවිටෙක ගැටුම් ඇති නොකරයි
-- [ ] ලේඛන යාවත්කාලීන කර ඇත (අදාළ නම්)
-- [ ] නව CodeQL / Secret-Scanning අනතුරු ඇඟවීම් විවෘත කර නැත, නැතහොත් සෑම එකක්ම අදාළ `docs/security/` ලේඛනය සඳහන් කරන තාක්ෂණික සාධාරණීකරණයක් සමඟ ප්රතික්ෂේප කර ඇත
-- [ ] උප ක්රියාවලි ආරම්භ කරන මාර්ග (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` තුළ `isLocalOnlyPath()` ලෙස වර්ගීකරණය කර ඇත — [දැඩි රීතිය #15](docs/security/ROUTE_GUARD_TIERS.md) බලන්න
-- [ ] commit පණිවිඩ තුළ `Co-Authored-By` ට්රේලර් නොමැත — commits ගබඩා හිමිකරුගේ Git අනන්යතාව යටතේ පමණක් දිස් විය යුතුය (දැඩි රීතිය #16)
+- [ ] Linting සමත් වේ (`npm run lint`)
+- [ ] Build කිරීම සාර්ථක වේ (`npm run build`)
+- [ ] නව public functions සහ interfaces සඳහා TypeScript types එක් කර ඇත
+- [ ] Hardcode කළ secrets හෝ fallback values නොමැත
+- [ ] Public upstream credentials, literals ලෙස නොව `resolvePublicCred()` හරහා embed කර ඇත ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) බලන්න)
+- [ ] Error responses, `buildErrorBody()` / `sanitizeErrorMessage()` හරහා යොමු වේ — response bodies තුළ raw stack traces නොමැත ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) බලන්න)
+- [ ] Shell commands (`exec` / `spawn`), string interpolation හරහා නොව `env` හරහා runtime values ලබා දෙයි
+- [ ] සියලු inputs, Zod schemas සමඟ validate කර ඇත
+- [ ] පරිශීලකයාට පෙනෙන වෙනස්කම් සඳහා `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` යටතේ Changelog **fragment** එකක් එක් කර ඇත ([`changelog.d/README.md`](./changelog.d/README.md) බලන්න) — `CHANGELOG.md` සෘජුව සංස්කරණය **නොකරන්න**; release අවස්ථාවේදී fragments එකතු කෙරෙන අතර PR අතර කිසිවිටෙක ගැටුම් ඇති නොවේ
+- [ ] Documentation යාවත්කාලීන කර ඇත (අදාළ නම්)
+- [ ] නව CodeQL / Secret-Scanning alerts කිසිවක් විවෘත කර නැත, නැතහොත් අදාළ `docs/security/` ලේඛනය සඳහන් කරන තාක්ෂණික සාධාරණීකරණයක් සමඟ ඒ සෑම එකක්ම ඉවත දමා ඇත
+- [ ] Child processes ආරම්භ කරන routes (`/api/mcp/`, `/api/cli-tools/runtime/`), `src/server/authz/routeGuard.ts` තුළ `isLocalOnlyPath()` ලෙස වර්ගීකරණය කර ඇත — [දැඩි රීතිය #15](docs/security/ROUTE_GUARD_TIERS.md) බලන්න
+- [ ] Commit messages තුළ AI/bot `Co-authored-by` trailers නොමැත (දැඩි රීතිය #16) — නැවත භාවිත කරන ලද කාර්යයේ මානව සහයෝගිතාකරුවන්ට සම්මත `Co-authored-by: Name <email>` trailers මඟින් ගෞරවය ලබා දී ඇත
 
 ---
 
@@ -428,11 +428,10 @@ VPS යෙදවීම් සඳහා, `npm run build` වෙනුවට `npm 
 
 ---
 
-## උදව් ලබා ගැනීම
+## උපකාර ලබා ගැනීම
 
-- **ගෘහනිර්මාණය**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) බලන්න
+- **ගෘහ නිර්මාණ ශිල්පය**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) බලන්න
 - **API යොමුව**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) බලන්න
 - **ආරක්ෂක ලේඛන**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **මෙහෙයුම් ලේඛන**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **ගැටලු**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: ගෘහනිර්මාණ තීරණ වාර්තා සඳහා `docs/adr/` බලන්න

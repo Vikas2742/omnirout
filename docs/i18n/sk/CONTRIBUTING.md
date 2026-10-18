@@ -300,7 +300,7 @@ src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
 │   ├── (dashboard)/        # Stránky ovládacieho panela (23 sekcií)
 │   ├── api/                # Trasy API (51 adresárov)
-│   └── login/              # Stránky autentifikácie (.tsx)
+│   └── login/              # Stránky overovania (.tsx)
 ├── domain/                 # Modul pravidiel (policyEngine, comboResolver, costRules atď.)
 ├── lib/                    # Základná obchodná logika (.ts)
 │   ├── a2a/                # Server protokolu Agent-to-Agent v0.3
@@ -309,55 +309,55 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── db/                 # Doménové moduly SQLite + 130 migrácií
 │   ├── memory/             # Trvalá konverzačná pamäť
 │   ├── oauth/              # Poskytovatelia, služby a pomocné nástroje OAuth
-│   ├── skills/             # Rozšíriteľný framework zručností
-│   ├── usage/              # Sledovanie používania a výpočet nákladov
-│   └── localDb.ts          # Iba vrstva opätovných exportov — nikdy sem nepridávajte logiku
+│   ├── skills/             # Rozšíriteľný rámec zručností
+│   ├── usage/              # Sledovanie využitia a výpočet nákladov
+│   └── localDb.ts          # Iba vrstva opätovného exportu — nikdy sem nepridávajte logiku
 ├── middleware/              # Middleware požiadaviek (promptInjectionGuard)
-├── mitm/                   # Proxy MITM (certifikát, DNS, smerovanie cieľa)
+├── mitm/                   # Proxy MITM (certifikát, DNS, smerovanie cieľov)
 ├── shared/
 │   ├── components/         # Komponenty React (.tsx)
 │   ├── constants/          # Definície poskytovateľov (329), rozsahy MCP, 19 stratégií smerovania
-│   ├── utils/              # Istič, sanitizátor, pomocné nástroje autentifikácie
+│   ├── utils/              # Istič, sanitizátor, pomocné nástroje overovania
 │   └── validation/         # Schémy Zod v4
-└── sse/                    # Reťazec spracovania proxy SSE
+└── sse/                    # Reťazec proxy SSE
 
 open-sse/                   # Pracovný priestor @omniroute/open-sse
-├── executors/              # 89 modulov implementácie vykonávačov
-├── handlers/               # 11 obslužných modulov požiadaviek (chat, odpovede, vnorenia, obrázky atď.)
+├── executors/              # 150 modulov vykonávateľov (triedy vykonávateľov + pomocné nástroje pre jednotlivých poskytovateľov)
+├── handlers/               # 11 obslužných modulov požiadaviek (chat, odpovede, embeddings, obrázky atď.)
 ├── mcp-server/             # Server MCP (110 jedinečných nástrojov, 3 transporty, 33 rozsahov)
 ├── services/               # 178 služieb najvyššej úrovne (combo, autoCombo, rateLimitManager atď.)
-├── translator/             # Prevodníky formátov (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── translator/             # Prekladače formátov (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Transformátor Responses API
-└── utils/                  # 22 pomocných modulov (stream, TLS, proxy, zaznamenávanie do logu)
+└── utils/                  # 22 pomocných modulov (stream, TLS, proxy, protokolovanie)
 
-electron/                   # Multiplatformová desktopová aplikácia Electron
+electron/                   # Desktopová aplikácia Electron (multiplatformová)
 
 tests/
-├── unit/                   # Spúšťač testov Node.js (1 574 testovacích súborov)
+├── unit/                   # Testovací nástroj Node.js (1 574 testovacích súborov)
 ├── integration/            # Integračné testy
 ├── e2e/                    # Testy Playwright
 ├── security/               # Bezpečnostné testy
-├── translator/             # Testy špecifické pre prevodník
+├── translator/             # Testy špecifické pre prekladač
 └── load/                   # Záťažové testy
 
 docs/
 ├── adr/                     # Záznamy architektonických rozhodnutí
 ├── architecture/            # Architektúra a odolnosť systému
 ├── comparison/              # OmniRoute v porovnaní s alternatívami
-├── compression/             # Návody a pravidlá kompresie
+├── compression/             # Príručky a pravidlá kompresie
 ├── dev/                     # Vývojárske príručky
 ├── diagrams/                # Diagramy architektúry
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
 ├── guides/                  # Používateľská príručka, Docker, nastavenie, riešenie problémov
-├── i18n/                    # Internacionalizované preklady README
+├── i18n/                    # Internacionalizované preklady súboru README
 ├── marketing/               # Marketingové materiály
 ├── ops/                     # Nasadenie, proxy, pokrytie, vydania
 ├── providers/               # Dokumentácia špecifická pre poskytovateľov
-├── reference/               # Referenčná dokumentácia API, premenné prostredia, nástroje CLI, bezplatné úrovne
+├── reference/               # Referenčná príručka API, premenné prostredia, nástroje CLI, bezplatné úrovne
 ├── releases/                # Poznámky k vydaniam
-├── routing/                 # Modul automatických kombinácií, opakované prehrávanie uvažovania
+├── routing/                 # Modul automatických kombinácií, opätovné prehrávanie uvažovania
 ├── screenshots/             # Snímky obrazovky ovládacieho panela
-├── security/                # Ochranné mechanizmy, súlad, skryté fungovanie, tokeny
+├── security/                # Ochranné mechanizmy, súlad, utajenie, tokeny
 └── specs/                   # Špecifikácie návrhu
 ```
 
@@ -399,22 +399,22 @@ Napíšte jednotkové testy v `tests/unit/`, ktoré pokrývajú minimálne:
 
 ---
 
-## Kontrolný zoznam pull requestu
+## Kontrolný zoznam pre Pull Request
 
-- [ ] Testy sú úspešné (`npm test`)
-- [ ] Kontrola lintovania je úspešná (`npm run lint`)
+- [ ] Testy prechádzajú (`npm test`)
+- [ ] Kontrola lintingu prechádza (`npm run lint`)
 - [ ] Zostavenie je úspešné (`npm run build`)
-- [ ] Pre nové verejné funkcie a rozhrania boli pridané typy TypeScript
+- [ ] Pre nové verejné funkcie a rozhrania sú pridané typy TypeScript
 - [ ] Žiadne napevno zadané tajné údaje ani záložné hodnoty
-- [ ] Verejné upstream prihlasovacie údaje sú vložené pomocou `resolvePublicCred()` (pozrite si [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), nikdy nie ako literály
-- [ ] Chybové odpovede prechádzajú cez `buildErrorBody()` / `sanitizeErrorMessage()` — telá odpovedí neobsahujú nespracované trasovania zásobníka (pozrite si [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Verejné prihlasovacie údaje upstream služieb sú vložené prostredníctvom `resolvePublicCred()` (pozrite si [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), nikdy nie ako literály
+- [ ] Chybové odpovede prechádzajú cez `buildErrorBody()` / `sanitizeErrorMessage()` — v telách odpovedí nie sú žiadne nespracované výpisy zásobníka (pozrite si [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
 - [ ] Shellové príkazy (`exec` / `spawn`) odovzdávajú hodnoty za behu prostredníctvom `env`, nie pomocou interpolácie reťazcov
-- [ ] Všetky vstupy sú overené pomocou schém Zod
-- [ ] Pre zmeny viditeľné používateľom bol do `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` pridaný **fragment** zoznamu zmien (pozrite si [`changelog.d/README.md`](./changelog.d/README.md)) — **neupravujte** priamo `CHANGELOG.md`; fragmenty sa agregujú pri vydaní a medzi pull requestmi nikdy nevytvárajú konflikty
-- [ ] Dokumentácia bola aktualizovaná (ak je to relevantné)
+- [ ] Všetky vstupy sú validované pomocou schém Zod
+- [ ] Pre zmeny viditeľné pre používateľov je pridaný **fragment** záznamu zmien v `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` (pozrite si [`changelog.d/README.md`](./changelog.d/README.md)) — **neupravujte** priamo `CHANGELOG.md`; fragmenty sa agregujú pri vydaní a medzi Pull Requestmi nikdy nevznikajú konflikty
+- [ ] Dokumentácia je aktualizovaná (ak je to relevantné)
 - [ ] Neboli vytvorené žiadne nové upozornenia CodeQL / Secret-Scanning alebo bolo každé z nich zamietnuté s technickým odôvodnením odkazujúcim na príslušný dokument v `docs/security/`
-- [ ] Trasy, ktoré spúšťajú podriadené procesy (`/api/mcp/`, `/api/cli-tools/runtime/`), sú klasifikované ako `isLocalOnlyPath()` v `src/server/authz/routeGuard.ts` — pozrite si [Pevné pravidlo č. 15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Správy commitov neobsahujú riadky `Co-Authored-By` — commity musia byť uvedené výlučne pod identitou Git vlastníka repozitára (Pevné pravidlo č. 16)
+- [ ] Trasy, ktoré spúšťajú podradené procesy (`/api/mcp/`, `/api/cli-tools/runtime/`), sú klasifikované ako `isLocalOnlyPath()` v `src/server/authz/routeGuard.ts` — pozrite si [Prísne pravidlo č. 15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Správy commitov neobsahujú pätičky `Co-authored-by` pre AI/botov (Prísne pravidlo č. 16) — ľudskí spolupracovníci, ktorých práca je opätovne použitá, sú uvedení pomocou štandardných pätičiek `Co-authored-by: Name <email>`
 
 ---
 
@@ -435,4 +435,3 @@ Potom použite zručnosti `/deploy-vps-*-cc`, ktoré pomocou rsync synchronizuj�
 - **Bezpečnostná dokumentácia**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **Prevádzková dokumentácia**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Problémy**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR**: Záznamy o architektonických rozhodnutiach nájdete v `docs/adr/`

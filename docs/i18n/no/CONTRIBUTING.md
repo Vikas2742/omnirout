@@ -288,65 +288,72 @@ Se `open-sse/utils/stream.ts` og `open-sse/utils/streamHandler.ts` for anvendte 
 
 ---
 
-## Project Structure
+## Prosjektstruktur
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # Dashboardsider (23 seksjoner)
+│   ├── api/                # API-ruter (51 kataloger)
+│   └── login/              # Autentiseringssider (.tsx)
+├── domain/                 # Regelmotor (policyEngine, comboResolver, costRules osv.)
+├── lib/                    # Sentral forretningslogikk (.ts)
+│   ├── a2a/                # Agent-til-agent v0.3-protokollserver
+│   ├── acp/                # Register for Agent Communication Protocol
+│   ├── compliance/         # Regelmotor for samsvar
+│   ├── db/                 # SQLite-domenemoduler + 130 migreringer
+│   ├── memory/             # Vedvarende samtaleminne
+│   ├── oauth/              # OAuth-leverandører, -tjenester og -verktøy
+│   ├── skills/             # Utvidbart ferdighetsrammeverk
+│   ├── usage/              # Brukssporing og kostnadsberegning
+│   └── localDb.ts          # Kun reeksportlag — legg aldri til logikk her
+├── middleware/              # Mellomvare for forespørsler (promptInjectionGuard)
+├── mitm/                   # MITM-proxy (sertifikat, DNS, målruting)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React-komponenter (.tsx)
+│   ├── constants/          # Leverandørdefinisjoner (329), MCP-omfang, 19 rutingsstrategier
+│   ├── utils/              # Kretsbryter, rensing, autentiseringshjelpere
+│   └── validation/         # Zod v4-skjemaer
+└── sse/                    # SSE-proxypipeline
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse-arbeidsområde
+├── executors/              # 150 kjøringsmoduler (kjøringsklasser + leverandørspesifikke hjelpere)
+├── handlers/               # 11 forespørselsbehandlere (chat, svar, innebygginger, bilder osv.)
+├── mcp-server/             # MCP-server (110 unike verktøy, 3 transporter, 33 omfang)
+├── services/               # 178 tjenester på toppnivå (combo, autoCombo, rateLimitManager osv.)
+├── translator/             # Formatoversettere (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Transformer for Responses API
+└── utils/                  # 22 verktøymoduler (strøm, TLS, proxy, logging)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Electron-skrivebordsapp (på tvers av plattformer)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js-testkjører (1 574 testfiler)
+├── integration/            # Integrasjonstester
+├── e2e/                    # Playwright-tester
+├── security/               # Sikkerhetstester
+├── translator/             # Oversetterspesifikke tester
+└── load/                   # Belastningstester
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Arkitekturbeslutningslogger
+├── architecture/            # Systemarkitektur og robusthet
+├── comparison/              # OmniRoute kontra alternativer
+├── compression/             # Komprimeringsveiledninger og -regler
+├── dev/                     # Utviklingsveiledninger
+├── diagrams/                # Arkitekturdiagrammer
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # Brukerveiledning, Docker, oppsett, feilsøking
+├── i18n/                    # Internasjonaliserte README-oversettelser
+├── marketing/               # Markedsføringsmateriell
+├── ops/                     # Distribusjon, proxy, dekning, utgivelser
+├── providers/               # Leverandørspesifikk dokumentasjon
+├── reference/               # API-referanse, miljøvariabler, CLI-verktøy, gratisnivåer
+├── releases/                # Utgivelsesmerknader
+├── routing/                 # Automatisk kombinasjonsmotor, repetisjon av resonnering
+├── screenshots/             # Skjermbilder av dashbordet
+├── security/                # Sikkerhetsmekanismer, samsvar, skjult modus, tokener
+└── specs/                   # Designspesifikasjoner
 ```
 
 ---
@@ -391,18 +398,18 @@ Skriv enhetstester i `tests/unit/` som minst dekker:
 
 - [ ] Tester består (`npm test`)
 - [ ] Linting består (`npm run lint`)
-- [ ] Bygging lykkes (`npm run build`)
+- [ ] Bygging fullføres (`npm run build`)
 - [ ] TypeScript-typer er lagt til for nye offentlige funksjoner og grensesnitt
 - [ ] Ingen hardkodede hemmeligheter eller reserveverdier
-- [ ] Offentlig tilgjengelig oppstrømslegitimasjon er innebygd via `resolvePublicCred()` (se [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), aldri som literalverdier
-- [ ] Feilsvar går gjennom `buildErrorBody()` / `sanitizeErrorMessage()` — ingen rå stakkspor i svarinnholdet (se [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Offentlig tilgjengelig påloggingsinformasjon for oppstrømstjenester bygges inn via `resolvePublicCred()` (se [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), aldri som litteraler
+- [ ] Feilsvar går gjennom `buildErrorBody()` / `sanitizeErrorMessage()` — ingen rå stakksporinger i svarinnhold (se [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
 - [ ] Skallkommandoer (`exec` / `spawn`) sender kjøretidsverdier via `env`, ikke via strenginterpolasjon
 - [ ] Alle inndata valideres med Zod-skjemaer
-- [ ] Et **fragment** til endringsloggen er lagt til under `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` for endringer som er synlige for brukerne (se [`changelog.d/README.md`](./changelog.d/README.md)) — **ikke** rediger `CHANGELOG.md` direkte; fragmentene samles ved utgivelse og skaper aldri konflikter mellom pull requests
+- [ ] En **fragmentfil** for endringsloggen er lagt til under `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` for brukersynlige endringer (se [`changelog.d/README.md`](./changelog.d/README.md)) — rediger **ikke** `CHANGELOG.md` direkte; fragmentene samles ved utgivelse og skaper aldri konflikter mellom pull request-er
 - [ ] Dokumentasjonen er oppdatert (hvis aktuelt)
-- [ ] Ingen nye CodeQL-varsler eller varsler fra Secret-Scanning er åpnet, eller hvert varsel er avvist med en teknisk begrunnelse som henviser til det relevante dokumentet under `docs/security/`
+- [ ] Ingen nye CodeQL-/Secret-Scanning-varsler er opprettet, eller hvert varsel er avvist med en teknisk begrunnelse som henviser til det relevante dokumentet under `docs/security/`
 - [ ] Ruter som starter underprosesser (`/api/mcp/`, `/api/cli-tools/runtime/`), er klassifisert som `isLocalOnlyPath()` i `src/server/authz/routeGuard.ts` — se [ufravikelig regel nr. 15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Ingen `Co-Authored-By`-trailere i commit-meldinger — commits må utelukkende vises under repository-eierens Git-identitet (ufravikelig regel nr. 16)
+- [ ] Ingen AI-/bot-`Co-authored-by`-trailere i commit-meldinger (ufravikelig regel nr. 16) — menneskelige samarbeidspartnere hvis arbeid gjenbrukes, krediteres med standardtrailere av typen `Co-authored-by: Name <email>`
 
 ---
 
@@ -419,4 +426,3 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **Sikkerhetsdokumentasjon**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **Driftsdokumentasjon**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Problemer**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR-er**: Se `docs/adr/` for arkitekturbeslutningslogger

@@ -293,71 +293,71 @@ Lee `open-sse/utils/stream.ts` na `open-sse/utils/streamHandler.ts` maka ihe at�
 
 ---
 
-## Nhazi Ọrụ Ngo
+## Nhazi Projekti
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Ibe dashboard (ngalaba 23)
-│   ├── api/                # Ụzọ API (directory 51)
-│   └── login/              # Ibe authentication (.tsx)
-├── domain/                 # Injin policy (policyEngine, comboResolver, costRules, wdg.)
-├── lib/                    # Isi logic azụmahịa (.ts)
-│   ├── a2a/                # Server protokol Agent-to-Agent v0.3
-│   ├── acp/                # Registry Agent Communication Protocol
-│   ├── compliance/         # Injin policy compliance
-│   ├── db/                 # Modul domain SQLite + migration 130
+│   ├── (dashboard)/        # Ihu dashboard (ngalaba 23)
+│   ├── api/                # Ụzọ API (folda 51)
+│   └── login/              # Ihu njirimara (.tsx)
+├── domain/                 # Injin iwu (policyEngine, comboResolver, costRules, wdg.)
+├── lib/                    # Isi mgbagha azụmahịa (.ts)
+│   ├── a2a/                # Sava protokol Agent-to-Agent v0.3
+│   ├── acp/                # Ndebanye protokol nkwurịta okwu nke ndị agent
+│   ├── compliance/         # Injin iwu nrubeisi
+│   ├── db/                 # Modul ngalaba SQLite + mbugharị 130
 │   ├── memory/             # Ebe nchekwa mkparịta ụka na-adịgide adịgide
-│   ├── oauth/              # Provider, service, na utility OAuth
-│   ├── skills/             # Framework skill a pụrụ ịgbasawanye
-│   ├── usage/              # Nsochi ojiji na ngụkọta ọnụahịa
-│   └── localDb.ts          # Naanị layer re-export — etinyela logic ebe a
-├── middleware/              # Middleware request (promptInjectionGuard)
-├── mitm/                   # Proxy MITM (cert, DNS, routing target)
+│   ├── oauth/              # Ndị na-eweta OAuth, ọrụ, na ngwa enyemaka
+│   ├── skills/             # Framework nka nwere ike ịgbasawanye
+│   ├── usage/              # Nsochie ojiji na ngụkọta ụgwọ
+│   └── localDb.ts          # Naanị oyi akwa mbupụ ọzọ — etinyela mgbagha ebe a
+├── middleware/              # Middleware arịrịọ (promptInjectionGuard)
+├── mitm/                   # Proxy MITM (asambodo, DNS, ntụgharị ebe ebumnuche)
 ├── shared/
-│   ├── components/         # Component React (.tsx)
-│   ├── constants/          # Nkọwa provider (329), scope MCP, atụmatụ routing 19
-│   ├── utils/              # Circuit breaker, sanitizer, ihe enyemaka authentication
+│   ├── components/         # Komponentị React (.tsx)
+│   ├── constants/          # Nkọwa ndị na-eweta (329), oke MCP, atụmatụ ntụgharị 19
+│   ├── utils/              # Ihe nkwụsị sekit, ihe nhicha, ngwa enyemaka njirimara
 │   └── validation/         # Schema Zod v4
 └── sse/                    # Pipeline proxy SSE
 
-open-sse/                   # Workspace @omniroute/open-sse
-├── executors/              # Modul implementation executor 89
-├── handlers/               # Handler request 11 (chat, responses, embeddings, images, wdg.)
-├── mcp-server/             # Server MCP (ngwaọrụ pụrụ iche 110, transport 3, scope 33)
-├── services/               # Service ọkwa elu 178 (combo, autoCombo, rateLimitManager, wdg.)
-├── translator/             # Ndị ntụgharị format (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Transformer Responses API
-└── utils/                  # Modul utility 22 (stream, TLS, proxy, logging)
+open-sse/                   # Ebe ọrụ @omniroute/open-sse
+├── executors/              # Modul mmejuputa 150 (klaasị mmejuputa + ngwa enyemaka maka onye na-eweta ọ bụla)
+├── handlers/               # Ndị njikwa arịrịọ 11 (nkata, nzaghachi, embeddings, onyonyo, wdg.)
+├── mcp-server/             # Sava MCP (ngwa pụrụ iche 110, ụzọ mbufe 3, oke 33)
+├── services/               # Ọrụ ọkwa elu 178 (combo, autoCombo, rateLimitManager, wdg.)
+├── translator/             # Ndị ntụgharị usoro (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Ihe ntụgharị Responses API
+└── utils/                  # Modul ngwa enyemaka 22 (stream, TLS, proxy, logging)
 
-electron/                   # Ngwa desktop Electron (cross-platform)
+electron/                   # Ngwa desktop Electron (na-arụ ọrụ n'elu sistemụ dị iche iche)
 
 tests/
-├── unit/                   # Test runner Node.js (faịlụ test 1,574)
-├── integration/            # Test integration
-├── e2e/                    # Test Playwright
-├── security/               # Test nchekwa
-├── translator/             # Test ndị metụtara translator kpọmkwem
-└── load/                   # Test ibu ọrụ
+├── unit/                   # Onye na-agba ule Node.js (faịlụ ule 1,574)
+├── integration/            # Ule njikọ
+├── e2e/                    # Ule Playwright
+├── security/               # Ule nchekwa
+├── translator/             # Ule pụrụ iche maka onye ntụgharị
+└── load/                   # Ule ibu ọrụ
 
 docs/
-├── adr/                     # Ndekọ Mkpebi Architecture
-├── architecture/            # Architecture sistemụ na ikike ịnagide ọdịda
-├── comparison/              # OmniRoute megide nhọrọ ndị ọzọ
-├── compression/             # Ntuziaka na iwu compression
+├── adr/                     # Ndekọ Mkpebi Nhazi Sistemụ
+├── architecture/            # Nhazi sistemụ na ikike iguzogide nsogbu
+├── comparison/              # OmniRoute tụnyere nhọrọ ndị ọzọ
+├── compression/             # Ntuziaka na iwu mkpakọ
 ├── dev/                     # Ntuziaka mmepe
-├── diagrams/                # Eserese architecture
+├── diagrams/                # Eserese nhazi sistemụ
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Ntuziaka onye ọrụ, Docker, setup, idozi nsogbu
-├── i18n/                    # Ntụgharị README n’asụsụ mba dị iche iche
-├── marketing/               # Ihe ndị e ji eme marketing
-├── ops/                     # Deployment, proxy, coverage, release
-├── providers/               # Dokumenteshọn kpọmkwem maka provider
-├── reference/               # Ntụaka API, env vars, ngwa CLI, free tiers
-├── releases/                # Ihe edeturu gbasara release
-├── routing/                 # Injin auto-combo, reasoning replay
-├── screenshots/             # Screenshot dashboard
-├── security/                # Guardrails, compliance, stealth, token
+├── guides/                  # Ntuziaka onye ọrụ, Docker, nhazi, idozi nsogbu
+├── i18n/                    # Ntụgharị README gaa n'asụsụ mba dị iche iche
+├── marketing/               # Ngwa ahịa
+├── ops/                     # Mbugharị, proxy, mkpuchi, mwepụta
+├── providers/               # Akwụkwọ maka ndị na-eweta kpọmkwem
+├── reference/               # Ntụaka API, env vars, ngwa CLI, ọkwa efu
+├── releases/                # Ndetu mwepụta
+├── routing/                 # Injin auto-combo, mmegharị usoro echiche
+├── screenshots/             # Nseta ihuenyo dashboard
+├── security/                # Usoro nchedo, nrubeisi, izochi ọrụ, tokens
 └── specs/                   # Nkọwapụta imewe
 ```
 
@@ -399,22 +399,22 @@ Dee unit tests na `tests/unit/` nke ga-ekpuchi ma ọ dịkarịa ala:
 
 ---
 
-## Ndepụta Nnyocha Pull Request
+## Ndepụta Nlele Pull Request
 
-- [ ] Tests gafere (`npm test`)
+- [ ] Nnwale gafere (`npm test`)
 - [ ] Linting gafere (`npm run lint`)
-- [ ] Build gara nke ọma (`npm run build`)
-- [ ] Agbakwunyere ụdị TypeScript maka functions na interfaces ọhaneze ọhụrụ
-- [ ] Enweghị secrets ma ọ bụ fallback values e dere ozugbo na koodu
-- [ ] E tinyere public upstream credentials site na `resolvePublicCred()` (lee [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), ọ bụghị dịka literals
-- [ ] Error responses na-agafe na `buildErrorBody()` / `sanitizeErrorMessage()` — enweghị raw stack traces n'ime response bodies (lee [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Shell commands (`exec` / `spawn`) na-ebufe runtime values site na `env`, ọ bụghị site na string interpolation
-- [ ] E ji Zod schemas nyochaa inputs niile
-- [ ] Agbakwunyere **fragment** changelog n'okpuru `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` maka mgbanwe ndị users ga-ahụ (lee [`changelog.d/README.md`](./changelog.d/README.md)) — **edezigharịla** `CHANGELOG.md` ozugbo; a na-achịkọta fragments n'oge release, ha anaghịkwa enwe conflict n'etiti PRs
-- [ ] Emelitere documentation (ọ bụrụ na ọ dị mkpa)
-- [ ] Enweghị alerts ọhụrụ nke CodeQL / Secret-Scanning e mepere, ma ọ bụ a kagburu nke ọ bụla site na technical justification nke na-ezo aka na doc kwesịrị ekwesị dị na `docs/security/`
-- [ ] Routes ndị na-emepụta child processes (`/api/mcp/`, `/api/cli-tools/runtime/`) ka e kewara dịka `isLocalOnlyPath()` na `src/server/authz/routeGuard.ts` — lee [Iwu Siri Ike #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Enweghị trailers `Co-Authored-By` n'ime commit messages — commits ga-apụta naanị n'okpuru Git identity nke onye nwe repository (Iwu Siri Ike #16)
+- [ ] Nrụpụta gara nke ọma (`npm run build`)
+- [ ] Agbakwunyere ụdị TypeScript maka ọrụ na interface ọhụụ ndị ọha na-eji
+- [ ] Enweghị ihe nzuzo ma ọ bụ fallback values e dere kpọmkwem n'ime koodu
+- [ ] E tinyere credentials ọha nke upstream site na `resolvePublicCred()` (lee [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), ọ bụghị dị ka literals
+- [ ] Nzaghachi njehie na-agafe na `buildErrorBody()` / `sanitizeErrorMessage()` — enweghị raw stack traces n'ime response bodies (lee [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Iwu shell (`exec` / `spawn`) na-ebufe runtime values site na `env`, ọ bụghị site na string interpolation
+- [ ] E jiri Zod schemas nyochaa inputs niile
+- [ ] Agbakwunyere **fragment** nke changelog n'okpuru `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` maka mgbanwe ndị ọrụ ga-ahụ (lee [`changelog.d/README.md`](./changelog.d/README.md)) — **edezila** `CHANGELOG.md` ozugbo; a na-achịkọta fragments n'oge release, ha anaghịkwa enwe esemokwu n'etiti PR dị iche iche
+- [ ] Emelitere documentation (ma ọ bụrụ na ọ dị mkpa)
+- [ ] Enweghị alerts ọhụrụ nke CodeQL / Secret-Scanning e mepere, ma ọ bụ a kagburu nke ọ bụla site na technical justification nke na-arụtụ aka na doc kwesịrị ekwesị dị na `docs/security/`
+- [ ] E kọwara routes ndị na-amalite child processes (`/api/mcp/`, `/api/cli-tools/runtime/`) dị ka `isLocalOnlyPath()` n'ime `src/server/authz/routeGuard.ts` — lee [Iwu Siri Ike #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Enweghị trailers AI/bot `Co-authored-by` n'ime commit messages (Iwu Siri Ike #16) — a na-enye ndị mmadụ rụkọrọ ọrụ, ndị e ji ọrụ ha mee ihe ọzọ, otuto site na trailers ọkọlọtọ `Co-authored-by: Name <email>`
 
 ---
 
@@ -430,9 +430,8 @@ Mgbe ahụ, jiri skills `/deploy-vps-*-cc` ndị na-eji rsync ebuga `dist/` na d
 
 ## Inweta Enyemaka
 
-- **Ọdịdị sistemụ**: Lee [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
-- **Ntụaka API**: Lee [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
+- **Nhazi sistemụ**: Hụ [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
+- **Ntụaka API**: Hụ [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Akwụkwọ nchekwa**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **Akwụkwọ arụmọrụ**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **Akwụkwọ ọrụ sistemụ**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Nsogbu**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: Lee `docs/adr/` maka ndekọ mkpebi gbasara ọdịdị sistemụ

@@ -1,113 +1,40 @@
 "use client";
 
+import ConnectionTestButton from "@/shared/components/ConnectionTestButton";
+
 // Phase 1d extraction — Issue #3501
 // ConnectionRow (and its local helpers CooldownTimer, inferErrorType,
 // getStatusPresentation) moved out of ProviderDetailPageClient.tsx.
 
 import { readCookieExpiresAt } from "@/shared/utils/webCookieExpiry";
 import { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge, Button, Toggle } from "@/shared/components";
 import { pickDisplayValue } from "@/shared/utils/maskEmail";
 import useEmailPrivacyStore from "@/store/emailPrivacyStore";
 import { isClaudeExtraUsageBlockEnabled } from "@/lib/providers/claudeExtraUsage";
 import { shouldShowConnectionLastError } from "./connectionRowHelpers";
-import {
-  getCodexEffectiveServiceTier,
-  type CodexGlobalServiceMode,
-} from "@/lib/providers/codexFastTier";
-import { normalizeCodexLimitPolicy, providerText, ERROR_TYPE_LABELS } from "../providerPageHelpers";
+import { readStoredVerificationUrl } from "@omniroute/open-sse/services/antigravityVerification.ts";
+import type { ConnectionRowProps } from "./connectionRowTypes";
+import { getStatusPresentation } from "./connectionRowStatus";
+import { getCodexEffectiveServiceTier } from "@/lib/providers/codexFastTier";
+import { normalizeCodexLimitPolicy, providerText } from "../providerPageHelpers";
 import { getCodexPlanLabel } from "../codexPlanLabel";
-import type { CodexAccountPoolProjection } from "@omniroute/open-sse/services/codexAccount/index.ts";
 import CodexAccountDetails from "./CodexAccountDetails";
+import ConnectionQuotaPanel from "./ConnectionQuotaPanel";
+import ConnectionIdChip from "./ConnectionIdChip";
+import {
+  isProviderQuotaVisible,
+  supportsProviderQuota,
+} from "@/shared/utils/providerQuotaVisibility";
 import ProviderQuotaVisibilityToggle from "./ProviderQuotaVisibilityToggle";
+import CodexPingNowButton from "./CodexPingNowButton";
 
 // ---------------------------------------------------------------------------
 // Types (exported so the client can reference them without re-importing)
 // ---------------------------------------------------------------------------
 
-export interface ConnectionRowConnection {
-  id?: string;
-  provider?: string;
-  name?: string;
-  email?: string;
-  displayName?: string;
-  rateLimitedUntil?: string;
-  rateLimitProtection?: boolean;
-  testStatus?: string;
-  isActive?: boolean;
-  priority?: number;
-  lastError?: string;
-  lastErrorType?: string;
-  lastErrorSource?: string;
-  errorCode?: string | number;
-  globalPriority?: number;
-  providerSpecificData?: Record<string, unknown>;
-  defaultModel?: string | null;
-  expiresAt?: string;
-  tokenExpiresAt?: string;
-  maxConcurrent?: number | null;
-  authType?: string;
-  proxyEnabled?: boolean;
-  perKeyProxyEnabled?: boolean;
-  quotaVisible?: boolean;
-  codexAccountPool?: CodexAccountPoolProjection;
-}
-
-export interface ConnectionRowProps {
-  connection: ConnectionRowConnection;
-  isOAuth: boolean;
-  isClaude?: boolean;
-  isCodex?: boolean;
-  codexGlobalServiceMode?: CodexGlobalServiceMode;
-  isFirst: boolean;
-  isLast: boolean;
-  isSelected?: boolean;
-  onToggleSelect?: () => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onToggleActive: (isActive?: boolean) => void | Promise<void>;
-  onToggleRateLimit: (enabled?: boolean) => void;
-  onToggleQuotaVisibility?: (visible: boolean) => void;
-  onToggleClaudeExtraUsage?: (enabled?: boolean) => void;
-  onToggleAutoSync?: (enabled: boolean) => void;
-  onToggleCodex5h?: (enabled?: boolean) => void;
-  onToggleCodexWeekly?: (enabled?: boolean) => void;
-  isCcCompatible?: boolean;
-  cliproxyapiEnabled?: boolean;
-  onToggleCliproxyapiMode?: (enabled?: boolean) => void;
-  /** Provider-level upstream proxy routing mode (native/CLIProxyAPI/Dario/fallback). */
-  upstreamProxyMode?: "native" | "cliproxyapi" | "dario" | "fallback";
-  upstreamProxyFallbackBackend?: "cliproxyapi" | "dario";
-  onSetUpstreamProxyMode?: (
-    mode: "native" | "cliproxyapi" | "dario" | "fallback",
-    fallbackBackend?: "cliproxyapi" | "dario"
-  ) => void;
-  onRetest: () => void;
-  isRetesting?: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  onReauth?: () => void;
-  onProxy?: () => void;
-  hasProxy?: boolean;
-  proxySource?: string;
-  proxyHost?: string;
-  proxyName?: string | null;
-  proxyEnabled?: boolean;
-  perKeyProxyEnabled?: boolean;
-  onToggleProxyEnabled?: (enabled: boolean) => void;
-  onTogglePerKeyProxyEnabled?: (enabled: boolean) => void;
-  onRefreshToken?: () => void;
-  isRefreshing?: boolean;
-  onApplyCodexAuthLocal?: () => void;
-  isApplyingCodexAuthLocal?: boolean;
-  onExportCodexAuthFile?: () => void;
-  isExportingCodexAuthFile?: boolean;
-  onApplyClaudeAuthLocal?: () => void;
-  isApplyingClaudeAuthLocal?: boolean;
-  onExportClaudeAuthFile?: () => void;
-  isExportingClaudeAuthFile?: boolean;
-}
+export type { ConnectionRowConnection, ConnectionRowProps } from "./connectionRowTypes";
 
 // ---------------------------------------------------------------------------
 // CooldownTimerProps (local — only used below)
@@ -154,194 +81,6 @@ function CooldownTimer({ until }: CooldownTimerProps) {
 }
 
 // ---------------------------------------------------------------------------
-// inferErrorType
-// ---------------------------------------------------------------------------
-
-function inferErrorType(connection: ConnectionRowConnection, isCooldown: boolean): string | null {
-  if (isCooldown) return "upstream_rate_limited";
-  if (connection.testStatus === "banned") return "banned";
-  if (connection.testStatus === "credits_exhausted") return "credits_exhausted";
-  if (connection.lastErrorType) return connection.lastErrorType;
-
-  const code = Number(connection.errorCode);
-  if (code === 401 || code === 403) return "upstream_auth_error";
-  if (code === 429) return "upstream_rate_limited";
-  if (code >= 500) return "upstream_unavailable";
-
-  const msg = (connection.lastError || "").toLowerCase();
-  if (!msg) return null;
-  if (
-    msg.includes("runtime") ||
-    msg.includes("not runnable") ||
-    msg.includes("not installed") ||
-    msg.includes("healthcheck")
-  )
-    return "runtime_error";
-  if (msg.includes("refresh failed")) return "token_refresh_failed";
-  if (msg.includes("token expired") || msg.includes("expired")) return "token_expired";
-  if (
-    msg.includes("invalid api key") ||
-    msg.includes("token invalid") ||
-    msg.includes("revoked") ||
-    msg.includes("access denied") ||
-    msg.includes("unauthorized")
-  )
-    return "upstream_auth_error";
-  if (
-    msg.includes("rate limit") ||
-    msg.includes("quota") ||
-    msg.includes("too many requests") ||
-    msg.includes("429")
-  )
-    return "upstream_rate_limited";
-  if (
-    msg.includes("fetch failed") ||
-    msg.includes("network") ||
-    msg.includes("timeout") ||
-    msg.includes("econn") ||
-    msg.includes("enotfound")
-  )
-    return "network_error";
-  if (msg.includes("not supported")) return "unsupported";
-  return "upstream_error";
-}
-
-// ---------------------------------------------------------------------------
-// getStatusPresentation
-// ---------------------------------------------------------------------------
-
-type TFn = (key: string, values?: Record<string, unknown>) => string;
-
-function getStatusPresentation(
-  connection: ConnectionRowConnection,
-  effectiveStatus: string | undefined,
-  isCooldown: boolean,
-  t: TFn
-) {
-  if (connection.isActive === false) {
-    return {
-      statusVariant: "default",
-      statusLabel: t("statusDisabled"),
-      errorType: null,
-      errorBadge: null,
-      errorTextClass: "text-text-muted",
-    };
-  }
-
-  if (effectiveStatus === "active" || effectiveStatus === "success") {
-    return {
-      statusVariant: "success",
-      statusLabel: t("statusConnected"),
-      errorType: null,
-      errorBadge: null,
-      errorTextClass: "text-text-muted",
-    };
-  }
-
-  const errorType = inferErrorType(connection, isCooldown);
-  const errorBadge = errorType ? ERROR_TYPE_LABELS[errorType] || null : null;
-
-  if (errorType === "runtime_error") {
-    return {
-      statusVariant: "warning",
-      statusLabel: t("statusRuntimeIssue"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-yellow-600 dark:text-yellow-400",
-    };
-  }
-
-  if (errorType === "account_deactivated") {
-    return {
-      statusVariant: "error",
-      statusLabel: providerText(t, "statusDeactivated", "Deactivated"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-red-600 font-bold",
-    };
-  }
-
-  if (
-    errorType === "upstream_auth_error" ||
-    errorType === "auth_missing" ||
-    errorType === "token_refresh_failed" ||
-    errorType === "token_expired"
-  ) {
-    return {
-      statusVariant: "error",
-      statusLabel: t("statusAuthFailed"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-red-500",
-    };
-  }
-
-  if (errorType === "upstream_rate_limited") {
-    return {
-      statusVariant: "warning",
-      statusLabel: t("statusRateLimited"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-yellow-600 dark:text-yellow-400",
-    };
-  }
-
-  if (errorType === "network_error") {
-    return {
-      statusVariant: "warning",
-      statusLabel: t("statusNetworkIssue"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-yellow-600 dark:text-yellow-400",
-    };
-  }
-
-  if (errorType === "unsupported") {
-    return {
-      statusVariant: "default",
-      statusLabel: t("statusTestUnsupported"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-text-muted",
-    };
-  }
-
-  if (errorType === "banned") {
-    return {
-      statusVariant: "error",
-      statusLabel: providerText(t, "statusBanned", "Banned (403)"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-red-600 font-bold",
-    };
-  }
-
-  if (errorType === "credits_exhausted") {
-    return {
-      statusVariant: "warning",
-      statusLabel: providerText(t, "statusCreditsExhausted", "Out of Credits"),
-      errorType,
-      errorBadge,
-      errorTextClass: "text-amber-500",
-    };
-  }
-
-  const fallbackStatusMap: Record<string, string> = {
-    unavailable: t("statusUnavailable"),
-    failed: t("statusFailed"),
-    error: t("statusError"),
-  };
-
-  return {
-    statusVariant: "error",
-    statusLabel: fallbackStatusMap[effectiveStatus ?? ""] || effectiveStatus || t("statusError"),
-    errorType,
-    errorBadge,
-    errorTextClass: "text-red-500",
-  };
-}
-
-// ---------------------------------------------------------------------------
 // ConnectionRow
 // ---------------------------------------------------------------------------
 
@@ -366,6 +105,7 @@ export default function ConnectionRow({
   onToggleRateLimit,
   onToggleQuotaVisibility,
   onToggleClaudeExtraUsage,
+  onToggleCodexPaidCredits,
   onToggleAutoSync,
   onToggleCodex5h,
   onToggleCodexWeekly,
@@ -394,8 +134,12 @@ export default function ConnectionRow({
   onTogglePerKeyProxyEnabled,
   proxyEnabled,
   onToggleProxyEnabled,
+  quotaCache,
+  quotaRefreshing,
+  onRefreshQuota,
 }: ConnectionRowProps) {
   const t = useTranslations("providers");
+  const locale = useLocale();
   const emailsVisible = useEmailPrivacyStore((s) => s.emailsVisible);
   const displayName = isOAuth
     ? pickDisplayValue(
@@ -416,8 +160,9 @@ export default function ConnectionRow({
   // #11497: cookie rows with a decodable JWT credential carry a persisted
   // cookieExpiresAt — feed it into the same countdown badge OAuth rows use.
   const cookieExpiresAt = readCookieExpiresAt(connection.providerSpecificData);
-  const effectiveExpiresAt =
-    connection.tokenExpiresAt || connection.expiresAt || cookieExpiresAt;
+  // Antigravity 403 VALIDATION_REQUIRED: Google link that unlocks the account (validated host).
+  const verificationUrl = readStoredVerificationUrl(connection.providerSpecificData);
+  const effectiveExpiresAt = connection.tokenExpiresAt || connection.expiresAt || cookieExpiresAt;
   const hasExpirySource = isOAuth || Boolean(cookieExpiresAt);
   const getTokenMinsLeft = () => {
     if (!hasExpirySource || !effectiveExpiresAt) return null;
@@ -460,6 +205,8 @@ export default function ConnectionRow({
 
   const statusPresentation = getStatusPresentation(connection, effectiveStatus, isCooldown, t);
   const rateLimitEnabled = !!connection.rateLimitProtection;
+  const rateLimitAutoProtected = connection.rateLimitAutoProtected === true;
+  const rateLimitShielded = rateLimitEnabled || rateLimitAutoProtected;
   const quotaVisible = connection.quotaVisible !== false;
   const codexPolicy =
     connection.providerSpecificData &&
@@ -518,7 +265,24 @@ export default function ConnectionRow({
   const claudeBlockExtraUsageEnabled = isClaude
     ? isClaudeExtraUsageBlockEnabled("claude", connection.providerSpecificData)
     : false;
+  const codexPaidCreditsEnabled = connection.providerSpecificData?.allowPaidCredits === true;
   const codexPlanLabel = getCodexPlanLabel(!!isCodex, connection.providerSpecificData);
+  // Per-account quota strip — gated per connection (not per page) so family
+  // aliases and openai-compatible-* nodes with their own quotaEndpoint qualify.
+  const quotaPanelSupported =
+    supportsProviderQuota(String(connection.provider || ""), connection) &&
+    isProviderQuotaVisible(connection);
+  // Subscription/plan label from the usage cache (claude tier, antigravity
+  // tier, grok subscription, …). Codex keeps its dedicated badge above. The
+  // badge is quota-derived, so it disappears together with the quota strip
+  // when the connection opts out or the provider has no usage API.
+  const planLabel =
+    quotaPanelSupported &&
+    !codexPlanLabel &&
+    typeof quotaCache?.plan === "string" &&
+    quotaCache.plan.trim()
+      ? quotaCache.plan.trim()
+      : null;
   // #dario: this control is now a full mode selector (native/CLIProxyAPI/
   // Dario/fallback), not a binary toggle — cliproxyapiEnabled/
   // onToggleCliproxyapiMode are kept on the props interface for any other
@@ -526,10 +290,37 @@ export default function ConnectionRow({
   const effectiveUpstreamProxyMode = upstreamProxyMode ?? "native";
   const autoSyncEnabled = !!(connection.providerSpecificData as Record<string, unknown> | undefined)
     ?.autoSync;
+  const [syncClock, setSyncClock] = useState<number | null>(null);
+  useEffect(() => {
+    const update = () => setSyncClock(Date.now());
+    update();
+    const timer = setInterval(update, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  const lastSync = connection.syncedModelsAt ? Date.parse(connection.syncedModelsAt) : NaN;
+  const validSync = Number.isFinite(lastSync) && lastSync > 0;
+  const ageMinutes =
+    validSync && syncClock !== null
+      ? Math.max(0, Math.floor((syncClock - lastSync) / 60_000))
+      : null;
+  const ageUnit =
+    ageMinutes === null ? null : ageMinutes < 60 ? "minute" : ageMinutes < 1440 ? "hour" : "day";
+  const ageValue =
+    ageMinutes === null
+      ? 0
+      : ageUnit === "minute"
+        ? ageMinutes
+        : ageUnit === "hour"
+          ? Math.floor(ageMinutes / 60)
+          : Math.floor(ageMinutes / 1440);
+  const syncAgeLabel =
+    ageUnit === null
+      ? null
+      : new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-ageValue, ageUnit);
 
   return (
     <div
-      className={`group flex items-center justify-between p-3 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors ${connection.isActive === false ? "opacity-60" : ""}`}
+      className={`group flex ${isCodex ? "flex-col items-stretch gap-3" : "items-center justify-between"} p-3 rounded-lg hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors ${connection.isActive === false ? "opacity-60" : ""}`}
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {onToggleSelect && (
@@ -570,6 +361,13 @@ export default function ConnectionRow({
               <Badge variant="primary" size="sm" className="capitalize">
                 {codexPlanLabel}
               </Badge>
+            )}
+            {planLabel && (
+              <span title={t("quotaPlanBadge")}>
+                <Badge variant="primary" size="sm" className="capitalize">
+                  {planLabel}
+                </Badge>
+              </span>
             )}
             {/* T12: Token expiry status indicator (state-driven, no Date.now in render) */}
             {/* #5836: the red "Token Expired" badge is TERMINAL-only — for OAuth
@@ -613,6 +411,7 @@ export default function ConnectionRow({
               </span>
             )}
             <span className="text-xs text-text-muted">#{connection.priority}</span>
+            <ConnectionIdChip connectionId={connection.id} />
             {connection.globalPriority && (
               <span className="text-xs text-text-muted">
                 {t("autoPriority", { priority: connection.globalPriority })}
@@ -632,7 +431,7 @@ export default function ConnectionRow({
             <button
               onClick={() => onToggleRateLimit(!rateLimitEnabled)}
               className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium transition-all cursor-pointer ${
-                rateLimitEnabled
+                rateLimitShielded
                   ? "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25"
                   : "bg-black/[0.03] dark:bg-white/[0.03] text-text-muted/50 hover:text-text-muted hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"
               }`}
@@ -641,7 +440,7 @@ export default function ConnectionRow({
               }
             >
               <span className="material-symbols-outlined text-[13px]">shield</span>
-              {rateLimitEnabled ? t("rateLimitProtected") : t("rateLimitUnprotected")}
+              {rateLimitShielded ? t("rateLimitProtected") : t("rateLimitUnprotected")}
             </button>
             {onToggleQuotaVisibility && (
               <ProviderQuotaVisibilityToggle
@@ -665,6 +464,17 @@ export default function ConnectionRow({
                   <span className="material-symbols-outlined text-[13px]">sync</span>
                   {t("autoSyncShort")}
                 </button>
+                <span
+                  className="text-xs text-text-muted"
+                  title={
+                    validSync ? new Date(lastSync).toLocaleString(locale) : t("autoSyncNeverSynced")
+                  }
+                  data-testid="connection-last-model-sync"
+                >
+                  {validSync && syncAgeLabel
+                    ? t("autoSyncLastSynced", { time: syncAgeLabel })
+                    : t("autoSyncNeverSynced")}
+                </span>
               </>
             )}
             {isClaude && (
@@ -682,6 +492,25 @@ export default function ConnectionRow({
                   <span className="material-symbols-outlined text-[13px]">payments</span>
                   {t("claudeExtraUsageShort")}{" "}
                   {!claudeBlockExtraUsageEnabled ? t("toggleOnShort") : t("toggleOffShort")}
+                </button>
+              </>
+            )}
+            {isCodex && connection.provider === "codex" && onToggleCodexPaidCredits && (
+              <>
+                <span className="text-text-muted/30 select-none">|</span>
+                <button
+                  onClick={() => onToggleCodexPaidCredits(!codexPaidCreditsEnabled)}
+                  className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium transition-all cursor-pointer ${
+                    codexPaidCreditsEnabled
+                      ? "bg-amber-500/15 text-amber-500 hover:bg-amber-500/25"
+                      : "bg-black/[0.03] dark:bg-white/[0.03] text-text-muted/50 hover:text-text-muted hover:bg-black/[0.06] dark:hover:bg-white/[0.06]"
+                  }`}
+                  title={t("codexPaidCreditsToggleTitle")}
+                  aria-pressed={codexPaidCreditsEnabled}
+                >
+                  <span className="material-symbols-outlined text-[13px]">payments</span>
+                  {t("codexPaidCreditsShort")}{" "}
+                  {codexPaidCreditsEnabled ? t("toggleOnShort") : t("toggleOffShort")}
                 </button>
               </>
             )}
@@ -833,7 +662,10 @@ export default function ConnectionRow({
                 return (
                   <>
                     <span className="text-text-muted/30 select-none">|</span>
-                    <span
+                    <button
+                      type="button"
+                      onClick={onProxy}
+                      disabled={!onProxy}
                       className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${colorClass}`}
                       title={t("proxyConfiguredBySource", {
                         source: label,
@@ -842,14 +674,18 @@ export default function ConnectionRow({
                     >
                       <span className="material-symbols-outlined text-[13px]">vpn_lock</span>
                       {proxyName || proxyHost || t("proxy")}
-                    </span>
+                    </button>
                   </>
                 );
               })()}
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${isCodex ? "flex-wrap" : ""}`}>
+        <ConnectionTestButton
+          connectionId={connection.id}
+          disabled={connection.isActive === false}
+        />
         <Button
           size="sm"
           variant="ghost"
@@ -876,6 +712,12 @@ export default function ConnectionRow({
           >
             {t("tokenShort")}
           </Button>
+        )}
+        {isCodex && isOAuth && connection.provider === "codex" && (
+          <CodexPingNowButton
+            connectionId={connection.id}
+            disabled={connection.isActive === false}
+          />
         )}
         {isCodex && onApplyCodexAuthLocal && (
           <Button
@@ -949,6 +791,19 @@ export default function ConnectionRow({
               <span className="material-symbols-outlined text-[18px]">passkey</span>
             </button>
           )}
+          {verificationUrl && (
+            <a
+              href={verificationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 hover:bg-amber-500/10 rounded text-amber-600 hover:text-amber-500"
+              title={t("verifyAccountHint")}
+              aria-label={t("verifyAccount")}
+              data-testid="connection-verify-account"
+            >
+              <span className="material-symbols-outlined text-[18px]">verified_user</span>
+            </a>
+          )}
           <button
             onClick={onEdit}
             className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary"
@@ -974,6 +829,15 @@ export default function ConnectionRow({
       </div>
       {isCodex && connection.codexAccountPool ? (
         <CodexAccountDetails pool={connection.codexAccountPool} />
+      ) : null}
+      {quotaPanelSupported ? (
+        <ConnectionQuotaPanel
+          providerId={String(connection.provider || "")}
+          connection={connection}
+          cache={quotaCache}
+          refreshing={quotaRefreshing}
+          onRefresh={onRefreshQuota}
+        />
       ) : null}
     </div>
   );

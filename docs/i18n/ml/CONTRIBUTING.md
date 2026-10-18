@@ -293,67 +293,67 @@ production build എന്നിവ CI-യുടെ ഉത്തരവാദി�
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard പേജുകൾ (23 വിഭാഗങ്ങൾ)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth പേജുകൾ (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, തുടങ്ങിയവ)
-├── lib/                    # പ്രധാന business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite domain modules + 130 migrations
-│   ├── memory/             # സ്ഥിരമായ conversational memory
-│   ├── oauth/              # OAuth providers, services, utilities
-│   ├── skills/             # വിപുലീകരിക്കാവുന്ന skill framework
-│   ├── usage/              # Usage tracking-ഉം cost calculation-ഉം
-│   └── localDb.ts          # Re-export layer മാത്രം — ഇവിടെ ഒരിക്കലും logic ചേർക്കരുത്
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # ഡാഷ്ബോർഡ് പേജുകൾ (23 വിഭാഗങ്ങൾ)
+│   ├── api/                # API റൂട്ടുകൾ (51 ഡയറക്ടറികൾ)
+│   └── login/              # പ്രാമാണീകരണ പേജുകൾ (.tsx)
+├── domain/                 # പോളിസി എൻജിൻ (policyEngine, comboResolver, costRules തുടങ്ങിയവ)
+├── lib/                    # പ്രധാന ബിസിനസ് ലോജിക് (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 പ്രോട്ടോക്കോൾ സെർവർ
+│   ├── acp/                # Agent Communication Protocol രജിസ്ട്രി
+│   ├── compliance/         # അനുപാലന പോളിസി എൻജിൻ
+│   ├── db/                 # SQLite ഡൊമെയ്ൻ മൊഡ്യൂളുകൾ + 130 മൈഗ്രേഷനുകൾ
+│   ├── memory/             # സ്ഥിര സംഭാഷണ മെമ്മറി
+│   ├── oauth/              # OAuth പ്രൊവൈഡറുകൾ, സേവനങ്ങൾ, യൂട്ടിലിറ്റികൾ
+│   ├── skills/             # വിപുലീകരിക്കാവുന്ന സ്കിൽ ഫ്രെയിംവർക്ക്
+│   ├── usage/              # ഉപയോഗ ട്രാക്കിംഗും ചെലവ് കണക്കാക്കലും
+│   └── localDb.ts          # റീ-എക്സ്പോർട്ട് ലെയർ മാത്രം — ഇവിടെ ഒരിക്കലും ലോജിക് ചേർക്കരുത്
+├── middleware/              # റിക്വസ്റ്റ് മിഡിൽവെയർ (promptInjectionGuard)
+├── mitm/                   # MITM പ്രോക്സി (സർട്ടിഫിക്കറ്റ്, DNS, ടാർഗറ്റ് റൂട്ടിംഗ്)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, 19 routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React കമ്പോണന്റുകൾ (.tsx)
+│   ├── constants/          # പ്രൊവൈഡർ നിർവചനങ്ങൾ (329), MCP സ്കോപ്പുകൾ, 19 റൂട്ടിംഗ് തന്ത്രങ്ങൾ
+│   ├── utils/              # സർക്യൂട്ട് ബ്രേക്കർ, സാനിറ്റൈസർ, പ്രാമാണീകരണ സഹായികൾ
+│   └── validation/         # Zod v4 സ്കീമകൾ
+└── sse/                    # SSE പ്രോക്സി പൈപ്പ്ലൈൻ
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, തുടങ്ങിയവ)
-├── mcp-server/             # MCP server (110 വ്യത്യസ്ത tools, 3 transports, 33 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, തുടങ്ങിയവ)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse വർക്ക്സ്പേസ്
+├── executors/              # 150 എക്സിക്യൂട്ടർ മൊഡ്യൂളുകൾ (എക്സിക്യൂട്ടർ ക്ലാസുകൾ + ഓരോ പ്രൊവൈഡറിനുമുള്ള സഹായികൾ)
+├── handlers/               # 11 റിക്വസ്റ്റ് ഹാൻഡ്ലറുകൾ (ചാറ്റ്, റെസ്പോൺസുകൾ, എംബെഡ്ഡിംഗുകൾ, ചിത്രങ്ങൾ തുടങ്ങിയവ)
+├── mcp-server/             # MCP സെർവർ (110 തനത് ടൂളുകൾ, 3 ട്രാൻസ്പോർട്ടുകൾ, 33 സ്കോപ്പുകൾ)
+├── services/               # 178 ടോപ്പ്-ലെവൽ സേവനങ്ങൾ (combo, autoCombo, rateLimitManager തുടങ്ങിയവ)
+├── translator/             # ഫോർമാറ്റ് ട്രാൻസ്ലേറ്ററുകൾ (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API ട്രാൻസ്ഫോർമർ
+└── utils/                  # 22 യൂട്ടിലിറ്റി മൊഡ്യൂളുകൾ (സ്ട്രീം, TLS, പ്രോക്സി, ലോഗിംഗ്)
 
-electron/                   # Electron desktop app (പല പ്ലാറ്റ്ഫോമുകളിലും പ്രവർത്തിക്കുന്നത്)
+electron/                   # Electron ഡെസ്ക്ടോപ്പ് ആപ്പ് (ക്രോസ്-പ്ലാറ്റ്ഫോം)
 
 tests/
-├── unit/                   # Node.js test runner (1,574 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-നുള്ള പ്രത്യേക tests
-└── load/                   # Load tests
+├── unit/                   # Node.js ടെസ്റ്റ് റണ്ണർ (1,574 ടെസ്റ്റ് ഫയലുകൾ)
+├── integration/            # ഇന്റഗ്രേഷൻ ടെസ്റ്റുകൾ
+├── e2e/                    # Playwright ടെസ്റ്റുകൾ
+├── security/               # സുരക്ഷാ ടെസ്റ്റുകൾ
+├── translator/             # ട്രാൻസ്ലേറ്ററിനായുള്ള പ്രത്യേക ടെസ്റ്റുകൾ
+└── load/                   # ലോഡ് ടെസ്റ്റുകൾ
 
 docs/
-├── adr/                     # Architecture Decision Records
-├── architecture/            # System architecture-ഉം resilience-ഉം
-├── comparison/              # OmniRoute-ഉം മറ്റ് ബദലുകളും തമ്മിലുള്ള താരതമ്യം
-├── compression/             # Compression guides-ഉം rules-ഉം
-├── dev/                     # Development guides
-├── diagrams/                # Architecture diagrams
+├── adr/                     # ആർക്കിടെക്ചർ തീരുമാന രേഖകൾ
+├── architecture/            # സിസ്റ്റം ആർക്കിടെക്ചറും പ്രതിരോധശേഷിയും
+├── comparison/              # OmniRoute-ഉം ബദൽ സംവിധാനങ്ങളും തമ്മിലുള്ള താരതമ്യം
+├── compression/             # കംപ്രഷൻ ഗൈഡുകളും നിയമങ്ങളും
+├── dev/                     # ഡെവലപ്മെന്റ് ഗൈഡുകൾ
+├── diagrams/                # ആർക്കിടെക്ചർ ഡയഗ്രാമുകൾ
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # User guide, Docker, setup, troubleshooting
+├── guides/                  # ഉപയോക്തൃ ഗൈഡ്, Docker, സജ്ജീകരണം, പ്രശ്നപരിഹാരം
 ├── i18n/                    # അന്താരാഷ്ട്രവൽക്കരിച്ച README പരിഭാഷകൾ
-├── marketing/               # Marketing സാമഗ്രികൾ
-├── ops/                     # Deployment, proxy, coverage, releases
-├── providers/               # Provider-നുള്ള പ്രത്യേക docs
-├── reference/               # API reference, env vars, CLI tools, free tiers
-├── releases/                # Release notes
-├── routing/                 # Auto-combo engine, reasoning replay
-├── screenshots/             # Dashboard screenshots
-├── security/                # Guardrails, compliance, stealth, tokens
-└── specs/                   # Design specs
+├── marketing/               # മാർക്കറ്റിംഗ് സാമഗ്രികൾ
+├── ops/                     # വിന്യാസം, പ്രോക്സി, കവറേജ്, റിലീസുകൾ
+├── providers/               # പ്രൊവൈഡർ-നിർദ്ദിഷ്ട ഡോക്യുമെന്റേഷൻ
+├── reference/               # API റഫറൻസ്, എൻവയോൺമെന്റ് വേരിയബിളുകൾ, CLI ടൂളുകൾ, സൗജന്യ ടയറുകൾ
+├── releases/                # റിലീസ് കുറിപ്പുകൾ
+├── routing/                 # ഓട്ടോ-കോംബോ എൻജിൻ, റീസണിംഗ് റീപ്ലേ
+├── screenshots/             # ഡാഷ്ബോർഡ് സ്ക്രീൻഷോട്ടുകൾ
+├── security/                # സുരക്ഷാ നിയന്ത്രണങ്ങൾ, അനുപാലനം, സ്റ്റെൽത്ത്, ടോക്കണുകൾ
+└── specs/                   # ഡിസൈൻ സ്പെസിഫിക്കേഷനുകൾ
 ```
 
 ---
@@ -394,22 +394,22 @@ Handler/executor-കൾക്കുള്ളിൽ, ക്ലയന്റില�
 
 ---
 
-## Pull Request ചെക്ക്ലിസ്റ്റ്
+## പുൾ റിക്വസ്റ്റ് ചെക്ക്ലിസ്റ്റ്
 
 - [ ] ടെസ്റ്റുകൾ വിജയിക്കുന്നു (`npm test`)
-- [ ] Linting വിജയിക്കുന്നു (`npm run lint`)
-- [ ] Build വിജയിക്കുന്നു (`npm run build`)
-- [ ] പുതിയ പൊതു function-ുകൾക്കും interface-ുകൾക്കും TypeScript type-ുകൾ ചേർത്തിട്ടുണ്ട്
-- [ ] Hardcode ചെയ്ത secret-ുകളോ fallback മൂല്യങ്ങളോ ഇല്ല
-- [ ] പൊതു അപ്സ്ട്രീം ക്രെഡൻഷ്യലുകൾ `resolvePublicCred()` വഴി ഉൾച്ചേർത്തിട്ടുണ്ട് ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) കാണുക), ഒരിക്കലും literal-ുകളായി ഉൾപ്പെടുത്തിയിട്ടില്ല
-- [ ] പിശക് response-ുകൾ `buildErrorBody()` / `sanitizeErrorMessage()` വഴി കടന്നുപോകുന്നു — response body-കളിൽ അസംസ്കൃത stack trace-ുകൾ ഇല്ല ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) കാണുക)
-- [ ] Shell command-ുകൾ (`exec` / `spawn`) runtime മൂല്യങ്ങൾ string interpolation വഴിയല്ല, `env` വഴിയാണ് കൈമാറുന്നത്
-- [ ] എല്ലാ input-ുകളും Zod schema-കൾ ഉപയോഗിച്ച് സാധൂകരിച്ചിട്ടുണ്ട്
-- [ ] ഉപയോക്താവിനെ ബാധിക്കുന്ന മാറ്റങ്ങൾക്ക് `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md`-ന് കീഴിൽ changelog **fragment** ചേർത്തിട്ടുണ്ട് ([`changelog.d/README.md`](./changelog.d/README.md) കാണുക) — `CHANGELOG.md` നേരിട്ട് തിരുത്തരുത്; release സമയത്ത് fragment-ുകൾ സമാഹരിക്കപ്പെടുന്നതിനാൽ PR-ുകൾക്കിടയിൽ ഒരിക്കലും conflict ഉണ്ടാകില്ല
-- [ ] ഡോക്യുമെന്റേഷൻ പുതുക്കിയിട്ടുണ്ട് (ബാധകമെങ്കിൽ)
-- [ ] പുതിയ CodeQL / Secret-Scanning alert-ുകൾ തുറന്നിട്ടില്ല, അല്ലെങ്കിൽ പ്രസക്തമായ `docs/security/` ഡോക്യുമെന്റ് പരാമർശിക്കുന്ന സാങ്കേതിക ന്യായീകരണത്തോടെ ഓരോന്നും നിരസിച്ചിട്ടുണ്ട്
-- [ ] Child process-ുകൾ spawn ചെയ്യുന്ന route-ുകൾ (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts`-ൽ `isLocalOnlyPath()` ആയി വർഗ്ഗീകരിച്ചിട്ടുണ്ട് — [Hard Rule #15](docs/security/ROUTE_GUARD_TIERS.md) കാണുക
-- [ ] Commit സന്ദേശങ്ങളിൽ `Co-Authored-By` trailer-ുകൾ ഇല്ല — commit-ുകൾ repository ഉടമയുടെ Git identity-യിൽ മാത്രം ദൃശ്യമാകണം (Hard Rule #16)
+- [ ] ലിന്റിംഗ് വിജയിക്കുന്നു (`npm run lint`)
+- [ ] ബിൽഡ് വിജയിക്കുന്നു (`npm run build`)
+- [ ] പുതിയ പൊതു ഫങ്ഷനുകൾക്കും ഇന്റർഫേസുകൾക്കും TypeScript ടൈപ്പുകൾ ചേർത്തിട്ടുണ്ട്
+- [ ] ഹാർഡ്കോഡ് ചെയ്ത രഹസ്യങ്ങളോ ഫാൾബാക്ക് മൂല്യങ്ങളോ ഇല്ല
+- [ ] പൊതു അപ്സ്ട്രീം ക്രെഡൻഷ്യലുകൾ ലിറ്ററലുകളായി ഒരിക്കലും ഉൾപ്പെടുത്താതെ `resolvePublicCred()` വഴി ഉൾപ്പെടുത്തിയിട്ടുണ്ട് ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) കാണുക)
+- [ ] പിശക് പ്രതികരണങ്ങൾ `buildErrorBody()` / `sanitizeErrorMessage()` വഴി റൂട്ട് ചെയ്യുന്നു — പ്രതികരണ ബോഡികളിൽ അസംസ്കൃത സ്റ്റാക്ക് ട്രെയ്സുകൾ ഇല്ല ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) കാണുക)
+- [ ] ഷെൽ കമാൻഡുകൾ (`exec` / `spawn`) റൺടൈം മൂല്യങ്ങൾ സ്ട്രിങ് ഇന്റർപൊളേഷൻ വഴിയല്ല, `env` വഴി കൈമാറുന്നു
+- [ ] എല്ലാ ഇൻപുട്ടുകളും Zod സ്കീമകൾ ഉപയോഗിച്ച് സാധൂകരിച്ചിട്ടുണ്ട്
+- [ ] ഉപയോക്താവിന് ദൃശ്യമാകുന്ന മാറ്റങ്ങൾക്കായി `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` എന്നതിനു കീഴിൽ ചേഞ്ച്ലോഗ് **ഫ്രാഗ്മെന്റ്** ചേർത്തിട്ടുണ്ട് ([`changelog.d/README.md`](./changelog.d/README.md) കാണുക) — `CHANGELOG.md` നേരിട്ട് എഡിറ്റ് ചെയ്യരുത്; റിലീസ് സമയത്ത് ഫ്രാഗ്മെന്റുകൾ സമാഹരിക്കപ്പെടുന്നതിനാൽ PR-കൾ തമ്മിൽ ഒരിക്കലും വൈരുദ്ധ്യമുണ്ടാകില്ല
+- [ ] ഡോക്യുമെന്റേഷൻ അപ്ഡേറ്റ് ചെയ്തിട്ടുണ്ട് (ബാധകമെങ്കിൽ)
+- [ ] പുതിയ CodeQL / Secret-Scanning അലേർട്ടുകളൊന്നും സൃഷ്ടിച്ചിട്ടില്ല, അല്ലെങ്കിൽ പ്രസക്തമായ `docs/security/` ഡോക്യുമെന്റ് പരാമർശിക്കുന്ന സാങ്കേതിക ന്യായീകരണത്തോടെ ഓരോന്നും നിരസിച്ചിട്ടുണ്ട്
+- [ ] ചൈൽഡ് പ്രോസസ്സുകൾ സൃഷ്ടിക്കുന്ന റൂട്ടുകൾ (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts`-ൽ `isLocalOnlyPath()` ആയി വർഗ്ഗീകരിച്ചിട്ടുണ്ട് — [കർശന നിയമം #15](docs/security/ROUTE_GUARD_TIERS.md) കാണുക
+- [ ] കമ്മിറ്റ് സന്ദേശങ്ങളിൽ AI/ബോട്ട് `Co-authored-by` ട്രെയിലറുകളില്ല (കർശന നിയമം #16) — വീണ്ടും ഉപയോഗിച്ചിട്ടുള്ള പ്രവൃത്തിയുടെ ഉടമകളായ മനുഷ്യ സഹപ്രവർത്തകർക്ക് സാധാരണ `Co-authored-by: Name <email>` ട്രെയിലറുകൾ ഉപയോഗിച്ച് അംഗീകാരം നൽകിയിട്ടുണ്ട്
 
 ---
 
@@ -423,11 +423,10 @@ VPS വിന്യാസങ്ങൾക്കായി, `npm run build` എന�
 
 ---
 
-## സഹായം ലഭിക്കാൻ
+## സഹായം നേടൽ
 
 - **ആർക്കിടെക്ചർ**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) കാണുക
 - **API റഫറൻസ്**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) കാണുക
 - **സുരക്ഷാ ഡോക്യുമെന്റേഷൻ**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **ഓപ്പറേഷൻസ് ഡോക്യുമെന്റേഷൻ**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **പ്രശ്നങ്ങൾ**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: ആർക്കിടെക്ചറൽ തീരുമാന രേഖകൾക്കായി `docs/adr/` കാണുക

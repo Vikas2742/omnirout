@@ -288,65 +288,72 @@ npm run test:combo:live:vps:failover     # добавляет реальный �
 
 ---
 
-## Project Structure
+## Структура проекта
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # Страницы панели управления (23 раздела)
+│   ├── api/                # Маршруты API (51 каталог)
+│   └── login/              # Страницы аутентификации (.tsx)
+├── domain/                 # Движок политик (policyEngine, comboResolver, costRules и т. д.)
+├── lib/                    # Основная бизнес-логика (.ts)
+│   ├── a2a/                # Сервер протокола Agent-to-Agent v0.3
+│   ├── acp/                # Реестр Agent Communication Protocol
+│   ├── compliance/         # Движок политик соответствия требованиям
+│   ├── db/                 # Доменные модули SQLite + 130 миграций
+│   ├── memory/             # Постоянная память диалогов
+│   ├── oauth/              # Провайдеры, сервисы и утилиты OAuth
+│   ├── skills/             # Расширяемый фреймворк навыков
+│   ├── usage/              # Отслеживание использования и расчёт стоимости
+│   └── localDb.ts          # Только слой реэкспорта — никогда не добавляйте сюда логику
+├── middleware/              # Промежуточное ПО для запросов (promptInjectionGuard)
+├── mitm/                   # MITM-прокси (сертификаты, DNS, маршрутизация к целевым узлам)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # Компоненты React (.tsx)
+│   ├── constants/          # Определения провайдеров (329), области доступа MCP, 19 стратегий маршрутизации
+│   ├── utils/              # Автоматический выключатель, санитайзер, вспомогательные средства аутентификации
+│   └── validation/         # Схемы Zod v4
+└── sse/                    # Конвейер SSE-прокси
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # Рабочая область @omniroute/open-sse
+├── executors/              # 150 модулей-исполнителей (классы исполнителей + вспомогательные средства для каждого провайдера)
+├── handlers/               # 11 обработчиков запросов (чат, ответы, эмбеддинги, изображения и т. д.)
+├── mcp-server/             # Сервер MCP (110 уникальных инструментов, 3 транспорта, 33 области доступа)
+├── services/               # 178 сервисов верхнего уровня (combo, autoCombo, rateLimitManager и т. д.)
+├── translator/             # Преобразователи форматов (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Преобразователь Responses API
+└── utils/                  # 22 служебных модуля (потоки, TLS, прокси, журналирование)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Кроссплатформенное настольное приложение Electron
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Средство запуска тестов Node.js (1 574 файла тестов)
+├── integration/            # Интеграционные тесты
+├── e2e/                    # Тесты Playwright
+├── security/               # Тесты безопасности
+├── translator/             # Тесты преобразователей
+└── load/                   # Нагрузочные тесты
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Записи архитектурных решений
+├── architecture/            # Архитектура и отказоустойчивость системы
+├── comparison/              # Сравнение OmniRoute с альтернативами
+├── compression/             # Руководства и правила сжатия
+├── dev/                     # Руководства по разработке
+├── diagrams/                # Архитектурные диаграммы
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # Руководство пользователя, Docker, настройка, устранение неполадок
+├── i18n/                    # Локализованные переводы README
+├── marketing/               # Маркетинговые материалы
+├── ops/                     # Развёртывание, прокси, покрытие, выпуски
+├── providers/               # Документация для отдельных провайдеров
+├── reference/               # Справочник API, переменные окружения, инструменты CLI, бесплатные тарифы
+├── releases/                # Примечания к выпускам
+├── routing/                 # Движок автоматического комбинирования, повторное воспроизведение рассуждений
+├── screenshots/             # Снимки экрана панели управления
+├── security/                # Защитные механизмы, соответствие требованиям, скрытность, токены
+└── specs/                   # Проектные спецификации
 ```
 
 ---
@@ -390,19 +397,19 @@ docs/                       # Documentation
 ## Контрольный список Pull Request
 
 - [ ] Тесты проходят (`npm test`)
-- [ ] Линтинг проходит (`npm run lint`)
-- [ ] Сборка выполняется успешно (`npm run build`)
+- [ ] Проверка линтером проходит (`npm run lint`)
+- [ ] Сборка завершается успешно (`npm run build`)
 - [ ] Для новых публичных функций и интерфейсов добавлены типы TypeScript
 - [ ] Нет жёстко заданных секретов или резервных значений
-- [ ] Публичные учётные данные вышестоящих сервисов встраиваются через `resolvePublicCred()` (см. [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), но никогда не задаются литералами
-- [ ] Ответы с ошибками проходят через `buildErrorBody()` / `sanitizeErrorMessage()` — никаких необработанных трассировок стека в телах ответов (см. [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Команды оболочки (`exec` / `spawn`) передают значения времени выполнения через `env`, а не посредством строковой интерполяции
+- [ ] Публичные учётные данные вышестоящих сервисов встраиваются через `resolvePublicCred()` (см. [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), а не задаются литералами
+- [ ] Ответы с ошибками проходят через `buildErrorBody()` / `sanitizeErrorMessage()` — необработанные трассировки стека не включаются в тела ответов (см. [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Команды оболочки (`exec` / `spawn`) передают значения времени выполнения через `env`, а не посредством интерполяции строк
 - [ ] Все входные данные проверяются с помощью схем Zod
-- [ ] Для изменений, заметных пользователям, добавлен **фрагмент** журнала изменений в `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` (см. [`changelog.d/README.md`](./changelog.d/README.md)) — **не** редактируйте `CHANGELOG.md` напрямую; фрагменты объединяются во время выпуска и никогда не создают конфликтов между PR
+- [ ] Для изменений, видимых пользователям, добавлен **фрагмент** журнала изменений в `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` (см. [`changelog.d/README.md`](./changelog.d/README.md)) — **не** редактируйте `CHANGELOG.md` напрямую; фрагменты объединяются при выпуске релиза и никогда не вызывают конфликтов между PR
 - [ ] Документация обновлена (если применимо)
 - [ ] Не создано новых предупреждений CodeQL / Secret-Scanning либо каждое из них отклонено с техническим обоснованием и ссылкой на соответствующий документ в `docs/security/`
-- [ ] Маршруты, запускающие дочерние процессы (`/api/mcp/`, `/api/cli-tools/runtime/`), классифицированы как `isLocalOnlyPath()` в `src/server/authz/routeGuard.ts` — см. [Жёсткое правило №15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] В сообщениях коммитов отсутствуют завершающие строки `Co-Authored-By` — коммиты должны отображаться исключительно под Git-идентичностью владельца репозитория (Жёсткое правило №16)
+- [ ] Маршруты, запускающие дочерние процессы (`/api/mcp/`, `/api/cli-tools/runtime/`), классифицированы как `isLocalOnlyPath()` в `src/server/authz/routeGuard.ts` — см. [жёсткое правило № 15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] В сообщениях коммитов отсутствуют трейлеры `Co-authored-by` для ИИ/ботов (жёсткое правило № 16) — люди, чья работа была повторно использована, указываются как соавторы с помощью стандартных трейлеров `Co-authored-by: Name <email>`
 
 ---
 
@@ -418,5 +425,4 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **Справочник API**: см. [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Документация по безопасности**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **Документация по эксплуатации**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
-- **Проблемы**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR**: записи об архитектурных решениях см. в `docs/adr/`
+- **Сообщения о проблемах**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)

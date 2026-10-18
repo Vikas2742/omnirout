@@ -288,65 +288,72 @@ Tingnan ang `open-sse/utils/stream.ts` at `open-sse/utils/streamHandler.ts` para
 
 ---
 
-## Project Structure
+## Estruktura ng Proyekto
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # Mga pahina ng dashboard (23 seksyon)
+│   ├── api/                # Mga ruta ng API (51 direktoryo)
+│   └── login/              # Mga pahina ng awtentikasyon (.tsx)
+├── domain/                 # Engine ng patakaran (policyEngine, comboResolver, costRules, atbp.)
+├── lib/                    # Pangunahing lohika ng negosyo (.ts)
+│   ├── a2a/                # Server ng Agent-to-Agent v0.3 protocol
+│   ├── acp/                # Registry ng Agent Communication Protocol
+│   ├── compliance/         # Engine ng patakaran sa pagsunod
+│   ├── db/                 # Mga domain module ng SQLite + 130 migrasyon
+│   ├── memory/             # Persistent na memorya ng pag-uusap
+│   ├── oauth/              # Mga provider, serbisyo, at utility ng OAuth
+│   ├── skills/             # Napapalawak na framework ng kasanayan
+│   ├── usage/              # Pagsubaybay sa paggamit at pagkalkula ng gastos
+│   └── localDb.ts          # Layer para lamang sa muling pag-export — huwag kailanman magdagdag ng lohika rito
+├── middleware/              # Middleware ng kahilingan (promptInjectionGuard)
+├── mitm/                   # MITM proxy (sertipiko, DNS, pagruruta ng target)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # Mga React component (.tsx)
+│   ├── constants/          # Mga depinisyon ng provider (329), mga saklaw ng MCP, 19 na estratehiya sa pagruruta
+│   ├── utils/              # Circuit breaker, sanitizer, mga helper sa awtentikasyon
+│   └── validation/         # Mga schema ng Zod v4
+└── sse/                    # Pipeline ng SSE proxy
 
 open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+├── executors/              # 150 executor module (mga executor class + mga helper para sa bawat provider)
+├── handlers/               # 11 handler ng kahilingan (chat, responses, embeddings, images, atbp.)
+├── mcp-server/             # MCP server (110 natatanging tool, 3 transport, 33 saklaw)
+├── services/               # 178 top-level na serbisyo (combo, autoCombo, rateLimitManager, atbp.)
+├── translator/             # Mga tagasalin ng format (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Transformer ng Responses API
+└── utils/                  # 22 utility module (stream, TLS, proxy, logging)
 
 electron/                   # Electron desktop app (cross-platform)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js test runner (1,574 test file)
+├── integration/            # Mga integration test
+├── e2e/                    # Mga Playwright test
+├── security/               # Mga security test
+├── translator/             # Mga test na partikular sa translator
+└── load/                   # Mga load test
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Mga Architecture Decision Record
+├── architecture/            # Arkitektura at katatagan ng system
+├── comparison/              # OmniRoute kumpara sa mga alternatibo
+├── compression/             # Mga gabay at panuntunan sa compression
+├── dev/                     # Mga gabay sa development
+├── diagrams/                # Mga diagram ng arkitektura
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # Gabay ng user, Docker, pag-setup, pag-troubleshoot
+├── i18n/                    # Mga naisaling README na pang-internasyonal
+├── marketing/               # Mga materyal sa marketing
+├── ops/                     # Deployment, proxy, coverage, mga release
+├── providers/               # Dokumentasyong partikular sa provider
+├── reference/               # Sanggunian ng API, mga env var, CLI tool, mga libreng tier
+├── releases/                # Mga tala sa release
+├── routing/                 # Auto-combo engine, reasoning replay
+├── screenshots/             # Mga screenshot ng dashboard
+├── security/                # Mga guardrail, pagsunod, stealth, mga token
+└── specs/                   # Mga espesipikasyon ng disenyo
 ```
 
 ---
@@ -392,17 +399,17 @@ Sumulat ng mga unit test sa `tests/unit/` na sumasaklaw, bilang minimum, sa:
 - [ ] Pumapasa ang mga test (`npm test`)
 - [ ] Pumapasa ang linting (`npm run lint`)
 - [ ] Matagumpay ang build (`npm run build`)
-- [ ] Naidagdag ang mga TypeScript type para sa mga bagong pampublikong function at interface
-- [ ] Walang mga naka-hardcode na secret o fallback value
-- [ ] Naka-embed ang mga pampublikong upstream credential sa pamamagitan ng `resolvePublicCred()` (tingnan ang [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), at hindi kailanman bilang mga literal
-- [ ] Dumadaan ang mga tugon sa error sa `buildErrorBody()` / `sanitizeErrorMessage()` — walang mga raw stack trace sa mga response body (tingnan ang [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Ipinapasa ng mga shell command (`exec` / `spawn`) ang mga runtime value sa pamamagitan ng `env`, hindi sa pamamagitan ng string interpolation
-- [ ] Na-validate ang lahat ng input gamit ang mga Zod schema
-- [ ] Nagdagdag ng **fragment** ng changelog sa ilalim ng `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` para sa mga pagbabagong nakikita ng user (tingnan ang [`changelog.d/README.md`](./changelog.d/README.md)) — **huwag** direktang i-edit ang `CHANGELOG.md`; pinagsasama-sama ang mga fragment sa oras ng release at hindi kailanman nagkakaroon ng conflict sa pagitan ng mga PR
+- [ ] Nagdagdag ng mga TypeScript type para sa mga bagong pampublikong function at interface
+- [ ] Walang naka-hardcode na mga secret o fallback value
+- [ ] Ang mga pampublikong upstream credential ay naka-embed sa pamamagitan ng `resolvePublicCred()` (tingnan ang [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), at hindi kailanman bilang mga literal
+- [ ] Ang mga error response ay dumaraan sa `buildErrorBody()` / `sanitizeErrorMessage()` — walang mga raw stack trace sa mga response body (tingnan ang [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Ang mga shell command (`exec` / `spawn`) ay nagpapasa ng mga runtime value sa pamamagitan ng `env`, hindi sa pamamagitan ng string interpolation
+- [ ] Napatunayan ang bisa ng lahat ng input gamit ang mga Zod schema
+- [ ] Nagdagdag ng **fragment** ng changelog sa ilalim ng `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` para sa mga pagbabagong nakikita ng user (tingnan ang [`changelog.d/README.md`](./changelog.d/README.md)) — **huwag** direktang i-edit ang `CHANGELOG.md`; pinagsasama-sama ang mga fragment sa oras ng release at hindi kailanman nagkakasalungatan sa pagitan ng mga PR
 - [ ] Na-update ang dokumentasyon (kung naaangkop)
-- [ ] Walang bagong nabuksang alerto mula sa CodeQL / Secret-Scanning, o na-dismiss ang bawat isa nang may teknikal na katwirang tumutukoy sa nauugnay na dokumento sa `docs/security/`
+- [ ] Walang bagong nabuksang alerto mula sa CodeQL / Secret-Scanning, o ang bawat isa ay na-dismiss nang may teknikal na katwiran na tumutukoy sa nauugnay na dokumento sa `docs/security/`
 - [ ] Ang mga route na naglulunsad ng mga child process (`/api/mcp/`, `/api/cli-tools/runtime/`) ay inuri bilang `isLocalOnlyPath()` sa `src/server/authz/routeGuard.ts` — tingnan ang [Mahigpit na Panuntunan #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Walang mga trailer na `Co-Authored-By` sa mga commit message — dapat lumabas ang mga commit sa ilalim lamang ng Git identity ng may-ari ng repository (Mahigpit na Panuntunan #16)
+- [ ] Walang mga AI/bot na `Co-authored-by` trailer sa mga commit message (Mahigpit na Panuntunan #16) — ang mga taong collaborator na muling ginamit ang gawa ay kinikilala gamit ang karaniwang `Co-authored-by: Name <email>` na mga trailer
 
 ---
 
@@ -412,11 +419,10 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 
 ---
 
-## Pagkuha ng Tulong
+## Paghingi ng Tulong
 
 - **Arkitektura**: Tingnan ang [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
 - **Sanggunian ng API**: Tingnan ang [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Mga dokumento sa seguridad**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **Mga dokumento sa operasyon**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Mga isyu**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **Mga ADR**: Tingnan ang `docs/adr/` para sa mga talaan ng desisyong pang-arkitektura

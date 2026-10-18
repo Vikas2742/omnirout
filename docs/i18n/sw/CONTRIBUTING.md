@@ -288,65 +288,72 @@ Tazama `open-sse/utils/stream.ts` na `open-sse/utils/streamHandler.ts` kwa mifan
 
 ---
 
-## Project Structure
+## Muundo wa Mradi
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # Kurasa za dashibodi (sehemu 23)
+│   ├── api/                # Njia za API (saraka 51)
+│   └── login/              # Kurasa za uthibitishaji (.tsx)
+├── domain/                 # Injini ya sera (policyEngine, comboResolver, costRules, n.k.)
+├── lib/                    # Mantiki kuu ya biashara (.ts)
+│   ├── a2a/                # Seva ya itifaki ya Agent-to-Agent v0.3
+│   ├── acp/                # Sajili ya Agent Communication Protocol
+│   ├── compliance/         # Injini ya sera za uzingatiaji
+│   ├── db/                 # Moduli za kikoa za SQLite + uhamishaji 130
+│   ├── memory/             # Kumbukumbu endelevu ya mazungumzo
+│   ├── oauth/              # Watoa huduma, huduma, na zana za OAuth
+│   ├── skills/             # Mfumo unaoweza kupanuliwa wa ujuzi
+│   ├── usage/              # Ufuatiliaji wa matumizi na ukokotoaji wa gharama
+│   └── localDb.ts          # Safu ya kusafirisha upya pekee — usiongeze mantiki hapa kamwe
+├── middleware/              # Programu kati ya maombi (promptInjectionGuard)
+├── mitm/                   # Proksi ya MITM (cheti, DNS, uelekezaji lengwa)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # Vipengele vya React (.tsx)
+│   ├── constants/          # Ufafanuzi wa watoa huduma (329), mawanda ya MCP, mikakati 19 ya uelekezaji
+│   ├── utils/              # Kivunja saketi, kisafishaji, visaidizi vya uthibitishaji
+│   └── validation/         # Skima za Zod v4
+└── sse/                    # Mchakato wa proksi ya SSE
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # Nafasi ya kazi ya @omniroute/open-sse
+├── executors/              # Moduli 150 za utekelezaji (madarasa ya utekelezaji + visaidizi vya kila mtoa huduma)
+├── handlers/               # Vishughulikiaji 11 vya maombi (gumzo, majibu, upachikaji, picha, n.k.)
+├── mcp-server/             # Seva ya MCP (zana 110 za kipekee, njia 3 za usafirishaji, mawanda 33)
+├── services/               # Huduma 178 za ngazi ya juu (combo, autoCombo, rateLimitManager, n.k.)
+├── translator/             # Vigeuzi vya umbizo (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Kigeuzi cha Responses API
+└── utils/                  # Moduli 22 za zana (mtiririko, TLS, proksi, uwekaji kumbukumbu)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Programu ya eneo-kazi ya Electron (majukwaa mbalimbali)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Kiendeshaji cha majaribio cha Node.js (faili 1,574 za majaribio)
+├── integration/            # Majaribio ya ujumuishaji
+├── e2e/                    # Majaribio ya Playwright
+├── security/               # Majaribio ya usalama
+├── translator/             # Majaribio mahususi ya kigeuzi
+└── load/                   # Majaribio ya mzigo
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Rekodi za Maamuzi ya Usanifu
+├── architecture/            # Usanifu na ustahimilivu wa mfumo
+├── comparison/              # OmniRoute dhidi ya mbadala
+├── compression/             # Miongozo na kanuni za mfinyazo
+├── dev/                     # Miongozo ya uendelezaji
+├── diagrams/                # Michoro ya usanifu
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # Mwongozo wa mtumiaji, Docker, usanidi, utatuzi wa matatizo
+├── i18n/                    # Tafsiri za README za kimataifa
+├── marketing/               # Nyenzo za uuzaji
+├── ops/                     # Usambazaji, proksi, ufunikaji, matoleo
+├── providers/               # Nyaraka mahususi za watoa huduma
+├── reference/               # Marejeleo ya API, vigeu vya mazingira, zana za CLI, viwango vya bure
+├── releases/                # Maelezo ya matoleo
+├── routing/                 # Injini ya mchanganyiko otomatiki, urudiaji wa ureasonishaji
+├── screenshots/             # Picha za skrini za dashibodi
+├── security/                # Vizuizi vya usalama, uzingatiaji, usiri, tokeni
+└── specs/                   # Vipimo vya usanifu
 ```
 
 ---
@@ -391,18 +398,18 @@ Andika majaribio ya vipengele katika `tests/unit/` yanayojumuisha angalau:
 
 - [ ] Majaribio yanafaulu (`npm test`)
 - [ ] Ukaguzi wa lint unafaulu (`npm run lint`)
-- [ ] Ujenzi unafanikiwa (`npm run build`)
+- [ ] Uundaji unafaulu (`npm run build`)
 - [ ] Aina za TypeScript zimeongezwa kwa functions na interfaces mpya za umma
-- [ ] Hakuna siri au thamani mbadala zilizowekwa moja kwa moja
-- [ ] Vitambulisho vya umma vya upstream vimepachikwa kupitia `resolvePublicCred()` (angalia [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), kamwe si kama literals
-- [ ] Majibu ya hitilafu hupitishwa kupitia `buildErrorBody()` / `sanitizeErrorMessage()` — hakuna stack traces ghafi katika miili ya majibu (angalia [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Amri za shell (`exec` / `spawn`) hupitisha thamani za runtime kupitia `env`, si kupitia uingizaji wa thamani kwenye string
-- [ ] Ingizo zote zimethibitishwa kwa schemas za Zod
-- [ ] **Kipande** cha changelog kimeongezwa chini ya `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` kwa mabadiliko yanayoonekana kwa mtumiaji (angalia [`changelog.d/README.md`](./changelog.d/README.md)) — **usihariri** `CHANGELOG.md` moja kwa moja; vipande huunganishwa wakati wa toleo na kamwe havikinzani kati ya PR
-- [ ] Nyaraka zimesasishwa (ikiwa inatumika)
-- [ ] Hakuna arifa mpya za CodeQL / Secret-Scanning zilizofunguliwa, au kila moja imepuuzwa kwa uhalalishaji wa kiufundi unaorejelea hati husika ya `docs/security/`
-- [ ] Routes zinazoanzisha child processes (`/api/mcp/`, `/api/cli-tools/runtime/`) zimeainishwa kama `isLocalOnlyPath()` katika `src/server/authz/routeGuard.ts` — angalia [Kanuni Isiyobadilika #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Hakuna trailers za `Co-Authored-By` katika commit messages — commits lazima zionekane chini ya Git identity ya mmiliki wa repository pekee (Kanuni Isiyobadilika #16)
+- [ ] Hakuna siri au thamani mbadala zilizowekwa moja kwa moja kwenye msimbo
+- [ ] Vitambulisho vya upstream vya umma vimepachikwa kupitia `resolvePublicCred()` (tazama [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), kamwe si kama literals
+- [ ] Majibu ya hitilafu yanapitia `buildErrorBody()` / `sanitizeErrorMessage()` — hakuna stack traces ghafi katika response bodies (tazama [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Amri za shell (`exec` / `spawn`) hupitisha thamani za wakati wa utekelezaji kupitia `env`, si kupitia string interpolation
+- [ ] Ingizo zote zimethibitishwa kwa Zod schemas
+- [ ] **Kipande** cha changelog kimeongezwa chini ya `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` kwa mabadiliko yanayoonekana kwa watumiaji (tazama [`changelog.d/README.md`](./changelog.d/README.md)) — **usihariri** `CHANGELOG.md` moja kwa moja; vipande huunganishwa wakati wa toleo na kamwe havikinzani kati ya PRs
+- [ ] Nyaraka zimesasishwa (ikiwa inahusika)
+- [ ] Hakuna arifa mpya za CodeQL / Secret-Scanning zilizofunguliwa, au kila moja imekataliwa kwa uhalalisho wa kiufundi unaorejelea hati husika ya `docs/security/`
+- [ ] Routes zinazoanzisha child processes (`/api/mcp/`, `/api/cli-tools/runtime/`) zimeainishwa kama `isLocalOnlyPath()` katika `src/server/authz/routeGuard.ts` — tazama [Kanuni Kali #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Hakuna trailers za AI/bot za `Co-authored-by` katika commit messages (Kanuni Kali #16) — washirika wanadamu ambao kazi yao imetumika tena wanatambuliwa kwa trailers za kawaida za `Co-authored-by: Name <email>`
 
 ---
 
@@ -412,11 +419,10 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 
 ---
 
-## Kupata Msaada
+## Kupata Usaidizi
 
 - **Usanifu**: Tazama [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
 - **Marejeleo ya API**: Tazama [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Nyaraka za usalama**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **Nyaraka za uendeshaji**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Masuala**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR**: Tazama `docs/adr/` kwa rekodi za maamuzi ya usanifu

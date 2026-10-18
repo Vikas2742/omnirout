@@ -294,72 +294,72 @@ production build တို့သည် CI ၏ တာဝန်ဖြစ်သည�
 
 ---
 
-## ပရောဂျက်ဖွဲ့စည်းပုံ
+## ပရောဂျက် ဖွဲ့စည်းပုံ
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard စာမျက်နှာများ (ကဏ္ဍ 23 ခု)
-│   ├── api/                # API route များ (directory 51 ခု)
-│   └── login/              # အထောက်အထားစိစစ်ခြင်း စာမျက်နှာများ (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules စသည်)
-├── lib/                    # အဓိက business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite domain module များ + migration 130 ခု
-│   ├── memory/             # ရေရှည်သိမ်းဆည်းထားသော စကားဝိုင်းမှတ်ဉာဏ်
-│   ├── oauth/              # OAuth provider များ၊ service များနှင့် utility များ
-│   ├── skills/             # တိုးချဲ့နိုင်သော skill framework
-│   ├── usage/              # အသုံးပြုမှု ခြေရာခံခြင်းနှင့် ကုန်ကျစရိတ်တွက်ချက်ခြင်း
-│   └── localDb.ts          # ပြန်လည် export လုပ်သည့် layer သီးသန့် — ဤနေရာတွင် logic ကို မည်သည့်အခါမျှ မထည့်ပါနှင့်
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (certificate၊ DNS၊ ပစ်မှတ် routing)
+│   ├── (dashboard)/        # ဒက်ရှ်ဘုတ် စာမျက်နှာများ (ကဏ္ဍ 23 ခု)
+│   ├── api/                # API လမ်းကြောင်းများ (လမ်းညွှန် 51 ခု)
+│   └── login/              # စစ်မှန်ကြောင်းအတည်ပြုခြင်း စာမျက်နှာများ (.tsx)
+├── domain/                 # မူဝါဒ အင်ဂျင် (policyEngine, comboResolver, costRules စသည်)
+├── lib/                    # ပင်မ လုပ်ငန်းဆိုင်ရာ လော့ဂျစ် (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 ပရိုတိုကော ဆာဗာ
+│   ├── acp/                # Agent Communication Protocol မှတ်ပုံတင်စာရင်း
+│   ├── compliance/         # စည်းမျဉ်းလိုက်နာမှု မူဝါဒအင်ဂျင်
+│   ├── db/                 # SQLite ဒိုမိန်းမော်ဂျူးများ + ရွှေ့ပြောင်းမှု 130 ခု
+│   ├── memory/             # အမြဲတမ်းသိမ်းဆည်းထားသော စကားဝိုင်းမှတ်ဉာဏ်
+│   ├── oauth/              # OAuth ပံ့ပိုးသူများ၊ ဝန်ဆောင်မှုများနှင့် အသုံးဝင်ကိရိယာများ
+│   ├── skills/             # တိုးချဲ့နိုင်သော စွမ်းရည်ဘောင်
+│   ├── usage/              # အသုံးပြုမှု ခြေရာခံခြင်းနှင့် ကုန်ကျစရိတ် တွက်ချက်ခြင်း
+│   └── localDb.ts          # ပြန်လည်တင်ပို့သည့် အလွှာသာ — ဤနေရာတွင် လော့ဂျစ်ကို မည်သည့်အခါမျှ မထည့်ပါနှင့်
+├── middleware/              # တောင်းဆိုမှု ကြားခံဆော့ဖ်ဝဲ (promptInjectionGuard)
+├── mitm/                   # MITM ပရောက်စီ (လက်မှတ်၊ DNS၊ ပစ်မှတ်လမ်းကြောင်းသတ်မှတ်ခြင်း)
 ├── shared/
-│   ├── components/         # React component များ (.tsx)
-│   ├── constants/          # Provider သတ်မှတ်ချက်များ (329)၊ MCP scope များ၊ routing strategy 19 ခု
-│   ├── utils/              # Circuit breaker၊ sanitizer၊ auth helper များ
-│   └── validation/         # Zod v4 schema များ
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React ကွန်ပိုနင့်များ (.tsx)
+│   ├── constants/          # ပံ့ပိုးသူ သတ်မှတ်ချက်များ (329)၊ MCP နယ်ပယ်များ၊ လမ်းကြောင်းရွေးချယ်မှု မဟာဗျူဟာ 19 ခု
+│   ├── utils/              # ဆားကစ်ဖြတ်တောက်ကိရိယာ၊ သန့်စင်ကိရိယာ၊ စစ်မှန်ကြောင်းအတည်ပြုမှု အထောက်အကူပြုကိရိယာများ
+│   └── validation/         # Zod v4 စကီးမားများ
+└── sse/                    # SSE ပရောက်စီ လုပ်ငန်းစဉ်အစဉ်
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # Executor implementation module 89 ခု
-├── handlers/               # Request handler 11 ခု (chat၊ responses၊ embeddings၊ images စသည်)
-├── mcp-server/             # MCP server (သီးခြား tool 110 ခု၊ transport 3 ခု၊ scope 33 ခု)
-├── services/               # ထိပ်တန်းအဆင့် service 178 ခု (combo၊ autoCombo၊ rateLimitManager စသည်)
-├── translator/             # Format translator များ (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # Utility module 22 ခု (stream၊ TLS၊ proxy၊ logging)
+open-sse/                   # @omniroute/open-sse အလုပ်နေရာ
+├── executors/              # အကောင်အထည်ဖော် မော်ဂျူး 150 ခု (အကောင်အထည်ဖော် ကလတ်စ်များ + ပံ့ပိုးသူတစ်ခုချင်းစီအတွက် အထောက်အကူပြုကိရိယာများ)
+├── handlers/               # တောင်းဆိုမှု ကိုင်တွယ်သူ 11 ခု (ချတ်၊ တုံ့ပြန်ချက်များ၊ မြှုပ်သွင်းချက်များ၊ ပုံများ စသည်)
+├── mcp-server/             # MCP ဆာဗာ (ထူးခြားသော ကိရိယာ 110 ခု၊ ပို့ဆောင်ရေးနည်းလမ်း 3 ခု၊ နယ်ပယ် 33 ခု)
+├── services/               # အပေါ်ဆုံးအဆင့် ဝန်ဆောင်မှု 178 ခု (combo, autoCombo, rateLimitManager စသည်)
+├── translator/             # ဖော်မတ် ဘာသာပြန်ကိရိယာများ (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API အသွင်ပြောင်းကိရိယာ
+└── utils/                  # အသုံးဝင် မော်ဂျူး 22 ခု (စီးကြောင်း၊ TLS၊ ပရောက်စီ၊ မှတ်တမ်းတင်ခြင်း)
 
-electron/                   # Electron desktop app (platform အမျိုးမျိုးတွင် အသုံးပြုနိုင်သော)
+electron/                   # Electron ဒက်စ်တော့အက်ပ် (ပလက်ဖောင်းစုံ)
 
 tests/
-├── unit/                   # Node.js test runner (test ဖိုင် 1,574 ခု)
-├── integration/            # Integration test များ
-├── e2e/                    # Playwright test များ
-├── security/               # လုံခြုံရေး test များ
-├── translator/             # Translator သီးသန့် test များ
-└── load/                   # Load test များ
+├── unit/                   # Node.js စမ်းသပ်မှု လုပ်ဆောင်ကိရိယာ (စမ်းသပ်မှုဖိုင် 1,574 ခု)
+├── integration/            # ပေါင်းစည်းမှု စမ်းသပ်ချက်များ
+├── e2e/                    # Playwright စမ်းသပ်ချက်များ
+├── security/               # လုံခြုံရေး စမ်းသပ်ချက်များ
+├── translator/             # ဘာသာပြန်ကိရိယာအတွက် သီးသန့် စမ်းသပ်ချက်များ
+└── load/                   # ဝန်အား စမ်းသပ်ချက်များ
 
 docs/
-├── adr/                     # Architecture Decision Record များ
-├── architecture/            # စနစ် architecture နှင့် resilience
-├── comparison/              # OmniRoute နှင့် အခြားရွေးချယ်စရာများကို နှိုင်းယှဉ်ခြင်း
-├── compression/             # Compression လမ်းညွှန်များနှင့် စည်းမျဉ်းများ
+├── adr/                     # ဗိသုကာဆိုင်ရာ ဆုံးဖြတ်ချက် မှတ်တမ်းများ
+├── architecture/            # စနစ်ဗိသုကာနှင့် ခံနိုင်ရည်
+├── comparison/              # OmniRoute နှင့် အခြားရွေးချယ်စရာများ နှိုင်းယှဉ်ချက်
+├── compression/             # ချုံ့ခြင်း လမ်းညွှန်များနှင့် စည်းမျဉ်းများ
 ├── dev/                     # ဖွံ့ဖြိုးတိုးတက်ရေး လမ်းညွှန်များ
-├── diagrams/                # Architecture diagram များ
-├── frameworks/              # MCP၊ A2A၊ OpenCode၊ Memory၊ Skills
-├── guides/                  # အသုံးပြုသူလမ်းညွှန်၊ Docker၊ စနစ်တပ်ဆင်ခြင်း၊ ပြဿနာဖြေရှင်းခြင်း
-├── i18n/                    # ဘာသာစကားမျိုးစုံဖြင့် ပြန်ဆိုထားသော README များ
+├── diagrams/                # ဗိသုကာ ပုံကြမ်းများ
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # အသုံးပြုသူလမ်းညွှန်၊ Docker၊ ပြင်ဆင်တပ်ဆင်မှု၊ ပြဿနာဖြေရှင်းခြင်း
+├── i18n/                    # နိုင်ငံတကာဘာသာစကားသုံး README ဘာသာပြန်များ
 ├── marketing/               # စျေးကွက်မြှင့်တင်ရေး ပစ္စည်းများ
-├── ops/                     # Deployment၊ proxy၊ coverage၊ release များ
-├── providers/               # Provider သီးသန့် documentation
-├── reference/               # API reference၊ env var များ၊ CLI tool များ၊ အခမဲ့အဆင့်များ
-├── releases/                # Release note များ
-├── routing/                 # Auto-combo engine၊ reasoning replay
-├── screenshots/             # Dashboard screenshot များ
-├── security/                # Guardrail များ၊ compliance၊ stealth၊ token များ
-└── specs/                   # ဒီဇိုင်းသတ်မှတ်ချက်များ
+├── ops/                     # ဖြန့်ကျက်ခြင်း၊ ပရောက်စီ၊ လွှမ်းခြုံမှု၊ ထုတ်ဝေမှုများ
+├── providers/               # ပံ့ပိုးသူအလိုက် စာရွက်စာတမ်းများ
+├── reference/               # API ကိုးကားချက်၊ ပတ်ဝန်းကျင် ကိန်းရှင်များ၊ CLI ကိရိယာများ၊ အခမဲ့အဆင့်များ
+├── releases/                # ထုတ်ဝေမှု မှတ်စုများ
+├── routing/                 # အလိုအလျောက် ပေါင်းစပ်အင်ဂျင်၊ ကျိုးကြောင်းဆင်ခြင်မှု ပြန်လည်လုပ်ဆောင်ခြင်း
+├── screenshots/             # ဒက်ရှ်ဘုတ် မျက်နှာပြင်ပုံများ
+├── security/                # အကာအကွယ်စည်းမျဉ်းများ၊ စည်းမျဉ်းလိုက်နာမှု၊ ကိုယ်ပျောက်စနစ်၊ တိုကင်များ
+└── specs/                   # ဒီဇိုင်း သတ်မှတ်ချက်များ
 ```
 
 ---
@@ -402,20 +402,20 @@ Model definition များကို `open-sse/config/providerRegistry.ts` တ
 
 ## Pull Request စစ်ဆေးရန်စာရင်း
 
-- [ ] Tests များ အောင်မြင်သည် (`npm test`)
-- [ ] Linting အောင်မြင်သည် (`npm run lint`)
-- [ ] Build အောင်မြင်သည် (`npm run build`)
-- [ ] Public function နှင့် interface အသစ်များအတွက် TypeScript types များ ထည့်သွင်းထားသည်
-- [ ] Hardcoded secrets သို့မဟုတ် fallback values များ မရှိပါ
-- [ ] အများသုံး upstream credentials များကို literal များအဖြစ် လုံးဝမထည့်ဘဲ `resolvePublicCred()` မှတစ်ဆင့် ထည့်သွင်းထားသည် ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ကို ကြည့်ပါ)
-- [ ] Error response များသည် `buildErrorBody()` / `sanitizeErrorMessage()` ကို ဖြတ်သန်းသည် — response body များထဲတွင် raw stack trace များ မပါဝင်ပါ ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ကို ကြည့်ပါ)
-- [ ] Shell commands (`exec` / `spawn`) များသည် runtime values များကို string interpolation ဖြင့် မဟုတ်ဘဲ `env` မှတစ်ဆင့် ပေးပို့သည်
-- [ ] Input အားလုံးကို Zod schemas များဖြင့် အတည်ပြုစစ်ဆေးထားသည်
-- [ ] အသုံးပြုသူနှင့် သက်ဆိုင်သော ပြောင်းလဲမှုများအတွက် Changelog **fragment** ကို `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` အောက်တွင် ထည့်သွင်းထားသည် ([`changelog.d/README.md`](./changelog.d/README.md) ကို ကြည့်ပါ) — `CHANGELOG.md` ကို တိုက်ရိုက် **မပြင်ဆင်ပါနှင့်**။ Fragment များကို release လုပ်ချိန်တွင် စုစည်းပြီး PR များအကြား မည်သည့်အခါမျှ conflict မဖြစ်ပါ
-- [ ] Documentation ကို အပ်ဒိတ်လုပ်ထားသည် (သက်ဆိုင်ပါက)
-- [ ] CodeQL / Secret-Scanning alert အသစ်များ မဖွင့်ထားပါ၊ သို့မဟုတ် alert တစ်ခုချင်းစီကို သက်ဆိုင်ရာ `docs/security/` doc ကို ကိုးကားသည့် နည်းပညာဆိုင်ရာ အကြောင်းပြချက်ဖြင့် ပယ်ဖျက်ထားသည်
-- [ ] Child process များကို စတင်သည့် routes (`/api/mcp/`, `/api/cli-tools/runtime/`) ကို `src/server/authz/routeGuard.ts` ရှိ `isLocalOnlyPath()` အဖြစ် အမျိုးအစားသတ်မှတ်ထားသည် — [တင်းကျပ်သော စည်းမျဉ်း #15](docs/security/ROUTE_GUARD_TIERS.md) ကို ကြည့်ပါ
-- [ ] Commit message များတွင် `Co-Authored-By` trailers မပါဝင်ပါ — commit များသည် repository ပိုင်ရှင်၏ Git identity တစ်ခုတည်းအောက်တွင်သာ ပေါ်ရမည် (တင်းကျပ်သော စည်းမျဉ်း #16)
+- [ ] စမ်းသပ်မှုများ အောင်မြင်သည် (`npm test`)
+- [ ] Linting စစ်ဆေးမှုများ အောင်မြင်သည် (`npm run lint`)
+- [ ] Build ပြုလုပ်မှု အောင်မြင်သည် (`npm run build`)
+- [ ] အများသုံး function နှင့် interface အသစ်များအတွက် TypeScript type များ ထည့်သွင်းထားသည်
+- [ ] Hardcode လုပ်ထားသော secret သို့မဟုတ် fallback value များ မရှိပါ
+- [ ] အများသုံး upstream credential များကို literal များအဖြစ် မသုံးဘဲ `resolvePublicCred()` မှတစ်ဆင့် ထည့်သွင်းထားသည် ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ကို ကြည့်ပါ)
+- [ ] Error response များကို `buildErrorBody()` / `sanitizeErrorMessage()` မှတစ်ဆင့် ဖြတ်သန်းစေထားပြီး response body များတွင် မူရင်း stack trace များ မပါဝင်ပါ ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ကို ကြည့်ပါ)
+- [ ] Shell command များ (`exec` / `spawn`) သည် runtime value များကို string interpolation မှတစ်ဆင့် မဟုတ်ဘဲ `env` မှတစ်ဆင့် ပေးပို့သည်
+- [ ] Input အားလုံးကို Zod schema များဖြင့် စစ်ဆေးအတည်ပြုထားသည်
+- [ ] အသုံးပြုသူအပေါ် သက်ရောက်သည့် ပြောင်းလဲမှုများအတွက် Changelog **fragment** ကို `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` အောက်တွင် ထည့်သွင်းထားသည် ([`changelog.d/README.md`](./changelog.d/README.md) ကို ကြည့်ပါ) — `CHANGELOG.md` ကို တိုက်ရိုက် **မပြင်ဆင်ပါနှင့်**၊ fragment များကို release ပြုလုပ်ချိန်တွင် စုစည်းပြီး PR များအကြား conflict မဖြစ်စေပါ
+- [ ] Documentation ကို လိုအပ်ပါက အပ်ဒိတ်လုပ်ထားသည်
+- [ ] CodeQL / Secret-Scanning alert အသစ်များ မပေါ်လာပါ၊ သို့မဟုတ် alert တစ်ခုချင်းစီကို သက်ဆိုင်ရာ `docs/security/` doc အား ကိုးကားထားသည့် နည်းပညာဆိုင်ရာ အကြောင်းပြချက်ဖြင့် ပယ်ချထားသည်
+- [ ] Child process များကို စတင်သည့် route များ (`/api/mcp/`, `/api/cli-tools/runtime/`) ကို `src/server/authz/routeGuard.ts` ရှိ `isLocalOnlyPath()` အဖြစ် သတ်မှတ်ထားသည် — [Hard Rule #15](docs/security/ROUTE_GUARD_TIERS.md) ကို ကြည့်ပါ
+- [ ] Commit message များတွင် AI/bot `Co-authored-by` trailer များ မပါဝင်ပါ (Hard Rule #16) — ပြန်လည်အသုံးပြုထားသော အလုပ်၏ လူသားပူးပေါင်းဆောင်ရွက်သူများကို စံသတ်မှတ်ထားသည့် `Co-authored-by: Name <email>` trailer များဖြင့် အသိအမှတ်ပြုထားသည်
 
 ---
 
@@ -430,9 +430,8 @@ VPS deploy များအတွက် `npm run build` အစား `npm run bui
 
 ## အကူအညီရယူခြင်း
 
-- **Architecture**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) ကို ကြည့်ပါ
+- **ဗိသုကာဖွဲ့စည်းပုံ**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) ကို ကြည့်ပါ
 - **API ကိုးကားချက်**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) ကို ကြည့်ပါ
 - **လုံခြုံရေးဆိုင်ရာ စာရွက်စာတမ်းများ**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **လုပ်ငန်းလည်ပတ်မှုဆိုင်ရာ စာရွက်စာတမ်းများ**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **ပြဿနာများ**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: ဗိသုကာဆိုင်ရာ ဆုံးဖြတ်ချက်မှတ်တမ်းများအတွက် `docs/adr/` ကို ကြည့်ပါ

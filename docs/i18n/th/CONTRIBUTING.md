@@ -288,65 +288,72 @@ npm run test:combo:live:vps:failover     # เพิ่มสถานการ�
 
 ---
 
-## Project Structure
+## โครงสร้างโปรเจกต์
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # หน้าแดชบอร์ด (23 ส่วน)
+│   ├── api/                # เส้นทาง API (51 ไดเรกทอรี)
+│   └── login/              # หน้าการยืนยันตัวตน (.tsx)
+├── domain/                 # กลไกนโยบาย (policyEngine, comboResolver, costRules ฯลฯ)
+├── lib/                    # ตรรกะทางธุรกิจหลัก (.ts)
+│   ├── a2a/                # เซิร์ฟเวอร์โปรโตคอล Agent-to-Agent v0.3
+│   ├── acp/                # รีจิสทรี Agent Communication Protocol
+│   ├── compliance/         # กลไกนโยบายการปฏิบัติตามข้อกำหนด
+│   ├── db/                 # โมดูลโดเมน SQLite + การย้ายข้อมูล 130 รายการ
+│   ├── memory/             # หน่วยความจำการสนทนาแบบถาวร
+│   ├── oauth/              # ผู้ให้บริการ บริการ และยูทิลิตี OAuth
+│   ├── skills/             # เฟรมเวิร์กทักษะที่ขยายความสามารถได้
+│   ├── usage/              # การติดตามการใช้งานและการคำนวณต้นทุน
+│   └── localDb.ts          # เลเยอร์ส่งออกซ้ำเท่านั้น — ห้ามเพิ่มตรรกะที่นี่
+├── middleware/              # มิดเดิลแวร์สำหรับคำขอ (promptInjectionGuard)
+├── mitm/                   # พร็อกซี MITM (ใบรับรอง, DNS, การกำหนดเส้นทางเป้าหมาย)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # คอมโพเนนต์ React (.tsx)
+│   ├── constants/          # คำจำกัดความของผู้ให้บริการ (329), ขอบเขต MCP, กลยุทธ์การกำหนดเส้นทาง 19 แบบ
+│   ├── utils/              # เซอร์กิตเบรกเกอร์, ตัวกรองข้อมูล, ตัวช่วยการยืนยันตัวตน
+│   └── validation/         # สคีมา Zod v4
+└── sse/                    # ไปป์ไลน์พร็อกซี SSE
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # เวิร์กสเปซ @omniroute/open-sse
+├── executors/              # โมดูลตัวดำเนินการ 150 โมดูล (คลาสตัวดำเนินการ + ตัวช่วยเฉพาะผู้ให้บริการ)
+├── handlers/               # ตัวจัดการคำขอ 11 ตัว (แชต, การตอบกลับ, embeddings, รูปภาพ ฯลฯ)
+├── mcp-server/             # เซิร์ฟเวอร์ MCP (เครื่องมือไม่ซ้ำกัน 110 รายการ, รูปแบบการส่งข้อมูล 3 แบบ, ขอบเขต 33 รายการ)
+├── services/               # บริการระดับบนสุด 178 รายการ (combo, autoCombo, rateLimitManager ฯลฯ)
+├── translator/             # ตัวแปลรูปแบบ (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # ตัวแปลง Responses API
+└── utils/                  # โมดูลยูทิลิตี 22 โมดูล (สตรีม, TLS, พร็อกซี, การบันทึกเหตุการณ์)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # แอปเดสก์ท็อป Electron (ข้ามแพลตฟอร์ม)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # ตัวรันการทดสอบ Node.js (ไฟล์ทดสอบ 1,574 ไฟล์)
+├── integration/            # การทดสอบการทำงานร่วมกัน
+├── e2e/                    # การทดสอบ Playwright
+├── security/               # การทดสอบความปลอดภัย
+├── translator/             # การทดสอบเฉพาะตัวแปล
+└── load/                   # การทดสอบโหลด
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # บันทึกการตัดสินใจด้านสถาปัตยกรรม
+├── architecture/            # สถาปัตยกรรมระบบและความยืดหยุ่น
+├── comparison/              # OmniRoute เทียบกับทางเลือกอื่น
+├── compression/             # คู่มือและกฎการบีบอัด
+├── dev/                     # คู่มือการพัฒนา
+├── diagrams/                # แผนภาพสถาปัตยกรรม
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # คู่มือผู้ใช้, Docker, การตั้งค่า, การแก้ไขปัญหา
+├── i18n/                    # คำแปล README สำหรับภาษาต่าง ๆ
+├── marketing/               # สื่อการตลาด
+├── ops/                     # การปรับใช้, พร็อกซี, ความครอบคลุม, รุ่นเผยแพร่
+├── providers/               # เอกสารเฉพาะผู้ให้บริการ
+├── reference/               # เอกสารอ้างอิง API, ตัวแปรสภาพแวดล้อม, เครื่องมือ CLI, ระดับใช้งานฟรี
+├── releases/                # บันทึกประจำรุ่น
+├── routing/                 # กลไก auto-combo, การเล่นซ้ำกระบวนการให้เหตุผล
+├── screenshots/             # ภาพหน้าจอแดชบอร์ด
+├── security/                # มาตรการควบคุม, การปฏิบัติตามข้อกำหนด, การซ่อนตัว, โทเค็น
+└── specs/                   # ข้อกำหนดการออกแบบ
 ```
 
 ---
@@ -394,15 +401,15 @@ docs/                       # Documentation
 - [ ] การ Build สำเร็จ (`npm run build`)
 - [ ] เพิ่ม TypeScript types สำหรับ public functions และ interfaces ใหม่แล้ว
 - [ ] ไม่มี secrets หรือ fallback values ที่ hardcode ไว้
-- [ ] Public upstream credentials ถูกฝังผ่าน `resolvePublicCred()` (ดู [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)) และห้ามใช้เป็น literals
+- [ ] ฝัง public upstream credentials ผ่าน `resolvePublicCred()` (ดู [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)) และไม่ใช้ literals โดยเด็ดขาด
 - [ ] Error responses ส่งผ่าน `buildErrorBody()` / `sanitizeErrorMessage()` — ไม่มี raw stack traces ใน response bodies (ดู [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
 - [ ] Shell commands (`exec` / `spawn`) ส่ง runtime values ผ่าน `env` ไม่ใช่ผ่าน string interpolation
-- [ ] Inputs ทั้งหมดได้รับการตรวจสอบด้วย Zod schemas
-- [ ] เพิ่ม **fragment** ของ Changelog ภายใต้ `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` สำหรับการเปลี่ยนแปลงที่ส่งผลต่อผู้ใช้แล้ว (ดู [`changelog.d/README.md`](./changelog.d/README.md)) — **ห้าม** แก้ไข `CHANGELOG.md` โดยตรง; fragments จะถูกรวบรวมเมื่อออกรุ่น และจะไม่เกิดข้อขัดแย้งระหว่าง PRs
+- [ ] ตรวจสอบ inputs ทั้งหมดด้วย Zod schemas
+- [ ] เพิ่ม **fragment** ของ Changelog ภายใต้ `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` สำหรับการเปลี่ยนแปลงที่ส่งผลต่อผู้ใช้ (ดู [`changelog.d/README.md`](./changelog.d/README.md)) — **ห้าม** แก้ไข `CHANGELOG.md` โดยตรง; fragments จะถูกรวบรวมเมื่อเผยแพร่ release และจะไม่เกิด conflict ระหว่าง PRs
 - [ ] อัปเดตเอกสารแล้ว (หากเกี่ยวข้อง)
-- [ ] ไม่มี CodeQL / Secret-Scanning alerts ใหม่ หรือแต่ละรายการถูกปิดโดยมีเหตุผลเชิงเทคนิคที่อ้างอิงเอกสาร `docs/security/` ที่เกี่ยวข้อง
-- [ ] Routes ที่ spawn child processes (`/api/mcp/`, `/api/cli-tools/runtime/`) ถูกจัดประเภทเป็น `isLocalOnlyPath()` ใน `src/server/authz/routeGuard.ts` — ดู [กฎเคร่งครัด #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] ไม่มี trailers `Co-Authored-By` ใน commit messages — commits ต้องแสดงภายใต้ Git identity ของเจ้าของ repository เท่านั้น (กฎเคร่งครัด #16)
+- [ ] ไม่มี CodeQL / Secret-Scanning alerts ใหม่ หรือแต่ละรายการถูก dismiss พร้อมเหตุผลทางเทคนิคที่อ้างอิงเอกสาร `docs/security/` ที่เกี่ยวข้อง
+- [ ] Routes ที่ spawn child processes (`/api/mcp/`, `/api/cli-tools/runtime/`) ถูกจัดประเภทเป็น `isLocalOnlyPath()` ใน `src/server/authz/routeGuard.ts` — ดู [กฎบังคับ #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] ไม่มี trailers `Co-authored-by` ของ AI/bot ใน commit messages (กฎบังคับ #16) — human collaborators ที่นำผลงานมาใช้จะได้รับเครดิตด้วย trailers มาตรฐาน `Co-authored-by: Name <email>`
 
 ---
 
@@ -417,6 +424,5 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **สถาปัตยกรรม**: ดู [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
 - **เอกสารอ้างอิง API**: ดู [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **เอกสารด้านความปลอดภัย**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **เอกสารการปฏิบัติการ**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **เอกสารด้านการปฏิบัติการ**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **ปัญหา**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR**: ดูบันทึกการตัดสินใจด้านสถาปัตยกรรมได้ที่ `docs/adr/`

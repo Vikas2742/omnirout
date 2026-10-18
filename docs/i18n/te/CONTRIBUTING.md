@@ -281,65 +281,72 @@ production build CI బాధ్యత — వాటిని స్థాని
 
 ---
 
-## Project Structure
+## ప్రాజెక్ట్ నిర్మాణం
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # డ్యాష్బోర్డ్ పేజీలు (23 విభాగాలు)
+│   ├── api/                # API రూట్లు (51 డైరెక్టరీలు)
+│   └── login/              # ప్రామాణీకరణ పేజీలు (.tsx)
+├── domain/                 # పాలసీ ఇంజిన్ (policyEngine, comboResolver, costRules మొదలైనవి)
+├── lib/                    # ప్రధాన వ్యాపార లాజిక్ (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 ప్రోటోకాల్ సర్వర్
+│   ├── acp/                # Agent Communication Protocol రిజిస్ట్రీ
+│   ├── compliance/         # అనువర్తన పాలసీ ఇంజిన్
+│   ├── db/                 # SQLite డొమైన్ మాడ్యూల్లు + 130 మైగ్రేషన్లు
+│   ├── memory/             # నిరంతర సంభాషణ మెమరీ
+│   ├── oauth/              # OAuth ప్రొవైడర్లు, సేవలు మరియు యుటిలిటీలు
+│   ├── skills/             # విస్తరించదగిన నైపుణ్య ఫ్రేమ్వర్క్
+│   ├── usage/              # వినియోగ ట్రాకింగ్ మరియు ఖర్చు గణన
+│   └── localDb.ts          # తిరిగి ఎగుమతి చేసే లేయర్ మాత్రమే — ఇక్కడ ఎప్పుడూ లాజిక్ను జోడించవద్దు
+├── middleware/              # అభ్యర్థన మిడిల్వేర్ (promptInjectionGuard)
+├── mitm/                   # MITM ప్రాక్సీ (సర్టిఫికేట్, DNS, లక్ష్య రూటింగ్)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React కాంపోనెంట్లు (.tsx)
+│   ├── constants/          # ప్రొవైడర్ నిర్వచనాలు (329), MCP స్కోప్లు, 19 రూటింగ్ వ్యూహాలు
+│   ├── utils/              # సర్క్యూట్ బ్రేకర్, శానిటైజర్, ప్రామాణీకరణ సహాయకాలు
+│   └── validation/         # Zod v4 స్కీమాలు
+└── sse/                    # SSE ప్రాక్సీ పైప్లైన్
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse వర్క్స్పేస్
+├── executors/              # 150 ఎగ్జిక్యూటర్ మాడ్యూల్లు (ఎగ్జిక్యూటర్ క్లాస్లు + ప్రతి ప్రొవైడర్కు సహాయకాలు)
+├── handlers/               # 11 అభ్యర్థన హ్యాండ్లర్లు (చాట్, ప్రతిస్పందనలు, ఎంబెడ్డింగ్లు, చిత్రాలు మొదలైనవి)
+├── mcp-server/             # MCP సర్వర్ (110 ప్రత్యేక టూల్లు, 3 ట్రాన్స్పోర్ట్లు, 33 స్కోప్లు)
+├── services/               # 178 అగ్ర-స్థాయి సేవలు (combo, autoCombo, rateLimitManager మొదలైనవి)
+├── translator/             # ఫార్మాట్ అనువాదకాలు (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API ట్రాన్స్ఫార్మర్
+└── utils/                  # 22 యుటిలిటీ మాడ్యూల్లు (స్ట్రీమ్, TLS, ప్రాక్సీ, లాగింగ్)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Electron డెస్క్టాప్ యాప్ (క్రాస్-ప్లాట్ఫారమ్)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js టెస్ట్ రన్నర్ (1,574 టెస్ట్ ఫైల్లు)
+├── integration/            # ఇంటిగ్రేషన్ టెస్ట్లు
+├── e2e/                    # Playwright టెస్ట్లు
+├── security/               # భద్రతా టెస్ట్లు
+├── translator/             # అనువాదకానికి ప్రత్యేకమైన టెస్ట్లు
+└── load/                   # లోడ్ టెస్ట్లు
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # ఆర్కిటెక్చర్ నిర్ణయ రికార్డ్లు
+├── architecture/            # సిస్టమ్ ఆర్కిటెక్చర్ & స్థితిస్థాపకత
+├── comparison/              # OmniRoute మరియు ప్రత్యామ్నాయాల పోలిక
+├── compression/             # కంప్రెషన్ మార్గదర్శకాలు & నియమాలు
+├── dev/                     # అభివృద్ధి మార్గదర్శకాలు
+├── diagrams/                # ఆర్కిటెక్చర్ రేఖాచిత్రాలు
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # వినియోగదారు మార్గదర్శకం, Docker, సెటప్, సమస్య పరిష్కారం
+├── i18n/                    # అంతర్జాతీయీకరించిన README అనువాదాలు
+├── marketing/               # మార్కెటింగ్ సామగ్రి
+├── ops/                     # డిప్లాయ్మెంట్, ప్రాక్సీ, కవరేజ్, విడుదలలు
+├── providers/               # ప్రొవైడర్కు ప్రత్యేకమైన డాక్యుమెంటేషన్
+├── reference/               # API రిఫరెన్స్, env vars, CLI టూల్లు, ఉచిత స్థాయిలు
+├── releases/                # విడుదల గమనికలు
+├── routing/                 # ఆటో-కాంబో ఇంజిన్, రీజనింగ్ రీప్లే
+├── screenshots/             # డ్యాష్బోర్డ్ స్క్రీన్షాట్లు
+├── security/                # గార్డ్రెయిల్లు, అనువర్తనం, స్టెల్త్, టోకెన్లు
+└── specs/                   # డిజైన్ స్పెసిఫికేషన్లు
 ```
 
 ---
@@ -380,22 +387,22 @@ docs/                       # Documentation
 
 ---
 
-## పుల్ రిక్వెస్ట్ తనిఖీ జాబితా
+## పుల్ రిక్వెస్ట్ చెక్లిస్ట్
 
 - [ ] పరీక్షలు విజయవంతమయ్యాయి (`npm test`)
 - [ ] లింటింగ్ విజయవంతమైంది (`npm run lint`)
 - [ ] బిల్డ్ విజయవంతమైంది (`npm run build`)
 - [ ] కొత్త పబ్లిక్ ఫంక్షన్లు మరియు ఇంటర్ఫేస్ల కోసం TypeScript టైప్లు జోడించబడ్డాయి
 - [ ] హార్డ్కోడ్ చేసిన సీక్రెట్లు లేదా ఫాల్బ్యాక్ విలువలు లేవు
-- [ ] పబ్లిక్ అప్స్ట్రీమ్ క్రెడెన్షియల్లు లిటరల్లుగా కాకుండా `resolvePublicCred()` ద్వారా పొందుపరచబడ్డాయి ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) చూడండి)
-- [ ] ఎర్రర్ రెస్పాన్స్లు `buildErrorBody()` / `sanitizeErrorMessage()` ద్వారా రూట్ చేయబడతాయి — రెస్పాన్స్ బాడీలలో ముడి స్టాక్ ట్రేస్లు ఉండకూడదు ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) చూడండి)
+- [ ] పబ్లిక్ అప్స్ట్రీమ్ క్రెడెన్షియల్స్ను లిటరల్స్గా కాకుండా `resolvePublicCred()` ద్వారా పొందుపరిచారు ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) చూడండి)
+- [ ] ఎర్రర్ రెస్పాన్స్లు `buildErrorBody()` / `sanitizeErrorMessage()` ద్వారా పంపబడతాయి — రెస్పాన్స్ బాడీలలో ముడి స్టాక్ ట్రేస్లు ఉండవు ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) చూడండి)
 - [ ] షెల్ కమాండ్లు (`exec` / `spawn`) రన్టైమ్ విలువలను స్ట్రింగ్ ఇంటర్పోలేషన్ ద్వారా కాకుండా `env` ద్వారా పంపుతాయి
 - [ ] అన్ని ఇన్పుట్లు Zod స్కీమాలతో ధ్రువీకరించబడ్డాయి
 - [ ] వినియోగదారులకు కనిపించే మార్పుల కోసం `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` కింద చేంజ్లాగ్ **ఫ్రాగ్మెంట్** జోడించబడింది ([`changelog.d/README.md`](./changelog.d/README.md) చూడండి) — `CHANGELOG.md`ను నేరుగా సవరించవద్దు; ఫ్రాగ్మెంట్లు విడుదల సమయంలో సమీకరించబడతాయి మరియు PRల మధ్య ఎప్పటికీ విభేదించవు
 - [ ] డాక్యుమెంటేషన్ నవీకరించబడింది (వర్తిస్తే)
-- [ ] కొత్త CodeQL / Secret-Scanning అలర్ట్లు ఏవీ తెరవబడలేదు, లేదా ప్రతి అలర్ట్ సంబంధిత `docs/security/` డాక్యుమెంట్ను ప్రస్తావించే సాంకేతిక సమర్థనతో విస్మరించబడింది
+- [ ] కొత్త CodeQL / Secret-Scanning అలర్ట్లు ఏవీ తెరవబడలేదు లేదా ప్రతి అలర్ట్ను సంబంధిత `docs/security/` డాక్యుమెంట్ను సూచించే సాంకేతిక సమర్థనతో డిస్మిస్ చేశారు
 - [ ] చైల్డ్ ప్రాసెస్లను ప్రారంభించే రూట్లు (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts`లో `isLocalOnlyPath()`గా వర్గీకరించబడ్డాయి — [కఠిన నియమం #15](docs/security/ROUTE_GUARD_TIERS.md) చూడండి
-- [ ] కమిట్ సందేశాలలో `Co-Authored-By` ట్రైలర్లు లేవు — కమిట్లు పూర్తిగా రిపాజిటరీ యజమాని Git గుర్తింపు కింద మాత్రమే కనిపించాలి (కఠిన నియమం #16)
+- [ ] కమిట్ సందేశాలలో AI/బాట్ `Co-authored-by` ట్రైలర్లు లేవు (కఠిన నియమం #16) — తిరిగి ఉపయోగించిన పనికి చెందిన మానవ సహకారులకు ప్రామాణిక `Co-authored-by: Name <email>` ట్రైలర్లతో క్రెడిట్ ఇవ్వబడింది
 
 ---
 
@@ -408,8 +415,7 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 ## సహాయం పొందడం
 
 - **ఆర్కిటెక్చర్**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) చూడండి
-- **API సూచిక**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) చూడండి
-- **భద్రతా డాక్యుమెంట్లు**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **ఆపరేషన్స్ డాక్యుమెంట్లు**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **API రిఫరెన్స్**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) చూడండి
+- **భద్రతా డాక్యుమెంటేషన్**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
+- **ఆపరేషన్స్ డాక్యుమెంటేషన్**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **సమస్యలు**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRలు**: ఆర్కిటెక్చరల్ నిర్ణయాల రికార్డుల కోసం `docs/adr/` చూడండి

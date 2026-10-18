@@ -293,12 +293,12 @@ Amalda qoʻllangan misollar uchun `open-sse/utils/stream.ts` va `open-sse/utils/
 
 ---
 
-## Loyiha tuzilishi
+## Loyiha tuzilmasi
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Boshqaruv paneli sahifalari (23 ta boʻlim)
+│   ├── (dashboard)/        # Boshqaruv paneli sahifalari (23 ta bo‘lim)
 │   ├── api/                # API marshrutlari (51 ta katalog)
 │   └── login/              # Autentifikatsiya sahifalari (.tsx)
 ├── domain/                 # Siyosat mexanizmi (policyEngine, comboResolver, costRules va boshqalar)
@@ -309,31 +309,31 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── db/                 # SQLite domen modullari + 130 ta migratsiya
 │   ├── memory/             # Doimiy suhbat xotirasi
 │   ├── oauth/              # OAuth provayderlari, xizmatlari va yordamchi vositalari
-│   ├── skills/             # Kengaytiriladigan koʻnikmalar freymvorki
-│   ├── usage/              # Foydalanishni kuzatish va xarajatni hisoblash
-│   └── localDb.ts          # Faqat qayta eksport qilish qatlami — bu yerga hech qachon mantiq qoʻshmang
-├── middleware/              # Soʻrov vositachi dasturi (promptInjectionGuard)
-├── mitm/                   # MITM proksi (sertifikat, DNS, maqsadni marshrutlash)
+│   ├── skills/             # Kengaytiriladigan ko‘nikmalar freymvorki
+│   ├── usage/              # Foydalanishni kuzatish va xarajatlarni hisoblash
+│   └── localDb.ts          # Faqat qayta eksport qilish qatlami — bu yerga hech qachon mantiq qo‘shmang
+├── middleware/              # So‘rovlar uchun oraliq dastur (promptInjectionGuard)
+├── mitm/                   # MITM proksi (sertifikat, DNS, maqsadli marshrutlash)
 ├── shared/
 │   ├── components/         # React komponentlari (.tsx)
-│   ├── constants/          # Provayder taʼriflari (329 ta), MCP doiralari, 19 ta marshrutlash strategiyasi
-│   ├── utils/              # Avtomatik uzgich, sanitayzer, autentifikatsiya yordamchilari
+│   ├── constants/          # Provayder ta’riflari (329 ta), MCP qamrovlari, 19 ta marshrutlash strategiyasi
+│   ├── utils/              # Zanjir uzgich, sanitizator, autentifikatsiya yordamchilari
 │   └── validation/         # Zod v4 sxemalari
 └── sse/                    # SSE proksi konveyeri
 
 open-sse/                   # @omniroute/open-sse ish maydoni
-├── executors/              # 89 ta ijrochi amalga oshirish moduli
-├── handlers/               # 11 ta soʻrov ishlovchisi (chat, javoblar, embeddinglar, tasvirlar va boshqalar)
-├── mcp-server/             # MCP serveri (110 ta noyob vosita, 3 ta transport, 33 ta doira)
+├── executors/              # 150 ta ijrochi modul (ijrochi sinflari + har bir provayder uchun yordamchilar)
+├── handlers/               # 11 ta so‘rov ishlovchisi (chat, javoblar, embeddinglar, tasvirlar va boshqalar)
+├── mcp-server/             # MCP serveri (110 ta noyob vosita, 3 ta transport, 33 ta qamrov)
 ├── services/               # 178 ta yuqori darajadagi xizmat (combo, autoCombo, rateLimitManager va boshqalar)
 ├── translator/             # Format tarjimonlari (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformeri
-└── utils/                  # 22 ta yordamchi modul (oqim, TLS, proksi, jurnalga yozish)
+├── transformer/            # Responses API transformatori
+└── utils/                  # 22 ta yordamchi modul (oqim, TLS, proksi, jurnal yuritish)
 
 electron/                   # Electron ish stoli ilovasi (turli platformalar uchun)
 
 tests/
-├── unit/                   # Node.js test bajaruvchisi (1 574 ta test fayli)
+├── unit/                   # Node.js test ishga tushiruvchisi (1 574 ta test fayli)
 ├── integration/            # Integratsion testlar
 ├── e2e/                    # Playwright testlari
 ├── security/               # Xavfsizlik testlari
@@ -341,19 +341,19 @@ tests/
 └── load/                   # Yuklama testlari
 
 docs/
-├── adr/                     # Arxitektura qarorlari yozuvlari
-├── architecture/            # Tizim arxitekturasi va bardoshlilik
+├── adr/                     # Arxitektura qarorlari qaydlari
+├── architecture/            # Tizim arxitekturasi va bardoshliligi
 ├── comparison/              # OmniRoute va muqobil yechimlar taqqoslanishi
-├── compression/             # Siqish boʻyicha qoʻllanmalar va qoidalar
-├── dev/                     # Ishlab chiqish boʻyicha qoʻllanmalar
+├── compression/             # Siqish bo‘yicha qo‘llanmalar va qoidalar
+├── dev/                     # Ishlab chiqish bo‘yicha qo‘llanmalar
 ├── diagrams/                # Arxitektura diagrammalari
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Foydalanuvchi qoʻllanmasi, Docker, sozlash, muammolarni bartaraf etish
+├── guides/                  # Foydalanuvchi qo‘llanmasi, Docker, sozlash, nosozliklarni bartaraf etish
 ├── i18n/                    # Xalqarolashtirilgan README tarjimalari
 ├── marketing/               # Marketing materiallari
 ├── ops/                     # Joylashtirish, proksi, qamrov, relizlar
 ├── providers/               # Provayderlarga xos hujjatlar
-├── reference/               # API maʼlumotnomasi, muhit oʻzgaruvchilari, CLI vositalari, bepul tariflar
+├── reference/               # API ma’lumotnomasi, muhit o‘zgaruvchilari, CLI vositalari, bepul tariflar
 ├── releases/                # Reliz qaydlari
 ├── routing/                 # Avtomatik kombinatsiya mexanizmi, mulohazalarni qayta ijro etish
 ├── screenshots/             # Boshqaruv paneli skrinshotlari
@@ -399,22 +399,22 @@ Model taʼriflarini `open-sse/config/providerRegistry.ts` fayliga qoʻshing.
 
 ---
 
-## Pull Request nazorat roʻyxati
+## Pull Request tekshiruv roʻyxati
 
 - [ ] Testlar muvaffaqiyatli oʻtadi (`npm test`)
-- [ ] Lint tekshiruvi muvaffaqiyatli oʻtadi (`npm run lint`)
-- [ ] Yigʻish muvaffaqiyatli yakunlanadi (`npm run build`)
+- [ ] Linting tekshiruvi muvaffaqiyatli oʻtadi (`npm run lint`)
+- [ ] Build muvaffaqiyatli yakunlanadi (`npm run build`)
 - [ ] Yangi ommaviy funksiyalar va interfeyslar uchun TypeScript turlari qoʻshilgan
-- [ ] Qattiq kodlangan maxfiy maʼlumotlar yoki zaxira qiymatlar mavjud emas
-- [ ] Ommaviy yuqori oqim hisob maʼlumotlari `resolvePublicCred()` orqali joylashtirilgan ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) hujjatiga qarang), hech qachon literal sifatida emas
-- [ ] Xato javoblari `buildErrorBody()` / `sanitizeErrorMessage()` orqali oʻtadi — javob tanalarida xom stek treyslari mavjud emas ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) hujjatiga qarang)
+- [ ] Hardkodlangan maxfiy maʼlumotlar yoki zaxira qiymatlar mavjud emas
+- [ ] Ommaviy upstream hisob maʼlumotlari literal qiymatlar sifatida emas, `resolvePublicCred()` orqali kiritilgan ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ga qarang)
+- [ ] Xato javoblari `buildErrorBody()` / `sanitizeErrorMessage()` orqali yoʻnaltirilgan — javob tanalarida xom stack trace mavjud emas ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ga qarang)
 - [ ] Shell buyruqlari (`exec` / `spawn`) bajarilish vaqtidagi qiymatlarni satr interpolyatsiyasi orqali emas, `env` orqali uzatadi
-- [ ] Barcha kiruvchi maʼlumotlar Zod sxemalari yordamida tekshirilgan
-- [ ] Foydalanuvchiga taʼsir qiladigan oʻzgarishlar uchun `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ostiga oʻzgarishlar jurnali **fragmenti** qoʻshilgan ([`changelog.d/README.md`](./changelog.d/README.md) hujjatiga qarang) — `CHANGELOG.md` faylini bevosita tahrirlamang; fragmentlar reliz vaqtida birlashtiriladi va PRlar oʻrtasida hech qachon ziddiyat keltirib chiqarmaydi
+- [ ] Barcha kirish maʼlumotlari Zod sxemalari bilan tekshirilgan
+- [ ] Foydalanuvchiga taʼsir qiluvchi oʻzgarishlar uchun `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ostiga changelog **fragmenti** qoʻshilgan ([`changelog.d/README.md`](./changelog.d/README.md) ga qarang) — `CHANGELOG.md` faylini toʻgʻridan-toʻgʻri tahrirlamang; fragmentlar reliz vaqtida birlashtiriladi va PRlar oʻrtasida hech qachon ziddiyatga olib kelmaydi
 - [ ] Hujjatlar yangilangan (agar tegishli boʻlsa)
-- [ ] Yangi CodeQL / Secret-Scanning ogohlantirishlari ochilmagan yoki ularning har biri tegishli `docs/security/` hujjatiga havola qiluvchi texnik asos bilan rad etilgan
-- [ ] Ichki jarayonlarni ishga tushiradigan marshrutlar (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` faylida `isLocalOnlyPath()` sifatida tasniflangan — [15-qatʼiy qoida](docs/security/ROUTE_GUARD_TIERS.md)ga qarang
-- [ ] Commit xabarlarida `Co-Authored-By` yakuniy satrlari mavjud emas — commitlar faqat repozitoriy egasining Git identifikatori ostida koʻrinishi kerak (16-qatʼiy qoida)
+- [ ] Yangi CodeQL / Secret-Scanning ogohlantirishlari yaratilmagan yoki ularning har biri tegishli `docs/security/` hujjatiga havola qilingan texnik asos bilan rad etilgan
+- [ ] Quyi jarayonlarni ishga tushiradigan marshrutlar (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` ichida `isLocalOnlyPath()` sifatida tasniflangan — [Qatʼiy qoida #15](docs/security/ROUTE_GUARD_TIERS.md) ga qarang
+- [ ] Commit xabarlarida AI/botga tegishli `Co-authored-by` treylerlari mavjud emas (Qatʼiy qoida #16) — ishidan qayta foydalanilgan inson hamkorlar standart `Co-authored-by: Name <email>` treylerlari bilan eʼtirof etiladi
 
 ---
 
@@ -431,8 +431,7 @@ So‘ng `dist/` tarkibini masofaviy `app/` katalogiga rsync orqali sinxronlaydig
 ## Yordam olish
 
 - **Arxitektura**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) fayliga qarang
-- **API ma’lumotnomasi**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) fayliga qarang
+- **API maʼlumotnomasi**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) fayliga qarang
 - **Xavfsizlik hujjatlari**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **Ekspluatatsiya hujjatlari**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **Operatsion hujjatlar**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Muammolar**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR’lar**: Arxitektura qarorlari yozuvlari uchun `docs/adr/` katalogiga qarang

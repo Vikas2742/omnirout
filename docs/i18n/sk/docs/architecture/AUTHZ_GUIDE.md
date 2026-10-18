@@ -13,72 +13,108 @@ OmniRoute má autorizačný pipeline, ktorý je citlivý na trasy a stráži ka�
 
 > Zdroj: [diagrams/authz-pipeline.mmd](../diagrams/authz-pipeline.mmd)
 
-## Dva režimy overovania
+## Dva režimy autentifikácie
 
 ### 1. Kľúč API (Bearer)
 
-Používa sa pre klientske API kompatibilné s OpenAI/Anthropic/Gemini a pre niektoré trasy správy, ak má kľúč rozsah `manage`.
+Používa sa pre klientske API kompatibilné s OpenAI/Anthropic/Gemini a niekoľko trás na správu, keď má kľúč rozsah `manage`.
 
 ```
-Authorization: Bearer <kľúč-api>
+Authorization: Bearer <api-key>
 ```
 
-Overuje sa pomocou `isValidApiKey()` / `extractApiKey()` v `src/sse/services/auth.ts` a opätovne sa exportuje prostredníctvom `src/shared/utils/apiAuth.ts`. Overovací mechanizmus prijíma aj premenné prostredia `OMNIROUTE_API_KEY` / `ROUTER_API_KEY` ako trvalé kľúče na priame odovzdávanie (problém č. 1350).
+Overuje sa pomocou `isValidApiKey()` / `extractApiKey()` v `src/sse/services/auth.ts` a opätovne sa exportuje prostredníctvom `src/shared/utils/apiAuth.ts`. Validátor akceptuje aj premenné prostredia `OMNIROUTE_API_KEY` / `ROUTER_API_KEY` ako trvalé priechodné kľúče (problém #1350).
 
 ### 2. Relácia ovládacieho panela (súbor cookie auth_token)
 
 Pre stránky ovládacieho panela a operácie správcu.
 
 ```
-Cookie: auth_token=<JWT podpísaný pomocou JWT_SECRET>
+Cookie: auth_token=<JWT signed with JWT_SECRET>
 ```
 
 Súbor cookie predstavuje reláciu iba vtedy, keď je JWT úspešne overený **a** obsahuje `authenticated: true`
 (`src/shared/utils/dashboardSessionToken.ts` → `verifyDashboardSessionToken`). Každý
-spotrebiteľ súboru cookie (ochrana trasy, obnovenie autorizačného kanála, nadviazanie spojenia WebSocket, živý
+spotrebiteľ tohto súboru cookie (ochrana trás ovládacieho panela (`isDashboardSessionAuthenticated()`), obnovenie autorizačného kanála, nadviazanie spojenia WebSocket, živý
 server, `/api/settings/require-login`, `/api/auth/status`) používa túto pomocnú funkciu.
-Existujú aj iné JWT podpísané pomocou `JWT_SECRET` — priame odovzdávanie Cursor CLI vydáva
-držiteľom kľúčov tokeny s `iss "omniroute" / aud "cursor-cli"` — a tie sa nikdy nepovažujú za relácie
+Existujú aj iné JWT podpísané pomocou `JWT_SECRET` — priechodný mechanizmus Cursor CLI vytvára
+tokeny `iss "omniroute" / aud "cursor-cli"` pre držiteľov kľúčov — tie však nikdy nepredstavujú relácie
 (#13298).
 
-Overuje sa pomocou `isDashboardSessionAuthenticated()` v `src/shared/utils/apiAuth.ts`. Kanál automaticky obnoví JWT, keď do konca jeho 30-dňovej platnosti zostáva menej než 7 dní.
+Overenie vykonáva `isDashboardSessionAuthenticated()` v `src/shared/utils/apiAuth.ts`. Kanál automaticky obnoví JWT, keď z jeho 30-dňovej životnosti zostáva menej než 7 dní.
 
-Niektoré trasy správy akceptujú **ktorýkoľvek** režim: súbor cookie ALEBO `Bearer <key>`, ak má kľúč API rozsah `manage` (alebo `admin`). Práve to umožňuje pracovný postup „konfigurovateľné prostredníctvom volaní API“, ktorý bol pridaný vo verzii v3.8.
+Relácia sa môže skončiť aj pred uplynutím 30 dní, pretože každý mechanizmus vydávania používa `mintDashboardSessionToken` (čas vydania `iat` a identifikátor `jti`) a overovač kontroluje dve nastavenia: `sessionsValidAfter`, ktoré sa nastaví pri zmene hesla, takže všetky relácie vydané pred týmto okamihom prestanú byť platné (prehliadač, v ktorom sa heslo zmenilo, dostane nový súbor cookie), a `revokedDashboardSessions`, do ktorého `POST /api/auth/logout` pridá `jti` odhlásenej relácie. Relácie vytvorené staršou verziou neobsahujú ani jeden z týchto nárokov a zostávajú platné až do prvej zmeny hesla. Ak nastavenia nemožno načítať, relácia sa nepovažuje za dôveryhodnú.
 
-#### Voliteľná brána prihlásenia OIDC (#6973)
+Niektoré trasy na správu akceptujú **ktorýkoľvek** režim: súbor cookie ALEBO `Bearer <key>`, keď má kľúč API rozsah `manage` (alebo `admin`). To umožňuje pracovný postup „konfigurovateľné prostredníctvom volaní API“, ktorý bol pridaný vo v3.8.
 
-Prihlásenie správcu do ovládacieho panela podporuje okrem predvoleného prihlásenia heslom aj **voliteľný** postup OIDC (OpenID Connect) — prihlásenie heslom sa nikdy neodstráni, iba
+#### Voliteľná prihlasovacia brána OIDC (#6973)
+
+Prihlásenie správcu ovládacieho panela podporuje popri predvolenom prihlásení heslom aj **voliteľný** tok OIDC (OpenID Connect) — prihlásenie heslom sa nikdy neodstráni, iba
 doplní:
 
-- Je vypnutý, pokiaľ `settings.oidcEnabled === true` **a zároveň** nie sú nakonfigurované všetky položky `oidcIssuer` /
-  `oidcClientId` / `oidcClientSecret` (Nastavenia → Overovanie).
+- Je vypnutý, pokiaľ `settings.oidcEnabled === true` **a zároveň** nie sú nakonfigurované všetky hodnoty `oidcIssuer` /
+  `oidcClientId` / `oidcClientSecret` (Nastavenia → Autentifikácia).
   V opačnom prípade `GET /api/auth/oidc/login` vráti `400`.
-- `GET /api/auth/oidc/login` zistí `authorization_endpoint` z konfigurácie
-  `/.well-known/openid-configuration` vydavateľa (ako záložné riešenie použije
+- `GET /api/auth/oidc/login` zistí `authorization_endpoint` z
+  `/.well-known/openid-configuration` vydavateľa (ako záložnú možnosť použije
   `<issuer>/authorize`), zostaví URI presmerovania z prichádzajúcej požiadavky
-  (so zohľadnením `x-forwarded-proto`) a presmeruje na IdP s náhodným reťazcom `state`
-  uloženým v súbore cookie `oidc_state` s príznakom `httpOnly`.
+  (s ohľadom na `x-forwarded-proto`) a presmeruje na IdP s náhodnou hodnotou `state`
+  uloženou v súbore cookie `oidc_state` s príznakom `httpOnly`.
 - `GET /api/auth/oidc/callback` overí `state`, vymení autorizačný
-  kód a overí podpis tokenu ID prostredníctvom JWKS vydavateľa
-  (`createRemoteJWKSet` z balíka `jose`, uložené vo vyrovnávacej pamäti pre každý identifikátor URI JWKS) s kontrolami `issuer`/`audience`.
-  Voliteľný zoznam povolených hodnôt `oidcAllowedSubjects` porovnáva deklaráciu `sub`
-  tokenu alebo jeho deklaráciu `email` — deklarácia e-mailu sa zohľadní iba vtedy, keď
-  `email_verified === true`, takže neoverený e-mail u IdP nikdy nemôže prejsť
-  touto bránou.
-- Pri úspechu sa vydá **presne ten istý** 30-dňový JWT `auth_token` ako pri prihlásení
-  heslom (`src/app/api/auth/login/route.ts`), takže zvyšok kanála relácie
-  ovládacieho panela (automatické obnovenie, príznaky súborov cookie) zostáva nezmenený —
-  OIDC nahrádza iba spôsob vydania súboru cookie, nie oprávnenia, ktoré udeľuje.
+  kód a overí podpis ID tokenu prostredníctvom JWKS vydavateľa
+  (`createRemoteJWKSet` z `jose`, uložené vo vyrovnávacej pamäti pre každé URI JWKS) s kontrolami `issuer`/`audience`.
+  Zoznam povolených hodnôt `oidcAllowedSubjects` je povinný: porovnáva
+  nárok `sub` tokenu alebo jeho nárok `email` — nárok emailu sa akceptuje iba
+  vtedy, keď `email_verified === true`, takže neoverený email u IdP nikdy nemôže
+  prejsť cez bránu — a bez položiek spätné volanie odmietne každé prihlásenie
+  (`not_configured`).
+- Pri úspechu vytvorí **presne rovnaký** 30-dňový JWT `auth_token`, aký vydáva prihlásenie
+  heslom (`src/app/api/auth/login/route.ts`), takže zvyšok
+  kanála relácie ovládacieho panela (automatické obnovenie, príznaky súborov cookie) zostáva nezmenený —
+  OIDC nahrádza iba spôsob vytvorenia súboru cookie, nie oprávnenia, ktoré poskytuje.
+- Každé nastavenie `oidc*` (`oidcEnabled`, `oidcDisablePasswordLogin`,
+  `oidcIssuer`, `oidcClientId`, `oidcClientSecret`, `oidcAllowedSubjects`,
+  `oidcRedirectPath`, `oidcScopes`) je zahrnuté v `SECURITY_IMPACTING_SETTINGS_KEYS`
+  (`src/shared/constants/securityImpactingSettings.ts`): `PATCH /api/settings`
+  odpovie `400 PASSWORD_REQUIRED`, pokiaľ telo neobsahuje heslo na správu
+  ako `currentPassword` (`401 PASSWORD_MISMATCH`, keď je nesprávne).
+  `oidcDisablePasswordLogin` odmietne _prihlásenie_ heslom (`POST /api/auth/login`),
+  ale zachová uložený hash hesla a opätovná autentifikácia naďalej kontroluje
+  `currentPassword` voči nemu.
+- `POST /api/settings/import-json` túto opätovnú autentifikáciu preskočí, preto pred zápisom odstráni každý kľúč v
+  `IMPORT_STRIPPED_SETTINGS_KEYS` (ten istý súbor): heslo a
+  `currentPassword`, každú položku `SECURITY_IMPACTING_SETTINGS_KEYS` a
+  stav relácie ovládacieho panela (`sessionsValidAfter`, `revokedDashboardSessions`).
+  Import staršej zálohy preto nemôže obnoviť reláciu, ktorú už ukončila zmena
+  hesla alebo odhlásenie.
 
 ## Triedy trás
 
 Súbor `src/server/authz/types.ts` definuje tri triedy; každá trasa, ktorú nemožno deterministicky klasifikovať, sa predvolene zaradí do triedy `MANAGEMENT`.
 
-| Trieda       | Popis                                                                                                                                                     | Vyžadované overenie                                                     |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `PUBLIC`     | Explicitne bezpečné trasy — prihlásenie, odhlásenie, stav, inicializácia, kontrola stavu, úvodná inicializácia.                                           | Žiadne                                                                  |
-| `CLIENT_API` | Koncové body poskytovania modelov — `/api/v1/*`, `/api/v1beta/*` a aliasy `/v1/*`, `/v1beta/*`, `/chat/completions`, `/responses`, `/models`, `/codex/*`. | Kľúč Bearer, keď je zapnutý efektívny príznak funkcie `REQUIRE_API_KEY` |
-| `MANAGEMENT` | Stránky ovládacieho panela, nastavenia, poskytovatelia, kľúče, koncové body správy a diagnostiky.                                                         | Relácia ovládacieho panela ALEBO Bearer s rozsahom `manage`             |
+| Trieda       | Popis                                                                                                                                                        | Vyžadované overenie                                                      |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `PUBLIC`     | Explicitne bezpečné trasy — prihlásenie, odhlásenie, stav, inicializácia, kontrola funkčnosti, počiatočné nastavenie onboardingu.                            | Žiadne                                                                   |
+| `CLIENT_API` | Koncové body na poskytovanie modelov — `/api/v1/*`, `/api/v1beta/*` a aliasy `/v1/*`, `/v1beta/*`, `/chat/completions`, `/responses`, `/models`, `/codex/*`. | Kľúč Bearer, keď je povolený efektívny príznak funkcie `REQUIRE_API_KEY` |
+| `MANAGEMENT` | Stránky ovládacieho panela, nastavenia, poskytovatelia, kľúče a koncové body pre správu a diagnostiku.                                                       | Relácia ovládacieho panela ALEBO Bearer s rozsahom `manage`              |
+
+Niektoré akcie triedy `MANAGEMENT` sú **určené iba pre operátora**: kľúč s rozsahom `manage` nestačí. Export uložených
+prihlasovacích údajov (`GET /api/settings/export-json`, `GET /api/db-backups/export`,
+`GET /api/db-backups/exportAll`), vydanie synchronizačného tokenu (`POST /api/sync/tokens`) a vytvorenie
+prístupového tokenu CLI `admin` (`POST /api/cli/tokens`) vyžadujú reláciu ovládacieho panela, lokálny subjekt CLI
+alebo vypnuté prihlasovanie; kľúče API s ľubovoľným rozsahom a prístupové tokeny `oma_` dostanú odpoveď `403`. Kontrola
+sa nachádza v súbore `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` /
+`requireOperatorCredential()`).
+
+A few `MANAGEMENT` actions are **operator-only**: a `manage` key is not enough. Exporting stored
+credentials (`GET /api/settings/export-json`, `GET /api/db-backups/export`,
+`GET /api/db-backups/exportAll`), restoring a backup over the live data
+(`POST /api/db-backups/import` including `dryRun=true`, `POST /api/db-backups` restore by id,
+`POST /api/settings/import-json`), issuing a sync token (`POST /api/sync/tokens`) and minting an
+`admin` CLI access token (`POST /api/cli/tokens`) require a dashboard session, the local CLI
+subject, or login disabled; API keys of any scope and `oma_` access tokens get `403`. The check
+lives in `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` /
+`requireOperatorCredential()`).
 
 ## Reťazec spracovania
 

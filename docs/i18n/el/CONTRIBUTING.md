@@ -286,72 +286,72 @@ npm run test:combo:live:vps:failover     # προσθέτει ένα πραγμ�
 
 ---
 
-## Δομή Έργου
+## Δομή του έργου
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Σελίδες Dashboard (23 ενότητες)
+│   ├── (dashboard)/        # Σελίδες πίνακα ελέγχου (23 ενότητες)
 │   ├── api/                # Διαδρομές API (51 κατάλογοι)
-│   └── login/              # Σελίδες πιστοποίησης (.tsx)
-├── domain/                 # Μηχανισμός πολιτικής (policyEngine, comboResolver, costRules, κ.λπ.)
+│   └── login/              # Σελίδες ελέγχου ταυτότητας (.tsx)
+├── domain/                 # Μηχανή πολιτικών (policyEngine, comboResolver, costRules κ.λπ.)
 ├── lib/                    # Βασική επιχειρησιακή λογική (.ts)
 │   ├── a2a/                # Διακομιστής πρωτοκόλλου Agent-to-Agent v0.3
 │   ├── acp/                # Μητρώο Agent Communication Protocol
-│   ├── compliance/         # Μηχανισμός πολιτικής συμμόρφωσης
-│   ├── db/                 # Ενότητες τομέα SQLite + 130 μεταναστεύσεις
+│   ├── compliance/         # Μηχανή πολιτικών συμμόρφωσης
+│   ├── db/                 # Λειτουργικές μονάδες τομέα SQLite + 130 μετεγκαταστάσεις
 │   ├── memory/             # Μόνιμη μνήμη συνομιλιών
-│   ├── oauth/              # Πάροχοι OAuth, υπηρεσίες και βοηθητικά εργαλεία
+│   ├── oauth/              # Πάροχοι, υπηρεσίες και βοηθητικά εργαλεία OAuth
 │   ├── skills/             # Επεκτάσιμο πλαίσιο δεξιοτήτων
 │   ├── usage/              # Παρακολούθηση χρήσης και υπολογισμός κόστους
 │   └── localDb.ts          # Μόνο επίπεδο επανεξαγωγής — μην προσθέτετε ποτέ λογική εδώ
-├── middleware/              # Middleware αιτημάτων (promptInjectionGuard)
-├── mitm/                   # MITM proxy (πιστοποιητικό, DNS, δρομολόγηση στόχου)
+├── middleware/              # Ενδιάμεσο λογισμικό αιτημάτων (promptInjectionGuard)
+├── mitm/                   # Διακομιστής μεσολάβησης MITM (πιστοποιητικό, DNS, δρομολόγηση προορισμού)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Ορισμοί παρόχων (329), πεδία MCP, 19 στρατηγικές δρομολόγησης
-│   ├── utils/              # Circuit breaker, sanitizer, βοηθητικά πιστοποίησης
+│   ├── components/         # Στοιχεία React (.tsx)
+│   ├── constants/          # Ορισμοί παρόχων (329), εμβέλειες MCP, 19 στρατηγικές δρομολόγησης
+│   ├── utils/              # Διακόπτης κυκλώματος, εργαλείο εξυγίανσης, βοηθητικά εργαλεία ελέγχου ταυτότητας
 │   └── validation/         # Σχήματα Zod v4
-└── sse/                    # Αγωγός proxy SSE
+└── sse/                    # Διοχέτευση διακομιστή μεσολάβησης SSE
 
 open-sse/                   # Χώρος εργασίας @omniroute/open-sse
-├── executors/              # 89 ενότητες υλοποίησης executor
-├── handlers/               # 11 χειριστές αιτημάτων (chat, responses, embeddings, images, κ.λπ.)
-├── mcp-server/             # Διακομιστής MCP (110 μοναδικά εργαλεία, 3 μεταφορές, 33 πεδία)
-├── services/               # 178 υπηρεσίες ανώτατου επιπέδου (combo, autoCombo, rateLimitManager, κ.λπ.)
-├── translator/             # Μεταφραστές μορφής (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── executors/              # 150 λειτουργικές μονάδες εκτέλεσης (κλάσεις εκτέλεσης + βοηθητικά εργαλεία ανά πάροχο)
+├── handlers/               # 11 χειριστές αιτημάτων (συνομιλία, αποκρίσεις, ενσωματώσεις, εικόνες κ.λπ.)
+├── mcp-server/             # Διακομιστής MCP (110 μοναδικά εργαλεία, 3 μεταφορές, 33 εμβέλειες)
+├── services/               # 178 υπηρεσίες ανώτατου επιπέδου (combo, autoCombo, rateLimitManager κ.λπ.)
+├── translator/             # Μετατροπείς μορφών (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Μετασχηματιστής Responses API
-└── utils/                  # 22 ενότητες βοηθητικών εργαλείων (stream, TLS, proxy, logging)
+└── utils/                  # 22 βοηθητικές λειτουργικές μονάδες (ροή, TLS, διακομιστής μεσολάβησης, καταγραφή)
 
-electron/                   # Εφαρμογή desktop Electron (cross-platform)
+electron/                   # Εφαρμογή υπολογιστή Electron (πολλαπλών πλατφορμών)
 
 tests/
 ├── unit/                   # Εκτελεστής δοκιμών Node.js (1.574 αρχεία δοκιμών)
 ├── integration/            # Δοκιμές ενσωμάτωσης
 ├── e2e/                    # Δοκιμές Playwright
-├── security/               # Δοκιμές ασφαλείας
-├── translator/             # Δοκιμές ειδικά για τον translator
+├── security/               # Δοκιμές ασφάλειας
+├── translator/             # Δοκιμές ειδικά για τον μετατροπέα
 └── load/                   # Δοκιμές φόρτου
 
 docs/
-├── adr/                     # Αρχεία Αποφάσεων Αρχιτεκτονικής
-├── architecture/            # Αρχιτεκτονική συστήματος & ανθεκτικότητα
-├── comparison/              # OmniRoute έναντι εναλλακτικών
-├── compression/             # Οδηγοί & κανόνες συμπίεσης
+├── adr/                     # Αρχεία αποφάσεων αρχιτεκτονικής
+├── architecture/            # Αρχιτεκτονική συστήματος και ανθεκτικότητα
+├── comparison/              # OmniRoute έναντι εναλλακτικών λύσεων
+├── compression/             # Οδηγοί και κανόνες συμπίεσης
 ├── dev/                     # Οδηγοί ανάπτυξης
 ├── diagrams/                # Διαγράμματα αρχιτεκτονικής
-├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Οδηγός χρήστη, Docker, εγκατάσταση, αντιμετώπιση προβλημάτων
+├── frameworks/              # MCP, A2A, OpenCode, μνήμη, δεξιότητες
+├── guides/                  # Οδηγός χρήστη, Docker, ρύθμιση, αντιμετώπιση προβλημάτων
 ├── i18n/                    # Διεθνοποιημένες μεταφράσεις README
 ├── marketing/               # Υλικό μάρκετινγκ
-├── ops/                     # Ανάπτυξη, proxy, κάλυψη, εκδόσεις
-├── providers/               # Τεκμηρίωση ανά πάροχο
-├── reference/               # Αναφορά API, μεταβλητές περιβάλλοντος, εργαλεία CLI, δωρεάν επίπεδα
+├── ops/                     # Ανάπτυξη, διακομιστής μεσολάβησης, κάλυψη, εκδόσεις
+├── providers/               # Τεκμηρίωση ειδική για κάθε πάροχο
+├── reference/               # Αναφορά API, μεταβλητές περιβάλλοντος, εργαλεία CLI, δωρεάν βαθμίδες
 ├── releases/                # Σημειώσεις έκδοσης
-├── routing/                 # Μηχανισμός auto-combo, αναπαραγωγή συλλογισμού
-├── screenshots/             # Στιγμιότυπα οθόνης Dashboard
-├── security/               # Προστατευτικά μέτρα, συμμόρφωση, stealth, tokens
-└── specs/                   # Προδιαγραφές σχεδιασμού
+├── routing/                 # Μηχανή αυτόματων συνδυασμών, επανάληψη συλλογισμού
+├── screenshots/             # Στιγμιότυπα οθόνης του πίνακα ελέγχου
+├── security/                # Δικλίδες ασφαλείας, συμμόρφωση, απόκρυψη, διακριτικά
+└── specs/                   # Προδιαγραφές σχεδίασης
 ```
 
 ---
@@ -392,22 +392,24 @@ docs/
 
 ---
 
-## Λίστα Ελέγχου Pull Request
+## Λίστα ελέγχου Pull Request
 
-- [ ] Τα tests περνούν (`npm test`)
-- [ ] Το linting περνά (`npm run lint`)
+- [ ] Οι δοκιμές ολοκληρώνονται επιτυχώς (`npm test`)
+- [ ] Ο έλεγχος lint ολοκληρώνεται επιτυχώς (`npm run lint`)
 - [ ] Το build ολοκληρώνεται επιτυχώς (`npm run build`)
-- [ ] Προστέθηκαν TypeScript types για νέες δημόσιες συναρτήσεις και interfaces
-- [ ] Δεν υπάρχουν hardcoded secrets ή fallback τιμές
-- [ ] Τα δημόσια upstream διαπιστευτήρια ενσωματώνονται μέσω `resolvePublicCred()` (δείτε [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), ποτέ ως literals
-- [ ] Οι αποκρίσεις σφαλμάτων δρομολογούνται μέσω `buildErrorBody()` / `sanitizeErrorMessage()` — χωρίς raw stack traces στα σώματα απόκρισης (δείτε [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Οι εντολές shell (`exec` / `spawn`) μεταβιβάζουν τιμές runtime μέσω `env`, όχι μέσω string interpolation
-- [ ] Όλες οι εισόδοι επικυρώνονται με Zod schemas
-- [ ] Προστέθηκε **fragment** Changelog στο `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` για αλλαγές που επηρεάζουν τον χρήστη (δείτε [`changelog.d/README.md`](./changelog.d/README.md)) — **μην** επεξεργάζεστε απευθείας το `CHANGELOG.md`· τα fragments συγκεντρώνονται κατά την έκδοση και δεν δημιουργούν ποτέ συγκρούσεις μεταξύ PRs
-- [ ] Η τεκμηρίωση ενημερώθηκε (εάν απαιτείται)
-- [ ] Δεν ανοίχτηκαν νέες ειδοποιήσεις CodeQL / Secret-Scanning, ή κάθε μία απορρίφθηκε με τεχνική αιτιολόγηση που παραπέμπει στο σχετικό έγγραφο `docs/security/`
-- [ ] Τα routes που εκκινούν child processes (`/api/mcp/`, `/api/cli-tools/runtime/`) ταξινομούνται ως `isLocalOnlyPath()` στο `src/server/authz/routeGuard.ts` — δείτε [Κανόνα #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Δεν υπάρχουν trailers `Co-Authored-By` στα μηνύματα commit — τα commits πρέπει να εμφανίζονται αποκλειστικά υπό την Git ταυτότητα του ιδιοκτήτη του αποθετηρίου (Κανόνας #16)
+- [ ] Προστέθηκαν τύποι TypeScript για νέες δημόσιες συναρτήσεις και διεπαφές
+- [ ] Δεν υπάρχουν hardcoded μυστικά ή εφεδρικές τιμές
+- [ ] Τα δημόσια διαπιστευτήρια upstream ενσωματώνονται μέσω `resolvePublicCred()` (βλ. [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)) και ποτέ ως literals
+- [ ] Οι αποκρίσεις σφαλμάτων δρομολογούνται μέσω `buildErrorBody()` / `sanitizeErrorMessage()` — δεν υπάρχουν ανεπεξέργαστα stack traces στα σώματα αποκρίσεων (βλ. [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Οι εντολές shell (`exec` / `spawn`) μεταβιβάζουν τις τιμές χρόνου εκτέλεσης μέσω `env` και όχι μέσω παρεμβολής συμβολοσειρών
+- [ ] Όλες οι είσοδοι επικυρώνονται με σχήματα Zod
+- [ ] Προστέθηκε **τμήμα** changelog στον κατάλογο `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` για αλλαγές που επηρεάζουν τους χρήστες (βλ. [`changelog.d/README.md`](./changelog.d/README.md)) — **μην** επεξεργάζεστε απευθείας το `CHANGELOG.md`· τα τμήματα συγκεντρώνονται κατά την έκδοση και δεν δημιουργούν ποτέ διενέξεις μεταξύ PR
+- [ ] Η τεκμηρίωση ενημερώθηκε (εφόσον απαιτείται)
+- [ ] Δεν δημιουργήθηκαν νέες ειδοποιήσεις CodeQL / Secret-Scanning ή καθεμία απορρίφθηκε με τεχνική αιτιολόγηση που παραπέμπει στο σχετικό έγγραφο του `docs/security/`
+- [ ] Οι διαδρομές που εκκινούν θυγατρικές διεργασίες (`/api/mcp/`, `/api/cli-tools/runtime/`) ταξινομούνται ως `isLocalOnlyPath()` στο `src/server/authz/routeGuard.ts` — βλ. [Αυστηρός κανόνας #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Δεν υπάρχουν trailers `Co-authored-by` από AI/bot στα μηνύματα commit (Αυστηρός κανόνας #16) — οι άνθρωποι συνεργάτες των οποίων η εργασία επαναχρησιμοποιείται αναφέρονται με τα τυπικά trailers `Co-authored-by: Name <email>`
+
+---
 
 ## Κυκλοφορία Εκδόσεων
 
@@ -419,11 +421,10 @@ docs/
 
 ---
 
-## Λήψη Βοήθειας
+## Λήψη βοήθειας
 
-- **Αρχιτεκτονική**: Δείτε [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
-- **Αναφορά API**: Δείτε [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
-- **Έγγραφα ασφαλείας**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **Έγγραφα λειτουργίας**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **Αρχιτεκτονική**: Δείτε το [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
+- **Αναφορά API**: Δείτε το [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
+- **Τεκμηρίωση ασφαλείας**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
+- **Τεκμηρίωση λειτουργίας**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Ζητήματα**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: Δείτε τον φάκελο `docs/adr/` για αρχεία αποφάσεων αρχιτεκτονικής

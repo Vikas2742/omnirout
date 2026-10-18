@@ -287,65 +287,72 @@ Lihat `open-sse/utils/stream.ts` dan `open-sse/utils/streamHandler.ts` untuk con
 
 ---
 
-## Project Structure
+## Struktur Projek
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # Halaman papan pemuka (23 bahagian)
+│   ├── api/                # Laluan API (51 direktori)
+│   └── login/              # Halaman pengesahan (.tsx)
+├── domain/                 # Enjin dasar (policyEngine, comboResolver, costRules, dll.)
+├── lib/                    # Logik perniagaan teras (.ts)
+│   ├── a2a/                # Pelayan protokol Agent-to-Agent v0.3
+│   ├── acp/                # Daftar Agent Communication Protocol
+│   ├── compliance/         # Enjin dasar pematuhan
+│   ├── db/                 # Modul domain SQLite + 130 migrasi
+│   ├── memory/             # Memori perbualan berterusan
+│   ├── oauth/              # Penyedia, perkhidmatan dan utiliti OAuth
+│   ├── skills/             # Rangka kerja kemahiran boleh diperluas
+│   ├── usage/              # Penjejakan penggunaan dan pengiraan kos
+│   └── localDb.ts          # Lapisan eksport semula sahaja — jangan sekali-kali tambah logik di sini
+├── middleware/              # Perisian tengah permintaan (promptInjectionGuard)
+├── mitm/                   # Proksi MITM (sijil, DNS, penghalaan sasaran)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # Komponen React (.tsx)
+│   ├── constants/          # Takrifan penyedia (329), skop MCP, 19 strategi penghalaan
+│   ├── utils/              # Pemutus litar, pensanitasi, pembantu pengesahan
+│   └── validation/         # Skema Zod v4
+└── sse/                    # Saluran pemprosesan proksi SSE
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # Ruang kerja @omniroute/open-sse
+├── executors/              # 150 modul pelaksana (kelas pelaksana + pembantu setiap penyedia)
+├── handlers/               # 11 pengendali permintaan (sembang, respons, pembenaman, imej, dll.)
+├── mcp-server/             # Pelayan MCP (110 alat unik, 3 pengangkutan, 33 skop)
+├── services/               # 178 perkhidmatan peringkat teratas (combo, autoCombo, rateLimitManager, dll.)
+├── translator/             # Penterjemah format (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Pengubah API Responses
+└── utils/                  # 22 modul utiliti (strim, TLS, proksi, pengelogan)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Aplikasi desktop Electron (merentas platform)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Pelaksana ujian Node.js (1,574 fail ujian)
+├── integration/            # Ujian integrasi
+├── e2e/                    # Ujian Playwright
+├── security/               # Ujian keselamatan
+├── translator/             # Ujian khusus penterjemah
+└── load/                   # Ujian beban
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Rekod Keputusan Seni Bina
+├── architecture/            # Seni bina sistem & daya tahan
+├── comparison/              # OmniRoute berbanding alternatif
+├── compression/             # Panduan & peraturan pemampatan
+├── dev/                     # Panduan pembangunan
+├── diagrams/                # Rajah seni bina
+├── frameworks/              # MCP, A2A, OpenCode, Memori, Kemahiran
+├── guides/                  # Panduan pengguna, Docker, persediaan, penyelesaian masalah
+├── i18n/                    # Terjemahan README yang diantarabangsakan
+├── marketing/               # Bahan pemasaran
+├── ops/                     # Penggunaan, proksi, liputan, keluaran
+├── providers/               # Dokumentasi khusus penyedia
+├── reference/               # Rujukan API, pemboleh ubah persekitaran, alat CLI, peringkat percuma
+├── releases/                # Nota keluaran
+├── routing/                 # Enjin auto-combo, main semula penaakulan
+├── screenshots/             # Tangkapan skrin papan pemuka
+├── security/                # Batasan keselamatan, pematuhan, penyamaran, token
+└── specs/                   # Spesifikasi reka bentuk
 ```
 
 ---
@@ -389,19 +396,19 @@ Tulis ujian unit dalam `tests/unit/` yang sekurang-kurangnya merangkumi:
 ## Senarai Semak Pull Request
 
 - [ ] Ujian lulus (`npm test`)
-- [ ] Pelintiran lulus (`npm run lint`)
+- [ ] Pelintan lulus (`npm run lint`)
 - [ ] Binaan berjaya (`npm run build`)
 - [ ] Jenis TypeScript ditambahkan untuk fungsi dan antara muka awam baharu
 - [ ] Tiada rahsia atau nilai sandaran yang dikod keras
-- [ ] Bukti kelayakan huluan awam dibenamkan melalui `resolvePublicCred()` (lihat [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), bukan sebagai nilai literal
-- [ ] Respons ralat disalurkan melalui `buildErrorBody()` / `sanitizeErrorMessage()` — tiada surihan tindanan mentah dalam badan respons (lihat [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Kelayakan huluan awam dibenamkan melalui `resolvePublicCred()` (lihat [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), bukan sebagai literal
+- [ ] Respons ralat disalurkan melalui `buildErrorBody()` / `sanitizeErrorMessage()` — tiada surih tindanan mentah dalam badan respons (lihat [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
 - [ ] Perintah shell (`exec` / `spawn`) menghantar nilai masa jalan melalui `env`, bukan melalui interpolasi rentetan
 - [ ] Semua input disahkan dengan skema Zod
-- [ ] **Fragmen** log perubahan ditambahkan di bawah `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` untuk perubahan yang dapat dilihat oleh pengguna (lihat [`changelog.d/README.md`](./changelog.d/README.md)) — jangan edit `CHANGELOG.md` secara langsung; fragmen dihimpunkan semasa keluaran dan tidak akan bercanggah antara PR
+- [ ] **Fragmen** log perubahan ditambahkan di bawah `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` untuk perubahan yang memberi kesan kepada pengguna (lihat [`changelog.d/README.md`](./changelog.d/README.md)) — **jangan** edit `CHANGELOG.md` secara langsung; fragmen digabungkan semasa keluaran dan tidak pernah bercanggah antara PR
 - [ ] Dokumentasi dikemas kini (jika berkenaan)
-- [ ] Tiada amaran CodeQL / Secret-Scanning baharu dibuka, atau setiap amaran ditolak dengan justifikasi teknikal yang merujuk dokumen `docs/security/` yang berkaitan
-- [ ] Laluan yang melancarkan proses anak (`/api/mcp/`, `/api/cli-tools/runtime/`) diklasifikasikan sebagai `isLocalOnlyPath()` dalam `src/server/authz/routeGuard.ts` — lihat [Peraturan Tegas #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Tiada treler `Co-Authored-By` dalam mesej komit — komit mesti dipaparkan semata-mata di bawah identiti Git pemilik repositori (Peraturan Tegas #16)
+- [ ] Tiada amaran CodeQL / Secret-Scanning baharu dibuka, atau setiap satunya ditolak dengan justifikasi teknikal yang merujuk dokumen `docs/security/` yang berkaitan
+- [ ] Laluan yang mencetuskan proses anak (`/api/mcp/`, `/api/cli-tools/runtime/`) diklasifikasikan sebagai `isLocalOnlyPath()` dalam `src/server/authz/routeGuard.ts` — lihat [Peraturan Tegas #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Tiada treler `Co-authored-by` AI/bot dalam mesej komit (Peraturan Tegas #16) — kolaborator manusia yang hasil kerja mereka digunakan semula diberi penghargaan dengan treler standard `Co-authored-by: Name <email>`
 
 ---
 
@@ -413,9 +420,8 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 
 ## Mendapatkan Bantuan
 
-- **Seni Bina**: Lihat [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
+- **Seni bina**: Lihat [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
 - **Rujukan API**: Lihat [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Dokumentasi keselamatan**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **Dokumentasi operasi**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Isu**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR**: Lihat `docs/adr/` untuk rekod keputusan seni bina

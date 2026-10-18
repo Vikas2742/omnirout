@@ -286,65 +286,72 @@ PR ખોલતા પહેલાં, તમે જે બદલ્યું �
 
 ---
 
-## Project Structure
+## પ્રોજેક્ટનું માળખું
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # ડૅશબોર્ડ પૃષ્ઠો (23 વિભાગો)
+│   ├── api/                # API રૂટ્સ (51 ડિરેક્ટરીઓ)
+│   └── login/              # પ્રમાણીકરણ પૃષ્ઠો (.tsx)
+├── domain/                 # નીતિ એન્જિન (policyEngine, comboResolver, costRules, વગેરે)
+├── lib/                    # મુખ્ય વ્યવસાયિક તર્ક (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 પ્રોટોકોલ સર્વર
+│   ├── acp/                # Agent Communication Protocol રજિસ્ટ્રી
+│   ├── compliance/         # અનુપાલન નીતિ એન્જિન
+│   ├── db/                 # SQLite ડોમેન મોડ્યુલો + 130 માઇગ્રેશન્સ
+│   ├── memory/             # કાયમી સંવાદાત્મક મેમરી
+│   ├── oauth/              # OAuth પ્રદાતાઓ, સેવાઓ અને ઉપયોગિતાઓ
+│   ├── skills/             # વિસ્તારી શકાય તેવું કૌશલ્ય ફ્રેમવર્ક
+│   ├── usage/              # વપરાશ ટ્રૅકિંગ અને ખર્ચની ગણતરી
+│   └── localDb.ts          # ફક્ત પુનઃ-નિકાસ સ્તર — અહીં ક્યારેય તર્ક ઉમેરશો નહીં
+├── middleware/              # વિનંતી મિડલવેર (promptInjectionGuard)
+├── mitm/                   # MITM પ્રોક્સી (પ્રમાણપત્ર, DNS, લક્ષ્ય રૂટિંગ)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React કોમ્પોનન્ટ્સ (.tsx)
+│   ├── constants/          # પ્રદાતા વ્યાખ્યાઓ (329), MCP સ્કોપ્સ, 19 રૂટિંગ વ્યૂહરચનાઓ
+│   ├── utils/              # સર્કિટ બ્રેકર, સેનિટાઇઝર, પ્રમાણીકરણ સહાયકો
+│   └── validation/         # Zod v4 સ્કીમાઓ
+└── sse/                    # SSE પ્રોક્સી પાઇપલાઇન
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse વર્કસ્પેસ
+├── executors/              # 150 એક્ઝિક્યુટર મોડ્યુલો (એક્ઝિક્યુટર ક્લાસિસ + દરેક પ્રદાતા માટેના સહાયકો)
+├── handlers/               # 11 વિનંતી હેન્ડલર્સ (ચેટ, પ્રતિસાદો, એમ્બેડિંગ્સ, છબીઓ, વગેરે)
+├── mcp-server/             # MCP સર્વર (110 અનન્ય ટૂલ્સ, 3 ટ્રાન્સપોર્ટ્સ, 33 સ્કોપ્સ)
+├── services/               # 178 ટોચ-સ્તરની સેવાઓ (combo, autoCombo, rateLimitManager, વગેરે)
+├── translator/             # ફોર્મેટ અનુવાદકો (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API ટ્રાન્સફોર્મર
+└── utils/                  # 22 ઉપયોગિતા મોડ્યુલો (સ્ટ્રીમ, TLS, પ્રોક્સી, લૉગિંગ)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Electron ડેસ્કટોપ ઍપ (ક્રોસ-પ્લેટફોર્મ)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js ટેસ્ટ રનર (1,574 ટેસ્ટ ફાઇલો)
+├── integration/            # ઇન્ટિગ્રેશન ટેસ્ટ્સ
+├── e2e/                    # Playwright ટેસ્ટ્સ
+├── security/               # સુરક્ષા ટેસ્ટ્સ
+├── translator/             # અનુવાદક-વિશિષ્ટ ટેસ્ટ્સ
+└── load/                   # લોડ ટેસ્ટ્સ
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # આર્કિટેક્ચર નિર્ણય રેકોર્ડ્સ
+├── architecture/            # સિસ્ટમ આર્કિટેક્ચર અને સ્થિતિસ્થાપકતા
+├── comparison/              # OmniRoute વિરુદ્ધ વિકલ્પો
+├── compression/             # કમ્પ્રેશન માર્ગદર્શિકાઓ અને નિયમો
+├── dev/                     # ડેવલપમેન્ટ માર્ગદર્શિકાઓ
+├── diagrams/                # આર્કિટેક્ચર આકૃતિઓ
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # વપરાશકર્તા માર્ગદર્શિકા, Docker, સેટઅપ, સમસ્યા નિવારણ
+├── i18n/                    # આંતરરાષ્ટ્રીયકૃત README અનુવાદો
+├── marketing/               # માર્કેટિંગ સામગ્રી
+├── ops/                     # ડિપ્લોયમેન્ટ, પ્રોક્સી, કવરેજ, રિલીઝ
+├── providers/               # પ્રદાતા-વિશિષ્ટ દસ્તાવેજો
+├── reference/               # API સંદર્ભ, પર્યાવરણ ચલો, CLI ટૂલ્સ, મફત ટિયર્સ
+├── releases/                # રિલીઝ નોંધો
+├── routing/                 # ઑટો-કોમ્બો એન્જિન, રીઝનિંગ રીપ્લે
+├── screenshots/             # ડૅશબોર્ડ સ્ક્રીનશૉટ્સ
+├── security/                # સુરક્ષા નિયંત્રણો, અનુપાલન, સ્ટેલ્થ, ટોકન્સ
+└── specs/                   # ડિઝાઇન વિશિષ્ટતાઓ
 ```
 
 ---
@@ -387,20 +394,20 @@ docs/                       # Documentation
 
 ## Pull Request ચેકલિસ્ટ
 
-- [ ] પરીક્ષણો સફળ થાય છે (`npm test`)
-- [ ] લિન્ટિંગ સફળ થાય છે (`npm run lint`)
+- [ ] ટેસ્ટ્સ પાસ થાય છે (`npm test`)
+- [ ] લિન્ટિંગ પાસ થાય છે (`npm run lint`)
 - [ ] બિલ્ડ સફળ થાય છે (`npm run build`)
-- [ ] નવા જાહેર ફંક્શન્સ અને ઇન્ટરફેસ માટે TypeScript પ્રકારો ઉમેર્યા છે
-- [ ] કોઈ હાર્ડકોડ કરેલા સિક્રેટ્સ અથવા ફૉલબૅક મૂલ્યો નથી
-- [ ] જાહેર અપસ્ટ્રીમ ક્રેડેન્શિયલ્સ `resolvePublicCred()` દ્વારા એમ્બેડ કર્યાં છે ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) જુઓ), ક્યારેય લિટરલ્સ તરીકે નહીં
-- [ ] ભૂલ પ્રતિસાદો `buildErrorBody()` / `sanitizeErrorMessage()` મારફતે જાય છે — પ્રતિસાદ બોડીમાં કોઈ કાચા સ્ટૅક ટ્રેસ નથી ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) જુઓ)
-- [ ] શેલ કમાન્ડ્સ (`exec` / `spawn`) રનટાઇમ મૂલ્યોને સ્ટ્રિંગ ઇન્ટરપોલેશન દ્વારા નહીં, પરંતુ `env` દ્વારા પસાર કરે છે
-- [ ] તમામ ઇનપુટ્સ Zod સ્કીમા વડે માન્ય કર્યાં છે
-- [ ] વપરાશકર્તાને અસર કરતા ફેરફારો માટે `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` હેઠળ ચેન્જલૉગ **ફ્રૅગમેન્ટ** ઉમેર્યું છે ([`changelog.d/README.md`](./changelog.d/README.md) જુઓ) — `CHANGELOG.md` ને સીધું સંપાદિત **કરશો નહીં**; ફ્રૅગમેન્ટ્સ રિલીઝ સમયે એકત્રિત થાય છે અને PR વચ્ચે ક્યારેય સંઘર્ષ કરતા નથી
+- [ ] નવા સાર્વજનિક ફંક્શન્સ અને ઇન્ટરફેસ માટે TypeScript પ્રકારો ઉમેર્યા છે
+- [ ] કોઈ હાર્ડકોડેડ સિક્રેટ્સ અથવા ફૉલબૅક મૂલ્યો નથી
+- [ ] સાર્વજનિક અપસ્ટ્રીમ ક્રેડેન્શિયલ્સ `resolvePublicCred()` મારફતે એમ્બેડ કર્યાં છે ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) જુઓ), ક્યારેય લિટરલ્સ તરીકે નહીં
+- [ ] ભૂલ પ્રતિસાદો `buildErrorBody()` / `sanitizeErrorMessage()` મારફતે રૂટ થાય છે — પ્રતિસાદ બોડીમાં કોઈ કાચા સ્ટૅક ટ્રેસ નથી ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) જુઓ)
+- [ ] શેલ કમાન્ડ્સ (`exec` / `spawn`) રનટાઇમ મૂલ્યોને સ્ટ્રિંગ ઇન્ટરપોલેશન મારફતે નહીં, પરંતુ `env` મારફતે પસાર કરે છે
+- [ ] બધા ઇનપુટ્સ Zod સ્કીમા વડે માન્ય કરેલા છે
+- [ ] વપરાશકર્તાને અસર કરતા ફેરફારો માટે `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` હેઠળ ચેન્જલૉગ **ફ્રેગમેન્ટ** ઉમેર્યો છે ([`changelog.d/README.md`](./changelog.d/README.md) જુઓ) — `CHANGELOG.md`ને સીધું સંપાદિત કરશો **નહીં**; ફ્રેગમેન્ટ્સને રિલીઝ સમયે એકત્રિત કરવામાં આવે છે અને PRs વચ્ચે ક્યારેય સંઘર્ષ થતો નથી
 - [ ] દસ્તાવેજીકરણ અપડેટ કર્યું છે (જો લાગુ પડતું હોય)
-- [ ] કોઈ નવા CodeQL / Secret-Scanning અલર્ટ ખોલાયા નથી, અથવા દરેકને સંબંધિત `docs/security/` દસ્તાવેજનો સંદર્ભ આપતા તકનીકી વાજબીકરણ સાથે રદ કર્યો છે
-- [ ] ચાઇલ્ડ પ્રોસેસ શરૂ કરતા રૂટ્સ (`/api/mcp/`, `/api/cli-tools/runtime/`) ને `src/server/authz/routeGuard.ts` માં `isLocalOnlyPath()` તરીકે વર્ગીકૃત કર્યા છે — [કડક નિયમ #15](docs/security/ROUTE_GUARD_TIERS.md) જુઓ
-- [ ] કમિટ સંદેશાઓમાં કોઈ `Co-Authored-By` ટ્રેલર્સ નથી — કમિટ્સ ફક્ત રિપોઝિટરી માલિકની Git ઓળખ હેઠળ જ દેખાવા જોઈએ (કડક નિયમ #16)
+- [ ] કોઈ નવી CodeQL / Secret-Scanning ચેતવણીઓ ખોલવામાં આવી નથી, અથવા દરેકને સંબંધિત `docs/security/` દસ્તાવેજનો સંદર્ભ આપતા ટેક્નિકલ વાજબીકરણ સાથે રદ કરવામાં આવી છે
+- [ ] ચાઇલ્ડ પ્રોસેસ શરૂ કરતા રૂટ્સ (`/api/mcp/`, `/api/cli-tools/runtime/`)ને `src/server/authz/routeGuard.ts`માં `isLocalOnlyPath()` તરીકે વર્ગીકૃત કર્યા છે — [કડક નિયમ #15](docs/security/ROUTE_GUARD_TIERS.md) જુઓ
+- [ ] કમિટ સંદેશાઓમાં AI/બોટ `Co-authored-by` ટ્રેલર્સ નથી (કડક નિયમ #16) — જે માનવીય સહયોગીઓના કાર્યનો પુનઃઉપયોગ થયો છે તેમને પ્રમાણભૂત `Co-authored-by: Name <email>` ટ્રેલર્સ દ્વારા શ્રેય આપવામાં આવ્યો છે
 
 ---
 
@@ -415,6 +422,5 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **આર્કિટેક્ચર**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) જુઓ
 - **API સંદર્ભ**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) જુઓ
 - **સુરક્ષા દસ્તાવેજો**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **ઑપરેશન્સ દસ્તાવેજો**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **ઓપરેશન્સ દસ્તાવેજો**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **સમસ્યાઓ**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: આર્કિટેક્ચરલ નિર્ણયોના રેકોર્ડ માટે `docs/adr/` જુઓ

@@ -286,65 +286,72 @@ PR उघडण्यापूर्वी, तुम्ही बदलले�
 
 ---
 
-## Project Structure
+## प्रकल्पाची संरचना
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # डॅशबोर्ड पृष्ठे (23 विभाग)
+│   ├── api/                # API मार्ग (51 निर्देशिका)
+│   └── login/              # प्रमाणीकरण पृष्ठे (.tsx)
+├── domain/                 # धोरण इंजिन (policyEngine, comboResolver, costRules इत्यादी)
+├── lib/                    # मुख्य व्यवसाय तर्क (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 प्रोटोकॉल सर्व्हर
+│   ├── acp/                # Agent Communication Protocol नोंदणी
+│   ├── compliance/         # अनुपालन धोरण इंजिन
+│   ├── db/                 # SQLite डोमेन मॉड्यूल्स + 130 स्थलांतरे
+│   ├── memory/             # कायमस्वरूपी संभाषणात्मक स्मृती
+│   ├── oauth/              # OAuth प्रदाते, सेवा आणि उपयुक्तता
+│   ├── skills/             # विस्तारक्षम कौशल्य फ्रेमवर्क
+│   ├── usage/              # वापराचे मागोवा घेणे आणि खर्चाची गणना
+│   └── localDb.ts          # केवळ पुनर्निर्यात स्तर — येथे कधीही तर्क जोडू नका
+├── middleware/              # विनंती मिडलवेअर (promptInjectionGuard)
+├── mitm/                   # MITM प्रॉक्सी (प्रमाणपत्र, DNS, लक्ष्य राउटिंग)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React घटक (.tsx)
+│   ├── constants/          # प्रदात्यांच्या व्याख्या (329), MCP व्याप्ती, 19 राउटिंग धोरणे
+│   ├── utils/              # सर्किट ब्रेकर, सॅनिटायझर, प्रमाणीकरण सहाय्यके
+│   └── validation/         # Zod v4 स्कीमा
+└── sse/                    # SSE प्रॉक्सी पाइपलाइन
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse कार्यक्षेत्र
+├── executors/              # 150 एक्झिक्युटर मॉड्यूल्स (एक्झिक्युटर वर्ग + प्रत्येक प्रदात्यासाठी सहाय्यके)
+├── handlers/               # 11 विनंती हँडलर्स (चॅट, प्रतिसाद, एम्बेडिंग्ज, प्रतिमा इत्यादी)
+├── mcp-server/             # MCP सर्व्हर (110 अद्वितीय साधने, 3 वाहतूक प्रकार, 33 व्याप्ती)
+├── services/               # 178 शीर्ष-स्तरीय सेवा (combo, autoCombo, rateLimitManager इत्यादी)
+├── translator/             # स्वरूप अनुवादक (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API ट्रान्सफॉर्मर
+└── utils/                  # 22 उपयुक्तता मॉड्यूल्स (स्ट्रीम, TLS, प्रॉक्सी, लॉगिंग)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Electron डेस्कटॉप ॲप (बहु-प्लॅटफॉर्म)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js चाचणी रनर (1,574 चाचणी फाइल्स)
+├── integration/            # एकात्मता चाचण्या
+├── e2e/                    # Playwright चाचण्या
+├── security/               # सुरक्षा चाचण्या
+├── translator/             # अनुवादक-विशिष्ट चाचण्या
+└── load/                   # भार चाचण्या
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # आर्किटेक्चर निर्णय नोंदी
+├── architecture/            # प्रणाली आर्किटेक्चर आणि लवचिकता
+├── comparison/              # OmniRoute विरुद्ध पर्याय
+├── compression/             # संक्षेपण मार्गदर्शिका आणि नियम
+├── dev/                     # विकास मार्गदर्शिका
+├── diagrams/                # आर्किटेक्चर आकृत्या
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # वापरकर्ता मार्गदर्शिका, Docker, सेटअप, समस्यानिवारण
+├── i18n/                    # आंतरराष्ट्रीयीकृत README भाषांतरे
+├── marketing/               # विपणन साहित्य
+├── ops/                     # उपयोजन, प्रॉक्सी, व्याप्ती, प्रकाशने
+├── providers/               # प्रदाता-विशिष्ट दस्तऐवज
+├── reference/               # API संदर्भ, पर्यावरण चल, CLI साधने, विनामूल्य स्तर
+├── releases/                # प्रकाशन नोंदी
+├── routing/                 # स्वयंचलित-कॉम्बो इंजिन, तर्क पुनरावृत्ती
+├── screenshots/             # डॅशबोर्ड स्क्रीनशॉट्स
+├── security/                # संरक्षक उपाय, अनुपालन, गुप्तता, टोकन्स
+└── specs/                   # डिझाइन तपशील
 ```
 
 ---
@@ -387,20 +394,20 @@ OAuth क्रेडेन्शियल्स `src/lib/oauth/constants/oauth.
 
 ## Pull Request तपासणी सूची
 
-- [ ] चाचण्या उत्तीर्ण (`npm test`)
-- [ ] लिंटिंग उत्तीर्ण (`npm run lint`)
-- [ ] बिल्ड यशस्वी (`npm run build`)
-- [ ] नवीन सार्वजनिक फंक्शन्स आणि इंटरफेसेससाठी TypeScript प्रकार जोडले
+- [ ] चाचण्या यशस्वी होतात (`npm test`)
+- [ ] लिंटिंग यशस्वी होते (`npm run lint`)
+- [ ] बिल्ड यशस्वी होते (`npm run build`)
+- [ ] नवीन सार्वजनिक फंक्शन्स आणि इंटरफेसेससाठी TypeScript प्रकार जोडले आहेत
 - [ ] कोणतीही हार्डकोड केलेली गुपिते किंवा फॉलबॅक मूल्ये नाहीत
-- [ ] सार्वजनिक अपस्ट्रीम क्रेडेन्शियल्स `resolvePublicCred()` द्वारे एम्बेड केलेली आहेत ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) पहा), लिटरल्स म्हणून कधीही नाहीत
-- [ ] त्रुटी प्रतिसाद `buildErrorBody()` / `sanitizeErrorMessage()` मधून पाठवले जातात — प्रतिसादांच्या बॉडीमध्ये कोणतेही रॉ स्टॅक ट्रेस नाहीत ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) पहा)
+- [ ] सार्वजनिक अपस्ट्रीम क्रेडेन्शियल्स `resolvePublicCred()` द्वारे एम्बेड केली आहेत ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) पहा), लिटरल्स म्हणून कधीही नाही
+- [ ] त्रुटी प्रतिसाद `buildErrorBody()` / `sanitizeErrorMessage()` द्वारे पाठवले जातात — प्रतिसादांच्या बॉडीमध्ये रॉ स्टॅक ट्रेसेस नाहीत ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) पहा)
 - [ ] शेल कमांड्स (`exec` / `spawn`) रनटाइम मूल्ये स्ट्रिंग इंटरपोलेशनद्वारे नव्हे, तर `env` द्वारे पाठवतात
 - [ ] सर्व इनपुट्स Zod स्कीमांद्वारे प्रमाणित केले आहेत
-- [ ] वापरकर्त्यांना दिसणाऱ्या बदलांसाठी `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` अंतर्गत चेंजलॉग **फ्रॅगमेंट** जोडला आहे ([`changelog.d/README.md`](./changelog.d/README.md) पहा) — `CHANGELOG.md` थेट संपादित करू **नका**; फ्रॅगमेंट्स रिलीजच्या वेळी एकत्रित केले जातात आणि PRs दरम्यान कधीही संघर्ष निर्माण करत नाहीत
-- [ ] दस्तऐवजीकरण अद्ययावत केले (लागू असल्यास)
+- [ ] वापरकर्त्यांना दिसणाऱ्या बदलांसाठी `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` अंतर्गत चेंजलॉग **फ्रॅगमेंट** जोडला आहे ([`changelog.d/README.md`](./changelog.d/README.md) पहा) — `CHANGELOG.md` थेट संपादित करू **नका**; फ्रॅगमेंट्स रिलीजच्या वेळी एकत्रित केले जातात आणि PRs दरम्यान त्यांचा कधीही संघर्ष होत नाही
+- [ ] दस्तऐवजीकरण अद्ययावत केले आहे (लागू असल्यास)
 - [ ] कोणतेही नवीन CodeQL / Secret-Scanning अलर्ट उघडलेले नाहीत किंवा प्रत्येक अलर्ट संबंधित `docs/security/` दस्तऐवजाचा संदर्भ देणाऱ्या तांत्रिक समर्थनासह डिसमिस केला आहे
-- [ ] चाइल्ड प्रोसेसेस स्पॉन करणारे रूट्स (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` मधील `isLocalOnlyPath()` म्हणून वर्गीकृत केले आहेत — [कठोर नियम #15](docs/security/ROUTE_GUARD_TIERS.md) पहा
-- [ ] कमिट संदेशांमध्ये कोणतेही `Co-Authored-By` ट्रेलर्स नाहीत — कमिट्स केवळ रिपॉझिटरी मालकाच्या Git ओळखीखाली दिसले पाहिजेत (कठोर नियम #16)
+- [ ] चाइल्ड प्रोसेसेस सुरू करणारे रूट्स (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` मध्ये `isLocalOnlyPath()` म्हणून वर्गीकृत केले आहेत — [कठोर नियम #15](docs/security/ROUTE_GUARD_TIERS.md) पहा
+- [ ] कमिट संदेशांमध्ये AI/bot `Co-authored-by` ट्रेलर्स नाहीत (कठोर नियम #16) — ज्यांचे काम पुन्हा वापरले आहे अशा मानवी सहकाऱ्यांना मानक `Co-authored-by: Name <email>` ट्रेलर्सद्वारे श्रेय दिले आहे
 
 ---
 
@@ -417,4 +424,3 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **सुरक्षा दस्तऐवज**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **ऑपरेशन्स दस्तऐवज**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **समस्या**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: आर्किटेक्चरल निर्णय नोंदींसाठी `docs/adr/` पहा
