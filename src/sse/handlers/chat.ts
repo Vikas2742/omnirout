@@ -1486,6 +1486,14 @@ async function handleChatImplementation(
 
 export const handleChat = chatAdmission.withChatAdmission(handleChatImplementation);
 
+function readEmptyStreamSiblingRecoveryFlag(): boolean {
+  try {
+    return isFeatureFlagEnabled("EMPTY_STREAM_SIBLING_RECOVERY_ENABLED");
+  } catch {
+    return false;
+  }
+}
+
 /** Handle one resolved model through gates, credentials, and retry/fallback. */
 async function handleSingleModelChat(
   body: any,
@@ -1788,9 +1796,13 @@ async function handleSingleModelChat(
     let preselectedCredentials = initialPreselectedCredentials;
     initialPreselectedCredentials = null;
 
+    // #16438 opt-in (EMPTY_STREAM_SIBLING_RECOVERY_ENABLED): read once per dispatch;
+    // fail closed so any flag-resolution error keeps the release retry behavior.
+    const emptyStreamSiblingRecovery = readEmptyStreamSiblingRecoveryFlag();
     while (true) {
       const emptyTurnExcluded = new Set(excludedConnectionIds);
       if (
+        emptyStreamSiblingRecovery &&
         runtimeOptions.emptyTurnConnectionId &&
         !hasForcedConnection &&
         !runtimeOptions.managedLease
@@ -2292,7 +2304,7 @@ async function handleSingleModelChat(
         (result.errorType === "stream_timeout" ||
           result.errorType === "stream_early_eof" ||
           result.errorCode === "empty_response" ||
-          result.errorCode === "empty_content") &&
+          (emptyStreamSiblingRecovery && result.errorCode === "empty_content")) &&
         !isAntigravityStreamReadinessFailure
       ) {
         // Bug #3758: flaky OpenAI-compatible upstreams (e.g. NVIDIA NIM) sometimes
@@ -2304,7 +2316,9 @@ async function handleSingleModelChat(
         if (
           shouldRetryStreamEarlyEof(result.errorCode, streamEarlyEofRetries) &&
           !hasForcedConnection &&
-          !requestSignal?.aborted &&
+          // #16438 (flag-gated): never spend a retry on a client that already left, and
+          // let the combo own empty_content recovery so the two layers never stack.
+          !(emptyStreamSiblingRecovery && requestSignal?.aborted) &&
           !(isCombo && result.errorCode === "empty_content")
         ) {
           streamEarlyEofRetries += 1;

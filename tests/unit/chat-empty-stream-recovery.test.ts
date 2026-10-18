@@ -14,6 +14,8 @@ process.env.API_KEY_SECRET = "test-empty-stream-recovery";
 process.env.STREAM_READINESS_TIMEOUT_MS = "1000";
 process.env.FLUSH_EMPTY_RETRY_ENABLED = "false";
 process.env.STREAM_READINESS_STALL_RETRY_ENABLED = "false";
+// #16438: the recovery under test is opt-in; flag-off tests below flip it per test.
+process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED = "true";
 
 const core = await import("../../src/lib/db/core.ts");
 const providersDb = await import("../../src/lib/db/providers.ts");
@@ -610,4 +612,93 @@ test("one-model round-robin recovers late empty content on an allowed sibling wi
   assert.doesNotMatch(body, /Provider returned empty content/);
   assert.deepEqual(dispatches, [first.token, sibling.token]);
   assert.equal(response.headers.get("X-OmniRoute-Selected-Connection-Id"), sibling.id);
+});
+
+// ── #16438 flag off: EMPTY_STREAM_SIBLING_RECOVERY_ENABLED=false keeps the release path ──
+// The same scenarios as above, with the opt-in flag off: no content probe, no sibling
+// retry, no combo empty_content branch. These must behave exactly like the release tip.
+async function withRecoveryFlagOff<T>(fn: () => Promise<T>): Promise<T> {
+  const previous = process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED;
+  process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED = "false";
+  try {
+    return await fn();
+  } finally {
+    process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED = previous;
+  }
+}
+
+test("flag off: an empty Claude lifecycle is not retried on a sibling", async () => {
+  await withRecoveryFlagOff(async () => {
+    const first = await seedConnection("off-empty");
+    await seedConnection("off-healthy");
+    const dispatches = stubClaudeDispatches((token) =>
+      token === first.token ? claudeStream("", null) : claudeStream("RECOVERED")
+    );
+
+    const response = await handleChat(streamRequest());
+    const body = await response.text();
+
+    assert.doesNotMatch(body, /RECOVERED/);
+    assert.deepEqual(dispatches, [first.token], "release path dispatches exactly once");
+  });
+});
+
+test("flag off: an empty Codex Responses lifecycle is not retried on a sibling", async () => {
+  await withRecoveryFlagOff(async () => {
+    const first = await seedConnection("off-codex-empty", "codex");
+    await seedConnection("off-codex-healthy", "codex");
+    const dispatches = stubCodexDispatches((token) =>
+      token === first.token
+        ? codexResponsesStream({ responseStatus: "in_progress" })
+        : codexResponsesStream({ text: "CODEX_RECOVERED" })
+    );
+
+    const response = await handleChat(streamRequest({}, "codex/gpt-6.1-sol-xhigh"));
+    const body = await response.text();
+
+    assert.doesNotMatch(body, /CODEX_RECOVERED/);
+    assert.deepEqual(dispatches, [first.token]);
+  });
+});
+
+test("flag off: a one-model round-robin early empty_content 502 keeps the release outcome", async () => {
+  await withRecoveryFlagOff(async () => {
+    const first = await seedConnection("off-rr-early-empty");
+    const sibling = await seedConnection("off-rr-early-healthy");
+    const combo = await combosDb.createCombo({
+      name: "off-rr-early-empty",
+      strategy: "round-robin",
+      models: [
+        {
+          kind: "model",
+          model: "claude/claude-opus-5-5-xhigh",
+          allowedConnectionIds: [first.id, sibling.id],
+        },
+      ],
+      config: { maxRetries: 1, retryDelayMs: 0, maxGlobalAttempts: 2 },
+    });
+    const dispatches = stubClaudeDispatches((token) =>
+      token === first.token
+        ? new Response(
+            JSON.stringify({
+              error: {
+                message: "Provider returned empty content",
+                type: "server_error",
+                code: "empty_content",
+              },
+            }),
+            { status: 502, headers: { "Content-Type": "application/json" } }
+          )
+        : claudeStream("ROUND_ROBIN_EARLY_RECOVERED")
+    );
+
+    const response = await handleChat(streamRequest({}, combo.name));
+    const body = await response.text();
+
+    // The release round-robin loop already re-dispatches a generic 502; the flag only
+    // changes how the empty_content branch accounts for it, not this outcome.
+    assert.equal(response.status, 200, body);
+    assert.match(body, /ROUND_ROBIN_EARLY_RECOVERED/);
+    assert.deepEqual(dispatches, [first.token, sibling.token]);
+  });
 });

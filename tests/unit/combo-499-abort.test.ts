@@ -111,7 +111,9 @@ test("combo loop does NOT stop on 502 (transient) — tries more than one model"
   assert.equal(result.status, 502, "should still return 502 if all models fail");
 });
 
-test("round-robin empty-content recovery stops when the client cancels during retry delay", async () => {
+async function runRoundRobinEmptyContentAbort(flag: "true" | "false") {
+  const previous = process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED;
+  process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED = flag;
   const controller = new AbortController();
   const dispatchedModels: string[] = [];
   let abortTimer: ReturnType<typeof setTimeout> | undefined;
@@ -144,16 +146,33 @@ test("round-robin empty-content recovery stops when the client cancels during re
       allCombos: [],
       signal: controller.signal,
     });
-    assert.equal(controller.signal.aborted, true);
-    assert.equal(
-      dispatchedModels.length,
-      1,
-      "cancellation must prevent retry and sibling dispatch"
-    );
-    assert.equal(response.status, 499);
+    await response.body?.cancel().catch(() => {});
+    return { status: response.status, dispatchedModels, aborted: controller.signal.aborted };
   } finally {
     clearTimeout(abortTimer);
+    if (previous === undefined) delete process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED;
+    else process.env.EMPTY_STREAM_SIBLING_RECOVERY_ENABLED = previous;
   }
+}
+
+test("#16438 flag on: round-robin empty-content recovery stops when the client cancels during retry delay", async () => {
+  const result = await runRoundRobinEmptyContentAbort("true");
+  assert.equal(result.aborted, true);
+  assert.equal(
+    result.dispatchedModels.length,
+    1,
+    "cancellation must prevent retry and sibling dispatch"
+  );
+  assert.equal(result.status, 499);
+});
+
+test("#16438 flag off: round-robin keeps the release retry-delay behavior on cancellation", async () => {
+  const result = await runRoundRobinEmptyContentAbort("false");
+  // Release behavior: the fixed retry delay is not abort-aware, so the loop keeps
+  // dispatching until the shared attempt budget (3) runs out and answers 503.
+  assert.equal(result.aborted, true);
+  assert.equal(result.dispatchedModels.length, 3);
+  assert.equal(result.status, 503);
 });
 
 test("signal abort during fallback wait interrupts immediately", async () => {

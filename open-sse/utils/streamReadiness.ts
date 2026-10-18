@@ -52,9 +52,29 @@ function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.length > 0;
 }
 
-function hasUsefulValue(value: unknown): boolean {
+// A Claude thinking or signature delta is proof the model is working, even
+// when its payload carries no readable text (encrypted reasoning, empty
+// signature envelope). Presence of a non-empty `thinking` or `signature`
+// string on a typed delta object counts as liveness — never as user-visible
+// output. Plain `signature: ""` bootstraps stay excluded: only a non-empty
+// value passes.
+function hasThinkingLiveness(value: Record<string, unknown>): boolean {
+  const deltaType = value.type;
+  if (deltaType !== "thinking_delta" && deltaType !== "signature_delta") return false;
+  return hasNonEmptyString(value.thinking) || hasNonEmptyString(value.signature);
+}
+
+/**
+ * #16438 content-probe semantics (EMPTY_STREAM_SIBLING_RECOVERY_ENABLED only): an
+ * opaque signature is reasoning progress, not usable output, while a tool start (or a
+ * Responses `item` carrying one) commits an action before its name/arguments arrive.
+ * The default (`contentProbe: false`) keeps the release semantics untouched.
+ */
+type UsefulContentOptions = { contentProbe?: boolean };
+
+function hasUsefulValue(value: unknown, contentProbe = false): boolean {
   if (hasNonEmptyString(value)) return true;
-  if (Array.isArray(value)) return value.some(hasUsefulValue);
+  if (Array.isArray(value)) return value.some((item) => hasUsefulValue(item, contentProbe));
   if (!isRecord(value)) return false;
 
   // A Responses compaction item IS the turn's output: remote compaction
@@ -64,8 +84,13 @@ function hasUsefulValue(value: unknown): boolean {
   // tripping the #8649 empty-content guard.
   // This shape is specific to Responses streams; chat-completion frames do not produce it.
   if (value.type === "compaction" && hasNonEmptyString(value.encrypted_content)) return true;
-  // Tool starts commit an action even before their name/arguments arrive.
-  if (value.type === "function_call" || value.type === "tool_use") return true;
+
+  if (contentProbe) {
+    // Tool starts commit an action even before their name/arguments arrive.
+    if (value.type === "function_call" || value.type === "tool_use") return true;
+  } else if (hasThinkingLiveness(value)) {
+    return true;
+  }
 
   for (const key of [
     "content",
@@ -88,7 +113,11 @@ function hasUsefulValue(value: unknown): boolean {
   ]) {
     const candidate = value[key];
     if (hasNonEmptyString(candidate)) return true;
-    if ((Array.isArray(candidate) || isRecord(candidate)) && hasUsefulValue(candidate)) return true;
+    if (
+      (Array.isArray(candidate) || isRecord(candidate)) &&
+      hasUsefulValue(candidate, contentProbe)
+    )
+      return true;
   }
 
   for (const key of [
@@ -99,22 +128,22 @@ function hasUsefulValue(value: unknown): boolean {
     "function_call",
     "function_call_output",
     "output",
-    "item",
+    ...(contentProbe ? ["item"] : []),
     "content_block",
     "response",
     "choices",
     "candidates",
     "parts",
   ]) {
-    if (hasUsefulValue(value[key])) return true;
+    if (hasUsefulValue(value[key], contentProbe)) return true;
   }
 
   return false;
 }
 
-function hasUsefulJsonPayload(payload: unknown): boolean {
+function hasUsefulJsonPayload(payload: unknown, contentProbe = false): boolean {
   if (!isRecord(payload)) return false;
-  return hasUsefulValue(payload);
+  return hasUsefulValue(payload, contentProbe);
 }
 
 function isPingEventType(type: string): boolean {
@@ -164,7 +193,7 @@ function hasNonPingStructuredPayload(payload: unknown, eventType = ""): boolean 
   return payload !== null && payload !== undefined;
 }
 
-export function hasUsefulStreamContent(text: string): boolean {
+export function hasUsefulStreamContent(text: string, options: UsefulContentOptions = {}): boolean {
   const lines = text.split(/\r?\n/);
 
   for (const line of lines) {
@@ -177,7 +206,7 @@ export function hasUsefulStreamContent(text: string): boolean {
     if (!data || data === "[DONE]") continue;
 
     try {
-      if (hasUsefulJsonPayload(JSON.parse(data))) return true;
+      if (hasUsefulJsonPayload(JSON.parse(data), options.contentProbe === true)) return true;
     } catch {
       if (data.length > 0) return true;
     }
@@ -195,6 +224,13 @@ const LEGIT_EMPTY_TERMINAL_REASONS = new Set([
   "content_filter",
   "max_tokens",
   "tool_use",
+]);
+
+// #16438 content probe only (EMPTY_STREAM_SIBLING_RECOVERY_ENABLED): Claude terminals
+// that also end a turn without content on purpose, so the probe must not turn them
+// into a retryable empty_content failure. The default watcher keeps the set above.
+const CONTENT_PROBE_LEGIT_EMPTY_TERMINAL_REASONS: ReadonlySet<string> = new Set([
+  ...LEGIT_EMPTY_TERMINAL_REASONS,
   "refusal",
   "pause_turn",
   "model_context_window_exceeded",
@@ -400,7 +436,13 @@ export type StreamContentWatcher = {
  * Also tracks `sawError` so an already-emitted structured error is not rewritten
  * as empty content (parity with Claude #3685 `lifecycle.hasError` and readiness #8972).
  */
-export function createStreamContentWatcher(): StreamContentWatcher {
+export function createStreamContentWatcher(
+  options: UsefulContentOptions = {}
+): StreamContentWatcher {
+  const contentProbe = options.contentProbe === true;
+  const legitEmptyReasons: ReadonlySet<string> = contentProbe
+    ? CONTENT_PROBE_LEGIT_EMPTY_TERMINAL_REASONS
+    : LEGIT_EMPTY_TERMINAL_REASONS;
   const MAX_BUFFERED = 64 * 1024;
   let pending = "";
   let content = false;
@@ -414,7 +456,7 @@ export function createStreamContentWatcher(): StreamContentWatcher {
     if (!frame) return;
     if (!sse && SSE_FIELD_LINE.test(frame)) sse = true;
     if (!error && frameHasStructuredStreamError(frame)) error = true;
-    if (!content && hasUsefulStreamContent(frame)) content = true;
+    if (!content && hasUsefulStreamContent(frame, { contentProbe })) content = true;
     if (!content && isReasoningProgressFrame(frame)) progress += 1;
     if (!normalStop) {
       for (const match of frame.matchAll(TERMINAL_REASON_PATTERN)) {
@@ -427,7 +469,7 @@ export function createStreamContentWatcher(): StreamContentWatcher {
     }
     if (legitEmpty) return;
     for (const match of frame.matchAll(TERMINAL_REASON_PATTERN)) {
-      if (LEGIT_EMPTY_TERMINAL_REASONS.has(match[2])) {
+      if (legitEmptyReasons.has(match[2])) {
         legitEmpty = true;
         return;
       }
@@ -711,7 +753,9 @@ export async function ensureStreamReadiness(
       : startedAt + effectiveTimeoutMs;
   let deadline = startedAt + effectiveTimeoutMs;
   let handedOffReader = false;
-  const contentWatcher = options.contentProbeMs ? createStreamContentWatcher() : null;
+  const contentWatcher = options.contentProbeMs
+    ? createStreamContentWatcher({ contentProbe: true })
+    : null;
   let contentProbeDeadline = 0;
   let bufferedBytes = 0;
   let pendingRead: Promise<ReadableStreamReadResult<Uint8Array>> | null = null;

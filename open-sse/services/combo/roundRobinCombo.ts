@@ -109,6 +109,7 @@ import {
   isEmptyContentResponse,
   isEarlyEofResponse,
 } from "./emptyContentRetry.ts";
+import { isEmptyStreamSiblingRecoveryEnabled } from "../streamRecovery.ts";
 import { getCachedProviderConnectionById } from "../../../src/lib/db/readCache.ts";
 import { applyComboTargetExhaustion } from "./targetExhaustion.ts";
 import { isRetryAfterEligibleStatus } from "./unavailableRetryGate.ts";
@@ -452,6 +453,10 @@ export async function handleRoundRobinCombo({
   // #11134: operator-configurable shared attempt budget (clamped to the hard
   // cap). Defaults to MAX_GLOBAL_ATTEMPTS when unset.
   const maxGlobalAttempts = clampGlobalAttempts(config.maxGlobalAttempts);
+  // #16438 opt-in (EMPTY_STREAM_SIBLING_RECOVERY_ENABLED): empty_content sibling retry,
+  // abort-aware retry delay and the early-EOF provider-cooldown skip. Off = release path.
+  const emptyStreamSiblingRecovery = isEmptyStreamSiblingRecoveryEnabled();
+  const clientGone = () => emptyStreamSiblingRecovery && signal?.aborted === true;
 
   const retryEmptyContent = ({
     response,
@@ -539,7 +544,7 @@ export async function handleRoundRobinCombo({
   // Try each model starting from the round-robin target
   try {
     for (let offset = 0; offset < modelCount; offset++) {
-      if (signal?.aborted) return errorResponse(499, "Client disconnected");
+      if (clientGone()) return errorResponse(499, "Client disconnected");
       // G4: stop launching new work once the safety timer fired.
       if (rrExpired) break;
       const modelIndex = (rrStartIndex + offset) % modelCount;
@@ -686,7 +691,7 @@ export async function handleRoundRobinCombo({
       let emptyTurnConnectionId: string | null = null;
       try {
         for (let retry = 0; retry <= maxRetries; retry++) {
-          if (signal?.aborted) return errorResponse(499, "Client disconnected");
+          if (clientGone()) return errorResponse(499, "Client disconnected");
           globalAttempts++;
           if (globalAttempts > maxGlobalAttempts) {
             log.warn(
@@ -713,17 +718,21 @@ export async function handleRoundRobinCombo({
               "COMBO-RR",
               `Retrying ${modelStr} in ${retryDelayMs}ms (attempt ${retry + 1}/${maxRetries + 1})`
             );
-            await new Promise<void>((resolve) => {
-              const finish = () => {
-                clearTimeout(timer);
-                signal?.removeEventListener("abort", finish);
-                resolve();
-              };
-              const timer = setTimeout(finish, retryDelayMs);
-              signal?.addEventListener("abort", finish, { once: true });
-              if (signal?.aborted) finish();
-            });
-            if (signal?.aborted) return errorResponse(499, "Client disconnected");
+            if (emptyStreamSiblingRecovery) {
+              await new Promise<void>((resolve) => {
+                const finish = () => {
+                  clearTimeout(timer);
+                  signal?.removeEventListener("abort", finish);
+                  resolve();
+                };
+                const timer = setTimeout(finish, retryDelayMs);
+                signal?.addEventListener("abort", finish, { once: true });
+                if (signal?.aborted) finish();
+              });
+            } else {
+              await new Promise((r) => setTimeout(r, retryDelayMs));
+            }
+            if (clientGone()) return errorResponse(499, "Client disconnected");
           }
 
           log.info(
@@ -839,7 +848,7 @@ export async function handleRoundRobinCombo({
                 );
               }
               rrEvents.failed(`Quality: ${quality.reason}`, Date.now() - startTime);
-              if (quality.upstreamFailure?.code === "empty_content") {
+              if (emptyStreamSiblingRecovery && quality.upstreamFailure?.emptyContent) {
                 const emptyContentRetry = retryEmptyContent({
                   response: new Response(null, {
                     status: quality.upstreamFailure.status,
@@ -1040,7 +1049,7 @@ export async function handleRoundRobinCombo({
             break;
           }
 
-          if (isEmptyContentResponse(result, errorBody)) {
+          if (emptyStreamSiblingRecovery && isEmptyContentResponse(result, errorBody)) {
             const emptyContentRetry = retryEmptyContent({
               response: result,
               errorText,
@@ -1238,7 +1247,7 @@ export async function handleRoundRobinCombo({
             provider !== "unknown" &&
             !scopedFailure &&
             !isModelScopedClaudeQuota &&
-            !isStreamEarlyEof &&
+            !(emptyStreamSiblingRecovery && isStreamEarlyEof) &&
             !(
               (result.status === 500 || result.status === 429) &&
               hasPerModelQuota(provider, rawModel)

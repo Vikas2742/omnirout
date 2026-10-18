@@ -112,6 +112,7 @@ import {
   isEarlyEofResponse,
   isReadinessFailure,
 } from "./emptyContentRetry.ts";
+import { isEmptyStreamSiblingRecoveryEnabled } from "../streamRecovery.ts";
 
 export async function executeTargetAttempt(
   opts: ExecuteTargetAttemptOptions
@@ -140,6 +141,9 @@ export async function executeTargetAttempt(
     });
 
   const familyTried = new Set<string>();
+  // #16438 opt-in (EMPTY_STREAM_SIBLING_RECOVERY_ENABLED): an empty_content turn spends
+  // this loop's existing retry on a sibling connection with no lockout. Off = release path.
+  const emptyStreamSiblingRecovery = isEmptyStreamSiblingRecoveryEnabled();
   let emptyTurnConnectionId: string | null = null;
   // Retry loop for transient errors
   for (let retry = 0; retry <= deps.maxRetries; retry++) {
@@ -418,7 +422,7 @@ export async function executeTargetAttempt(
           provider &&
           rawModel &&
           !qualityFailure.requestScoped &&
-          quality.upstreamFailure?.code !== "empty_content"
+          !(emptyStreamSiblingRecovery && quality.upstreamFailure?.emptyContent)
         ) {
           const mlSettings = resolveModelLockoutSettings(deps.settings);
           if (mlSettings.enabled && mlSettings.errorCodes.includes(qualityFailure.status)) {
@@ -447,7 +451,7 @@ export async function executeTargetAttempt(
         });
         state.observeFailure(false, target.executionKey);
         if (handlePreContentStreamRetry(quality, retry, deps, modelStr)) {
-          if (quality.upstreamFailure?.code === "empty_content") {
+          if (emptyStreamSiblingRecovery && quality.upstreamFailure?.emptyContent) {
             emptyTurnConnectionId = effectiveConnectionId || null;
           }
           continue;
@@ -777,7 +781,7 @@ export async function executeTargetAttempt(
       return null;
     }
 
-    if (isEmptyContentResponse(result, errorBody)) {
+    if (emptyStreamSiblingRecovery && isEmptyContentResponse(result, errorBody)) {
       const emptyContentRetry = handleEmptyContentRetry({
         response: result,
         errorText,

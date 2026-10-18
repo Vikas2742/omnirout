@@ -285,6 +285,12 @@ export interface StreamingUpstreamFailure {
   message?: string;
   requestScoped: boolean;
   retryable: boolean;
+  /**
+   * #16438: the failure is a pre-output empty turn (the disconnect guard's synthetic
+   * "Provider returned empty content" frame or an explicit `empty_content` code). Read
+   * only when EMPTY_STREAM_SIBLING_RECOVERY_ENABLED is on; `code` keeps the wire value.
+   */
+  emptyContent?: boolean;
 }
 
 export interface ResponseQualityResult {
@@ -298,12 +304,11 @@ function classifyStreamingUpstreamFailure(parsed: unknown): StreamingUpstreamFai
   const normalized = normalizeStreamFailurePayload(parsed);
   if (!normalized) return null;
   const type = normalized.type?.trim().toLowerCase() || "";
+  const code = normalized.code?.trim().toLowerCase() || "";
   // The disconnect guard's synthetic empty-turn error uses the generic wire code.
-  // Keep it distinct internally so recovery can prefer a sibling without a lockout.
-  const code =
-    normalized.message === "Provider returned empty content"
-      ? "empty_content"
-      : normalized.code?.trim().toLowerCase() || "";
+  // Flag it separately so opt-in recovery can prefer a sibling without a lockout.
+  const emptyContent =
+    normalized.message === "Provider returned empty content" || code === "empty_content";
   const requestScoped =
     type === "invalid_request_error" ||
     code === "invalid_request_error" ||
@@ -319,6 +324,7 @@ function classifyStreamingUpstreamFailure(parsed: unknown): StreamingUpstreamFai
     ...(message ? { message } : {}),
     requestScoped,
     retryable: !requestScoped && normalized.status >= 500,
+    ...(emptyContent ? { emptyContent: true } : {}),
   };
 }
 
