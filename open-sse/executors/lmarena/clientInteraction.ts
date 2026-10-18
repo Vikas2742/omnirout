@@ -280,3 +280,56 @@ export const ARENA_CLIENT_INTERACTION_FIELD = "cx";
 export { BLOB_CHARS as ARENA_CLIENT_INTERACTION_BLOB_CHARS };
 export { CLIENT_INTERACTION_VERSION as ARENA_CLIENT_INTERACTION_VERSION };
 export { PROGRAMMATIC_NONCE as ARENA_CLIENT_INTERACTION_NONCE };
+
+/**
+ * Default-off feature flag: synthesise the programmatic `cx` blob when the operator
+ * supplied none. Off (default) → the create-evaluation body carries no `cx` at all
+ * unless `providerSpecificData.cx` is set, exactly as before #16895. The synthesised
+ * value is an anti-automation signal OmniRoute would be fabricating, so sending it is
+ * an explicit operator decision.
+ */
+export const LMARENA_SYNTHESIZED_CX_FLAG = "LMARENA_SYNTHESIZED_CX_ENABLED";
+
+// The server feature-flag resolver (DB override > env > definition default) is
+// published on globalThis by src/shared/utils/featureFlagResolverBridge.ts under this
+// process-wide symbol; reading it here keeps open-sse free of a new src import.
+const FEATURE_FLAG_RESOLVER_KEY = Symbol.for("omniroute.featureFlagResolver");
+
+type EnvLike = Record<string, string | undefined>;
+
+/** True only when the operator enabled LMARENA_SYNTHESIZED_CX_ENABLED; fails closed. */
+export function isLMArenaSynthesizedCxEnabled(env: EnvLike = process.env): boolean {
+  try {
+    const resolver = (globalThis as Record<symbol, unknown>)[FEATURE_FLAG_RESOLVER_KEY];
+    if (typeof resolver === "function") {
+      return (resolver as (key: string) => boolean)(LMARENA_SYNTHESIZED_CX_FLAG) === true;
+    }
+    const raw = env[LMARENA_SYNTHESIZED_CX_FLAG];
+    return raw === "true" || raw === "1" || raw === "yes";
+  } catch {
+    return false;
+  }
+}
+
+/** Operator-supplied `cx` (credentials.providerSpecificData.cx), trimmed; null when absent/blank. */
+export function readOperatorClientInteraction(credentials: unknown): string | null {
+  if (!credentials || typeof credentials !== "object") return null;
+  const psd = (credentials as Record<string, unknown>).providerSpecificData;
+  if (!psd || typeof psd !== "object") return null;
+  const cx = (psd as Record<string, unknown>).cx;
+  return typeof cx === "string" && cx.trim() ? cx.trim() : null;
+}
+
+/**
+ * The `cx` value to send, or null to omit the field: the operator's captured value
+ * when supplied, else the synthesised programmatic blob only behind the flag.
+ */
+export function resolveLMArenaClientInteraction(
+  credentials: unknown,
+  synthesizedEnabled: boolean = isLMArenaSynthesizedCxEnabled()
+): string | null {
+  return (
+    readOperatorClientInteraction(credentials) ??
+    (synthesizedEnabled ? encodeProgrammaticCx() : null)
+  );
+}

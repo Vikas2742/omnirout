@@ -25,7 +25,7 @@ import {
   type LMArenaModelMetadata,
 } from "./lmarena/models.ts";
 import { formatArenaPrompt, parseArenaSSE } from "./lmarena/stream.ts";
-import { encodeProgrammaticCx } from "./lmarena/clientInteraction.ts";
+import { resolveLMArenaClientInteraction } from "./lmarena/clientInteraction.ts";
 import {
   buildArenaUpstreamHttpResponse,
   createOpenAIArenaStream,
@@ -80,30 +80,6 @@ function readRecaptchaToken(credentials: unknown, body: unknown): string | null 
   return fromObj(credentials) ?? fromObj(body);
 }
 
-/**
- * Optional browser-issued `cx` client-interaction blob (operator-supplied).
- *
- * A real browser always sends one; operators replaying a captured session can
- * pass theirs through. When absent we synthesise the same blob arena.ai emits
- * for a page with no recorded interaction — see `./lmarena/clientInteraction.ts`.
- */
-function readClientInteractionToken(credentials: unknown, body: unknown): string | null {
-  const fromObj = (v: unknown): string | null => {
-    if (!v || typeof v !== "object") return null;
-    const rec = v as Record<string, unknown>;
-    const direct = rec.cx;
-    if (typeof direct === "string" && direct.trim()) return direct.trim();
-    const psd = rec.providerSpecificData;
-    if (psd && typeof psd === "object") {
-      const nested = psd as Record<string, unknown>;
-      const t = nested.cx;
-      if (typeof t === "string" && t.trim()) return t.trim();
-    }
-    return null;
-  };
-  return fromObj(credentials) ?? fromObj(body);
-}
-
 // Publish the received status so proxy health counts it as upstream.
 function recordLMArenaUpstreamStatus(status: number): void {
   const sink = currentAppliedProxySink();
@@ -140,6 +116,9 @@ export class LMArenaExecutor extends BaseExecutor {
     const messages = Array.isArray(openaiBody.messages)
       ? (openaiBody.messages as OpenAIMessage[])
       : [];
+    // `cx` only when the operator supplied providerSpecificData.cx, or the synthesised
+    // blob behind the default-off LMARENA_SYNTHESIZED_CX_ENABLED flag (#16895).
+    const cx = resolveLMArenaClientInteraction(credentials);
     return {
       id: uuidv7(),
       mode: "direct-battle",
@@ -153,7 +132,7 @@ export class LMArenaExecutor extends BaseExecutor {
       },
       modality: "chat",
       recaptchaV3Token: readRecaptchaToken(credentials, body),
-      cx: readClientInteractionToken(credentials, body) ?? encodeProgrammaticCx(),
+      ...(cx ? { cx } : {}),
     };
   }
 

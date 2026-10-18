@@ -3,8 +3,10 @@
  *
  * Two independent defects are pinned here:
  *
- *  1. `create-evaluation` always carries a `cx` telemetry blob
- *     (`CLIENT_INTERACTION_FIELD`), which the executor previously never sent.
+ *  1. `create-evaluation` in the browser always carries a `cx` telemetry blob
+ *     (`CLIENT_INTERACTION_FIELD`). The executor forwards an operator-captured
+ *     `providerSpecificData.cx`; the synthesised blob is sent only behind the
+ *     default-off LMARENA_SYNTHESIZED_CX_ENABLED flag.
  *     `open-sse/executors/lmarena/clientInteraction.ts` re-implements the upstream
  *     packer; the frozen vectors below were captured from the live arena.ai bundle,
  *     so any drift in the PRNG, layout, bit-packing or base64url step fails here.
@@ -26,6 +28,8 @@ import {
   buildProgrammaticClientInteraction,
   encodeClientInteraction,
   encodeProgrammaticCx,
+  isLMArenaSynthesizedCxEnabled,
+  LMARENA_SYNTHESIZED_CX_FLAG,
 } from "../../open-sse/executors/lmarena/clientInteraction.ts";
 
 // Import BEFORE mocking global.fetch — open-sse/utils/proxyFetch.ts overwrites
@@ -140,30 +144,98 @@ describe("arena client interaction — wire format", () => {
 });
 
 describe("arena client interaction — request payload", () => {
-  it("always attaches cx to the create-evaluation body", () => {
-    const body = transform({ messages: [{ role: "user", content: "hi" }] });
-    assert.equal(body.cx, REAL_BUNDLE_VECTORS[0].expected);
+  const FLAG = LMARENA_SYNTHESIZED_CX_FLAG;
+  const withFlag = (value: string | undefined, fn: () => void) => {
+    const previous = process.env[FLAG];
+    if (value === undefined) delete process.env[FLAG];
+    else process.env[FLAG] = value;
+    try {
+      fn();
+    } finally {
+      if (previous === undefined) delete process.env[FLAG];
+      else process.env[FLAG] = previous;
+    }
+  };
+
+  it("flag off (default): the create-evaluation body carries no cx field", () => {
+    withFlag(undefined, () => {
+      const body = transform({ messages: [{ role: "user", content: "hi" }] });
+      assert.equal("cx" in body, false);
+      assert.equal("cx" in transform({ messages: [] }), false);
+    });
   });
 
-  it("attaches cx even with no credentials at all", () => {
-    const body = transform({ messages: [] });
-    assert.equal(typeof body.cx, "string");
-    assert.ok(body.cx.length > 0);
+  it("flag off: an operator-supplied providerSpecificData.cx is forwarded (trimmed)", () => {
+    withFlag(undefined, () => {
+      const captured = "ReplayedCxBlob12345";
+      assert.equal(
+        transform({ messages: [] }, { providerSpecificData: { cx: ` ${captured} ` } }).cx,
+        captured
+      );
+    });
   });
 
-  it("prefers an operator-supplied cx over the synthesised blob", () => {
-    const captured = "ReplayedCxBlob12345";
-    assert.equal(
-      transform({ messages: [] }, { providerSpecificData: { cx: captured } }).cx,
-      captured
-    );
-    assert.equal(transform({ messages: [] }, { cx: captured }).cx, captured);
-    assert.equal(transform({ messages: [], cx: captured }).cx, captured);
+  it("only the operator's providerSpecificData.cx counts — client body / top-level cx are ignored", () => {
+    withFlag(undefined, () => {
+      assert.equal("cx" in transform({ messages: [], cx: "ClientInjected" }), false);
+      assert.equal("cx" in transform({ messages: [] }, { cx: "TopLevel" }), false);
+    });
   });
 
-  it("ignores a blank operator-supplied cx", () => {
-    const body = transform({ messages: [] }, { providerSpecificData: { cx: "   " } });
-    assert.equal(body.cx, REAL_BUNDLE_VECTORS[0].expected);
+  it("flag off: a blank operator cx sends nothing", () => {
+    withFlag(undefined, () => {
+      const body = transform({ messages: [] }, { providerSpecificData: { cx: "   " } });
+      assert.equal("cx" in body, false);
+    });
+  });
+
+  it("flag on: synthesises the programmatic blob when the operator supplied none", () => {
+    withFlag("true", () => {
+      assert.equal(
+        transform({ messages: [{ role: "user", content: "hi" }] }).cx,
+        REAL_BUNDLE_VECTORS[0].expected
+      );
+      assert.equal(
+        transform({ messages: [] }, { providerSpecificData: { cx: "   " } }).cx,
+        REAL_BUNDLE_VECTORS[0].expected
+      );
+    });
+  });
+
+  it("flag on: an operator-supplied cx still wins over the synthesised blob", () => {
+    withFlag("true", () => {
+      assert.equal(
+        transform({ messages: [] }, { providerSpecificData: { cx: "ReplayedCxBlob12345" } }).cx,
+        "ReplayedCxBlob12345"
+      );
+    });
+  });
+
+  it("flag resolver fails closed and honours the registered server resolver", () => {
+    const key = Symbol.for("omniroute.featureFlagResolver");
+    const store = globalThis as Record<symbol, unknown>;
+    const previous = store[key];
+    try {
+      // No registered server resolver → environment only.
+      delete store[key];
+      assert.equal(isLMArenaSynthesizedCxEnabled({}), false);
+      assert.equal(isLMArenaSynthesizedCxEnabled({ [FLAG]: "true" }), true);
+      // A throwing resolver keeps the default (off), even with the env set.
+      store[key] = () => {
+        throw new Error("flag store unavailable");
+      };
+      assert.equal(isLMArenaSynthesizedCxEnabled({ [FLAG]: "true" }), false);
+      let asked = "";
+      store[key] = (k: string) => {
+        asked = k;
+        return true;
+      };
+      assert.equal(isLMArenaSynthesizedCxEnabled({}), true);
+      assert.equal(asked, "LMARENA_SYNTHESIZED_CX_ENABLED");
+    } finally {
+      if (previous === undefined) delete store[key];
+      else store[key] = previous;
+    }
   });
 });
 
