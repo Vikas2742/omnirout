@@ -266,6 +266,8 @@ export function stripOpencodeModelPrefix(model: unknown): unknown {
 /**
  * The published catalog declares each model's surface per model id; an explicit
  * registry entry stays an override and wins. Unmeasured SDKs decide nothing.
+ * Opt-in (OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED): with the flag off the lookup
+ * answers nothing and never reads the catalog, so the heuristics below decide as before.
  */
 function publishedCatalogFormat(aliasOrId: string, bareModelId: string): string | null {
   return surfaceTargetFormatForNpm(getPublishedModelNpm(aliasOrId, bareModelId));
@@ -273,9 +275,9 @@ function publishedCatalogFormat(aliasOrId: string, bareModelId: string): string 
 
 /**
  * OpenCode's Muse Spark family is Responses-only. Resolved models can still carry
- * the raw provider id (for example "opencode/muse-spark-1.3-contributor-free")
- * even when the public alias is "oc": match the family against the final model
- * segment so both forms work.
+ * an extra provider segment (for example "opencode/muse-spark-1.3-contributor-free"
+ * under opencode-zen): match the family against the final model segment so both
+ * forms work.
  */
 function museSparkTargetFormat(alias: string, bareModelId: string): string | null {
   if (!OPENCODE_MUSE_SPARK_ALIASES.has(alias)) return null;
