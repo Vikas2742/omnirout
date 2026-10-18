@@ -298,66 +298,66 @@ Trenutni status testova: **122 unit test fajla** koji pokrivaju:
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Странице контролне табле (23 секције)
-│   ├── api/                # API рути (51 директоријум)
-│   └── login/              # Странице аутентикације (.tsx)
-├── domain/                 # Механизам политика (policyEngine, comboResolver, costRules, итд.)
+│   ├── (dashboard)/        # Странице контролне табле (23 одељка)
+│   ├── api/                # API руте (51 директоријум)
+│   └── login/              # Странице за аутентификацију (.tsx)
+├── domain/                 # Механизам политика (policyEngine, comboResolver, costRules итд.)
 ├── lib/                    # Основна пословна логика (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 протокол сервер
-│   ├── acp/                # Регистар Agent Communication Protocol
+│   ├── a2a/                # Сервер протокола Agent-to-Agent v0.3
+│   ├── acp/                # Регистар протокола Agent Communication Protocol
 │   ├── compliance/         # Механизам политика усклађености
-│   ├── db/                 # SQLite домен модули + 130 миграција
-│   ├── memory/             # Трајна конверзацијска мемориja
-│   ├── oauth/              # OAuth провајдери, сервиси и алатке
-│   ├── skills/             # Проширив оквир вештина
-│   ├── usage/              # Праћење коришћења и обрачун трошкова
-│   └── localDb.ts          # Само слој ре-експорта — никада не додавати логику овде
-├── middleware/              # Middleware захтева (promptInjectionGuard)
-├── mitm/                   # MITM проксy (сертификат, DNS, циљно рутирање)
+│   ├── db/                 # SQLite доменски модули + 130 миграција
+│   ├── memory/             # Трајна конверзациона меморија
+│   ├── oauth/              # OAuth провајдери, сервиси и помоћни алати
+│   ├── skills/             # Прошириви оквир вештина
+│   ├── usage/              # Праћење употребе и обрачун трошкова
+│   └── localDb.ts          # Само слој за поновни извоз — никада не додајте логику овде
+├── middleware/              # Посреднички софтвер за захтеве (promptInjectionGuard)
+├── mitm/                   # MITM прокси (сертификат, DNS, усмеравање ка циљу)
 ├── shared/
 │   ├── components/         # React компоненте (.tsx)
-│   ├── constants/          # Дефиниције провајдера (329), MCP опсези, 19 стратегија рутирања
-│   ├── utils/              # Circuit breaker, санитизатор, помагала за аутентикацију
+│   ├── constants/          # Дефиниције провајдера (329), MCP опсези, 19 стратегија усмеравања
+│   ├── utils/              # Прекидач струјног кола, санитизатор, помоћни алати за аутентификацију
 │   └── validation/         # Zod v4 шеме
-└── sse/                    # SSE proxy pipeline
+└── sse/                    # SSE прокси ток обраде
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 модула за извршавање
-├── handlers/               # 11 handler-а за захтеве (chat, responses, embeddings, images, итд.)
-├── mcp-server/             # MCP сервер (110 уникатних алатки, 3 транспорта, 33 опсега)
-├── services/               # 178 сервиса на најгорем нивоу (combo, autoCombo, rateLimitManager, итд.)
+open-sse/                   # @omniroute/open-sse радни простор
+├── executors/              # 150 извршних модула (извршне класе + помоћни алати по провајдеру)
+├── handlers/               # 11 обрађивача захтева (ћаскање, одговори, уграђивања, слике итд.)
+├── mcp-server/             # MCP сервер (110 јединствених алата, 3 транспорта, 33 опсега)
+├── services/               # 178 сервиса највишег нивоа (combo, autoCombo, rateLimitManager итд.)
 ├── translator/             # Преводиоци формата (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Трансформатор Responses API
-└── utils/                  # 22 помоćна модула (stream, TLS, proxy, логовање)
+├── transformer/            # Трансформатор Responses API-ја
+└── utils/                  # 22 помоћна модула (ток, TLS, прокси, евидентирање)
 
-electron/                   # Electron десктоп апликација (мултиплатформска)
+electron/                   # Electron десктоп апликација (за више платформи)
 
 tests/
-├── unit/                   # Node.js test runner (1.574 тест фајлова)
+├── unit/                   # Node.js покретач тестова (1.574 датотеке тестова)
 ├── integration/            # Интеграциони тестови
 ├── e2e/                    # Playwright тестови
 ├── security/               # Безбедносни тестови
-├── translator/             # Тестови специфични за преводиоце
+├── translator/             # Тестови специфични за преводилац
 └── load/                   # Тестови оптерећења
 
 docs/
 ├── adr/                     # Записи о архитектонским одлукама
 ├── architecture/            # Архитектура система и отпорност
-├── comparison/              # OmniRoute у поређењу са алтернативама
-├── compression/             # Водичи и правила компресије
+├── comparison/              # OmniRoute у односу на алтернативе
+├── compression/             # Водичи и правила за компресију
 ├── dev/                     # Водичи за развој
 ├── diagrams/                # Дијаграми архитектуре
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
 ├── guides/                  # Кориснички водич, Docker, подешавање, решавање проблема
-├── i18n/                    # Интернационализовани преводи README-а
-├── marketing/               # Маркетинг материјали
-├── ops/                     # Деплојмент, proxy, покривеност, издања
+├── i18n/                    # Интернационализовани README преводи
+├── marketing/               # Маркетиншки материјали
+├── ops/                     # Примена, прокси, покривеност, издања
 ├── providers/               # Документација специфична за провајдере
-├── reference/               # API референца, env варијабле, CLI алатке, бесплатни планови
+├── reference/               # API референца, променљиве окружења, CLI алати, бесплатни нивои
 ├── releases/                # Напомене о издањима
-├── routing/                 # Auto-combo механизам, реplay резоновања
+├── routing/                 # Механизам аутоматских комбинација, поновна репродукција закључивања
 ├── screenshots/             # Снимци екрана контролне табле
-├── security/                # Заштитне мере, усклађеност, стелт, токени
+├── security/                # Заштитне мере, усклађеност, прикривеност, токени
 └── specs/                   # Спецификације дизајна
 ```
 
@@ -399,22 +399,24 @@ docs/
 
 ---
 
-## Листа за проверу Pull Request-а
+## Контролна листа за Pull Request
 
 - [ ] Тестови пролазе (`npm test`)
-- [ ] Linting пролази (`npm run lint`)
-- [ ] Build успешно пролази (`npm run build`)
-- [ ] TypeScript типови додати за нове јавне функције и интерфејсе
-- [ ] Нема хардкодованих тајни (secrets) или fallback вредности
-- [ ] Јавни upstream креденцијали уграђени преко `resolvePublicCred()` (погледајте [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), никада као литерали
-- [ ] Одговори са грешкама пролазе кроз `buildErrorBody()` / `sanitizeErrorMessage()` — нема сирових stack trace-ова у телима одговора (погледајте [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Shell команде (`exec` / `spawn`) прослеђују runtime вредности преко `env`, а не путем интерполације стринга
-- [ ] Сви инпути су валидирани помоћу Zod шема
-- [ ] Додат changelog **фрагмент** унутар `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` за промене видљиве корисницима (погледајте [`changelog.d/README.md`](./changelog.d/README.md)) — **немојте** директно уређивати `CHANGELOG.md`; фрагменти се агрегирају приликом издања и никада се не сукобљавају између PR-ова
-- [ ] Документација ажурирана (ако је применљиво)
-- [ ] Нема нових CodeQL / Secret-Scanning упозорења, или је свако од њих одбачено са техничким образложењем које упућује на релевантан документ из `docs/security/`
-- [ ] Руте које покрећу подпроцесе (`/api/mcp/`, `/api/cli-tools/runtime/`) класификоване као `isLocalOnlyPath()` у `src/server/authz/routeGuard.ts` — погледајте [Строго правило бр. 15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Нема `Co-Authored-By` додатака у commit порукама — commit-ови морају бити исписани искључиво под Git идентитетом власника репозиторијума (Строго правило бр. 16)
+- [ ] Провера lint правила пролази (`npm run lint`)
+- [ ] Изградња је успешна (`npm run build`)
+- [ ] Додати су TypeScript типови за нове јавне функције и интерфејсе
+- [ ] Нема хардкодованих тајни или резервних вредности
+- [ ] Јавни приступни подаци узводног система уграђени су помоћу `resolvePublicCred()` (погледајте [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), никада као литерали
+- [ ] Одговори са грешкама пролазе кроз `buildErrorBody()` / `sanitizeErrorMessage()` — нема необрађених stack trace-ова у телима одговора (погледајте [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Команде љуске (`exec` / `spawn`) прослеђују вредности током извршавања преко `env`, а не путем интерполације стрингова
+- [ ] Сви улази су валидирани помоћу Zod шема
+- [ ] Додат је **фрагмент** евиденције измена у `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` за измене видљиве корисницима (погледајте [`changelog.d/README.md`](./changelog.d/README.md)) — немојте директно уређивати `CHANGELOG.md`; фрагменти се обједињују приликом издавања и никада не изазивају конфликте између PR-ова
+- [ ] Документација је ажурирана (ако је применљиво)
+- [ ] Нису отворена нова CodeQL упозорења нити упозорења Secret-Scanning-а, или је свако одбачено уз техничко образложење које упућује на релевантни документ у `docs/security/`
+- [ ] Руте које покрећу подређене процесе (`/api/mcp/`, `/api/cli-tools/runtime/`) класификоване су као `isLocalOnlyPath()` у `src/server/authz/routeGuard.ts` — погледајте [Строго правило #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Нема AI/bot `Co-authored-by` завршних редова у порукама commit-а (Строго правило #16) — људски сарадници чији је рад поново употребљен наводе се помоћу стандардних `Co-authored-by: Name <email>` завршних редова
+
+---
 
 ## Издавање
 
@@ -431,6 +433,5 @@ docs/
 - **Архитектура**: Погледајте [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
 - **API референца**: Погледајте [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Документација о безбедности**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **Оперативна документација**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **Документација о оперативном раду**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Проблеми**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR документи**: Погледајте `docs/adr/` за записе о архитектонским одлукама

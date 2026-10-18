@@ -287,65 +287,72 @@ production build ஆகியவை CI-இன் பொறுப்பு — �
 
 ---
 
-## Project Structure
+## திட்டக் கட்டமைப்பு
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # கட்டுப்பாட்டுப் பலகைப் பக்கங்கள் (23 பிரிவுகள்)
+│   ├── api/                # API வழித்தடங்கள் (51 கோப்பகங்கள்)
+│   └── login/              # அங்கீகாரப் பக்கங்கள் (.tsx)
+├── domain/                 # கொள்கை இயந்திரம் (policyEngine, comboResolver, costRules போன்றவை)
+├── lib/                    # முதன்மை வணிகத் தர்க்கம் (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 நெறிமுறைச் சேவையகம்
+│   ├── acp/                # Agent Communication Protocol பதிவகம்
+│   ├── compliance/         # இணக்கக் கொள்கை இயந்திரம்
+│   ├── db/                 # SQLite களத் தொகுதிகள் + 130 இடம்பெயர்வுகள்
+│   ├── memory/             # நிலையான உரையாடல் நினைவகம்
+│   ├── oauth/              # OAuth வழங்குநர்கள், சேவைகள் மற்றும் பயன்பாட்டுக் கருவிகள்
+│   ├── skills/             # விரிவாக்கக்கூடிய திறன் கட்டமைப்பு
+│   ├── usage/              # பயன்பாட்டுக் கண்காணிப்பு மற்றும் செலவுக் கணக்கீடு
+│   └── localDb.ts          # மறு-ஏற்றுமதி அடுக்கு மட்டும் — இங்கே ஒருபோதும் தர்க்கத்தைச் சேர்க்க வேண்டாம்
+├── middleware/              # கோரிக்கை இடைநிலை மென்பொருள் (promptInjectionGuard)
+├── mitm/                   # MITM பதிலி (சான்றிதழ், DNS, இலக்கு வழிச்செலுத்தல்)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React கூறுகள் (.tsx)
+│   ├── constants/          # வழங்குநர் வரையறைகள் (329), MCP நோக்கெல்லைகள், 19 வழிச்செலுத்தல் உத்திகள்
+│   ├── utils/              # மின்சுற்றுத் துண்டிப்பான், தூய்மைப்படுத்தி, அங்கீகார உதவிக் கருவிகள்
+│   └── validation/         # Zod v4 திட்டவடிவங்கள்
+└── sse/                    # SSE பதிலிக் குழாய்த்தொடர்
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse பணியிடம்
+├── executors/              # 150 செயலாக்கத் தொகுதிகள் (செயலாக்க வகுப்புகள் + ஒவ்வொரு வழங்குநருக்குமான உதவிக் கருவிகள்)
+├── handlers/               # 11 கோரிக்கைக் கையாளிகள் (அரட்டை, பதில்கள், உட்பொதிவுகள், படங்கள் போன்றவை)
+├── mcp-server/             # MCP சேவையகம் (110 தனித்துவமான கருவிகள், 3 போக்குவரத்து முறைகள், 33 நோக்கெல்லைகள்)
+├── services/               # 178 மேல்நிலைச் சேவைகள் (combo, autoCombo, rateLimitManager போன்றவை)
+├── translator/             # வடிவமைப்பு மொழிமாற்றிகள் (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API உருமாற்றி
+└── utils/                  # 22 பயன்பாட்டுத் தொகுதிகள் (தரவு ஓட்டம், TLS, பதிலி, பதிவுசெய்தல்)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Electron கணினிப் பயன்பாடு (பல இயங்குதளங்களுக்கு)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js சோதனை இயக்கி (1,574 சோதனைக் கோப்புகள்)
+├── integration/            # ஒருங்கிணைப்புச் சோதனைகள்
+├── e2e/                    # Playwright சோதனைகள்
+├── security/               # பாதுகாப்புச் சோதனைகள்
+├── translator/             # மொழிமாற்றிக்கான பிரத்யேகச் சோதனைகள்
+└── load/                   # சுமைச் சோதனைகள்
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # கட்டமைப்புத் தீர்மானப் பதிவுகள்
+├── architecture/            # கணினிக் கட்டமைப்பு மற்றும் மீள்திறன்
+├── comparison/              # OmniRoute மற்றும் மாற்றுத் தீர்வுகளின் ஒப்பீடு
+├── compression/             # சுருக்க வழிகாட்டிகள் மற்றும் விதிகள்
+├── dev/                     # மேம்பாட்டு வழிகாட்டிகள்
+├── diagrams/                # கட்டமைப்பு வரைபடங்கள்
+├── frameworks/              # MCP, A2A, OpenCode, நினைவகம், திறன்கள்
+├── guides/                  # பயனர் வழிகாட்டி, Docker, அமைப்பு, சிக்கல் தீர்த்தல்
+├── i18n/                    # பன்னாட்டுமயமாக்கப்பட்ட README மொழிபெயர்ப்புகள்
+├── marketing/               # சந்தைப்படுத்தல் ஆவணங்கள்
+├── ops/                     # நிறுவல், பதிலி, உள்ளடக்க வரம்பு, வெளியீடுகள்
+├── providers/               # வழங்குநருக்கான பிரத்யேக ஆவணங்கள்
+├── reference/               # API குறிப்பேடு, சூழல் மாறிகள், CLI கருவிகள், இலவச நிலைகள்
+├── releases/                # வெளியீட்டுக் குறிப்புகள்
+├── routing/                 # தானியங்கு-சேர்க்கை இயந்திரம், பகுத்தறிவு மறுஇயக்கம்
+├── screenshots/             # கட்டுப்பாட்டுப் பலகைத் திரைப்பிடிப்புகள்
+├── security/                # பாதுகாப்புத் தடுப்புகள், இணக்கம், மறைநிலை, அடையாளக் கூறுகள்
+└── specs/                   # வடிவமைப்பு விவரக்குறிப்புகள்
 ```
 
 ---
@@ -392,16 +399,16 @@ OAuth நற்சான்றுகளை `src/lib/oauth/constants/oauth.ts`-�
 - [ ] Linting வெற்றிபெறுகிறது (`npm run lint`)
 - [ ] Build வெற்றிபெறுகிறது (`npm run build`)
 - [ ] புதிய public functions மற்றும் interfaces-க்கு TypeScript types சேர்க்கப்பட்டுள்ளன
-- [ ] Hardcoded secrets அல்லது fallback values எதுவும் இல்லை
-- [ ] Public upstream credentials, literals-ஆக அல்லாமல் `resolvePublicCred()` வழியாக உட்பொதிக்கப்பட்டுள்ளன ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)-ஐப் பார்க்கவும்)
+- [ ] Hardcoded secrets அல்லது fallback values இல்லை
+- [ ] Public upstream credentials, literals-ஆக ஒருபோதும் இல்லாமல், `resolvePublicCred()` வழியாகப் பதிக்கப்பட்டுள்ளன ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)-ஐப் பார்க்கவும்)
 - [ ] Error responses, `buildErrorBody()` / `sanitizeErrorMessage()` வழியாக அனுப்பப்படுகின்றன — response bodies-இல் raw stack traces இல்லை ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md)-ஐப் பார்க்கவும்)
 - [ ] Shell commands (`exec` / `spawn`), runtime values-ஐ string interpolation வழியாக அல்லாமல் `env` வழியாக அனுப்புகின்றன
 - [ ] அனைத்து inputs-உம் Zod schemas மூலம் சரிபார்க்கப்பட்டுள்ளன
-- [ ] பயனர்களுக்குத் தெரியக்கூடிய மாற்றங்களுக்கு `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md`-இன் கீழ் Changelog **fragment** சேர்க்கப்பட்டுள்ளது ([`changelog.d/README.md`](./changelog.d/README.md)-ஐப் பார்க்கவும்) — `CHANGELOG.md`-ஐ நேரடியாகத் திருத்த **வேண்டாம்**; fragments, release நேரத்தில் ஒருங்கிணைக்கப்படுவதால் PR-களுக்கு இடையே ஒருபோதும் முரண்படாது
+- [ ] பயனர்கள் காணக்கூடிய மாற்றங்களுக்கு `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md`-இன் கீழ் Changelog **fragment** சேர்க்கப்பட்டுள்ளது ([`changelog.d/README.md`](./changelog.d/README.md)-ஐப் பார்க்கவும்) — `CHANGELOG.md`-ஐ நேரடியாகத் திருத்த **வேண்டாம்**; fragments வெளியீட்டு நேரத்தில் ஒருங்கிணைக்கப்படுவதால், PR-களுக்கு இடையே ஒருபோதும் முரண்படாது
 - [ ] ஆவணங்கள் புதுப்பிக்கப்பட்டுள்ளன (பொருந்தினால்)
-- [ ] புதிய CodeQL / Secret-Scanning alerts எதுவும் உருவாக்கப்படவில்லை, அல்லது ஒவ்வொன்றும் தொடர்புடைய `docs/security/` ஆவணத்தை மேற்கோளிட்டு தொழில்நுட்ப நியாயத்துடன் நிராகரிக்கப்பட்டுள்ளது
-- [ ] Child processes-ஐ உருவாக்கும் routes (`/api/mcp/`, `/api/cli-tools/runtime/`), `src/server/authz/routeGuard.ts`-இல் `isLocalOnlyPath()` என வகைப்படுத்தப்பட்டுள்ளன — [Hard Rule #15](docs/security/ROUTE_GUARD_TIERS.md)-ஐப் பார்க்கவும்
-- [ ] Commit messages-இல் `Co-Authored-By` trailers இல்லை — commits, repository உரிமையாளரின் Git identity-இன் கீழ் மட்டுமே தோன்ற வேண்டும் (Hard Rule #16)
+- [ ] புதிய CodeQL / Secret-Scanning alerts எதுவும் உருவாக்கப்படவில்லை; அல்லது ஒவ்வொன்றும் தொடர்புடைய `docs/security/` ஆவணத்தைக் குறிப்பிடும் தொழில்நுட்ப நியாயத்துடன் நிராகரிக்கப்பட்டுள்ளது
+- [ ] Child processes-ஐத் தொடங்கும் routes (`/api/mcp/`, `/api/cli-tools/runtime/`), `src/server/authz/routeGuard.ts`-இல் `isLocalOnlyPath()` என வகைப்படுத்தப்பட்டுள்ளன — [Hard Rule #15](docs/security/ROUTE_GUARD_TIERS.md)-ஐப் பார்க்கவும்
+- [ ] Commit messages-இல் AI/bot `Co-authored-by` trailers இல்லை (Hard Rule #16) — மீண்டும் பயன்படுத்தப்பட்ட பணிக்குரிய மனித collaborators, நிலையான `Co-authored-by: Name <email>` trailers மூலம் குறிப்பிடப்பட்டுள்ளனர்
 
 ---
 
@@ -418,4 +425,3 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **பாதுகாப்பு ஆவணங்கள்**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **செயல்பாட்டு ஆவணங்கள்**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **சிக்கல்கள்**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: கட்டமைப்பு முடிவுப் பதிவுகளுக்கு `docs/adr/`-ஐப் பார்க்கவும்

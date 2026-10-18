@@ -290,71 +290,71 @@ production build የCI ኃላፊነት ናቸው — እነዚህን በአካ�
 
 ---
 
-## የፕሮጀክት መዋቅር
+## የፕሮጀክቱ መዋቅር
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
 │   ├── (dashboard)/        # የዳሽቦርድ ገጾች (23 ክፍሎች)
-│   ├── api/                # የAPI መንገዶች (51 ማውጫዎች)
+│   ├── api/                # የAPI መስመሮች (51 ማውጫዎች)
 │   └── login/              # የማረጋገጫ ገጾች (.tsx)
-├── domain/                 # የፖሊሲ ሞተር (policyEngine, comboResolver, costRules, ወዘተ)
-├── lib/                    # ዋና የንግድ ሥራ አመክንዮ (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 ፕሮቶኮል ሰርቨር
-│   ├── acp/                # Agent Communication Protocol መዝገብ
+├── domain/                 # የፖሊሲ ሞተር (policyEngine, comboResolver, costRules, ወዘተ.)
+├── lib/                    # ዋና የንግድ ሎጂክ (.ts)
+│   ├── a2a/                # የAgent-to-Agent v0.3 ፕሮቶኮል አገልጋይ
+│   ├── acp/                # የAgent Communication Protocol መዝገብ
 │   ├── compliance/         # የተገዢነት ፖሊሲ ሞተር
-│   ├── db/                 # የSQLite ዶሜይን ሞጁሎች + 130 ፍልሰቶች
+│   ├── db/                 # የSQLite ዶሜይን ሞጁሎች + 130 ሽግግሮች
 │   ├── memory/             # ቀጣይነት ያለው የውይይት ማህደረ ትውስታ
 │   ├── oauth/              # የOAuth አቅራቢዎች፣ አገልግሎቶች እና መገልገያዎች
-│   ├── skills/             # ሊሰፋ የሚችል የክህሎት ማዕቀፍ
-│   ├── usage/              # የአጠቃቀም ክትትል እና ወጪ ስሌት
-│   └── localDb.ts          # ዳግም-ወደውጭ-መላኪያ ንብርብር ብቻ — እዚህ አመክንዮ ፈጽሞ አይጨምሩ
-├── middleware/              # የጥያቄ middleware (promptInjectionGuard)
-├── mitm/                   # MITM ፕሮክሲ (የምስክር ወረቀት፣ DNS፣ የዒላማ ማዞሪያ)
+│   ├── skills/             # ሊስፋፋ የሚችል የክህሎት ማዕቀፍ
+│   ├── usage/              # የአጠቃቀም ክትትል እና የወጪ ስሌት
+│   └── localDb.ts          # ዳግም ወደ ውጭ መላኪያ ንብርብር ብቻ — እዚህ ሎጂክ በፍጹም አይጨምሩ
+├── middleware/              # የጥያቄ መካከለኛ ሶፍትዌር (promptInjectionGuard)
+├── mitm/                   # MITM ፕሮክሲ (የምስክር ወረቀት፣ DNS፣ የዒላማ ማዘዋወር)
 ├── shared/
-│   ├── components/         # React ኮምፖነንቶች (.tsx)
-│   ├── constants/          # የአቅራቢ ትርጓሜዎች (329)፣ MCP ወሰኖች፣ 19 የማዞሪያ ስልቶች
-│   ├── utils/              # Circuit breaker፣ sanitizer፣ የማረጋገጫ አጋዥ ተግባራት
-│   └── validation/         # የZod v4 ንድፎች
-└── sse/                    # የSSE ፕሮክሲ pipeline
+│   ├── components/         # React ክፍሎች (.tsx)
+│   ├── constants/          # የአቅራቢ ትርጓሜዎች (329)፣ MCP ወሰኖች፣ 19 የማዘዋወር ስልቶች
+│   ├── utils/              # የወረዳ ሰባሪ፣ ማጽጃ፣ የማረጋገጫ ረዳቶች
+│   └── validation/         # Zod v4 መርሐግብሮች
+└── sse/                    # የSSE ፕሮክሲ የሂደት መስመር
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 የexecutor ትግበራ ሞጁሎች
-├── handlers/               # 11 የጥያቄ handlers (ውይይት፣ ምላሾች፣ embeddings፣ ምስሎች፣ ወዘተ)
-├── mcp-server/             # MCP ሰርቨር (110 ልዩ መሳሪያዎች፣ 3 transports፣ 33 ወሰኖች)
-├── services/               # 178 ከፍተኛ-ደረጃ አገልግሎቶች (combo, autoCombo, rateLimitManager, ወዘተ)
+open-sse/                   # @omniroute/open-sse የሥራ ቦታ
+├── executors/              # 150 የአስፈጻሚ ሞጁሎች (የአስፈጻሚ ክፍሎች + ለእያንዳንዱ አቅራቢ የተዘጋጁ ረዳቶች)
+├── handlers/               # 11 የጥያቄ ተቆጣጣሪዎች (ውይይት፣ ምላሾች፣ መክተቻዎች፣ ምስሎች፣ ወዘተ.)
+├── mcp-server/             # MCP አገልጋይ (110 ልዩ መሣሪያዎች፣ 3 ማጓጓዣዎች፣ 33 ወሰኖች)
+├── services/               # 178 ከፍተኛ-ደረጃ አገልግሎቶች (combo, autoCombo, rateLimitManager, ወዘተ.)
 ├── translator/             # የቅርጸት ተርጓሚዎች (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 የመገልገያ ሞጁሎች (ዥረት፣ TLS፣ ፕሮክሲ፣ ሎግ ማድረግ)
+├── transformer/            # የResponses API ቀያሪ
+└── utils/                  # 22 የመገልገያ ሞጁሎች (ዥረት፣ TLS፣ ፕሮክሲ፣ ምዝገባ)
 
-electron/                   # Electron የዴስክቶፕ መተግበሪያ (ብዙ-መድረክ)
+electron/                   # Electron የዴስክቶፕ መተግበሪያ (ተሻጋሪ-መድረክ)
 
 tests/
-├── unit/                   # Node.js test runner (1,574 የሙከራ ፋይሎች)
+├── unit/                   # Node.js የሙከራ አስኬጅ (1,574 የሙከራ ፋይሎች)
 ├── integration/            # የውህደት ሙከራዎች
 ├── e2e/                    # Playwright ሙከራዎች
 ├── security/               # የደህንነት ሙከራዎች
-├── translator/             # ተርጓሚ-ተኮር ሙከራዎች
+├── translator/             # ለትርጉም የተለዩ ሙከራዎች
 └── load/                   # የጭነት ሙከራዎች
 
 docs/
 ├── adr/                     # የሥነ-ሕንፃ ውሳኔ መዝገቦች
-├── architecture/            # የስርዓት ሥነ-ሕንፃ እና የመቋቋም አቅም
+├── architecture/            # የሥርዓት ሥነ-ሕንፃ እና የመቋቋም ችሎታ
 ├── comparison/              # OmniRoute ከአማራጮች ጋር
-├── compression/             # የመጭመቂያ መመሪያዎች እና ደንቦች
+├── compression/             # የማመቅ መመሪያዎች እና ደንቦች
 ├── dev/                     # የልማት መመሪያዎች
 ├── diagrams/                # የሥነ-ሕንፃ ንድፎች
 ├── frameworks/              # MCP፣ A2A፣ OpenCode፣ ማህደረ ትውስታ፣ ክህሎቶች
-├── guides/                  # የተጠቃሚ መመሪያ፣ Docker፣ ቅንብር፣ መላ ፍለጋ
-├── i18n/                    # ወደ ዓለም አቀፍ ቋንቋዎች የተተረጎሙ README ትርጉሞች
+├── guides/                  # የተጠቃሚ መመሪያ፣ Docker፣ ማዋቀር፣ ችግር መፍታት
+├── i18n/                    # ዓለም አቀፋዊ የተደረጉ የREADME ትርጉሞች
 ├── marketing/               # የግብይት ቁሳቁሶች
 ├── ops/                     # ማሰማራት፣ ፕሮክሲ፣ ሽፋን፣ ልቀቶች
-├── providers/               # ለአቅራቢ-ተኮር ሰነዶች
-├── reference/               # የAPI ማጣቀሻ፣ env vars፣ CLI መሳሪያዎች፣ ነጻ ደረጃዎች
+├── providers/               # ለአቅራቢ የተለዩ ሰነዶች
+├── reference/               # የAPI ማጣቀሻ፣ የአካባቢ ተለዋዋጮች፣ CLI መሣሪያዎች፣ ነፃ ደረጃዎች
 ├── releases/                # የልቀት ማስታወሻዎች
-├── routing/                 # Auto-combo ሞተር፣ የአመክንዮ ዳግም ማጫወት
-├── screenshots/             # የዳሽቦርድ ቅጽበታዊ ገጽ ዕይታዎች
-├── security/                # የመከላከያ ገደቦች፣ ተገዢነት፣ ድብቅነት፣ tokens
+├── routing/                 # ራስ-ሰር ጥምር ሞተር፣ የምክንያት አሰጣጥ ዳግም ማጫወት
+├── screenshots/             # የዳሽቦርድ ቅጽበታዊ ምስሎች
+├── security/                # የጥበቃ ማዕቀፎች፣ ተገዢነት፣ ስውርነት፣ ቶከኖች
 └── specs/                   # የንድፍ ዝርዝር መግለጫዎች
 ```
 
@@ -398,20 +398,20 @@ docs/
 
 ## የPull Request ማረጋገጫ ዝርዝር
 
-- [ ] Tests በትክክል ያልፋሉ (`npm test`)
-- [ ] Linting በትክክል ያልፋል (`npm run lint`)
+- [ ] ሙከራዎች ያልፋሉ (`npm test`)
+- [ ] Linting ያልፋል (`npm run lint`)
 - [ ] Build ይሳካል (`npm run build`)
 - [ ] ለአዲስ ይፋዊ functions እና interfaces የTypeScript types ታክለዋል
-- [ ] በኮድ ውስጥ በቀጥታ የተጻፉ secrets ወይም fallback values የሉም
-- [ ] ይፋዊ የupstream ማረጋገጫ መረጃዎች በ`resolvePublicCred()` ተካትተዋል ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)ን ይመልከቱ)፣ ፈጽሞ እንደ literals አልተጻፉም
-- [ ] የስህተት ምላሾች በ`buildErrorBody()` / `sanitizeErrorMessage()` ያልፋሉ — በresponse bodies ውስጥ ጥሬ stack traces የሉም ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md)ን ይመልከቱ)
-- [ ] Shell commands (`exec` / `spawn`) የruntime valuesን በstring interpolation ሳይሆን በ`env` ያስተላልፋሉ
+- [ ] Hardcoded secrets ወይም fallback values የሉም
+- [ ] ይፋዊ upstream credentials በ`resolvePublicCred()` በኩል ተካትተዋል ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ይመልከቱ)፤ በፍጹም እንደ literals አልተጻፉም
+- [ ] የስህተት ምላሾች በ`buildErrorBody()` / `sanitizeErrorMessage()` በኩል ያልፋሉ — በምላሽ bodies ውስጥ raw stack traces የሉም ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ይመልከቱ)
+- [ ] Shell commands (`exec` / `spawn`) የruntime valuesን በstring interpolation ሳይሆን በ`env` በኩል ያስተላልፋሉ
 - [ ] ሁሉም inputs በZod schemas ተረጋግጠዋል
-- [ ] ለተጠቃሚ የሚታዩ ለውጦች Changelog **fragment** በ`changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ስር ታክሏል ([`changelog.d/README.md`](./changelog.d/README.md)ን ይመልከቱ) — `CHANGELOG.md`ን በቀጥታ **አያርትዑ**፤ fragments በrelease ጊዜ አንድ ላይ ይሰበሰባሉ እና በPRs መካከል ፈጽሞ አይጋጩም
+- [ ] በተጠቃሚ ላይ ለሚታዩ ለውጦች የChangelog **fragment** በ`changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ስር ታክሏል ([`changelog.d/README.md`](./changelog.d/README.md) ይመልከቱ) — `CHANGELOG.md`ን በቀጥታ **አርትዕ አያድርጉ**፤ fragments በrelease ጊዜ ይሰባሰባሉ እና በPRs መካከል በፍጹም አይጋጩም
 - [ ] Documentation ዘምኗል (አስፈላጊ ከሆነ)
-- [ ] ምንም አዲስ CodeQL / Secret-Scanning alerts አልተከፈቱም፣ ወይም እያንዳንዳቸው ተዛማጁን `docs/security/` doc በሚጠቅስ ቴክኒካዊ ምክንያት ውድቅ ተደርገዋል
-- [ ] child processes የሚጀምሩ Routes (`/api/mcp/`, `/api/cli-tools/runtime/`) በ`src/server/authz/routeGuard.ts` ውስጥ እንደ `isLocalOnlyPath()` ተመድበዋል — [Hard Rule #15](docs/security/ROUTE_GUARD_TIERS.md)ን ይመልከቱ
-- [ ] በcommit messages ውስጥ `Co-Authored-By` trailers የሉም — commits በrepository owner Git identity ስር ብቻ መታየት አለባቸው (Hard Rule #16)
+- [ ] አዲስ CodeQL / Secret-Scanning alerts አልተከፈቱም፣ ወይም እያንዳንዳቸው ተዛማጅ `docs/security/` docን በሚጠቅስ ቴክኒካዊ ምክንያት ውድቅ ተደርገዋል
+- [ ] Child processes የሚጀምሩ routes (`/api/mcp/`, `/api/cli-tools/runtime/`) በ`src/server/authz/routeGuard.ts` ውስጥ እንደ `isLocalOnlyPath()` ተመድበዋል — [ጥብቅ ደንብ #15](docs/security/ROUTE_GUARD_TIERS.md)ን ይመልከቱ
+- [ ] በcommit messages ውስጥ የAI/bot `Co-authored-by` trailers የሉም (ጥብቅ ደንብ #16) — ሥራቸው እንደገና ጥቅም ላይ የዋለ ሰብዓዊ collaborators በመደበኛ `Co-authored-by: Name <email>` trailers እውቅና ያገኛሉ
 
 ---
 
@@ -429,7 +429,6 @@ docs/
 
 - **አርክቴክቸር**፦ [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)ን ይመልከቱ
 - **የAPI ማጣቀሻ**፦ [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)ን ይመልከቱ
-- **የደኅንነት ሰነዶች**፦ [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **የክዋኔ ሰነዶች**፦ [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **የደህንነት ሰነዶች**፦ [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md)፣ [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md)፣ [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md)፣ [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
+- **የክወና ሰነዶች**፦ [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **ችግሮች**፦ [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**፦ የአርክቴክቸር ውሳኔ መዝገቦችን በ`docs/adr/` ይመልከቱ

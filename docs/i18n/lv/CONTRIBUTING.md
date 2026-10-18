@@ -289,66 +289,66 @@ Skatiet `open-sse/utils/stream.ts` un `open-sse/utils/streamHandler.ts`, lai iep
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
 │   ├── (dashboard)/        # Informācijas paneļa lapas (23 sadaļas)
-│   ├── api/                # API maršruti (51 direktorija)
+│   ├── api/                # API maršruti (51 direktorijs)
 │   └── login/              # Autentifikācijas lapas (.tsx)
-├── domain/                 # Politiku dzinis (policyEngine, comboResolver, costRules u.c.)
-├── lib/                    # Galvenā biznesa loģika (.ts)
+├── domain/                 # Politiku dzinējs (policyEngine, comboResolver, costRules u.c.)
+├── lib/                    # Biznesa pamatloģika (.ts)
 │   ├── a2a/                # Agent-to-Agent v0.3 protokola serveris
 │   ├── acp/                # Agent Communication Protocol reģistrs
-│   ├── compliance/         # Atbilstības politiku dzinis
+│   ├── compliance/         # Atbilstības politiku dzinējs
 │   ├── db/                 # SQLite domēna moduļi + 130 migrācijas
-│   ├── memory/             # Pastāvīga sarunu atmiņa
+│   ├── memory/             # Pastāvīgā sarunu atmiņa
 │   ├── oauth/              # OAuth nodrošinātāji, pakalpojumi un utilītas
-│   ├── skills/             # Paplašināma prasmju infrastruktūra
+│   ├── skills/             # Paplašināms prasmju ietvars
 │   ├── usage/              # Lietojuma uzskaite un izmaksu aprēķināšana
-│   └── localDb.ts          # Tikai atkārtotas eksportēšanas slānis — nekad šeit nepievienojiet loģiku
+│   └── localDb.ts          # Tikai atkārtota eksporta slānis — nekad nepievienojiet šeit loģiku
 ├── middleware/              # Pieprasījumu starpprogrammatūra (promptInjectionGuard)
 ├── mitm/                   # MITM starpniekserveris (sertifikāts, DNS, mērķa maršrutēšana)
 ├── shared/
 │   ├── components/         # React komponenti (.tsx)
 │   ├── constants/          # Nodrošinātāju definīcijas (329), MCP tvērumi, 19 maršrutēšanas stratēģijas
-│   ├── utils/              # Automātiskais slēdzis, sanitizētājs, autentifikācijas palīgi
+│   ├── utils/              # Ķēdes pārtraucējs, sanitizētājs, autentifikācijas palīgfunkcijas
 │   └── validation/         # Zod v4 shēmas
 └── sse/                    # SSE starpniekservera konveijers
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 izpildītāju ieviešanas moduļi
-├── handlers/               # 11 pieprasījumu apstrādātāji (chat, responses, embeddings, images u.c.)
+open-sse/                   # @omniroute/open-sse darbvieta
+├── executors/              # 150 izpildītāju moduļi (izpildītāju klases + katra nodrošinātāja palīgfunkcijas)
+├── handlers/               # 11 pieprasījumu apstrādātāji (tērzēšana, atbildes, iegulumi, attēli u.c.)
 ├── mcp-server/             # MCP serveris (110 unikāli rīki, 3 transporti, 33 tvērumi)
 ├── services/               # 178 augstākā līmeņa pakalpojumi (combo, autoCombo, rateLimitManager u.c.)
-├── translator/             # Formātu tulkotāji (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── translator/             # Formātu pārveidotāji (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses API pārveidotājs
-└── utils/                  # 22 utilītas moduļi (straume, TLS, starpniekserveris, reģistrēšana)
+└── utils/                  # 22 utilītu moduļi (straumēšana, TLS, starpniekserveris, žurnalēšana)
 
-electron/                   # Electron darbvirsmas lietotne (daudzplatformu)
+electron/                   # Electron darbvirsmas lietotne (vairākplatformu)
 
 tests/
-├── unit/                   # Node.js testu palaidējs (1,574 testu faili)
+├── unit/                   # Node.js testu izpildītājs (1 574 testu faili)
 ├── integration/            # Integrācijas testi
 ├── e2e/                    # Playwright testi
 ├── security/               # Drošības testi
-├── translator/             # Tulkotājam specifiski testi
+├── translator/             # Pārveidotājam specifiski testi
 └── load/                   # Slodzes testi
 
 docs/
 ├── adr/                     # Arhitektūras lēmumu ieraksti
 ├── architecture/            # Sistēmas arhitektūra un noturība
 ├── comparison/              # OmniRoute salīdzinājumā ar alternatīvām
-├── compression/             # Saspiešanas ceļveži un noteikumi
-├── dev/                     # Izstrādes ceļveži
+├── compression/             # Saspiešanas rokasgrāmatas un noteikumi
+├── dev/                     # Izstrādes rokasgrāmatas
 ├── diagrams/                # Arhitektūras diagrammas
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Lietotāja ceļvedis, Docker, iestatīšana, problēmu novēršana
+├── guides/                  # Lietotāja rokasgrāmata, Docker, iestatīšana, problēmu novēršana
 ├── i18n/                    # Internacionalizēti README tulkojumi
 ├── marketing/               # Mārketinga materiāli
 ├── ops/                     # Izvietošana, starpniekserveris, pārklājums, laidieni
-├── providers/               # Konkrētiem nodrošinātājiem paredzēta dokumentācija
-├── reference/               # API atsauce, vides mainīgie, CLI rīki, bezmaksas līmeņi
+├── providers/               # Nodrošinātājiem specifiska dokumentācija
+├── reference/               # API uzziņas, vides mainīgie, CLI rīki, bezmaksas līmeņi
 ├── releases/                # Laidienu piezīmes
-├── routing/                 # Automātiskās kombinēšanas dzinis, spriešanas atkārtošana
-├── screenshots/              # Informācijas paneļa ekrānuzņēmumi
-├── security/                # Drošības vadīklas, atbilstība, slēpšana, pilnvarojuma marķieri
-└── specs/                   # Izstrādes specifikācijas
+├── routing/                 # Automātisko kombināciju dzinējs, spriešanas atkārtošana
+├── screenshots/             # Informācijas paneļa ekrānuzņēmumi
+├── security/                # Aizsargmehānismi, atbilstība, maskēšana, pilnvaras
+└── specs/                   # Projektējuma specifikācijas
 ```
 
 ---
@@ -391,20 +391,20 @@ Uzrakstiet vienību testus direktorijā `tests/unit/`, kas aptver vismaz:
 
 ## Pull Request kontrolsaraksts
 
-- [ ] Testi ir veiksmīgi (`npm test`)
-- [ ] Lint pārbaude ir veiksmīga (`npm run lint`)
-- [ ] Būvēšana ir veiksmīga (`npm run build`)
-- [ ] Jaunām publiskajām funkcijām un saskarnēm ir pievienoti TypeScript tipi
-- [ ] Nav cietkodētu noslēpumu vai rezerves vērtību
-- [ ] Publiskie augšupējā nodrošinātāja akreditācijas dati ir iegulti, izmantojot `resolvePublicCred()` (skatiet [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), nekad kā literāļi
-- [ ] Kļūdu atbildes tiek novirzītas caur `buildErrorBody()` / `sanitizeErrorMessage()` — atbildes pamattekstā nav neapstrādātu steka izsekojumu (skatiet [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Čaulas komandas (`exec` / `spawn`) izpildlaika vērtības padod, izmantojot `env`, nevis virkņu interpolāciju
-- [ ] Visas ievades tiek validētas ar Zod shēmām
-- [ ] Lietotājiem redzamām izmaiņām ir pievienots izmaiņu žurnāla **fragment** fails `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` (skatiet [`changelog.d/README.md`](./changelog.d/README.md)) — **ne**rediģējiet `CHANGELOG.md` tieši; fragmenti tiek apkopoti laidiena izveides laikā un nekad nerada konfliktus starp PR
-- [ ] Dokumentācija ir atjaunināta (ja piemērojams)
-- [ ] Nav atvērti jauni CodeQL / Secret-Scanning brīdinājumi, vai arī katrs no tiem ir noraidīts ar tehnisku pamatojumu, atsaucoties uz atbilstošo `docs/security/` dokumentu
-- [ ] Maršruti, kas palaiž bērnprocesus (`/api/mcp/`, `/api/cli-tools/runtime/`), failā `src/server/authz/routeGuard.ts` ir klasificēti ar `isLocalOnlyPath()` — skatiet [Stingro noteikumu #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Komitziņojumos nav `Co-Authored-By` papildinājumu — komitiem ir jāparādās tikai repozitorija īpašnieka Git identitātes vārdā (Stingrais noteikums #16)
+- [ ] Testi ir sekmīgi (`npm test`)
+- [ ] Lintēšana ir sekmīga (`npm run lint`)
+- [ ] Būvēšana ir sekmīga (`npm run build`)
+- [ ] Jaunajām publiskajām funkcijām un saskarnēm ir pievienoti TypeScript tipi
+- [ ] Nav nekodētu noslēpumu vai atkāpšanās vērtību
+- [ ] Publiskie augšupstraumes akreditācijas dati ir iegulti, izmantojot `resolvePublicCred()` (skatiet [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), un nekad nav norādīti kā literāļi
+- [ ] Kļūdu atbildes tiek apstrādātas, izmantojot `buildErrorBody()` / `sanitizeErrorMessage()` — atbilžu pamattekstā nav neapstrādātu steka izsekojumu (skatiet [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Čaulas komandas (`exec` / `spawn`) izpildlaika vērtības nodod, izmantojot `env`, nevis virkņu interpolāciju
+- [ ] Visas ievades ir validētas, izmantojot Zod shēmas
+- [ ] Lietotājam redzamajām izmaiņām sadaļā `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ir pievienots izmaiņu žurnāla **fragments** (skatiet [`changelog.d/README.md`](./changelog.d/README.md)) — **nerediģējiet** `CHANGELOG.md` tieši; fragmenti tiek apkopoti laidiena izveides laikā un nekad nerada konfliktus starp PR
+- [ ] Dokumentācija ir atjaunināta (ja attiecināms)
+- [ ] Nav izveidots neviens jauns CodeQL / Secret-Scanning brīdinājums, vai arī katrs brīdinājums ir noraidīts ar tehnisku pamatojumu, atsaucoties uz attiecīgo `docs/security/` dokumentu
+- [ ] Maršruti, kas palaiž bērnprocesus (`/api/mcp/`, `/api/cli-tools/runtime/`), failā `src/server/authz/routeGuard.ts` ir klasificēti kā `isLocalOnlyPath()` — skatiet [Stingro noteikumu Nr. 15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Izpildes ziņojumos nav AI/robotu `Co-authored-by` nobeiguma rindu (Stingrais noteikums Nr. 16) — cilvēki, kuru darbs tiek atkārtoti izmantots, tiek norādīti ar standarta `Co-authored-by: Name <email>` nobeiguma rindām
 
 ---
 
@@ -420,9 +420,8 @@ Pēc tam izmantojiet `/deploy-vps-*-cc` prasmes, kas ar rsync sinhronizē `dist/
 
 ## Palīdzības saņemšana
 
-- **Arhitektūra**: skatiet [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
-- **API atsauce**: skatiet [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
+- **Arhitektūra**: Skatiet [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
+- **API atsauce**: Skatiet [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Drošības dokumentācija**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **Operāciju dokumentācija**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **Ekspluatācijas dokumentācija**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Problēmas**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR**: skatiet `docs/adr/`, lai iepazītos ar arhitektūras lēmumu ierakstiem

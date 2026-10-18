@@ -287,65 +287,72 @@ npm run test:combo:live:vps:failover     # מוסיף תרחיש מעבר לגי
 
 ---
 
-## Project Structure
+## מבנה הפרויקט
 
 ```
 src/                        # TypeScript (.ts / .tsx)
-├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+├── app/                    # נתב האפליקציה של Next.js 16
+│   ├── (dashboard)/        # דפי לוח הבקרה (23 מקטעים)
+│   ├── api/                # נתיבי API‏ (51 תיקיות)
+│   └── login/              # דפי אימות (.tsx)
+├── domain/                 # מנוע מדיניות (policyEngine, comboResolver, costRules וכו')
+├── lib/                    # לוגיקת ליבה עסקית (.ts)
+│   ├── a2a/                # שרת פרוטוקול Agent-to-Agent v0.3
+│   ├── acp/                # מרשם Agent Communication Protocol
+│   ├── compliance/         # מנוע מדיניות תאימות
+│   ├── db/                 # מודולי תחום של SQLite + 130 מיגרציות
+│   ├── memory/             # זיכרון שיחה מתמשך
+│   ├── oauth/              # ספקי OAuth, שירותים וכלי עזר
+│   ├── skills/             # מסגרת מיומנויות הניתנת להרחבה
+│   ├── usage/              # מעקב שימוש וחישוב עלויות
+│   └── localDb.ts          # שכבת ייצוא מחדש בלבד — לעולם אין להוסיף כאן לוגיקה
+├── middleware/              # תווכת בקשות (promptInjectionGuard)
+├── mitm/                   # פרוקסי MITM‏ (אישור, DNS, ניתוב יעד)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # רכיבי React‏ (.tsx)
+│   ├── constants/          # הגדרות ספקים (329), תחומי MCP,‏ 19 אסטרטגיות ניתוב
+│   ├── utils/              # מפסק מעגל, מחטא, כלי עזר לאימות
+│   └── validation/         # סכמות Zod v4
+└── sse/                    # צינור עיבוד לפרוקסי SSE
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # סביבת העבודה @omniroute/open-sse
+├── executors/              # 150 מודולי ביצוע (מחלקות ביצוע + כלי עזר לכל ספק)
+├── handlers/               # 11 מטפלי בקשות (צ'אט, תגובות, הטמעות, תמונות וכו')
+├── mcp-server/             # שרת MCP‏ (110 כלים ייחודיים, 3 תעבורות, 33 תחומים)
+├── services/               # 178 שירותים ברמה העליונה (combo, autoCombo, rateLimitManager וכו')
+├── translator/             # מתרגמי תבניות (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # ממיר Responses API
+└── utils/                  # 22 מודולי כלי עזר (הזרמה, TLS, פרוקסי, רישום)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # אפליקציית שולחן עבודה Electron‏ (חוצת פלטפורמות)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # מריץ הבדיקות של Node.js‏ (1,574 קובצי בדיקה)
+├── integration/            # בדיקות אינטגרציה
+├── e2e/                    # בדיקות Playwright
+├── security/               # בדיקות אבטחה
+├── translator/             # בדיקות ייעודיות למתרגם
+└── load/                   # בדיקות עומס
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # רשומות החלטות ארכיטקטוניות
+├── architecture/            # ארכיטקטורת מערכת ועמידות
+├── comparison/              # OmniRoute לעומת חלופות
+├── compression/             # מדריכים וכללים לדחיסה
+├── dev/                     # מדריכי פיתוח
+├── diagrams/                # תרשימי ארכיטקטורה
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # מדריך למשתמש, Docker, הגדרה, פתרון בעיות
+├── i18n/                    # תרגומי README לשפות שונות
+├── marketing/               # חומרי שיווק
+├── ops/                     # פריסה, פרוקסי, כיסוי, הפצות
+├── providers/               # תיעוד ייעודי לספקים
+├── reference/               # עיון ב-API, משתני סביבה, כלי CLI, שכבות חינמיות
+├── releases/                # הערות הפצה
+├── routing/                 # מנוע שילוב אוטומטי, הפעלה חוזרת של הסקה
+├── screenshots/             # צילומי מסך של לוח הבקרה
+├── security/                # אמצעי הגנה, תאימות, הסוואה, אסימונים
+└── specs/                   # מפרטי תכנון
 ```
 
 ---
@@ -392,16 +399,16 @@ docs/                       # Documentation
 - [ ] בדיקת הסגנון עוברת (`npm run lint`)
 - [ ] הבנייה מצליחה (`npm run build`)
 - [ ] נוספו טיפוסי TypeScript עבור פונקציות וממשקים ציבוריים חדשים
-- [ ] אין סודות או ערכי ברירת מחדל המקודדים באופן קשיח
-- [ ] פרטי גישה ציבוריים לשירותי upstream מוטמעים באמצעות `resolvePublicCred()` (ראו [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), ולעולם לא כליטרלים
-- [ ] תגובות שגיאה מנותבות דרך `buildErrorBody()` / `sanitizeErrorMessage()` — ללא עקבות מחסנית גולמיים בגופי התגובות (ראו [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] פקודות מעטפת (`exec` / `spawn`) מעבירות ערכי זמן ריצה באמצעות `env`, ולא באמצעות אינטרפולציית מחרוזות
+- [ ] אין סודות או ערכי ברירת מחדל מקודדים בקוד
+- [ ] פרטי גישה ציבוריים של upstream מוטמעים באמצעות `resolvePublicCred()` (ראו [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), ולעולם לא כערכים מילוליים
+- [ ] תגובות שגיאה עוברות דרך `buildErrorBody()` / `sanitizeErrorMessage()` — אין עקבות מחסנית גולמיים בגופי התגובות (ראו [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] פקודות מעטפת (`exec` / `spawn`) מעבירות ערכים בזמן ריצה באמצעות `env`, ולא באמצעות אינטרפולציית מחרוזות
 - [ ] כל הקלטים מאומתים באמצעות סכמות Zod
-- [ ] נוסף **מקטע** יומן שינויים תחת `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` עבור שינויים הנראים למשתמש (ראו [`changelog.d/README.md`](./changelog.d/README.md)) — **אין** לערוך את `CHANGELOG.md` ישירות; המקטעים מאוגדים בזמן ההפצה ולעולם אינם יוצרים התנגשויות בין בקשות משיכה
+- [ ] נוסף **מקטע** יומן שינויים תחת `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` עבור שינויים הנראים למשתמשים (ראו [`changelog.d/README.md`](./changelog.d/README.md)) — **אין** לערוך את `CHANGELOG.md` ישירות; המקטעים מאוגדים בעת ההפצה ולעולם אינם יוצרים התנגשויות בין בקשות משיכה
 - [ ] התיעוד עודכן (אם רלוונטי)
-- [ ] לא נפתחו התראות CodeQL / Secret-Scanning חדשות, או שכל אחת מהן נדחתה בצירוף הצדקה טכנית המפנה למסמך הרלוונטי תחת `docs/security/`
-- [ ] נתיבים שמפעילים תהליכי־בן (`/api/mcp/`, `/api/cli-tools/runtime/`) מסווגים כ־`isLocalOnlyPath()` בתוך `src/server/authz/routeGuard.ts` — ראו [כלל מחייב מס' 15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] אין שורות סיום מסוג `Co-Authored-By` בהודעות commit — ה־commits חייבים להופיע אך ורק תחת זהות ה־Git של בעלי המאגר (כלל מחייב מס' 16)
+- [ ] לא נפתחו התראות CodeQL / סריקת סודות חדשות, או שכל אחת מהן נדחתה בצירוף הצדקה טכנית המפנה למסמך הרלוונטי תחת `docs/security/`
+- [ ] נתיבים שמפעילים תהליכי-בן (`/api/mcp/`, `/api/cli-tools/runtime/`) מסווגים כ-`isLocalOnlyPath()` בתוך `src/server/authz/routeGuard.ts` — ראו [כלל מחייב מס' 15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] אין סיומות `Co-authored-by` של AI/בוט בהודעות commit (כלל מחייב מס' 16) — שותפים אנושיים שעבודתם נעשה שימוש חוזר מקבלים קרדיט באמצעות סיומות `Co-authored-by: Name <email>` תקניות
 
 ---
 
@@ -417,5 +424,4 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **תיעוד API**: ראו [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **מסמכי אבטחה**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **מסמכי תפעול**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
-- **דיווחים על בעיות**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: ראו `docs/adr/` לרשומות של החלטות ארכיטקטוניות
+- **בעיות**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)

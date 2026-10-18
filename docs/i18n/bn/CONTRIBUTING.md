@@ -286,65 +286,72 @@ check-গুলো ইতোমধ্যে দেবে না, এবং ছ�
 
 ---
 
-## Project Structure
+## প্রজেক্টের কাঠামো
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # ড্যাশবোর্ড পৃষ্ঠা (২৩টি বিভাগ)
+│   ├── api/                # API রুট (৫১টি ডিরেক্টরি)
+│   └── login/              # প্রমাণীকরণ পৃষ্ঠা (.tsx)
+├── domain/                 # পলিসি ইঞ্জিন (policyEngine, comboResolver, costRules ইত্যাদি)
+├── lib/                    # মূল ব্যবসায়িক লজিক (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 প্রোটোকল সার্ভার
+│   ├── acp/                # Agent Communication Protocol রেজিস্ট্রি
+│   ├── compliance/         # কমপ্লায়েন্স পলিসি ইঞ্জিন
+│   ├── db/                 # SQLite ডোমেইন মডিউল + ১৩০টি মাইগ্রেশন
+│   ├── memory/             # স্থায়ী কথোপকথনমূলক মেমরি
+│   ├── oauth/              # OAuth প্রোভাইডার, সার্ভিস এবং ইউটিলিটি
+│   ├── skills/             # সম্প্রসারণযোগ্য স্কিল ফ্রেমওয়ার্ক
+│   ├── usage/              # ব্যবহার ট্র্যাকিং এবং খরচ গণনা
+│   └── localDb.ts          # শুধুমাত্র পুনরায় এক্সপোর্টের স্তর — এখানে কখনো লজিক যোগ করবেন না
+├── middleware/              # রিকোয়েস্ট মিডলওয়্যার (promptInjectionGuard)
+├── mitm/                   # MITM প্রক্সি (সার্টিফিকেট, DNS, টার্গেট রাউটিং)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React কম্পোনেন্ট (.tsx)
+│   ├── constants/          # প্রোভাইডার সংজ্ঞা (৩২৯টি), MCP স্কোপ, ১৯টি রাউটিং কৌশল
+│   ├── utils/              # সার্কিট ব্রেকার, স্যানিটাইজার, প্রমাণীকরণ সহায়ক
+│   └── validation/         # Zod v4 স্কিমা
+└── sse/                    # SSE প্রক্সি পাইপলাইন
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse ওয়ার্কস্পেস
+├── executors/              # ১৫০টি এক্সিকিউটর মডিউল (এক্সিকিউটর ক্লাস + প্রতি-প্রোভাইডার সহায়ক)
+├── handlers/               # ১১টি রিকোয়েস্ট হ্যান্ডলার (চ্যাট, রেসপন্স, এমবেডিং, ইমেজ ইত্যাদি)
+├── mcp-server/             # MCP সার্ভার (১১০টি অনন্য টুল, ৩টি ট্রান্সপোর্ট, ৩৩টি স্কোপ)
+├── services/               # ১৭৮টি শীর্ষ-স্তরের সার্ভিস (combo, autoCombo, rateLimitManager ইত্যাদি)
+├── translator/             # ফরম্যাট অনুবাদক (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API ট্রান্সফরমার
+└── utils/                  # ২২টি ইউটিলিটি মডিউল (স্ট্রিম, TLS, প্রক্সি, লগিং)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Electron ডেস্কটপ অ্যাপ (ক্রস-প্ল্যাটফর্ম)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js টেস্ট রানার (১,৫৭৪টি টেস্ট ফাইল)
+├── integration/            # ইন্টিগ্রেশন টেস্ট
+├── e2e/                    # Playwright টেস্ট
+├── security/               # নিরাপত্তা টেস্ট
+├── translator/             # অনুবাদক-নির্দিষ্ট টেস্ট
+└── load/                   # লোড টেস্ট
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # আর্কিটেকচার সিদ্ধান্তের রেকর্ড
+├── architecture/            # সিস্টেম আর্কিটেকচার ও স্থিতিস্থাপকতা
+├── comparison/              # OmniRoute বনাম বিকল্পসমূহ
+├── compression/             # কম্প্রেশন নির্দেশিকা ও নিয়ম
+├── dev/                     # ডেভেলপমেন্ট নির্দেশিকা
+├── diagrams/                # আর্কিটেকচার ডায়াগ্রাম
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # ব্যবহারকারী নির্দেশিকা, Docker, সেটআপ, সমস্যা সমাধান
+├── i18n/                    # আন্তর্জাতিকীকৃত README অনুবাদ
+├── marketing/               # বিপণন উপকরণ
+├── ops/                     # ডিপ্লয়মেন্ট, প্রক্সি, কভারেজ, রিলিজ
+├── providers/               # প্রোভাইডার-নির্দিষ্ট ডকুমেন্টেশন
+├── reference/               # API রেফারেন্স, পরিবেশ ভেরিয়েবল, CLI টুল, বিনামূল্যের স্তর
+├── releases/                # রিলিজ নোট
+├── routing/                 # অটো-কম্বো ইঞ্জিন, রিজনিং রিপ্লে
+├── screenshots/             # ড্যাশবোর্ড স্ক্রিনশট
+├── security/                # গার্ডরেল, কমপ্লায়েন্স, স্টেলথ, টোকেন
+└── specs/                   # ডিজাইন স্পেসিফিকেশন
 ```
 
 ---
@@ -387,20 +394,20 @@ docs/                       # Documentation
 
 ## পুল রিকোয়েস্ট চেকলিস্ট
 
-- [ ] টেস্টসমূহ পাস করে (`npm test`)
+- [ ] টেস্ট পাস করে (`npm test`)
 - [ ] লিন্টিং পাস করে (`npm run lint`)
 - [ ] বিল্ড সফল হয় (`npm run build`)
 - [ ] নতুন পাবলিক ফাংশন ও ইন্টারফেসের জন্য TypeScript টাইপ যোগ করা হয়েছে
 - [ ] কোনো হার্ডকোড করা সিক্রেট বা ফলব্যাক মান নেই
-- [ ] পাবলিক আপস্ট্রিম ক্রেডেনশিয়ালগুলো `resolvePublicCred()`-এর মাধ্যমে এম্বেড করা হয়েছে ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) দেখুন), কখনোই লিটারেল হিসেবে নয়
-- [ ] ত্রুটির রেসপন্সগুলো `buildErrorBody()` / `sanitizeErrorMessage()`-এর মাধ্যমে রাউট করা হয় — রেসপন্স বডিতে কোনো অপরিশোধিত স্ট্যাক ট্রেস নেই ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) দেখুন)
-- [ ] শেল কমান্ডগুলো (`exec` / `spawn`) রানটাইম মান স্ট্রিং ইন্টারপোলেশনের মাধ্যমে নয়, `env`-এর মাধ্যমে পাস করে
+- [ ] পাবলিক আপস্ট্রিম ক্রেডেনশিয়াল `resolvePublicCred()`-এর মাধ্যমে এম্বেড করা হয়েছে ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) দেখুন), কখনোই লিটারেল হিসেবে নয়
+- [ ] ত্রুটির রেসপন্স `buildErrorBody()` / `sanitizeErrorMessage()`-এর মাধ্যমে রাউট করা হয় — রেসপন্স বডিতে কোনো অপরিশোধিত স্ট্যাক ট্রেস নেই ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) দেখুন)
+- [ ] শেল কমান্ড (`exec` / `spawn`) রানটাইম মান স্ট্রিং ইন্টারপোলেশনের মাধ্যমে নয়, `env`-এর মাধ্যমে পাস করে
 - [ ] সব ইনপুট Zod স্কিমা দিয়ে যাচাই করা হয়েছে
-- [ ] ব্যবহারকারীর দৃশ্যমান পরিবর্তনের জন্য `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md`-এর অধীনে চেঞ্জলগ **ফ্র্যাগমেন্ট** যোগ করা হয়েছে ([`changelog.d/README.md`](./changelog.d/README.md) দেখুন) — সরাসরি `CHANGELOG.md` সম্পাদনা করবেন **না**; রিলিজের সময় ফ্র্যাগমেন্টগুলো একত্রিত করা হয় এবং PR-গুলোর মধ্যে কখনোই দ্বন্দ্ব হয় না
+- [ ] ব্যবহারকারীর দৃশ্যমান পরিবর্তনের জন্য `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md`-এর অধীনে চেঞ্জলগ **ফ্র্যাগমেন্ট** যোগ করা হয়েছে ([`changelog.d/README.md`](./changelog.d/README.md) দেখুন) — `CHANGELOG.md` সরাসরি সম্পাদনা করবেন **না**; রিলিজের সময় ফ্র্যাগমেন্টগুলো একত্রিত করা হয় এবং PR-গুলোর মধ্যে কখনো দ্বন্দ্ব সৃষ্টি করে না
 - [ ] ডকুমেন্টেশন হালনাগাদ করা হয়েছে (প্রযোজ্য হলে)
-- [ ] নতুন কোনো CodeQL / Secret-Scanning সতর্কতা খোলা হয়নি, অথবা প্রতিটি সতর্কতা প্রাসঙ্গিক `docs/security/` ডকুমেন্ট উল্লেখ করে কারিগরি যৌক্তিকতাসহ খারিজ করা হয়েছে
-- [ ] যেসব রাউট চাইল্ড প্রসেস চালু করে (`/api/mcp/`, `/api/cli-tools/runtime/`), সেগুলো `src/server/authz/routeGuard.ts`-এ `isLocalOnlyPath()` হিসেবে শ্রেণিবদ্ধ করা হয়েছে — [কঠোর নিয়ম #15](docs/security/ROUTE_GUARD_TIERS.md) দেখুন
-- [ ] কমিট মেসেজে কোনো `Co-Authored-By` ট্রেলার নেই — কমিটগুলো অবশ্যই কেবল রিপোজিটরি মালিকের Git পরিচয়ের অধীনে প্রদর্শিত হতে হবে (কঠোর নিয়ম #16)
+- [ ] কোনো নতুন CodeQL / Secret-Scanning সতর্কতা খোলা হয়নি, অথবা প্রতিটি সতর্কতা প্রাসঙ্গিক `docs/security/` ডকুমেন্ট উল্লেখ করে কারিগরি যৌক্তিকতাসহ খারিজ করা হয়েছে
+- [ ] চাইল্ড প্রসেস চালু করা রাউটগুলো (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts`-এ `isLocalOnlyPath()` হিসেবে শ্রেণিবদ্ধ করা হয়েছে — [কঠোর নিয়ম #15](docs/security/ROUTE_GUARD_TIERS.md) দেখুন
+- [ ] কমিট মেসেজে AI/বটের `Co-authored-by` ট্রেলার নেই (কঠোর নিয়ম #16) — যেসব মানব সহযোগীর কাজ পুনর্ব্যবহার করা হয়েছে, তাঁদের স্ট্যান্ডার্ড `Co-authored-by: Name <email>` ট্রেলার দিয়ে কৃতিত্ব দেওয়া হয়েছে
 
 ---
 
@@ -414,7 +421,6 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 
 - **আর্কিটেকচার**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) দেখুন
 - **API রেফারেন্স**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) দেখুন
-- **নিরাপত্তা ডকুমেন্টেশন**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **অপারেশনস ডকুমেন্টেশন**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **নিরাপত্তা-সংক্রান্ত ডকুমেন্টেশন**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
+- **অপারেশন-সংক্রান্ত ডকুমেন্টেশন**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **সমস্যাসমূহ**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: আর্কিটেকচার-সংক্রান্ত সিদ্ধান্তের রেকর্ডের জন্য `docs/adr/` দেখুন

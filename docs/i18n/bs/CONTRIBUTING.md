@@ -293,67 +293,67 @@ Pogledajte `open-sse/utils/stream.ts` i `open-sse/utils/streamHandler.ts` za pri
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard stranice (23 sekcije)
+│   ├── (dashboard)/        # Stranice kontrolne ploče (23 odjeljka)
 │   ├── api/                # API rute (51 direktorij)
-│   └── login/              # Auth stranice (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, itd.)
-├── lib/                    # Core poslovna logika (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registar
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite domain moduli + 130 migracija
-│   ├── memory/             # Persistent konverzacijska memorija
-│   ├── oauth/              # OAuth provajderi, servisi i utility funkcije
-│   ├── skills/             # Proširivi skill framework
-│   ├── usage/              # Praćenje upotrebe i kalkulacija troškova
-│   └── localDb.ts          # Samo sloj za re-export — nikada ovdje ne dodajte logiku
-├── middleware/              # Middleware za zahtjeve (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   └── login/              # Stranice za autentifikaciju (.tsx)
+├── domain/                 # Mehanizam pravila (policyEngine, comboResolver, costRules itd.)
+├── lib/                    # Osnovna poslovna logika (.ts)
+│   ├── a2a/                # Server protokola Agent-to-Agent v0.3
+│   ├── acp/                # Registar protokola Agent Communication Protocol
+│   ├── compliance/         # Mehanizam pravila usklađenosti
+│   ├── db/                 # SQLite domenski moduli + 130 migracija
+│   ├── memory/             # Trajna konverzacijska memorija
+│   ├── oauth/              # OAuth pružaoci, servisi i pomoćni alati
+│   ├── skills/             # Proširivi okvir vještina
+│   ├── usage/              # Praćenje korištenja i izračun troškova
+│   └── localDb.ts          # Samo sloj za ponovni izvoz — ovdje nikada ne dodavati logiku
+├── middleware/              # Posrednički softver zahtjeva (promptInjectionGuard)
+├── mitm/                   # MITM proxy (certifikat, DNS, usmjeravanje cilja)
 ├── shared/
 │   ├── components/         # React komponente (.tsx)
-│   ├── constants/          # Definicije provajdera (329), MCP scope-ovi, 19 strategija rutiranja
-│   ├── utils/              # Circuit breaker, sanitizer, auth helperi
+│   ├── constants/          # Definicije pružalaca (329), MCP opsezi, 19 strategija usmjeravanja
+│   ├── utils/              # Prekidač strujnog kruga, sanitizator, pomoćne funkcije za autentifikaciju
 │   └── validation/         # Zod v4 sheme
-└── sse/                    # SSE proxy pipeline
+└── sse/                    # SSE proxy cjevovod
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 modula za implementaciju executora
-├── handlers/               # 11 handlera za zahtjeve (chat, responses, embeddings, images, itd.)
-├── mcp-server/             # MCP server (110 jedinstvenih alata, 3 transporta, 33 scope-a)
-├── services/               # 178 top-level servisa (combo, autoCombo, rateLimitManager, itd.)
-├── translator/             # Translatori formata (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modula (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse radni prostor
+├── executors/              # 150 izvršnih modula (klase izvršilaca + pomoćne funkcije po pružaocu)
+├── handlers/               # 11 obrađivača zahtjeva (razgovor, odgovori, ugrađivanja, slike itd.)
+├── mcp-server/             # MCP server (110 jedinstvenih alata, 3 transporta, 33 opsega)
+├── services/               # 178 servisa najvišeg nivoa (combo, autoCombo, rateLimitManager itd.)
+├── translator/             # Prevodioci formata (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Transformator Responses API-ja
+└── utils/                  # 22 pomoćna modula (tok, TLS, proxy, evidentiranje)
 
-electron/                   # Electron desktop aplikacija (cross-platform)
+electron/                   # Electron desktop aplikacija (višeplatformska)
 
 tests/
-├── unit/                   # Node.js test runner (1,574 test datoteke)
-├── integration/            # Integracioni testovi
+├── unit/                   # Node.js pokretač testova (1.574 testne datoteke)
+├── integration/            # Integracijski testovi
 ├── e2e/                    # Playwright testovi
 ├── security/               # Sigurnosni testovi
-├── translator/             # Specifični testovi za translator
-└── load/                   # Load testovi
+├── translator/             # Testovi specifični za prevodioce
+└── load/                   # Testovi opterećenja
 
 docs/
-├── adr/                     # Architecture Decision Records
-├── architecture/            # Sistemska arhitektura i otpornost
-├── comparison/              # OmniRoute naspram alternativa
-├── compression/             # Vodiči i pravila kompresije
+├── adr/                     # Zapisi o arhitektonskim odlukama
+├── architecture/            # Arhitektura i otpornost sistema
+├── comparison/              # OmniRoute u odnosu na alternative
+├── compression/             # Vodiči i pravila za kompresiju
 ├── dev/                     # Vodiči za razvoj
-├── diagrams/                # Arhitektonski dijagrami
-├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Korisnički vodič, Docker, setup, rješavanje problema
-├── i18n/                    # Internacionalizovani prevodi README-a
+├── diagrams/                # Dijagrami arhitekture
+├── frameworks/              # MCP, A2A, OpenCode, memorija, vještine
+├── guides/                  # Korisnički vodič, Docker, postavljanje, rješavanje problema
+├── i18n/                    # Internacionalizirani prijevodi README-a
 ├── marketing/               # Marketinški materijali
-├── ops/                     # Deployment, proxy, coverage, release-ovi
-├── providers/               # Dokumentacija specifična za provajdere
-├── reference/               # API referenca, env varijable, CLI alati, besplatni nivoi
-├── releases/                # Bilješke o verzijama (release notes)
-├── routing/                 # Auto-combo engine, reasoning replay
-├── screenshots/             # Screenshot-ovi dashboarda
-├── security/                # Guardrails, compliance, stealth, tokeni
-└── specs/                   # Design specifikacije
+├── ops/                     # Implementacija, proxy, pokrivenost, izdanja
+├── providers/               # Dokumentacija specifična za pružaoce
+├── reference/               # API referenca, varijable okruženja, CLI alati, besplatni paketi
+├── releases/                # Napomene o izdanjima
+├── routing/                 # Mehanizam automatskih kombinacija, ponovno izvođenje zaključivanja
+├── screenshots/             # Snimci ekrana kontrolne ploče
+├── security/                # Zaštitne mjere, usklađenost, prikrivanje, tokeni
+└── specs/                   # Specifikacije dizajna
 ```
 
 ---
@@ -394,22 +394,22 @@ Napišite unit testove u `tests/unit/` koji pokrivaju najmanje:
 
 ---
 
-## Pull Request Checklist
+## Kontrolna lista za Pull Request
 
 - [ ] Testovi prolaze (`npm test`)
-- [ ] Linting prolazi (`npm run lint`)
-- [ ] Build uspijeva (`npm run build`)
-- [ ] TypeScript tipovi su dodani za nove javne funkcije i interfejse
-- [ ] Nema hardkodiranih tajni (secrets) ili fallback vrijednosti
-- [ ] Javni upstream kredencijali su ugrađeni putem `resolvePublicCred()` (vidi [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), nikada kao literali
-- [ ] Odgovori o greškama prolaze kroz `buildErrorBody()` / `sanitizeErrorMessage()` — bez sirovih stack trace-ova u tijelima odgovora (vidi [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Shell komande (`exec` / `spawn`) prenose runtime vrijednosti putem `env`, a ne putem string interpolacije
-- [ ] Svi inputi su validirani Zod shemama
-- [ ] **Fragment** changeloga je dodan pod `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` za promjene vidljive korisnicima (vidi [`changelog.d/README.md`](./changelog.d/README.md)) — **nemojte** direktno uređivati `CHANGELOG.md`; fragmenti se agregiraju prilikom release-a i nikada ne dolazi do konflikata između PR-ova
+- [ ] Provjera lintinga prolazi (`npm run lint`)
+- [ ] Build je uspješan (`npm run build`)
+- [ ] Dodani su TypeScript tipovi za nove javne funkcije i interfejse
+- [ ] Nema hardkodiranih tajni ili rezervnih vrijednosti
+- [ ] Javni pristupni podaci uzvodnog sistema ugrađeni su putem `resolvePublicCred()` (pogledajte [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), nikada kao literali
+- [ ] Odgovori s greškama prolaze kroz `buildErrorBody()` / `sanitizeErrorMessage()` — nema neobrađenih stack traceova u tijelima odgovora (pogledajte [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Shell komande (`exec` / `spawn`) prosljeđuju vrijednosti tokom izvršavanja putem `env`, a ne putem interpolacije stringova
+- [ ] Svi ulazi validirani su pomoću Zod schema
+- [ ] **Fragment** dnevnika promjena dodan je u `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` za promjene vidljive korisnicima (pogledajte [`changelog.d/README.md`](./changelog.d/README.md)) — **nemojte** direktno uređivati `CHANGELOG.md`; fragmenti se objedinjuju prilikom izdavanja i nikada ne uzrokuju konflikte između PR-ova
 - [ ] Dokumentacija je ažurirana (ako je primjenjivo)
-- [ ] Nema novih CodeQL / Secret-Scanning upozorenja, ili je svako od njih odbijeno uz tehničko obrazloženje koje referencira relevantni `docs/security/` dokument
-- [ ] Rute koje pokreću child procese (`/api/mcp/`, `/api/cli-tools/runtime/`) su klasifikovane kao `isLocalOnlyPath()` u `src/server/authz/routeGuard.ts` — vidi [Hard Rule #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Nema `Co-Authored-By` trailera u commit porukama — commitovi moraju pojaviti se isključivo pod Git identitetom vlasnika repozitorija (Hard Rule #16)
+- [ ] Nisu otvorena nova CodeQL upozorenja / upozorenja skeniranja tajni ili je svako od njih odbačeno uz tehničko obrazloženje koje upućuje na relevantni dokument u `docs/security/`
+- [ ] Rute koje pokreću podređene procese (`/api/mcp/`, `/api/cli-tools/runtime/`) klasificirane su kao `isLocalOnlyPath()` u `src/server/authz/routeGuard.ts` — pogledajte [Strogo pravilo #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Nema AI/bot `Co-authored-by` završnih redova u porukama commita (Strogo pravilo #16) — ljudski saradnici čiji se rad ponovo koristi navode se standardnim `Co-authored-by: Name <email>` završnim redovima
 
 ---
 
@@ -422,11 +422,10 @@ Zatim koristite `/deploy-vps-*-cc` skill-ove koji rsync-uju `dist/` u udaljeni `
 
 ---
 
-## Pomoć
+## Dobivanje pomoći
 
 - **Arhitektura**: Pogledajte [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
-- **API Referenca**: Pogledajte [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
-- **Dokumentacija o sigurnosti**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **Ops dokumentacija**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
-- **Problemi (Issues)**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: Pogledajte `docs/adr/` za zapise o arhitektonskim odlukama (architectural decision records)
+- **API referenca**: Pogledajte [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
+- **Sigurnosna dokumentacija**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
+- **Operativna dokumentacija**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **Problemi**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)

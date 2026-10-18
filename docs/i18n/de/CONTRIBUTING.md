@@ -288,65 +288,72 @@ Anwendungsbeispiele findest du unter `open-sse/utils/stream.ts` und `open-sse/ut
 
 ---
 
-## Project Structure
+## Projektstruktur
 
 ```
 src/                        # TypeScript (.ts / .tsx)
-├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+├── app/                    # Next.js-16-App-Router
+│   ├── (dashboard)/        # Dashboard-Seiten (23 Bereiche)
+│   ├── api/                # API-Routen (51 Verzeichnisse)
+│   └── login/              # Authentifizierungsseiten (.tsx)
+├── domain/                 # Richtlinien-Engine (policyEngine, comboResolver, costRules usw.)
+├── lib/                    # Zentrale Geschäftslogik (.ts)
+│   ├── a2a/                # Server für das Agent-to-Agent-v0.3-Protokoll
+│   ├── acp/                # Registry für das Agent Communication Protocol
+│   ├── compliance/         # Compliance-Richtlinien-Engine
+│   ├── db/                 # SQLite-Domänenmodule + 130 Migrationen
+│   ├── memory/             # Persistenter Konversationsspeicher
+│   ├── oauth/              # OAuth-Anbieter, -Dienste und -Hilfsfunktionen
+│   ├── skills/             # Erweiterbares Skill-Framework
+│   ├── usage/              # Nutzungsverfolgung und Kostenberechnung
+│   └── localDb.ts          # Nur Reexport-Schicht — hier niemals Logik hinzufügen
+├── middleware/              # Anfrage-Middleware (promptInjectionGuard)
+├── mitm/                   # MITM-Proxy (Zertifikat, DNS, Ziel-Routing)
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # React-Komponenten (.tsx)
+│   ├── constants/          # Anbieterdefinitionen (329), MCP-Bereiche, 19 Routing-Strategien
+│   ├── utils/              # Leistungsschutzschalter, Bereinigung, Authentifizierungshilfen
+│   └── validation/         # Zod-v4-Schemas
+└── sse/                    # SSE-Proxy-Pipeline
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sse-Workspace
+├── executors/              # 150 Executor-Module (Executor-Klassen + anbieterspezifische Hilfsfunktionen)
+├── handlers/               # 11 Anfrage-Handler (Chat, Antworten, Einbettungen, Bilder usw.)
+├── mcp-server/             # MCP-Server (110 eindeutige Tools, 3 Übertragungswege, 33 Bereiche)
+├── services/               # 178 Dienste auf oberster Ebene (combo, autoCombo, rateLimitManager usw.)
+├── translator/             # Formatübersetzer (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses-API-Transformer
+└── utils/                  # 22 Hilfsmodule (Streaming, TLS, Proxy, Protokollierung)
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Plattformübergreifende Electron-Desktop-App
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.js-Test-Runner (1.574 Testdateien)
+├── integration/            # Integrationstests
+├── e2e/                    # Playwright-Tests
+├── security/               # Sicherheitstests
+├── translator/             # Übersetzerspezifische Tests
+└── load/                   # Lasttests
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Architekturentscheidungsprotokolle
+├── architecture/            # Systemarchitektur und Resilienz
+├── comparison/              # OmniRoute im Vergleich zu Alternativen
+├── compression/             # Komprimierungsleitfäden und -regeln
+├── dev/                     # Entwicklungsleitfäden
+├── diagrams/                # Architekturdiagramme
+├── frameworks/              # MCP, A2A, OpenCode, Speicher, Skills
+├── guides/                  # Benutzerhandbuch, Docker, Einrichtung, Fehlerbehebung
+├── i18n/                    # Internationalisierte README-Übersetzungen
+├── marketing/               # Marketingmaterialien
+├── ops/                     # Bereitstellung, Proxy, Abdeckung, Releases
+├── providers/               # Anbieterspezifische Dokumentation
+├── reference/               # API-Referenz, Umgebungsvariablen, CLI-Tools, kostenlose Kontingente
+├── releases/                # Versionshinweise
+├── routing/                 # Auto-Combo-Engine, Reasoning-Wiedergabe
+├── screenshots/             # Dashboard-Screenshots
+├── security/                # Schutzmechanismen, Compliance, Verschleierung, Tokens
+└── specs/                   # Designspezifikationen
 ```
 
 ---
@@ -389,20 +396,20 @@ Unit-Tests in `tests/unit/` schreiben, die mindestens Folgendes abdecken:
 
 ## Pull-Request-Checkliste
 
-- [ ] Tests erfolgreich (`npm test`)
-- [ ] Linting erfolgreich (`npm run lint`)
-- [ ] Build erfolgreich (`npm run build`)
+- [ ] Tests sind erfolgreich (`npm test`)
+- [ ] Linting ist erfolgreich (`npm run lint`)
+- [ ] Build ist erfolgreich (`npm run build`)
 - [ ] TypeScript-Typen für neue öffentliche Funktionen und Schnittstellen hinzugefügt
 - [ ] Keine hartcodierten Geheimnisse oder Fallback-Werte
-- [ ] Öffentliche Upstream-Zugangsdaten über `resolvePublicCred()` eingebettet (siehe [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), niemals als Literale
-- [ ] Fehlerantworten werden über `buildErrorBody()` / `sanitizeErrorMessage()` geleitet – keine unverarbeiteten Stacktraces in Antworttexten (siehe [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Öffentliche Zugangsdaten von Upstream-Diensten über `resolvePublicCred()` eingebettet (siehe [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), niemals als Literale
+- [ ] Fehlerantworten werden über `buildErrorBody()` / `sanitizeErrorMessage()` geleitet — keine unbearbeiteten Stacktraces in Antwortinhalten (siehe [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
 - [ ] Shell-Befehle (`exec` / `spawn`) übergeben Laufzeitwerte über `env`, nicht über String-Interpolation
 - [ ] Alle Eingaben mit Zod-Schemas validiert
-- [ ] Changelog-**Fragment** für benutzersichtbare Änderungen unter `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` hinzugefügt (siehe [`changelog.d/README.md`](./changelog.d/README.md)) – `CHANGELOG.md` **nicht** direkt bearbeiten; Fragmente werden zum Veröffentlichungszeitpunkt zusammengeführt und verursachen niemals Konflikte zwischen PRs
+- [ ] Changelog-**Fragment** für benutzersichtbare Änderungen unter `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` hinzugefügt (siehe [`changelog.d/README.md`](./changelog.d/README.md)) — `CHANGELOG.md` **nicht** direkt bearbeiten; Fragmente werden zum Veröffentlichungszeitpunkt zusammengeführt und verursachen niemals Konflikte zwischen PRs
 - [ ] Dokumentation aktualisiert (falls zutreffend)
-- [ ] Keine neuen CodeQL- / Secret-Scanning-Warnungen ausgelöst oder jede einzelne mit einer technischen Begründung unter Verweis auf das relevante Dokument unter `docs/security/` verworfen
-- [ ] Routen, die untergeordnete Prozesse starten (`/api/mcp/`, `/api/cli-tools/runtime/`), in `src/server/authz/routeGuard.ts` als `isLocalOnlyPath()` klassifiziert – siehe [Strikte Regel Nr. 15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Keine `Co-Authored-By`-Trailer in Commit-Nachrichten – Commits dürfen ausschließlich unter der Git-Identität des Repository-Eigentümers erscheinen (Strikte Regel Nr. 16)
+- [ ] Keine neuen CodeQL-/Secret-Scanning-Warnungen ausgelöst oder jede Warnung mit einer technischen Begründung unter Verweis auf das relevante Dokument unter `docs/security/` verworfen
+- [ ] Routen, die untergeordnete Prozesse starten (`/api/mcp/`, `/api/cli-tools/runtime/`), in `src/server/authz/routeGuard.ts` als `isLocalOnlyPath()` klassifiziert — siehe [Strikte Regel Nr. 15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Keine `Co-authored-by`-Trailer für KI/Bots in Commit-Nachrichten (strikte Regel Nr. 16) — menschliche Mitwirkende, deren Arbeit wiederverwendet wird, werden mit standardmäßigen `Co-authored-by: Name <email>`-Trailern gewürdigt
 
 ---
 
@@ -418,5 +425,4 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **API-Referenz**: Siehe [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
 - **Sicherheitsdokumentation**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **Betriebsdokumentation**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
-- **Issues**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: Siehe `docs/adr/` für Aufzeichnungen zu Architekturentscheidungen
+- **Probleme**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)

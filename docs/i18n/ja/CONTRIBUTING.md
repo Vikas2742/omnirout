@@ -287,65 +287,72 @@ PR を作成する前に、
 
 ---
 
-## Project Structure
+## プロジェクト構成
 
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard pages (23 sections)
-│   ├── api/                # API routes (51 directories)
-│   └── login/              # Auth pages (.tsx)
-├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
-├── lib/                    # Core business logic (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
-│   ├── acp/                # Agent Communication Protocol registry
-│   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
-│   ├── memory/             # Persistent conversational memory
-│   ├── oauth/              # OAuth providers, services, and utilities
-│   ├── skills/             # Extensible skill framework
-│   ├── usage/              # Usage tracking and cost calculation
-│   └── localDb.ts          # Re-export layer only — never add logic here
-├── middleware/              # Request middleware (promptInjectionGuard)
-├── mitm/                   # MITM proxy (cert, DNS, target routing)
+│   ├── (dashboard)/        # ダッシュボードページ（23セクション）
+│   ├── api/                # APIルート（51ディレクトリ）
+│   └── login/              # 認証ページ（.tsx）
+├── domain/                 # ポリシーエンジン（policyEngine、comboResolver、costRulesなど）
+├── lib/                    # コアビジネスロジック（.ts）
+│   ├── a2a/                # Agent-to-Agent v0.3プロトコルサーバー
+│   ├── acp/                # Agent Communication Protocolレジストリ
+│   ├── compliance/         # コンプライアンスポリシーエンジン
+│   ├── db/                 # SQLiteドメインモジュール + 130件のマイグレーション
+│   ├── memory/             # 永続的な会話メモリ
+│   ├── oauth/              # OAuthプロバイダー、サービス、ユーティリティ
+│   ├── skills/             # 拡張可能なスキルフレームワーク
+│   ├── usage/              # 使用量追跡とコスト計算
+│   └── localDb.ts          # 再エクスポート層のみ — ここにはロジックを追加しないこと
+├── middleware/              # リクエストミドルウェア（promptInjectionGuard）
+├── mitm/                   # MITMプロキシ（証明書、DNS、ターゲットルーティング）
 ├── shared/
-│   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
-│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
-│   └── validation/         # Zod v4 schemas
-└── sse/                    # SSE proxy pipeline
+│   ├── components/         # Reactコンポーネント（.tsx）
+│   ├── constants/          # プロバイダー定義（329）、MCPスコープ、19種類のルーティング戦略
+│   ├── utils/              # サーキットブレーカー、サニタイザー、認証ヘルパー
+│   └── validation/         # Zod v4スキーマ
+└── sse/                    # SSEプロキシパイプライン
 
-open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
-├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
-├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
-├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformer
-└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
+open-sse/                   # @omniroute/open-sseワークスペース
+├── executors/              # 150個のエグゼキューターモジュール（エグゼキュータークラス + プロバイダー別ヘルパー）
+├── handlers/               # 11個のリクエストハンドラー（チャット、レスポンス、埋め込み、画像など）
+├── mcp-server/             # MCPサーバー（110個の固有ツール、3種類のトランスポート、33個のスコープ）
+├── services/               # 178個のトップレベルサービス（combo、autoCombo、rateLimitManagerなど）
+├── translator/             # フォーマットトランスレーター（OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama）
+├── transformer/            # Responses APIトランスフォーマー
+└── utils/                  # 22個のユーティリティモジュール（ストリーム、TLS、プロキシ、ロギング）
 
-electron/                   # Electron desktop app (cross-platform)
+electron/                   # Electronデスクトップアプリ（クロスプラットフォーム）
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
-├── integration/            # Integration tests
-├── e2e/                    # Playwright tests
-├── security/               # Security tests
-├── translator/             # Translator-specific tests
-└── load/                   # Load tests
+├── unit/                   # Node.jsテストランナー（1,574個のテストファイル）
+├── integration/            # 統合テスト
+├── e2e/                    # Playwrightテスト
+├── security/               # セキュリティテスト
+├── translator/             # トランスレーター固有のテスト
+└── load/                   # 負荷テスト
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # アーキテクチャ意思決定記録
+├── architecture/            # システムアーキテクチャとレジリエンス
+├── comparison/              # OmniRouteと代替手段の比較
+├── compression/             # 圧縮ガイドとルール
+├── dev/                     # 開発ガイド
+├── diagrams/                # アーキテクチャ図
+├── frameworks/              # MCP、A2A、OpenCode、Memory、Skills
+├── guides/                  # ユーザーガイド、Docker、セットアップ、トラブルシューティング
+├── i18n/                    # 国際化されたREADME翻訳
+├── marketing/               # マーケティング資料
+├── ops/                     # デプロイ、プロキシ、カバレッジ、リリース
+├── providers/               # プロバイダー固有のドキュメント
+├── reference/               # APIリファレンス、環境変数、CLIツール、無料枠
+├── releases/                # リリースノート
+├── routing/                 # 自動コンボエンジン、推論リプレイ
+├── screenshots/             # ダッシュボードのスクリーンショット
+├── security/                # ガードレール、コンプライアンス、ステルス、トークン
+└── specs/                   # 設計仕様
 ```
 
 ---
@@ -386,22 +393,22 @@ OAuth 認証情報を `src/lib/oauth/constants/oauth.ts` に、サービスを `
 
 ---
 
-## プルリクエストチェックリスト
+## Pull Request チェックリスト
 
 - [ ] テストが成功する（`npm test`）
 - [ ] Lint が成功する（`npm run lint`）
 - [ ] ビルドが成功する（`npm run build`）
 - [ ] 新しい公開関数およびインターフェースに TypeScript の型が追加されている
 - [ ] ハードコードされたシークレットやフォールバック値がない
-- [ ] 公開アップストリーム認証情報は、リテラルではなく `resolvePublicCred()` を介して埋め込まれている（[`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) を参照）
-- [ ] エラーレスポンスは `buildErrorBody()` / `sanitizeErrorMessage()` を経由している — レスポンス本文に未加工のスタックトレースを含めない（[`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) を参照）
-- [ ] シェルコマンド（`exec` / `spawn`）では、実行時の値を文字列補間ではなく `env` 経由で渡している
+- [ ] 公開アップストリーム認証情報はリテラルではなく `resolvePublicCred()` を使用して埋め込まれている（[`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) を参照）
+- [ ] エラーレスポンスは `buildErrorBody()` / `sanitizeErrorMessage()` を経由している — レスポンス本文に未加工のスタックトレースが含まれていない（[`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) を参照）
+- [ ] シェルコマンド（`exec` / `spawn`）には、文字列補間ではなく `env` を介してランタイム値を渡している
 - [ ] すべての入力が Zod スキーマで検証されている
-- [ ] ユーザー向けの変更について、`changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` 以下に変更履歴の**フラグメント**が追加されている（[`changelog.d/README.md`](./changelog.d/README.md) を参照）— `CHANGELOG.md` を直接編集しては**ならない**。フラグメントはリリース時に集約され、PR 間で競合することはない
+- [ ] ユーザー向けの変更について、`changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` 配下に Changelog の**フラグメント**が追加されている（[`changelog.d/README.md`](./changelog.d/README.md) を参照）— `CHANGELOG.md` を直接編集してはならない。フラグメントはリリース時に集約され、PR 間で競合することはない
 - [ ] ドキュメントが更新されている（該当する場合）
-- [ ] 新しい CodeQL / Secret-Scanning アラートが発生していない。または、各アラートが関連する `docs/security/` ドキュメントを参照した技術的根拠とともに却下されている
-- [ ] 子プロセスを起動するルート（`/api/mcp/`、`/api/cli-tools/runtime/`）が `src/server/authz/routeGuard.ts` で `isLocalOnlyPath()` として分類されている — [ハードルール #15](docs/security/ROUTE_GUARD_TIERS.md) を参照
-- [ ] コミットメッセージに `Co-Authored-By` トレーラーがない — コミットはリポジトリ所有者の Git ID のみで作成されたものとして表示されなければならない（ハードルール #16）
+- [ ] 新しい CodeQL / Secret-Scanning アラートが発生していない、または各アラートが関連する `docs/security/` ドキュメントを参照した技術的根拠とともに却下されている
+- [ ] 子プロセスを起動するルート（`/api/mcp/`、`/api/cli-tools/runtime/`）が `src/server/authz/routeGuard.ts` 内で `isLocalOnlyPath()` として分類されている — [厳守ルール #15](docs/security/ROUTE_GUARD_TIERS.md) を参照
+- [ ] コミットメッセージに AI/bot の `Co-authored-by` トレーラーが含まれていない（厳守ルール #16）— 再利用した作業を行った人間の共同作業者は、標準の `Co-authored-by: Name <email>` トレーラーでクレジットされている
 
 ---
 
@@ -417,5 +424,4 @@ Releases are managed via the `/generate-release` workflow. When a new GitHub Rel
 - **API リファレンス**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)を参照してください
 - **セキュリティドキュメント**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md)、[`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md)、[`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md)、[`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **運用ドキュメント**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
-- **課題**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADR**: アーキテクチャ上の意思決定記録については、`docs/adr/`を参照してください
+- **Issue**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)

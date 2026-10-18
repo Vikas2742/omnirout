@@ -296,68 +296,70 @@ Vaata `open-sse/utils/stream.ts` ja `open-sse/utils/streamHandler.ts` rakendatud
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard lehed (23 sektsiooni)
+│   ├── (dashboard)/        # Juhtpaneeli lehed (23 jaotist)
 │   ├── api/                # API marsruudid (51 kataloogi)
-│   └── login/              # Autentimise lehed (.tsx)
-├── domain/                 # Poliitika mootor (policyEngine, comboResolver, costRules, jne)
+│   └── login/              # Autentimislehed (.tsx)
+├── domain/                 # Reeglimootor (policyEngine, comboResolver, costRules jne)
 ├── lib/                    # Põhiline äriloogika (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protokolli server
-│   ├── acp/                # Agent Communication Protocol registri
-│   ├── compliance/         # Vastavuse poliitika mootor
-│   ├── db/                 # SQLite domeeni moodulid + 130 migreerimist
-│   ├── memory/             # Pidev konversatsioonimälu
-│   ├── oauth/              # OAuth pakkujad, teenused ja utiliidid
+│   ├── a2a/                # Agentidevahelise v0.3 protokolli server
+│   ├── acp/                # Agent Communication Protocoli register
+│   ├── compliance/         # Vastavusreeglite mootor
+│   ├── db/                 # SQLite'i domeenimoodulid + 130 migratsiooni
+│   ├── memory/             # Püsiv vestlusmälu
+│   ├── oauth/              # OAuthi pakkujad, teenused ja utiliidid
 │   ├── skills/             # Laiendatav oskuste raamistik
 │   ├── usage/              # Kasutuse jälgimine ja kulude arvutamine
-│   └── localDb.ts          # Ainult re-eksporti kihi — kunagi ei lisa loogikat siia
-├── middleware/              # Päringu middleware (promptInjectionGuard)
-├── mitm/                   # MITM proksi (sert, DNS, sihtmarsruutimine)
+│   └── localDb.ts          # Ainult reekspordi kiht — ära lisa siia kunagi loogikat
+├── middleware/              # Päringute vahevara (promptInjectionGuard)
+├── mitm/                   # MITM-puhverserver (sertifikaat, DNS, sihtkoha marsruutimine)
 ├── shared/
-│   ├── components/         # React komponendid (.tsx)
-│   ├── constants/          # Pakkuja definitsioonid (329), MCP skoobid, 19 marsruutimisstrategiat
-│   ├── utils/              # Ringi katkestaja, sanitaizer, autentimise abid
+│   ├── components/         # Reacti komponendid (.tsx)
+│   ├── constants/          # Pakkujate definitsioonid (329), MCP ulatused, 19 marsruutimisstrateegiat
+│   ├── utils/              # Kaitselüliti, puhastaja, autentimise abifunktsioonid
 │   └── validation/         # Zod v4 skeemid
-└── sse/                    # SSE proksi pipeline
+└── sse/                    # SSE-puhverserveri töötluskonveier
 
 open-sse/                   # @omniroute/open-sse tööruum
-├── executors/              # 89 eksikuteeri implementatsiooni moodulit
-├── handlers/               # 11 päringu käsitlejat (vestlus, vastused, embeddings, pildid, jne)
-├── mcp-server/             # MCP server (110 unikaalset tööriista, 3 transpordi, 33 skoobi)
-├── services/               # 178 ülemise taseme teenust (combo, autoCombo, rateLimitManager, jne)
-├── translator/             # Formaadi tõlkijad (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API transformeri
-└── utils/                  # 22 utiliidi moodulit (voog, TLS, proksi, logimine)
+├── executors/              # 150 täituri moodulit (täituriklassid + pakkujapõhised abifunktsioonid)
+├── handlers/               # 11 päringutöötlejat (vestlus, vastused, vektoresitused, pildid jne)
+├── mcp-server/             # MCP-server (110 unikaalset tööriista, 3 transporti, 33 ulatust)
+├── services/               # 178 tipptaseme teenust (combo, autoCombo, rateLimitManager jne)
+├── translator/             # Vorminguteisendajad (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API teisendaja
+└── utils/                  # 22 utiliidimoodulit (voog, TLS, puhverserver, logimine)
 
-electron/                   # Electroni töölauarakendus (cross-platform)
+electron/                   # Electroni töölauarakendus (platvormideülene)
 
 tests/
-├── unit/                   # Node.js test runner (1,574 testifaili)
+├── unit/                   # Node.js-i testikäitaja (1574 testifaili)
 ├── integration/            # Integratsioonitestid
-├── e2e/                    # Playwright testid
-├── security/               # Turvatestid
-├── translator/             # Tõlke-spetsiifilised testid
+├── e2e/                    # Playwrighti testid
+├── security/               # Turbetestid
+├── translator/             # Teisendajapõhised testid
 └── load/                   # Koormustestid
 
 docs/
-├── adr/                     # Arhitektuuripõhiste otsuste kirjed
+├── adr/                     # Arhitektuuriotsuste kirjed
 ├── architecture/            # Süsteemi arhitektuur ja vastupidavus
-├── comparison/              # OmniRoute vs alternatiivid
-├── compression/             # Pakkimise juhised ja reeglid
-├── dev/                     # Arendamise juhised
-├── diagrams/                # Arhitektuuridiagrammid
+├── comparison/              # OmniRoute võrreldes alternatiividega
+├── compression/             # Tihendamise juhendid ja reeglid
+├── dev/                     # Arendusjuhendid
+├── diagrams/                # Arhitektuuriskeemid
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Kasutajajuhend, Docker, seadistamine, tõrkeotsing
-├── i18n/                    # Rahvusvahelised README tõlked
+├── guides/                  # Kasutusjuhend, Docker, seadistamine, tõrkeotsing
+├── i18n/                    # README rahvusvahelised tõlked
 ├── marketing/               # Turundusmaterjalid
-├── ops/                     # Juurutamine, proksi, katvus, väljalasked
-├── providers/               # Pakkuja-spetsiifilised dokumendid
-├── reference/               # API viide, keskkonna muutujad, CLI tööriistad, tasuta kihid
+├── ops/                     # Juurutamine, puhverserver, testikate, väljalasked
+├── providers/               # Pakkujapõhine dokumentatsioon
+├── reference/               # API teatmik, keskkonnamuutujad, CLI-tööriistad, tasuta paketid
 ├── releases/                # Väljalaskemärkmed
-├── routing/                 # Auto-combo mootor, põhjenduse uuesti mängimine
-├── screenshots/             # Dashboardi ekraanipildid
-├── security/                # Kaitsekaitsed, vastavus, saladus, märgid
+├── routing/                 # Automaatkombinatsioonide mootor, arutluskäigu taasesitus
+├── screenshots/             # Juhtpaneeli kuvatõmmised
+├── security/                # Kaitsepiirded, vastavus, varjatud toimimine, pääsmikud
 └── specs/                   # Disainispetsifikatsioonid
 ```
+
+---
 
 ## Uue tarnija lisamine
 
@@ -395,22 +397,22 @@ Kirjuta üksiktestid `tests/unit/` kataloogi, kattes vähemalt:
 
 ---
 
-## Pull requesti kontrollnimekiri
+## Tõmbetaotluse kontrollnimekiri
 
-- [ ] Testid läbivad (`npm test`)
-- [ ] Linting läbib (`npm run lint`)
-- [ ] Ehitamine õnnestub (`npm run build`)
-- [ ] TypeScripti tüübid lisatud uutele avalikele funktsioonidele ja liidestele
-- [ ] Pole peidetud salajasi väärtusi ega fallback väärtusi
-- [ ] Avalikud ülemised volikirjad sisestatud `resolvePublicCred()` kaudu (vaata [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), mitte kunagi sõna-sõnalt
-- [ ] Vigavastused suunatakse läbi `buildErrorBody()` / `sanitizeErrorMessage()` — vastuste kehades ei ole toored stack trace'id (vaata [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Käsurea käsud (`exec` / `spawn`) edastavad käitusväärtused `env` kaudu, mitte stringi interpoleerimise teel
-- [ ] Kõik sisendid valideeritud skeemidega
-- [ ] Muudatuste logi **fragment** lisatud `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` alla kasutajate suunatud muudatuste jaoks (vaata [`changelog.d/README.md`](./changelog.d/README.md)) — **ära** muuda `CHANGELOG.md` otse; fragmendid kogutakse väljaandmise ajal ja ei tekki kunagi konflikte
-- [ ] Dokumentatsioon uuendatud (kohaldatavatel juhtudel)
-- [ ] Uusi CodeQL / Secret-Scanning hoiatusi ei avatud, või iga neist lükati tagasi tehnilise põhjendusega, viidates asjakohasele `docs/security/` dokumendile
-- [ ] Marsruudid, mis käivitavad lapseprotsesse (`/api/mcp/`, `/api/cli-tools/runtime/`), on klassifitseeritud `isLocalOnlyPath()` abil `src/server/authz/routeGuard.ts` failis — vaata [Rangedreegel nr 15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Kommitedetsioonides pole `Co-Authored-By` trailerid — kommid peavad ilmuma ainult hoidla omaniku Git identiteedi all (Rangedreegel nr 16)
+- [ ] Testid läbivad edukalt (`npm test`)
+- [ ] Lintimine läbib edukalt (`npm run lint`)
+- [ ] Järk õnnestub (`npm run build`)
+- [ ] Uutele avalikele funktsioonidele ja liidestele on lisatud TypeScripti tüübid
+- [ ] Puuduvad kõvakodeeritud saladused või varuväärtused
+- [ ] Avalikud ülesvoolu pääsutunnused on manustatud `resolvePublicCred()` kaudu (vt [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), mitte kunagi literaalidena
+- [ ] Veavastused läbivad `buildErrorBody()` / `sanitizeErrorMessage()` — vastuste kehades pole töötlemata pinujälgi (vt [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Kestakäsud (`exec` / `spawn`) edastavad käitusaegsed väärtused `env` kaudu, mitte stringinterpolatsiooni abil
+- [ ] Kõik sisendid on valideeritud Zodi skeemidega
+- [ ] Kasutajale nähtavate muudatuste jaoks on lisatud muudatuste logi **fragment** asukohta `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` (vt [`changelog.d/README.md`](./changelog.d/README.md)) — ärge muutke faili `CHANGELOG.md` otse; fragmendid koondatakse väljalaske ajal ega lähe tõmbetaotluste vahel kunagi konflikti
+- [ ] Dokumentatsioon on värskendatud (kui kohaldatav)
+- [ ] Uusi CodeQL-i / saladuste skannimise hoiatusi pole avatud või iga hoiatus on tagasi lükatud tehnilise põhjendusega, mis viitab asjakohasele dokumendile kataloogis `docs/security/`
+- [ ] Alamprotsesse käivitavad marsruudid (`/api/mcp/`, `/api/cli-tools/runtime/`) on failis `src/server/authz/routeGuard.ts` liigitatud funktsiooniga `isLocalOnlyPath()` — vt [ranget reeglit nr 15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Sissekannete sõnumites pole tehisintellekti/roboti `Co-authored-by` järelridu (range reegel nr 16) — inimkaastöötajaid, kelle tööd taaskasutatakse, tunnustatakse standardsete `Co-authored-by: Name <email>` järelridadega
 
 ---
 
@@ -426,9 +428,8 @@ Seejärel kasuta töövooge `/deploy-vps-*-cc`, mis kasutavad rsync-i `dist/` ed
 
 ## Abi saamine
 
-- **Arhitektuur**: Vaata [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
-- **API viide**: Vaata [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
-- **Turvadokumendid**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **Toimingute dokumendid**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **Arhitektuur**: Vaadake faili [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md)
+- **API viitedokumentatsioon**: Vaadake faili [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md)
+- **Turbedokumentatsioon**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
+- **Käitlusdokumentatsioon**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **Probleemid**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **Arhitektuurilised otsused**: Vaata kausta `docs/adr/` arhitektuuriliste otsuste kirjelduste jaoks

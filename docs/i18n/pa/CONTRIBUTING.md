@@ -286,36 +286,36 @@ PR ਖੋਲ੍ਹਣ ਤੋਂ ਪਹਿਲਾਂ, ਆਪਣੀਆਂ ਕੀਤ
 
 ---
 
-## ਪ੍ਰੋਜੈਕਟ ਸੰਰਚਨਾ
+## ਪ੍ਰੋਜੈਕਟ ਦੀ ਬਣਤਰ
 
 ```
 src/                        # TypeScript (.ts / .tsx)
-├── app/                    # Next.js 16 ਐਪ ਰਾਊਟਰ
-│   ├── (dashboard)/        # ਡੈਸ਼ਬੋਰਡ ਪੰਨੇ (23 ਸੈਕਸ਼ਨ)
+├── app/                    # Next.js 16 App Router
+│   ├── (dashboard)/        # ਡੈਸ਼ਬੋਰਡ ਪੰਨੇ (23 ਭਾਗ)
 │   ├── api/                # API ਰੂਟ (51 ਡਾਇਰੈਕਟਰੀਆਂ)
 │   └── login/              # ਪ੍ਰਮਾਣੀਕਰਨ ਪੰਨੇ (.tsx)
 ├── domain/                 # ਨੀਤੀ ਇੰਜਣ (policyEngine, comboResolver, costRules, ਆਦਿ)
 ├── lib/                    # ਮੁੱਖ ਕਾਰੋਬਾਰੀ ਤਰਕ (.ts)
 │   ├── a2a/                # Agent-to-Agent v0.3 ਪ੍ਰੋਟੋਕੋਲ ਸਰਵਰ
 │   ├── acp/                # Agent Communication Protocol ਰਜਿਸਟਰੀ
-│   ├── compliance/         # ਪਾਲਣਾ ਨੀਤੀ ਇੰਜਣ
+│   ├── compliance/         # ਅਨੁਪਾਲਨਾ ਨੀਤੀ ਇੰਜਣ
 │   ├── db/                 # SQLite ਡੋਮੇਨ ਮੋਡੀਊਲ + 130 ਮਾਈਗ੍ਰੇਸ਼ਨਾਂ
 │   ├── memory/             # ਸਥਾਈ ਗੱਲਬਾਤੀ ਮੈਮੋਰੀ
 │   ├── oauth/              # OAuth ਪ੍ਰਦਾਤਾ, ਸੇਵਾਵਾਂ ਅਤੇ ਉਪਯੋਗਤਾਵਾਂ
-│   ├── skills/             # ਵਿਸਤਾਰਯੋਗ ਹੁਨਰ ਫ੍ਰੇਮਵਰਕ
-│   ├── usage/              # ਵਰਤੋਂ ਟ੍ਰੈਕਿੰਗ ਅਤੇ ਲਾਗਤ ਗਣਨਾ
+│   ├── skills/             # ਵਿਸਤਾਰਯੋਗ ਹੁਨਰ ਫਰੇਮਵਰਕ
+│   ├── usage/              # ਵਰਤੋਂ ਦੀ ਟ੍ਰੈਕਿੰਗ ਅਤੇ ਲਾਗਤ ਦੀ ਗਣਨਾ
 │   └── localDb.ts          # ਕੇਵਲ ਮੁੜ-ਨਿਰਯਾਤ ਪਰਤ — ਇੱਥੇ ਕਦੇ ਵੀ ਤਰਕ ਨਾ ਜੋੜੋ
 ├── middleware/              # ਬੇਨਤੀ ਮਿਡਲਵੇਅਰ (promptInjectionGuard)
-├── mitm/                   # MITM ਪ੍ਰੌਕਸੀ (ਸਰਟੀਫਿਕੇਟ, DNS, ਟਾਰਗੇਟ ਰਾਊਟਿੰਗ)
+├── mitm/                   # MITM ਪ੍ਰੌਕਸੀ (ਸਰਟੀਫਿਕੇਟ, DNS, ਟਾਰਗੇਟ ਰੂਟਿੰਗ)
 ├── shared/
 │   ├── components/         # React ਕੰਪੋਨੈਂਟ (.tsx)
-│   ├── constants/          # ਪ੍ਰਦਾਤਾ ਪਰਿਭਾਸ਼ਾਵਾਂ (329), MCP ਸਕੋਪ, 19 ਰਾਊਟਿੰਗ ਰਣਨੀਤੀਆਂ
-│   ├── utils/              # ਸਰਕਟ ਬ੍ਰੇਕਰ, ਸੈਨਿਟਾਈਜ਼ਰ, ਪ੍ਰਮਾਣੀਕਰਨ ਸਹਾਇਕ
-│   └── validation/         # Zod v4 ਸਕੀਮਾਂ
+│   ├── constants/          # ਪ੍ਰਦਾਤਾ ਪਰਿਭਾਸ਼ਾਵਾਂ (329), MCP ਸਕੋਪ, 19 ਰੂਟਿੰਗ ਰਣਨੀਤੀਆਂ
+│   ├── utils/              # ਸਰਕਿਟ ਬ੍ਰੇਕਰ, ਸੈਨਿਟਾਈਜ਼ਰ, ਪ੍ਰਮਾਣੀਕਰਨ ਸਹਾਇਕ
+│   └── validation/         # Zod v4 ਸਕੀਮਾ
 └── sse/                    # SSE ਪ੍ਰੌਕਸੀ ਪਾਈਪਲਾਈਨ
 
 open-sse/                   # @omniroute/open-sse ਵਰਕਸਪੇਸ
-├── executors/              # 89 ਐਗਜ਼ੀਕਿਊਟਰ ਲਾਗੂਕਰਨ ਮੋਡੀਊਲ
+├── executors/              # 150 ਐਗਜ਼ੀਕਿਊਟਰ ਮੋਡੀਊਲ (ਐਗਜ਼ੀਕਿਊਟਰ ਕਲਾਸਾਂ + ਪ੍ਰਤੀ-ਪ੍ਰਦਾਤਾ ਸਹਾਇਕ)
 ├── handlers/               # 11 ਬੇਨਤੀ ਹੈਂਡਲਰ (ਚੈਟ, ਜਵਾਬ, ਐਮਬੈਡਿੰਗ, ਚਿੱਤਰ, ਆਦਿ)
 ├── mcp-server/             # MCP ਸਰਵਰ (110 ਵਿਲੱਖਣ ਟੂਲ, 3 ਟ੍ਰਾਂਸਪੋਰਟ, 33 ਸਕੋਪ)
 ├── services/               # 178 ਸਿਖਰ-ਪੱਧਰੀ ਸੇਵਾਵਾਂ (combo, autoCombo, rateLimitManager, ਆਦਿ)
@@ -326,8 +326,8 @@ open-sse/                   # @omniroute/open-sse ਵਰਕਸਪੇਸ
 electron/                   # Electron ਡੈਸਕਟਾਪ ਐਪ (ਕ੍ਰਾਸ-ਪਲੇਟਫਾਰਮ)
 
 tests/
-├── unit/                   # Node.js ਟੈਸਟ ਰਨਰ (1,574 ਟੈਸਟ ਫ਼ਾਈਲਾਂ)
-├── integration/            # ਏਕੀਕਰਨ ਟੈਸਟ
+├── unit/                   # Node.js ਟੈਸਟ ਰਨਰ (1,574 ਟੈਸਟ ਫਾਈਲਾਂ)
+├── integration/            # ਇੰਟੀਗ੍ਰੇਸ਼ਨ ਟੈਸਟ
 ├── e2e/                    # Playwright ਟੈਸਟ
 ├── security/               # ਸੁਰੱਖਿਆ ਟੈਸਟ
 ├── translator/             # ਅਨੁਵਾਦਕ-ਵਿਸ਼ੇਸ਼ ਟੈਸਟ
@@ -341,16 +341,16 @@ docs/
 ├── dev/                     # ਵਿਕਾਸ ਗਾਈਡਾਂ
 ├── diagrams/                # ਆਰਕੀਟੈਕਚਰ ਡਾਇਗ੍ਰਾਮ
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # ਵਰਤੋਂਕਾਰ ਗਾਈਡ, Docker, ਸੈੱਟਅੱਪ, ਸਮੱਸਿਆ-ਨਿਪਟਾਰਾ
+├── guides/                  # ਵਰਤੋਂਕਾਰ ਗਾਈਡ, Docker, ਸੈੱਟਅੱਪ, ਸਮੱਸਿਆ-ਨਿਵਾਰਣ
 ├── i18n/                    # ਅੰਤਰਰਾਸ਼ਟਰੀਕ੍ਰਿਤ README ਅਨੁਵਾਦ
 ├── marketing/               # ਮਾਰਕੀਟਿੰਗ ਸਮੱਗਰੀ
-├── ops/                     # ਡਿਪਲੌਇਮੈਂਟ, ਪ੍ਰੌਕਸੀ, ਕਵਰੇਜ, ਰਿਲੀਜ਼ਾਂ
+├── ops/                     # ਡਿਪਲੌਇਮੈਂਟ, ਪ੍ਰੌਕਸੀ, ਕਵਰੇਜ, ਰਿਲੀਜ਼
 ├── providers/               # ਪ੍ਰਦਾਤਾ-ਵਿਸ਼ੇਸ਼ ਦਸਤਾਵੇਜ਼
 ├── reference/               # API ਹਵਾਲਾ, env vars, CLI ਟੂਲ, ਮੁਫ਼ਤ ਟੀਅਰ
-├── releases/                # ਰਿਲੀਜ਼ ਨੋਟ
-├── routing/                 # ਆਟੋ-ਕੰਬੋ ਇੰਜਣ, ਤਰਕ ਰੀਪਲੇਅ
+├── releases/                # ਰਿਲੀਜ਼ ਨੋਟਸ
+├── routing/                 # ਆਟੋ-ਕੌਂਬੋ ਇੰਜਣ, ਤਰਕ ਰੀਪਲੇ
 ├── screenshots/             # ਡੈਸ਼ਬੋਰਡ ਸਕ੍ਰੀਨਸ਼ਾਟ
-├── security/                # ਸੁਰੱਖਿਆ-ਸੀਮਾਵਾਂ, ਪਾਲਣਾ, ਗੁਪਤਤਾ, ਟੋਕਨ
+├── security/                # ਸੁਰੱਖਿਆ-ਪਾਬੰਦੀਆਂ, ਅਨੁਪਾਲਨਾ, ਗੁਪਤਤਾ, ਟੋਕਨ
 └── specs/                   # ਡਿਜ਼ਾਈਨ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ
 ```
 
@@ -392,22 +392,22 @@ docs/
 
 ---
 
-## ਪੁੱਲ ਰਿਕਵੈਸਟ ਚੈੱਕਲਿਸਟ
+## ਪੁੱਲ ਰਿਕਵੇਸਟ ਚੈੱਕਲਿਸਟ
 
 - [ ] ਟੈਸਟ ਪਾਸ ਹੁੰਦੇ ਹਨ (`npm test`)
 - [ ] ਲਿੰਟਿੰਗ ਪਾਸ ਹੁੰਦੀ ਹੈ (`npm run lint`)
 - [ ] ਬਿਲਡ ਸਫਲ ਹੁੰਦਾ ਹੈ (`npm run build`)
-- [ ] ਨਵੇਂ ਜਨਤਕ ਫੰਕਸ਼ਨਾਂ ਅਤੇ ਇੰਟਰਫੇਸਾਂ ਲਈ TypeScript ਟਾਈਪ ਸ਼ਾਮਲ ਕੀਤੇ ਗਏ ਹਨ
-- [ ] ਕੋਈ ਹਾਰਡਕੋਡ ਕੀਤਾ ਸੀਕ੍ਰੇਟ ਜਾਂ ਫਾਲਬੈਕ ਮੁੱਲ ਨਹੀਂ ਹੈ
-- [ ] ਜਨਤਕ ਅੱਪਸਟ੍ਰੀਮ ਕ੍ਰੈਡੈਂਸ਼ੀਅਲ `resolvePublicCred()` ਰਾਹੀਂ ਏਮਬੈੱਡ ਕੀਤੇ ਗਏ ਹਨ ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ਵੇਖੋ), ਕਦੇ ਵੀ ਲਿਟਰਲ ਵਜੋਂ ਨਹੀਂ
-- [ ] ਤਰੁੱਟੀ ਜਵਾਬ `buildErrorBody()` / `sanitizeErrorMessage()` ਰਾਹੀਂ ਜਾਂਦੇ ਹਨ — ਜਵਾਬ ਬਾਡੀਆਂ ਵਿੱਚ ਕੋਈ ਕੱਚਾ ਸਟੈਕ ਟਰੇਸ ਨਹੀਂ ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ਵੇਖੋ)
-- [ ] ਸ਼ੈੱਲ ਕਮਾਂਡਾਂ (`exec` / `spawn`) ਰਨਟਾਈਮ ਮੁੱਲਾਂ ਨੂੰ ਸਟਰਿੰਗ ਇੰਟਰਪੋਲੇਸ਼ਨ ਰਾਹੀਂ ਨਹੀਂ, ਸਗੋਂ `env` ਰਾਹੀਂ ਪਾਸ ਕਰਦੀਆਂ ਹਨ
+- [ ] ਨਵੇਂ ਪਬਲਿਕ ਫੰਕਸ਼ਨਾਂ ਅਤੇ ਇੰਟਰਫੇਸਾਂ ਲਈ TypeScript ਟਾਈਪਾਂ ਜੋੜੀਆਂ ਗਈਆਂ ਹਨ
+- [ ] ਕੋਈ ਹਾਰਡਕੋਡ ਕੀਤੇ ਸੀਕ੍ਰੇਟ ਜਾਂ ਫਾਲਬੈਕ ਮੁੱਲ ਨਹੀਂ ਹਨ
+- [ ] ਪਬਲਿਕ ਅੱਪਸਟ੍ਰੀਮ ਕ੍ਰੈਡੈਂਸ਼ਲ `resolvePublicCred()` ਰਾਹੀਂ ਐਂਬੈੱਡ ਕੀਤੇ ਗਏ ਹਨ ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ਵੇਖੋ), ਕਦੇ ਵੀ ਲਿਟਰਲ ਵਜੋਂ ਨਹੀਂ
+- [ ] ਗਲਤੀ ਜਵਾਬ `buildErrorBody()` / `sanitizeErrorMessage()` ਰਾਹੀਂ ਭੇਜੇ ਜਾਂਦੇ ਹਨ — ਜਵਾਬ ਬਾਡੀਆਂ ਵਿੱਚ ਕੋਈ ਕੱਚਾ ਸਟੈਕ ਟ੍ਰੇਸ ਨਹੀਂ ਹੈ ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ਵੇਖੋ)
+- [ ] ਸ਼ੈੱਲ ਕਮਾਂਡਾਂ (`exec` / `spawn`) ਰਨਟਾਈਮ ਮੁੱਲ ਸਟ੍ਰਿੰਗ ਇੰਟਰਪੋਲੇਸ਼ਨ ਰਾਹੀਂ ਨਹੀਂ, ਸਗੋਂ `env` ਰਾਹੀਂ ਪਾਸ ਕਰਦੀਆਂ ਹਨ
 - [ ] ਸਾਰੇ ਇਨਪੁੱਟ Zod ਸਕੀਮਿਆਂ ਨਾਲ ਪ੍ਰਮਾਣਿਤ ਕੀਤੇ ਗਏ ਹਨ
-- [ ] ਉਪਭੋਗਤਾ-ਸਾਹਮਣੇ ਵਾਲੀਆਂ ਤਬਦੀਲੀਆਂ ਲਈ `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ਅਧੀਨ ਚੇਂਜਲੌਗ **ਫ੍ਰੈਗਮੈਂਟ** ਸ਼ਾਮਲ ਕੀਤਾ ਗਿਆ ਹੈ ([`changelog.d/README.md`](./changelog.d/README.md) ਵੇਖੋ) — `CHANGELOG.md` ਨੂੰ ਸਿੱਧਾ ਸੰਪਾਦਿਤ **ਨਾ** ਕਰੋ; ਫ੍ਰੈਗਮੈਂਟ ਰਿਲੀਜ਼ ਵੇਲੇ ਇਕੱਠੇ ਕੀਤੇ ਜਾਂਦੇ ਹਨ ਅਤੇ PRs ਵਿਚਕਾਰ ਕਦੇ ਟਕਰਾਅ ਨਹੀਂ ਕਰਦੇ
+- [ ] ਵਰਤੋਂਕਾਰਾਂ ਨੂੰ ਪ੍ਰਭਾਵਿਤ ਕਰਨ ਵਾਲੀਆਂ ਤਬਦੀਲੀਆਂ ਲਈ `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ਅਧੀਨ ਚੇਂਜਲੌਗ **ਫ੍ਰੈਗਮੈਂਟ** ਜੋੜਿਆ ਗਿਆ ਹੈ ([`changelog.d/README.md`](./changelog.d/README.md) ਵੇਖੋ) — `CHANGELOG.md` ਨੂੰ ਸਿੱਧੇ ਤੌਰ 'ਤੇ ਸੰਪਾਦਿਤ **ਨਾ** ਕਰੋ; ਫ੍ਰੈਗਮੈਂਟ ਰਿਲੀਜ਼ ਸਮੇਂ ਇਕੱਠੇ ਕੀਤੇ ਜਾਂਦੇ ਹਨ ਅਤੇ PRs ਵਿਚਕਾਰ ਕਦੇ ਟਕਰਾਅ ਨਹੀਂ ਕਰਦੇ
 - [ ] ਦਸਤਾਵੇਜ਼ ਅੱਪਡੇਟ ਕੀਤੇ ਗਏ ਹਨ (ਜੇ ਲਾਗੂ ਹੋਵੇ)
-- [ ] ਕੋਈ ਨਵੀਂ CodeQL / Secret-Scanning ਚੇਤਾਵਨੀ ਨਹੀਂ ਖੋਲ੍ਹੀ ਗਈ, ਜਾਂ ਹਰੇਕ ਨੂੰ ਸੰਬੰਧਿਤ `docs/security/` ਦਸਤਾਵੇਜ਼ ਦਾ ਹਵਾਲਾ ਦਿੰਦੇ ਤਕਨੀਕੀ ਜਾਇਜ਼ੇ ਨਾਲ ਖਾਰਜ ਕੀਤਾ ਗਿਆ ਹੈ
-- [ ] ਚਾਈਲਡ ਪ੍ਰੋਸੈਸ ਸ਼ੁਰੂ ਕਰਨ ਵਾਲੇ ਰੂਟ (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` ਵਿੱਚ `isLocalOnlyPath()` ਵਜੋਂ ਵਰਗੀਕ੍ਰਿਤ ਹਨ — [ਸਖ਼ਤ ਨਿਯਮ #15](docs/security/ROUTE_GUARD_TIERS.md) ਵੇਖੋ
-- [ ] ਕਮਿਟ ਸੁਨੇਹਿਆਂ ਵਿੱਚ ਕੋਈ `Co-Authored-By` ਟ੍ਰੇਲਰ ਨਹੀਂ — ਕਮਿਟ ਸਿਰਫ਼ ਰਿਪੋਜ਼ਟਰੀ ਮਾਲਕ ਦੀ Git ਪਛਾਣ ਹੇਠ ਦਿਖਾਈ ਦੇਣੇ ਚਾਹੀਦੇ ਹਨ (ਸਖ਼ਤ ਨਿਯਮ #16)
+- [ ] ਕੋਈ ਨਵੀਂ CodeQL / Secret-Scanning ਚੇਤਾਵਨੀ ਨਹੀਂ ਖੋਲ੍ਹੀ ਗਈ, ਜਾਂ ਹਰ ਇੱਕ ਨੂੰ ਸੰਬੰਧਿਤ `docs/security/` ਦਸਤਾਵੇਜ਼ ਦਾ ਹਵਾਲਾ ਦਿੰਦੇ ਤਕਨੀਕੀ ਤਰਕ ਨਾਲ ਖਾਰਜ ਕੀਤਾ ਗਿਆ ਹੈ
+- [ ] ਚਾਈਲਡ ਪ੍ਰੋਸੈਸ ਸ਼ੁਰੂ ਕਰਨ ਵਾਲੇ ਰੂਟ (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` ਵਿੱਚ `isLocalOnlyPath()` ਵਜੋਂ ਵਰਗੀਕ੍ਰਿਤ ਕੀਤੇ ਗਏ ਹਨ — [ਸਖ਼ਤ ਨਿਯਮ #15](docs/security/ROUTE_GUARD_TIERS.md) ਵੇਖੋ
+- [ ] ਕਮਿਟ ਸੁਨੇਹਿਆਂ ਵਿੱਚ ਕੋਈ AI/ਬੌਟ `Co-authored-by` ਟ੍ਰੇਲਰ ਨਹੀਂ ਹਨ (ਸਖ਼ਤ ਨਿਯਮ #16) — ਜਿਨ੍ਹਾਂ ਮਨੁੱਖੀ ਸਹਿਯੋਗੀਆਂ ਦੇ ਕੰਮ ਦੀ ਮੁੜ ਵਰਤੋਂ ਕੀਤੀ ਗਈ ਹੈ, ਉਨ੍ਹਾਂ ਨੂੰ ਮਿਆਰੀ `Co-authored-by: Name <email>` ਟ੍ਰੇਲਰਾਂ ਨਾਲ ਸਿਹਰਾ ਦਿੱਤਾ ਗਿਆ ਹੈ
 
 ---
 
@@ -427,5 +427,4 @@ VPS ਡਿਪਲੌਇਆਂ ਲਈ, `npm run build` ਦੀ ਬਜਾਏ `npm ru
 - **API ਹਵਾਲਾ**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) ਵੇਖੋ
 - **ਸੁਰੱਖਿਆ ਦਸਤਾਵੇਜ਼**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
 - **ਓਪਰੇਸ਼ਨ ਦਸਤਾਵੇਜ਼**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
-- **ਮੁੱਦੇ**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: ਆਰਕੀਟੈਕਚਰਲ ਫ਼ੈਸਲਿਆਂ ਦੇ ਰਿਕਾਰਡਾਂ ਲਈ `docs/adr/` ਵੇਖੋ
+- **ਸਮੱਸਿਆਵਾਂ**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)

@@ -298,32 +298,32 @@ production build ಇವು CI ಯ ಜವಾಬ್ದಾರಿ — ಅವುಗ�
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
 │   ├── (dashboard)/        # ಡ್ಯಾಶ್ಬೋರ್ಡ್ ಪುಟಗಳು (23 ವಿಭಾಗಗಳು)
-│   ├── api/                # API ರೂಟ್ಗಳು (51 ಡೈರೆಕ್ಟರಿಗಳು)
+│   ├── api/                # API ಮಾರ್ಗಗಳು (51 ಡೈರೆಕ್ಟರಿಗಳು)
 │   └── login/              # ದೃಢೀಕರಣ ಪುಟಗಳು (.tsx)
 ├── domain/                 # ನೀತಿ ಎಂಜಿನ್ (policyEngine, comboResolver, costRules, ಇತ್ಯಾದಿ)
 ├── lib/                    # ಪ್ರಮುಖ ವ್ಯವಹಾರ ತರ್ಕ (.ts)
 │   ├── a2a/                # Agent-to-Agent v0.3 ಪ್ರೋಟೋಕಾಲ್ ಸರ್ವರ್
 │   ├── acp/                # Agent Communication Protocol ರಿಜಿಸ್ಟ್ರಿ
 │   ├── compliance/         # ಅನುಸರಣೆ ನೀತಿ ಎಂಜಿನ್
-│   ├── db/                 # SQLite ಡೊಮೇನ್ ಮಾಡ್ಯೂಲ್ಗಳು + 130 ಮೈಗ್ರೇಶನ್ಗಳು
+│   ├── db/                 # SQLite ಡೊಮೇನ್ ಮಾಡ್ಯೂಲ್ಗಳು + 130 ಮೈಗ್ರೇಷನ್ಗಳು
 │   ├── memory/             # ಶಾಶ್ವತ ಸಂಭಾಷಣಾ ಮೆಮೊರಿ
 │   ├── oauth/              # OAuth ಪೂರೈಕೆದಾರರು, ಸೇವೆಗಳು ಮತ್ತು ಉಪಯುಕ್ತತೆಗಳು
-│   ├── skills/             # ವಿಸ್ತರಿಸಬಹುದಾದ ಕೌಶಲ್ಯ ಫ್ರೇಮ್ವರ್ಕ್
+│   ├── skills/             # ವಿಸ್ತರಿಸಬಹುದಾದ ಕೌಶಲ್ಯ ಚೌಕಟ್ಟು
 │   ├── usage/              # ಬಳಕೆಯ ಟ್ರ್ಯಾಕಿಂಗ್ ಮತ್ತು ವೆಚ್ಚದ ಲೆಕ್ಕಾಚಾರ
 │   └── localDb.ts          # ಮರು-ರಫ್ತು ಲೇಯರ್ ಮಾತ್ರ — ಇಲ್ಲಿ ಎಂದಿಗೂ ತರ್ಕವನ್ನು ಸೇರಿಸಬೇಡಿ
 ├── middleware/              # ವಿನಂತಿ ಮಿಡಲ್ವೇರ್ (promptInjectionGuard)
 ├── mitm/                   # MITM ಪ್ರಾಕ್ಸಿ (ಪ್ರಮಾಣಪತ್ರ, DNS, ಗುರಿ ರೂಟಿಂಗ್)
 ├── shared/
 │   ├── components/         # React ಕಾಂಪೊನೆಂಟ್ಗಳು (.tsx)
-│   ├── constants/          # ಪೂರೈಕೆದಾರರ ವ್ಯಾಖ್ಯಾನಗಳು (329), MCP ಸ್ಕೋಪ್ಗಳು, 19 ರೂಟಿಂಗ್ ತಂತ್ರಗಳು
+│   ├── constants/          # ಪೂರೈಕೆದಾರರ ವ್ಯಾಖ್ಯಾನಗಳು (329), MCP ವ್ಯಾಪ್ತಿಗಳು, 19 ರೂಟಿಂಗ್ ತಂತ್ರಗಳು
 │   ├── utils/              # ಸರ್ಕ್ಯೂಟ್ ಬ್ರೇಕರ್, ಸ್ಯಾನಿಟೈಸರ್, ದೃಢೀಕರಣ ಸಹಾಯಕಗಳು
 │   └── validation/         # Zod v4 ಸ್ಕೀಮಾಗಳು
 └── sse/                    # SSE ಪ್ರಾಕ್ಸಿ ಪೈಪ್ಲೈನ್
 
 open-sse/                   # @omniroute/open-sse ವರ್ಕ್ಸ್ಪೇಸ್
-├── executors/              # 89 ಎಕ್ಸಿಕ್ಯೂಟರ್ ಅನುಷ್ಠಾನ ಮಾಡ್ಯೂಲ್ಗಳು
-├── handlers/               # 11 ವಿನಂತಿ ಹ್ಯಾಂಡ್ಲರ್ಗಳು (ಚಾಟ್, ಪ್ರತಿಕ್ರಿಯೆಗಳು, ಎಂಬೆಡಿಂಗ್ಗಳು, ಚಿತ್ರಗಳು, ಇತ್ಯಾದಿ)
-├── mcp-server/             # MCP ಸರ್ವರ್ (110 ಅನನ್ಯ ಟೂಲ್ಗಳು, 3 ಟ್ರಾನ್ಸ್ಪೋರ್ಟ್ಗಳು, 33 ಸ್ಕೋಪ್ಗಳು)
+├── executors/              # 150 ಎಕ್ಸಿಕ್ಯೂಟರ್ ಮಾಡ್ಯೂಲ್ಗಳು (ಎಕ್ಸಿಕ್ಯೂಟರ್ ಕ್ಲಾಸ್ಗಳು + ಪ್ರತಿ ಪೂರೈಕೆದಾರರ ಸಹಾಯಕಗಳು)
+├── handlers/               # 11 ವಿನಂತಿ ಹ್ಯಾಂಡ್ಲರ್ಗಳು (ಚಾಟ್, ಪ್ರತಿಕ್ರಿಯೆಗಳು, ಎಂಬೆಡ್ಡಿಂಗ್ಗಳು, ಚಿತ್ರಗಳು, ಇತ್ಯಾದಿ)
+├── mcp-server/             # MCP ಸರ್ವರ್ (110 ವಿಶಿಷ್ಟ ಪರಿಕರಗಳು, 3 ಟ್ರಾನ್ಸ್ಪೋರ್ಟ್ಗಳು, 33 ವ್ಯಾಪ್ತಿಗಳು)
 ├── services/               # 178 ಉನ್ನತ-ಮಟ್ಟದ ಸೇವೆಗಳು (combo, autoCombo, rateLimitManager, ಇತ್ಯಾದಿ)
 ├── translator/             # ಸ್ವರೂಪ ಅನುವಾದಕಗಳು (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses API ಟ್ರಾನ್ಸ್ಫಾರ್ಮರ್
@@ -332,31 +332,31 @@ open-sse/                   # @omniroute/open-sse ವರ್ಕ್ಸ್ಪೇಸ
 electron/                   # Electron ಡೆಸ್ಕ್ಟಾಪ್ ಆ್ಯಪ್ (ಬಹು-ಪ್ಲಾಟ್ಫಾರ್ಮ್)
 
 tests/
-├── unit/                   # Node.js ಟೆಸ್ಟ್ ರನ್ನರ್ (1,574 ಟೆಸ್ಟ್ ಫೈಲ್ಗಳು)
-├── integration/            # ಇಂಟಿಗ್ರೇಶನ್ ಟೆಸ್ಟ್ಗಳು
-├── e2e/                    # Playwright ಟೆಸ್ಟ್ಗಳು
-├── security/               # ಭದ್ರತಾ ಟೆಸ್ಟ್ಗಳು
-├── translator/             # ಅನುವಾದಕ-ನಿರ್ದಿಷ್ಟ ಟೆಸ್ಟ್ಗಳು
-└── load/                   # ಲೋಡ್ ಟೆಸ್ಟ್ಗಳು
+├── unit/                   # Node.js ಪರೀಕ್ಷಾ ರನ್ನರ್ (1,574 ಪರೀಕ್ಷಾ ಫೈಲ್ಗಳು)
+├── integration/            # ಏಕೀಕರಣ ಪರೀಕ್ಷೆಗಳು
+├── e2e/                    # Playwright ಪರೀಕ್ಷೆಗಳು
+├── security/               # ಭದ್ರತಾ ಪರೀಕ್ಷೆಗಳು
+├── translator/             # ಅನುವಾದಕ-ನಿರ್ದಿಷ್ಟ ಪರೀಕ್ಷೆಗಳು
+└── load/                   # ಲೋಡ್ ಪರೀಕ್ಷೆಗಳು
 
 docs/
 ├── adr/                     # ಆರ್ಕಿಟೆಕ್ಚರ್ ನಿರ್ಧಾರ ದಾಖಲೆಗಳು
-├── architecture/            # ಸಿಸ್ಟಮ್ ಆರ್ಕಿಟೆಕ್ಚರ್ ಮತ್ತು ಸ್ಥಿತಿಸ್ಥಾಪಕತ್ವ
+├── architecture/            # ಸಿಸ್ಟಂ ಆರ್ಕಿಟೆಕ್ಚರ್ ಮತ್ತು ಸ್ಥಿತಿಸ್ಥಾಪಕತ್ವ
 ├── comparison/              # OmniRoute ಮತ್ತು ಪರ್ಯಾಯಗಳ ಹೋಲಿಕೆ
-├── compression/             # ಸಂಕೋಚನ ಮಾರ್ಗದರ್ಶಿಗಳು ಮತ್ತು ನಿಯಮಗಳು
+├── compression/             # ಸಂಕುಚನ ಮಾರ್ಗದರ್ಶಿಗಳು ಮತ್ತು ನಿಯಮಗಳು
 ├── dev/                     # ಅಭಿವೃದ್ಧಿ ಮಾರ್ಗದರ್ಶಿಗಳು
 ├── diagrams/                # ಆರ್ಕಿಟೆಕ್ಚರ್ ರೇಖಾಚಿತ್ರಗಳು
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # ಬಳಕೆದಾರ ಮಾರ್ಗದರ್ಶಿ, Docker, ಸೆಟಪ್, ಸಮಸ್ಯೆ ನಿವಾರಣೆ
-├── i18n/                    # ಅಂತರರಾಷ್ಟ್ರೀಕೃತ README ಅನುವಾದಗಳು
+├── guides/                  # ಬಳಕೆದಾರ ಮಾರ್ಗದರ್ಶಿ, Docker, ಸೆಟಪ್, ದೋಷನಿವಾರಣೆ
+├── i18n/                    # ಅಂತರರಾಷ್ಟ್ರೀಕರಿಸಿದ README ಅನುವಾದಗಳು
 ├── marketing/               # ಮಾರ್ಕೆಟಿಂಗ್ ಸಾಮಗ್ರಿಗಳು
-├── ops/                     # ನಿಯೋಜನೆ, ಪ್ರಾಕ್ಸಿ, ಕವರೇಜ್, ಬಿಡುಗಡೆಗಳು
-├── providers/               # ಪೂರೈಕೆದಾರ-ನಿರ್ದಿಷ್ಟ ದಾಖಲೆಗಳು
-├── reference/               # API ಉಲ್ಲೇಖ, env vars, CLI ಟೂಲ್ಗಳು, ಉಚಿತ ಹಂತಗಳು
+├── ops/                     # ನಿಯೋಜನೆ, ಪ್ರಾಕ್ಸಿ, ವ್ಯಾಪ್ತಿ, ಬಿಡುಗಡೆಗಳು
+├── providers/               # ಪೂರೈಕೆದಾರ-ನಿರ್ದಿಷ್ಟ ದಸ್ತಾವೇಜುಗಳು
+├── reference/               # API ಉಲ್ಲೇಖ, ಪರಿಸರ ವೇರಿಯೇಬಲ್ಗಳು, CLI ಪರಿಕರಗಳು, ಉಚಿತ ಹಂತಗಳು
 ├── releases/                # ಬಿಡುಗಡೆ ಟಿಪ್ಪಣಿಗಳು
-├── routing/                 # ಸ್ವಯಂ-ಕಾಂಬೊ ಎಂಜಿನ್, ರೀಸನಿಂಗ್ ರೀಪ್ಲೇ
+├── routing/                 # ಸ್ವಯಂ-ಕಾಂಬೊ ಎಂಜಿನ್, ತಾರ್ಕಿಕತೆಯ ಮರುಪ್ರದರ್ಶನ
 ├── screenshots/             # ಡ್ಯಾಶ್ಬೋರ್ಡ್ ಸ್ಕ್ರೀನ್ಶಾಟ್ಗಳು
-├── security/                # ಗಾರ್ಡ್ರೇಲ್ಗಳು, ಅನುಸರಣೆ, ಸ್ಟೆಲ್ತ್, ಟೋಕನ್ಗಳು
+├── security/                # ಸುರಕ್ಷತಾ ನಿಯಂತ್ರಣಗಳು, ಅನುಸರಣೆ, ರಹಸ್ಯ ಕಾರ್ಯಾಚರಣೆ, ಟೋಕನ್ಗಳು
 └── specs/                   # ವಿನ್ಯಾಸ ವಿಶೇಷಣಗಳು
 ```
 
@@ -398,22 +398,22 @@ model definitions ಅನ್ನು `open-sse/config/providerRegistry.ts` ನಲ�
 
 ---
 
-## Pull Request ಪರಿಶೀಲನಾಪಟ್ಟಿ
+## ಪುಲ್ ರಿಕ್ವೆಸ್ಟ್ ಪರಿಶೀಲನಾ ಪಟ್ಟಿ
 
-- [ ] Tests ಯಶಸ್ವಿಯಾಗುತ್ತವೆ (`npm test`)
-- [ ] Linting ಯಶಸ್ವಿಯಾಗುತ್ತದೆ (`npm run lint`)
-- [ ] Build ಯಶಸ್ವಿಯಾಗುತ್ತದೆ (`npm run build`)
-- [ ] ಹೊಸ public functions ಮತ್ತು interfaces ಗಾಗಿ TypeScript types ಸೇರಿಸಲಾಗಿದೆ
-- [ ] hardcoded secrets ಅಥವಾ fallback values ಇಲ್ಲ
-- [ ] Public upstream credentials ಅನ್ನು `resolvePublicCred()` ಮೂಲಕ embed ಮಾಡಲಾಗಿದೆ ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ನೋಡಿ), literals ಆಗಿ ಎಂದಿಗೂ ಅಲ್ಲ
-- [ ] Error responses ಗಳು `buildErrorBody()` / `sanitizeErrorMessage()` ಮೂಲಕ ಹಾದುಹೋಗುತ್ತವೆ — response bodies ನಲ್ಲಿ ಕಚ್ಚಾ stack traces ಇಲ್ಲ ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ನೋಡಿ)
-- [ ] Shell commands (`exec` / `spawn`) runtime values ಅನ್ನು string interpolation ಮೂಲಕವಲ್ಲ, `env` ಮೂಲಕ ರವಾನಿಸುತ್ತವೆ
-- [ ] ಎಲ್ಲಾ inputs ಅನ್ನು Zod schemas ಮೂಲಕ ಮೌಲ್ಯೀಕರಿಸಲಾಗಿದೆ
-- [ ] ಬಳಕೆದಾರರಿಗೆ ಗೋಚರಿಸುವ ಬದಲಾವಣೆಗಳಿಗಾಗಿ `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ಅಡಿಯಲ್ಲಿ Changelog **fragment** ಸೇರಿಸಲಾಗಿದೆ ([`changelog.d/README.md`](./changelog.d/README.md) ನೋಡಿ) — `CHANGELOG.md` ಅನ್ನು ನೇರವಾಗಿ **ತಿದ್ದುಪಡಿ ಮಾಡಬೇಡಿ**; fragments ಅನ್ನು release ಸಮಯದಲ್ಲಿ ಒಟ್ಟುಗೂಡಿಸಲಾಗುತ್ತದೆ ಮತ್ತು ಅವು PR ಗಳ ನಡುವೆ ಎಂದಿಗೂ ಸಂಘರ್ಷಿಸುವುದಿಲ್ಲ
-- [ ] Documentation ನವೀಕರಿಸಲಾಗಿದೆ (ಅನ್ವಯಿಸಿದರೆ)
-- [ ] ಯಾವುದೇ ಹೊಸ CodeQL / Secret-Scanning alerts ತೆರೆಯಲಾಗಿಲ್ಲ, ಅಥವಾ ಪ್ರತಿಯೊಂದನ್ನೂ ಸಂಬಂಧಿತ `docs/security/` doc ಅನ್ನು ಉಲ್ಲೇಖಿಸುವ ತಾಂತ್ರಿಕ ಸಮರ್ಥನೆಯೊಂದಿಗೆ ವಜಾಗೊಳಿಸಲಾಗಿದೆ
-- [ ] child processes ಅನ್ನು spawn ಮಾಡುವ routes (`/api/mcp/`, `/api/cli-tools/runtime/`) ಅನ್ನು `src/server/authz/routeGuard.ts` ನಲ್ಲಿ `isLocalOnlyPath()` ಎಂದು ವರ್ಗೀಕರಿಸಲಾಗಿದೆ — [ಕಠಿಣ ನಿಯಮ #15](docs/security/ROUTE_GUARD_TIERS.md) ನೋಡಿ
-- [ ] commit messages ನಲ್ಲಿ `Co-Authored-By` trailers ಇಲ್ಲ — commits ಗಳು repository ಮಾಲೀಕರ Git identity ಅಡಿಯಲ್ಲಿ ಮಾತ್ರ ಕಾಣಿಸಬೇಕು (ಕಠಿಣ ನಿಯಮ #16)
+- [ ] ಪರೀಕ್ಷೆಗಳು ಯಶಸ್ವಿಯಾಗುತ್ತವೆ (`npm test`)
+- [ ] ಲಿಂಟಿಂಗ್ ಯಶಸ್ವಿಯಾಗುತ್ತದೆ (`npm run lint`)
+- [ ] ಬಿಲ್ಡ್ ಯಶಸ್ವಿಯಾಗುತ್ತದೆ (`npm run build`)
+- [ ] ಹೊಸ ಸಾರ್ವಜನಿಕ ಫಂಕ್ಷನ್ಗಳು ಮತ್ತು ಇಂಟರ್ಫೇಸ್ಗಳಿಗೆ TypeScript ಟೈಪ್ಗಳನ್ನು ಸೇರಿಸಲಾಗಿದೆ
+- [ ] ಹಾರ್ಡ್ಕೋಡ್ ಮಾಡಿದ ರಹಸ್ಯಗಳು ಅಥವಾ ಪರ್ಯಾಯ ಮೌಲ್ಯಗಳಿಲ್ಲ
+- [ ] ಸಾರ್ವಜನಿಕ ಅಪ್ಸ್ಟ್ರೀಮ್ ರುಜುವಾತುಗಳನ್ನು `resolvePublicCred()` ಮೂಲಕ ಎಂಬೆಡ್ ಮಾಡಲಾಗಿದೆ ([`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ನೋಡಿ), ಎಂದಿಗೂ ಲಿಟರಲ್ಗಳಾಗಿ ಅಲ್ಲ
+- [ ] ದೋಷ ಪ್ರತಿಕ್ರಿಯೆಗಳನ್ನು `buildErrorBody()` / `sanitizeErrorMessage()` ಮೂಲಕ ರವಾನಿಸಲಾಗಿದೆ — ಪ್ರತಿಕ್ರಿಯೆ ಬಾಡಿಗಳಲ್ಲಿ ಕಚ್ಚಾ ಸ್ಟ್ಯಾಕ್ ಟ್ರೇಸ್ಗಳಿಲ್ಲ ([`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) ನೋಡಿ)
+- [ ] ಶೆಲ್ ಕಮಾಂಡ್ಗಳು (`exec` / `spawn`) ರನ್ಟೈಮ್ ಮೌಲ್ಯಗಳನ್ನು ಸ್ಟ್ರಿಂಗ್ ಇಂಟರ್ಪೊಲೇಶನ್ ಮೂಲಕ ಅಲ್ಲ, `env` ಮೂಲಕ ರವಾನಿಸುತ್ತವೆ
+- [ ] ಎಲ್ಲಾ ಇನ್ಪುಟ್ಗಳನ್ನು Zod ಸ್ಕೀಮಾಗಳೊಂದಿಗೆ ಮೌಲ್ಯೀಕರಿಸಲಾಗಿದೆ
+- [ ] ಬಳಕೆದಾರರಿಗೆ ಗೋಚರಿಸುವ ಬದಲಾವಣೆಗಳಿಗಾಗಿ `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` ಅಡಿಯಲ್ಲಿ ಚೇಂಜ್ಲಾಗ್ **ಫ್ರ್ಯಾಗ್ಮೆಂಟ್** ಸೇರಿಸಲಾಗಿದೆ ([`changelog.d/README.md`](./changelog.d/README.md) ನೋಡಿ) — `CHANGELOG.md` ಅನ್ನು ನೇರವಾಗಿ ಸಂಪಾದಿಸ**ಬೇಡಿ**; ಫ್ರ್ಯಾಗ್ಮೆಂಟ್ಗಳನ್ನು ಬಿಡುಗಡೆ ಸಮಯದಲ್ಲಿ ಒಟ್ಟುಗೂಡಿಸಲಾಗುತ್ತದೆ ಮತ್ತು PRಗಳ ನಡುವೆ ಎಂದಿಗೂ ಸಂಘರ್ಷಿಸುವುದಿಲ್ಲ
+- [ ] ದಸ್ತಾವೇಜನ್ನು ನವೀಕರಿಸಲಾಗಿದೆ (ಅನ್ವಯಿಸಿದರೆ)
+- [ ] ಯಾವುದೇ ಹೊಸ CodeQL / Secret-Scanning ಎಚ್ಚರಿಕೆಗಳನ್ನು ತೆರೆಯಲಾಗಿಲ್ಲ, ಅಥವಾ ಪ್ರತಿಯೊಂದನ್ನೂ ಸಂಬಂಧಿತ `docs/security/` ದಸ್ತಾವೇಜನ್ನು ಉಲ್ಲೇಖಿಸುವ ತಾಂತ್ರಿಕ ಸಮರ್ಥನೆಯೊಂದಿಗೆ ವಜಾಗೊಳಿಸಲಾಗಿದೆ
+- [ ] ಚೈಲ್ಡ್ ಪ್ರೊಸೆಸ್ಗಳನ್ನು ಸ್ಪಾನ್ ಮಾಡುವ ರೂಟ್ಗಳನ್ನು (`/api/mcp/`, `/api/cli-tools/runtime/`) `src/server/authz/routeGuard.ts` ನಲ್ಲಿನ `isLocalOnlyPath()` ಆಗಿ ವರ್ಗೀಕರಿಸಲಾಗಿದೆ — [ಕಠಿಣ ನಿಯಮ #15](docs/security/ROUTE_GUARD_TIERS.md) ನೋಡಿ
+- [ ] ಕಮಿಟ್ ಸಂದೇಶಗಳಲ್ಲಿ AI/ಬಾಟ್ `Co-authored-by` ಟ್ರೇಲರ್ಗಳಿಲ್ಲ (ಕಠಿಣ ನಿಯಮ #16) — ಮರುಬಳಕೆ ಮಾಡಲಾದ ಕೆಲಸದ ಮಾನವ ಸಹಯೋಗಿಗಳಿಗೆ ಪ್ರಮಾಣಿತ `Co-authored-by: Name <email>` ಟ್ರೇಲರ್ಗಳೊಂದಿಗೆ ಮನ್ನಣೆ ನೀಡಲಾಗಿದೆ
 
 ---
 
@@ -431,7 +431,6 @@ VPS ನಿಯೋಜನೆಗಳಿಗಾಗಿ, `npm run build` ಬದಲಿಗ�
 
 - **ಆರ್ಕಿಟೆಕ್ಚರ್**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) ನೋಡಿ
 - **API ಉಲ್ಲೇಖ**: [`docs/reference/API_REFERENCE.md`](docs/reference/API_REFERENCE.md) ನೋಡಿ
-- **ಭದ್ರತಾ ದಾಖಲೆಗಳು**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
-- **ಕಾರ್ಯಾಚರಣೆಗಳ ದಾಖಲೆಗಳು**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
+- **ಭದ್ರತಾ ದಸ್ತಾವೇಜುಗಳು**: [`docs/security/CLI_TOKEN.md`](docs/security/CLI_TOKEN.md), [`docs/security/ROUTE_GUARD_TIERS.md`](docs/security/ROUTE_GUARD_TIERS.md), [`docs/security/ERROR_SANITIZATION.md`](docs/security/ERROR_SANITIZATION.md), [`docs/security/PUBLIC_CREDS.md`](docs/security/PUBLIC_CREDS.md)
+- **ಕಾರ್ಯಾಚರಣೆಗಳ ದಸ್ತಾವೇಜುಗಳು**: [`docs/ops/SQLITE_RUNTIME.md`](docs/ops/SQLITE_RUNTIME.md)
 - **ಸಮಸ್ಯೆಗಳು**: [github.com/diegosouzapw/OmniRoute/issues](https://github.com/diegosouzapw/OmniRoute/issues)
-- **ADRs**: ಆರ್ಕಿಟೆಕ್ಚರಲ್ ನಿರ್ಧಾರ ದಾಖಲೆಗಳಿಗಾಗಿ `docs/adr/` ನೋಡಿ
