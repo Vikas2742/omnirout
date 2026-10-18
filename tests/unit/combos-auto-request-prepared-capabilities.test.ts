@@ -7,6 +7,11 @@
  * (the release-tip code path, which prepares inside `createVirtualAutoCombo`)
  * serves: same members, same order, same snapshot weights, same advertised limits.
  * Unknown ids must not prepare a pool at all.
+ *
+ * AUTO_REQUEST_RESOLVED_CAPABILITIES (opt-in) prepares with resolved capabilities
+ * and quality scores. Those feed `computeSnapshotWeights`, so the same members in
+ * the same order get different weights; both request paths (resolveModelOrError
+ * and the auto-routing wrapper) must honor the flag, and only when it is on.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -138,6 +143,80 @@ test("default path: an unknown auto id keeps the 400", async () => {
   assert.equal(result.error.status, 400);
   assert.equal(result.combo, undefined);
   await result.error.body?.cancel();
+});
+
+const FLAG = "AUTO_REQUEST_RESOLVED_CAPABILITIES";
+
+async function withFlag<T>(value: string | undefined, fn: () => Promise<T>): Promise<T> {
+  const previous = process.env[FLAG];
+  if (value === undefined) delete process.env[FLAG];
+  else process.env[FLAG] = value;
+  try {
+    return await fn();
+  } finally {
+    if (previous === undefined) delete process.env[FLAG];
+    else process.env[FLAG] = previous;
+  }
+}
+
+const memberOrder = (combo: ComboLike) =>
+  (combo.models ?? []).map((m) => `${m.providerId}|${m.model}|${m.connectionId ?? ""}`);
+const weightsOf = (combo: ComboLike) => (combo.models ?? []).map((m) => m.weight);
+
+/** The resolved-capability combo for an id, built the way the flag-on path builds it. */
+async function resolvedPath(modelStr: string, suffix: string) {
+  return builtinCatalog.createBuiltinAutoCombo(
+    modelStr,
+    suffix,
+    await builtinCatalog.prepareBuiltinAutoComboInputs()
+  );
+}
+
+test("flag on: auto/coding keeps members and order but takes the resolved-capability weights", async () => {
+  await seedProviders();
+  const tipPath = await builtinCatalog.createBuiltinAutoCombo("auto/coding", "coding");
+  const resolved = await resolvedPath("auto/coding", "coding");
+  // Precondition: on this seed the resolved inputs really do change the weights.
+  assert.notDeepEqual(weightsOf(resolved), weightsOf(tipPath));
+  assert.deepEqual(memberOrder(resolved), memberOrder(tipPath));
+
+  const off = await withFlag("false", () =>
+    resolveModelOrError("auto/coding", BODY, "/v1/chat/completions")
+  );
+  assert.ok(off.combo);
+  assert.deepEqual(weightsOf(off.combo), weightsOf(tipPath), "flag off keeps the tip weights");
+
+  const on = await withFlag("true", () =>
+    resolveModelOrError("auto/coding", BODY, "/v1/chat/completions")
+  );
+  assert.ok(on.combo);
+  assert.deepEqual(memberOrder(on.combo), memberOrder(tipPath), "flag on keeps the member order");
+  assert.deepEqual(routingView(on.combo), routingView(resolved));
+});
+
+test("flag on/off: the auto-routing wrapper honors the flag", async () => {
+  await seedProviders();
+  const { resolveAutoRoutingState, createVirtualAutoCombo } =
+    await import("../../src/sse/handlers/autoRouting.ts");
+  const state = await resolveAutoRoutingState("auto/coding");
+  assert.ok(state.isAutoRouting, "auto/coding should route through the wrapper");
+  const tipPath = await virtualFactory.createVirtualAutoCombo(state.variant, state.spec);
+  const resolved = await virtualFactory.createVirtualAutoComboFromPrepared(
+    await virtualFactory.prepareVirtualAutoComboInputs({ includeResolvedCapabilities: true }),
+    state.variant,
+    state.spec
+  );
+  assert.notDeepEqual(weightsOf(resolved), weightsOf(tipPath));
+
+  const off = await withFlag(undefined, () => createVirtualAutoCombo(state, null));
+  assert.ok(off && !(off instanceof Response));
+  assert.deepEqual(memberOrder(off), memberOrder(tipPath));
+  assert.deepEqual(weightsOf(off), weightsOf(tipPath), "default keeps the tip weights");
+
+  const on = await withFlag("true", () => createVirtualAutoCombo(state, null));
+  assert.ok(on && !(on instanceof Response));
+  assert.deepEqual(memberOrder(on), memberOrder(tipPath), "flag on keeps the member order");
+  assert.deepEqual(weightsOf(on), weightsOf(resolved), "flag on takes the resolved weights");
 });
 
 test("default path: no connected candidate keeps the existing 503", async () => {

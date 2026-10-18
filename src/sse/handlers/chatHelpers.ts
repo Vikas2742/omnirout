@@ -58,7 +58,10 @@ import { resolveProviderId } from "../../shared/constants/providers";
 import { classifyProviderProbeResult } from "./providerProbeClassification";
 import { markProviderProbeResponse } from "../../shared/utils/providerProbeResult";
 import { inheritResponsePolicies } from "./chat/responsePolicies.ts";
-import { isFeatureFlagEnabled } from "../../shared/utils/featureFlags";
+import {
+  isAutoRequestResolvedCapabilitiesEnabled,
+  isFeatureFlagEnabled,
+} from "../../shared/utils/featureFlags";
 
 import { noteProxyOutcome } from "./proxyOutcomeMemory";
 import { logProxyJournal } from "./proxyJournal";
@@ -208,11 +211,13 @@ export async function resolveModelOrError(
 
     // One pool preparation shared by the attempt below and the fuzzy fallbacks,
     // built only when an id actually materializes (unknown ids never prepare).
-    // Same inputs as createVirtualAutoCombo(): capabilities resolve on demand.
+    // Default: the same inputs as createVirtualAutoCombo() (capabilities resolve on
+    // demand). AUTO_REQUEST_RESOLVED_CAPABILITIES (opt-in) resolves them up front,
+    // which also feeds them to the snapshot weights.
     let prepared: Awaited<ReturnType<typeof prepareBuiltinAutoComboInputs>> | undefined;
     const loadPrepared = async () =>
       (prepared ??= await prepareBuiltinAutoComboInputs(undefined, {
-        includeResolvedCapabilities: false,
+        includeResolvedCapabilities: isAutoRequestResolvedCapabilitiesEnabled(),
       }));
 
     try {
