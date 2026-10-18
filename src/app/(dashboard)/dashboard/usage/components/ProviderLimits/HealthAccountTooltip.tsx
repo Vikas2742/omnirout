@@ -43,6 +43,9 @@ export default function HealthAccountTooltip({
     };
   }, [anchor, account]);
   const cooling = a.kind === "cd5" || a.kind === "cdw";
+  const thresholdBlocked = a.reasons.some(
+    (r) => r.type === "quota" && (r.percent ?? 0) > 0 && Number.isFinite(r.cutoff)
+  );
   return createPortal(
     <div
       ref={card}
@@ -67,7 +70,7 @@ export default function HealthAccountTooltip({
         {a.kind === "act"
           ? t("healthLegendAction")
           : cooling
-            ? `${t(a.reasons.some((r) => r.type === "quota") ? "healthQuotaExhausted" : "healthCooldown")} · ${a.recoverAt ? t("healthWait", { duration: recovery(a.recoverAt), time: format.dateTime(new Date(a.recoverAt), { hour: "2-digit", minute: "2-digit" }) }) : t("healthRecoveryUnknown")}`
+            ? `${t(thresholdBlocked ? "quotaThresholdLabel" : a.reasons.some((r) => r.type === "quota") ? "healthQuotaExhausted" : "healthCooldown")} · ${a.recoverAt ? t("healthWait", { duration: recovery(a.recoverAt), time: format.dateTime(new Date(a.recoverAt), { hour: "2-digit", minute: "2-digit" }) }) : t("healthRecoveryUnknown")}`
             : a.partial
               ? t("healthLegendPartial")
               : all(DISPLAY_LABELS[a.kind])}
@@ -98,7 +101,11 @@ export default function HealthAccountTooltip({
         </p>
       ))}
       {a.reasons
-        .filter((r) => !["quota", "cooldown", "terminal"].includes(r.type))
+        .filter((r) =>
+          r.type === "quota"
+            ? Number.isFinite(r.percent) && Number.isFinite(r.cutoff)
+            : !["cooldown", "terminal"].includes(r.type)
+        )
         .map((r, i) => (
           <p key={i} className="mt-0.5 text-text-muted">
             {reason(r, a)}

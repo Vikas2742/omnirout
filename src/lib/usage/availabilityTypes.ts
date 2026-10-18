@@ -11,6 +11,8 @@ export interface QuotaAvailabilityDecision {
   /** null means that there is no cached observation, not a guessed healthy account. */
   usable: boolean | null;
   blockers: QuotaAvailabilityWindow[];
+  /** Server-selected first recovery across alternatives; blockers retain all explanations. */
+  recoveryWindow?: QuotaAvailabilityWindow;
   allowanceReasons: QuotaAllowanceReason[];
   /** False only when an enabled live cutoff cannot be reconstructed from cached usage. */
   cutoffEvaluated?: boolean;

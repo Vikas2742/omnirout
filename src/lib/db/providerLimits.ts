@@ -34,6 +34,8 @@ export interface ProviderLimitsCacheEntry {
   paidCredits?: CodexPaidCredits;
   billing?: ProviderBillingStatus;
   quotaGroups?: Array<Record<string, unknown>>;
+  limitReached?: boolean;
+  rateLimitReachedType?: string;
 }
 
 const PROVIDER_LIMITS_CACHE_NAMESPACE = "providerLimitsCache";
@@ -76,6 +78,10 @@ function normalizeCacheEntry(value: unknown): ProviderLimitsCacheEntry | null {
     message: typeof record.message === "string" ? record.message : null,
     fetchedAt,
     source: typeof record.source === "string" ? record.source : null,
+    ...(typeof record.limitReached === "boolean" ? { limitReached: record.limitReached } : {}),
+    ...(typeof record.rateLimitReachedType === "string"
+      ? { rateLimitReachedType: record.rateLimitReachedType }
+      : {}),
     ...(Number.isFinite(bankedResetCredits) ? { bankedResetCredits } : {}),
     ...(paidCredits ? { paidCredits } : {}),
     ...(billing ? { billing } : {}),

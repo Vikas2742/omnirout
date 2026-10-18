@@ -56,7 +56,9 @@ export function convertCachedUsageToQuotaInfo(
   const quotas = usage.quotas || {};
   return parseCodexUsageResponse(
     {
+      rate_limit_reached_type: usage.rateLimitReachedType,
       rate_limit: {
+        limit_reached: usage.limitReached ?? false,
         primary_window: codexWindow(quotas.session),
         secondary_window: codexWindow(quotas.weekly),
       },

@@ -19,6 +19,7 @@ export interface AvailabilityScopeInput {
   id: string;
   kind: "account" | "group" | "scoped";
   model: string;
+  models?: string[];
   windows: string[];
 }
 /** Representatives are discovered from observations or the router's model/scope catalog. */
@@ -91,16 +92,22 @@ export function availabilityScopes(
         ? group.models.filter((m): m is string => typeof m === "string")
         : [];
       const family = id === "claude_gpt" ? "claude" : id;
-      const model =
-        models[0] ||
-        [...names, ...catalog].find(
-          (m) => !/_(session|weekly)$/.test(m) && getAntigravityQuotaFamily(m) === family
-        );
+      const alternatives = [
+        ...new Set(
+          models.length
+            ? models
+            : [...names, ...catalog].filter(
+                (m) => !/_(session|weekly)$/.test(m) && getAntigravityQuotaFamily(m) === family
+              )
+        ),
+      ].sort();
+      const model = alternatives[0];
       if (model)
         scopes.push({
           id,
           kind: "group",
           model,
+          models: alternatives,
           windows: names.filter((n) => n.startsWith(`${id}_`)),
         });
     }

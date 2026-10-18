@@ -76,8 +76,11 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
   const terminal = reasons.some((r) => r.type === "terminal");
   const cooldown = reasons.filter((r) => r.type === "cooldown");
   let kind: DisplayKind = account.status === "paused" ? "paused" : terminal ? "act" : "ok";
+  const recoveryBlockers = decision?.recoveryWindow
+    ? [decision.recoveryWindow]
+    : decision?.blockers || [];
   const constraints: HealthReason[] = [
-    ...(decision?.blockers || []).map((b) => ({
+    ...recoveryBlockers.map((b) => ({
       type: "quota" as const,
       window: b.name,
       resetAt: b.resetAt,
@@ -90,7 +93,7 @@ function project(account: HealthAccount, now: number, poolId?: string): DisplayA
   if (kind === "ok" && (accountBlocked || quotaBlocked || cooldown.length)) {
     const classify = (r: HealthReason): "cd5" | "cdw" => {
       if (r.type === "quota") {
-        return decision?.blockers.find((b) => b.name === r.window)?.kind === "fiveHour"
+        return recoveryBlockers.find((b) => b.name === r.window)?.kind === "fiveHour"
           ? "cd5"
           : "cdw";
       }

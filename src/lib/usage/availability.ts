@@ -31,6 +31,7 @@ import {
 } from "@omniroute/open-sse/config/codexQuotaScopes.ts";
 import { formatQuotaWindowLabel } from "@omniroute/open-sse/services/quotaWindowLabel.ts";
 import { availabilityScopes } from "./availabilityScopes";
+import { combineQuotaAlternatives } from "./availabilityAlternatives";
 import { cutoffBlockingWindows, exhaustedBlockingWindows } from "./availabilityWindows";
 import { canEvaluateCachedCutoff, convertCachedUsageToQuotaInfo } from "./cachedQuotaConversion";
 import type {
@@ -261,7 +262,14 @@ export function buildConnectionQuotaAvailability(
             allowanceReasons: [],
             fetchedAt: cachedUsage.fetchedAt || null,
           }
-        : evaluateCachedQuotaAvailability(input, usage, policy, scope.model),
+        : scope.models
+          ? combineQuotaAlternatives(
+              scope.models.map((model) =>
+                evaluateCachedQuotaAvailability(input, usage, policy, model)
+              ),
+              evaluateCachedQuotaAvailability(input, usage, policy, scope.model)
+            )
+          : evaluateCachedQuotaAvailability(input, usage, policy, scope.model),
   }));
   const candidates = evaluated.filter((scope) => scope.id !== "code_review");
   // Ordinary requests define the account verdict. Only peer pools may use any-usable
@@ -271,20 +279,7 @@ export function buildConnectionQuotaAvailability(
     .filter((scope) => scope.kind === "group")
     .map((scope) => scope.decision);
   const fallback = evaluateCachedQuotaAvailability(input, usage, policy);
-  const usable = decisions.find((decision) => decision.usable === true);
-  const allBlocked = decisions.every((decision) => decision.usable === false);
-  const account = ordinary
-    ? ordinary.decision
-    : !decisions.length
-      ? fallback
-      : usable
-        ? { ...usable, blockers: [] }
-        : {
-            ...fallback,
-            usable: allBlocked ? false : null,
-            blockers: allBlocked ? decisions.flatMap((decision) => decision.blockers) : [],
-            allowanceReasons: [],
-          };
+  const account = ordinary ? ordinary.decision : combineQuotaAlternatives(decisions, fallback);
   const payloadScopes = evaluated.flatMap((scope) =>
     scope.kind === "account"
       ? candidates.some((candidate) => candidate.kind !== "account")
