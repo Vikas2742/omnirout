@@ -9,6 +9,10 @@ import { once } from "node:events";
 import { getLogExportDestinationType } from "../../src/lib/logExport/registry.ts";
 import type { LogExportRecord } from "../../src/lib/logExport/types.ts";
 
+const packageVersion: string = JSON.parse(
+  fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8")
+).version;
+
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "otlp-"));
 process.env.DATA_DIR = dir;
 process.env.STORAGE_ENCRYPTION_KEY = "synthetic-otlp-encryption-key";
@@ -119,7 +123,7 @@ test("chat payload golden: exact ids, completion timestamp, duration, resource a
         resource: {
           attributes: [
             { key: "service.name", value: str("omniroute") },
-            { key: "service.version", value: str("3.8.52") },
+            { key: "service.version", value: str(packageVersion) },
           ],
         },
         scopeSpans: [
