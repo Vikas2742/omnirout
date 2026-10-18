@@ -766,6 +766,7 @@ export async function checkConnection(conn) {
         : await probeGitHubAccessToken({
             accessToken: conn.accessToken,
             apiBaseUrl: getCopilotTokenBaseUrl(conn),
+            proxyConfig,
           });
       if (copilotResult?.status === 401) {
         await updateProviderConnection(conn.id, {
