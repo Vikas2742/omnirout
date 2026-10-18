@@ -46,7 +46,7 @@ A boolean flag is considered **enabled** when its effective value is `"true"`,
 
 ## Flag Catalog
 
-87 flags across 6 categories. **Default** is the definition default — the value
+104 flags across 6 categories. **Default** is the definition default — the value
 used when neither a DB override nor an environment variable is present.
 
 ### Security (10)
@@ -108,7 +108,7 @@ used when neither a DB override nor an environment variable is present.
 | `RADAR_ENABLED`                          | boolean | `false`    | Enable the OmniRoute Radar module (catalog feed screens and sync). Off by default; enabling only unlocks the UI — data sync remains a separate opt-in.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `MODEL_ENDPOINT_CAPABILITY_GATE_ENABLED` | boolean | `false`    | Enforce trusted model endpoint tags (provider-declared, inferred from a specialty model id, or operator-set): reject a request sent to an endpoint the model does not serve with HTTP 400 before dispatch on `/v1/chat/completions`, `/v1/embeddings`, `/v1/rerank`, `/v1/images/generations`, `/v1/videos/generations`, `/v1/music/generations` and `/v1/audio/*`; hide models whose tagged endpoints have no OmniRoute adapter from `/v1/models`; answer the dashboard model test with 422 for them (#16929). Off by default: endpoint tags stay informational and dispatch is unchanged. |
 
-### Runtime (38)
+### Runtime (48)
 
 | Key                                            | Type    | Default | Restart | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ---------------------------------------------- | ------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -245,7 +245,7 @@ Returns every flag with its effective value, source, and a summary.
       "requiresRestart": false,
       "warningLevel": "caution",
     },
-    // ... all 103 flags
+    // ... all 104 flags
   ],
   "summary": {
     "total": 56,
