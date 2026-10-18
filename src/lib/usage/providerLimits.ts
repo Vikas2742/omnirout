@@ -418,11 +418,11 @@ export function shouldClearErrorStateOnValidProbe(
 /**
  * May an active cooldown be released because the REAL quota windows recovered?
  *
- * Only the synthetic-cooldown case (#10534) qualifies: lastErrorType
- * "quota_exhausted" plus every governing window past its real reset with quota
- * left. A window that is still exhausted — or whose reset is unknown/unparseable
- * — keeps the connection locked, matching the kimi-coding partial-refresh
- * semantics.
+ * An ordinary quota poll may not overrule a real upstream 429 (#11277).
+ * There are only two narrow recovery paths: a synthetic cooldown whose real
+ * windows have elapsed (#10534), or a Claude weekly reset event positively
+ * observed AFTER that exact 429 with every reported quota window replenished
+ * (#17043). Unobserved/partial/stale windows preserve the original cooldown.
  */
 
 /**
@@ -472,10 +472,9 @@ export async function maybeClearRecoveredQuotaState(
   if (hasActiveCooldown(connection)) {
     // A future rateLimitedUntil written from a real upstream signal is a hard
     // statement no poller may overrule (#11277) — executor-sourced rate limits
-    // and extra-usage policy blocks included. Only a SYNTHETIC cooldown (a
-    // quota_exhausted lock persisted without an upstream reset, e.g. the
-    // Claude-subscription poller's 1h lockout) yields to positive live-window
-    // evidence that the real quota has already replenished past its reset.
+    // and extra-usage policy blocks included. Two independently evidenced
+    // exceptions exist: an outlived synthetic cooldown and a recorded Claude
+    // weekly reset observed after the 429 with fresh, usable windows.
     const syntheticRecoveryOverride =
       connection.lastErrorType === "quota_exhausted" &&
       connection.lastErrorSource !== "extra_usage" &&
