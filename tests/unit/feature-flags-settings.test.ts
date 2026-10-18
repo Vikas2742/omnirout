@@ -59,7 +59,7 @@ const {
 // (#17003, lets Claude OAuth drop the redact-thinking beta for summarized thinking,
 // default off) to 87; STREAM_LATE_OUTPUT_PROBE_ENABLED
 // (#16927 late-output stream probe, default off) to 88.
-const EXPECTED_FEATURE_FLAG_COUNT = 88;
+const EXPECTED_FEATURE_FLAG_COUNT = 94;
 // LMARENA_SYNTHESIZED_CX_ENABLED (#16895, default off) to 88.
 // CONTENT_POLICY_REFUSAL_COMBO_STOP_ENABLED (#15917, default off) takes it to 88.
 // NATIVE_CODEX_REACTIVE_COMPACTION_ENABLED (#16632, default off) to 88.
