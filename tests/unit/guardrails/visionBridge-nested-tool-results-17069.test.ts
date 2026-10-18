@@ -121,7 +121,7 @@ test("#17069: partial failure and maxImages cap cannot leak later nested images"
 });
 
 test("#17069: native vision models still retain the original nested image", async () => {
-  const request = { ...makeRequest([imagePart()]), model: "openai/gpt-4o" };
+  const request = { ...makeRequest([imagePart()]), model: "conol-web/claude-fable-5-xhigh" };
   let calls = 0;
   const result = await guardrail(10, async () => {
     calls++;
