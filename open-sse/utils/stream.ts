@@ -64,6 +64,7 @@ import { createReasoningStreamObserver } from "./responsesReasoningObservation.t
 import { recordToolLatency } from "../services/toolLatencyTracker.ts";
 import { extractToolSchemaMap } from "../translator/response/openai-responses/toolSchemas.ts";
 import { collectDeclaredToolNames } from "../translator/response/openai-responses/declaredToolName.ts";
+import { appendToolCallNameDelta } from "./toolCallName.ts";
 import {
   generateSessionId,
   markToolFinish,
@@ -99,6 +100,7 @@ import { trackStreamPartialUsage } from "./streamPartialUsage.ts";
 import { buildUsageOnlyChunk } from "./usageOnlyChunk.ts";
 import { createSSEOutputSink } from "./sseOutputSink.ts";
 import { normalizeArrayContentChunk } from "./arrayContentDelta.ts";
+import { drainTranslateFlushTail } from "./translateFlushTail.ts";
 
 /**
  * Race a response body read against a timeout.
@@ -2152,8 +2154,14 @@ export function createSSEStream(options: StreamOptions = {}) {
                         });
                       } else {
                         if (tc?.id) existing.id = existing.id || String(tc.id);
-                        if (tc?.function?.name && !existing.function.name)
-                          existing.function.name = tc.function.name;
+                        // Accumulate name deltas — a split declared name
+                        // (`functions__` + `exec`) must not be truncated to one
+                        // fragment (arguments already append below).
+                        if (tc?.function?.name)
+                          existing.function.name = appendToolCallNameDelta(
+                            existing.function.name,
+                            tc.function.name
+                          );
                         existing.function.arguments += deltaArgs;
                       }
                     }
@@ -2959,6 +2967,62 @@ export function createSSEStream(options: StreamOptions = {}) {
           }
 
           // Translate mode: process remaining buffer
+          // Held tail lines first, then the partial buffer below: exactly one
+          // of the two ever holds data (the normalizer clears `buffer` when it
+          // produces the tail), so the two paths never emit twice.
+          if (
+            drainTranslateFlushTail(normalizedTailLines, controller, {
+              targetFormat,
+              openaiFormat: FORMATS.OPENAI,
+              openaiResponsesFormat: FORMATS.OPENAI_RESPONSES,
+              body,
+              state: state as TranslateState & Record<string, unknown>,
+              sessionId,
+              now: () => Date.now(),
+              getLastToolCallChunkTime: () => lastToolCallChunkTime,
+              setLastToolCallChunkTime: (value) => {
+                lastToolCallChunkTime = value;
+              },
+              getToolFinishTime: () => toolFinishTime,
+              setToolFinishTime: (value) => {
+                toolFinishTime = value;
+              },
+              noteReasoning: (parsed, nowMs) => {
+                if (
+                  targetFormat === FORMATS.OPENAI_RESPONSES &&
+                  ((parsed as JsonRecord).type === "response.output_item.added" ||
+                    (parsed as JsonRecord).type === "response.output_item.done") &&
+                  (parsed as JsonRecord).item !== undefined
+                )
+                  reasoningObserver.note(parsed, nowMs);
+              },
+              isDuplicateSequence: (value) => isDuplicateResponsesSequence(value),
+              shouldDropCommentary: (parsed) =>
+                shouldDropResponsesCommentary ? dropCommentary(parsed as JsonRecord) : false,
+              pushProviderPayload: (payload) => providerPayloadCollector.push(payload),
+              emitFailureAndAbort: (ctrl, parsed) =>
+                emitTranslatedFailureAndAbort(
+                  ctrl as TransformStreamDefaultController<Uint8Array>,
+                  parsed
+                ),
+              translateAndEmit: (ctrl, parsed) => {
+                const translated = translateResponse(targetFormat, sourceFormat, parsed, state);
+                for (const item of getOpenAIIntermediateChunks(translated)) {
+                  const openaiOutput = formatSSE(item, FORMATS.OPENAI);
+                  reqLogger?.appendOpenAIChunk?.(openaiOutput);
+                }
+                if (translated?.length > 0) {
+                  for (const item of translated) {
+                    emitTranslatedClientItem(
+                      ctrl as TransformStreamDefaultController<Uint8Array>,
+                      item as Record<string, unknown>
+                    );
+                  }
+                }
+              },
+            })
+          )
+            return;
           if (buffer.trim()) {
             const parsed = parseSSELine(buffer.trim());
             if (parsed && !parsed.done) {
