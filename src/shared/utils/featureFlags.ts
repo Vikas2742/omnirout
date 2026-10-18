@@ -458,6 +458,23 @@ export function isOpencodePoolReselectEnabled(): boolean {
   }
 }
 
+/**
+ * #16798 — OpenCode Zen/Go models without an explicit registry endpoint take their
+ * request surface from the published models.opencode.ai catalog. Off by default; any
+ * resolution error keeps the registry behavior.
+ */
+export function isOpencodePublishedCatalogRoutingEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
+
 export function isServerOwnedToolLoopEnabled(
   reader: (key: string) => boolean = isFeatureFlagEnabled
 ): boolean {
