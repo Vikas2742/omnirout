@@ -214,6 +214,9 @@ export function hasObservedClaudeQuotaResetAfter(
        WHERE connection_id = ? AND LOWER(provider) = 'claude'
          AND (LOWER(window_key) LIKE '%weekly%' OR LOWER(window_key) LIKE '%7d%')
          AND LOWER(window_key) NOT LIKE '%sonnet%'
+         AND previous_remaining_percentage IS NOT NULL
+         AND new_remaining_percentage > previous_remaining_percentage
+         AND new_remaining_percentage > 0
          AND observed_at > ? AND observed_at <= ?
        ORDER BY observed_at DESC, id DESC LIMIT 1`
     ).all(connectionId, new Date(afterMs).toISOString(), new Date(nowMs).toISOString());
