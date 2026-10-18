@@ -13,7 +13,7 @@ const { VisionBridgeGuardrail } = await import("../../../src/lib/guardrails/visi
 const { getResolvedModelCapabilities } = await import("../../../src/lib/modelCapabilities.ts");
 const { containsMediaKind } = await import("../../../open-sse/utils/mediaParts.ts");
 
-const TEXT_ONLY_MODEL = "conol-web/deepseek/deepseek-v4-pro";
+const TEXT_ONLY_MODEL = "glm/glm-5.3";
 const DATA = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
 function imagePart(data: string = DATA) {
@@ -70,6 +70,13 @@ function guardrail(maxImages: number, callVisionModel: (ref: string) => Promise<
   });
 }
 
+test("#17069: GLM text-only and vision-capable siblings have explicit metadata", () => {
+  for (const id of ["glm-5.3", "glm-5.3-high", "glm-5.3-low", "glm-5.3-max"]) {
+    assert.equal(getResolvedModelCapabilities(`glm/${id}`).supportsVision, false, id);
+  }
+  assert.equal(getResolvedModelCapabilities("glm/glm-5.3-flash").supportsVision, true);
+});
+
 test("#17069: a failed nested Read-tool image is replaced for confirmed text-only targets", async () => {
   assert.equal(getResolvedModelCapabilities(TEXT_ONLY_MODEL).supportsVision, false);
   const request = makeRequest([imagePart()]);
@@ -121,7 +128,7 @@ test("#17069: partial failure and maxImages cap cannot leak later nested images"
 });
 
 test("#17069: native vision models still retain the original nested image", async () => {
-  const request = { ...makeRequest([imagePart()]), model: "conol-web/claude-fable-5-xhigh" };
+  const request = { ...makeRequest([imagePart()]), model: "glm/glm-5.3-flash" };
   let calls = 0;
   const result = await guardrail(10, async () => {
     calls++;
