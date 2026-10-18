@@ -1223,6 +1223,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     warningLevel: "caution",
   },
   {
+    key: "OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED",
+    label: "OpenCode Published Catalog Routing",
+    description:
+      "Let OpenCode Zen and OpenCode Go models without an explicit registry endpoint take their request surface (Responses for @ai-sdk/openai, Messages for @ai-sdk/anthropic) from the published models.opencode.ai catalog, read in the background every 6 h. Off by default: the endpoint comes from the registry heuristics exactly as before and the catalog is never fetched.",
+    descriptionI18nKey: "featureFlagOpencodePublishedCatalogRoutingEnabledDescription",
+    category: "runtime",
+    defaultValue: "false",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "info",
+  },
+  {
     key: "AUTO_REQUEST_RESOLVED_CAPABILITIES",
     label: "Auto Requests: Resolved Capability Weights",
     description:

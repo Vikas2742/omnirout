@@ -110,8 +110,10 @@ import {
   isOpencodeRateLimited429EarlyStopEnabled,
   isOpencodeParkAndResumeEnabled,
   isOpencodePoolReselectEnabled,
+  isOpencodePublishedCatalogRoutingEnabled,
   isOpencodeV2ClientFingerprintEnabled,
 } from "@/shared/utils/featureFlags";
+import { setPublishedCatalogRoutingGate } from "../utils/opencodePublishedCatalog.ts";
 import { isEgressBucketedLockScope } from "../config/providerErrorRules.ts";
 import {
   BURST_PARK_THRESHOLD,
@@ -189,6 +191,12 @@ export function parseEffortLevel(model: string): { baseModel: string; effort: st
   }
   return null;
 }
+
+// #16798: the published-catalog surface lookup in providerModels.ts is client-reachable and
+// cannot import the server flag resolver; this executor (always loaded with the chat
+// pipeline) hands it the OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED reader. Unregistered
+// (client bundle) reads as off.
+setPublishedCatalogRoutingGate(isOpencodePublishedCatalogRoutingEnabled);
 
 /**
  * Resolves the registry `targetFormat` for a model, aliasing `provider` first.
