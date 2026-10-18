@@ -671,38 +671,36 @@ test("403 forbidden marks only that connection exhausted, not the whole provider
   assert.ok(s.exhaustedConnections.has("test-dedup-provider:conn-1"));
 });
 
-// 2026-10-08 live incident (auto/best-coding interrupted mid-session): the opencode free
-// tier delisted `deepseek-v4-flash-free` upstream, so the gateway answered
-// 401 "Model deepseek-v4-flash-free is not supported". chatCore locks the model for 120s
-// (retry protection), but markAuthLevelExhaustion ALSO poisoned the shared synthetic
-// `noauth` connection — every remaining sibling target was then skipped via #1731v2 and
-// the combo died at attempt 1/5 with "All models failed". The credential is fine;
-// upstream is refusing the MODEL (errorClassifier classifies this text MODEL_NOT_FOUND,
-// #7268). Sibling models must stay eligible for the rest of the request.
-test("model-scoped 401 (Model X is not supported) does NOT exhaust the shared connection", () => {
+// #14313 — three generic guards on the exhaustion classifier. Each case below fails on the
+// release tip (the connection was marked exhausted, skipping every sibling target that
+// shares it) and passes with the guards. The target is a plain non-passthrough provider
+// (`test-dedup-provider`), so no per-model-quota exemption hides the guard under test.
+
+// (1) A 401/403 whose body names the MODEL as unsupported is model-scoped (errorClassifier
+// classifies it MODEL_NOT_FOUND, #7268): chatCore locks the model; the connection stays
+// eligible for its sibling models.
+test("#14313 model-scoped 401 (Model X is not supported) does NOT exhaust the connection", () => {
   const s = sets();
-  const { providerExhausted: exhausted } = applyComboTargetExhaustion(
-    target({ provider: "opencode", connectionId: "noauth" }),
-    {
-      ...baseOpts,
-      result: { status: 401 },
-      fallbackResult: {},
-      errorText: "[401]: Model deepseek-v4-flash-free is not supported",
-      sets: s,
-    }
-  );
+  const { providerExhausted: exhausted } = applyComboTargetExhaustion(target(), {
+    ...baseOpts,
+    result: { status: 401 },
+    fallbackResult: {},
+    errorText: "[401]: Model some-rotated-model is not supported",
+    sets: s,
+  });
   assert.equal(exhausted, false, "model-scoped 401 must not mark the connection exhausted");
   assert.equal(s.exhaustedConnections.size, 0, "a delisted model must not poison its siblings");
   assert.equal(s.exhaustedProviders.size, 0, "a delisted model must not poison the provider");
 });
 
-test("model-scoped 403 (Model X is not supported) does NOT exhaust the shared connection", () => {
+test("#14313 model-scoped 403 (message only in structuredError) does NOT exhaust", () => {
   const s = sets();
   const { providerExhausted: exhausted } = applyComboTargetExhaustion(target(), {
     ...baseOpts,
     result: { status: 403 },
     fallbackResult: {},
-    errorText: "Model some-remium-model is not supported",
+    errorText: "Forbidden",
+    structuredError: { message: "Model some-premium-model is not supported" },
     sets: s,
   });
   assert.equal(exhausted, false);
@@ -710,13 +708,10 @@ test("model-scoped 403 (Model X is not supported) does NOT exhaust the shared co
   assert.equal(s.exhaustedProviders.size, 0);
 });
 
-// 2026-10-08 live: nemotron-3-ultra-free's upstream (Nvidia) flaked with "Service
-// temporarily overloaded", which streamReadiness rewrote into a synthetic 502
-// "Stream ended before producing a non-ping SSE event". The connection to the gateway
-// was healthy (it answered and opened the stream) — only this MODEL's backend failed.
-// Poisoning the shared connection skipped every sibling (#1731v2) and failed the combo
-// at attempt 1/4. Same verdict as the #5085 empty-content 502.
-test("synthetic early-EOF 502 does NOT exhaust the connection (structured code)", () => {
+// (2) streamReadiness rewrites an upstream stream that dies before any non-ping event into
+// a synthetic 502 (code STREAM_EARLY_EOF / type stream_early_eof). The connection answered
+// and opened the stream; only this MODEL's backend failed — same verdict as #5085.
+test("#14313 synthetic early-EOF 502 does NOT exhaust the connection (structured code)", () => {
   const s = sets();
   const { providerExhausted: exhausted } = applyComboTargetExhaustion(target(), {
     ...baseOpts,
@@ -731,7 +726,7 @@ test("synthetic early-EOF 502 does NOT exhaust the connection (structured code)"
   assert.equal(s.exhaustedProviders.size, 0);
 });
 
-test("synthetic early-EOF 502 does NOT exhaust the connection (text only)", () => {
+test("#14313 synthetic early-EOF 502 does NOT exhaust the connection (text only)", () => {
   const s = sets();
   applyComboTargetExhaustion(target(), {
     ...baseOpts,
@@ -741,72 +736,40 @@ test("synthetic early-EOF 502 does NOT exhaust the connection (text only)", () =
       "Stream ended before producing a non-ping SSE event: Streaming response failed: [503] Upstream error from Nvidia: Service temporarily overloaded",
     sets: s,
   });
-  assert.equal(
-    s.exhaustedConnections.size,
-    0,
-    "model-level upstream overload must not poison siblings"
-  );
+  assert.equal(s.exhaustedConnections.size, 0, "model-level overload must not poison siblings");
 });
 
-// 2026-10-08 live (auto/best-coding): a `-contributor-free` opencode model pushes the
-// request upstream and the zen gateway answers 403 "OpenCode's free tier can only be
-// used from within OpenCode" (FreeTierError). The refusal is REQUEST-SCOPED — the same
-// request is served on big-pickle / nemotron. opencode is a passthrough provider, so the
-// per-model-quota gate above already exempts it today; the requestScoped gates below
-// make the same promise for non-passthrough providers. Either way the shared noauth
-// connection must never be marked auth-exhausted on a free-tier refusal.
-test("request-scoped 403 free-tier refusal does NOT exhaust (flag set)", () => {
+test("#14313 a plain 502 still exhausts the connection — the EOF guard is not over-broad", () => {
   const s = sets();
-  const { providerExhausted: exhausted } = applyComboTargetExhaustion(
-    target({ provider: "opencode", connectionId: "noauth" }),
-    {
-      ...baseOpts,
-      result: { status: 403 },
-      fallbackResult: {},
-      errorText: "OpenCode's free tier can only be used from within OpenCode.",
-      requestScopedFailure: true,
-      sets: s,
-    }
-  );
-  assert.equal(exhausted, false, "free-tier refusal must not mark auth-level exhaustion");
-  assert.equal(s.exhaustedConnections.size, 0);
-  assert.equal(s.exhaustedProviders.size, 0);
+  applyComboTargetExhaustion(target(), {
+    ...baseOpts,
+    result: { status: 502, headers: null },
+    fallbackResult: {},
+    errorText: "Bad Gateway",
+    sets: s,
+  });
+  assert.ok(s.exhaustedConnections.has("test-dedup-provider:conn-1"));
 });
 
-test("request-scoped 403 free-tier refusal does NOT exhaust (structured freetiererror)", () => {
-  const s = sets();
-  const { providerExhausted: exhausted } = applyComboTargetExhaustion(
-    target({ provider: "opencode", connectionId: "noauth" }),
-    {
-      ...baseOpts,
-      result: { status: 403 },
-      fallbackResult: {},
-      errorText: "OpenCode's free tier can only be used from within OpenCode.",
-      structuredError: { code: "FreeTierError", type: "freetiererror" },
-      sets: s,
-    }
-  );
-  assert.equal(exhausted, false);
-  assert.equal(s.exhaustedConnections.size, 0);
-  assert.equal(s.exhaustedProviders.size, 0);
-});
-
-test("a request-scoped 401 on a non-passthrough provider does NOT exhaust (flag)", () => {
+// (3) A request-scoped failure refuses the REQUEST SHAPE, never the credentials. The
+// connection-level and provider-quota branches already honored `requestScopedFailure` /
+// `isRequestScopedUpstreamFailure`; the 401/403 auth branch did not.
+test("#14313 request-scoped 401 does NOT exhaust (requestScopedFailure option)", () => {
   const s = sets();
   const { providerExhausted: exhausted } = applyComboTargetExhaustion(target(), {
     ...baseOpts,
     result: { status: 401 },
     fallbackResult: {},
-    errorText: "OpenCode's free tier can only be used from within OpenCode.",
+    errorText: "This request shape is not accepted on this tier.",
     requestScopedFailure: true,
     sets: s,
   });
-  assert.equal(exhausted, false, "the requestScopedFailure flag must bypass auth-level exhaustion");
+  assert.equal(exhausted, false, "requestScopedFailure must bypass auth-level exhaustion");
   assert.equal(s.exhaustedConnections.size, 0);
   assert.equal(s.exhaustedProviders.size, 0);
 });
 
-test("a request-scoped 403 on a non-passthrough provider does NOT exhaust (structured invalid_request)", () => {
+test("#14313 request-scoped 403 does NOT exhaust (structured invalid_request_error)", () => {
   const s = sets();
   const { providerExhausted: exhausted } = applyComboTargetExhaustion(target(), {
     ...baseOpts,
@@ -816,15 +779,11 @@ test("a request-scoped 403 on a non-passthrough provider does NOT exhaust (struc
     structuredError: { type: "invalid_request_error" },
     sets: s,
   });
-  assert.equal(
-    exhausted,
-    false,
-    "a request-scoped structured type must bypass auth-level exhaustion"
-  );
+  assert.equal(exhausted, false, "a request-scoped structured type must bypass auth exhaustion");
   assert.equal(s.exhaustedConnections.size, 0);
 });
 
-test("a plain 403 on a non-passthrough provider still exhausts — gates did not over-exempt", () => {
+test("#14313 a plain 403 still exhausts the connection — the gates did not over-exempt", () => {
   const s = sets();
   const { providerExhausted: exhausted } = applyComboTargetExhaustion(target(), {
     ...baseOpts,
