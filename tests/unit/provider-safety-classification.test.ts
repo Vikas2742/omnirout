@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classifyProviderSafetyError } from "../../open-sse/utils/providerSafety.ts";
+import {
+  classifyProviderSafetyError,
+  isPublicProviderSafetyCode,
+} from "../../open-sse/utils/providerSafety.ts";
+import { extractJsonErrorFields } from "../../open-sse/utils/tencentEnvelope.ts";
+
+// Classification is opt-in (PROVIDER_SAFETY_STOPS_TERMINAL, default off): these cases run
+// with the flag on; the default-off case below clears it.
+process.env.PROVIDER_SAFETY_STOPS_TERMINAL = "true";
 
 const message =
   "This request was blocked by our safety systems. Reason: Potentially unintended activity.";
@@ -75,5 +83,30 @@ test("a type projected into the legacy code slot retains only the local stop cla
       message,
     }),
     { status: 403, code: "provider_safety_rejection" }
+  );
+});
+
+test("default off: classification, public safety codes and the response.error fallback are inert", () => {
+  const previous = process.env.PROVIDER_SAFETY_STOPS_TERMINAL;
+  delete process.env.PROVIDER_SAFETY_STOPS_TERMINAL;
+  try {
+    assert.equal(
+      classifyProviderSafetyError({ status: 403, code: "misalignment_policy_violation" }),
+      null
+    );
+    assert.equal(isPublicProviderSafetyCode("content_policy_violation"), false);
+    const fields = extractJsonErrorFields({
+      response: { error: { code: "content_policy_violation", message: "nested" } },
+    });
+    assert.notEqual(fields.errorCode, "content_policy_violation");
+  } finally {
+    process.env.PROVIDER_SAFETY_STOPS_TERMINAL = previous;
+  }
+  assert.equal(isPublicProviderSafetyCode("content_policy_violation"), true);
+  assert.equal(
+    extractJsonErrorFields({
+      response: { error: { code: "content_policy_violation", message: "nested" } },
+    }).errorCode,
+    "content_policy_violation"
   );
 });

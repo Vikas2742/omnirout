@@ -1,7 +1,7 @@
 import { CORS_HEADERS } from "./cors.ts";
 import { unwrapClinepassEnvelope } from "./clinepassEnvelope.ts";
 import { extractJsonErrorFields } from "./tencentEnvelope.ts";
-import { classifyProviderSafetyError } from "./providerSafety.ts";
+import { classifyProviderSafetyError, isPublicProviderSafetyCode } from "./providerSafety.ts";
 import {
   redactSensitiveErrorText,
   sanitizeErrorMessage,
@@ -117,7 +117,6 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "connection_unavailable",
   "connector_error",
   "connector_not_found",
-  "content_policy_violation",
   "context_length_exceeded",
   "context_window",
   "devin_agentic_error",
@@ -210,7 +209,6 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "missing_session_id",
   "missing_tool_name",
   "missing_tool_use_id",
-  "misalignment_policy_violation",
   "mixed_tool_narrative",
   "model_cooldown",
   "model_excluded",
@@ -247,7 +245,6 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "provider_error",
   "provider_not_configured",
   "provider_retired",
-  "provider_safety_rejection",
   "provider_unavailable",
   "proxy_family_unavailable",
   "proxy_request_failed",
@@ -369,7 +366,9 @@ function isSafePublicErrorIdentifier(value: string): boolean {
   if (!PUBLIC_ERROR_IDENTIFIER.test(value)) return false;
   if (/^[1-5]\d{2}$/.test(value)) return true;
   if (/^HTTP_[1-5]\d{2}$/i.test(value)) return true;
-  return SAFE_PUBLIC_ERROR_IDENTIFIERS.has(value.toLowerCase());
+  return (
+    SAFE_PUBLIC_ERROR_IDENTIFIERS.has(value.toLowerCase()) || isPublicProviderSafetyCode(value)
+  );
 }
 
 /** Project an internal classification onto the bounded client-visible identifier vocabulary. */

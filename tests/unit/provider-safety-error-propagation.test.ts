@@ -8,6 +8,8 @@ const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-safety-error-bo
 process.env.DATA_DIR = dataDir;
 process.env.API_KEY_SECRET = "safety-error-boundary-fixture-only";
 process.env.DISABLE_SQLITE_AUTO_BACKUP = "true";
+// These cases exercise the opt-in behavior (default off; see the default-off case).
+process.env.PROVIDER_SAFETY_STOPS_TERMINAL = "true";
 const { buildErrorBody, createErrorResult, parseUpstreamError } =
   await import("../../open-sse/utils/error.ts");
 const { normalizeStreamFailurePayload, projectCompletedStreamError } =
@@ -142,12 +144,6 @@ test("unrelated and status-conflicting errors are not promoted to request-scoped
       type: "rate_limit_error",
       message: "Rate limit",
     },
-    {
-      status: 502,
-      code: "content_policy_violation",
-      type: "server_error",
-      message: "Upstream error",
-    },
   ]) {
     const normalized = normalizeStreamFailurePayload({ error });
     assert.equal(normalized?.type, error.type);
@@ -162,6 +158,25 @@ test("unrelated and status-conflicting errors are not promoted to request-scoped
       false
     );
   }
+
+  // A status-conflicting content-policy code is not promoted to a safety stop either: its
+  // type and 502 status survive. (Its request-scoped verdict comes from #15917, which
+  // treats a content_policy_violation code as request-scoped by itself.)
+  const serverError = {
+    status: 502,
+    code: "content_policy_violation",
+    type: "server_error",
+    message: "Upstream error",
+  };
+  const normalized = normalizeStreamFailurePayload({ error: serverError });
+  assert.equal(normalized?.type, "server_error");
+  assert.equal(normalized?.status, 502);
+  const parsed = await parseUpstreamError(
+    new Response(JSON.stringify({ error: serverError }), { status: 502 }),
+    "codex"
+  );
+  assert.equal(parsed.errorType, "server_error");
+  assert.equal(parsed.statusCode, 502);
 });
 
 test("unknown identifiers and status-conflicting safety-shaped errors remain sanitized", () => {

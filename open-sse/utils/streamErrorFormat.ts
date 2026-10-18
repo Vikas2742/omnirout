@@ -1,7 +1,7 @@
 import { FORMATS } from "../translator/formats.ts";
 import { isContentPolicyRefusal } from "./contentPolicyError.ts";
 import { buildErrorBody, sanitizeErrorMessage } from "./error.ts";
-import { classifyProviderSafetyError } from "./providerSafety.ts";
+import { classifyProviderSafetyError, isProviderSafetyStopsEnabled } from "./providerSafety.ts";
 import { projectResponsesFailureOutput } from "./responsesFailureOutput.ts";
 import { SYNTHETIC_RESPONSES_SEQUENCE_NUMBER } from "./responsesSequence.ts";
 
@@ -49,7 +49,9 @@ export function projectCompletedStreamError(
   const status = Number.isInteger(failure.status) ? failure.status : 502;
   return buildErrorBody(status, failure.message, undefined, {
     type: failure.type ?? "server_error",
-    code: failure.code ?? String(failure.status ?? 502),
+    // PROVIDER_SAFETY_STOPS_TERMINAL (#17049) keeps the upstream code; off, the status is the code.
+    code:
+      (isProviderSafetyStopsEnabled() ? failure.code : undefined) ?? String(failure.status ?? 502),
   }).error;
 }
 

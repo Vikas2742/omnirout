@@ -9,6 +9,8 @@ const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-combo-safety-st
 process.env.DATA_DIR = dataDir;
 process.env.API_KEY_SECRET = "combo-safety-stop-offline-test-only";
 process.env.DISABLE_SQLITE_AUTO_BACKUP = "true";
+// These cases exercise the opt-in behavior (default off; see the default-off case).
+process.env.PROVIDER_SAFETY_STOPS_TERMINAL = "true";
 const network = mock.method(globalThis, "fetch", async () => {
   throw new Error("Unexpected network call in offline combo safety tests");
 });
@@ -560,4 +562,36 @@ test.after(() => {
   fs.rmSync(dataDir, { recursive: true, force: true });
   assert.equal(network.mock.callCount(), 0, "all combo safety tests must remain offline");
   network.mock.restore();
+});
+
+test("PROVIDER_SAFETY_STOPS_TERMINAL off (default): a safety-coded refusal routes like any other 403", async () => {
+  const previous = process.env.PROVIDER_SAFETY_STOPS_TERMINAL;
+  delete process.env.PROVIDER_SAFETY_STOPS_TERMINAL;
+  try {
+    const run = async (code: string) => {
+      const calls: string[] = [];
+      const opts = options();
+      opts.handleSingleModel = async (_body, model) => {
+        calls.push(model);
+        return calls.length === 1 ? failure(403, code) : success();
+      };
+      const response = await handleComboChat(opts);
+      return {
+        status: response.status,
+        calls,
+        terminal: getComboTrace(opts.invocationId as string)?.terminal,
+      };
+    };
+    const safety = await run("misalignment_policy_violation");
+    const ordinary = await run("permission_denied");
+    assert.equal(safety.status, ordinary.status);
+    assert.deepEqual(safety.calls, ordinary.calls);
+    assert.notEqual(
+      (safety.terminal as { errorClass?: string } | undefined)?.errorClass,
+      "safety_rejection"
+    );
+  } finally {
+    if (previous === undefined) delete process.env.PROVIDER_SAFETY_STOPS_TERMINAL;
+    else process.env.PROVIDER_SAFETY_STOPS_TERMINAL = previous;
+  }
 });
