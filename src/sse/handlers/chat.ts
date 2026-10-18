@@ -1,5 +1,5 @@
-import { intersectAllowedConnectionIds } from "./chat/connectionConstraints.ts";
 import { hasQoderCallerTools } from "@omniroute/open-sse/services/qoderCapabilities";
+import { getRequestedModelEndpointMismatch } from "@/lib/providerModels/modelEndpointGuard";
 import { randomUUID } from "crypto";
 import { resolveChatRequestBody } from "./requestBody";
 import { getComboCredentialAvailability } from "./comboCredentialAvailability.ts";
@@ -12,14 +12,15 @@ import { resolvePreviousResponseState } from "@/lib/db/responsesContinuationStor
 import { normalizeResponsesPreviousResponseIdMode } from "@omniroute/open-sse/utils/responsesStatePolicy.ts";
 import { FORMATS } from "@omniroute/open-sse/translator/formats.ts";
 import { resolveRoutingModel, RoutingModelOps } from "./resolveRoutingModel";
+import { resolveApiKeyForcedModel } from "./apiKeyForcedModel";
 import {
   getProviderCredentialsWithQuotaPreflight,
   markAccountUnavailable,
   buildExhaustionOptions,
-  extractApiKey,
   isValidApiKey,
   extractSessionAffinityKey,
 } from "../services/auth";
+import { resolveClientApiKey } from "../services/clientApiKeyResolver";
 import {
   getRuntimeProviderProfile,
   clearModelLock,
@@ -47,7 +48,6 @@ import { isVerifiedNativeCodexRequest } from "@omniroute/open-sse/config/codexId
 import { resolveCompressionSettings } from "@omniroute/open-sse/handlers/chatCore/compressionSettings.ts";
 import type { CompressionExclusions } from "@omniroute/open-sse/services/compression/exclusions.ts";
 import { resolveComboConfig } from "@omniroute/open-sse/services/comboConfig.ts";
-import { comboPinAllowlist } from "@/lib/combos/steps.ts";
 import { injectHandoffIntoBody } from "@omniroute/open-sse/services/contextHandoff.ts";
 import { runWithTransientBackendRetry } from "@omniroute/open-sse/services/transientBackendRetry.ts";
 import {
@@ -119,7 +119,10 @@ import {
 import { buildModalityBridgeHeader } from "@/lib/guardrails/modalityBridge/bridgeStats";
 import type { VideoBridgeLogRedactionEntry } from "@/lib/guardrails/videoBridge";
 import { reanchorVideoBridgeRedaction } from "@/lib/guardrails/videoBridge";
-import { resolveConversationId } from "@omniroute/open-sse/services/conversationTracker.ts";
+import {
+  resolveClientSessionId,
+  resolveConversationId,
+} from "@omniroute/open-sse/services/conversationTracker.ts";
 import {
   classifyProviderBreakerResult,
   isAntigravityMissingProjectError,
@@ -143,7 +146,12 @@ import {
 } from "./reasoningRouting";
 import { createVirtualAutoCombo, resolveAutoRoutingState } from "./autoRouting";
 import { getComboFailureLogError } from "./comboFailureLogging";
-import { logAdmissionRejection, logHandlerRejection } from "./admissionRejectionLog";
+import {
+  logAdmissionRejection,
+  logHandlerRejection,
+  previousResponseNotFoundRejection,
+  rejectPayload,
+} from "./admissionRejectionLog";
 
 // Pipeline integration — wired modules
 import { classify429FromError, type FailureKind } from "@/shared/utils/classify429";
@@ -222,6 +230,7 @@ import {
   validateExclusiveLeaseKeyConfiguration,
   type ManagedLeaseDispatchContext,
 } from "../services/leaseContext";
+import { resolveConnectionRestrictions } from "../services/connectionRestrictions.ts";
 
 registerCodexQuotaFetcher();
 registerQuotaTrackersBatch();
@@ -450,6 +459,7 @@ async function handleChatImplementation(
     });
   }
 
+  if ((body = rejectPayload(body, request, reqId)) instanceof Response) return body;
   // Only the server's policy resolver may attach execution directives or route traces.
   // Discard lookalike JSON fields supplied by callers before evaluating any rule.
   if (body && typeof body === "object") {
@@ -629,10 +639,11 @@ async function handleChatImplementation(
     log.debug("NO_THINKING", `Resolved no-thinking alias → ${noThinking.realModel}`);
   }
 
-  // X-Route-Model header overrides body.model for routing purposes (see
-  // resolveRoutingModel). The resolved model still passes through
-  // enforceApiKeyPolicy below, so it cannot bypass per-key allowlists.
-  let modelStr = resolveRoutingModel(request, body);
+  // X-Route-Model header overrides body.model for routing purposes, and a per-key
+  // enforced model overrides both (see resolveRoutingModel). The resolved model
+  // still passes through enforceApiKeyPolicy below, so it cannot bypass per-key
+  // allowlists or budgets.
+  let modelStr = resolveRoutingModel(request, body, await resolveApiKeyForcedModel(request, log));
   if (typeof modelStr === "string") {
     // Preserve literal combo names such as "Claude [1m]". Context tags are
     // stripped only when the exact request does not identify a combo.
@@ -680,7 +691,7 @@ async function handleChatImplementation(
   // masked prefix/last4. These debug lines get copied verbatim into bug reports
   // and support tickets, so any key fragment is sensitive.
   const authHeader = request.headers.get("Authorization");
-  const apiKey = extractApiKey(request);
+  const { apiKey } = await resolveClientApiKey(request);
   if (authHeader && apiKey) {
     log.debug("AUTH", "API key provided");
   } else {
@@ -738,6 +749,20 @@ async function handleChatImplementation(
         correlationId: reqId,
       }
     );
+  }
+
+  // A trusted endpoint-tag mismatch is a local client error, not a provider or
+  // connection health failure. Exact combo names are exempt in the resolver.
+  const endpointMismatch = await getRequestedModelEndpointMismatch(modelStr, "chat");
+  if (endpointMismatch) {
+    return logHandlerRejection(errorResponse(HTTP_STATUS.BAD_REQUEST, endpointMismatch), {
+      path: new URL(request.url).pathname,
+      model: modelStr,
+      requestBody: body ?? null,
+      apiKeyId: null,
+      apiKeyName: null,
+      correlationId: reqId,
+    });
   }
 
   // T04: client-provided external session header has priority over generated fingerprint.
@@ -823,20 +848,14 @@ async function handleChatImplementation(
       : null;
     // resume flag for the attempt store in handleChatCore (best-effort).
     if (!stored) {
-      // Matches OpenAI's own `previous_response_not_found` contract (missing
-      // or expired server-side state) so a client with the matching retry
-      // behavior -- resend the full request, same turn -- recovers exactly
-      // as it would against the real OpenAI backend.
-      return new Response(
-        JSON.stringify({
-          error: {
-            message: "Previous response not found.",
-            type: "invalid_request_error",
-            code: "previous_response_not_found",
-          },
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return previousResponseNotFoundRejection({
+        path: new URL(request.url).pathname,
+        model: modelStr,
+        requestBody: body ?? null,
+        apiKeyId: apiKeyInfo?.id ?? null,
+        apiKeyName: apiKeyInfo?.name ?? null,
+        correlationId: reqId,
+      });
     }
     const deltaInput = Array.isArray((body as { input?: unknown }).input)
       ? (body as { input: unknown[] }).input
@@ -947,6 +966,7 @@ async function handleChatImplementation(
       model: modelStr,
       apiKeyId: apiKeyInfo?.id ?? null,
       clientSessionIdHeader: clientConversationHeader,
+      clientSessionId: resolveClientSessionId(request.headers, body),
       correlationId: reqId,
     }));
   } catch (error) {
@@ -1164,10 +1184,8 @@ async function handleChatImplementation(
       const resolvedModel = modelInfo.model || modelString;
       const githubGate = await ghComboGate(comboPreselectedCredentials, provider, resolvedModel);
       if (githubGate !== null) return githubGate;
-      let allowedConnections = intersectAllowedConnectionIds(
-        apiKeyInfo?.allowedConnections ?? null,
-        comboPinAllowlist(true, target?.connectionId ?? null, target?.allowedConnectionIds ?? null)
-      );
+      const restrictions = resolveConnectionRestrictions(apiKeyInfo, target, true);
+      let allowedConnections = restrictions.allowedConnections;
 
       // A4: quota-exclusive keys must only use the pool's connection(s).
       if (apiKeyInfo?.allowedQuotas && apiKeyInfo.allowedQuotas.length > 0) {
@@ -1188,6 +1206,7 @@ async function handleChatImplementation(
         allowedConnections,
         resolvedModel,
         {
+          connectionRestrictionSources: restrictions.sources,
           requireToolCalling: hasQoderCallerTools(body),
           sessionKey: sessionAffinityKey,
           ...(target?.allowRateLimitedConnection ? { allowRateLimitedConnections: true } : {}),
@@ -1646,7 +1665,7 @@ async function handleSingleModelChat(
   })();
   const resolvedModelGate = resolvedPolicy.createVisibleResolvedModelGate({
     apiKeyInfo,
-    apiKey: extractApiKey(request),
+    apiKey: (await resolveClientApiKey(request)).apiKey,
     contextModel: runtimeOptions.authorizationContextModel,
     comboGrantsTargets: runtimeOptions.comboGrantsTargets,
     provider,
@@ -1664,10 +1683,9 @@ async function handleSingleModelChat(
       ? runtimeOptions.forcedConnectionId.trim()
       : "";
   const hasForcedConnection = forcedConnectionId.length > 0;
-  let effectiveAllowedConnections = intersectAllowedConnectionIds(
-    apiKeyInfo?.allowedConnections ?? null,
-    comboPinAllowlist(isCombo, forcedConnectionId || null, runtimeOptions.allowedConnectionIds)
-  );
+  const pinTarget = { ...runtimeOptions, connectionId: forcedConnectionId };
+  const restrictions = resolveConnectionRestrictions(apiKeyInfo, pinTarget, isCombo);
+  let effectiveAllowedConnections = restrictions.allowedConnections;
 
   // A4: quota-exclusive keys must only use the pool's connection(s).
   if (apiKeyInfo?.allowedQuotas && apiKeyInfo.allowedQuotas.length > 0) {
@@ -1796,6 +1814,7 @@ async function handleSingleModelChat(
               effectiveAllowedConnections,
               model,
               {
+                connectionRestrictionSources: restrictions.sources,
                 requireToolCalling: hasQoderCallerTools(body),
                 sessionKey: occupancySessionKey,
                 reserveOAuthSession: true,
@@ -2149,6 +2168,7 @@ async function handleSingleModelChat(
             previousResponseResumed: runtimeOptions.previousResponseResumed,
             fallbackAttempts: runtimeOptions.fallbackAttempts,
             forcedConnectionId: hasForcedConnection ? forcedConnectionId : null, // #14116
+            allowedConnections: effectiveAllowedConnections,
           },
           runtimeOptions
         );

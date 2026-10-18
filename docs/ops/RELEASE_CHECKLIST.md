@@ -137,7 +137,7 @@ matrix automatically, without any label.
 - [ ] `npm run lint` — 0 errors (warnings are pre-existing)
 - [ ] `npm run typecheck:core` — clean
 - [ ] `npm run typecheck:noimplicit:core` — clean (strict)
-- [ ] `npm run check:cycles` — no circular deps
+- [ ] `npm run check:cycles:ratchet` — within the frozen `metrics.cycles` ceiling (bare `check:cycles` exits 1 on any cycle, #15281)
 - [ ] `npm run check:any-budget:t11` — within budget
 - [ ] `npm run check:route-validation:t06` — clean
 - [ ] `npm run check:node-runtime` — supported runtime floor met (`>=22.22.2 <23`, `>=24.0.0 <27`, per `SUPPORTED_NODE_RANGE` in `src/shared/utils/nodeRuntimeSupport.ts`; aligned with `package.json` `engines`)
@@ -403,8 +403,11 @@ npm run release:dry-run-lts-cut -- --from <3.9.0-tip> # pin the source commit
 ```
 
 `scripts/release/dry-run-lts-cut.mjs` executes nothing: it reads git and `gh` and prints the
-whole sequence — preconditions (source resolves, previous tag exists, `package.json` is the
-target version, a `release-freeze` issue is open, no open `Release branch not green` issue
+whole sequence — preconditions (source resolves, the source repository has full history —
+a shallow clone cannot push `stable/v3`, the receiving side rejects the pack at the first
+grafted parent, so cut from a full clone or `git fetch --unshallow origin` first — previous
+tag exists, `package.json` is the target version, a `release-freeze` issue is open, no open
+`Release branch not green` issue
 on an existing release branch — a branch that does not exist reports `?` unknown, never
 green — the Mergify `release` queue is configured (G11: `queue_rules`, `checks_timeout`,
 label `queue`), the `release/*` ruleset still blocks deletion and force-push, and
