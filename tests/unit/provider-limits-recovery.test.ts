@@ -987,4 +987,7 @@ test("#17043: only a complete live quota observation can authorize a reset", () 
   assert.equal(providerLimits.everyQuotaWindowReplenished({
     quotas: { session: { remainingPercentage: 98 }, weekly: { unlimited: true } },
   }), false);
+  assert.equal(providerLimits.everyQuotaWindowReplenished({
+    quotas: { session: { remainingPercentage: 98 }, weekly: { fractionReported: false, remainingPercentage: 100 } },
+  }), false);
 });
