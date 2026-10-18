@@ -505,3 +505,53 @@ export function isDbHealthcheckStartupDeferredEnabled(): boolean {
     return false;
   }
 }
+
+/**
+ * Resolved-capability scoring inputs on the auto/* request path (#16419). Opt-in:
+ * off keeps capabilities resolved on demand, so they never reach the snapshot
+ * weights and candidate weights stay identical to the pre-flag behavior.
+ * Fail closed: an unreadable flag store keeps the pre-flag behavior (disabled).
+ */
+export function isAutoRequestResolvedCapabilitiesEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("AUTO_REQUEST_RESOLVED_CAPABILITIES");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve AUTO_REQUEST_RESOLVED_CAPABILITIES, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
+/**
+ * Quota window bounded park (#17000). Opt-in: off keeps the per-window threshold
+ * blocking on the cached percentage until the window's own reset time.
+ * Fail closed: an unreadable flag store keeps the pre-flag behavior (disabled).
+ */
+export function isQuotaWindowBoundedParkEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("QUOTA_WINDOW_BOUNDED_PARK");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve QUOTA_WINDOW_BOUNDED_PARK, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
+/**
+ * Image generation long jobs (#16260). Opt-in: off keeps the fixed image fetch budget, no
+ * caller cancellation (499) and no Playground SSE wrapping.
+ * Fail closed: an unreadable flag store keeps the pre-flag behavior (disabled).
+ */
+export function isImageGenerationLongJobsEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("IMAGE_GENERATION_LONG_JOBS");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve IMAGE_GENERATION_LONG_JOBS, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
