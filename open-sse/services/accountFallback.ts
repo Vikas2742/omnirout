@@ -68,7 +68,9 @@ import {
   parseDetailedRetryHintFromJsonBody,
   parseDelayString,
   MAX_SHORT_RETRY_HINT_MS,
+  hasGoogleDailyQuotaViolation,
 } from "./retryAfterJson.ts";
+import { googleDailyQuotaCooldownMs } from "./googleDailyQuota.ts";
 import { isMoonshotAccountBalanceExhausted } from "./usage/moonshotOpenPlatform.ts";
 import { isTpdRateLimit, resolveTpdCooldownMs, nextConfiguredResetMs } from "./dailyQuotaReset.ts";
 
@@ -101,9 +103,12 @@ import {
   parseIsoDateTimeResetMs,
   shouldPreserveQuotaSignals,
 } from "./quotaResetParsing.ts";
+import { isTransientComboCooldownReason } from "./combo/comboCooldownRetry.ts";
 import { evictLockoutOverflow } from "./accountFallback/lockoutEviction.ts";
 export { MODEL_LOCKOUT_EVICTION_CAP } from "./accountFallback/lockoutEviction.ts";
 export { hasPerModelFailureScope } from "./accountFallback/perModelFailureScope.ts";
+import { buildConcurrencyLimitFallback } from "./accountFallback/concurrencyLimit429.ts";
+export { CONCURRENCY_LIMIT_COOLDOWN_MS } from "./accountFallback/concurrencyLimit429.ts";
 import { capScaledCooldownMs } from "./accountFallback/cooldownCap.ts";
 import { resolveApiKeyForbiddenFallback } from "./accountFallback/nonRetryableUpstream.ts";
 import * as exactModelLock from "./accountFallback/exactModelLock.ts";
@@ -112,6 +117,7 @@ import { CREDITS_EXHAUSTED_SIGNALS } from "./accountFallback/creditExhaustionSig
 export { CREDITS_EXHAUSTED_SIGNALS } from "./accountFallback/creditExhaustionSignals.ts";
 import { isMistralAmbiguous401 } from "./accountFallback/mistralAmbiguousAuth.ts";
 import { isMistralAmbiguous401SoftLockoutEnabled } from "@/shared/utils/featureFlags";
+import { boundedMap } from "@/lib/quota/boundedMap";
 export type ProviderProfile = {
   baseCooldownMs: number;
   useUpstreamRetryHints: boolean;
@@ -554,13 +560,19 @@ const modelFailureState = new Map<string, ModelFailureState>();
 
 // Aliases (e.g. "cx" → "codex") must share lockout state with their canonical
 // provider, otherwise a model locked via one spelling stays routable via the other.
-const canonicalProviderCache = new Map<string, string>();
-function getCanonicalLockProvider(provider: string): string {
-  let canonical = canonicalProviderCache.get(provider);
-  if (!canonical) {
-    canonical = resolveProviderId(provider);
-    canonicalProviderCache.set(provider, canonical);
-  }
+// Bounded LRU: resolveProviderId is a pure catalog lookup, so evicting an entry
+// and recomputing it returns the same id. Exported so the cap is testable.
+export const CANONICAL_PROVIDER_CACHE_LIMIT = 512;
+export const canonicalProviderCache = boundedMap<string>(
+  "canonical-provider-cache",
+  CANONICAL_PROVIDER_CACHE_LIMIT,
+  "lru"
+);
+export function getCanonicalLockProvider(provider: string): string {
+  const cached = canonicalProviderCache.get(provider);
+  if (cached !== undefined) return cached;
+  const canonical = resolveProviderId(provider);
+  canonicalProviderCache.set(provider, canonical);
   return canonical;
 }
 
@@ -1048,6 +1060,40 @@ export function getModelLockoutInfo(
   };
 }
 
+export function scanTransientModelLock(provider: string, model: string | null | undefined) {
+  if (!model) return null;
+  const marker = "__omniroute_connection_probe__";
+  const templates = getModelLockKeys(provider, marker, model)
+    .map((key) => {
+      const markerIndex = key.indexOf(`:${marker}:`);
+      if (markerIndex < 0) return null;
+      return {
+        prefix: key.slice(0, markerIndex + 1),
+        suffix: key.slice(markerIndex + marker.length + 1),
+      };
+    })
+    .filter((template): template is { prefix: string; suffix: string } => template !== null);
+  if (templates.length === 0) return null;
+
+  const now = Date.now();
+  let earliest: ModelLockoutEntry | null = null;
+  for (const [key, entry] of modelLockouts) {
+    cleanupModelLockKey(key, now);
+    if (entry.until <= now) continue;
+    if (!isTransientComboCooldownReason(entry.reason)) continue;
+    if (!templates.some(({ prefix, suffix }) => key.startsWith(prefix) && key.endsWith(suffix)))
+      continue;
+    if (!earliest || entry.until < earliest.until) earliest = entry;
+  }
+  if (!earliest) return null;
+  return {
+    reason: earliest.reason,
+    remainingMs: earliest.until - now,
+    lockedAt: new Date(earliest.lockedAt).toISOString(),
+    failureCount: earliest.failureCount,
+  };
+}
+
 export type ModelLockoutInfo = {
   provider: string;
   connectionId: string;
@@ -1385,6 +1431,8 @@ export function parseRetryFromErrorText(
 ): number | null {
   if (!errorText || typeof errorText !== "string") return null;
   const msg: string = String(errorText);
+  // A Google PerDay quota violation outlives its seconds-scale RetryInfo.
+  if (hasGoogleDailyQuotaViolation(msg)) return googleDailyQuotaCooldownMs({ nowMs });
 
   const bodyHintMs = parseRetryHintFromJsonBody(msg, MAX_PROVIDER_COOLDOWN_MS);
   if (bodyHintMs !== null) return bodyHintMs;
@@ -1884,6 +1932,21 @@ export function checkFallbackError(
       };
     }
 
+    // Google QuotaFailure naming a PerDay quotaId: daily exhaustion, not a throttle. Its
+    // RetryInfo (~20s) would re-burn the key every rotation until the daily reset, so park
+    // until then. Body-shaped (gemini/vertex/AI Studio alike); per-model providers turn
+    // quotaResetHintMs into a model lockout, still bounded by the operator's cap.
+    if (status === HTTP_STATUS.RATE_LIMITED && hasGoogleDailyQuotaViolation(errorStr)) {
+      const cooldownMs = googleDailyQuotaCooldownMs(dailyReset);
+      return {
+        shouldFallback: true,
+        cooldownMs,
+        reason: RateLimitReason.QUOTA_EXHAUSTED,
+        dailyQuotaExhausted: true,
+        quotaResetHintMs: cooldownMs,
+      };
+    }
+
     // Gemini-specific check — MUST run before isCreditsExhausted/
     // isDailyQuotaExhausted/the generic text classifier below: Gemini's free-
     // tier 429 boilerplate literally says "You exceeded your current quota,
@@ -2077,6 +2140,10 @@ export function checkFallbackError(
       );
     }
   }
+
+  // Concurrency-limit 429: healthy-but-busy account — fail over without backoff.
+  const concurrencyFallback = buildConcurrencyLimitFallback(status, errorStr, getUpstreamRetryHint);
+  if (concurrencyFallback) return concurrencyFallback;
 
   const configuredRule =
     isRateLimitStatus && !preserveQuota429
