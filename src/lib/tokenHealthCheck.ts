@@ -746,7 +746,11 @@ export async function checkConnection(conn) {
           if (!hideLogs) console.warn(LOG_PREFIX, `[${tag}]`, msg);
         },
         error: (tag: string, msg: string, extra?: Record<string, unknown>) => {
-          if (!hideLogs) console.error(LOG_PREFIX, `[${tag}]`, msg, extra       // Rotate the Copilot sub-token only when it needs renewal or when an
+          if (!hideLogs) console.error(LOG_PREFIX, `[${tag}]`, msg, extra || "");
+        },
+      };
+
+      // Rotate the Copilot sub-token only when it needs renewal or when an
       // expired connection needs a recovery probe. A healthy sub-token still
       // gets a cheap GitHub /user probe so a revoked access token demotes.
       const shouldProbeCopilot = copilotAboutToExpire || conn.testStatus === "expired";
@@ -763,8 +767,6 @@ export async function checkConnection(conn) {
             apiBaseUrl: getCopilotTokenBaseUrl(conn),
             proxyConfig,
           });
-tTokenBaseUrl(conn)
-      );
       if (copilotResult?.status === 401) {
         await updateProviderConnection(conn.id, {
           testStatus: "expired",
