@@ -14,7 +14,8 @@ const { getResolvedModelCapabilities } = await import("../../../src/lib/modelCap
 const { containsMediaKind } = await import("../../../open-sse/utils/mediaParts.ts");
 
 const TEXT_ONLY_MODEL = "glm/glm-5.3";
-const DATA = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+const DATA =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
 function imagePart(data: string = DATA) {
   return { type: "image", source: { type: "base64", media_type: "image/png", data } };
@@ -36,13 +37,25 @@ function makeRequest(images: Array<ReturnType<typeof imagePart>>) {
       { role: "user", content: [{ type: "text", text: "Read this screenshot." }] },
       {
         role: "assistant",
-        content: [{ type: "tool_use", id: "toolu_read_1", name: "Read", input: { file_path: "docs/screenshots/screen.png" } }],
+        content: [
+          {
+            type: "tool_use",
+            id: "toolu_read_1",
+            name: "Read",
+            input: { file_path: "docs/screenshots/screen.png" },
+          },
+        ],
       },
       {
         role: "user",
-        content: [{ type: "tool_result", tool_use_id: "toolu_read_1", content: toolResultContent(images) }],
+        content: [
+          { type: "tool_result", tool_use_id: "toolu_read_1", content: toolResultContent(images) },
+        ],
       },
-      { role: "user", content: [{ type: "text", text: "Continue without losing the conversation." }] },
+      {
+        role: "user",
+        content: [{ type: "text", text: "Continue without losing the conversation." }],
+      },
     ],
   };
 }
@@ -108,7 +121,11 @@ test("#17069: a failed nested Read-tool image is replaced for confirmed text-onl
 });
 
 test("#17069: partial failure and maxImages cap cannot leak later nested images", async () => {
-  const request = makeRequest([imagePart("aW1hZ2Ux"), imagePart("aW1hZ2Uy"), imagePart("aW1hZ2Uz")]);
+  const request = makeRequest([
+    imagePart("aW1hZ2Ux"),
+    imagePart("aW1hZ2Uy"),
+    imagePart("aW1hZ2Uz"),
+  ]);
   let calls = 0;
   const result = await guardrail(2, async (ref) => {
     calls++;
@@ -121,7 +138,9 @@ test("#17069: partial failure and maxImages cap cannot leak later nested images"
   const modified = result.modifiedPayload as typeof request;
   assert.ok(modified);
   assert.equal(containsMediaKind(modified.messages, "image"), false);
-  const nested = (modified.messages[2].content[0] as { content: Array<{type: string; text?: string}> }).content;
+  const nested = (
+    modified.messages[2].content[0] as { content: Array<{ type: string; text?: string }> }
+  ).content;
   assert.equal(nested.length, 5);
   assert.match(nested[1]?.text ?? "", /status indicator/);
   assert.match(nested[2]?.text ?? "", /unavailable/);
@@ -180,7 +199,8 @@ test("#17069: the /v1/messages guardrail result is safe after Claude-to-OpenAI t
 });
 
 test("#17069: unknown vision metadata retains a nested image when captioning fails", async () => {
-  const model = "unknown-provider/unknown-vision-model";
+  // No "vision" in the id: the name heuristic would otherwise resolve it as vision-capable.
+  const model = "unknown-provider/unknown-model-17069";
   const payload = { ...makeRequest([imagePart()]), model };
   let calls = 0;
   const result = await guardrail(10, async () => {
