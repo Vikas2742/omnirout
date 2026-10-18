@@ -5,26 +5,29 @@ title: Self-Hosted Runner Box Operations
 # Self-Hosted Runner Box Operations (.113 pool)
 
 The self-hosted pool runs on the **.113** box (`tomni-proxmox-113`). Since 2026-10-18 each
-OmniRoute runner has **one role**, one label, and a memory/CPU budget that keeps the sum of
-`MemoryHigh` near the physical RAM:
+OmniRoute runner has **one role**, one label, and a memory/CPU budget sized to what its workload
+measured. The Turbopack slot gets what the build needs; the other slots are sized to their
+measured peaks. The box only overcommits when a Turbopack build coincides with a Release-Green
+webpack build and a lint job; host swap (16 GB) absorbs that, and because pull-request Builds run
+hosted, the Turbopack slot is idle most of the time:
 
-| runner               | label          | role                                                                                                                            | `MemoryHigh` / `MemoryMax` | `CPUQuota` |
-| -------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------- |
-| `omniroute-113-5`    | `omni-build`   | Turbopack builds: `ci.yml` `Build`, Docker amd64, `npm-publish`, `nightly-v4-build`, `preview-artifact`, the nightly a11y build | 40 GB / 44 GB (swap 0)     | 1600 %     |
-| `omniroute-113-6`    | `omni-release` | Release-Green (`release-green` + `main-green`), webpack build                                                                   | 20 GB / 24 GB (swap 4 GB)  | 800 %      |
-| `omniroute-113-2`    | `omni-light`   | nightlies (Schemathesis, promptfoo, garak, k6, a11y boot) and `quality.yml` `lint-guard`                                        | 12 GB / 16 GB (swap 4 GB)  | 600 %      |
-| `omniroute-113`      | `omni-light`   | same pool as above                                                                                                              | 8 GB / 12 GB               | 400 %      |
-| OmniHeuris, OmniMind | (their repos)  | Dependabot only (peak 155 MB each, 2026-10-18)                                                                                  | 4 GB / 6 GB                | 200 % each |
+| runner               | label          | role                                                                                                                                                 | `MemoryHigh` / `MemoryMax` | `CPUQuota` |
+| -------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ---------- |
+| `omniroute-113-5`    | `omni-build`   | Turbopack builds: `ci.yml` `Build` (push/dispatch only), Docker amd64, `npm-publish`, `nightly-v4-build`, `preview-artifact`, the nightly a11y build | 56 GB / 60 GB (swap 0)     | 1600 %     |
+| `omniroute-113-6`    | `omni-release` | Release-Green (`release-green` + `main-green`), webpack build                                                                                        | 20 GB / 24 GB (swap 4 GB)  | 800 %      |
+| `omniroute-113-2`    | `omni-light`   | nightlies (Schemathesis, promptfoo, garak, k6, a11y boot) and `quality.yml` `lint-guard`                                                             | 12 GB / 16 GB (swap 4 GB)  | 600 %      |
+| `omniroute-113`      | `omni-light`   | same pool as above                                                                                                                                   | 8 GB / 12 GB               | 400 %      |
+| OmniHeuris, OmniMind | (their repos)  | Dependabot only (peak 155 MB each, 2026-10-18)                                                                                                       | 4 GB / 6 GB                | 200 % each |
 
 Measured 2026-10-18:
 
-| resource  | value                        | what it means for scheduling                                                                                                                                                                                                                 |
-| --------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RAM / CPU | **78 GB / 32 cores**         | a Turbopack production build peaks at 33–37 GB under a cgroup cap (49 GB uncapped, `tests/unit/ci-build-bundler-webpack.test.ts`); a webpack build at ~14–16 GB. One Turbopack + one webpack build fit together; two Turbopack builds do not |
-| swap      | 16 GB                        | `omniroute-113-5` runs with swap off (`MemorySwapMax=0`) so a runaway build is cut at its cap instead of swapping the box                                                                                                                    |
-| `/tmp`    | **12 GB tmpfs = RAM**        | anything parked there is memory; leftovers are swept after 3 h                                                                                                                                                                               |
-| CPU       | load 60 on 32 cores observed | before the quotas, one Turbopack build (~1166 % CPU) plus a coverage suite on the same box starved the other listeners' heartbeats (`The self-hosted runner lost communication`, #16853)                                                     |
-| runners   | **6 listeners**              | 4 OmniRoute + OmniHeuris + OmniMind; `omniroute-113-3/-4/-7/-8` are disabled (`systemctl enable --now` brings one back)                                                                                                                      |
+| resource  | value                        | what it means for scheduling                                                                                                                                                                                                                                                                                                                          |
+| --------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RAM / CPU | **78 GB / 32 cores**         | a Turbopack production build peaked at 49 GB uncapped (`tests/unit/ci-build-bundler-webpack.test.ts`); on Next 16.3.8 the compile phase alone holds ~40 GB (36 GB RSS in `next-build` plus 17 loader workers at 3 GB, measured 2026-10-18); a webpack build at ~14–16 GB. One Turbopack + one webpack build fit together; two Turbopack builds do not |
+| swap      | 16 GB                        | `omniroute-113-5` runs with swap off (`MemorySwapMax=0`) so a runaway build is cut at its cap instead of swapping the box                                                                                                                                                                                                                             |
+| `/tmp`    | **12 GB tmpfs = RAM**        | anything parked there is memory; leftovers are swept after 3 h                                                                                                                                                                                                                                                                                        |
+| CPU       | load 60 on 32 cores observed | before the quotas, one Turbopack build (~1166 % CPU) plus a coverage suite on the same box starved the other listeners' heartbeats (`The self-hosted runner lost communication`, #16853)                                                                                                                                                              |
+| runners   | **6 listeners**              | 4 OmniRoute + OmniHeuris + OmniMind; `omniroute-113-3/-4/-7/-8` are disabled (`systemctl enable --now` brings one back)                                                                                                                                                                                                                               |
 
 The limits live in each unit's `/etc/systemd/system/actions.runner.<…>.service.d/override.conf`
 (previous values kept as `override.conf.bak-20261018`) and were applied live with
@@ -55,6 +58,16 @@ checkouts of runners whose unit is **stopped**; alerts on disk ≥ 85 %, memory 
 `full/avg60` ≥ 10 %, and more listeners than `MAX_ACTIVE_RUNNERS` (with an
 omniroute/other breakdown). Exit 1 = attention needed; read the log.
 
+The 75-minute rule does not catch a build whose job GitHub already gave up on. When the
+`Runner.Listener` cannot renew its job, `_diag/Runner_*.log` shows
+`POST request to …/renewjob timed out after 100 seconds`, the API reports the job `completed`
+(failure) about ten minutes after the last successful renewal, and `next-build` keeps running with
+no job attached (2026-10-18: the Build of #17066 was failed at 19:43 and its build was still
+holding 40 GB five minutes later). Confirm the ref in the newest `_diag/Worker_*.log`, then
+SIGTERM only the build tree by PID — `next-build`, `npm run build`, `build-next-isolated.mjs` and
+the `_work` workers. Never touch `Runner.Listener`, `RunnerService.js` or `Runner.Worker`: the
+worker reports the job as cancelled and the listener goes back online by itself.
+
 ## Runner units: KillMode
 
 The runner's default `KillMode=process` leaves `Runner.Worker → npm → next-build`
@@ -76,6 +89,20 @@ a time, only when idle**, with the idle check and the restart in the same comman
   (`cancel-in-progress: false`). Docker Engine must be on `omniroute-113-5`. A second Turbopack
   slot does not fit 78 GB (2 × 33–37 GB plus the rest of the box); a second slot is only safe for
   webpack builds.
+- **Pull-request Builds run hosted (2026-10-18).** `ci.yml` `Build` reaches `omni-build` only for
+  `push` and `workflow_dispatch`; every `pull_request` (own-origin or fork) and `merge_group` Build
+  runs on `ubuntu-latest` with webpack. With every own-origin PR routed to the slot, a Turbopack
+  Build held it 29–58 min, 18 Builds queued for up to 18 h, and the release line's own push Build
+  got the slot once in 40 jobs. Hosted, the same PR Build takes 8–12 min next to the PR's other
+  jobs. Turbopack, the bundler `npm-publish` ships, stays exercised on the release line by the
+  nightly a11y build of the default branch (04:41 UTC), by every push or dispatch Build that
+  reaches the slot, and by `npm-publish` itself. `tests/unit/build/heavy-build-queue.test.ts`
+  pins the four-clause gate.
+- **Never size the Turbopack slot below its measured need.** On 2026-10-18 at 18:06 the slot was
+  lowered from 56G/60G to 40G/44G to make room for `omni-release`. The compile phase sat at the
+  `MemoryHigh` for its whole run (memory PSI `full` 30–43 %), and the `Runner.Listener`, which
+  shares the cgroup, could not renew its job. The owner's 56G/60G of 2026-10-17 was restored the
+  same day. Below that value the build does not fail; it thrashes, and the job is lost.
 - **Release-Green has its own slot (2026-10-18).** Until then both Release-Green validations ran
   on `omni-build`: on every push (~10/hour, 97 of 100 push runs cancelled mid-work in one day)
   and three ~2 h full sweeps a day (the 05:29 sweep waited 6 h for the slot) — the single build
