@@ -14,6 +14,7 @@ import {
 } from "../../utils/streamHelpers.ts";
 import { sanitizeErrorMessage } from "../../utils/errorSanitization.ts";
 import { normalizeStreamFailurePayload } from "../../utils/streamErrorFormat.ts";
+import { isContentPolicyRefusal } from "../../utils/contentPolicyError.ts";
 import { evaluateResponseValidation, type ResponseValidationConfig } from "./responseValidation.ts";
 import { getReasoningTokens } from "../../../src/lib/usage/tokenAccounting.ts";
 import { REASONING_BUFFER_MIN_TRIGGER } from "../reasoningTokenBuffer.ts";
@@ -310,6 +311,7 @@ function classifyStreamingUpstreamFailure(parsed: unknown): StreamingUpstreamFai
   const emptyContent =
     normalized.message === "Provider returned empty content" || code === "empty_content";
   const requestScoped =
+    isContentPolicyRefusal(normalized) ||
     type === "invalid_request_error" ||
     code === "invalid_request_error" ||
     type === "context_length_exceeded" ||
