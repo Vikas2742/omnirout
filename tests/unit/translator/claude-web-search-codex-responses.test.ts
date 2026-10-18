@@ -137,13 +137,13 @@ test("mixed tools on codex: existing fallback conversion is unchanged", () => {
   assert.equal(fallback.enabled, true);
   assert.equal(fallback.convertedToolCount, 1);
   const tools = body.tools as Array<Record<string, unknown>>;
-  // The fallback tool is injected (flat Responses shape) and the client's own
-  // function survives — byte-identical to the base behavior for this shape.
+  // Since #16448 the fallback tool is injected in the client's own (Claude flat)
+  // shape `{ name, input_schema }` so the normal translator converts it like any
+  // other client tool; the client's own function survives.
   assert.deepEqual(tools[0], {
-    type: "function",
     name: "omniroute_web_search",
     description: (tools[0] as Record<string, unknown>).description,
-    parameters: (tools[0] as Record<string, unknown>).parameters,
+    input_schema: (tools[0] as Record<string, unknown>).input_schema,
   });
   assert.equal(tools[1], custom);
   assert.equal(
@@ -151,6 +151,34 @@ test("mixed tools on codex: existing fallback conversion is unchanged", () => {
     false,
     "native server tool must have been converted away"
   );
+
+  // End-to-end: after the CLAUDE -> OPENAI_RESPONSES translation the injected
+  // tool reaches the upstream as the flat Responses function tool.
+  const translated = translateRequest(
+    FORMATS.CLAUDE,
+    FORMATS.OPENAI_RESPONSES,
+    "gpt-5.5",
+    body,
+    true,
+    null,
+    "codex"
+  ) as { tools?: Array<Record<string, unknown>> };
+  const upstreamTools = translated.tools ?? [];
+  assert.deepEqual(upstreamTools[0], {
+    type: "function",
+    name: "omniroute_web_search",
+    description: upstreamTools[0].description,
+    parameters: upstreamTools[0].parameters,
+    // chatStrictFrom stamps the provider default on converted function tools.
+    strict: false,
+  });
+  assert.deepEqual(upstreamTools[1], {
+    type: "function",
+    name: "get_weather",
+    description: "weather",
+    parameters: { type: "object", properties: {}, additionalProperties: true },
+    strict: false,
+  });
 });
 
 // ── 4. interceptSearchOverride still wins ─────────────────────────────────
