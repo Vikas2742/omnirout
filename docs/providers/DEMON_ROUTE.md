@@ -76,4 +76,14 @@ interpret an offline seed fallback as a successful live sync. If chat fails with
 channel name. If streaming stalls, inspect the client timeout and account limits
 without disabling OmniRoute's normal outbound URL, proxy, or credential safeguards.
 
+## Acceptance and troubleshooting checklist
+
+- **Before testing:** confirm the connection is enabled, its Bearer key belongs to the intended Demon Route account, and the selected model appears in that account's live catalog. Static seeds are not proof of access.
+- **Discovery:** use **Import from /models**, then check the imported identifiers without changing their case or the `vendor/model` slash. If the live request fails, distinguish the fallback seed from a successful sync.
+- **Chat:** issue a short non-streaming request first, then verify streaming returns valid SSE events and terminates. Client-side timeouts may need to exceed the built-in 120-second upstream timeout.
+- **Embeddings:** test only an upstream model that explicitly supports embeddings. Deriving the endpoint is not proof that an arbitrary chat model is embedding-capable.
+- **Routing:** check a direct model call before adding it to a combo. Then verify fallback behavior and that client-visible errors, traces, and logs do not disclose the stored provider key.
+- **Errors:** troubleshoot `401` by rechecking the key, `402` by checking prepaid balance, `429` by respecting the provider's rate limit, and `404` by re-importing the live model list. Avoid immediate unbounded retries.
+- **Costs:** successful live chat/embedding tests can be billable. No live account entitlement, upstream refund, quota, or pricing assertions are established by offline tests in this PR.
+
 For broader provider and combo workflows, see the [User Guide](../guides/USER_GUIDE.md).
