@@ -251,7 +251,11 @@ export function buildConnectionQuotaAvailability(
   });
   const evaluated = appendSavedRouterScopes(
     connection,
-    availabilityScopes(connection.provider, cachedUsage)
+    availabilityScopes(
+      connection.provider,
+      cachedUsage,
+      connection.providerSpecificData?.antigravityFamilyRateLimitedUntil
+    )
   ).map((scope) => ({
     ...scope,
     // Routing has no request-specific selector for this display-only window.

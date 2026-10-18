@@ -25,7 +25,8 @@ export interface AvailabilityScopeInput {
 /** Representatives are discovered from observations or the router's model/scope catalog. */
 export function availabilityScopes(
   provider: string,
-  usage: Partial<ProviderLimitsCacheEntry>
+  usage: Partial<ProviderLimitsCacheEntry>,
+  familyCooldowns: unknown = undefined
 ): AvailabilityScopeInput[] {
   const scopes: AvailabilityScopeInput[] = [];
   const names = Object.keys(usage.quotas || {});
@@ -85,7 +86,32 @@ export function availabilityScopes(
     }
   }
   if (provider === "antigravity" || provider === "agy") {
-    const groups = usage.quotaGroups || [];
+    let groups = usage.quotaGroups || [];
+    const hasFamilyEvidence =
+      names.some(
+        (name) => /^(gemini|claude_gpt)_/.test(name) || getAntigravityQuotaFamily(name) !== "other"
+      ) ||
+      (familyCooldowns !== null &&
+        typeof familyCooldowns === "object" &&
+        !Array.isArray(familyCooldowns) &&
+        ["gemini", "claude"].some((family) => Object.hasOwn(familyCooldowns, family)));
+    if (!groups.length && hasFamilyEvidence) {
+      // Family evidence permits peer pools; generic account windows retain null-model routing.
+      groups = ["gemini", "claude"].flatMap((family) => {
+        const familyModels = catalog.filter((model) => getAntigravityQuotaFamily(model) === family);
+        if (!familyModels.length) return [];
+        const observed = names.filter(
+          (name) =>
+            !/^(gemini|claude_gpt)_/.test(name) && getAntigravityQuotaFamily(name) === family
+        );
+        return [
+          {
+            id: family === "claude" ? "claude_gpt" : family,
+            models: observed.length ? observed : familyModels,
+          },
+        ];
+      });
+    }
     for (const group of groups) {
       const id = String(group.id);
       const models = Array.isArray(group.models)
