@@ -75,6 +75,44 @@ test.after(() => {
   delete process.env.API_KEY_SECRET;
 });
 
+test("history caching is off by default: unset or invalid env keeps every read live", async () => {
+  for (const raw of [undefined, "", "  ", "abc", "-5", "1.5", "250ms"]) {
+    if (raw === undefined) delete process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS;
+    else process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS = raw;
+    assert.equal(cache.getCacheMetricsMinComputeMs(), null, `env=${JSON.stringify(raw)}`);
+  }
+  for (const [raw, expected] of [
+    ["0", 0],
+    ["250", 250],
+    [" 1000 ", 1000],
+  ] as const) {
+    process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS = raw;
+    assert.equal(cache.getCacheMetricsMinComputeMs(), expected, `env=${JSON.stringify(raw)}`);
+  }
+});
+
+test("env unset: GET /api/cache reads history live and sets no cache header", async () => {
+  delete process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS;
+  insertUsageRow(core.getDbInstance());
+
+  const first = await route.GET(localRequest("http://localhost/api/cache"));
+  assert.equal(first.status, 200);
+  assert.equal(first.headers.get("x-analytics-cache"), null);
+  const firstBody = (await first.json()) as { promptCache: { totalRequests: number } };
+
+  insertUsageRow(core.getDbInstance());
+  const second = await route.GET(localRequest("http://localhost/api/cache"));
+  assert.equal(second.status, 200);
+  assert.equal(second.headers.get("x-analytics-cache"), null);
+  const secondBody = (await second.json()) as { promptCache: { totalRequests: number } };
+  assert.equal(secondBody.promptCache.totalRequests, firstBody.promptCache.totalRequests + 1);
+
+  // Opting in afterwards starts from an empty history cache: nothing was stored while off.
+  process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS = "0";
+  const optedIn = await route.GET(localRequest("http://localhost/api/cache"));
+  assert.equal(optedIn.headers.get("x-analytics-cache"), "miss");
+});
+
 test("per-call options win over the shared threshold", async () => {
   process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS = "60000";
   assert.equal(cache.getCacheMetricsMinComputeMs(), 60_000);

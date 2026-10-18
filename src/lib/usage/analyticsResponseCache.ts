@@ -15,7 +15,8 @@
  * Tuning:
  *   OMNIROUTE_ANALYTICS_CACHE_TTL_MS          (default 60000; 0 disables)
  *   OMNIROUTE_ANALYTICS_CACHE_MIN_COMPUTE_MS  (default 1000)
- *   OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS    (default 250)
+ *   OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS    (unset by default = off; opt-in for
+ *                                             the history part of GET /api/cache)
  */
 
 type CachedBody = {
@@ -28,7 +29,6 @@ type Entry = CachedBody & { expiresAt: number };
 
 const DEFAULT_TTL_MS = 60_000;
 const DEFAULT_MIN_COMPUTE_MS = 1_000;
-const DEFAULT_CACHE_METRICS_MIN_COMPUTE_MS = 250;
 const MAX_ENTRIES = 32;
 
 const entries = new Map<string, Entry>();
@@ -51,11 +51,16 @@ export function getAnalyticsCacheMinComputeMs(): number {
   );
 }
 
-export function getCacheMetricsMinComputeMs(): number {
-  return readNonNegativeInt(
-    process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS,
-    DEFAULT_CACHE_METRICS_MIN_COMPUTE_MS
-  );
+/**
+ * Opt-in threshold for caching the history part of GET /api/cache. Returns
+ * `null` (caching off, every read is live) unless the env var holds a
+ * non-negative integer, so the default behavior of the cache page is unchanged.
+ */
+export function getCacheMetricsMinComputeMs(): number | null {
+  const raw = process.env.OMNIROUTE_CACHE_METRICS_MIN_COMPUTE_MS;
+  if (raw === undefined || raw.trim() === "" || !/^\d+$/.test(raw.trim())) return null;
+  const parsed = Number.parseInt(raw.trim(), 10);
+  return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
 function toResponse(cached: CachedBody, cacheState: "hit" | "miss"): Response {
