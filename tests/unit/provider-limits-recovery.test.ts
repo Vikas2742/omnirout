@@ -803,6 +803,18 @@ test("#17043: the actual quota-cache observation unlocks the weekly Claude 429 a
         weekly: { remainingPercentage: 93, resetAt: weeklyReset },
       },
       modelQuotas: {
+        "weekly sonnet (7d)": {
+          remainingPercentage: 80,
+          resetAt: weeklyReset,
+          claudeQuota: {
+            kind: "weekly_scoped",
+            active: false,
+            severity: null,
+            scopeKey: "model:claude-sonnet-5",
+            modelId: "claude-sonnet-5",
+            modelDisplayName: null,
+          },
+        },
         "weekly opus (7d)": {
           remainingPercentage: 0,
           resetAt: weeklyReset,
@@ -819,7 +831,11 @@ test("#17043: the actual quota-cache observation unlocks the weekly Claude 429 a
     });
     assert.equal(result.rateLimitedUntil, null);
     assert.equal(result.testStatus, "active");
-    assert.equal((await providersDb.getProviderConnectionById(id)).rateLimitedUntil, null);
+    assert.equal(
+      (await providersDb.getProviderConnectionById(id)).rateLimitedUntil,
+      undefined,
+      "the DB read API omits cleared nullable cooldown fields"
+    );
     assert.equal(fallback.isModelLocked("claude", id, "claude-sonnet-5"), false);
     assert.equal(
       fallback.isModelLocked("claude", id, "claude-opus-5-5"),
@@ -1072,14 +1088,20 @@ test("#17043: model-scoped quota evidence distinguishes a real block from a pred
     usageWith({ fractionReported: false, remainingPercentage: 100 }), "claude-opus-5-5"
   ), true);
   assert.equal(providerLimits.hasBlockingClaudeModelQuota(
+    { quotas: { weekly: { remainingPercentage: 100 } } }, "claude-opus-5-5"
+  ), true, "no model quota payload cannot authorize unlocking a model lock");
+  assert.equal(providerLimits.hasBlockingClaudeModelQuota(
+    { modelQuotas: {} }, "claude-opus-5-5"
+  ), true, "empty model quota payload cannot authorize unlocking a model lock");
+  assert.equal(providerLimits.hasBlockingClaudeModelQuota(
     usageWith({ remainingPercentage: 20 }), "claude-opus-5-5"
   ), false, "critical-but-positive capacity is a warning, not an exhaustion");
   assert.equal(providerLimits.hasBlockingClaudeModelQuota(
     usageWith({ remainingPercentage: 0 }), "claude-sonnet-5"
-  ), false, "a different model's weekly quota must not block a sibling");
+  ), true, "another model's weekly quota cannot prove this sibling has recovered");
   assert.equal(providerLimits.hasBlockingClaudeModelQuota(
     { modelQuotas: { disabled: { ...baseQuota, remainingPercentage: 0,
       claudeQuota: { ...baseQuota.claudeQuota, active: false } } } },
     "claude-opus-5-5"
-  ), false);
+  ), true, "an inactive flag without refilled model quota is not positive evidence");
 });
