@@ -1137,6 +1137,15 @@ test("#17043: only a complete live quota observation can authorize a reset", () 
   assert.equal(providerLimits.isClaudeWeeklyQuota429Signal("Generic usage limit reached"), false);
   assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow(valid), true);
   assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
+    quotas: { "weekly (7d)": { remainingPercentage: 96 } },
+  }), true, "the provider's normalized global weekly window remains supported");
+  assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
+    quotas: { "weekly opus (7d)": { remainingPercentage: 100 } },
+  }), false, "an Opus-specific refill cannot prove a global weekly refill");
+  assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
+    quotas: { "weekly haiku (7d)": { remainingPercentage: 100 } },
+  }), false, "a Haiku-specific refill cannot prove a global weekly refill");
+  assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
     quotas: { session: { remainingPercentage: 90 } },
   }), false);
   assert.equal(providerLimits.hasRecoveredClaudeWeeklyWindow({
