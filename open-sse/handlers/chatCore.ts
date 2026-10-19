@@ -2721,6 +2721,11 @@ async function handleChatCoreInner({
             retainedMessage: persistentMessage,
             retryAfterMs,
             hasCallerOwner: typeof onStreamFailure === "function",
+            deps: {
+              readConnection: getProviderConnectionById,
+              persistConnection: updateProviderConnection,
+              isProbe: shouldIsolateProbeFailures,
+            },
           })
         )
           return;
