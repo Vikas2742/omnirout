@@ -16,7 +16,7 @@ npm run build:release          # Release build
 npm run lint                   # ESLint (0 errors expected; warnings are pre-existing)
 npm run typecheck:core         # TypeScript check (should be clean)
 npm run typecheck:noimplicit:core  # Strict check (no implicit any)
-npm run test:coverage          # Unit tests + coverage gate (60/60/60/60 — statements/lines/functions/branches)
+npm run test:coverage          # Unit tests + coverage gate (67.33 / 67.33 / 72.02 / 65.08 — statements/lines/functions/branches, enforced by the blocking ratchet in config/quality/quality-baseline.json; test:coverage itself hardcodes 60)
 npm run check                  # lint + test combined
 npm run check:cycles           # Detect circular dependencies (advisory — lists the SCCs)
 npm run check:cycles:ratchet   # Same scan, blocking above the quality-baseline ceiling
@@ -47,7 +47,7 @@ Repository map and Reference Documentation sections below.
 
 ## Project at a Glance
 
-**OmniRoute** — unified AI proxy/router. One endpoint, 372 LLM providers, auto-fallback.
+**OmniRoute** — unified AI proxy/router. One endpoint, 375 LLM providers, auto-fallback.
 
 | Layer         | Location                | Purpose                                                                                                                                                                   |
 | ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@ Repository map and Reference Documentation sections below.
 | Translators   | `open-sse/translator/`  | Format conversion (OpenAI↔Claude↔Gemini)                                                                                                                                  |
 | Transformer   | `open-sse/transformer/` | Responses API ↔ Chat Completions                                                                                                                                          |
 | Services      | `open-sse/services/`    | Combo routing, rate limits, caching, etc                                                                                                                                  |
-| Database      | `src/lib/db/`           | SQLite domain modules (202 migrations)                                                                                                                                    |
+| Database      | `src/lib/db/`           | SQLite domain modules (208 migrations)                                                                                                                                    |
 | Domain/Policy | `src/domain/`           | Policy engine, cost rules, fallback logic                                                                                                                                 |
 | MCP Server    | `open-sse/mcp-server/`  | 110 tools (45 canonical + memory/skill/GitHub/pool/gamification/plugin/Notion/Obsidian/local-corpus/RTK modules), 3 transports (stdio / SSE / Streamable HTTP), 33 scopes |
 | A2A Server    | `src/lib/a2a/`          | JSON-RPC 2.0 agent protocol                                                                                                                                               |
@@ -115,7 +115,9 @@ upstream/service level, so one unhealthy provider does not slow down every reque
 
 - `CLOSED`: normal traffic is allowed.
 - `DEGRADED`: early-warning band — failures crossed the degradation threshold but not the
-  breaker threshold yet; traffic still flows, dashboards show the warning.
+  breaker threshold yet; traffic still flows, dashboards show the warning. A valid connection
+  test or a quiet window with no new failure returns it to `CLOSED`
+  (`docs/architecture/RESILIENCE_GUIDE.md` has the window).
 - `OPEN`: provider is temporarily blocked; callers get a provider-circuit-open response
   or combo routing skips to another target.
 - `HALF_OPEN`: reset timeout has elapsed; allow a probe request. Success closes the
@@ -462,16 +464,16 @@ For any non-trivial change, read the matching deep-dive first:
 
 ## Testing
 
-| What                    | Command                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| Unit tests              | `npm run test:unit`                                                           |
-| Single file             | `node --import tsx/esm --test tests/unit/your-file.test.ts`                   |
-| Vitest (MCP, autoCombo) | `npm run test:vitest`                                                         |
-| E2E (Playwright)        | `npm run test:e2e`                                                            |
-| Protocol E2E (MCP+A2A)  | `npm run test:protocols:e2e` (CI job `test-protocols-e2e`, advisory — #10049) |
-| Ecosystem               | `npm run test:ecosystem` (CI job `test-ecosystem`, blocking)                  |
-| Coverage gate           | `npm run test:coverage` (60/60/60/60 — statements/lines/functions/branches)   |
-| Coverage report         | `npm run coverage:report`                                                     |
+| What                    | Command                                                                                                                                                                                                    |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit tests              | `npm run test:unit`                                                                                                                                                                                        |
+| Single file             | `node --import tsx/esm --test tests/unit/your-file.test.ts`                                                                                                                                                |
+| Vitest (MCP, autoCombo) | `npm run test:vitest`                                                                                                                                                                                      |
+| E2E (Playwright)        | `npm run test:e2e`                                                                                                                                                                                         |
+| Protocol E2E (MCP+A2A)  | `npm run test:protocols:e2e` (CI job `test-protocols-e2e`, advisory — #10049)                                                                                                                              |
+| Ecosystem               | `npm run test:ecosystem` (CI job `test-ecosystem`, blocking)                                                                                                                                               |
+| Coverage gate           | `npm run test:coverage` (67.33 / 67.33 / 72.02 / 65.08 — statements/lines/functions/branches, enforced by the blocking ratchet in config/quality/quality-baseline.json; test:coverage itself hardcodes 60) |
+| Coverage report         | `npm run coverage:report`                                                                                                                                                                                  |
 
 **PR rule**: If you change production code in `src/`, `open-sse/`, `electron/`, or `bin/`, you must include or update tests in the same PR.
 

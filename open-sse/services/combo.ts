@@ -6,10 +6,14 @@
  */
 
 import { errorResponse, errorResponseWithComboDiagnostics } from "../utils/error.ts";
+import { isProviderSafetyStopsEnabled } from "../utils/providerSafety.ts";
+import { createChaosHeaderBarrier } from "./combo/chaosHeaderBarrier.ts";
+import { runComboWithSafetyLatch } from "./combo/safetyStopLatch.ts";
 
 import { recordComboFailure } from "./combo/failureTracker.ts";
 import { buildRecoveryHint } from "./combo/pinRecovery.ts";
 import { buildTargetTimeoutRunner } from "./combo/targetTimeoutRunner.ts";
+import { costKey, resolvePoolCosts } from "./combo/candidateCost.ts";
 import { getComboMetrics } from "./comboMetrics.ts";
 import { qualityScoreFor } from "./routing/index.ts";
 import {
@@ -19,6 +23,7 @@ import {
 } from "./comboConfig.ts";
 
 import { getHiddenModelsByProvider } from "@/models";
+import { getHiddenChatModels } from "../../src/lib/hiddenChatModels";
 
 import { evaluateQuotaCutoff, getQuotaFetcher, type QuotaInfo } from "./quotaPreflight.ts";
 import { resolveProviderId } from "../../src/shared/constants/providers.ts";
@@ -217,7 +222,6 @@ const DEFAULT_MODEL_P95_MS: Record<string, number> = {
   "deepseek-chat": 2000,
 };
 const MIN_HISTORY_SAMPLES = 10;
-const OUTPUT_TOKEN_RATIO = 0.4;
 
 function calculateTargetContextAffinity(
   target: ResolvedComboTarget,
@@ -392,6 +396,17 @@ export async function buildAutoCandidates(
     }
   );
 
+  const poolCosts = await resolvePoolCosts(
+    fingerprintExpandedTargets.map((t) => {
+      const parsed = parseModel(t.modelStr);
+      return {
+        provider: t.provider || parsed.provider || parsed.providerAlias || "unknown",
+        model: parsed.model || t.modelStr,
+      };
+    }),
+    getPricingForModel
+  );
+
   const candidates = await Promise.all(
     fingerprintExpandedTargets.map(async (target) => {
       const modelStr = target.modelStr;
@@ -404,22 +419,7 @@ export async function buildAutoCandidates(
       const hasHistoricalSignal =
         Number.isFinite(historicalTotal) && historicalTotal >= MIN_HISTORY_SAMPLES;
 
-      let costPer1MTokens = 1;
-      try {
-        const pricing = await getPricingForModel(provider, model);
-        const inputPrice = Number(pricing?.input);
-        const outputPrice = Number(pricing?.output);
-        if (Number.isFinite(inputPrice) && inputPrice >= 0) {
-          if (Number.isFinite(outputPrice) && outputPrice >= 0) {
-            costPer1MTokens =
-              inputPrice * (1 - OUTPUT_TOKEN_RATIO) + outputPrice * OUTPUT_TOKEN_RATIO;
-          } else {
-            costPer1MTokens = inputPrice;
-          }
-        }
-      } catch {
-        // keep default cost
-      }
+      const costPer1MTokens = poolCosts.get(costKey(provider, model)) ?? 1;
 
       const modelMetric = metrics?.byModel?.[modelStr] || null;
       const avgLatency = Number(modelMetric?.avgLatencyMs);
@@ -676,7 +676,15 @@ export async function handleComboChat(options: HandleComboChatOptions): Promise<
     (typeof comboInvocationId === "string" && comboInvocationId.length > 0
       ? comboInvocationId
       : createInvocationId());
-  const response = await handleComboChatInner({ ...options, invocationId: traceInvocationId });
+  // PROVIDER_SAFETY_STOPS_TERMINAL (#17049, default off): latch explicit provider safety
+  // stops as terminal for this invocation. Off, the combo runs exactly as before.
+  const response = isProviderSafetyStopsEnabled()
+    ? await runComboWithSafetyLatch(
+        { ...options, invocationId: traceInvocationId },
+        traceInvocationId,
+        handleComboChatInner
+      )
+    : await handleComboChatInner({ ...options, invocationId: traceInvocationId });
   response.headers.set("X-OmniRoute-Combo-Trace", traceInvocationId);
   const trace = getComboTrace(traceInvocationId);
   options.log.info(
@@ -698,7 +706,7 @@ async function handleComboChatInner({
   signal,
   apiKeyAllowedConnections = null,
   nesting = null,
-  hiddenModelsByProvider = getHiddenModelsByProvider(),
+  hiddenModelsByProvider,
   clientManagedResponsesContext = false,
   perTargetAdmission = null,
   deferContextOverflowWhenCompressible = false,
@@ -708,6 +716,7 @@ async function handleComboChatInner({
   requestHeaders = null,
   invocationId,
 }: HandleComboChatOptions): Promise<Response> {
+  hiddenModelsByProvider ??= await getHiddenChatModels();
   const comboCtx = createComboContext({ body, combo, settings, relayOptions, log });
   const {
     strategy,
@@ -791,6 +800,12 @@ async function handleComboChatInner({
 
   // Chaos mode (parallel multi-model dispatch): detection + dispatch live in
   // chaosEngine.ts (dispatchChaosFromCombo), returning null when not chaos-enabled.
+  // Chaos otherwise commits a synthetic SSE 200 before its panel returns headers.
+  // Only with PROVIDER_SAFETY_STOPS_TERMINAL (#17049); off, chaos dispatch is unchanged.
+  const chaosHeaders =
+    body.stream === true && isProviderSafetyStopsEnabled()
+      ? createChaosHeaderBarrier(handleSingleModelWithTimeout, perTargetAdmission, signal)
+      : null;
   const chaosDispatch = dispatchChaosFromCombo({
     cfg,
     comboModels: resolveComboTargets(
@@ -801,11 +816,15 @@ async function handleComboChatInner({
     ).map((target) => target.modelStr),
     comboName: combo.name,
     body,
-    handleSingleModel: handleSingleModelWithTimeout,
+    handleSingleModel: chaosHeaders?.handleSingleModel ?? handleSingleModelWithTimeout,
     log,
-    perTargetAdmission,
+    perTargetAdmission: chaosHeaders?.perTargetAdmission ?? perTargetAdmission,
   });
-  if (chaosDispatch) return chaosDispatch;
+  if (chaosDispatch) {
+    const response = await chaosDispatch;
+    await chaosHeaders?.wait();
+    return response;
+  }
 
   const pipelineDispatch = await tryPipelineDispatch({
     body,
@@ -1144,6 +1163,7 @@ async function handleComboChatInner({
     traceInvocationId,
     clientRequestedStream,
     handleSingleModelWithTimeout,
+    requestHeaders,
     isModelAvailable,
     perTargetAdmission,
     signal,
