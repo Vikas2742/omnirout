@@ -442,58 +442,62 @@ open-sse/
 ├── package.json            Manifest ng workspace
 ├── tsconfig.json
 ├── types.d.ts
-├── config/                 Mga registry ng provider, profile ng header, identity, …
-├── handlers/               Mga handler ng request (chat, embedding, audio, larawan, …)
+├── config/                 Mga registry ng provider, profile ng header, pagkakakilanlan, …
+├── handlers/               Mga handler ng request (chat, embeddings, audio, image, …)
 ├── executors/              150 module ng provider executor (mga executor class + helper para sa bawat provider)
 ├── translator/             Pag-convert ng format (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
-├── transformer/            Transformer ng Responses API ↔ Chat Completions stream
-├── services/               80+ module ng serbisyo (mga combo, fallback, quota, identity, …)
+├── transformer/            Responses API ↔ transformer ng stream ng Chat Completions
+├── services/               80+ module ng serbisyo (mga combo, fallback, quota, pagkakakilanlan, …)
 ├── utils/                  Mga helper sa streaming, TLS client, AWS SigV4, proxy fetch, …
 └── mcp-server/             MCP server (3 transport, 33 scope, 110 tool)
 ```
 
 ### 4.1 `open-sse/handlers/`
 
-| Handler                 | Layunin                                                                                  |
-| ----------------------- | ---------------------------------------------------------------------------------------- |
-| `chatCore.ts`           | Pangunahing pipeline ng chat (cache, rate limit, combo routing, pagpapadala sa executor) |
-| `responsesHandler.ts`   | Entry point ng OpenAI Responses API                                                      |
-| `embeddings.ts`         | Mga embedding                                                                            |
-| `imageGeneration.ts`    | Pagbuo ng larawan                                                                        |
-| `audioSpeech.ts`        | Text-to-speech                                                                           |
-| `audioTranscription.ts` | Speech-to-text                                                                           |
-| `videoGeneration.ts`    | Pagbuo ng video                                                                          |
-| `musicGeneration.ts`    | Pagbuo ng musika                                                                         |
-| `rerank.ts`             | Muling pagraranggo                                                                       |
-| `moderations.ts`        | Moderation                                                                               |
-| `search.ts`             | Paghahanap sa web                                                                        |
-| `sseParser.ts`          | Parser ng SSE event                                                                      |
-| `usageExtractor.ts`     | Kinukuha ang mga bilang ng token mula sa mga upstream stream                             |
-| `responseSanitizer.ts`  | Inaalis ang ingay na partikular sa provider                                              |
-| `responseTranslator.ts` | Pandugtong sa pagitan ng tugon ng provider at layer ng translator                        |
+| Handler                 | Layunin                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| `chatCore.ts`           | Pangunahing pipeline ng chat (cache, rate limit, combo routing, executor dispatch) |
+| `responsesHandler.ts`   | Entry point ng OpenAI Responses API                                                |
+| `embeddings.ts`         | Mga embedding                                                                      |
+| `imageGeneration.ts`    | Pagbuo ng image                                                                    |
+| `audioSpeech.ts`        | Text-to-speech                                                                     |
+| `audioTranscription.ts` | Speech-to-text                                                                     |
+| `videoGeneration.ts`    | Pagbuo ng video                                                                    |
+| `musicGeneration.ts`    | Pagbuo ng musika                                                                   |
+| `rerank.ts`             | Muling pagraranggo                                                                 |
+| `moderations.ts`        | Moderation                                                                         |
+| `search.ts`             | Paghahanap sa web                                                                  |
+| `sseParser.ts`          | Parser ng SSE event                                                                |
+| `usageExtractor.ts`     | Kinukuha ang mga bilang ng token mula sa mga upstream stream                       |
+| `responseSanitizer.ts`  | Tinatanggal ang ingay na partikular sa provider                                    |
+| `responseTranslator.ts` | Ugnayan sa pagitan ng tugon ng provider at layer ng translator                     |
 
 ### 4.2 `open-sse/executors/`
 
-150 top-level na module ng executor (`*.ts` maliban sa `base.ts`, `index.ts`, at mga test — sinusukat ang bilang ng `npm run check:docs-counts`). Ang bawat executor class ay nag-e-extend sa `BaseExecutor` (`base.ts`), direkta man o sa pamamagitan ng `DefaultExecutor` o ibang executor; ang natitirang mga module ay mga helper para sa bawat provider (mga tool schema, fetch/TTS adapter, handler ng mga kakaibang gawi). Kabilang sa mga executor ang:
+150 top-level executor module (`*.ts` maliban sa `base.ts`, `index.ts`, at mga test — ang bilang na sinusukat ng
+`npm run check:docs-counts`). Ang bawat executor class ay nag-e-extend sa `BaseExecutor` (`base.ts`),
+nang direkta o sa pamamagitan ng `DefaultExecutor` o ibang executor; ang natitirang mga module ay mga helper
+para sa bawat provider (mga tool schema, fetch/TTS adapter, quirk handler). Kabilang sa mga executor ang:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
 `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,
 `muse-spark-web`, `nlpcloud`, `opencode`, `perplexity-web`, `petals`,
-`pollinations`, `qoder`, `vertex`, `devin-desktop`, kasama ang `claudeIdentity.ts`
-(pinagsasaluhang helper ng identity) at `index.ts` (registry).
+`pollinations`, `qoder`, `vertex`, `devin-desktop`, pati ang `claudeIdentity.ts`
+(nakabahaging helper ng pagkakakilanlan) at `index.ts` (registry).
 
-> Paalala: ang mga provider na hindi nakalista rito ay pinaglilingkuran ng `default.ts` gamit ang generic na executor na compatible sa OpenAI. Matatagpuan ang kumpletong catalog ng provider (372 provider) sa
+> Tandaan: ang mga provider na hindi nakalista rito ay pinaglilingkuran ng `default.ts` gamit ang generic na
+> OpenAI-compatible executor. Ang kumpletong catalog ng provider (374 provider) ay nasa
 > `src/shared/constants/providers.ts`.
 
 ### 4.3 `open-sse/translator/`
 
 Hub-and-spoke na pagsasalin (OpenAI ang hub).
 
-- **9 na translator ng request** (`translator/request/`):
+- **9 na request translator** (`translator/request/`):
   `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`,
   `gemini-to-openai`, `openai-responses`, `openai-to-claude`,
   `openai-to-cursor`, `openai-to-gemini`, `openai-to-kiro`.
-- **9 na translator ng response** (`translator/response/`):
+- **9 na response translator** (`translator/response/`):
   `claude-to-openai`, `cursor-to-openai`, `gemini-to-claude`, `gemini-to-openai`,
   `kiro-to-openai`, `openai-responses`, `openai-to-antigravity`,
   `openai-to-claude`.
@@ -501,12 +505,13 @@ Hub-and-spoke na pagsasalin (OpenAI ang hub).
   `claudeHelper`, `geminiHelper`, `geminiToolsSanitizer`, `maxTokensHelper`,
   `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, kasama ang
   mga test ng helper.
-- **Mga helper ng larawan** (`translator/image/sizeMapper.ts`).
+- **Mga helper ng image** (`translator/image/sizeMapper.ts`).
 - Top-level: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
 
 ### 4.4 `open-sse/transformer/`
 
-- `responsesTransformer.ts` — Converter ng Responses API ↔ Chat Completions na nakabatay sa `TransformStream` (ginagamit ng catch-all na route na `responses/`).
+- `responsesTransformer.ts` — `TransformStream`-based na converter ng Responses API ↔ Chat
+  Completions (ginagamit ng catch-all na route na `responses/`).
 
 ### 4.5 `open-sse/services/`
 
@@ -521,7 +526,7 @@ Mga tampok (ang kumpletong listahan ay nasa `open-sse/services/`):
 | Pag-cache                | `reasoningCache.ts`, `searchCache.ts`, `signatureCache.ts`, `requestDedup.ts`                                                                                                                                                                            |
 | Katalinuhan sa pag-route | `intentClassifier.ts`, `taskAwareRouter.ts`, `backgroundTaskDetector.ts`, `volumeDetector.ts`, `wildcardRouter.ts`, `workflowFSM.ts`, `specificityDetector.ts`, `specificityRules.ts`, `specificityTypes.ts`                                             |
 | Pangangasiwa ng modelo   | `modelCapabilities.ts`, `modelDeprecation.ts`, `modelFamilyFallback.ts`, `modelStrip.ts`, `model.ts`, `provider.ts`, `providerRequestDefaults.ts`, `providerCostData.ts`, `payloadRules.ts`                                                              |
-| Compression              | `compression/` — kumpletong wiring ng compression engine                                                                                                                                                                                                 |
+| Compression              | `compression/` — kumpletong pagkakawing ng compression engine                                                                                                                                                                                            |
 | Token + session          | `tokenRefresh.ts`, `sessionManager.ts`, `apiKeyRotator.ts`, `contextManager.ts`, `contextHandoff.ts`, `systemPrompt.ts`, `roleNormalizer.ts`, `responsesInputSanitizer.ts`, `toolSchemaSanitizer.ts`, `toolLimitDetector.ts`, `thinkingBudget.ts`        |
 | Tier / manifest          | `tierResolver.ts`, `tierConfig.ts`, `tierDefaults.json`, `tierTypes.ts`, `manifestAdapter.ts`                                                                                                                                                            |
 | IP / network             | `ipFilter.ts`, `webSearchFallback.ts`                                                                                                                                                                                                                    |
@@ -530,9 +535,9 @@ Mga tampok (ang kumpletong listahan ay nasa `open-sse/services/`):
 
 ### 4.6 `open-sse/mcp-server/`
 
-- **110 natatanging tool** na naka-wire sa `server.ts` (45 canonical sa `schemas/tools.ts` +
+- **110 natatanging tool** na nakakawing sa `server.ts` (45 canonical sa `schemas/tools.ts` +
   mga module ng memory, skills, GitHub-skills, pool, gamification, plugin, Notion, Obsidian,
-  local-corpus at compression — binilang ang union ng `countUniqueMcpTools`).
+  local-corpus, at compression — binilang ang union sa pamamagitan ng `countUniqueMcpTools`).
 - **3 transport**: stdio, HTTP Streamable, SSE.
 - **33 scope** na ipinapatupad sa runtime — ang batayang listahan ay nasa `src/shared/constants/mcpScopes.ts`, at ang kumpletong set ay ang union ng mga scope na idineklara ng bawat module ng tool.
 - Talahanayan ng audit: `mcp_tool_audit` (pinupunan ng `audit.ts`).
@@ -540,12 +545,12 @@ Mga tampok (ang kumpletong listahan ay nasa `open-sse/services/`):
   `runtimeHeartbeat.ts`, `descriptionCompressor.ts`, `schemas/{tools, a2a, audit, index}.ts`,
   `tools/{advancedTools, compressionTools, memoryTools, skillTools}.ts`,
   kasama ang mga test sa ilalim ng `__tests__/`.
-- Tingnan ang [MCP-SERVER.md](../frameworks/MCP-SERVER.md) para sa kumpletong katalogo ng tool.
+- Tingnan ang [MCP-SERVER.md](../frameworks/MCP-SERVER.md) para sa kumpletong katalogo ng mga tool.
 
 ### 4.7 `open-sse/config/`
 
 Mga registry ng provider (`providerRegistry.ts`, `providerModels.ts`,
-`providerHeaderProfiles.ts`), mga registry ng modelo para sa bawat format (`audioRegistry.ts`,
+`providerHeaderProfiles.ts`), mga registry ng modelo ayon sa format (`audioRegistry.ts`,
 `embeddingRegistry.ts`, `imageRegistry.ts`, `moderationRegistry.ts`,
 `musicRegistry.ts`, `rerankRegistry.ts`, `searchRegistry.ts`, `videoRegistry.ts`),
 mga helper ng identity (`codexIdentity.ts`, `codexInstructions.ts`,
@@ -558,7 +563,7 @@ adapter (`azureAi.ts`, `bedrock.ts`, `datarobot.ts`, `glmProvider.ts`,
 
 ### 4.8 `open-sse/utils/`
 
-Mga primitive sa streaming at mga helper ng provider: `stream.ts`, `streamHandler.ts`,
+Mga primitive sa streaming at helper ng provider: `stream.ts`, `streamHandler.ts`,
 `streamHelpers.ts`, `streamPayloadCollector.ts`, `streamReadiness.ts`,
 `sseHeartbeat.ts`, `proxyFetch.ts`, `proxyDispatcher.ts`, `tlsClient.ts`,
 `networkProxy.ts`, `awsSigV4.ts`, `cacheControlPolicy.ts`,
@@ -651,7 +656,7 @@ Mga karaniwang command:
 
 ## 8. `scripts/`
 
-Inayos sa 6 na subfolder ayon sa layunin.
+Isinaayos sa 6 na subfolder ayon sa layunin.
 
 - **`scripts/build/`** — `build-next-isolated.mjs`, `prepublish.ts`,
   `prepare-electron-standalone.mjs`, `pack-artifact-policy.ts`,
@@ -663,7 +668,11 @@ Inayos sa 6 na subfolder ayon sa layunin.
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`.
+  `system-info.mjs`, kasama ang mga read-only na helper para sa pagsubaybay sa PR:
+  `ci-discriminate.sh` (inuuri ang mga signature ng pumalyang check ng isang PR bilang sarili / minana /
+  hindi alam batay sa isang reference PR o sa base-red issue) at `audit-worktree.sh`
+  (maruruming file, mga protektadong surface, mga inalis na assert, bilang ng mga suppression, mga natirang
+  pansamantalang tsconfig, PR head kumpara sa lokal na HEAD — bago tanggapin ang PR ng isang worker).
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,
