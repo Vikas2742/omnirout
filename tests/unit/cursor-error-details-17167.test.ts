@@ -44,6 +44,63 @@ function classifiedPayload(payload: Buffer) {
   return classifyCursorError(projected);
 }
 
+test("known-type debug-only details retain title and guidance without exposing private fields", () => {
+  const debug = {
+    details: {
+      title: TITLE,
+      detail: `${DETAIL} authorization=synthetic-secret /srv/private/synthetic.txt https://evil.invalid/pay`,
+      additional_info: "PRIVATE_ADDITIONAL_INFO",
+      buttons: [{ label: "BUTTON_POISON", url: "https://evil.invalid/button" }],
+      metadata: "METADATA_POISON",
+    },
+    raw: "RAW_DEBUG_POISON",
+  };
+  const result = classifiedPayload(envelope([{ type: TYPE, debug }]));
+  assert.equal(result.status, 404);
+  assert.ok(result.message.includes(TITLE));
+  assert.ok(result.message.includes(DETAIL));
+  assert.doesNotMatch(
+    result.message,
+    /synthetic-secret|\/srv\/private|evil\.invalid|PRIVATE_ADDITIONAL_INFO|POISON/
+  );
+  for (const details of [{ title: TITLE }, { detail: TITLE }]) {
+    assert.equal(classifiedPayload(envelope([{ type: TYPE, debug: { details } }])).status, 404);
+  }
+  const bounded = connectEndStreamError(
+    envelope([{ type: TYPE, debug: { details: { title: "x".repeat(3000) + "TAIL_POISON" } } }])
+  );
+  assert.doesNotMatch(bounded || "", /TAIL_POISON/);
+});
+
+test("debug-only details require the exact known type and explicit object whitelist", () => {
+  for (const type of [undefined, "", "other.ErrorDetails", `${TYPE}Extra`]) {
+    assert.equal(
+      connectEndStreamError(envelope([{ type, debug: { details: { title: TITLE } } }])),
+      "cursor-agent stream ended with error unknown: Error"
+    );
+  }
+  for (const debug of [null, [], { title: TITLE }, { details: [TITLE] }, { details: TITLE }]) {
+    assert.equal(
+      connectEndStreamError(envelope([{ type: TYPE, debug }])),
+      "cursor-agent stream ended with error unknown: Error"
+    );
+  }
+});
+
+test("present typed value wins over debug and malformed values never enable debug fallback", () => {
+  const debug = { details: { title: "DEBUG_POISON", detail: "DEBUG_GUIDANCE_POISON" } };
+  const valid = connectEndStreamError(envelope([typed(TITLE, DETAIL, debug)]));
+  assert.ok(valid?.includes(TITLE));
+  assert.ok(valid?.includes(DETAIL));
+  assert.doesNotMatch(valid || "", /POISON/);
+  for (const value of [null, false, 0, {}, "", "%%%", "EgV4", "A".repeat(100_000)]) {
+    assert.equal(
+      connectEndStreamError(envelope([{ type: TYPE, value, debug }])),
+      "cursor-agent stream ended with error unknown: Error"
+    );
+  }
+});
+
 for (const [name, details] of [
   ["without debug", [typed()]],
   ["with conflicting debug", [typed(TITLE, DETAIL, { details: { title: "DEBUG_POISON" } })]],

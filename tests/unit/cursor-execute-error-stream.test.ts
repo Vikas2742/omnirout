@@ -40,6 +40,15 @@ const typed = {
 const errorPayload = (code: string, message: string, details: unknown[] = []) =>
   Buffer.from(JSON.stringify({ error: { code, message, details } }));
 const entitlement = errorPayload("unknown", "Error", [typed]);
+const entitlementFixtures = [
+  ["typed value", entitlement],
+  [
+    "known-type debug-only",
+    errorPayload("unknown", "Error", [
+      { type: "aiserver.v1.ErrorDetails", debug: { details: { title, detail } } },
+    ]),
+  ],
+] as const;
 function frame(payload: Buffer, flag = 2) {
   const header = Buffer.alloc(5);
   header[0] = flag;
@@ -246,24 +255,26 @@ test("whitespace scan remains bounded; non-JSON and malformed JSON retain fallba
   );
   assert.match(projectCursorError(Buffer.from(" ".repeat(140_000) + "{}")) || "", /too large/);
 });
-for (const mode of deliveries) {
-  for (const flag of [0, 2]) {
-    for (const stream of [false, true]) {
-      test(`pre-output entitlement ${mode} flag=${flag} stream=${stream}`, async () => {
-        delivery = mode;
-        bytes = frame(entitlement, flag);
-        try {
-          const out = await execute(stream);
-          const wire = await out.response.text();
-          if (!stream) assert.equal(out.response.status, 404);
-          assert.ok(wire.includes(title));
-          assert.ok(wire.includes(detail));
-          assert.match(wire, /invalid_request_error/);
-          if (stream) assert.match(wire, /"status":404/);
-        } finally {
-          delivery = "complete";
-        }
-      });
+for (const [fixture, payload] of entitlementFixtures) {
+  for (const mode of deliveries) {
+    for (const flag of [0, 2]) {
+      for (const stream of [false, true]) {
+        test(`pre-output entitlement ${fixture} ${mode} flag=${flag} stream=${stream}`, async () => {
+          delivery = mode;
+          bytes = frame(payload, flag);
+          try {
+            const out = await execute(stream);
+            const wire = await out.response.text();
+            if (!stream) assert.equal(out.response.status, 404);
+            assert.ok(wire.includes(title));
+            assert.ok(wire.includes(detail));
+            assert.match(wire, /invalid_request_error/);
+            if (stream) assert.match(wire, /"status":404/);
+          } finally {
+            delivery = "complete";
+          }
+        });
+      }
     }
   }
 }
@@ -338,42 +349,43 @@ test("real streaming pipeline locks only current connection/model; sibling and s
     });
   pipeline = true;
   try {
-    for (const mode of deliveries)
-      for (const flag of [0, 2])
-        await t.test(`${mode} flag=${flag}`, async () => {
-          fallback.clearAllModelLockouts();
-          delivery = mode;
-          bytes = frame(entitlement, flag);
-          const failed = await harness.handleChat(request("fable-5", firstId));
-          const wire = await failed.text();
-          assert.equal(failed.status, 404, wire);
-          assert.match(wire, /"type":"invalid_request_error"/);
-          assert.doesNotMatch(wire, /STREAM_READINESS_TIMEOUT/);
-          assert.ok(wire.includes(title));
-          assert.ok(wire.includes(detail));
-          assert.equal(fallback.isModelLocked("cursor", firstId, "fable-5"), true);
-          assert.equal(fallback.isModelLocked("cursor", firstId, "composer-2.5"), false);
-          assert.equal(fallback.isModelLocked("cursor", secondId, "fable-5"), false);
-          for (const id of [firstId, secondId])
-            assert.equal(fallback.isProviderInCooldown("cursor", id), false);
-          assert.equal(fallback.getProviderBreakerState("cursor")?.failureCount, 0);
-          const after = await providers.getProviderConnectionById(firstId);
-          for (const field of ["testStatus", "rateLimitedUntil", "isActive"] as const)
-            assert.equal(after[field], before[field], field);
-          attempts.length = 0;
-          const sibling = await harness.handleChat(request("composer-2.5", firstId));
-          assert.equal(sibling.status, 200);
-          assert.match(await sibling.text(), /synthetic healthy reply/);
-          assert.ok(attempts.some((attempt) => attempt.first));
-          attempts.length = 0;
-          const other = await harness.handleChat(request("fable-5"));
-          assert.equal(other.status, 200);
-          assert.match(await other.text(), /synthetic healthy reply/);
-          assert.ok(attempts.length > 0);
-          assert.ok(attempts.every((attempt) => !attempt.first));
-          // Neither success may clear the rejected connection/model's failure.
-          assert.equal(fallback.isModelLocked("cursor", firstId, "fable-5"), true);
-        });
+    for (const [fixture, payload] of entitlementFixtures)
+      for (const mode of deliveries)
+        for (const flag of [0, 2])
+          await t.test(`${fixture} ${mode} flag=${flag}`, async () => {
+            fallback.clearAllModelLockouts();
+            delivery = mode;
+            bytes = frame(payload, flag);
+            const failed = await harness.handleChat(request("fable-5", firstId));
+            const wire = await failed.text();
+            assert.equal(failed.status, 404, wire);
+            assert.match(wire, /"type":"invalid_request_error"/);
+            assert.doesNotMatch(wire, /STREAM_READINESS_TIMEOUT/);
+            assert.ok(wire.includes(title));
+            assert.ok(wire.includes(detail));
+            assert.equal(fallback.isModelLocked("cursor", firstId, "fable-5"), true);
+            assert.equal(fallback.isModelLocked("cursor", firstId, "composer-2.5"), false);
+            assert.equal(fallback.isModelLocked("cursor", secondId, "fable-5"), false);
+            for (const id of [firstId, secondId])
+              assert.equal(fallback.isProviderInCooldown("cursor", id), false);
+            assert.equal(fallback.getProviderBreakerState("cursor")?.failureCount, 0);
+            const after = await providers.getProviderConnectionById(firstId);
+            for (const field of ["testStatus", "rateLimitedUntil", "isActive"] as const)
+              assert.equal(after[field], before[field], field);
+            attempts.length = 0;
+            const sibling = await harness.handleChat(request("composer-2.5", firstId));
+            assert.equal(sibling.status, 200);
+            assert.match(await sibling.text(), /synthetic healthy reply/);
+            assert.ok(attempts.some((attempt) => attempt.first));
+            attempts.length = 0;
+            const other = await harness.handleChat(request("fable-5"));
+            assert.equal(other.status, 200);
+            assert.match(await other.text(), /synthetic healthy reply/);
+            assert.ok(attempts.length > 0);
+            assert.ok(attempts.every((attempt) => !attempt.first));
+            // Neither success may clear the rejected connection/model's failure.
+            assert.equal(fallback.isModelLocked("cursor", firstId, "fable-5"), true);
+          });
   } finally {
     delivery = "complete";
     pipeline = false;

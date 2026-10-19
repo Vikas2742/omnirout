@@ -79,10 +79,18 @@ function safeText(value: unknown): string {
     .trim();
 }
 
-function typedText(detail: unknown): string {
+function detailText(detail: unknown): string {
   const entry = record(detail);
-  if (entry?.type !== ERROR_DETAILS_TYPE || typeof entry.value !== "string") return "";
-  const value = entry.value;
+  if (entry?.type !== ERROR_DETAILS_TYPE) return "";
+  if (!Object.hasOwn(entry, "value")) {
+    const details = record(record(entry.debug)?.details);
+    return [safeText(details?.title), safeText(details?.detail)].filter(Boolean).join(" ");
+  }
+  return typedText(entry.value);
+}
+
+function typedText(value: unknown): string {
+  if (typeof value !== "string") return "";
   if (!value || value.length > Math.ceil(MAX_VALUE_BYTES / 3) * 4) return "";
   // Buffer's decoder silently accepts junk; require canonical standard base64
   // (Connect permits omitted padding) before touching the protobuf wire value.
@@ -131,6 +139,6 @@ export function projectCursorError(payload: Buffer): string | null {
   const code = safeText(error.code) || "unknown";
   const fallback = safeText(error.message);
   const details = Array.isArray(error.details) ? error.details.slice(0, MAX_DETAILS) : [];
-  const text = details.map(typedText).find(Boolean) || fallback;
+  const text = details.map(detailText).find(Boolean) || fallback;
   return `${code}${text ? `: ${text}` : ""}`;
 }
