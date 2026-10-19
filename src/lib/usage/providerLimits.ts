@@ -354,9 +354,7 @@ export function syntheticCooldownOutlivedByRealWindows(
   const windows = Object.values(usage.quotas);
   if (windows.length === 0) return false;
   for (const value of windows) {
-    if (!isRecord(value) || value.unlimited === true || value.fractionReported === false) {
-      return false;
-    }
+    if (!isRecord(value) || value.unlimited === true) return false;
     const remaining =
       typeof value.remaining === "number"
         ? value.remaining
@@ -473,7 +471,9 @@ export function everyQuotaWindowReplenished(usage: JsonRecord): boolean {
   if (usage.message || usage._stale || !isRecord(usage.quotas)) return false;
   const windows = Object.values(usage.quotas);
   return windows.length > 0 && windows.every((value) => {
-    if (!isRecord(value) || value.unlimited === true) return false;
+    if (!isRecord(value) || value.unlimited === true || value.fractionReported === false) {
+      return false;
+    }
     const remaining = typeof value.remainingPercentage === "number"
       ? value.remainingPercentage
       : typeof value.remaining === "number" ? value.remaining : null;
