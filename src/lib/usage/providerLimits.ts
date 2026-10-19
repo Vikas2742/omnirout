@@ -498,10 +498,11 @@ export function everyQuotaWindowReplenished(usage: JsonRecord): boolean {
 export function hasRecoveredClaudeWeeklyWindow(usage: JsonRecord): boolean {
   if (!isRecord(usage.quotas)) return false;
   return Object.entries(usage.quotas).some(([key, value]) => {
-    const lower = key.toLowerCase();
-    if ((!lower.includes("weekly") && !lower.includes("7d")) || lower.includes("sonnet")) {
-      return false;
-    }
+    // Normalized Claude quotas put model-scoped buckets in modelQuotas.
+    // Reject similarly named rows here rather than treating a recovered
+    // Opus/Haiku weekly bucket as recovered account-wide capacity.
+    const normalized = key.trim().toLowerCase();
+    if (!["weekly", "weekly (7d)", "7d"].includes(normalized)) return false;
     if (!isRecord(value) || value.fractionReported === false || value.unlimited === true) {
       return false;
     }
