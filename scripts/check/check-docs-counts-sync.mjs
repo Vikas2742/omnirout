@@ -411,6 +411,11 @@ export function readCoverageRatchetFloors() {
   }
 }
 
+function isTableRowAt(content, index) {
+  const lineStart = content.lastIndexOf("\n", index - 1) + 1;
+  return content.slice(lineStart, index).trimStart().startsWith("|");
+}
+
 export function makeVersionClaimValidator(expected) {
   // G-06 (#15159): the original list matched only TWO literal phrasings, so the
   // gate saw at most one claim per file and four stale strings shipped through
@@ -433,6 +438,7 @@ export function makeVersionClaimValidator(expected) {
   //   3. a bold range — emphasis picks out the target, so capture the SECOND
   //      endpoint ("**v3.8.20 → v3.8.50**" asserts the right one is current)
   //   4. a single bold version — emphasis marks the notable/current one
+  //      (outside markdown table rows; see isTableRowAt below)
   //   5. a version inside a heading's parentheses ("## Key Features (v3.8.50)")
   //   6. an inline range's target ("from v3.8.20 → v3.8.50")
   //   7. a backticked floor ("`v3.8.51+`") — a floor below current understates
@@ -489,6 +495,13 @@ export function makeVersionClaimValidator(expected) {
         // range's left endpoint being double-counted — skip it.
         const isRangeTarget = pattern === PATTERNS[2] || pattern === PATTERNS[5];
         if (insideRange(index) && !isRangeTarget) continue;
+        // A bold version inside a markdown TABLE row is a column marker, not a
+        // current-version claim: the README compatibility table bolds the last
+        // SHIPPED release (`| v3.8.50 | **v3.8.51** | \`v3.8.52+\` |`) while
+        // package.json already carries the in-development version. In such a
+        // row the current version is asserted by the backticked floor
+        // (pattern 7), which is still checked.
+        if (pattern === PATTERNS[3] && isTableRowAt(content, index)) continue;
         claims.push({ value, text: m[0].trim(), index });
       }
     }
@@ -789,7 +802,7 @@ export function buildChecks() {
       // the real floors from quality-baseline.json rather than hardcoding them
       // here, so a future rebaseline cannot leave the docs silently wrong.
       label: "Coverage floor (docs vs blocking ratchet)",
-      actual: readCoverageRatchetFloors(),
+      actual: Object.values(readCoverageRatchetFloors()).join(" / "),
       docKey: "coverage floor",
       strict: true,
       files: ["AGENTS.md", "README.md"],

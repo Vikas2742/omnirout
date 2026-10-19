@@ -87,6 +87,22 @@ test("G-06: a 'v3.8.51+' lower-bound claim is caught, not treated as a range", (
   assert.equal(result.ok, false);
 });
 
+test("G-06: a compatibility-table row bolding the last SHIPPED release is accepted", () => {
+  // Mid-cycle the README table bolds the last released column while package.json
+  // already carries the in-development version; the row's current-version claim
+  // is the backticked floor, which must match.
+  const row = "|  | v3.8.50 | **v3.8.51** | `v3.8.52+` |";
+  const result = validateVersion(VERSION)(row);
+  assert.equal(result.ok, true, `table column marker treated as a claim: ${result.detail}`);
+
+  // The same row with a stale floor is still caught.
+  const staleFloor = validateVersion(VERSION)("|  | v3.8.50 | **v3.8.51** | `v3.8.51+` |");
+  assert.equal(staleFloor.ok, false);
+
+  // A bold version OUTSIDE a table row is still a claim.
+  assert.equal(validateVersion(VERSION)("Now shipping **v3.8.51**.").ok, false);
+});
+
 test("G-06: unrelated version numbers in docs are not flagged", () => {
   // The gate must not become so greedy it reddens on legitimate prose — node
   // versions, dependency versions, historical notes.
