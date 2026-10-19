@@ -115,44 +115,44 @@ OmniRoute/
 ```
 src/
 ├── app/                 # App Router (страницы + маршруты API + страницы состояния + лендинг)
-├── lib/                 # Основные библиотеки / доменные модули (80 подкаталогов + ~70 файлов верхнего уровня)
-├── domain/              # Чистая доменная логика (движок политик, резервные сценарии, стоимость, блокировка, comboResolver, оценка)
-├── server/              # Только серверные модули (конвейер авторизации, cors, ПО промежуточного слоя для аутентификации) — импортировать из клиента нельзя
-├── shared/              # Общие для сервера и клиента компоненты, где это безопасно (константы, типы, валидация, контракты, утилиты)
+├── lib/                 # Основные библиотеки / доменные модули (80 подкаталогов + около 70 файлов верхнего уровня)
+├── domain/              # Чистая доменная логика (policy engine, fallback, cost, lockout, comboResolver, assessment)
+├── server/              # Только серверные модули (конвейер authz, cors, промежуточное ПО аутентификации) — нельзя импортировать на клиенте
+├── shared/              # Общий код для сервера и клиента, когда это безопасно (константы, типы, валидация, контракты, утилиты)
 ├── i18n/                # Конфигурация next-intl + JSON-файлы сообщений для каждой локали (42 локали)
-├── middleware/          # ПО промежуточного слоя Next.js (обогащение запросов, определение локали)
+├── middleware/          # Промежуточное ПО Next.js (обогащение запросов, определение локали)
 ├── mitm/                # Ядро MITM-прокси: создание/установка сертификатов, обработчики, цели, инспектор, маски, сквозная передача
 │   ├── handlers/        # 9 классов обработчиков IDE-агентов, расширяющих MitmHandlerBase (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
-│   └── inspector/       # Слой перехвата трафика: буфер (кольцевой буфер в памяти), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
-├── models/              # Связующий код адаптеров моделей (устаревшая прослойка)
+│   └── inspector/       # Уровень перехвата трафика: буфер (кольцевой буфер в памяти), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
+├── models/              # Связующий код адаптеров моделей (устаревший слой совместимости)
 ├── scripts/             # Внутренние скрипты обслуживания (например, backfillAggregation)
 ├── sse/                 # Устаревшие обработчики/сервисы SSE (chat.ts, chatHelpers.ts, services/auth.ts)
 ├── store/               # Устаревшее хранилище в памяти (постепенно заменяется на src/lib/db)
 ├── types/               # Общие файлы типов TS
 ├── instrumentation.ts   # Хук телеметрии Next.js (браузер + edge)
 ├── instrumentation-node.ts  # Инструментирование только для Node
-└── proxy.ts             # Входная прослойка HTTP-прокси
+└── proxy.ts             # Входной слой совместимости HTTP-прокси
 ```
 
 ### `src/app/` — App Router (Next.js 16)
 
 | Путь                                                                         | Назначение                                                                                                                                                                                                                                                                                                                    |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | Публичный API, совместимый с OpenAI (~25 подмаршрутов: чат, генерация текста, эмбеддинги, файлы, пакетная обработка, аудио, изображения, видео, музыка, реранжирование, модерация, поиск, WebSocket, агенты, учётные записи, провайдеры и т. д.)                                                                              |
+| `app/api/v1/`                                                                | Публичный API, совместимый с OpenAI (~25 подмаршрутов: чаты, дополнения, эмбеддинги, файлы, пакеты, аудио, изображения, видео, музыка, переранжирование, модерация, поиск, ws, агенты, учётные записи, провайдеры и т. д.)                                                                                                    |
 | `app/api/v1beta/`                                                            | Конечные точки API в стиле Gemini                                                                                                                                                                                                                                                                                             |
-| `app/api/playground/`                                                        | Маршруты Playground Studio: `improve-prompt/` (POST — переформулирование промпта с помощью LLM), `presets/` (GET для получения списка / POST для создания), `presets/[id]/` (GET / PUT / DELETE) — см. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                 |
-| `app/api/` (не v1)                                                           | Маршруты управления и администрирования (~60 каталогов: провайдеры, комбинации, настройки, MCP, A2A, оценки, память, навыки, вебхуки, соответствие требованиям, отказоустойчивость, мониторинг, туннели, инструменты CLI и т. д.)                                                                                             |
-| `app/api/tools/agent-bridge/`                                                | REST API AgentBridge — 12 маршрутов (управление сервером, состояние агентов/DNS/сопоставления, обход, сертификат, вышестоящий ЦС). LOCAL_ONLY + SPAWN_CAPABLE. См. `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                                       |
-| `app/api/tools/traffic-inspector/`                                           | REST + WebSocket API Traffic Inspector — более 16 маршрутов (запросы, сеансы, хосты, режимы захвата, экспорт, WebSocket). LOCAL_ONLY + SPAWN_CAPABLE. См. `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                                          |
+| `app/api/playground/`                                                        | Маршруты Playground Studio: `improve-prompt/` (POST — переформулирование промпта с помощью LLM), `presets/` (GET списка / POST для создания), `presets/[id]/` (GET / PUT / DELETE) — см. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                               |
+| `app/api/` (не v1)                                                           | Маршруты управления и администрирования (~60 каталогов: провайдеры, комбинации, настройки, mcp, a2a, оценки, память, навыки, вебхуки, соответствие требованиям, отказоустойчивость, мониторинг, туннели, инструменты CLI и т. д.)                                                                                             |
+| `app/api/tools/agent-bridge/`                                                | REST API AgentBridge — 12 маршрутов (управление сервером, состояние агентов/DNS/сопоставления, обход, сертификат, вышестоящий центр сертификации). LOCAL_ONLY + SPAWN_CAPABLE. См. `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                       |
+| `app/api/tools/traffic-inspector/`                                           | REST + WS API Traffic Inspector — более 16 маршрутов (запросы, сеансы, хосты, режимы захвата, экспорт, ws). LOCAL_ONLY + SPAWN_CAPABLE. См. `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                                                        |
 | `app/a2a/`                                                                   | Точка входа A2A JSON-RPC 2.0 (`POST /a2a`)                                                                                                                                                                                                                                                                                    |
 | `app/.well-known/agent.json/`                                                | Карточка агента A2A (обнаружение)                                                                                                                                                                                                                                                                                             |
-| `app/(dashboard)/dashboard/`                                                 | Страницы интерфейса панели управления (более 50 разделов, ~118 файлов page.tsx: провайдеры, комбинации, настройки, память, навыки, вебхуки, оценки, аудит, пакетная обработка, кеш, затраты, работоспособность, система, активность и т. д.)                                                                                  |
-| `app/(dashboard)/dashboard/search-tools/`                                    | Интерфейс Search Tools Studio (3 вкладки: поиск/скрейпинг/сравнение + SearchConceptCard + ProviderCatalog) — см. `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                                     |
+| `app/(dashboard)/dashboard/`                                                 | Страницы интерфейса панели управления (более 50 разделов, ~118 файлов page.tsx: провайдеры, комбинации, настройки, память, навыки, вебхуки, оценки, аудит, пакетная обработка, кэш, затраты, состояние, система, активность и т. д.)                                                                                          |
+| `app/(dashboard)/dashboard/search-tools/`                                    | Интерфейс Search Tools Studio (3 вкладки: Search/Scrape/Compare + SearchConceptCard + ProviderCatalog) — см. `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                                         |
 | `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (план 21): `page.tsx` (оболочка с 3 вкладками), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Страница AgentBridge в панели управления — карточка сервера, 9 карточек агентов, мастер настройки, сопоставление моделей, список обхода. i18n для PT-BR + EN. См. `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                           |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Страница Traffic Inspector в панели управления — разделённый интерфейс DevTools, 7 вкладок с подробностями, 4 переключателя режимов захвата, средство записи сеансов, цветовое выделение контекста. i18n для PT-BR + EN. См. `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                          |
-| `app/(dashboard)/dashboard/activity/`                                        | Страница ленты активности (группа B): `page.tsx` (серверный) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — см. `docs/architecture/MONITORING_SECTIONS.md`                                                                                                             |
-| `app/(dashboard)/dashboard/costs/quota-share/`                               | Страница совместного использования квот (группа B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                               |
+| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Страница AgentBridge в панели управления — карточка сервера, 9 карточек агентов, мастер настройки, сопоставление моделей, список обхода. Интернационализация PT-BR + EN. См. `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                |
+| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Страница Traffic Inspector в панели управления — разделённый интерфейс DevTools, 7 вкладок подробных сведений, 4 переключателя режимов захвата, средство записи сеансов, цветовое выделение контекста. Интернационализация PT-BR + EN. См. `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                            |
+| `app/(dashboard)/dashboard/activity/`                                        | Страница ленты активности (группа B): `page.tsx` (сервер) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — см. `docs/architecture/MONITORING_SECTIONS.md`                                                                                                                |
+| `app/(dashboard)/dashboard/costs/quota-share/`                               | Страница распределения квот (группа B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                           |
 | `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Страница настройки тарифного плана провайдера (группа B): `page.tsx` + `ProviderPlanConfigClient.tsx` — переопределение измерений квоты для каждого подключения                                                                                                                                                               |
 | `app/docs/`                                                                  | Встроенное средство просмотра документации (отображает `docs/*.md`)                                                                                                                                                                                                                                                           |
 | `app/landing/`                                                               | Маркетинговая целевая страница                                                                                                                                                                                                                                                                                                |
@@ -166,42 +166,42 @@ src/
 
 | Модуль                                   | Назначение                                                                                                                                                                                                                                                                                                                                |
 | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`                                   | Диспетчер задач протокола A2A, навыки (5), потоковая передача                                                                                                                                                                                                                                                                             |
+| `a2a/`                                   | Менеджер задач протокола A2A, навыки (5), потоковая передача                                                                                                                                                                                                                                                                              |
 | `acp/`                                   | Реестр CLI-агентов (локальное обнаружение CLI — см. `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                                           |
-| `api/`                                   | Общие вспомогательные функции API (`requireManagementAuth`, валидация)                                                                                                                                                                                                                                                                    |
-| `auth/`                                  | Сессии, хеширование паролей, проверка токенов                                                                                                                                                                                                                                                                                             |
-| `batches/`                               | Обработчики OpenAI Batches API                                                                                                                                                                                                                                                                                                            |
-| `catalog/`                               | Zod-валидация каталога провайдеров и определение возможностей                                                                                                                                                                                                                                                                             |
+| `api/`                                   | Общие вспомогательные средства API (`requireManagementAuth`, валидация)                                                                                                                                                                                                                                                                   |
+| `auth/`                                  | Сессии, хеширование паролей, валидация токенов                                                                                                                                                                                                                                                                                            |
+| `batches/`                               | Обработчики Batches API OpenAI                                                                                                                                                                                                                                                                                                            |
+| `catalog/`                               | Валидация каталога провайдеров с помощью Zod + определение возможностей                                                                                                                                                                                                                                                                   |
 | `cloudAgent/`                            | Облачные агенты (Codex Cloud, Devin, Jules) — см. `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                                        |
-| `combos/`                                | Определение комбинаций и вспомогательные функции изменения порядка                                                                                                                                                                                                                                                                        |
-| `audit/`                                 | Вспомогательные функции ленты активности: `highLevelActions.ts` (список разрешённых действий и `isHighLevelAction()`), `activityIcons.ts` (сопоставление действия со значком/глаголом), `timeline.ts` (groupByDay/relativeTime) — см. `docs/architecture/MONITORING_SECTIONS.md`                                                          |
-| `compliance/`                            | Журнал аудита и аудит провайдеров — см. `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                                     |
-| `compression/`                           | Связующий слой механизма сжатия (реализации находятся в `open-sse/services/compression/`)                                                                                                                                                                                                                                                 |
-| `config/`                                | Вспомогательные функции конфигурации среды выполнения                                                                                                                                                                                                                                                                                     |
-| `db/`                                    | Более 120 доменных модулей БД и 168 миграций (для SQLite всегда используйте их)                                                                                                                                                                                                                                                           |
+| `combos/`                                | Определение комбинаций + вспомогательные средства изменения порядка                                                                                                                                                                                                                                                                       |
+| `audit/`                                 | Вспомогательные средства ленты активности: `highLevelActions.ts` (список разрешённых действий + `isHighLevelAction()`), `activityIcons.ts` (сопоставление действия с иконкой/глаголом), `timeline.ts` (`groupByDay`/`relativeTime`) — см. `docs/architecture/MONITORING_SECTIONS.md`                                                      |
+| `compliance/`                            | Журнал аудита + аудит провайдеров — см. `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                                     |
+| `compression/`                           | Связующий слой механизма сжатия (механизмы находятся в `open-sse/services/compression/`)                                                                                                                                                                                                                                                  |
+| `config/`                                | Вспомогательные средства конфигурации среды выполнения                                                                                                                                                                                                                                                                                    |
+| `db/`                                    | Более 120 модулей БД для предметных областей + 168 миграций (для работы с SQLite всегда используйте их)                                                                                                                                                                                                                                   |
 | `quota/`                                 | Механизм совместного использования квот: `dimensions.ts` (типы/Zod), `types.ts` (интерфейс QuotaStore), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — см. `docs/routing/QUOTA_SHARE.md` |
 | `radar/`                                 | Клиент каталога бесплатных моделей Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — см. `docs/frameworks/RADAR.md`                                                                                                                                                     |
-| `display/`                               | Вспомогательные функции форматирования UI (стоимость, задержка и т. д.)                                                                                                                                                                                                                                                                   |
-| `embeddings/`                            | Вспомогательные функции сервиса эмбеддингов                                                                                                                                                                                                                                                                                               |
-| `env/`                                   | Разбор и проверка переменных окружения                                                                                                                                                                                                                                                                                                    |
-| `evals/`                                 | Фреймворк оценки (наборы, средство запуска, среда выполнения) — см. `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                            |
-| `guardrails/`                            | Маскирование персональных данных, защита от инъекций в промпты, интерфейс для работы с изображениями — см. `docs/security/GUARDRAILS.md`                                                                                                                                                                                                  |
-| `jobs/`                                  | Фоновые задания (аналог cron)                                                                                                                                                                                                                                                                                                             |
-| `memory/`                                | Диалоговая память (гибридный RRF на базе SQLite FTS5 + sqlite-vec, а также Qdrant второго уровня) — см. `docs/frameworks/MEMORY.md`                                                                                                                                                                                                       |
-| `memory/embedding/`                      | Многоресурсный слой эмбеддингов: `index.ts` (резолвер), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (план 21)                                                                                                                                                                                          |
-| `memory/vectorStore.ts`                  | Обёртка для sqlite-vec v0.1.9 — KNN с полным перебором + гибридный RRF (FTS5 + векторы, k=60). Ленивая инициализация, корректная деградация при недоступности sqlite-vec. (план 21)                                                                                                                                                       |
-| `memory/reindex.ts`                      | `runReindexBatch()` — обрабатывает в фоновом режиме записи памяти с `needs_reindex=1`; вызывается через `POST /api/memory/reindex` и механизм ленивого обратного заполнения. (план 21)                                                                                                                                                    |
-| `monitoring/`                            | Проверки работоспособности, отправка метрик                                                                                                                                                                                                                                                                                               |
+| `display/`                               | Вспомогательные средства форматирования интерфейса (стоимость, задержка и т. д.)                                                                                                                                                                                                                                                          |
+| `embeddings/`                            | Вспомогательные средства сервиса эмбеддингов                                                                                                                                                                                                                                                                                              |
+| `env/`                                   | Разбор и валидация переменных окружения                                                                                                                                                                                                                                                                                                   |
+| `evals/`                                 | Фреймворк оценки (наборы, исполнитель, среда выполнения) — см. `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                                 |
+| `guardrails/`                            | Маскирование персональных данных, защита от внедрения промптов, мост для обработки изображений — см. `docs/security/GUARDRAILS.md`                                                                                                                                                                                                        |
+| `jobs/`                                  | Фоновые задания (по типу cron)                                                                                                                                                                                                                                                                                                            |
+| `memory/`                                | Диалоговая память (гибридный RRF на основе SQLite FTS5 + sqlite-vec и Qdrant уровня 2) — см. `docs/frameworks/MEMORY.md`                                                                                                                                                                                                                  |
+| `memory/embedding/`                      | Слой эмбеддингов с несколькими источниками: `index.ts` (модуль разрешения), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (план 21)                                                                                                                                                                      |
+| `memory/vectorStore.ts`                  | Обёртка для sqlite-vec v0.1.9 — полный перебор KNN + гибридный RRF (FTS5 + векторы, k=60). Ленивая инициализация, корректно переходит в ограниченный режим при недоступности sqlite-vec. (план 21)                                                                                                                                        |
+| `memory/reindex.ts`                      | `runReindexBatch()` — обрабатывает в фоновом режиме записи памяти с `needs_reindex=1`; вызывается через `POST /api/memory/reindex` и механизмом ленивого обратного заполнения. (план 21)                                                                                                                                                  |
+| `monitoring/`                            | Проверки работоспособности, публикация метрик                                                                                                                                                                                                                                                                                             |
 | `oauth/`                                 | Потоки OAuth/импорта для 22 модулей провайдеров (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                               |
 | `plugins/`                               | Реестр плагинов                                                                                                                                                                                                                                                                                                                           |
-| `promptCache/`                           | Точки разделения кэша промптов в стиле Anthropic                                                                                                                                                                                                                                                                                          |
+| `promptCache/`                           | Точки разделения кеша промптов в стиле Anthropic                                                                                                                                                                                                                                                                                          |
 | `skills/`                                | Фреймворк навыков (встроенные навыки + маркетплейс + SkillsSH) — см. `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                                          |
 | `playground/`                            | Общие вспомогательные модули Playground Studio: `codeExport.ts` (генератор curl/Python/TS), `promptImprover.ts` (построитель метапромптов), `streamMetrics.ts` (чистые функции TTFT/TPS), `types.ts` (таблица цен) — см. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                           |
 | `webhookDispatcher.ts`                   | Доставка вебхуков с HMAC — см. `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                                              |
 | `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Менеджеры туннелей — см. `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                                      |
 | `cloudSync.ts`, `initCloudSync.ts`       | Необязательная облачная синхронизация состояния                                                                                                                                                                                                                                                                                           |
-| `localDb.ts`                             | Модуль реэкспорта для модулей БД (без логики — только реэкспорт)                                                                                                                                                                                                                                                                          |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | Кэширование запросов и обеспечение идемпотентности                                                                                                                                                                                                                                                                                        |
+| `localDb.ts`                             | Модуль реэкспорта для модулей БД (без логики — только реэкспорты)                                                                                                                                                                                                                                                                         |
+| `cacheLayer.ts`, `idempotencyLayer.ts`   | Кэширование запросов + идемпотентность                                                                                                                                                                                                                                                                                                    |
 | (ещё ~30 файлов верхнего уровня)         | Специализированные вспомогательные модули (logEnv, modelsDevSync, piiSanitizer и т. д.)                                                                                                                                                                                                                                                   |
 
 ### `src/lib/db/` — База данных (137 модулей + 193 миграции)
@@ -209,9 +209,9 @@ src/
 | Подкаталог                | Назначение                                                                                                                                                                       |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `db/core.ts`              | Одиночка `getDbInstance()` с журналированием WAL                                                                                                                                 |
-| `db/migrations/`          | Версионированные SQL-файлы (идемпотентные, транзакционные). `073_memory_vec.sql` добавляет `memory_vec_meta` и столбец `needs_reindex` (план 21).                                |
-| `db/playgroundPresets.ts` | CRUD-модуль для предустановок Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)   |
-| `db/memoryVec.ts`         | CRUD для `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded), а также `markMemoryNeedsReindex`, `getMemoryReindexQueue` и т. д. (план 21)             |
+| `db/migrations/`          | Версионируемые SQL-файлы (идемпотентные, транзакционные). `073_memory_vec.sql` добавляет `memory_vec_meta` + столбец `needs_reindex` (план 21).                                  |
+| `db/playgroundPresets.ts` | CRUD-модуль для пресетов Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)        |
+| `db/memoryVec.ts`         | CRUD для `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue` и т. д. (план 21)                    |
 | `db/<domain>.ts`          | По одному модулю на домен: providers, combos, apiKeys, users, sessions, usage, audit*log, webhooks, skills, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache и т. д. |
 
 ### `src/domain/`
@@ -219,7 +219,7 @@ src/
 | Модуль                 | Назначение                                                 |
 | ---------------------- | ---------------------------------------------------------- |
 | `policy.ts`            | Механизм политик                                           |
-| `fallbackPolicy.ts`    | Дерево решений для резервного переключения                 |
+| `fallbackPolicy.ts`    | Дерево решений для резервного варианта                     |
 | `costRules.ts`         | Правила расчёта стоимости                                  |
 | `lockoutPolicy.ts`     | Политика блокировки модели/подключения                     |
 | `tagRouter.ts`         | Маршрутизация на основе тегов                              |
@@ -237,21 +237,21 @@ src/
 
 ### `src/shared/`
 
-| Модуль                           | Назначение                                                                |
-| -------------------------------- | ------------------------------------------------------------------------- |
-| `constants/providers.ts`         | **372 провайдера** с валидацией Zod (источник истины)                     |
-| `constants/cliTools.ts`          | Реестр внешних инструментов CLI                                           |
-| `constants/routingStrategies.ts` | **19 стратегий маршрутизации** с приоритетами                             |
-| `constants/publicApiRoutes.ts`   | Маршруты, требующие Bearer-аутентификации (в отличие от административной) |
-| `constants/upstreamHeaders.ts`   | Список запрещённых заголовков для вышестоящих запросов                    |
-| `validation/schemas.ts`          | ~80 схем Zod (единый источник истины для контрактов API)                  |
-| `validation/helpers.ts`          | Вспомогательные средства валидации Zod (`validateBody` и т. д.)           |
-| `types/`                         | Общие типы TS                                                             |
-| `contracts/`                     | Публичные контракты API (используются в `files:` в `package.json`)        |
-| `utils/circuitBreaker.ts`        | Предохранитель провайдера (см. `docs/architecture/RESILIENCE_GUIDE.md`)   |
-| `utils/apiAuth.ts`               | Валидация ключей API, проверка областей доступа                           |
-| `utils/fetchTimeout.ts`          | Обёртки тайм-аута/прерывания для вышестоящего fetch                       |
-| `utils/releaseNotes.ts`          | Парсер закрытых объявлений v2/legacy, локализация и скрытие по ID         |
+| Модуль                           | Назначение                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| `constants/providers.ts`         | **374 провайдера** с валидацией Zod (источник истины)                               |
+| `constants/cliTools.ts`          | Реестр внешних инструментов CLI                                                     |
+| `constants/routingStrategies.ts` | **19 стратегий маршрутизации** с приоритетами                                       |
+| `constants/publicApiRoutes.ts`   | Маршруты, требующие авторизации Bearer (в отличие от административной)              |
+| `constants/upstreamHeaders.ts`   | Список запрещённых заголовков для вышестоящих запросов                              |
+| `validation/schemas.ts`          | ~80 схем Zod (единый источник истины для контрактов API)                            |
+| `validation/helpers.ts`          | Вспомогательные функции валидации Zod (`validateBody` и т. д.)                      |
+| `types/`                         | Общие типы TS                                                                       |
+| `contracts/`                     | Публичные контракты API (подключаемые через `files:` в `package.json`)              |
+| `utils/circuitBreaker.ts`        | Автоматический выключатель провайдера (см. `docs/architecture/RESILIENCE_GUIDE.md`) |
+| `utils/apiAuth.ts`               | Проверка ключей API и областей доступа                                              |
+| `utils/fetchTimeout.ts`          | Обёртки для ограничения времени ожидания и прерывания вышестоящих запросов          |
+| `utils/releaseNotes.ts`          | Парсер закрытых объявлений v2/legacy, локализация и скрытие по ID                   |
 
 ---
 
@@ -383,72 +383,72 @@ open-sse/
 | --------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `ARCHITECTURE.md`           | Высокоуровневая архитектура, карта подсистем, интерфейс панели управления                             |
 | `CODEBASE_DOCUMENTATION.md` | Инженерный справочник: каталоги, модули, соглашения                                                   |
-| `FEATURES.md`               | Матрица функций с ключевыми нововведениями v3.8                                                       |
+| `FEATURES.md`               | Матрица функций с ключевыми изменениями v3.8                                                          |
 | `USER_GUIDE.md`             | Руководство пользователя (настройка, модели, комбинации, CLI, аудио и т. д.)                          |
 | `API_REFERENCE.md`          | Справочник по конечным точкам API с моделью аутентификации                                            |
 | `openapi.yaml`              | Спецификация OpenAPI 3.0 (121 маршрут)                                                                |
 | `SETUP_GUIDE.md`            | Способы установки (npm, npx, Docker, Electron, Termux, из исходного кода)                             |
-| `ENVIRONMENT.md`            | Все переменные окружения (около 800 описанных, около 3 050 строк в `.env.example`)                    |
-| `TROUBLESHOOTING.md`        | Распространённые ошибки и известные проблемы v3.8.0                                                   |
+| `ENVIRONMENT.md`            | Все переменные окружения (~800 задокументировано, ~3 050 строк в `.env.example`)                      |
+| `TROUBLESHOOTING.md`        | Распространённые ошибки + известные проблемы v3.8.0                                                   |
 | `RELEASE_CHECKLIST.md`      | Полный процесс выпуска (навыки, husky, conventional commits, развёртывание)                           |
-| `COVERAGE_PLAN.md`          | Цели по покрытию и текущее состояние                                                                  |
-| `FREE_TIERS.md`             | Подборка провайдеров с бесплатными тарифами (48+ бесплатных + 11 OAuth)                               |
-| `CLI-TOOLS.md`              | Интеграции с внешними CLI и внутренний OmniRoute CLI                                                  |
+| `COVERAGE_PLAN.md`          | Целевые показатели покрытия и текущее состояние                                                       |
+| `FREE_TIERS.md`             | Подобранные провайдеры с бесплатными тарифами (48+ бесплатных + 11 с OAuth)                           |
+| `CLI-TOOLS.md`              | Интеграции с внешними CLI + внутренний CLI OmniRoute                                                  |
 | `I18N.md`                   | Архитектура i18n, добавление языка, 42 локали                                                         |
-| `UNINSTALL.md`              | Инструкции по полному удалению                                                                        |
-| `PROVIDER_REFERENCE.md`     | **Автоматически созданный** каталог 372 провайдеров (перегенерация: `npm run gen:provider-reference`) |
+| `UNINSTALL.md`              | Шаги для полного удаления                                                                             |
+| `PROVIDER_REFERENCE.md`     | **Автоматически созданный** каталог 374 провайдеров (перегенерация: `npm run gen:provider-reference`) |
 
 ### Подробные описания подсистем
 
-| Документ                                        | Назначение                                                                            |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `MCP-SERVER.md`                                 | Сервер MCP: 110 инструментов, 3 транспорта, 33 области, REST-эндпоинты                |
-| `A2A-SERVER.md`                                 | A2A v0.3: JSON-RPC, 6 навыков, вспомогательные REST-средства, карточка агента         |
-| `AGENT_PROTOCOLS_GUIDE.md`                      | Единое руководство: A2A, ACP и облачные агенты                                        |
-| `CLOUD_AGENT.md`                                | Оркестрация Codex Cloud / Devin / Jules                                               |
-| `SKILLS.md`                                     | Фреймворк навыков (встроенные + маркетплейс + SkillsSH + песочница)                   |
-| `RADAR.md`                                      | Оверлей каталога бесплатных моделей Radar (`RADAR_ENABLED`, по умолчанию отключён)    |
-| `MEMORY.md`                                     | Система памяти (SQLite FTS5 + Qdrant)                                                 |
-| `EVALS.md`                                      | Фреймворк оценивания (наборы, запуски, критерии)                                      |
-| `GUARDRAILS.md`                                 | Маскирование персональных данных, защита от внедрения промптов, мост для изображений  |
-| `COMPLIANCE.md`                                 | Журнал аудита, хранение данных, отказ от журналирования через noLog                   |
-| `WEBHOOKS.md`                                   | Доставка вебхуков с подписью HMAC                                                     |
-| `REASONING_REPLAY.md`                           | Гибридный кэш памяти/SQLite для `reasoning_content`                                   |
-| `AUTHZ_GUIDE.md`                                | Конвейер авторизации (`classify` → `policies` → `enforce`)                            |
-| `RESILIENCE_GUIDE.md`                           | Автоматический выключатель + период ожидания + блокировка модели                      |
-| `docs/security/STEALTH_GUIDE.md` (только в git) | TLS-фингерпринтинг (JA3/JA4), Claude Code CCH, сертификат MITM                        |
-| `AUTO-COMBO.md`                                 | Движок Auto Combo (оценивание по 16 факторам, 6 наборов режимов, виртуальная фабрика) |
+| Документ                                        | Назначение                                                                          |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `MCP-SERVER.md`                                 | Сервер MCP: 110 инструментов, 3 транспорта, 33 области, REST-маршруты               |
+| `A2A-SERVER.md`                                 | A2A v0.3: JSON-RPC, 6 навыков, REST-помощники, карточка агента                      |
+| `AGENT_PROTOCOLS_GUIDE.md`                      | Единое руководство: A2A, ACP и облачные агенты                                      |
+| `CLOUD_AGENT.md`                                | Оркестрация Codex Cloud / Devin / Jules                                             |
+| `SKILLS.md`                                     | Фреймворк навыков (встроенные + маркетплейс + SkillsSH + песочница)                 |
+| `RADAR.md`                                      | Оверлей каталога бесплатных моделей Radar (`RADAR_ENABLED`, по умолчанию отключён)  |
+| `MEMORY.md`                                     | Система памяти (SQLite FTS5 + Qdrant)                                               |
+| `EVALS.md`                                      | Фреймворк оценивания (наборы, запуски, критерии)                                    |
+| `GUARDRAILS.md`                                 | Маскирование PII, инъекции промптов, мост для обработки изображений                 |
+| `COMPLIANCE.md`                                 | Журнал аудита, хранение данных, отказ от журналирования через noLog                 |
+| `WEBHOOKS.md`                                   | Доставка вебхуков с подписью HMAC                                                   |
+| `REASONING_REPLAY.md`                           | Гибридный кэш памяти/SQLite для `reasoning_content`                                 |
+| `AUTHZ_GUIDE.md`                                | Конвейер авторизации (`classify` → `policies` → `enforce`)                          |
+| `RESILIENCE_GUIDE.md`                           | Автоматический выключатель + период ожидания + блокировка модели                    |
+| `docs/security/STEALTH_GUIDE.md` (только в git) | TLS-фингерпринтинг (JA3/JA4), Claude Code CCH, сертификат MITM                      |
+| `AUTO-COMBO.md`                                 | Механизм Auto Combo (оценка по 16 факторам, 6 наборов режимов, виртуальная фабрика) |
 
 ### Сжатие
 
 | Документ                        | Назначение                                |
 | ------------------------------- | ----------------------------------------- |
-| `COMPRESSION_GUIDE.md`          | Обзор режимов сжатия и план развития      |
-| `COMPRESSION_ENGINES.md`        | Движки Caveman и RTK, контракт реестра    |
+| `COMPRESSION_GUIDE.md`          | Обзор режимов сжатия + план развития      |
+| `COMPRESSION_ENGINES.md`        | Механизмы Caveman + RTK, контракт реестра |
 | `COMPRESSION_RULES_FORMAT.md`   | JSON-схема пакета правил Caveman          |
 | `COMPRESSION_LANGUAGE_PACKS.md` | Перечень пакетов правил для каждого языка |
 | `RTK_COMPRESSION.md`            | Декларативный конвейер RTK (49 фильтров)  |
 
 ### Развёртывание
 
-| Документ                     | Назначение                                                            |
-| ---------------------------- | --------------------------------------------------------------------- |
-| `DOCKER_GUIDE.md`            | Сборка Docker, профили (base/cli/host/cliproxyapi), сайдкар Redis     |
-| `VM_DEPLOYMENT_GUIDE.md`     | Развёртывание на типовой VM/VPS (Ubuntu/Debian + nginx + systemd)     |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Развёртывание на Fly.io (в настоящее время только на китайском языке) |
-| `TERMUX_GUIDE.md`            | Работа на Android без графического интерфейса через Termux            |
-| `PWA_GUIDE.md`               | Установка Progressive Web App + service worker                        |
-| `ELECTRON_GUIDE.md`          | Сборка + подпись + распространение настольного приложения             |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                                |
-| `PROXY_GUIDE.md`             | 4-уровневый исходящий прокси + маркетплейс 1proxy                     |
+| Документ                     | Назначение                                                        |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `DOCKER_GUIDE.md`            | Сборка Docker, профили (base/cli/host/cliproxyapi), сайдкар Redis |
+| `VM_DEPLOYMENT_GUIDE.md`     | Развертывание на обычной VM/VPS (Ubuntu/Debian + nginx + systemd) |
+| `FLY_IO_DEPLOYMENT_GUIDE.md` | Развертывание на Fly.io (в настоящее время только на китайском)   |
+| `TERMUX_GUIDE.md`            | Работа без графического интерфейса на Android через Termux        |
+| `PWA_GUIDE.md`               | Установка Progressive Web App + сервис-воркер                     |
+| `ELECTRON_GUIDE.md`          | Сборка + подпись + распространение настольного приложения         |
+| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                            |
+| `PROXY_GUIDE.md`             | 4-уровневый исходящий прокси + маркетплейс 1proxy                 |
 
 ### Подкаталоги
 
-| Подкаталог            | Назначение                                                                                                                                                                                                                               |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | Локализованные переводы документации (41 локаль)                                                                                                                                                                                         |
-| `docs/screenshots/`   | Изображения для руководств                                                                                                                                                                                                               |
-| `_tasks/superpowers/` | Планы/спецификации из superpowers (`writing-plans`/`brainstorming`) + исследования — изолированный репозиторий с отдельным управлением версиями, игнорируемый основным деревом. См. CLAUDE.md → "Артефакты планирования и исследований". |
+| Подкаталог            | Назначение                                                                                                                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/i18n/`          | Локализованные переводы документации (41 локаль)                                                                                                                                                                                              |
+| `docs/screenshots/`   | Изображения для руководств                                                                                                                                                                                                                    |
+| `_tasks/superpowers/` | Планы/спецификации из superpowers (`writing-plans`/`brainstorming`) + исследования — изолированный репозиторий с отдельным управлением версиями, игнорируемый Git в основном дереве. См. CLAUDE.md → «Артефакты планирования и исследований». |
 
 ---
 

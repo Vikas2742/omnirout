@@ -110,7 +110,7 @@ OmniRoute/
 
 ---
 
-## `src/` — Aplikasi Next.js
+## `src/` — aplikasi Next.js
 
 ```
 src/
@@ -118,27 +118,27 @@ src/
 ├── lib/                 # Pustaka teras / modul domain (80 subdirektori + ~70 fail peringkat atas)
 ├── domain/              # Logik domain tulen (enjin dasar, sandaran, kos, penguncian, comboResolver, penilaian)
 ├── server/              # Modul pelayan sahaja (saluran authz, cors, perisian tengah pengesahan) — tidak boleh diimport daripada klien
-├── shared/              # Dikongsi antara pelayan dengan klien apabila selamat (pemalar, jenis, pengesahan, kontrak, utiliti)
-├── i18n/                # Konfigurasi next-intl + JSON mesej bagi setiap lokaliti (42 lokaliti)
-├── middleware/          # Perisian tengah Next.js (pengayaan permintaan, pengesanan lokaliti)
+├── shared/              # Dikongsi antara pelayan dan klien apabila selamat (pemalar, jenis, pengesahan, kontrak, utiliti)
+├── i18n/                # Konfigurasi next-intl + JSON mesej mengikut penempatan (42 penempatan)
+├── middleware/          # Perisian tengah Next.js (pengayaan permintaan, pengesanan penempatan)
 ├── mitm/                # Teras proksi MITM: penjanaan/pemasangan sijil, pengendali, sasaran, pemeriksa, topeng, laluan terus
 │   ├── handlers/        # 9 kelas pengendali ejen IDE yang melanjutkan MitmHandlerBase (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
 │   └── inspector/       # Lapisan tangkapan trafik: penimbal (gelang dalam memori), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
-├── models/              # Perekat penyesuai model (shim legasi)
+├── models/              # Kod penyambung penyesuai model (shim legasi)
 ├── scripts/             # Skrip penyelenggaraan dalam pepohon (cth., backfillAggregation)
 ├── sse/                 # Pengendali/perkhidmatan SSE legasi (chat.ts, chatHelpers.ts, services/auth.ts)
 ├── store/               # Storan dalam memori legasi (sedang dihentikan secara berperingkat untuk src/lib/db)
 ├── types/               # Fail jenis TS yang dikongsi
 ├── instrumentation.ts   # Cangkuk telemetri Next.js (pelayar + edge)
-├── instrumentation-node.ts  # Instrumentasi Node sahaja
-└── proxy.ts             # Shim masukan proksi HTTP
+├── instrumentation-node.ts  # Instrumentasi khusus Node
+└── proxy.ts             # Shim kemasukan proksi HTTP
 ```
 
 ### `src/app/` — App Router (Next.js 16)
 
 | Laluan                                                                       | Tujuan                                                                                                                                                                                                                                                                                                                 |
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | API awam yang serasi dengan OpenAI (~25 sublaluan: sembang, pelengkapan, pembenaman, fail, kelompok, audio, imej, video, muzik, penyusunan semula, penyederhanaan, carian, ws, ejen, akaun, penyedia, dll.)                                                                                                            |
+| `app/api/v1/`                                                                | API awam yang serasi dengan OpenAI (~25 sublaluan: sembang, pelengkapan, pembenaman, fail, kelompok, audio, imej, video, muzik, penarafan semula, penyederhanaan, carian, ws, ejen, akaun, penyedia, dll.)                                                                                                             |
 | `app/api/v1beta/`                                                            | Titik akhir API gaya Gemini                                                                                                                                                                                                                                                                                            |
 | `app/api/playground/`                                                        | Laluan Playground Studio: `improve-prompt/` (POST — penulis semula gesaan LLM), `presets/` (GET senarai / POST cipta), `presets/[id]/` (GET / PUT / DELETE) — lihat `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                                             |
 | `app/api/` (bukan v1)                                                        | Laluan pengurusan/pentadbir (~60 direktori: penyedia, gabungan, tetapan, mcp, a2a, penilaian, memori, kemahiran, webhook, pematuhan, daya tahan, pemantauan, terowong, alat CLI, dll.)                                                                                                                                 |
@@ -147,19 +147,19 @@ src/
 | `app/a2a/`                                                                   | Titik masuk A2A JSON-RPC 2.0 (`POST /a2a`)                                                                                                                                                                                                                                                                             |
 | `app/.well-known/agent.json/`                                                | Kad Ejen A2A (penemuan)                                                                                                                                                                                                                                                                                                |
 | `app/(dashboard)/dashboard/`                                                 | Halaman UI papan pemuka (50+ bahagian, ~118 fail page.tsx: penyedia, gabungan, tetapan, memori, kemahiran, webhook, penilaian, audit, kelompok, cache, kos, kesihatan, sistem, aktiviti, dll.)                                                                                                                         |
-| `app/(dashboard)/dashboard/search-tools/`                                    | UI Search Tools Studio (3 tab: Carian/Kikis/Bandingkan + SearchConceptCard + ProviderCatalog) — lihat `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                                         |
+| `app/(dashboard)/dashboard/search-tools/`                                    | UI Search Tools Studio (3 tab: Cari/Kikis/Bandingkan + SearchConceptCard + ProviderCatalog) — lihat `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                                           |
 | `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (pelan 21): `page.tsx` (kerangka 3 tab), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Halaman papan pemuka AgentBridge — kad pelayan, 9 kad ejen, bestari persediaan, pemetaan model, senarai pintasan. i18n PT-BR + EN. Lihat `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                                             |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Halaman papan pemuka Traffic Inspector — paparan terpisah DevTools, 7 tab butiran, 4 togol mod tangkapan, perakam sesi, pewarnaan konteks. i18n PT-BR + EN. Lihat `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                                                                              |
+| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Halaman papan pemuka AgentBridge — kad pelayan, 9 kad ejen, pendeta persediaan, pemetaan model, senarai pintasan. i18n PT-BR + EN. Lihat `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                                             |
+| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Halaman papan pemuka Traffic Inspector — paparan pisah DevTools, 7 tab butiran, 4 togol mod tangkapan, perakam sesi, pewarnaan konteks. i18n PT-BR + EN. Lihat `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                                                                                 |
 | `app/(dashboard)/dashboard/activity/`                                        | Halaman suapan aktiviti (Kumpulan B): `page.tsx` (pelayan) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — lihat `docs/architecture/MONITORING_SECTIONS.md`                                                                                                      |
 | `app/(dashboard)/dashboard/costs/quota-share/`                               | Halaman Perkongsian Kuota (Kumpulan B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                    |
-| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Halaman konfigurasi pelan penyedia (Kumpulan B): `page.tsx` + `ProviderPlanConfigClient.tsx` — dimensi kuota bagi setiap penggantian sambungan                                                                                                                                                                         |
+| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Halaman konfigurasi pelan penyedia (Kumpulan B): `page.tsx` + `ProviderPlanConfigClient.tsx` — penggantian dimensi kuota bagi setiap sambungan                                                                                                                                                                         |
 | `app/docs/`                                                                  | Pemapar dokumentasi terbenam (memaparkan `docs/*.md`)                                                                                                                                                                                                                                                                  |
 | `app/landing/`                                                               | Halaman pendaratan pemasaran                                                                                                                                                                                                                                                                                           |
 | `app/login/`, `forgot-password/`, `forbidden/`                               | Halaman berkaitan pengesahan                                                                                                                                                                                                                                                                                           |
 | `app/{400,401,403,408,429,500,502,503}/`                                     | Halaman ralat HTTP                                                                                                                                                                                                                                                                                                     |
 | `app/maintenance/`, `offline/`, `status/`, `privacy/`, `terms/`, `callback/` | Halaman statik/status                                                                                                                                                                                                                                                                                                  |
-| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | Reka letak akar, laman utama, manifes PWA, CSS global                                                                                                                                                                                                                                                                  |
+| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | Susun atur akar, halaman utama, manifes PWA, CSS global                                                                                                                                                                                                                                                                |
 | `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`          | Sempadan ralat                                                                                                                                                                                                                                                                                                         |
 
 ### `src/lib/` — Pustaka teras (~50 modul)
@@ -167,49 +167,49 @@ src/
 | Modul                                    | Tujuan                                                                                                                                                                                                                                                                                                                         |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `a2a/`                                   | Pengurus tugas protokol A2A, kemahiran (5), penstriman                                                                                                                                                                                                                                                                         |
-| `acp/`                                   | Pendaftaran Agen CLI (penemuan CLI setempat — lihat `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                                |
+| `acp/`                                   | Pendaftaran Ejen CLI (penemuan CLI setempat — lihat `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                                |
 | `api/`                                   | Pembantu API dikongsi (`requireManagementAuth`, pengesahan)                                                                                                                                                                                                                                                                    |
 | `auth/`                                  | Sesi, pencincangan kata laluan, pengesahan token                                                                                                                                                                                                                                                                               |
 | `batches/`                               | Pengendali OpenAI Batches API                                                                                                                                                                                                                                                                                                  |
-| `catalog/`                               | Pengesahan Zod katalog penyedia + penentuan keupayaan                                                                                                                                                                                                                                                                          |
-| `cloudAgent/`                            | Agen Awan (Codex Cloud, Devin, Jules) — lihat `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                                 |
-| `combos/`                                | Penentuan kombo + pembantu penyusunan semula                                                                                                                                                                                                                                                                                   |
+| `catalog/`                               | Pengesahan Zod untuk katalog penyedia + peleraian keupayaan                                                                                                                                                                                                                                                                    |
+| `cloudAgent/`                            | Ejen Awan (Codex Cloud, Devin, Jules) — lihat `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                                 |
+| `combos/`                                | Peleraian kombo + pembantu penyusunan semula                                                                                                                                                                                                                                                                                   |
 | `audit/`                                 | Pembantu suapan aktiviti: `highLevelActions.ts` (senarai dibenarkan + `isHighLevelAction()`), `activityIcons.ts` (pemetaan tindakan → ikon/kata kerja), `timeline.ts` (groupByDay/relativeTime) — lihat `docs/architecture/MONITORING_SECTIONS.md`                                                                             |
 | `compliance/`                            | Log audit + audit penyedia — lihat `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                               |
-| `compression/`                           | Penghubung enjin pemampatan (enjin berada dalam `open-sse/services/compression/`)                                                                                                                                                                                                                                              |
+| `compression/`                           | Kod penghubung enjin pemampatan (enjin berada dalam `open-sse/services/compression/`)                                                                                                                                                                                                                                          |
 | `config/`                                | Pembantu konfigurasi masa jalan                                                                                                                                                                                                                                                                                                |
-| `db/`                                    | 120+ modul DB domain + 168 migrasi (sentiasa gunakan modul ini untuk SQLite)                                                                                                                                                                                                                                                   |
+| `db/`                                    | Lebih 120 modul DB domain + 168 migrasi (sentiasa gunakan modul ini untuk SQLite)                                                                                                                                                                                                                                              |
 | `quota/`                                 | Enjin Perkongsian Kuota: `dimensions.ts` (jenis/Zod), `types.ts` (antara muka QuotaStore), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — lihat `docs/routing/QUOTA_SHARE.md` |
 | `radar/`                                 | Klien katalog model percuma Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — lihat `docs/frameworks/RADAR.md`                                                                                                                                               |
 | `display/`                               | Pembantu pemformatan UI (kos, kependaman, dll.)                                                                                                                                                                                                                                                                                |
 | `embeddings/`                            | Pembantu perkhidmatan pembenaman                                                                                                                                                                                                                                                                                               |
 | `env/`                                   | Penghuraian + pengesahan pemboleh ubah persekitaran                                                                                                                                                                                                                                                                            |
 | `evals/`                                 | Rangka kerja penilaian (suite, pelaksana, masa jalan) — lihat `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                       |
-| `guardrails/`                            | Penyamaran PII, suntikan gesaan, jambatan penglihatan — lihat `docs/security/GUARDRAILS.md`                                                                                                                                                                                                                                    |
+| `guardrails/`                            | Penyamar PII, suntikan gesaan, jambatan penglihatan — lihat `docs/security/GUARDRAILS.md`                                                                                                                                                                                                                                      |
 | `jobs/`                                  | Tugas latar belakang (seperti cron)                                                                                                                                                                                                                                                                                            |
 | `memory/`                                | Memori perbualan (RRF hibrid SQLite FTS5 + sqlite-vec + Qdrant peringkat 2) — lihat `docs/frameworks/MEMORY.md`                                                                                                                                                                                                                |
 | `memory/embedding/`                      | Lapisan pembenaman berbilang sumber: `index.ts` (penyelesai), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (pelan 21)                                                                                                                                                                        |
-| `memory/vectorStore.ts`                  | Pembalut sqlite-vec v0.1.9 — KNN daya kasar + RRF hibrid (FTS5 + vektor, k=60). Pemulaan secara malas, merosot dengan baik apabila sqlite-vec tidak tersedia. (pelan 21)                                                                                                                                                       |
-| `memory/reindex.ts`                      | `runReindexBatch()` — memproses memori dengan `needs_reindex=1` di latar belakang; dipanggil oleh `POST /api/memory/reindex` dan laluan pengisian semula secara malas. (pelan 21)                                                                                                                                              |
-| `monitoring/`                            | Pemeriksaan kesihatan, pemancaran metrik                                                                                                                                                                                                                                                                                       |
+| `memory/vectorStore.ts`                  | Pembalut sqlite-vec v0.1.9 — KNN daya kasar + RRF hibrid (FTS5 + vektor, k=60). Pemulaan malas, menurun taraf dengan lancar apabila sqlite-vec tidak tersedia. (pelan 21)                                                                                                                                                      |
+| `memory/reindex.ts`                      | `runReindexBatch()` — memproses memori dengan `needs_reindex=1` di latar belakang; dipanggil oleh `POST /api/memory/reindex` dan laluan pengisian semula malas. (pelan 21)                                                                                                                                                     |
+| `monitoring/`                            | Semakan kesihatan, pemancaran metrik                                                                                                                                                                                                                                                                                           |
 | `oauth/`                                 | Aliran OAuth/import untuk 22 modul penyedia (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                        |
 | `plugins/`                               | Daftar pemalam                                                                                                                                                                                                                                                                                                                 |
-| `promptCache/`                           | Titik pemisah cache gesaan gaya Anthropic                                                                                                                                                                                                                                                                                      |
+| `promptCache/`                           | Titik henti cache gesaan gaya Anthropic                                                                                                                                                                                                                                                                                        |
 | `skills/`                                | Rangka kerja kemahiran (terbina dalam + pasaran + SkillsSH) — lihat `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                                |
-| `playground/`                            | Pembantu dikongsi Playground Studio: `codeExport.ts` (penjana curl/Python/TS), `promptImprover.ts` (pembina meta-prom), `streamMetrics.ts` (TTFT/TPS tulen), `types.ts` (jadual harga) — lihat `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                          |
+| `playground/`                            | Pembantu dikongsi Playground Studio: `codeExport.ts` (penjana curl/Python/TS), `promptImprover.ts` (pembina meta-prompt), `streamMetrics.ts` (TTFT/TPS tulen), `types.ts` (jadual harga) — lihat `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                        |
 | `webhookDispatcher.ts`                   | Penghantaran webhook HMAC — lihat `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                                |
 | `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Pengurus terowong — lihat `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                          |
-| `cloudSync.ts`, `initCloudSync.ts`       | Penyegerakan keadaan ke awan secara pilihan                                                                                                                                                                                                                                                                                    |
-| `localDb.ts`                             | Fail tong eksport semula untuk modul db (tiada logik — eksport semula sahaja)                                                                                                                                                                                                                                                  |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | Cache permintaan + idempotensi                                                                                                                                                                                                                                                                                                 |
-| (~30 fail peringkat atas lagi)           | Pembantu khusus (logEnv, modelsDevSync, piiSanitizer, dll.)                                                                                                                                                                                                                                                                    |
+| `cloudSync.ts`, `initCloudSync.ts`       | Penyegerakan keadaan dengan awan secara pilihan                                                                                                                                                                                                                                                                                |
+| `localDb.ts`                             | Fail barrel eksport semula untuk modul db (tiada logik — eksport semula sahaja)                                                                                                                                                                                                                                                |
+| `cacheLayer.ts`, `idempotencyLayer.ts`   | Peng-cache-an permintaan + idempotensi                                                                                                                                                                                                                                                                                         |
+| (~30 lagi fail peringkat atas)           | Pembantu khusus (logEnv, modelsDevSync, piiSanitizer, dll.)                                                                                                                                                                                                                                                                    |
 
 ### `src/lib/db/` — Pangkalan Data (137 modul + 193 migrasi)
 
 | Subdir                    | Tujuan                                                                                                                                                                                   |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `db/core.ts`              | Singleton `getDbInstance()` dengan penjurnalan WAL                                                                                                                                       |
-| `db/migrations/`          | Fail SQL berversi (idempoten, transaksional). `073_memory_vec.sql` menambah `memory_vec_meta` + lajur `needs_reindex` (pelan 21).                                                        |
+| `db/migrations/`          | Fail SQL berversi (idempoten, bertransaksi). `073_memory_vec.sql` menambahkan lajur `memory_vec_meta` + `needs_reindex` (pelan 21).                                                      |
 | `db/playgroundPresets.ts` | Modul CRUD untuk pratetap Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)               |
 | `db/memoryVec.ts`         | CRUD untuk `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue`, dll. (pelan 21)                           |
 | `db/<domain>.ts`          | Satu modul bagi setiap domain: penyedia, kombo, kunci API, pengguna, sesi, penggunaan, audit*log, webhook, kemahiran, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache, dll. |
@@ -229,29 +229,29 @@ src/
 
 ### `src/server/`
 
-| Modul    | Tujuan                                                                                                       |
-| -------- | ------------------------------------------------------------------------------------------------------------ |
-| `authz/` | Saluran pemprosesan keizinan: `classify` → `policies` → `enforce` — lihat `docs/architecture/AUTHZ_GUIDE.md` |
-| `cors/`  | Konfigurasi CORS                                                                                             |
-| `auth/`  | Perisian tengah sesi                                                                                         |
+| Modul    | Tujuan                                                                                                        |
+| -------- | ------------------------------------------------------------------------------------------------------------- |
+| `authz/` | Saluran paip pengesahan kuasa: `classify` → `policies` → `enforce` — lihat `docs/architecture/AUTHZ_GUIDE.md` |
+| `cors/`  | Konfigurasi CORS                                                                                              |
+| `auth/`  | Perisian tengah sesi                                                                                          |
 
 ### `src/shared/`
 
-| Modul                            | Tujuan                                                                      |
-| -------------------------------- | --------------------------------------------------------------------------- |
-| `constants/providers.ts`         | **372 penyedia** dengan pengesahan Zod (sumber kebenaran)                   |
-| `constants/cliTools.ts`          | Daftar alat CLI luaran                                                      |
-| `constants/routingStrategies.ts` | **19 strategi penghalaan** dengan keutamaan                                 |
-| `constants/publicApiRoutes.ts`   | Laluan yang memerlukan pengesahan Bearer (berbanding pengesahan pengurusan) |
-| `constants/upstreamHeaders.ts`   | Senarai larangan pengepala untuk permintaan huluan                          |
-| `validation/schemas.ts`          | ~80 skema Zod (sumber kebenaran tunggal untuk kontrak API)                  |
-| `validation/helpers.ts`          | Pembantu pengesahan Zod (`validateBody`, dll.)                              |
-| `types/`                         | Jenis TS dikongsi                                                           |
-| `contracts/`                     | Kontrak API awam (digunakan oleh `files:` dalam `package.json`)             |
-| `utils/circuitBreaker.ts`        | Pemutus litar penyedia (lihat `docs/architecture/RESILIENCE_GUIDE.md`)      |
-| `utils/apiAuth.ts`               | Pengesahan kunci API, penyemakan skop                                       |
-| `utils/fetchTimeout.ts`          | Pembungkus tamat masa/pembatalan untuk pengambilan huluan                   |
-| `utils/releaseNotes.ts`          | Penghurai pengumuman v2/legasi tertutup, penyetempatan dan penolakan ID     |
+| Modul                            | Tujuan                                                                           |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| `constants/providers.ts`         | **374 penyedia** dengan pengesahan Zod (sumber rujukan utama)                    |
+| `constants/cliTools.ts`          | Registri alat CLI luaran                                                         |
+| `constants/routingStrategies.ts` | **19 strategi penghalaan** dengan keutamaan                                      |
+| `constants/publicApiRoutes.ts`   | Laluan yang memerlukan pengesahan Bearer (berbanding pengesahan pengurusan)      |
+| `constants/upstreamHeaders.ts`   | Senarai sekatan pengepala untuk permintaan huluan                                |
+| `validation/schemas.ts`          | ~80 skema Zod (sumber rujukan tunggal untuk kontrak API)                         |
+| `validation/helpers.ts`          | Pembantu pengesahan Zod (`validateBody`, dll.)                                   |
+| `types/`                         | Jenis TS yang dikongsi                                                           |
+| `contracts/`                     | Kontrak API awam (digunakan oleh `files:` dalam `package.json`)                  |
+| `utils/circuitBreaker.ts`        | Pemutus litar penyedia (lihat `docs/architecture/RESILIENCE_GUIDE.md`)           |
+| `utils/apiAuth.ts`               | Pengesahan kunci API, semakan skop                                               |
+| `utils/fetchTimeout.ts`          | Pembalut tamat masa/henti untuk pengambilan huluan                               |
+| `utils/releaseNotes.ts`          | Penghurai pengumuman v2/legasi tertutup, penyetempatan dan penolakan mengikut ID |
 
 ---
 
@@ -377,7 +377,7 @@ open-sse/
 
 ## `docs/` — Dokumentasi Awam (7 fail akar + 17 subdirektori)
 
-### Panduan peringkat teratas
+### Panduan peringkat atas
 
 | Dokumen                     | Tujuan                                                                                                |
 | --------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -388,15 +388,15 @@ open-sse/
 | `API_REFERENCE.md`          | Rujukan titik akhir API dengan model pengesahan                                                       |
 | `openapi.yaml`              | Spesifikasi OpenAPI 3.0 (121 laluan)                                                                  |
 | `SETUP_GUIDE.md`            | Kaedah pemasangan (npm, npx, Docker, Electron, Termux, sumber)                                        |
-| `ENVIRONMENT.md`            | Semua pemboleh ubah persekitaran (~800 didokumentasikan, ~3,050 baris `.env.example`)                 |
+| `ENVIRONMENT.md`            | Semua pemboleh ubah persekitaran (~800 didokumenkan, ~3,050 baris `.env.example`)                     |
 | `TROUBLESHOOTING.md`        | Ralat lazim + isu v3.8.0 yang diketahui                                                               |
-| `RELEASE_CHECKLIST.md`      | Aliran keluaran penuh (kemahiran, husky, commit konvensional, penggunaan)                             |
-| `COVERAGE_PLAN.md`          | Matlamat liputan dan keadaan semasa                                                                   |
-| `FREE_TIERS.md`             | Penyedia peringkat percuma yang dipilih susun (48+ percuma + 11 OAuth)                                |
-| `CLI-TOOLS.md`              | Penyepaduan CLI luaran + CLI OmniRoute dalaman                                                        |
-| `I18N.md`                   | Seni bina i18n, penambahan bahasa, 42 penempatan                                                      |
+| `RELEASE_CHECKLIST.md`      | Aliran keluaran penuh (kemahiran, husky, komit konvensional, pelaksanaan)                             |
+| `COVERAGE_PLAN.md`          | Sasaran liputan dan keadaan semasa                                                                    |
+| `FREE_TIERS.md`             | Penyedia peringkat percuma terpilih (48+ percuma + 11 OAuth)                                          |
+| `CLI-TOOLS.md`              | Penyepaduan CLI luaran + CLI OmniRoute Dalaman                                                        |
+| `I18N.md`                   | Seni bina i18n, penambahan bahasa, 42 lokal                                                           |
 | `UNINSTALL.md`              | Langkah nyahpasang bersih                                                                             |
-| `PROVIDER_REFERENCE.md`     | Katalog 372 penyedia yang **dijana secara automatik** (jana semula: `npm run gen:provider-reference`) |
+| `PROVIDER_REFERENCE.md`     | Katalog 374 penyedia yang **dijana secara automatik** (jana semula: `npm run gen:provider-reference`) |
 
 ### Kupasan mendalam subsistem
 
@@ -407,48 +407,48 @@ open-sse/
 | `AGENT_PROTOCOLS_GUIDE.md`                    | Panduan bersepadu: A2A berbanding ACP berbanding Ejen Awan                     |
 | `CLOUD_AGENT.md`                              | Orkestrasi Codex Cloud / Devin / Jules                                         |
 | `SKILLS.md`                                   | Rangka kerja kemahiran (terbina dalam + pasaran + SkillsSH + kotak pasir)      |
-| `RADAR.md`                                    | Tindanan katalog model percuma Radar (`RADAR_ENABLED`, dimatikan secara lalai) |
+| `RADAR.md`                                    | Tindihan katalog model percuma Radar (`RADAR_ENABLED`, dimatikan secara lalai) |
 | `MEMORY.md`                                   | Sistem memori (SQLite FTS5 + Qdrant)                                           |
-| `EVALS.md`                                    | Rangka kerja penilaian (suit, pelaksanaan, rubrik)                             |
+| `EVALS.md`                                    | Rangka kerja penilaian (sut, pelaksanaan, rubrik)                              |
 | `GUARDRAILS.md`                               | Penyamar PII, suntikan gesaan, jambatan penglihatan                            |
 | `COMPLIANCE.md`                               | Log audit, pengekalan, pilihan keluar noLog                                    |
-| `WEBHOOKS.md`                                 | Penghantaran webhook yang ditandatangani HMAC                                  |
+| `WEBHOOKS.md`                                 | Penghantaran webhook bertandatangan HMAC                                       |
 | `REASONING_REPLAY.md`                         | Cache memori/SQLite hibrid untuk `reasoning_content`                           |
-| `AUTHZ_GUIDE.md`                              | Talian paip pemberian kuasa (`classify` → `policies` → `enforce`)              |
-| `RESILIENCE_GUIDE.md`                         | Pemutus litar + tempoh bertenang + sekatan model                               |
-| `docs/security/STEALTH_GUIDE.md` (git sahaja) | Pengecapan jari TLS (JA3/JA4), Claude Code CCH, sijil MITM                     |
+| `AUTHZ_GUIDE.md`                              | Saluran kebenaran (`classify` → `policies` → `enforce`)                        |
+| `RESILIENCE_GUIDE.md`                         | Pemutus litar + tempoh bertenang + penguncian model                            |
+| `docs/security/STEALTH_GUIDE.md` (git sahaja) | Cap jari TLS (JA3/JA4), Claude Code CCH, sijil MITM                            |
 | `AUTO-COMBO.md`                               | Enjin Auto Combo (pemarkahan 16 faktor, 6 pek mod, kilang maya)                |
 
 ### Pemampatan
 
-| Dokumen                         | Tujuan                                          |
-| ------------------------------- | ----------------------------------------------- |
-| `COMPRESSION_GUIDE.md`          | Gambaran keseluruhan mod pemampatan + hala tuju |
-| `COMPRESSION_ENGINES.md`        | Enjin Caveman + RTK, kontrak daftaran           |
-| `COMPRESSION_RULES_FORMAT.md`   | Skema JSON pek peraturan Caveman                |
-| `COMPRESSION_LANGUAGE_PACKS.md` | Inventori pek peraturan mengikut bahasa         |
-| `RTK_COMPRESSION.md`            | Talian paip deklaratif RTK (49 penapis)         |
+| Dokumen                         | Tujuan                                                |
+| ------------------------------- | ----------------------------------------------------- |
+| `COMPRESSION_GUIDE.md`          | Gambaran keseluruhan mod pemampatan + pelan hala tuju |
+| `COMPRESSION_ENGINES.md`        | Enjin Caveman + RTK, kontrak daftar                   |
+| `COMPRESSION_RULES_FORMAT.md`   | Skema JSON pek peraturan Caveman                      |
+| `COMPRESSION_LANGUAGE_PACKS.md` | Inventori pek peraturan mengikut bahasa               |
+| `RTK_COMPRESSION.md`            | Saluran deklaratif RTK (49 penapis)                   |
 
-### Penggunaan
+### Pelaksanaan
 
 | Dokumen                      | Tujuan                                                           |
 | ---------------------------- | ---------------------------------------------------------------- |
 | `DOCKER_GUIDE.md`            | Binaan Docker, profil (base/cli/host/cliproxyapi), sidecar Redis |
-| `VM_DEPLOYMENT_GUIDE.md`     | Pengerahan VM/VPS generik (Ubuntu/Debian + nginx + systemd)      |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Pengerahan Fly.io (kini hanya tersedia dalam bahasa Cina)        |
-| `TERMUX_GUIDE.md`            | Android tanpa kepala melalui Termux                              |
-| `PWA_GUIDE.md`               | Pemasangan Progressive Web App + service worker                  |
-| `ELECTRON_GUIDE.md`          | Bina + tandatangani + edarkan aplikasi desktop                   |
+| `VM_DEPLOYMENT_GUIDE.md`     | Penggunaan VM/VPS generik (Ubuntu/Debian + nginx + systemd)      |
+| `FLY_IO_DEPLOYMENT_GUIDE.md` | Penggunaan Fly.io (kini hanya dalam bahasa Cina)                 |
+| `TERMUX_GUIDE.md`            | Android tanpa antaramuka melalui Termux                          |
+| `PWA_GUIDE.md`               | Pemasangan Aplikasi Web Progresif + service worker               |
+| `ELECTRON_GUIDE.md`          | Binaan aplikasi desktop + tandatangan + pengedaran               |
 | `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                           |
 | `PROXY_GUIDE.md`             | Proksi keluar 4 peringkat + pasaran 1proxy                       |
 
 ### Subdirektori
 
-| Subdirektori          | Tujuan                                                                                                                                                                                                                                              |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | Terjemahan dokumentasi yang disetempatkan (41 tempat)                                                                                                                                                                                               |
-| `docs/screenshots/`   | Aset imej untuk panduan                                                                                                                                                                                                                             |
-| `_tasks/superpowers/` | Pelan/spesifikasi daripada superpowers (`writing-plans`/`brainstorming`) + penyelidikan — repositori yang diasingkan dan diversi secara berasingan, diabaikan oleh git dalam pepohon utama. Lihat CLAUDE.md → "Artifak Perancangan & Penyelidikan". |
+| Subdirektori          | Tujuan                                                                                                                                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/i18n/`          | Terjemahan dokumentasi tersetempat (41 penempatan)                                                                                                                                                                                                        |
+| `docs/screenshots/`   | Aset imej untuk panduan                                                                                                                                                                                                                                   |
+| `_tasks/superpowers/` | Pelan/spesifikasi daripada superpowers (`writing-plans`/`brainstorming`) + penyelidikan — repositori yang diasingkan dan diversi secara berasingan, serta diabaikan oleh git dalam pepohon utama. Lihat CLAUDE.md → "Artifak Perancangan & Penyelidikan". |
 
 ---
 

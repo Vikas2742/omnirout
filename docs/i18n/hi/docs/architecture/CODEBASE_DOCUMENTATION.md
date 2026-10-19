@@ -436,8 +436,8 @@ server/
 
 ## 4. `open-sse/` — स्ट्रीमिंग इंजन वर्कस्पेस
 
-अलग npm वर्कस्पेस, जिसे `@omniroute/open-sse` के रूप में प्रकाशित किया गया है। यह अनुरोध
-प्रोसेसिंग, एक्ज़ीक्यूटर, ट्रांसलेटर, सेवाएँ, ट्रांसफ़ॉर्मर और MCP सर्वर को संभालता है।
+`@omniroute/open-sse` के रूप में प्रकाशित अलग npm वर्कस्पेस। यह अनुरोध
+प्रोसेसिंग, एक्ज़ीक्यूटर, ट्रांसलेटर, सेवाएँ, ट्रांसफ़ॉर्मर और MCP सर्वर का प्रबंधन करता है।
 
 ```
 open-sse/
@@ -450,7 +450,7 @@ open-sse/
 ├── executors/              150 प्रोवाइडर एक्ज़ीक्यूटर मॉड्यूल (एक्ज़ीक्यूटर क्लास + प्रति-प्रोवाइडर हेल्पर)
 ├── translator/             फ़ॉर्मेट रूपांतरण (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
 ├── transformer/            Responses API ↔ Chat Completions स्ट्रीम ट्रांसफ़ॉर्मर
-├── services/               80+ सर्विस मॉड्यूल (कॉम्बो, फ़ॉलबैक, कोटा, पहचान, …)
+├── services/               80+ सेवा मॉड्यूल (कॉम्बो, फ़ॉलबैक, कोटा, पहचान, …)
 ├── utils/                  स्ट्रीमिंग हेल्पर, TLS क्लाइंट, AWS SigV4, प्रॉक्सी फ़ेच, …
 └── mcp-server/             MCP सर्वर (3 ट्रांसपोर्ट, 33 स्कोप, 110 टूल)
 ```
@@ -471,15 +471,15 @@ open-sse/
 | `moderations.ts`        | मॉडरेशन                                                                |
 | `search.ts`             | वेब खोज                                                                |
 | `sseParser.ts`          | SSE इवेंट पार्सर                                                       |
-| `usageExtractor.ts`     | अपस्ट्रीम स्ट्रीम से टोकन गणना निकालना                                 |
-| `responseSanitizer.ts`  | प्रोवाइडर-विशिष्ट अनावश्यक डेटा हटाना                                  |
+| `usageExtractor.ts`     | अपस्ट्रीम स्ट्रीम से टोकन संख्या निकालना                               |
+| `responseSanitizer.ts`  | प्रोवाइडर-विशिष्ट अवांछित सामग्री हटाना                                |
 | `responseTranslator.ts` | प्रोवाइडर प्रतिक्रिया और ट्रांसलेटर लेयर के बीच संयोजक                 |
 
 ### 4.2 `open-sse/executors/`
 
 150 शीर्ष-स्तरीय एक्ज़ीक्यूटर मॉड्यूल (`*.ts` में से `base.ts`, `index.ts` और परीक्षणों को छोड़कर — यह संख्या
-`npm run check:docs-counts` द्वारा मापी जाती है)। प्रत्येक एक्ज़ीक्यूटर क्लास प्रत्यक्ष रूप से या `DefaultExecutor` अथवा किसी अन्य एक्ज़ीक्यूटर के माध्यम से
-`BaseExecutor` (`base.ts`) को एक्सटेंड करती है; शेष मॉड्यूल प्रति-प्रोवाइडर
+`npm run check:docs-counts` मापता है)। प्रत्येक एक्ज़ीक्यूटर क्लास `BaseExecutor` (`base.ts`) को,
+प्रत्यक्ष रूप से या `DefaultExecutor` अथवा किसी अन्य एक्ज़ीक्यूटर के माध्यम से विस्तारित करती है; शेष मॉड्यूल प्रति-प्रोवाइडर
 हेल्पर हैं (टूल स्कीमा, फ़ेच/TTS अडैप्टर, विशिष्ट व्यवहार हैंडलर)। एक्ज़ीक्यूटर में शामिल हैं:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
@@ -488,8 +488,8 @@ open-sse/
 `pollinations`, `qoder`, `vertex`, `devin-desktop`, साथ ही `claudeIdentity.ts`
 (साझा पहचान हेल्पर) और `index.ts` (रजिस्ट्री)।
 
-> नोट: यहाँ सूचीबद्ध नहीं किए गए प्रोवाइडर को सामान्य
-> OpenAI-संगत एक्ज़ीक्यूटर का उपयोग करके `default.ts` द्वारा सेवा दी जाती है। संपूर्ण प्रोवाइडर कैटलॉग (372 प्रोवाइडर)
+> नोट: यहाँ सूचीबद्ध नहीं किए गए प्रोवाइडर को जेनेरिक
+> OpenAI-संगत एक्ज़ीक्यूटर का उपयोग करते हुए `default.ts` द्वारा सेवा दी जाती है। पूर्ण प्रोवाइडर कैटलॉग (374 प्रोवाइडर)
 > `src/shared/constants/providers.ts` में मौजूद है।
 
 ### 4.3 `open-sse/translator/`
@@ -499,14 +499,14 @@ open-sse/
 - **9 अनुरोध ट्रांसलेटर** (`translator/request/`):
   `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`,
   `gemini-to-openai`, `openai-responses`, `openai-to-claude`,
-  `openai-to-cursor`, `openai-to-gemini`, `openai-to-kiro`.
+  `openai-to-cursor`, `openai-to-gemini`, `openai-to-kiro`।
 - **9 प्रतिक्रिया ट्रांसलेटर** (`translator/response/`):
   `claude-to-openai`, `cursor-to-openai`, `gemini-to-claude`, `gemini-to-openai`,
   `kiro-to-openai`, `openai-responses`, `openai-to-antigravity`,
-  `openai-to-claude`.
+  `openai-to-claude`।
 - **9 हेल्पर** (`translator/helpers/`):
   `claudeHelper`, `geminiHelper`, `geminiToolsSanitizer`, `maxTokensHelper`,
-  `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, और
+  `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, साथ ही
   हेल्पर परीक्षण।
 - **इमेज हेल्पर** (`translator/image/sizeMapper.ts`)।
 - शीर्ष-स्तर: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`।
@@ -518,7 +518,7 @@ open-sse/
 
 ### 4.5 `open-sse/services/`
 
-मुख्य बिंदु (पूरी सूची `open-sse/services/` के अंतर्गत):
+मुख्य विशेषताएँ (पूरी सूची `open-sse/services/` के अंतर्गत):
 
 | विषय              | फ़ाइलें                                                                                                                                                                                                                                                  |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -538,11 +538,11 @@ open-sse/
 
 ### 4.6 `open-sse/mcp-server/`
 
-- `server.ts` में वायर किए गए **110 अद्वितीय टूल** (`schemas/tools.ts` में 45 कैनॉनिकल +
+- **110 विशिष्ट टूल** `server.ts` में वायर किए गए हैं (`schemas/tools.ts` में 45 कैनोनिकल +
   मेमोरी, स्किल्स, GitHub-स्किल्स, पूल, गेमिफ़िकेशन, प्लगइन, Notion, Obsidian,
-  लोकल-कॉर्पस और संपीड़न मॉड्यूल — यूनियन की गणना `countUniqueMcpTools` द्वारा की गई है)।
+  लोकल-कॉर्पस और संपीड़न मॉड्यूल — यूनियन की गणना `countUniqueMcpTools` द्वारा की जाती है)।
 - **3 ट्रांसपोर्ट**: stdio, HTTP Streamable, SSE।
-- रनटाइम पर **33 स्कोप** लागू किए गए हैं — आधार सूची `src/shared/constants/mcpScopes.ts` में है, पूर्ण सेट प्रत्येक टूल मॉड्यूल द्वारा घोषित स्कोप का यूनियन है।
+- रनटाइम पर **33 स्कोप** लागू किए जाते हैं — आधार सूची `src/shared/constants/mcpScopes.ts` में है, जबकि पूर्ण सेट प्रत्येक टूल मॉड्यूल द्वारा घोषित स्कोप्स का यूनियन है।
 - ऑडिट तालिका: `mcp_tool_audit` (`audit.ts` द्वारा भरी जाती है)।
 - फ़ाइलें: `server.ts`, `index.ts`, `httpTransport.ts`, `audit.ts`, `scopeEnforcement.ts`,
   `runtimeHeartbeat.ts`, `descriptionCompressor.ts`, `schemas/{tools, a2a, audit, index}.ts`,
@@ -560,7 +560,7 @@ open-sse/
 `anthropicHeaders.ts`, `antigravityUpstream.ts`, `antigravityModelAliases.ts`,
 `cliFingerprints.ts`, `toolCloaking.ts`, `defaultThinkingSignature.ts`),
 क्रेडेंशियल सहायक (`credentialLoader.ts`, `codexClient.ts`), और क्लाउड
-एडेप्टर (`azureAi.ts`, `bedrock.ts`, `datarobot.ts`, `glmProvider.ts`,
+एडाप्टर (`azureAi.ts`, `bedrock.ts`, `datarobot.ts`, `glmProvider.ts`,
 `maritalk.ts`, `oci.ts`, `petals.ts`, `runway.ts`, `sap.ts`, `watsonx.ts`,
 `ollamaModels.ts`, `errorConfig.ts`, `constants.ts`, `registryUtils.ts`)।
 
@@ -659,7 +659,7 @@ bin/
 
 ## 8. `scripts/`
 
-उद्देश्य के आधार पर 6 सबफ़ोल्डर में व्यवस्थित।
+उद्देश्य के अनुसार 6 उपफ़ोल्डरों में व्यवस्थित।
 
 - **`scripts/build/`** — `build-next-isolated.mjs`, `prepublish.ts`,
   `prepare-electron-standalone.mjs`, `pack-artifact-policy.ts`,
@@ -671,7 +671,11 @@ bin/
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`।
+  `system-info.mjs`, साथ ही केवल-पढ़ने योग्य PR निगरानी सहायक
+  `ci-discriminate.sh` (किसी संदर्भ PR या base-red समस्या के सापेक्ष PR के विफल-जाँच हस्ताक्षरों को स्वयं के / विरासत में मिले /
+  अज्ञात में वर्गीकृत करता है) और `audit-worktree.sh`
+  (असंशोधित न की गई फ़ाइलें, संरक्षित सतहें, हटाए गए asserts, suppression की संख्याएँ, शेष
+  अस्थायी tsconfigs, PR head बनाम स्थानीय HEAD — किसी कर्मी का PR स्वीकार किए जाने से पहले)।
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,

@@ -7,8 +7,8 @@
 // Evidence: every numeric block MUST carry an `// evidence:` comment naming its source class —
 //   public-page (a provider page anyone can read), api-public (an unauthenticated provider endpoint), or
 //   console-verified <date> por <who> (visible only inside an account console). No evidence ⇒ no number
-//   (the entry stays recurring-uncapped, monthlyTokens 0). Blocks that predate 2026-09-02 and still lack
-//   the comment inherit the 2026-06-17 research pass; add the comment whenever such a block is touched.
+//   and no new recurring-uncapped claim. New uncapped rows require the per-model evidence ledger in
+//   config/quality/free-catalog-evidence.json; frozen legacy debt is not proof of free access.
 // Methodology: honest pool-deduped recurring tokens. "recurring-uncapped" = permanently free but no
 // published token cap (rate/concurrency-limited) — NOT summed into the steady headline (see freeModelCatalog.ts).
 // Deposit-unlock boosts (e.g. OpenRouter $10 -> 1000 RPD) live in FREE_TIER_BOOSTS, not per-record.
