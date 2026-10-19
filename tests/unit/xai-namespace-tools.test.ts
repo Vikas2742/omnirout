@@ -79,3 +79,34 @@ test("isRequestShapeRejection recognises xAI body-deserialization 422s only", ()
   assert.equal(isRequestShapeRejection({ status: 429, error: "Failed to deserialize" }), false);
   assert.equal(isRequestShapeRejection({ status: 422, error: "quota exhausted" }), false);
 });
+
+test("web_search loses OpenAI-only args xAI rejects (external_web_access)", async () => {
+  const out = normalizeXaiResponsesTools([
+    { type: "web_search", external_web_access: true, filters: { allowed_domains: ["a.com"] } },
+  ]) as Array<Record<string, unknown>>;
+  assert.deepEqual(out, [{ type: "web_search", allowed_domains: ["a.com"] }]);
+});
+
+test("normalizeXaiResponsesInput maps Chat `text` parts to Responses part types", async () => {
+  const { normalizeXaiResponsesInput } = await import("../../open-sse/executors/xai.ts");
+  const out = normalizeXaiResponsesInput([
+    { role: "user", content: [{ type: "text", text: "hi" }] },
+    { type: "message", role: "assistant", content: [{ type: "text", text: "yo" }] },
+    { type: "function_call_output", call_id: "c", output: "x" },
+  ]) as Array<Record<string, unknown>>;
+  assert.equal((out[0].content as any)[0].type, "input_text");
+  assert.equal((out[1].content as any)[0].type, "output_text");
+  assert.deepEqual(out[2], { type: "function_call_output", call_id: "c", output: "x" });
+});
+
+test("isRequestShapeError: 400 unsupported argument / 422 schema → no cooldown", async () => {
+  const { isRequestShapeError } = await import("../../src/sse/services/auth.ts");
+  assert.equal(
+    isRequestShapeError(400, "[400]: Argument not supported: external_web_access"),
+    true
+  );
+  assert.equal(isRequestShapeError(422, 'content[0]: unknown content type "text"'), true);
+  assert.equal(isRequestShapeError(401, "Argument not supported"), false);
+  assert.equal(isRequestShapeError(400, "invalid api key"), false);
+  assert.equal(isRequestShapeRejection({ status: 400, error: "Argument not supported: x" }), true);
+});

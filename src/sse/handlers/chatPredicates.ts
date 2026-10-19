@@ -87,9 +87,12 @@ export function classifyProviderBreakerResult(
  * That is a request-shape problem; it must not cool down the account.
  */
 export function isRequestShapeRejection(result: { status?: number; error?: unknown }): boolean {
-  if (Number(result.status) !== 422) return false;
+  const status = Number(result.status);
+  if (status !== 400 && status !== 422) return false;
   const message = typeof result.error === "string" ? result.error : "";
-  return /failed to deserialize the json body|unknown variant `|missing field `/i.test(message);
+  return /failed to deserialize the json body|unknown variant `|missing field `|argument not supported|unknown content type/i.test(
+    message
+  );
 }
 
 export function isAntigravityMissingProjectError(

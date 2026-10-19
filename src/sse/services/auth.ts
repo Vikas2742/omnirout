@@ -2668,6 +2668,16 @@ export function buildExhaustionOptions(
   return { ...rest, correlationId };
 }
 
+const REQUEST_SHAPE_ERROR_RE =
+  /failed to deserialize the json body|unknown variant `|missing field `|argument not supported|unknown content type/i;
+
+/** 400/422 that describes the request body (schema mismatch), not the account's health. */
+export function isRequestShapeError(status: number, errorText: unknown): boolean {
+  const code = Number(status);
+  if (code !== 400 && code !== 422) return false;
+  return REQUEST_SHAPE_ERROR_RE.test(typeof errorText === "string" ? errorText : "");
+}
+
 /** Persist exponential-backoff state for an unavailable provider connection. */
 export async function markAccountUnavailable(
   connectionId: string,
@@ -2710,6 +2720,18 @@ export async function markAccountUnavailable(
 
     const resourceBypass = getResource404Bypass(status, errorText, connectionId, log);
     if (resourceBypass) return resourceBypass;
+
+    // The upstream rejected the SHAPE of this request (schema / unsupported argument),
+    // not the account. Cooling the connection down would fail every other client routed
+    // to it (often the provider's only account) with this stale error. Let the caller
+    // fall back, but keep the connection available.
+    if (isRequestShapeError(status, errorText)) {
+      log.info(
+        "AUTH",
+        `${connectionId.slice(0, 8)} request-shape ${status} — no cooldown: ${String(errorText).slice(0, 120)}`
+      );
+      return { shouldFallback: true, cooldownMs: 0 };
+    }
 
     // Read current connection to get backoffLevel
     const connectionsRaw = await getProviderConnections({ provider });

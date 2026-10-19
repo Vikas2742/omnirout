@@ -131,11 +131,67 @@ export function normalizeXaiResponsesTools(tools: unknown): unknown[] | undefine
       continue;
     }
 
+    if (type === "web_search") {
+      out.push(toXaiWebSearchTool(tool));
+      continue;
+    }
+
     if (XAI_RESPONSES_TOOL_TYPES.has(type)) out.push(tool);
     // else: unsupported hosted tool type for xAI — drop it rather than 422 the request.
   }
 
   return out;
+}
+
+/**
+ * OpenAI/Codex `web_search` carries arguments xAI rejects with
+ * `400 Argument not supported: external_web_access`. Keep only what xAI understands.
+ */
+function toXaiWebSearchTool(tool: JsonRecord): JsonRecord {
+  const out: JsonRecord = { ...tool };
+  delete out.external_web_access;
+  delete out.search_context_size;
+  const filters = asRecord(out.filters);
+  if (filters) {
+    delete out.filters;
+    if (Array.isArray(filters.allowed_domains) && out.allowed_domains === undefined) {
+      out.allowed_domains = filters.allowed_domains;
+    }
+    if (Array.isArray(filters.blocked_domains) && out.excluded_domains === undefined) {
+      out.excluded_domains = filters.blocked_domains;
+    }
+  }
+  return out;
+}
+
+/**
+ * xAI accepts only Responses content part types (`input_text`, `output_text`,
+ * `input_image`, `input_file`, `refusal`); a Chat-style `text` / `image_url` part makes
+ * it 422 the whole request (`content[0]: unknown content type "text"`).
+ */
+export function normalizeXaiResponsesInput(input: unknown): unknown {
+  if (!Array.isArray(input)) return input;
+  return input.map((value) => {
+    const item = asRecord(value);
+    if (!item || !Array.isArray(item.content)) return value;
+    const textType = item.role === "assistant" ? "output_text" : "input_text";
+    let changed = false;
+    const content = item.content.map((partValue) => {
+      const part = asRecord(partValue);
+      if (!part) return partValue;
+      if (part.type === "text") {
+        changed = true;
+        return { ...part, type: textType };
+      }
+      if (part.type === "image_url") {
+        changed = true;
+        const image = asRecord(part.image_url);
+        return { type: "input_image", image_url: image ? image.url : part.image_url };
+      }
+      return partValue;
+    });
+    return changed ? { ...item, content } : value;
+  });
 }
 
 /**
@@ -266,6 +322,7 @@ export class XaiExecutor extends BaseExecutor {
         if (tools.length > 0) out.tools = tools;
         else delete out.tools;
       }
+      if (Array.isArray(out.input)) out.input = normalizeXaiResponsesInput(out.input);
       // Keep model id from the routed request when the translator left it empty.
       if (out.model == null && model) out.model = model;
       // After chat→Responses expansion, `input` is what xAI counts toward 800.
