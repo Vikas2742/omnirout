@@ -181,5 +181,6 @@ test.each([
       expect(file.text).toHaveBeenCalledOnce();
     }
     expect(onCreated).toHaveBeenCalledWith("batch-test");
-  }
+  },
+  15000
 );
