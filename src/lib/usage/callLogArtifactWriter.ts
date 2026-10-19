@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { Worker } from "node:worker_threads";
 
+import { resolveWritableDataDir } from "../dataPaths";
+
 import type { CallLogArtifact, CallLogArtifactWriteResult } from "./callLogArtifacts.ts";
 
 const MAX_QUEUED_JOBS = 128;
@@ -22,6 +24,7 @@ type QueueItem = {
     pipelineMaxSizeKb?: string;
     chatDebugFile?: string;
     appLogLevel?: string;
+    dataDir?: string;
   };
   resolve: (result: CallLogArtifactWriteResult | null) => void;
 };
@@ -116,8 +119,15 @@ function warnRateLimited(message: string): void {
   console.warn(message);
 }
 
-function failOpen(warn = false): void {
-  if (warn) warnRateLimited("[callLogs] Call-log artifact worker failed; detail omitted.");
+function describeFailureDetail(detail: unknown): string {
+  if (detail instanceof Error) return `${detail.name}: ${detail.message}`;
+  return String(detail ?? "unknown error");
+}
+
+function failOpen(warn = false, detail?: unknown): void {
+  if (warn) {
+    warnRateLimited(`[callLogs] Call-log artifact worker failed: ${describeFailureDetail(detail)}`);
+  }
   const failed = active ? [active, ...queue] : [...queue];
   active = null;
   queue.length = 0;
@@ -126,10 +136,24 @@ function failOpen(warn = false): void {
   notifyCloseWaiters();
 }
 
+let workerFileOverride: { workerFile: string; execArgv: string[] } | null = null;
+
+/**
+ * Test-only hook: force the next ensureWorker() call to spawn an arbitrary worker
+ * script/execArgv instead of the real callLogArtifactWorker file. Lets regression tests
+ * trigger a genuine worker_threads `error`/`exit` event without editing the production
+ * worker script. Never called from production code paths.
+ */
+export function __setCallLogWorkerOverrideForTests(
+  override: { workerFile: string; execArgv: string[] } | null
+): void {
+  workerFileOverride = override;
+}
+
 function ensureWorker(): Worker {
   if (worker) return worker;
 
-  const { workerFile, execArgv } = resolveCallLogArtifactWorker();
+  const { workerFile, execArgv } = workerFileOverride ?? resolveCallLogArtifactWorker();
   // Reflect.construct keeps Next/Turbopack from interpreting the runtime-selected
   // worker path as a build-time glob and tracing tens of thousands of unrelated files.
   const created = Reflect.construct(Worker, [pathToFileURL(workerFile), { execArgv }]) as Worker;
@@ -141,12 +165,12 @@ function ensureWorker(): Worker {
     completed.resolve(reply.result);
     pump();
   });
-  created.on("error", () => failOpen(true));
-  created.on("messageerror", () => failOpen(true));
+  created.on("error", (err) => failOpen(true, err));
+  created.on("messageerror", (err) => failOpen(true, err));
   created.on("exit", (code) => {
     if (worker !== created) return;
     worker = null;
-    if (code !== 0 || active) failOpen(true);
+    if (code !== 0 || active) failOpen(true, new Error(`worker exited with code ${code}`));
   });
   return created;
 }
@@ -168,8 +192,8 @@ function pump(): void {
       artifact: next.artifact,
       environment: next.environment,
     });
-  } catch {
-    failOpen(true);
+  } catch (err) {
+    failOpen(true, err);
   }
 }
 
@@ -189,6 +213,8 @@ export function writeCallArtifactAsync(
         pipelineMaxSizeKb: process.env.CALL_LOG_PIPELINE_MAX_SIZE_KB,
         chatDebugFile: process.env.CHAT_DEBUG_FILE,
         appLogLevel: process.env.APP_LOG_LEVEL,
+        // Resolved, not raw: a redirected parent has no DATA_DIR in its env.
+        dataDir: resolveWritableDataDir(),
       },
       resolve,
     };

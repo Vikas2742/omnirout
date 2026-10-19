@@ -1,16 +1,17 @@
 ---
 title: "Hard Rules — Full Text and Rationale"
-version: 3.8.51
-lastUpdated: 2026-09-04
+version: 3.8.52
+lastUpdated: 2026-10-18
 ---
 
 # Hard Rules — full text and rationale
 
-> Deep-dive companion to the numbered list in `AGENTS.md` → "Hard Rules". The numbered list in
-> `AGENTS.md` is the authoritative, normative source; this file carries the **full wording,
-> rationale, incident history, and decision trees** for the long narrative rules so the AGENTS.md
-> list can stay compact. Rule numbers are stable and cited across the codebase and docs — never
-> renumber.
+> Deep-dive companion to the numbered list in `AGENTS.md` → "Hard Rules". Every rule 1–23 is
+> listed in `AGENTS.md`; where that list shows a short form, the section below with the same
+> number carries the **complete binding text** plus rationale, incident history and decision
+> trees — both are normative, and the longer text here wins on any detail the short form omits.
+> Rules not listed here (1–13, 15, 17) appear in full in `AGENTS.md`. Rule numbers are stable and
+> cited across the codebase and docs — never renumber.
 
 ## Rule 14 — CodeQL / Secret-Scanning dismissals
 
@@ -129,8 +130,8 @@ campaign, session, or agent may open a `release-freeze` marker at any other time
 **never** a mid-development coordination tool. If a session ever believes a freeze is genuinely,
 unavoidably necessary outside the `/generate-release` flow, it **MUST first ask the operator
 (`diegosouzapw`) in chat, explicitly alert "estou criando um freeze" and get an explicit yes** —
-never open, extend, or re-open a `release-freeze` autonomously. Conversely, do **not** close or
-lift an active `/generate-release` freeze to unblock campaign merges: it protects the captain's
+never open, extend, or re-open a `release-freeze` autonomously. Conversely, do **not** close/lift
+an active `/generate-release` freeze to unblock campaign merges: it protects the captain's
 single clean CI run and auto-lifts at Phase 12c — closing it early re-triggers the exact commit
 race it prevents. Verify a freeze is legitimate before acting on it: an open `release-freeze`
 whose title/body references an **OPEN** release PR (`gh pr view <N> --json state`) is the
