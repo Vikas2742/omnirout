@@ -1541,43 +1541,6 @@ export class CursorExecutor extends BaseExecutor {
       }
     };
 
-    // A complete error already buffered before any output is an HTTP failure,
-    // not a successful streaming request. Keep its SSE body for stream clients,
-    // and its status for the existing route's account/model failure handling.
-    // Inspect only an uncompressed first frame; never wait for more bytes or
-    // pre-read a healthy stream (including partial frames / late trailers).
-    if (h2.initialBytes.length >= 5 && (h2.initialBytes[0] & 0x01) === 0) {
-      const length = h2.initialBytes.readUInt32BE(1);
-      if (length <= h2.initialBytes.length - 5) {
-        const projected = projectCursorError(h2.initialBytes.subarray(5, 5 + length));
-        if (projected) {
-          const classified = classifyCursorError(projected);
-          const ctx = newStreamCtx(model, () => {});
-          finishLifecycle(ctx, true);
-          if (stream === false) {
-            return {
-              response: buildErrorResponse(classified.status, classified.message, classified.type),
-              url,
-              headers,
-              transformedBody: body,
-            };
-          }
-          const chunks: string[] = [];
-          ctx.emit = (chunk) => chunks.push(chunk);
-          emitCursorSseError(ctx, classified);
-          return {
-            response: new Response(chunks.join(""), {
-              status: classified.status,
-              headers: { "Content-Type": "text/event-stream" },
-            }),
-            url,
-            headers,
-            transformedBody: body,
-          };
-        }
-      }
-    }
-
     // Stream mode: ReadableStream that emits SSE chunks as they're decoded.
     if (stream !== false) {
       const enc = new TextEncoder();
