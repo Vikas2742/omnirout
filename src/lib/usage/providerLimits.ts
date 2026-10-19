@@ -500,27 +500,26 @@ export function hasRecoveredClaudeWeeklyWindow(usage: JsonRecord): boolean {
 }
 
 /**
- * Resetting the account-wide weekly bucket is not proof that a model-scoped
- * weekly bucket has reopened. Leave that model's existing lock alone while
- * its fresh Claude metadata still shows a blocking, exhausted scope. Unknown
- * remaining fractions are conservatively treated as unresolved.
+ * A recovered account-wide bucket does not prove that an existing model-specific
+ * quota lock has recovered. Clear it only when the fresh response supplies an
+ * explicit matching weekly model quota with positive, reported remaining capacity.
+ * Missing/empty/unknown model telemetry must fail closed (#17043).
  */
 export function hasBlockingClaudeModelQuota(usage: JsonRecord, model: string): boolean {
-  if (!isRecord(usage.modelQuotas)) return false;
-  return Object.values(usage.modelQuotas).some((value) => {
+  if (!isRecord(usage.modelQuotas)) return true;
+  const matchingScopes = Object.values(usage.modelQuotas).filter((value) => {
     if (!isRecord(value) || !isClaudeQuotaMetadata(value.claudeQuota)) return false;
-    const metadata = value.claudeQuota;
-    if (metadata.kind !== "weekly_scoped" || !claudeQuotaMatchesModel(metadata, model)) {
-      return false;
-    }
-    if (!metadata.active) return false;
-    const severity = metadata.severity?.trim().toLowerCase() || null;
-    if (severity !== null && severity !== "critical") return false;
+    return value.claudeQuota.kind === "weekly_scoped" &&
+      claudeQuotaMatchesModel(value.claudeQuota, model);
+  });
+  if (matchingScopes.length === 0) return true;
+  return matchingScopes.some((value) => {
+    if (!isRecord(value)) return true;
+    if (value.fractionReported === false || value.unlimited === true) return true;
     const remaining = typeof value.remainingPercentage === "number"
       ? value.remainingPercentage
       : typeof value.remaining === "number" ? value.remaining : null;
-    return value.fractionReported === false ||
-      remaining === null || !Number.isFinite(remaining) || remaining <= 0;
+    return remaining === null || !Number.isFinite(remaining) || remaining <= 0;
   });
 }
 
