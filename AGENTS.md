@@ -16,7 +16,7 @@ npm run build:release          # Release build
 npm run lint                   # ESLint (0 errors expected; warnings are pre-existing)
 npm run typecheck:core         # TypeScript check (should be clean)
 npm run typecheck:noimplicit:core  # Strict check (no implicit any)
-npm run test:coverage          # Unit tests + coverage gate (60/60/60/60 — statements/lines/functions/branches)
+npm run test:coverage          # Unit tests + coverage gate (67.33 / 67.33 / 72.02 / 65.08 — statements/lines/functions/branches, enforced by the blocking ratchet in config/quality/quality-baseline.json; test:coverage itself hardcodes 60)
 npm run check                  # lint + test combined
 npm run check:cycles           # Detect circular dependencies (advisory — lists the SCCs)
 npm run check:cycles:ratchet   # Same scan, blocking above the quality-baseline ceiling
@@ -190,7 +190,7 @@ Full step-by-step recipes: [`docs/architecture/MODIFICATION_SCENARIOS.md`](docs/
 - **New A2A skill**: `src/lib/a2a/skills/` → `A2A_SKILL_HANDLERS` → Agent Card → tests + doc table.
 - **New cloud agent**: `src/lib/cloudAgent/agents/` (extends `CloudAgentBase`) → `registry.ts` → OAuth → tests + doc.
 - **New embedded service**: installer → `bootstrap.ts` → DB seed → 8 API endpoints + `isLocalOnlyPath()` guard → UI tab → docs + OpenAPI → tests.
-- **Guardrail / eval / sandbox skill / webhook event / log-export destination**: per-type file + doc pairs in the detail doc.
+- **Guardrail / eval / skill / webhook / log-export destination**: see the detail doc.
 
 ---
 
@@ -220,14 +220,14 @@ For any non-trivial change, read the matching deep-dive first:
 - Unit tests — `npm run test:unit`; single file (Node native test runner — most tests) — `node --import tsx/esm --test tests/unit/your-file.test.ts`
 - Vitest (MCP server, autoCombo, cache) — `npm run test:vitest`; all suites — `npm run test:all`
 - E2E (Playwright) — `npm run test:e2e`; Protocol E2E (MCP+A2A) — `npm run test:protocols:e2e` (CI job `test-protocols-e2e`, advisory — #10049); Ecosystem — `npm run test:ecosystem` (CI job `test-ecosystem`, blocking)
-- Coverage gate — `npm run test:coverage` (60/60/60/60 — statements/lines/functions/branches); report — `npm run coverage:report`
+- Coverage gate — `npm run test:coverage` (67.33 / 67.33 / 72.02 / 65.08 — statements/lines/functions/branches, enforced by the blocking ratchet in config/quality/quality-baseline.json; test:coverage itself hardcodes 60); report — `npm run coverage:report`
 - Full test matrix: `CONTRIBUTING.md` → "Running Tests"
 
 **PR rule**: If you change production code in `src/`, `open-sse/`, `electron/`, or `bin/`, you must include or update tests in the same PR.
 
 **Test layer preference**: unit first → integration (multi-module or DB state) → e2e (UI/workflow only). Encode bug reproductions as automated tests before or alongside the fix.
 
-**Both test runners must pass**: `npm run test:unit` (Node native — most tests) AND `npm run test:vitest` (MCP server, autoCombo, cache) cover **non-overlapping files**. Both are wired in CI (jobs `test-unit` and `test-vitest`) and must be green before merging. A PR where only one suite passes may silently ship broken MCP tools or routing regressions.
+**Both test runners must pass**: `npm run test:unit` and `npm run test:vitest` cover **non-overlapping files**; both are CI jobs (`test-unit`, `test-vitest`) and must be green before merging — one green suite may silently ship broken MCP tools or routing regressions.
 
 **Bug fix / issue triage protocol (Hard Rule #18)**: failing-then-passing test (TDD, preferred) OR a documented live test on the production VPS (`root@192.168.0.15`) recorded in the PR; touch only what the failing test proves broken. Decision tree: `docs/ops/HARD_RULES_DETAIL.md` → Rule 18.
 
@@ -352,7 +352,7 @@ This checkout is a fork of `diegosouzapw/OmniRoute`. Keep fork-only deployment a
 
 ## Quality Gates & Ratchets
 
-OmniRoute has **~90 quality-gate scripts** (`scripts/check/` + `scripts/quality/`) wired across **9 gate-running jobs** in `.github/workflows/ci.yml`, plus the `quality.yml` fast-gates job (PR→`release/**`) and 5 quality nightly workflows (`nightly-property`, `nightly-resilience`, `nightly-llm-security`, `nightly-mutation`, `nightly-schemathesis`). Full inventory, per-job breakdown, and operational procedures: [`docs/architecture/QUALITY_GATES.md`](docs/architecture/QUALITY_GATES.md).
+OmniRoute has **~90 quality-gate scripts** (`scripts/check/` + `scripts/quality/`) wired across **9 gate-running jobs** in `.github/workflows/ci.yml`, plus the `quality.yml` fast-gates job (PR→`release/**`) and 5 quality nightly workflows. Full inventory, per-job breakdown, and operational procedures: [`docs/architecture/QUALITY_GATES.md`](docs/architecture/QUALITY_GATES.md).
 
 **Quick reference:**
 
@@ -394,7 +394,7 @@ is a short form, its complete binding text, rationale and incident history are i
 17. Never expose routes under `/api/services/` or `/dashboard/providers/services/*/embed/` without `isLocalOnlyPath()` classification in `src/server/authz/routeGuard.ts`. These routes can spawn child processes (`npm install`, `node`). Loopback enforcement happens unconditionally before any auth check — a leaked JWT via tunnel cannot trigger process spawning. See `docs/security/ROUTE_GUARD_TIERS.md`.
 18. Every bug fix must be validated before shipping: a failing-then-passing unit/integration test (TDD) OR a documented live test on the production VPS (192.168.0.15). A fix without either is not merged. See Testing → "Bug fix / issue triage protocol" and `docs/ops/HARD_RULES_DETAIL.md` → Rule 18 for the full decision tree.
 19. Never develop on the shared main checkout. Every development task runs in its own git worktree on its own dedicated branch, and you MUST confirm the base branch with the operator before creating the worktree/branch — never assume `main` or the currently checked-out branch. A `git checkout` in the shared checkout silently destroys other sessions' uncommitted work. Tear down only the worktrees/branches you created (by name, never `fix/*`/`feat/*` wildcards), leave other sessions' worktrees untouched, and end on the branch you started on (the active `release/vX.Y.Z`, never `main`). See Git Workflow → "Worktree isolation" and `docs/ops/WORKTREE_ISOLATION.md`.
-20. PII redaction/sanitization is **opt-in — never on by default**. The two data-mutating PII feature flags **MUST** keep `defaultValue: "false"` in `src/shared/constants/featureFlagDefinitions.ts`: `PII_REDACTION_ENABLED` (request-side) and `PII_RESPONSE_SANITIZATION` (response + streaming). Flipping either default to `"true"` requires explicit operator approval; opt-in is per-operator, never a silent default. Regression guard: `tests/unit/pii-opt-in-default.test.ts`. Full text (gated application points, overrides): `docs/ops/HARD_RULES_DETAIL.md` → Rule 20.
+20. PII redaction/sanitization is **opt-in — never on by default**. The two data-mutating PII feature flags **MUST** keep `defaultValue: "false"` in `src/shared/constants/featureFlagDefinitions.ts`: `PII_REDACTION_ENABLED` (request-side) and `PII_RESPONSE_SANITIZATION` (response + streaming). Flipping either default to `"true"` requires explicit operator approval; opt-in is per-operator, never a silent default. Regression guard: `tests/unit/pii-opt-in-default.test.ts`. Full text: `docs/ops/HARD_RULES_DETAIL.md` → Rule 20.
 21. **Release-freeze — the FROZEN release branch belongs to the release captain; development does NOT stop (parallel-cycle model, 2026-07-04).** Before merging **any** PR, every campaign workflow **MUST** check `gh issue list --repo diegosouzapw/OmniRoute --label release-freeze --state open`. If active: **NEVER merge into the frozen `release/vX.Y.Z`** — retarget the PR to the **highest** `release/v*` (`gh pr edit <N> --base release/vX+1`, then VERIFY with `gh pr view <N> --json baseRefName` — the edit fails silently) and merge normally; **HOLD only when the highest release/v\* branch IS the frozen one**. **⛔ ONLY `/generate-release` may raise a release-freeze (Phase 0a; lifted at Phase 12c)** — never open, extend, re-open or close one autonomously (any other freeze needs the operator's explicit yes). Full text: `docs/ops/HARD_RULES_DETAIL.md` → Rule 21.
 22. **Cross-session safety — this repo is worked by MANY parallel sessions/agents at once; never step on another's in-flight work.** Two absolute bans (both recurring incidents):
     - **(a) Never `git stash` / `git stash pop` — ANYWHERE in this repo, including inside an isolated worktree, and including inside any subagent you dispatch.** `git stash` operates on the **shared repository object store**, not the per-worktree working tree — a stash in one session can silently clobber or resurrect another parallel session's uncommitted changes. Compare against a base ref with `git show <ref>:<path>` or `git diff <ref> -- <path>` instead — never stash your tree away to "get it clean". **Put this ban verbatim in the prompt of every subagent that touches git.**
