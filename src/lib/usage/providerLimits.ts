@@ -17,9 +17,16 @@ import { setQuotaCache } from "@/domain/quotaCache";
 import { buildClaudeExtraUsageConnectionUpdate } from "@/lib/providers/claudeExtraUsage";
 import { clearRecoveredProviderState } from "@/sse/services/auth";
 import { hasObservedClaudeQuotaResetAfter } from "@/lib/db/quotaResetEvents";
-import { clearModelLock, getAllModelLockouts } from "@omniroute/open-sse/services/accountFallback.ts";
+import {
+  clearModelLock,
+  getAllModelLockouts,
+} from "@omniroute/open-sse/services/accountFallback.ts";
 import { RateLimitReason } from "@omniroute/open-sse/config/constants.ts";
-import { claudeQuotaMatchesModel, isClaudeQuotaMetadata, isExplicitClaudeQuota429Text } from "@omniroute/open-sse/services/usage/claudeQuota.ts";
+import {
+  claudeQuotaMatchesModel,
+  isClaudeQuotaMetadata,
+  isExplicitClaudeQuota429Text,
+} from "@omniroute/open-sse/services/usage/claudeQuota.ts";
 import { getMachineId } from "@/shared/utils/machine";
 import { supportsProviderQuota } from "@/shared/utils/providerQuotaVisibility";
 import { mergeProviderLimitsCacheEntry, toProviderLimitsCacheEntry } from "./providerLimitsCache";
@@ -470,15 +477,21 @@ export function isClaudeWeeklyQuota429Signal(errorText: string | null | undefine
 export function everyQuotaWindowReplenished(usage: JsonRecord): boolean {
   if (usage.message || usage._stale || !isRecord(usage.quotas)) return false;
   const windows = Object.values(usage.quotas);
-  return windows.length > 0 && windows.every((value) => {
-    if (!isRecord(value) || value.unlimited === true || value.fractionReported === false) {
-      return false;
-    }
-    const remaining = typeof value.remainingPercentage === "number"
-      ? value.remainingPercentage
-      : typeof value.remaining === "number" ? value.remaining : null;
-    return remaining !== null && Number.isFinite(remaining) && remaining > 0;
-  });
+  return (
+    windows.length > 0 &&
+    windows.every((value) => {
+      if (!isRecord(value) || value.unlimited === true || value.fractionReported === false) {
+        return false;
+      }
+      const remaining =
+        typeof value.remainingPercentage === "number"
+          ? value.remainingPercentage
+          : typeof value.remaining === "number"
+            ? value.remaining
+            : null;
+      return remaining !== null && Number.isFinite(remaining) && remaining > 0;
+    })
+  );
 }
 
 /** A partial session-only poll is not proof of a recovered weekly allowance. */
@@ -492,9 +505,12 @@ export function hasRecoveredClaudeWeeklyWindow(usage: JsonRecord): boolean {
     if (!isRecord(value) || value.fractionReported === false || value.unlimited === true) {
       return false;
     }
-    const remaining = typeof value.remainingPercentage === "number"
-      ? value.remainingPercentage
-      : typeof value.remaining === "number" ? value.remaining : null;
+    const remaining =
+      typeof value.remainingPercentage === "number"
+        ? value.remainingPercentage
+        : typeof value.remaining === "number"
+          ? value.remaining
+          : null;
     return remaining !== null && Number.isFinite(remaining) && remaining > 0;
   });
 }
@@ -509,18 +525,62 @@ export function hasBlockingClaudeModelQuota(usage: JsonRecord, model: string): b
   if (!isRecord(usage.modelQuotas)) return true;
   const matchingScopes = Object.values(usage.modelQuotas).filter((value) => {
     if (!isRecord(value) || !isClaudeQuotaMetadata(value.claudeQuota)) return false;
-    return value.claudeQuota.kind === "weekly_scoped" &&
-      claudeQuotaMatchesModel(value.claudeQuota, model);
+    return (
+      value.claudeQuota.kind === "weekly_scoped" &&
+      claudeQuotaMatchesModel(value.claudeQuota, model)
+    );
   });
   if (matchingScopes.length === 0) return true;
   return matchingScopes.some((value) => {
     if (!isRecord(value)) return true;
     if (value.fractionReported === false || value.unlimited === true) return true;
-    const remaining = typeof value.remainingPercentage === "number"
-      ? value.remainingPercentage
-      : typeof value.remaining === "number" ? value.remaining : null;
+    const remaining =
+      typeof value.remainingPercentage === "number"
+        ? value.remainingPercentage
+        : typeof value.remaining === "number"
+          ? value.remaining
+          : null;
     return remaining === null || !Number.isFinite(remaining) || remaining <= 0;
   });
+}
+
+function canRecoverClaudeFromObservedReset(
+  connection: ProviderConnectionLike,
+  usage: JsonRecord
+): boolean {
+  return (
+    connection.provider === "claude" &&
+    (connection.lastErrorType === "quota_exhausted" ||
+      // Older 429 records used the generic RPM classifier for Claude's
+      // weekly-quota text. Only admit such a record with the full positive
+      // reset evidence and an explicit long-window signal.
+      connection.lastErrorType === "rate_limited") &&
+    isClaudeWeeklyQuota429Signal(connection.lastError) &&
+    connection.lastErrorSource !== "extra_usage" &&
+    Number(connection.errorCode) === 429 &&
+    hasObservedClaudeQuotaResetAfter(connection.id, connection.lastErrorAt) &&
+    everyQuotaWindowReplenished(usage) &&
+    hasRecoveredClaudeWeeklyWindow(usage)
+  );
+}
+
+function clearRecoveredClaudeQuotaModelLocks(connectionId: string, usage: JsonRecord): void {
+  const accountLocks = getAllModelLockouts().filter(
+    (lock) => lock.connectionId === connectionId && lock.provider === "claude"
+  );
+  // clearModelLock removes *all* lock keys for a model. Never let quota
+  // recovery erase an unrelated capacity/auth/not-found lock on that model.
+  const unrelatedModels = new Set(
+    accountLocks
+      .filter((lock) => lock.reason !== RateLimitReason.QUOTA_EXHAUSTED)
+      .map((lock) => lock.model)
+  );
+  for (const lock of accountLocks) {
+    if (lock.reason !== RateLimitReason.QUOTA_EXHAUSTED) continue;
+    if (unrelatedModels.has(lock.model)) continue;
+    if (hasBlockingClaudeModelQuota(usage, lock.model)) continue;
+    clearModelLock(lock.provider, lock.connectionId, lock.model);
+  }
 }
 
 export async function maybeClearRecoveredQuotaState(
@@ -543,19 +603,7 @@ export async function maybeClearRecoveredQuotaState(
     // #17043: unlike an ordinary quota poll, a persisted weekly reset event
     // observed after the last 429 is independent positive evidence. It can
     // release only a Claude quota-exhaustion lock with every live window open.
-    const observedResetOverride =
-      connection.provider === "claude" &&
-      (connection.lastErrorType === "quota_exhausted" ||
-        // Older 429 records used the generic RPM classifier for Claude's
-        // weekly-quota text. Only admit such a record with the full positive
-        // reset evidence and an explicit long-window signal.
-        connection.lastErrorType === "rate_limited") &&
-      isClaudeWeeklyQuota429Signal(connection.lastError) &&
-      connection.lastErrorSource !== "extra_usage" &&
-      Number(connection.errorCode) === 429 &&
-      hasObservedClaudeQuotaResetAfter(connection.id, connection.lastErrorAt) &&
-      everyQuotaWindowReplenished(usage) &&
-      hasRecoveredClaudeWeeklyWindow(usage);
+    const observedResetOverride = canRecoverClaudeFromObservedReset(connection, usage);
     if (!syntheticRecoveryOverride && !observedResetOverride) return connection;
     verifiedResetRecovery = observedResetOverride;
   }
@@ -598,22 +646,7 @@ export async function maybeClearRecoveredQuotaState(
   if (cleared && verifiedResetRecovery) {
     // Only quota-family locks belong to this reset. Preserve auth, capacity,
     // missing-model, and generic RPM locks for their own recovery path.
-    const accountLocks = getAllModelLockouts().filter(
-      (lock) => lock.connectionId === connection.id && lock.provider === "claude"
-    );
-    // clearModelLock removes *all* lock keys for a model. Never let quota
-    // recovery erase an unrelated capacity/auth/not-found lock on that model.
-    const unrelatedModels = new Set(
-      accountLocks
-        .filter((lock) => lock.reason !== RateLimitReason.QUOTA_EXHAUSTED)
-        .map((lock) => lock.model)
-    );
-    for (const lock of accountLocks) {
-      if (lock.reason !== RateLimitReason.QUOTA_EXHAUSTED) continue;
-      if (unrelatedModels.has(lock.model)) continue;
-      if (hasBlockingClaudeModelQuota(usage, lock.model)) continue;
-      clearModelLock(lock.provider, lock.connectionId, lock.model);
-    }
+    clearRecoveredClaudeQuotaModelLocks(connection.id, usage);
   }
 
   if (!cleared) {
