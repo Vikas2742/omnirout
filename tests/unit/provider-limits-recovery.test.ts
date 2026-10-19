@@ -852,6 +852,102 @@ test("#17043: the actual quota-cache observation unlocks the weekly Claude 429 a
   }
 });
 
+test("#17043: absent, empty, or unrelated model telemetry preserves Sonnet lock after global reset", async () => {
+  const quotaCache = await import("../../src/domain/quotaCache.ts");
+  const fallback = await import("../../open-sse/services/accountFallback.ts");
+  const { RateLimitReason } = await import("../../open-sse/config/constants.ts");
+  const cases = ["absent", "empty", "unrelated"] as const;
+
+  fallback.clearAllModelLockouts();
+  try {
+    for (const scopeCase of cases) {
+      const now = Date.now();
+      const weeklyReset = new Date(now + 3 * 86_400_000).toISOString();
+      const sessionReset = new Date(now + 4 * 3_600_000).toISOString();
+      const created = await providersDb.createProviderConnection({
+        provider: "claude",
+        authType: "oauth",
+        accessToken: `token-missing-model-scope-17043-${scopeCase}`,
+        refreshToken: `refresh-missing-model-scope-17043-${scopeCase}`,
+        testStatus: "unavailable",
+        isActive: true,
+        lastError: "This request would exceed your account's rate limit",
+        lastErrorAt: new Date(now - 120_000).toISOString(),
+        lastErrorType: "quota_exhausted",
+        lastErrorSource: "executor",
+        errorCode: 429,
+        rateLimitedUntil: weeklyReset,
+        backoffLevel: 2,
+      });
+      const id = (created as { id: string }).id;
+      const initial = {
+        "session (5h)": { remainingPercentage: 90, resetAt: sessionReset },
+        "weekly (7d)": { remainingPercentage: 0, resetAt: weeklyReset },
+      };
+      const refilled = {
+        "session (5h)": { remainingPercentage: 98, resetAt: sessionReset },
+        "weekly (7d)": { remainingPercentage: 94, resetAt: weeklyReset },
+      };
+      // Exercise the persisted reset-event producer, not a manually inserted event.
+      quotaCache.setQuotaCache(id, "claude", initial);
+      quotaCache.setQuotaCache(id, "claude", refilled);
+
+      fallback.lockModel(
+        "claude", id, "claude-sonnet-5", RateLimitReason.QUOTA_EXHAUSTED, 120_000
+      );
+      fallback.lockModel(
+        "claude", id, "claude-haiku-5-5", RateLimitReason.SERVER_ERROR, 120_000
+      );
+      const unrelatedModel = {
+        "weekly opus (7d)": {
+          remainingPercentage: 100,
+          claudeQuota: {
+            kind: "weekly_scoped",
+            active: false,
+            severity: null,
+            scopeKey: "model:claude-opus-5-5",
+            modelId: "claude-opus-5-5",
+            modelDisplayName: null,
+          },
+        },
+      };
+      const usage = {
+        quotas: {
+          session: { remainingPercentage: 98, resetAt: sessionReset },
+          weekly: { remainingPercentage: 94, resetAt: weeklyReset },
+        },
+        ...(scopeCase === "absent" ? {} : {
+          modelQuotas: scopeCase === "empty" ? {} : unrelatedModel,
+        }),
+      };
+      const result = await providerLimits.maybeClearRecoveredQuotaState(
+        await providersDb.getProviderConnectionById(id),
+        usage
+      );
+
+      assert.equal(result.testStatus, "active", `${scopeCase}: account can recover`);
+      assert.equal(result.rateLimitedUntil, null, `${scopeCase}: cooldown cleared`);
+      assert.equal(
+        (await providersDb.getProviderConnectionById(id)).rateLimitedUntil,
+        undefined,
+        `${scopeCase}: SQLite round-trip reports cleared cooldown as undefined`
+      );
+      assert.equal(
+        fallback.isModelLocked("claude", id, "claude-sonnet-5"),
+        true,
+        `${scopeCase}: missing matching model quota cannot release Sonnet lock`
+      );
+      assert.equal(
+        fallback.isModelLocked("claude", id, "claude-haiku-5-5"),
+        true,
+        `${scopeCase}: unrelated server-error lock remains`
+      );
+    }
+  } finally {
+    fallback.clearAllModelLockouts();
+  }
+});
+
 test("#17043: old event, exhausted window, stale poll and terminal status cannot release 429", async () => {
   const now = Date.now();
   const observed = new Date(now - 180_000).toISOString();
