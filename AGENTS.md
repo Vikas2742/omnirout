@@ -333,6 +333,20 @@ Steps + baseline-freeze check: `docs/ops/WORKTREE_ISOLATION.md` → "Sync-back l
 
 ## Upstream contributions
 
+**Mandatory upstream-first fork preflight (every contribution, including PR follow-ups):**
+Before creating a branch, modifying any source/documentation, committing, pushing, or opening or
+updating an upstream PR, discover the current **active release branch** and fetch its latest tip
+from `diegosouzapw/OmniRoute`. First synchronize the corresponding branch in
+`fabioKoruja00/OmniRoute` to include that upstream tip, then verify that the fork is
+**zero commits behind** upstream. Perform the same preflight at the beginning of every new
+work session and before resuming an existing PR; do not assume yesterday's base is current.
+If it is already synchronized, verify and proceed without making an empty merge commit.
+Preserve fork-only deployment protections, unmerged contributor branches, and branch history:
+never force-push or destructively reset an active branch. If synchronization cannot be
+verified or completed, **stop all mutation** until it is fixed. Once the fork base is current,
+reconcile the dedicated issue/PR branch with the matching upstream release tip before edits.
+Exclude this fork-specific instruction and other fork-only artifacts from upstream PR diffs.
+
 This checkout is a fork of `diegosouzapw/OmniRoute`. Keep fork-only deployment and personal automation changes out of upstream PRs. Start upstream work from the active upstream default branch, not `main` (`git fetch upstream && git switch -c <branch-name> upstream/<default-branch>`), target that same release branch in the PR, stage only the intended files, run the focused checks, and use a Conventional Commit message (for example, `docs: slim AGENTS.md`).
 
 ---
