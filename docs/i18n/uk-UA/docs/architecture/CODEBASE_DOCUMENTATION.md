@@ -447,11 +447,11 @@ open-sse/
 ├── types.d.ts
 ├── config/                 Реєстри провайдерів, профілі заголовків, ідентичність, …
 ├── handlers/               Обробники запитів (чат, вбудовування, аудіо, зображення, …)
-├── executors/              150 модулів виконавців провайдерів (класи виконавців + допоміжні засоби для окремих провайдерів)
+├── executors/              150 модулів виконавців провайдерів (класи виконавців і допоміжні засоби для окремих провайдерів)
 ├── translator/             Перетворення форматів (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
 ├── transformer/            Трансформер потоків Responses API ↔ Chat Completions
-├── services/               Понад 80 сервісних модулів (комбінації, резервування, квоти, ідентичність, …)
-├── utils/                  Допоміжні засоби для потокового передавання, клієнт TLS, AWS SigV4, проксі-вибірка, …
+├── services/               Понад 80 модулів сервісів (комбінації, резервування, квоти, ідентичність, …)
+├── utils/                  Допоміжні засоби потокового передавання, TLS-клієнт, AWS SigV4, проксі-виклики fetch, …
 └── mcp-server/             Сервер MCP (3 транспорти, 33 області дії, 110 інструментів)
 ```
 
@@ -473,14 +473,14 @@ open-sse/
 | `sseParser.ts`          | Парсер подій SSE                                                                                     |
 | `usageExtractor.ts`     | Вилучення кількості токенів із висхідних потоків                                                     |
 | `responseSanitizer.ts`  | Видалення специфічного для провайдера шуму                                                           |
-| `responseTranslator.ts` | Зв’язувальний шар між відповіддю провайдера та шаром транслятора                                     |
+| `responseTranslator.ts` | Зв’язувальний шар між відповіддю провайдера та шаром трансляції                                      |
 
 ### 4.2 `open-sse/executors/`
 
-150 модулів виконавців верхнього рівня (`*.ts` без `base.ts`, `index.ts` і тестів — це число
-вимірює `npm run check:docs-counts`). Кожен клас виконавця розширює `BaseExecutor` (`base.ts`),
+150 модулів виконавців верхнього рівня (`*.ts` за винятком `base.ts`, `index.ts` і тестів — цю кількість
+визначає `npm run check:docs-counts`). Кожен клас виконавця розширює `BaseExecutor` (`base.ts`)
 безпосередньо або через `DefaultExecutor` чи інший виконавець; решта модулів є допоміжними
-засобами для окремих провайдерів (схеми інструментів, адаптери вибірки/TTS, обробники особливостей). Виконавці включають:
+засобами для окремих провайдерів (схеми інструментів, адаптери fetch/TTS, обробники особливостей). Серед виконавців:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
 `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,
@@ -488,13 +488,13 @@ open-sse/
 `pollinations`, `qoder`, `vertex`, `devin-desktop`, а також `claudeIdentity.ts`
 (спільний допоміжний засіб ідентичності) та `index.ts` (реєстр).
 
-> Примітка: провайдери, не перелічені тут, обслуговуються `default.ts` за допомогою універсального
-> OpenAI-сумісного виконавця. Повний каталог провайдерів (372 провайдери) міститься в
+> Примітка: провайдери, не перелічені тут, обслуговуються через `default.ts` за допомогою універсального
+> виконавця, сумісного з OpenAI. Повний каталог провайдерів (374 провайдери) розміщено в
 > `src/shared/constants/providers.ts`.
 
 ### 4.3 `open-sse/translator/`
 
-Трансляція за топологією «центр і промені» (OpenAI є центром).
+Трансляція за моделлю «центр і промені» (OpenAI є центром).
 
 - **9 трансляторів запитів** (`translator/request/`):
   `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`,
@@ -509,12 +509,12 @@ open-sse/
   `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, а також
   тести допоміжних засобів.
 - **Допоміжні засоби для зображень** (`translator/image/sizeMapper.ts`).
-- Верхній рівень: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
+- На верхньому рівні: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
 
 ### 4.4 `open-sse/transformer/`
 
-- `responsesTransformer.ts` — конвертер Responses API ↔ Chat Completions на основі
-  `TransformStream` (використовується універсальним маршрутом `responses/`).
+- `responsesTransformer.ts` — заснований на `TransformStream` конвертер Responses API ↔ Chat
+  Completions (використовується універсальним маршрутом `responses/`).
 
 ### 4.5 `open-sse/services/`
 
@@ -530,7 +530,7 @@ open-sse/
 | Інтелектуальна маршрутизація | `intentClassifier.ts`, `taskAwareRouter.ts`, `backgroundTaskDetector.ts`, `volumeDetector.ts`, `wildcardRouter.ts`, `workflowFSM.ts`, `specificityDetector.ts`, `specificityRules.ts`, `specificityTypes.ts`                                             |
 | Обробка моделей              | `modelCapabilities.ts`, `modelDeprecation.ts`, `modelFamilyFallback.ts`, `modelStrip.ts`, `model.ts`, `provider.ts`, `providerRequestDefaults.ts`, `providerCostData.ts`, `payloadRules.ts`                                                              |
 | Стиснення                    | `compression/` — повне підключення рушія стиснення                                                                                                                                                                                                       |
-| Токени й сеанси              | `tokenRefresh.ts`, `sessionManager.ts`, `apiKeyRotator.ts`, `contextManager.ts`, `contextHandoff.ts`, `systemPrompt.ts`, `roleNormalizer.ts`, `responsesInputSanitizer.ts`, `toolSchemaSanitizer.ts`, `toolLimitDetector.ts`, `thinkingBudget.ts`        |
+| Токени та сеанси             | `tokenRefresh.ts`, `sessionManager.ts`, `apiKeyRotator.ts`, `contextManager.ts`, `contextHandoff.ts`, `systemPrompt.ts`, `roleNormalizer.ts`, `responsesInputSanitizer.ts`, `toolSchemaSanitizer.ts`, `toolLimitDetector.ts`, `thinkingBudget.ts`        |
 | Рівні / маніфест             | `tierResolver.ts`, `tierConfig.ts`, `tierDefaults.json`, `tierTypes.ts`, `manifestAdapter.ts`                                                                                                                                                            |
 | IP / мережа                  | `ipFilter.ts`, `webSearchFallback.ts`                                                                                                                                                                                                                    |
 | Пакети                       | `batchProcessor.ts`                                                                                                                                                                                                                                      |
@@ -540,10 +540,10 @@ open-sse/
 
 - **110 унікальних інструментів**, підключених у `server.ts` (45 канонічних у `schemas/tools.ts` +
   модулі пам’яті, навичок, GitHub-навичок, пулу, гейміфікації, плагінів, Notion, Obsidian,
-  локального корпусу та стиснення — об’єднання підраховується за допомогою `countUniqueMcpTools`).
+  локального корпусу та стиснення — об’єднання підраховується функцією `countUniqueMcpTools`).
 - **3 транспорти**: stdio, HTTP Streamable, SSE.
 - **33 області доступу**, що застосовуються під час виконання, — базовий список міститься в `src/shared/constants/mcpScopes.ts`, а повний набір є об’єднанням областей доступу, оголошених кожним модулем інструментів.
-- Таблиця аудиту: `mcp_tool_audit` (заповнюється через `audit.ts`).
+- Таблиця аудиту: `mcp_tool_audit` (заповнюється за допомогою `audit.ts`).
 - Файли: `server.ts`, `index.ts`, `httpTransport.ts`, `audit.ts`, `scopeEnforcement.ts`,
   `runtimeHeartbeat.ts`, `descriptionCompressor.ts`, `schemas/{tools, a2a, audit, index}.ts`,
   `tools/{advancedTools, compressionTools, memoryTools, skillTools}.ts`,
@@ -566,7 +566,7 @@ open-sse/
 
 ### 4.8 `open-sse/utils/`
 
-Примітиви потокової передачі та допоміжні засоби провайдерів: `stream.ts`, `streamHandler.ts`,
+Примітиви потокового передавання та допоміжні засоби провайдерів: `stream.ts`, `streamHandler.ts`,
 `streamHelpers.ts`, `streamPayloadCollector.ts`, `streamReadiness.ts`,
 `sseHeartbeat.ts`, `proxyFetch.ts`, `proxyDispatcher.ts`, `tlsClient.ts`,
 `networkProxy.ts`, `awsSigV4.ts`, `cacheControlPolicy.ts`,
@@ -659,7 +659,7 @@ bin/
 
 ## 8. `scripts/`
 
-Організовано в 6 підпапок за призначенням.
+Організовано у 6 підпапок за призначенням.
 
 - **`scripts/build/`** — `build-next-isolated.mjs`, `prepublish.ts`,
   `prepare-electron-standalone.mjs`, `pack-artifact-policy.ts`,
@@ -671,7 +671,12 @@ bin/
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`.
+  `system-info.mjs`, а також допоміжні засоби лише для читання для супроводу PR:
+  `ci-discriminate.sh` (класифікує сигнатури невдалих перевірок PR як власні /
+  успадковані / невідомі, порівнюючи з еталонним PR або проблемою невдалих перевірок
+  базової гілки) і `audit-worktree.sh` (змінені файли, захищені поверхні, видалені
+  перевірки, кількість приглушень, залишкові тимчасові tsconfig-файли, HEAD PR
+  порівняно з локальним HEAD — перед прийняттям PR виконавця).
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,

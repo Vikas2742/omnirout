@@ -434,53 +434,54 @@ Dividido em subdiretórios específicos:
 
 ---
 
-## 4. `open-sse/` — Espaço de trabalho do motor de streaming
+## 4. `open-sse/` — Área de trabalho do motor de streaming
 
-Espaço de trabalho npm separado, publicado como `@omniroute/open-sse`. É responsável pelo processamento
-de pedidos, executores, tradutores, serviços, transformador e servidor MCP.
+Área de trabalho npm separada, publicada como `@omniroute/open-sse`. Responsável pelo processamento de
+pedidos, executores, tradutores, serviços, transformador e servidor MCP.
 
 ```
 open-sse/
 ├── index.ts                Exportações públicas
-├── package.json            Manifesto do espaço de trabalho
+├── package.json            Manifesto da área de trabalho
 ├── tsconfig.json
 ├── types.d.ts
 ├── config/                 Registos de fornecedores, perfis de cabeçalhos, identidade, …
 ├── handlers/               Processadores de pedidos (chat, embeddings, áudio, imagem, …)
-├── executors/              150 módulos executores de fornecedores (classes de executores + auxiliares por fornecedor)
+├── executors/              150 módulos de execução de fornecedores (classes de execução + auxiliares por fornecedor)
 ├── translator/             Conversão de formatos (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
 ├── transformer/            Transformador de streams da Responses API ↔ Chat Completions
 ├── services/               Mais de 80 módulos de serviço (combinações, contingência, quotas, identidade, …)
-├── utils/                  Auxiliares de streaming, cliente TLS, AWS SigV4, obtenção por proxy, …
+├── utils/                  Auxiliares de streaming, cliente TLS, AWS SigV4, obtenção via proxy, …
 └── mcp-server/             Servidor MCP (3 transportes, 33 âmbitos, 110 ferramentas)
 ```
 
 ### 4.1 `open-sse/handlers/`
 
-| Processador             | Finalidade                                                                                                   |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `chatCore.ts`           | Pipeline principal de chat (cache, limite de pedidos, encaminhamento de combinações, despacho de executores) |
-| `responsesHandler.ts`   | Ponto de entrada da OpenAI Responses API                                                                     |
-| `embeddings.ts`         | Embeddings                                                                                                   |
-| `imageGeneration.ts`    | Geração de imagens                                                                                           |
-| `audioSpeech.ts`        | Conversão de texto em voz                                                                                    |
-| `audioTranscription.ts` | Conversão de voz em texto                                                                                    |
-| `videoGeneration.ts`    | Geração de vídeo                                                                                             |
-| `musicGeneration.ts`    | Geração de música                                                                                            |
-| `rerank.ts`             | Reordenação                                                                                                  |
-| `moderations.ts`        | Moderação                                                                                                    |
-| `search.ts`             | Pesquisa na Web                                                                                              |
-| `sseParser.ts`          | Analisador de eventos SSE                                                                                    |
-| `usageExtractor.ts`     | Extrai contagens de tokens dos streams a montante                                                            |
-| `responseSanitizer.ts`  | Remove ruído específico do fornecedor                                                                        |
-| `responseTranslator.ts` | Ligação entre a resposta do fornecedor e a camada de tradução                                                |
+| Processador             | Finalidade                                                                                     |
+| ----------------------- | ---------------------------------------------------------------------------------------------- |
+| `chatCore.ts`           | Pipeline principal de chat (cache, limite de pedidos, encaminhamento de combinações, execução) |
+| `responsesHandler.ts`   | Ponto de entrada da Responses API da OpenAI                                                    |
+| `embeddings.ts`         | Embeddings                                                                                     |
+| `imageGeneration.ts`    | Geração de imagens                                                                             |
+| `audioSpeech.ts`        | Conversão de texto em voz                                                                      |
+| `audioTranscription.ts` | Conversão de voz em texto                                                                      |
+| `videoGeneration.ts`    | Geração de vídeo                                                                               |
+| `musicGeneration.ts`    | Geração de música                                                                              |
+| `rerank.ts`             | Reordenação                                                                                    |
+| `moderations.ts`        | Moderação                                                                                      |
+| `search.ts`             | Pesquisa na Web                                                                                |
+| `sseParser.ts`          | Analisador de eventos SSE                                                                      |
+| `usageExtractor.ts`     | Extrai contagens de tokens dos streams a montante                                              |
+| `responseSanitizer.ts`  | Remove ruído específico do fornecedor                                                          |
+| `responseTranslator.ts` | Ligação entre a resposta do fornecedor e a camada de tradução                                  |
 
 ### 4.2 `open-sse/executors/`
 
-150 módulos executores de nível superior (`*.ts` menos `base.ts`, `index.ts` e testes — a contagem é
-medida por `npm run check:docs-counts`). Cada classe de executor estende `BaseExecutor` (`base.ts`),
+150 módulos de execução de nível superior (`*.ts` menos `base.ts`, `index.ts` e testes — a contagem
+é efetuada por `npm run check:docs-counts`). Cada classe de execução estende `BaseExecutor` (`base.ts`),
 diretamente ou através de `DefaultExecutor` ou de outro executor; os restantes módulos são auxiliares
-específicos de cada fornecedor (esquemas de ferramentas, adaptadores de obtenção/TTS, processadores de peculiaridades). Os executores incluem:
+específicos de cada fornecedor (esquemas de ferramentas, adaptadores de obtenção/TTS, processadores de
+particularidades). Os executores incluem:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
 `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,
@@ -488,13 +489,13 @@ específicos de cada fornecedor (esquemas de ferramentas, adaptadores de obtenç
 `pollinations`, `qoder`, `vertex`, `devin-desktop`, além de `claudeIdentity.ts`
 (auxiliar de identidade partilhado) e `index.ts` (registo).
 
-> Nota: os fornecedores não indicados aqui são servidos por `default.ts` através do executor
-> genérico compatível com OpenAI. O catálogo completo de fornecedores (372 fornecedores) encontra-se em
+> Nota: os fornecedores não indicados aqui são servidos por `default.ts`, utilizando o executor
+> genérico compatível com a OpenAI. O catálogo completo de fornecedores (374 fornecedores) encontra-se em
 > `src/shared/constants/providers.ts`.
 
 ### 4.3 `open-sse/translator/`
 
-Tradução segundo um modelo hub-and-spoke (o OpenAI é o hub).
+Tradução segundo o modelo hub-and-spoke (a OpenAI é o hub).
 
 - **9 tradutores de pedidos** (`translator/request/`):
   `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`,
@@ -513,14 +514,14 @@ Tradução segundo um modelo hub-and-spoke (o OpenAI é o hub).
 
 ### 4.4 `open-sse/transformer/`
 
-- `responsesTransformer.ts` — Conversor baseado em `TransformStream` da Responses API ↔ Chat
-  Completions (utilizado pelo mecanismo abrangente da rota `responses/`).
+- `responsesTransformer.ts` — Conversor da Responses API ↔ Chat Completions baseado em
+  `TransformStream` (utilizado pelo mecanismo genérico da rota `responses/`).
 
 ### 4.5 `open-sse/services/`
 
 Destaques (lista completa em `open-sse/services/`):
 
-| Área                           | Ficheiros                                                                                                                                                                                                                                                |
+| Aspeto                         | Ficheiros                                                                                                                                                                                                                                                |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Encaminhamento Combo           | `combo.ts` (19 estratégias), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                   |
 | Motor Auto Combo               | `autoCombo/` — `engine.ts`, `scoring.ts`, `taskFitness.ts`, `virtualFactory.ts`, `modePacks.ts`, `autoPrefix.ts`, `persistence.ts`, `providerDiversity.ts`, `providerRegistryAccessor.ts`, `routerStrategy.ts`, `selfHealing.ts`, `index.ts`             |
@@ -528,9 +529,9 @@ Destaques (lista completa em `open-sse/services/`):
 | Quotas                         | `quotaMonitor.ts`, `quotaPreflight.ts`, `bailianQuotaFetcher.ts`, `codexQuotaFetcher.ts`, `deepseekQuotaFetcher.ts`, `openrouterQuotaFetcher.ts`, `openrouterFreeWindow.ts`, `llmgatewayQuotaFetcher.ts`, `crofUsageFetcher.ts`, `antigravityCredits.ts` |
 | Colocação em cache             | `reasoningCache.ts`, `searchCache.ts`, `signatureCache.ts`, `requestDedup.ts`                                                                                                                                                                            |
 | Inteligência de encaminhamento | `intentClassifier.ts`, `taskAwareRouter.ts`, `backgroundTaskDetector.ts`, `volumeDetector.ts`, `wildcardRouter.ts`, `workflowFSM.ts`, `specificityDetector.ts`, `specificityRules.ts`, `specificityTypes.ts`                                             |
-| Gestão de modelos              | `modelCapabilities.ts`, `modelDeprecation.ts`, `modelFamilyFallback.ts`, `modelStrip.ts`, `model.ts`, `provider.ts`, `providerRequestDefaults.ts`, `providerCostData.ts`, `payloadRules.ts`                                                              |
+| Processamento de modelos       | `modelCapabilities.ts`, `modelDeprecation.ts`, `modelFamilyFallback.ts`, `modelStrip.ts`, `model.ts`, `provider.ts`, `providerRequestDefaults.ts`, `providerCostData.ts`, `payloadRules.ts`                                                              |
 | Compressão                     | `compression/` — integração completa do motor de compressão                                                                                                                                                                                              |
-| Tokens + sessão                | `tokenRefresh.ts`, `sessionManager.ts`, `apiKeyRotator.ts`, `contextManager.ts`, `contextHandoff.ts`, `systemPrompt.ts`, `roleNormalizer.ts`, `responsesInputSanitizer.ts`, `toolSchemaSanitizer.ts`, `toolLimitDetector.ts`, `thinkingBudget.ts`        |
+| Token + sessão                 | `tokenRefresh.ts`, `sessionManager.ts`, `apiKeyRotator.ts`, `contextManager.ts`, `contextHandoff.ts`, `systemPrompt.ts`, `roleNormalizer.ts`, `responsesInputSanitizer.ts`, `toolSchemaSanitizer.ts`, `toolLimitDetector.ts`, `thinkingBudget.ts`        |
 | Nível / manifesto              | `tierResolver.ts`, `tierConfig.ts`, `tierDefaults.json`, `tierTypes.ts`, `manifestAdapter.ts`                                                                                                                                                            |
 | IP / rede                      | `ipFilter.ts`, `webSearchFallback.ts`                                                                                                                                                                                                                    |
 | Lotes                          | `batchProcessor.ts`                                                                                                                                                                                                                                      |
@@ -671,7 +672,11 @@ Organizados em 6 subpastas por finalidade.
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`.
+  `system-info.mjs`, além dos auxiliares só de leitura para acompanhamento de PRs
+  `ci-discriminate.sh` (classifica as assinaturas das verificações com falhas de um PR como próprias /
+  herdadas / desconhecidas, comparando-as com um PR de referência ou com a issue de falhas na base) e `audit-worktree.sh`
+  (ficheiros alterados, áreas protegidas, asserções removidas, contagens de supressões,
+  tsconfigs temporários remanescentes, head do PR vs. HEAD local — antes de o PR de um worker ser aceite).
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,

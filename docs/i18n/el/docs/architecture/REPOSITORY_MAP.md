@@ -115,17 +115,17 @@ OmniRoute/
 ```
 src/
 ├── app/                 # App Router (σελίδες + διαδρομές API + σελίδες κατάστασης + σελίδα προορισμού)
-├── lib/                 # Βασικές βιβλιοθήκες / λειτουργικές μονάδες τομέα (80 υποκατάλογοι + ~70 αρχεία ανώτατου επιπέδου)
-├── domain/              # Αμιγής λογική τομέα (μηχανή πολιτικών, εφεδρική λειτουργία, κόστος, αποκλεισμός, comboResolver, αξιολόγηση)
-├── server/              # Λειτουργικές μονάδες αποκλειστικά για τον διακομιστή (αλυσίδα authz, cors, middleware ελέγχου ταυτότητας) — δεν μπορούν να εισαχθούν από τον client
-├── shared/              # Κοινόχρηστα μεταξύ διακομιστή και client όπου είναι ασφαλές (σταθερές, τύποι, επικύρωση, συμβάσεις, βοηθητικά εργαλεία)
-├── i18n/                # Ρύθμιση παραμέτρων next-intl + JSON μηνυμάτων ανά τοπικές ρυθμίσεις (42 τοπικές ρυθμίσεις)
-├── middleware/          # Middleware του Next.js (εμπλουτισμός αιτήματος, εντοπισμός τοπικών ρυθμίσεων)
+├── lib/                 # Βασικές βιβλιοθήκες / λειτουργικές μονάδες πεδίου (80 υποκατάλογοι + ~70 αρχεία ανώτατου επιπέδου)
+├── domain/              # Αμιγής λογική πεδίου (μηχανή πολιτικών, εφεδρική μετάπτωση, κόστος, αποκλεισμός, comboResolver, αξιολόγηση)
+├── server/              # Λειτουργικές μονάδες αποκλειστικά για τον διακομιστή (διοχέτευση authz, cors, ενδιάμεσο λογισμικό ελέγχου ταυτότητας) — δεν μπορούν να εισαχθούν από τον πελάτη
+├── shared/              # Κοινόχρηστα μεταξύ διακομιστή και πελάτη, όπου είναι ασφαλές (σταθερές, τύποι, επικύρωση, συμβάσεις, βοηθητικά εργαλεία)
+├── i18n/                # Ρύθμιση παραμέτρων next-intl + JSON μηνυμάτων ανά τοπική ρύθμιση (42 τοπικές ρυθμίσεις)
+├── middleware/          # Ενδιάμεσο λογισμικό Next.js (εμπλουτισμός αιτήματος, ανίχνευση τοπικής ρύθμισης)
 ├── mitm/                # Πυρήνας διακομιστή μεσολάβησης MITM: δημιουργία/εγκατάσταση πιστοποιητικών, χειριστές, προορισμοί, επιθεωρητής, μάσκες, απευθείας διέλευση
 │   ├── handlers/        # 9 κλάσεις χειριστών πρακτόρων IDE που επεκτείνουν τη MitmHandlerBase (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
-│   └── inspector/       # Επίπεδο καταγραφής κίνησης: buffer (κυκλικό στη μνήμη), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
-├── models/              # Συνδετικός κώδικας προσαρμογέα μοντέλων (παλαιό επίπεδο συμβατότητας)
-├── scripts/             # Ενσωματωμένα script συντήρησης (π.χ. backfillAggregation)
+│   └── inspector/       # Επίπεδο καταγραφής κίνησης: ενδιάμεση μνήμη (δακτυλιοειδής στη μνήμη), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
+├── models/              # Κώδικας διασύνδεσης προσαρμογέων μοντέλων (παλαιό επίπεδο συμβατότητας)
+├── scripts/             # Σενάρια συντήρησης εντός του δέντρου (π.χ. backfillAggregation)
 ├── sse/                 # Παλαιοί χειριστές/υπηρεσίες SSE (chat.ts, chatHelpers.ts, services/auth.ts)
 ├── store/               # Παλαιός χώρος αποθήκευσης στη μνήμη (καταργείται σταδιακά υπέρ του src/lib/db)
 ├── types/               # Κοινόχρηστα αρχεία τύπων TS
@@ -138,120 +138,120 @@ src/
 
 | Διαδρομή                                                                     | Σκοπός                                                                                                                                                                                                                                                                                                                      |
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | Δημόσιο API συμβατό με OpenAI (~25 υποδιαδρομές: συνομιλία, συμπληρώσεις, ενσωματώσεις, αρχεία, παρτίδες, ήχος, εικόνες, βίντεο, μουσική, ανακατάταξη, εποπτεία περιεχομένου, αναζήτηση, ws, πράκτορες, λογαριασμοί, πάροχοι κ.λπ.)                                                                                         |
+| `app/api/v1/`                                                                | Δημόσιο API συμβατό με το OpenAI (~25 υποδιαδρομές: συνομιλία, συμπληρώσεις, ενσωματώσεις, αρχεία, παρτίδες, ήχος, εικόνες, βίντεο, μουσική, ανακατάταξη, έλεγχοι περιεχομένου, αναζήτηση, ws, πράκτορες, λογαριασμοί, πάροχοι κ.λπ.)                                                                                       |
 | `app/api/v1beta/`                                                            | Τελικά σημεία API τύπου Gemini                                                                                                                                                                                                                                                                                              |
-| `app/api/playground/`                                                        | Διαδρομές του Playground Studio: `improve-prompt/` (POST — αναδιατύπωση προτροπών μέσω LLM), `presets/` (GET για λίστα / POST για δημιουργία), `presets/[id]/` (GET / PUT / DELETE) — βλ. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                            |
+| `app/api/playground/`                                                        | Διαδρομές του Playground Studio: `improve-prompt/` (POST — αναδιατύπωση προτροπών μέσω LLM), `presets/` (GET λίστα / POST δημιουργία), `presets/[id]/` (GET / PUT / DELETE) — βλ. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                                    |
 | `app/api/` (εκτός v1)                                                        | Διαδρομές διαχείρισης/διαχειριστή (~60 κατάλογοι: πάροχοι, συνδυασμοί, ρυθμίσεις, mcp, a2a, αξιολογήσεις, μνήμη, δεξιότητες, webhooks, συμμόρφωση, ανθεκτικότητα, παρακολούθηση, σήραγγες, εργαλεία CLI κ.λπ.)                                                                                                              |
-| `app/api/tools/agent-bridge/`                                                | REST API του AgentBridge — 12 διαδρομές (έλεγχος διακομιστή, κατάσταση πράκτορα/DNS/αντιστοιχίσεις, παράκαμψη, πιστοποιητικό, ανάντη CA). LOCAL_ONLY + SPAWN_CAPABLE. Βλ. `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                              |
+| `app/api/tools/agent-bridge/`                                                | REST API του AgentBridge — 12 διαδρομές (έλεγχος διακομιστή, κατάσταση πράκτορα/DNS/αντιστοιχίσεις, παράκαμψη, πιστοποιητικό, upstream-CA). LOCAL_ONLY + SPAWN_CAPABLE. Βλ. `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                            |
 | `app/api/tools/traffic-inspector/`                                           | REST + WS API του Traffic Inspector — 16+ διαδρομές (αιτήματα, συνεδρίες, κεντρικοί υπολογιστές, λειτουργίες καταγραφής, εξαγωγή, ws). LOCAL_ONLY + SPAWN_CAPABLE. Βλ. `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                           |
 | `app/a2a/`                                                                   | Σημείο εισόδου A2A JSON-RPC 2.0 (`POST /a2a`)                                                                                                                                                                                                                                                                               |
 | `app/.well-known/agent.json/`                                                | Κάρτα πράκτορα A2A (εντοπισμός)                                                                                                                                                                                                                                                                                             |
-| `app/(dashboard)/dashboard/`                                                 | Σελίδες UI του πίνακα ελέγχου (50+ ενότητες, ~118 αρχεία page.tsx: πάροχοι, συνδυασμοί, ρυθμίσεις, μνήμη, δεξιότητες, webhooks, αξιολογήσεις, έλεγχος, παρτίδες, κρυφή μνήμη, κόστη, εύρυθμη λειτουργία, σύστημα, δραστηριότητα κ.λπ.)                                                                                      |
-| `app/(dashboard)/dashboard/search-tools/`                                    | UI του Search Tools Studio (3 καρτέλες: Αναζήτηση/Απόξεση/Σύγκριση + SearchConceptCard + ProviderCatalog) — βλ. `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                                    |
+| `app/(dashboard)/dashboard/`                                                 | Σελίδες διεπαφής χρήστη του πίνακα ελέγχου (50+ ενότητες, ~118 αρχεία page.tsx: πάροχοι, συνδυασμοί, ρυθμίσεις, μνήμη, δεξιότητες, webhooks, αξιολογήσεις, έλεγχος, παρτίδες, προσωρινή μνήμη, κόστη, εύρυθμη λειτουργία, σύστημα, δραστηριότητα κ.λπ.)                                                                     |
+| `app/(dashboard)/dashboard/search-tools/`                                    | Διεπαφή χρήστη του Search Tools Studio (3 καρτέλες: Αναζήτηση/Συλλογή/Σύγκριση + SearchConceptCard + ProviderCatalog) — βλ. `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                        |
 | `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (σχέδιο 21): `page.tsx` (κέλυφος 3 καρτελών), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
 | `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Σελίδα πίνακα ελέγχου του AgentBridge — κάρτα διακομιστή, 9 κάρτες πρακτόρων, οδηγός εγκατάστασης, αντιστοίχιση μοντέλων, λίστα παράκαμψης. i18n PT-BR + EN. Βλ. `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                          |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Σελίδα πίνακα ελέγχου του Traffic Inspector — διαιρεμένη προβολή DevTools, 7 καρτέλες λεπτομερειών, 4 διακόπτες λειτουργίας καταγραφής, καταγραφέας συνεδριών, χρωματισμός βάσει περιβάλλοντος. i18n PT-BR + EN. Βλ. `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                                |
+| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Σελίδα πίνακα ελέγχου του Traffic Inspector — διαιρεμένη προβολή DevTools, 7 καρτέλες λεπτομερειών, 4 διακόπτες λειτουργίας καταγραφής, καταγραφέας συνεδριών, χρωματική επισήμανση βάσει περιβάλλοντος. i18n PT-BR + EN. Βλ. `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                       |
 | `app/(dashboard)/dashboard/activity/`                                        | Σελίδα ροής δραστηριότητας (Ομάδα B): `page.tsx` (διακομιστής) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — δείτε `docs/architecture/MONITORING_SECTIONS.md`                                                                                                       |
 | `app/(dashboard)/dashboard/costs/quota-share/`                               | Σελίδα κοινής χρήσης ποσοστώσεων (Ομάδα B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                     |
-| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Σελίδα διαμόρφωσης προγράμματος παρόχου (Ομάδα B): `page.tsx` + `ProviderPlanConfigClient.tsx` — παράκαμψη διαστάσεων ποσοστώσεων ανά σύνδεση                                                                                                                                                                               |
-| `app/docs/`                                                                  | Ενσωματωμένο πρόγραμμα προβολής τεκμηρίωσης (αποδίδει τα `docs/*.md`)                                                                                                                                                                                                                                                       |
+| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Σελίδα ρύθμισης πλάνου παρόχου (Ομάδα B): `page.tsx` + `ProviderPlanConfigClient.tsx` — παράκαμψη διαστάσεων ποσόστωσης ανά σύνδεση                                                                                                                                                                                         |
+| `app/docs/`                                                                  | Ενσωματωμένη προβολή τεκμηρίωσης (αποδίδει τα `docs/*.md`)                                                                                                                                                                                                                                                                  |
 | `app/landing/`                                                               | Σελίδα προορισμού μάρκετινγκ                                                                                                                                                                                                                                                                                                |
 | `app/login/`, `forgot-password/`, `forbidden/`                               | Σελίδες σχετικές με τον έλεγχο ταυτότητας                                                                                                                                                                                                                                                                                   |
 | `app/{400,401,403,408,429,500,502,503}/`                                     | Σελίδες σφαλμάτων HTTP                                                                                                                                                                                                                                                                                                      |
 | `app/maintenance/`, `offline/`, `status/`, `privacy/`, `terms/`, `callback/` | Στατικές σελίδες/σελίδες κατάστασης                                                                                                                                                                                                                                                                                         |
-| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | Ριζική διάταξη, αρχική σελίδα, μανιφέστο PWA, καθολικό CSS                                                                                                                                                                                                                                                                  |
+| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | Ριζική διάταξη, αρχική σελίδα, δηλωτικό PWA, καθολικό CSS                                                                                                                                                                                                                                                                   |
 | `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`          | Όρια σφαλμάτων                                                                                                                                                                                                                                                                                                              |
 
 ### `src/lib/` — Βασικές βιβλιοθήκες (~50 αρθρώματα)
 
-| Module                                   | Σκοπός                                                                                                                                                                                                                                                                                                                                |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`                                   | Διαχειριστής εργασιών πρωτοκόλλου A2A, δεξιότητες (5), ροή δεδομένων                                                                                                                                                                                                                                                                  |
-| `acp/`                                   | Μητρώο πρακτόρων CLI (τοπικός εντοπισμός CLI — δείτε `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                                      |
-| `api/`                                   | Κοινόχρηστα βοηθητικά εργαλεία API (`requireManagementAuth`, επικύρωση)                                                                                                                                                                                                                                                               |
-| `auth/`                                  | Συνεδρία, κατακερματισμός κωδικών πρόσβασης, επικύρωση token                                                                                                                                                                                                                                                                          |
-| `batches/`                               | Χειριστές του OpenAI Batches API                                                                                                                                                                                                                                                                                                      |
-| `catalog/`                               | Επικύρωση Zod του καταλόγου παρόχων + επίλυση δυνατοτήτων                                                                                                                                                                                                                                                                             |
-| `cloudAgent/`                            | Πράκτορες cloud (Codex Cloud, Devin, Jules) — δείτε `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                                  |
-| `combos/`                                | Βοηθητικά εργαλεία επίλυσης συνδυασμών + αναδιάταξης                                                                                                                                                                                                                                                                                  |
-| `audit/`                                 | Βοηθητικά εργαλεία ροής δραστηριότητας: `highLevelActions.ts` (λίστα επιτρεπόμενων + `isHighLevelAction()`), `activityIcons.ts` (αντιστοίχιση ενέργειας → εικονιδίου/ρήματος), `timeline.ts` (`groupByDay`/`relativeTime`) — δείτε `docs/architecture/MONITORING_SECTIONS.md`                                                         |
-| `compliance/`                            | Αρχείο καταγραφής ελέγχου + έλεγχος παρόχων — δείτε `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                     |
-| `compression/`                           | Κώδικας διασύνδεσης μηχανής συμπίεσης (οι μηχανές βρίσκονται στο `open-sse/services/compression/`)                                                                                                                                                                                                                                    |
-| `config/`                                | Βοηθητικά εργαλεία ρύθμισης παραμέτρων χρόνου εκτέλεσης                                                                                                                                                                                                                                                                               |
-| `db/`                                    | 120+ λειτουργικές μονάδες ΒΔ ανά τομέα + 168 μετεγκαταστάσεις (για το SQLite να χρησιμοποιείτε πάντα αυτές)                                                                                                                                                                                                                           |
-| `quota/`                                 | Μηχανή κοινής χρήσης ποσοστώσεων: `dimensions.ts` (τύποι/Zod), `types.ts` (διεπαφή `QuotaStore`), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — δείτε `docs/routing/QUOTA_SHARE.md` |
-| `radar/`                                 | Πρόγραμμα-πελάτης καταλόγου δωρεάν μοντέλων Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — βλ. `docs/frameworks/RADAR.md`                                                                                                                                        |
-| `display/`                               | Βοηθητικές συναρτήσεις μορφοποίησης UI (κόστος, καθυστέρηση κ.λπ.)                                                                                                                                                                                                                                                                    |
-| `embeddings/`                            | Βοηθητικές συναρτήσεις υπηρεσίας embeddings                                                                                                                                                                                                                                                                                           |
-| `env/`                                   | Ανάλυση και επικύρωση μεταβλητών περιβάλλοντος                                                                                                                                                                                                                                                                                        |
-| `evals/`                                 | Πλαίσιο αξιολόγησης (σουίτες, εκτελεστής, περιβάλλον εκτέλεσης) — βλ. `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                      |
-| `guardrails/`                            | Απόκρυψη PII, προστασία από prompt injection, γέφυρα όρασης — βλ. `docs/security/GUARDRAILS.md`                                                                                                                                                                                                                                       |
-| `jobs/`                                  | Εργασίες παρασκηνίου (τύπου cron)                                                                                                                                                                                                                                                                                                     |
-| `memory/`                                | Μνήμη συνομιλιών (υβριδικό RRF με SQLite FTS5 + sqlite-vec και Qdrant επιπέδου 2) — βλ. `docs/frameworks/MEMORY.md`                                                                                                                                                                                                                   |
-| `memory/embedding/`                      | Επίπεδο embedding πολλαπλών πηγών: `index.ts` (μηχανισμός επίλυσης), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (σχέδιο 21)                                                                                                                                                                       |
-| `memory/vectorStore.ts`                  | Περίβλημα sqlite-vec v0.1.9 — KNN εξαντλητικής αναζήτησης + υβριδικό RRF (FTS5 + διάνυσμα, k=60). Καθυστερημένη αρχικοποίηση, υποβαθμίζεται ομαλά όταν το sqlite-vec δεν είναι διαθέσιμο. (σχέδιο 21)                                                                                                                                 |
-| `memory/reindex.ts`                      | `runReindexBatch()` — επεξεργάζεται στο παρασκήνιο μνήμες με `needs_reindex=1`· καλείται από το `POST /api/memory/reindex` και τη διαδρομή καθυστερημένης συμπλήρωσης. (σχέδιο 21)                                                                                                                                                    |
-| `monitoring/`                            | Έλεγχοι εύρυθμης λειτουργίας, εκπομπή μετρικών                                                                                                                                                                                                                                                                                        |
-| `oauth/`                                 | Ροές OAuth/εισαγωγής για 22 αρθρώματα παρόχων (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                             |
-| `plugins/`                               | Μητρώο προσθέτων                                                                                                                                                                                                                                                                                                                      |
-| `promptCache/`                           | Σημεία διακοπής κρυφής μνήμης προτροπών τύπου Anthropic                                                                                                                                                                                                                                                                               |
-| `skills/`                                | Πλαίσιο δεξιοτήτων (ενσωματωμένες + marketplace + SkillsSH) — βλ. `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                                         |
-| `playground/`                            | Κοινόχρηστα βοηθητικά εργαλεία του Playground Studio: `codeExport.ts` (γεννήτρια curl/Python/TS), `promptImprover.ts` (δημιουργός μετα-προτροπών), `streamMetrics.ts` (αμιγείς μετρήσεις TTFT/TPS), `types.ts` (πίνακας τιμολόγησης) — δείτε `docs/frameworks/PLAYGROUND_STUDIO.md`                                                   |
-| `webhookDispatcher.ts`                   | Παράδοση webhook με HMAC — δείτε `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                                        |
-| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Διαχειριστές σηράγγων — δείτε `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                             |
-| `cloudSync.ts`, `initCloudSync.ts`       | Προαιρετικός συγχρονισμός κατάστασης με το cloud                                                                                                                                                                                                                                                                                      |
-| `localDb.ts`                             | Αρχείο συγκεντρωτικής επανεξαγωγής για τις μονάδες της βάσης δεδομένων (χωρίς λογική — μόνο επανεξαγωγές)                                                                                                                                                                                                                             |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | Προσωρινή αποθήκευση αιτημάτων + ιδιοδυναμία                                                                                                                                                                                                                                                                                          |
-| (~30 ακόμη αρχεία ανώτατου επιπέδου)     | Εξειδικευμένα βοηθητικά εργαλεία (logEnv, modelsDevSync, piiSanitizer κ.λπ.)                                                                                                                                                                                                                                                          |
+| Module                                   | Σκοπός                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `a2a/`                                   | Διαχειριστής εργασιών πρωτοκόλλου A2A, δεξιότητες (5), ροή δεδομένων                                                                                                                                                                                                                                                                   |
+| `acp/`                                   | Μητρώο πρακτόρων CLI (τοπικός εντοπισμός CLI — δείτε το `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                                    |
+| `api/`                                   | Κοινόχρηστα βοηθητικά εργαλεία API (`requireManagementAuth`, επικύρωση)                                                                                                                                                                                                                                                                |
+| `auth/`                                  | Συνεδρία, κατακερματισμός κωδικών πρόσβασης, επικύρωση διακριτικών                                                                                                                                                                                                                                                                     |
+| `batches/`                               | Χειριστές του OpenAI Batches API                                                                                                                                                                                                                                                                                                       |
+| `catalog/`                               | Επικύρωση καταλόγου παρόχων μέσω Zod + επίλυση δυνατοτήτων                                                                                                                                                                                                                                                                             |
+| `cloudAgent/`                            | Πράκτορες cloud (Codex Cloud, Devin, Jules) — δείτε το `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                                |
+| `combos/`                                | Επίλυση συνδυασμών + βοηθητικά εργαλεία αναδιάταξης                                                                                                                                                                                                                                                                                    |
+| `audit/`                                 | Βοηθητικά εργαλεία ροής δραστηριότητας: `highLevelActions.ts` (λίστα επιτρεπόμενων + `isHighLevelAction()`), `activityIcons.ts` (αντιστοίχιση ενέργειας → εικονιδίου/ρήματος), `timeline.ts` (groupByDay/relativeTime) — δείτε το `docs/architecture/MONITORING_SECTIONS.md`                                                           |
+| `compliance/`                            | Αρχείο καταγραφής ελέγχου + έλεγχος παρόχων — δείτε το `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                   |
+| `compression/`                           | Κώδικας διασύνδεσης μηχανής συμπίεσης (οι μηχανές βρίσκονται στο `open-sse/services/compression/`)                                                                                                                                                                                                                                     |
+| `config/`                                | Βοηθητικά εργαλεία ρύθμισης παραμέτρων χρόνου εκτέλεσης                                                                                                                                                                                                                                                                                |
+| `db/`                                    | 120+ λειτουργικές μονάδες ΒΔ ανά τομέα + 168 μετεγκαταστάσεις (να χρησιμοποιείται πάντα αυτό για το SQLite)                                                                                                                                                                                                                            |
+| `quota/`                                 | Μηχανή κοινής χρήσης ποσοστώσεων: `dimensions.ts` (τύποι/Zod), `types.ts` (διεπαφή QuotaStore), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — δείτε το `docs/routing/QUOTA_SHARE.md` |
+| `radar/`                                 | Πελάτης καταλόγου δωρεάν μοντέλων Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — δείτε `docs/frameworks/RADAR.md`                                                                                                                                                 |
+| `display/`                               | Βοηθητικές συναρτήσεις μορφοποίησης UI (κόστος, καθυστέρηση κ.λπ.)                                                                                                                                                                                                                                                                     |
+| `embeddings/`                            | Βοηθητικές συναρτήσεις υπηρεσίας ενσωματώσεων                                                                                                                                                                                                                                                                                          |
+| `env/`                                   | Ανάλυση και επικύρωση μεταβλητών περιβάλλοντος                                                                                                                                                                                                                                                                                         |
+| `evals/`                                 | Πλαίσιο αξιολόγησης (σουίτες, εκτελεστής, περιβάλλον εκτέλεσης) — δείτε `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                     |
+| `guardrails/`                            | Μηχανισμός απόκρυψης PII, προστασία από έγχυση προτροπών, γέφυρα όρασης — δείτε `docs/security/GUARDRAILS.md`                                                                                                                                                                                                                          |
+| `jobs/`                                  | Εργασίες παρασκηνίου (παρόμοιες με cron)                                                                                                                                                                                                                                                                                               |
+| `memory/`                                | Μνήμη συνομιλιών (υβριδικό RRF με SQLite FTS5 + sqlite-vec και επίπεδο 2 με Qdrant) — δείτε `docs/frameworks/MEMORY.md`                                                                                                                                                                                                                |
+| `memory/embedding/`                      | Επίπεδο ενσωματώσεων πολλαπλών πηγών: `index.ts` (επιλυτής), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (σχέδιο 21)                                                                                                                                                                                |
+| `memory/vectorStore.ts`                  | Πρόγραμμα περιτύλιξης sqlite-vec v0.1.9 — KNN εξαντλητικής αναζήτησης + υβριδικό RRF (FTS5 + διάνυσμα, k=60). Αρχικοποιείται οκνηρά και υποβαθμίζεται ομαλά όταν το sqlite-vec δεν είναι διαθέσιμο. (σχέδιο 21)                                                                                                                        |
+| `memory/reindex.ts`                      | `runReindexBatch()` — επεξεργάζεται στο παρασκήνιο μνήμες με `needs_reindex=1`· καλείται από το `POST /api/memory/reindex` και τη διαδρομή οκνηρής αναδρομικής συμπλήρωσης. (σχέδιο 21)                                                                                                                                                |
+| `monitoring/`                            | Έλεγχοι εύρυθμης λειτουργίας, εκπομπή μετρικών                                                                                                                                                                                                                                                                                         |
+| `oauth/`                                 | Ροές OAuth/εισαγωγής για 22 αρθρώματα παρόχων (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                              |
+| `plugins/`                               | Μητρώο προσθέτων                                                                                                                                                                                                                                                                                                                       |
+| `promptCache/`                           | Σημεία διακοπής κρυφής μνήμης προτροπών τύπου Anthropic                                                                                                                                                                                                                                                                                |
+| `skills/`                                | Πλαίσιο δεξιοτήτων (ενσωματωμένες + marketplace + SkillsSH) — δείτε `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                                        |
+| `playground/`                            | Κοινόχρηστα βοηθητικά εργαλεία του Playground Studio: `codeExport.ts` (δημιουργία κώδικα curl/Python/TS), `promptImprover.ts` (δημιουργία meta-prompt), `streamMetrics.ts` (αμιγείς υπολογισμοί TTFT/TPS), `types.ts` (πίνακας τιμολόγησης) — βλ. `docs/frameworks/PLAYGROUND_STUDIO.md`                                               |
+| `webhookDispatcher.ts`                   | Παράδοση webhook με HMAC — βλ. `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                                           |
+| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Διαχειριστές tunnel — βλ. `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                                  |
+| `cloudSync.ts`, `initCloudSync.ts`       | Προαιρετικός συγχρονισμός κατάστασης με το cloud                                                                                                                                                                                                                                                                                       |
+| `localDb.ts`                             | Αρχείο συγκεντρωτικών επανεξαγωγών για τα modules της db (χωρίς λογική — μόνο επανεξαγωγές)                                                                                                                                                                                                                                            |
+| `cacheLayer.ts`, `idempotencyLayer.ts`   | Προσωρινή αποθήκευση αιτημάτων + ιδιοδυναμία                                                                                                                                                                                                                                                                                           |
+| (~30 ακόμη αρχεία ανώτατου επιπέδου)     | Εξειδικευμένα βοηθητικά εργαλεία (logEnv, modelsDevSync, piiSanitizer κ.λπ.)                                                                                                                                                                                                                                                           |
 
-### `src/lib/db/` — Βάση δεδομένων (137 μονάδες + 193 μετεγκαταστάσεις)
+### `src/lib/db/` — Βάση δεδομένων (137 modules + 193 migrations)
 
 | Υποκατάλογος              | Σκοπός                                                                                                                                                                               |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `db/core.ts`              | Μοναδιαίο στιγμιότυπο `getDbInstance()` με καταγραφή WAL                                                                                                                             |
+| `db/core.ts`              | Μοναδική παρουσία `getDbInstance()` με καταγραφή WAL                                                                                                                                 |
 | `db/migrations/`          | Αρχεία SQL με εκδόσεις (ιδιοδύναμα, συναλλακτικά). Το `073_memory_vec.sql` προσθέτει το `memory_vec_meta` + τη στήλη `needs_reindex` (σχέδιο 21).                                    |
-| `db/playgroundPresets.ts` | Μονάδα CRUD για τις προεπιλογές του Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`) |
+| `db/playgroundPresets.ts` | Module CRUD για τις προεπιλογές του Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`) |
 | `db/memoryVec.ts`         | CRUD για το `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue` κ.λπ. (σχέδιο 21)                     |
-| `db/<domain>.ts`          | Μία μονάδα ανά τομέα: providers, combos, apiKeys, users, sessions, usage, audit*log, webhooks, skills, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache κ.λπ.            |
+| `db/<domain>.ts`          | Ένα module ανά τομέα: providers, combos, apiKeys, users, sessions, usage, audit*log, webhooks, skills, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache κ.λπ.            |
 
 ### `src/domain/`
 
-| Μονάδα                 | Σκοπός                                                            |
-| ---------------------- | ----------------------------------------------------------------- |
-| `policy.ts`            | Μηχανισμός πολιτικών                                              |
-| `fallbackPolicy.ts`    | Δέντρο αποφάσεων εφεδρικής μετάπτωσης                             |
-| `costRules.ts`         | Κανόνες υπολογισμού κόστους                                       |
-| `lockoutPolicy.ts`     | Πολιτική αποκλεισμού μοντέλου/σύνδεσης                            |
-| `tagRouter.ts`         | Δρομολόγηση βάσει ετικετών                                        |
-| `comboResolver.ts`     | Επίλυση συνδυασμών (χρησιμοποιείται από τον μηχανισμό συνδυασμών) |
-| `modelAvailability.ts` | Έλεγχος διαθεσιμότητας ανά μοντέλο                                |
-| `assessment/`          | Αξιολόγηση μοντέλου (Φάση 1 του RFC-AUTO-ASSESSMENT)              |
+| Module                 | Σκοπός                                                        |
+| ---------------------- | ------------------------------------------------------------- |
+| `policy.ts`            | Μηχανή πολιτικών                                              |
+| `fallbackPolicy.ts`    | Δέντρο αποφάσεων εναλλακτικής επιλογής                        |
+| `costRules.ts`         | Κανόνες υπολογισμού κόστους                                   |
+| `lockoutPolicy.ts`     | Πολιτική αποκλεισμού μοντέλου/σύνδεσης                        |
+| `tagRouter.ts`         | Δρομολόγηση βάσει ετικετών                                    |
+| `comboResolver.ts`     | Επίλυση συνδυασμών (χρησιμοποιείται από τη μηχανή συνδυασμών) |
+| `modelAvailability.ts` | Έλεγχος διαθεσιμότητας ανά μοντέλο                            |
+| `assessment/`          | Αξιολόγηση μοντέλων (Φάση 1 του RFC-AUTO-ASSESSMENT)          |
 
 ### `src/server/`
 
-| Μονάδα   | Σκοπός                                                                                                    |
-| -------- | --------------------------------------------------------------------------------------------------------- |
-| `authz/` | Διοχέτευση εξουσιοδότησης: `classify` → `policies` → `enforce` — δείτε `docs/architecture/AUTHZ_GUIDE.md` |
-| `cors/`  | Διαμόρφωση CORS                                                                                           |
-| `auth/`  | Ενδιάμεσο λογισμικό συνεδρίας                                                                             |
+| Module   | Σκοπός                                                                                           |
+| -------- | ------------------------------------------------------------------------------------------------ |
+| `authz/` | Ροή εξουσιοδότησης: `classify` → `policies` → `enforce` — βλ. `docs/architecture/AUTHZ_GUIDE.md` |
+| `cors/`  | Ρύθμιση CORS                                                                                     |
+| `auth/`  | Middleware συνεδρίας                                                                             |
 
 ### `src/shared/`
 
-| Μονάδα                           | Σκοπός                                                                                 |
-| -------------------------------- | -------------------------------------------------------------------------------------- |
-| `constants/providers.ts`         | **372 πάροχοι** με επικύρωση Zod (πηγή αλήθειας)                                       |
-| `constants/cliTools.ts`          | Μητρώο εξωτερικών εργαλείων CLI                                                        |
-| `constants/routingStrategies.ts` | **19 στρατηγικές δρομολόγησης** με προτεραιότητες                                      |
-| `constants/publicApiRoutes.ts`   | Διαδρομές που απαιτούν έλεγχο ταυτότητας Bearer (αντί διαχείρισης)                     |
-| `constants/upstreamHeaders.ts`   | Λίστα αποκλεισμού κεφαλίδων για αιτήματα προς upstream υπηρεσίες                       |
-| `validation/schemas.ts`          | ~80 σχήματα Zod (μοναδική πηγή αλήθειας για συμβάσεις API)                             |
-| `validation/helpers.ts`          | Βοηθητικές συναρτήσεις επικύρωσης Zod (`validateBody` κ.λπ.)                           |
-| `types/`                         | Κοινόχρηστοι τύποι TS                                                                  |
-| `contracts/`                     | Δημόσιες συμβάσεις API (χρησιμοποιούνται από το `files:` στο `package.json`)           |
-| `utils/circuitBreaker.ts`        | Διακόπτης κυκλώματος παρόχου (βλ. `docs/architecture/RESILIENCE_GUIDE.md`)             |
-| `utils/apiAuth.ts`               | Επικύρωση κλειδιού API, έλεγχος εμβέλειας                                              |
-| `utils/fetchTimeout.ts`          | Περιτυλίγματα λήξης χρονικού ορίου/ακύρωσης για αιτήματα fetch προς upstream υπηρεσίες |
-| `utils/releaseNotes.ts`          | Αναλυτής ανακοινώσεων κλειστού v2/παλαιού τύπου, τοπικοποίηση και απόρριψη βάσει ID    |
+| Μονάδα                           | Σκοπός                                                                              |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| `constants/providers.ts`         | **374 πάροχοι** με επικύρωση Zod (μοναδική πηγή αλήθειας)                           |
+| `constants/cliTools.ts`          | Μητρώο εξωτερικών εργαλείων CLI                                                     |
+| `constants/routingStrategies.ts` | **19 στρατηγικές δρομολόγησης** με προτεραιότητες                                   |
+| `constants/publicApiRoutes.ts`   | Διαδρομές που απαιτούν έλεγχο ταυτότητας Bearer (αντί διαχείρισης)                  |
+| `constants/upstreamHeaders.ts`   | Λίστα αποκλεισμού κεφαλίδων για αιτήματα προς ανάντη υπηρεσίες                      |
+| `validation/schemas.ts`          | ~80 σχήματα Zod (μοναδική πηγή αλήθειας για συμβάσεις API)                          |
+| `validation/helpers.ts`          | Βοηθητικές συναρτήσεις επικύρωσης Zod (`validateBody` κ.λπ.)                        |
+| `types/`                         | Κοινόχρηστοι τύποι TS                                                               |
+| `contracts/`                     | Δημόσιες συμβάσεις API (χρησιμοποιούνται από το `files:` στο `package.json`)        |
+| `utils/circuitBreaker.ts`        | Αυτόματος διακόπτης παρόχου (βλ. `docs/architecture/RESILIENCE_GUIDE.md`)           |
+| `utils/apiAuth.ts`               | Επικύρωση κλειδιού API, έλεγχος πεδίου πρόσβασης                                    |
+| `utils/fetchTimeout.ts`          | Περιτυλίγματα χρονικού ορίου/ματαίωσης για ανάντη fetch                             |
+| `utils/releaseNotes.ts`          | Αναλυτής κλειστών ανακοινώσεων v2/παλαιού τύπου, τοπικοποίηση και απόρριψη βάσει ID |
 
 ---
 
@@ -379,76 +379,76 @@ open-sse/
 
 ### Οδηγοί ανώτατου επιπέδου
 
-| Έγγραφο                     | Σκοπός                                                                                             |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `ARCHITECTURE.md`           | Αρχιτεκτονική υψηλού επιπέδου, χάρτης υποσυστημάτων, επιφάνεια πίνακα ελέγχου                      |
-| `CODEBASE_DOCUMENTATION.md` | Αναφορά μηχανικής: κατάλογοι, αρθρώματα, συμβάσεις                                                 |
-| `FEATURES.md`               | Πίνακας δυνατοτήτων με τα σημαντικότερα σημεία της v3.8                                            |
-| `USER_GUIDE.md`             | Εγχειρίδιο τελικού χρήστη (ρύθμιση, μοντέλα, συνδυασμοί, CLI, ήχος κ.λπ.)                          |
-| `API_REFERENCE.md`          | Αναφορά τελικών σημείων API με μοντέλο ελέγχου ταυτότητας                                          |
-| `openapi.yaml`              | Προδιαγραφή OpenAPI 3.0 (121 διαδρομές)                                                            |
-| `SETUP_GUIDE.md`            | Μέθοδοι εγκατάστασης (npm, npx, Docker, Electron, Termux, πηγαίος κώδικας)                         |
-| `ENVIRONMENT.md`            | Όλες οι μεταβλητές περιβάλλοντος (~800 τεκμηριωμένες, ~3.050 γραμμές στο `.env.example`)           |
-| `TROUBLESHOOTING.md`        | Συνήθη σφάλματα + γνωστά ζητήματα της v3.8.0                                                       |
-| `RELEASE_CHECKLIST.md`      | Πλήρης ροή έκδοσης (δεξιότητες, husky, συμβατικές υποβολές, ανάπτυξη)                              |
-| `COVERAGE_PLAN.md`          | Στόχοι κάλυψης και τρέχουσα κατάσταση                                                              |
-| `FREE_TIERS.md`             | Επιμελημένοι πάροχοι δωρεάν βαθμίδων (48+ δωρεάν + 11 OAuth)                                       |
-| `CLI-TOOLS.md`              | Ενσωματώσεις εξωτερικών CLI + εσωτερικό OmniRoute CLI                                              |
-| `I18N.md`                   | Αρχιτεκτονική i18n, προσθήκη γλώσσας, 42 τοπικές ρυθμίσεις                                         |
-| `UNINSTALL.md`              | Βήματα καθαρής απεγκατάστασης                                                                      |
-| `PROVIDER_REFERENCE.md`     | **Αυτόματα παραγόμενος** κατάλογος 372 παρόχων (επαναδημιουργία: `npm run gen:provider-reference`) |
+| Έγγραφο                     | Σκοπός                                                                                              |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `ARCHITECTURE.md`           | Αρχιτεκτονική υψηλού επιπέδου, χάρτης υποσυστημάτων, επιφάνεια πίνακα ελέγχου                       |
+| `CODEBASE_DOCUMENTATION.md` | Τεχνική αναφορά: κατάλογοι, αρθρώματα, συμβάσεις                                                    |
+| `FEATURES.md`               | Πίνακας δυνατοτήτων με τα σημαντικότερα σημεία της v3.8                                             |
+| `USER_GUIDE.md`             | Εγχειρίδιο τελικού χρήστη (ρύθμιση, μοντέλα, συνδυασμοί, CLI, ήχος κ.λπ.)                           |
+| `API_REFERENCE.md`          | Αναφορά τελικών σημείων API με μοντέλο ελέγχου ταυτότητας                                           |
+| `openapi.yaml`              | Προδιαγραφή OpenAPI 3.0 (121 διαδρομές)                                                             |
+| `SETUP_GUIDE.md`            | Μέθοδοι εγκατάστασης (npm, npx, Docker, Electron, Termux, πηγαίος κώδικας)                          |
+| `ENVIRONMENT.md`            | Όλες οι μεταβλητές περιβάλλοντος (~800 τεκμηριωμένες, ~3.050 γραμμές στο `.env.example`)            |
+| `TROUBLESHOOTING.md`        | Συνήθη σφάλματα + γνωστά ζητήματα της v3.8.0                                                        |
+| `RELEASE_CHECKLIST.md`      | Πλήρης ροή έκδοσης (δεξιότητες, husky, συμβατικές υποβολές, ανάπτυξη)                               |
+| `COVERAGE_PLAN.md`          | Στόχοι κάλυψης και τρέχουσα κατάσταση                                                               |
+| `FREE_TIERS.md`             | Επιμελημένη λίστα παρόχων δωρεάν βαθμίδας (48+ δωρεάν + 11 OAuth)                                   |
+| `CLI-TOOLS.md`              | Εξωτερικές ενσωματώσεις CLI + εσωτερικό CLI του OmniRoute                                           |
+| `I18N.md`                   | Αρχιτεκτονική i18n, προσθήκη γλώσσας, 42 τοπικές ρυθμίσεις                                          |
+| `UNINSTALL.md`              | Βήματα καθαρής απεγκατάστασης                                                                       |
+| `PROVIDER_REFERENCE.md`     | **Αυτόματα δημιουργημένος** κατάλογος 374 παρόχων (αναδημιουργία: `npm run gen:provider-reference`) |
 
-### Αναλυτική παρουσίαση υποσυστημάτων
+### Αναλυτικές παρουσιάσεις υποσυστημάτων
 
-| Έγγραφο                                     | Σκοπός                                                                                       |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `MCP-SERVER.md`                             | Διακομιστής MCP: 110 εργαλεία, 3 μεταφορές, 33 εμβέλειες, τελικά σημεία REST                 |
-| `A2A-SERVER.md`                             | A2A v0.3: JSON-RPC, 6 δεξιότητες, βοηθητικά REST, κάρτα πράκτορα                             |
-| `AGENT_PROTOCOLS_GUIDE.md`                  | Ενοποιημένος οδηγός: A2A έναντι ACP έναντι Cloud Agents                                      |
-| `CLOUD_AGENT.md`                            | Ενορχήστρωση Codex Cloud / Devin / Jules                                                     |
-| `SKILLS.md`                                 | Πλαίσιο δεξιοτήτων (ενσωματωμένες + marketplace + SkillsSH + sandbox)                        |
-| `RADAR.md`                                  | Επίστρωση καταλόγου δωρεάν μοντέλων Radar (`RADAR_ENABLED`, απενεργοποιημένη από προεπιλογή) |
-| `MEMORY.md`                                 | Σύστημα μνήμης (SQLite FTS5 + Qdrant)                                                        |
-| `EVALS.md`                                  | Πλαίσιο αξιολόγησης (σουίτες, εκτελέσεις, κριτήρια)                                          |
-| `GUARDRAILS.md`                             | Απόκρυψη PII, έγχυση προτροπών, γέφυρα όρασης                                                |
-| `COMPLIANCE.md`                             | Αρχείο καταγραφής ελέγχου, διατήρηση, εξαίρεση μέσω noLog                                    |
-| `WEBHOOKS.md`                               | Παράδοση webhook υπογεγραμμένη με HMAC                                                       |
-| `REASONING_REPLAY.md`                       | Υβριδική κρυφή μνήμη μνήμης/SQLite για `reasoning_content`                                   |
-| `AUTHZ_GUIDE.md`                            | Ροή εξουσιοδότησης (`classify` → `policies` → `enforce`)                                     |
-| `RESILIENCE_GUIDE.md`                       | Διακόπτης κυκλώματος + περίοδος αναμονής + αποκλεισμός μοντέλου                              |
-| `docs/security/STEALTH_GUIDE.md` (μόνο git) | Αποτύπωμα TLS (JA3/JA4), Claude Code CCH, πιστοποιητικό MITM                                 |
-| `AUTO-COMBO.md`                             | Μηχανή Auto Combo (βαθμολόγηση 16 παραγόντων, 6 πακέτα λειτουργιών, εικονικό εργοστάσιο)     |
+| Έγγραφο                                         | Σκοπός                                                                                                |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `MCP-SERVER.md`                                 | Διακομιστής MCP: 110 εργαλεία, 3 τρόποι μεταφοράς, 33 εμβέλειες, τελικά σημεία REST                   |
+| `A2A-SERVER.md`                                 | A2A v0.3: JSON-RPC, 6 δεξιότητες, βοηθητικά REST, κάρτα πράκτορα                                      |
+| `AGENT_PROTOCOLS_GUIDE.md`                      | Ενοποιημένος οδηγός: A2A έναντι ACP έναντι Cloud Agents                                               |
+| `CLOUD_AGENT.md`                                | Ενορχήστρωση Codex Cloud / Devin / Jules                                                              |
+| `SKILLS.md`                                     | Πλαίσιο δεξιοτήτων (ενσωματωμένες + marketplace + SkillsSH + sandbox)                                 |
+| `RADAR.md`                                      | Επίπεδο επικάλυψης καταλόγου δωρεάν μοντέλων Radar (`RADAR_ENABLED`, απενεργοποιημένο από προεπιλογή) |
+| `MEMORY.md`                                     | Σύστημα μνήμης (SQLite FTS5 + Qdrant)                                                                 |
+| `EVALS.md`                                      | Πλαίσιο αξιολόγησης (σουίτες, εκτελέσεις, κριτήρια)                                                   |
+| `GUARDRAILS.md`                                 | Απόκρυψη PII, έγχυση προτροπών, γέφυρα όρασης                                                         |
+| `COMPLIANCE.md`                                 | Αρχείο καταγραφής ελέγχου, διατήρηση, εξαίρεση noLog                                                  |
+| `WEBHOOKS.md`                                   | Παράδοση webhook με υπογραφή HMAC                                                                     |
+| `REASONING_REPLAY.md`                           | Υβριδική κρυφή μνήμη/κρυφή μνήμη SQLite για `reasoning_content`                                       |
+| `AUTHZ_GUIDE.md`                                | Διοχέτευση εξουσιοδότησης (`classify` → `policies` → `enforce`)                                       |
+| `RESILIENCE_GUIDE.md`                           | Αυτόματος διακόπτης + περίοδος αναμονής + αποκλεισμός μοντέλου                                        |
+| `docs/security/STEALTH_GUIDE.md` (μόνο στο git) | Αποτύπωμα TLS (JA3/JA4), Claude Code CCH, πιστοποιητικό MITM                                          |
+| `AUTO-COMBO.md`                                 | Μηχανή Auto Combo (βαθμολόγηση 16 παραγόντων, 6 πακέτα λειτουργιών, εικονικό εργοστάσιο)              |
 
 ### Συμπίεση
 
-| Έγγραφο                         | Σκοπός                                           |
-| ------------------------------- | ------------------------------------------------ |
-| `COMPRESSION_GUIDE.md`          | Επισκόπηση λειτουργιών συμπίεσης + οδικός χάρτης |
-| `COMPRESSION_ENGINES.md`        | Μηχανές Caveman + RTK, σύμβαση μητρώου           |
-| `COMPRESSION_RULES_FORMAT.md`   | Σχήμα JSON πακέτου κανόνων Caveman               |
-| `COMPRESSION_LANGUAGE_PACKS.md` | Κατάλογος πακέτων κανόνων ανά γλώσσα             |
-| `RTK_COMPRESSION.md`            | Δηλωτική διοχέτευση RTK (49 φίλτρα)              |
+| Έγγραφο                         | Σκοπός                                      |
+| ------------------------------- | ------------------------------------------- |
+| `COMPRESSION_GUIDE.md`          | Επισκόπηση τρόπων συμπίεσης + οδικός χάρτης |
+| `COMPRESSION_ENGINES.md`        | Μηχανές Caveman + RTK, σύμβαση μητρώου      |
+| `COMPRESSION_RULES_FORMAT.md`   | Σχήμα JSON πακέτου κανόνων Caveman          |
+| `COMPRESSION_LANGUAGE_PACKS.md` | Κατάλογος πακέτων κανόνων ανά γλώσσα        |
+| `RTK_COMPRESSION.md`            | Δηλωτική διοχέτευση RTK (49 φίλτρα)         |
 
 ### Ανάπτυξη
 
-| Έγγραφο                      | Σκοπός                                                                 |
-| ---------------------------- | ---------------------------------------------------------------------- |
-| `DOCKER_GUIDE.md`            | Δημιουργία Docker, προφίλ (base/cli/host/cliproxyapi), βοηθητικό Redis |
-| `VM_DEPLOYMENT_GUIDE.md`     | Γενική ανάπτυξη σε VM/VPS (Ubuntu/Debian + nginx + systemd)            |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Ανάπτυξη στο Fly.io (προς το παρόν διαθέσιμο μόνο στα Κινεζικά)        |
-| `TERMUX_GUIDE.md`            | Εκτέλεση χωρίς γραφικό περιβάλλον σε Android μέσω Termux               |
-| `PWA_GUIDE.md`               | Εγκατάσταση Progressive Web App + service worker                       |
-| `ELECTRON_GUIDE.md`          | Δημιουργία + υπογραφή + διανομή εφαρμογής υπολογιστή                   |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                                 |
-| `PROXY_GUIDE.md`             | Εξερχόμενος διακομιστής μεσολάβησης 4 επιπέδων + αγορά 1proxy          |
+| Έγγραφο                      | Σκοπός                                                                  |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| `DOCKER_GUIDE.md`            | Δημιουργία Docker, προφίλ (base/cli/host/cliproxyapi), βοηθητικό Redis  |
+| `VM_DEPLOYMENT_GUIDE.md`     | Γενική ανάπτυξη σε VM/VPS (Ubuntu/Debian + nginx + systemd)             |
+| `FLY_IO_DEPLOYMENT_GUIDE.md` | Ανάπτυξη στο Fly.io (προς το παρόν διαθέσιμο μόνο στα Κινεζικά)         |
+| `TERMUX_GUIDE.md`            | Εκτέλεση χωρίς γραφικό περιβάλλον σε Android μέσω Termux                |
+| `PWA_GUIDE.md`               | Εγκατάσταση Progressive Web App + service worker                        |
+| `ELECTRON_GUIDE.md`          | Δημιουργία εφαρμογής υπολογιστή + υπογραφή + διανομή                    |
+| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                                  |
+| `PROXY_GUIDE.md`             | Εξερχόμενος διακομιστής μεσολάβησης 4 επιπέδων + marketplace του 1proxy |
 
 ### Υποκατάλογοι
 
-| Υποκατάλογος          | Σκοπός                                                                                                                                                                                                                                                      |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | Μεταφράσεις τεκμηρίωσης σε άλλες γλώσσες (41 τοπικές ρυθμίσεις)                                                                                                                                                                                             |
-| `docs/screenshots/`   | Αρχεία εικόνων για τους οδηγούς                                                                                                                                                                                                                             |
-| `_tasks/superpowers/` | Σχέδια/προδιαγραφές από το superpowers (`writing-plans`/`brainstorming`) + έρευνα — απομονωμένο αποθετήριο με ξεχωριστό έλεγχο εκδόσεων, το οποίο αγνοείται από το κύριο δέντρο μέσω git. Ανατρέξτε στο CLAUDE.md → «Τεχνουργήματα σχεδιασμού και έρευνας». |
+| Υποκατάλογος          | Σκοπός                                                                                                                                                                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/i18n/`          | Μεταφράσεις τεκμηρίωσης σε άλλες γλώσσες (41 τοπικές ρυθμίσεις)                                                                                                                                                                                         |
+| `docs/screenshots/`   | Στοιχεία εικόνων για τους οδηγούς                                                                                                                                                                                                                       |
+| `_tasks/superpowers/` | Σχέδια/προδιαγραφές από το superpowers (`writing-plans`/`brainstorming`) + έρευνα — απομονωμένο αποθετήριο με ξεχωριστή διαχείριση εκδόσεων, το οποίο αγνοείται από το κύριο δέντρο μέσω git. Δείτε CLAUDE.md → «Τεχνουργήματα σχεδιασμού και έρευνας». |
 
 ---
 
