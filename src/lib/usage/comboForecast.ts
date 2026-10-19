@@ -1,7 +1,7 @@
 import { getComboForecastUsageRows, type ComboForecastUsageRow } from "@/lib/db/comboForecast";
 import { getCombos, getComboById } from "@/lib/db/combos";
 import { getPricingForModel } from "@/lib/db/settings";
-import { getQuotaSnapshots } from "@/lib/db/quotaSnapshots";
+import { getQuotaSnapshots, isUnreportedQuotaSnapshot } from "@/lib/db/quotaSnapshots";
 import { isCreditMeteredProvider } from "@/lib/usage/creditMeteredProviders";
 import { computeCostFromPricing, normalizeModelName } from "@/lib/usage/costCalculator";
 import { resolveNestedComboTargets } from "@omniroute/open-sse/services/combo.ts";
@@ -132,10 +132,12 @@ function snapshotTime(snapshot: QuotaSnapshotRow): string {
 }
 
 function buildQuotaForecast(
-  snapshots: QuotaSnapshotRow[],
+  allSnapshots: QuotaSnapshotRow[],
   rangeDays: number,
   horizonDays: number
 ): ComboForecastTarget["quota"] {
+  // #10095: a window the upstream did not report is a 0% placeholder, not a reading.
+  const snapshots = allSnapshots.filter((snapshot) => !isUnreportedQuotaSnapshot(snapshot));
   if (snapshots.length === 0) {
     return {
       scope: "none",

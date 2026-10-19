@@ -48,20 +48,30 @@ const isNonNegativeNumber = (value: unknown): value is number =>
 
 /**
  * The `usage_history` billing columns for one request. An exact provider-reported
- * cost (`cost_in_usd_ticks`) is the billed amount for ANY provider (xAI,
- * credit-metered providers); without one the row stays NULL and is priced from its
- * tokens. Credits are provenance, kept only for credit-metered providers.
+ * cost is the billed amount for ANY provider; without one the row stays NULL and is
+ * priced from its tokens. The precedence mirrors `extractExactCostUsd` in
+ * {@link module:lib/usage/costCalculator}: `cost_in_usd_ticks` (xAI, credit-metered
+ * providers) first, then the normalized `cost_usd` (OpenRouter's `usage.cost`).
+ * Credits are provenance, kept only for credit-metered providers.
  */
 export function readReportedCost(
   providerId: string | null | undefined,
   tokens: unknown
 ): { providerCredits: number | null; providerCostUsd: number | null } {
-  const usage = tokens as { provider_credits?: unknown; cost_in_usd_ticks?: unknown } | null;
+  const usage = tokens as {
+    provider_credits?: unknown;
+    cost_in_usd_ticks?: unknown;
+    cost_usd?: unknown;
+  } | null;
   const credits = usage?.provider_credits;
   const ticks = usage?.cost_in_usd_ticks;
+  const costUsd = usage?.cost_usd;
+  let providerCostUsd: number | null = null;
+  if (isNonNegativeNumber(ticks)) providerCostUsd = ticks / 1e10;
+  else if (isNonNegativeNumber(costUsd)) providerCostUsd = costUsd;
   return {
     providerCredits:
       isCreditMeteredProvider(providerId) && isNonNegativeNumber(credits) ? credits : null,
-    providerCostUsd: isNonNegativeNumber(ticks) ? ticks / 1e10 : null,
+    providerCostUsd,
   };
 }

@@ -143,6 +143,35 @@ test("credits are only persisted for credit-metered providers", async () => {
   assert.deepEqual(row, { provider_cost_usd: 0.005, provider_credits: null });
 });
 
+test("OpenRouter's normalized cost_usd persists as the reported cost; xAI ticks win over it", async () => {
+  const key = await createApiKey("OpenRouter cost", "machine-openrouter");
+  await saveRequestUsage({
+    provider: "openrouter",
+    model: "openai/gpt-4o",
+    apiKeyId: key.id,
+    timestamp: new Date().toISOString(),
+    tokens: { prompt_tokens: 10, cost_usd: 0.0042 },
+  });
+  await saveRequestUsage({
+    provider: "openrouter",
+    model: "openai/gpt-4o",
+    apiKeyId: key.id,
+    timestamp: new Date(Date.now() + 1000).toISOString(),
+    tokens: { prompt_tokens: 20, cost_in_usd_ticks: 10000000, cost_usd: 99 },
+  });
+  const rows = core
+    .getDbInstance()
+    .prepare(
+      "SELECT provider_cost_usd, provider_credits FROM usage_history WHERE api_key_id = ? ORDER BY tokens_input"
+    )
+    .all(key.id);
+  // Same precedence as costCalculator's extractExactCostUsd: ticks first, then cost_usd.
+  assert.deepEqual(rows, [
+    { provider_cost_usd: 0.0042, provider_credits: null },
+    { provider_cost_usd: 0.001, provider_credits: null },
+  ]);
+});
+
 test("a failed request from a token-billed provider still costs its tokens", async () => {
   const key = await createApiKey("Token billed failure", "machine-token-failure");
   await updatePricing({ openai: { "gpt-4o": { input: 2.5, output: 10 } } });
