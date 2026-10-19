@@ -17,132 +17,63 @@ OmniRoute, her API isteğini denetleyen rota-farkındalıklı bir yetkilendirme 
 
 ### 1. API Anahtarı (Bearer)
 
-OpenAI/Anthropic/Gemini uyumlu istemci API'leri ve anahtarın `manage` kapsamına sahip olduğu bazı yönetim rotaları için kullanılır.
+OpenAI/Anthropic/Gemini uyumlu istemci API'leri ve anahtarın `manage` kapsamı olduğunda birkaç yönetim rotası için kullanılır.
 
 ```
 Authorization: Bearer <api-key>
 ```
 
-`src/sse/services/auth.ts` içindeki `isValidApiKey()` / `extractApiKey()` tarafından doğrulanır ve `src/shared/utils/apiAuth.ts` üzerinden yeniden dışa aktarılır. Doğrulayıcı, kalıcı doğrudan geçiş anahtarları olarak `OMNIROUTE_API_KEY` / `ROUTER_API_KEY` ortam değişkenlerini de kabul eder (sorun #1350).
+`isValidApiKey()` / `extractApiKey()` fonksiyonları `src/sse/services/auth.ts` içinde doğrulanır ve `src/shared/utils/apiAuth.ts` üzerinden yeniden dışa aktarılır. Doğrulayıcı, `OMNIROUTE_API_KEY` / `ROUTER_API_KEY` ortam değişkenlerini kalıcı geçiş anahtarları olarak da kabul eder (#1350 issue).
 
-### 2. Pano Oturumu (auth_token çerezi)
+### 2. Kontrol Paneli Oturumu (auth_token çerezi)
 
-Pano sayfaları ve yönetici işlemleri içindir.
+Kontrol paneli sayfaları ve yönetim işlemleri için.
 
 ```
-Cookie: auth_token=<JWT_SECRET ile imzalanmış JWT>
+Cookie: auth_token=<JWT signed with JWT_SECRET>
 ```
 
-Bir çerez yalnızca JWT doğrulandığında **ve** `authenticated: true` taşıdığında oturum sayılır
-(`src/shared/utils/dashboardSessionToken.ts` → `verifyDashboardSessionToken`). Çerezi
-kullanan her bileşen (pano rota koruması (`isDashboardSessionAuthenticated()`), yetkilendirme işlem hattı yenilemesi, WebSocket el sıkışması, canlı
-sunucu, `/api/settings/require-login`, `/api/auth/status`) bu yardımcı üzerinden geçer.
-`JWT_SECRET` ile imzalanmış başka JWT'ler de mevcuttur — Cursor CLI doğrudan geçişi,
-anahtar sahipleri için `iss "omniroute" / aud "cursor-cli"` belirteçleri oluşturur — ve bunlar hiçbir zaman oturum
-sayılmaz (#13298).
+Bir çerez, JWT doğrulanır **ve** `authenticated: true` içerirse oturum sayılır (`src/shared/utils/dashboardSessionToken.ts` → `verifyDashboardSessionToken`). Çerezi kullanan her bileşen — kontrol paneli rota koruyucusu (`isDashboardSessionAuthenticated()`), authz hattı yenilemesi, WebSocket el sıkışması, canlı sunucu, `/api/settings/require-login` ve `/api/auth/status` — bu yardımcı üzerinden geçer.
+`JWT_SECRET` ile imzalanan başka JWT'ler de vardır — Cursor CLI geçişi, anahtar sahipleri için `iss "omniroute" / aud "cursor-cli"` token'ları üretir — bunlar hiçbir zaman oturum değildir (#13298).
 
-`src/shared/utils/apiAuth.ts` içindeki `isDashboardSessionAuthenticated()` tarafından doğrulanır. İşlem hattı, 30 günlük kullanım ömrünün bitmesine 7 günden az kaldığında JWT'yi otomatik olarak yeniler.
+`isDashboardSessionAuthenticated()` ile `src/shared/utils/apiAuth.ts` içinde doğrulanır. 30 günlük ömrünün 7 günden az kaldığında hat JWT'yi otomatik olarak yeniler.
 
-Her oluşturucu `mintDashboardSessionToken` üzerinden geçtiği (bir düzenlenme zamanı `iat` ve bir kimlik `jti`) ve doğrulayıcı iki ayarı kontrol ettiği için oturum, 30 günü dolmadan da sona erebilir: `sessionsValidAfter`, parola değiştirildiğinde ayarlanır; böylece bu zamandan önce oluşturulan tüm oturumların doğrulanması durur (parolayı değiştiren tarayıcıya yeni bir çerez verilir) ve `revokedDashboardSessions`, `POST /api/auth/logout` tarafından çıkış yapılan oturumun `jti` değerinin eklendiği listedir. Daha eski bir sürüm tarafından oluşturulan oturumlar bu iddiaların hiçbirini taşımaz ve ilk parola değişikliğine kadar geçerli kalır. Ayarlar okunamazsa oturuma güvenilmez.
+Oturum 30 günden önce de sona erebilir: her üretici `mintDashboardSessionToken` üzerinden geçer (düzenlenme zamanı `iat`, kimlik `jti`) ve doğrulayıcı iki ayarı denetler. `sessionsValidAfter`, şifre değişikliğiyle ayarlanır; böylece ondan önce düzenlenmiş her oturum geçersiz olur (şifreyi değiştiren tarayıcı yeni bir çerez alır). `revokedDashboardSessions` listesine ise `POST /api/auth/logout`, çıkış yapılan oturumun `jti` değerini ekler. Eski bir sürümün ürettiği oturumlarda bu iddialar yoktur ve ilk şifre değişikliğine kadar geçerli kalırlar. Ayarlar okunamazsa oturuma güvenilmez.
 
-Bazı yönetim rotaları **her iki** modu da kabul eder: çerez VEYA API anahtarı `manage` (ya da `admin`) kapsamına sahip olduğunda `Bearer <key>`. v3.8 sürümünde eklenen "API çağrıları aracılığıyla yapılandırılabilir" iş akışını mümkün kılan budur.
+Bazı yönetim rotaları **her iki** modu da kabul eder: anahtarın `manage` (veya `admin`) kapsamı varsa çerez VEYA `Bearer <key>`. v3.8 ile eklenen "API çağrılarıyla yapılandırılabilir" iş akışını bu sağlar.
 
-#### İsteğe Bağlı OIDC Oturum Açma Kapısı (#6973)
+#### İsteğe bağlı OIDC giriş kapısı (#6973)
 
-Pano yöneticisi oturum açma işlemi, varsayılan parolayla oturum açmanın yanında **isteğe bağlı olarak etkinleştirilen** bir OIDC (OpenID Connect) akışını da destekler — parolayla oturum açma hiçbir zaman kaldırılmaz, yalnızca
-tamamlanır:
+Kontrol paneli yönetici girişi, varsayılan şifre girişinin yanında **isteğe bağlı** bir OIDC (OpenID Connect) akışını da destekler — şifre girişi hiçbir zaman kaldırılmaz, yalnızca tamamlayıcı olarak eklenir:
 
-- `settings.oidcEnabled === true` **olmadıkça** ve `oidcIssuer` /
-  `oidcClientId` / `oidcClientSecret` öğelerinin tümü yapılandırılmadıkça devre
-  dışıdır (Ayarlar → Kimlik Doğrulama). Aksi durumda
-  `GET /api/auth/oidc/login`, `400` döndürür.
-- `GET /api/auth/oidc/login`, `authorization_endpoint` değerini sağlayıcının
-  `/.well-known/openid-configuration` adresinden keşfeder (bulamazsa
-  `<issuer>/authorize` kullanılır), yönlendirme URI'sini gelen istekten
-  (`x-forwarded-proto` dikkate alınarak) oluşturur ve `httpOnly` bir
-  `oidc_state` çerezinde saklanan rastgele bir `state` ile IdP'ye yönlendirir.
-- `GET /api/auth/oidc/callback`, `state` değerini doğrular, yetkilendirme
-  kodunu takas eder ve ID belirtecinin imzasını sağlayıcının JWKS'i üzerinden
-  (`jose` paketinin `createRemoteJWKSet` işleviyle, JWKS URI'si başına
-  önbelleğe alınarak), `issuer`/`audience` kontrolleriyle doğrular.
-  `oidcAllowedSubjects` izin listesi zorunludur: belirtecin `sub` talebiyle
-  veya `email` talebiyle eşleşir — email talebi yalnızca
-  `email_verified === true` olduğunda dikkate alınır; dolayısıyla IdP'deki
-  doğrulanmamış bir email geçidi asla aşamaz — ve hiç girdi yoksa geri çağırma
-  her oturum açma girişimini reddeder (`not_configured`).
-- Başarılı olduğunda, parolayla oturum açma işleminin ürettiği 30 günlük
-  **tam olarak aynı** `auth_token` JWT'sini üretir
-  (`src/app/api/auth/login/route.ts`); böylece kontrol paneli oturum işlem
-  hattının geri kalanı (otomatik yenileme, çerez bayrakları) değişmeden kalır —
-  OIDC yalnızca çerezin nasıl üretildiğini değiştirir, verdiği yetkileri değil.
-- Her `oidc*` ayarı (`oidcEnabled`, `oidcDisablePasswordLogin`,
-  `oidcIssuer`, `oidcClientId`, `oidcClientSecret`, `oidcAllowedSubjects`,
-  `oidcRedirectPath`, `oidcScopes`), `SECURITY_IMPACTING_SETTINGS_KEYS`
-  (`src/shared/constants/securityImpactingSettings.ts`) içindedir:
-  gövde yönetim parolasını `currentPassword` olarak taşımadıkça
-  `PATCH /api/settings`, `400 PASSWORD_REQUIRED` yanıtını verir (yanlışsa
-  `401 PASSWORD_MISMATCH`). `oidcDisablePasswordLogin`, parolayla _oturum
-  açmayı_ (`POST /api/auth/login`) reddeder ancak saklanan parola karmasını
-  korur ve yeniden kimlik doğrulama hâlâ `currentPassword` değerini buna karşı
-  denetler.
-- `corsOrigins` ve `bruteForceProtection` da `SECURITY_IMPACTING_SETTINGS_KEYS`
-  içindedir: bunlardan herhangi birini gevşetmek oturum açma savunmalarını
-  zayıflatır; bu nedenle aynı `currentPassword` ile yeniden kimlik doğrulamasını
-  gerektirirler (Güvenlik sekmesi bunu ister) ve JSON içe aktarma işlemi bunları
-  çıkarır.
-- Her güvenlik politikası anahtarı — `SECURITY_IMPACTING_SETTINGS_KEYS`
-  girdileri, her `oidc*` anahtarı ve kontrol paneli oturum durumu —
-  `PATCH /api/settings` üzerinde **yalnızca operatöre açıktır**: `manage`
-  kapsamlı bir API anahtarı veya bir `oma_` erişim belirteci, doğru
-  `currentPassword` değerini gönderse bile `403` ile reddedilir ve bu ret,
-  `reason: OPERATOR_REQUIRED` ile `settings.update_failed` olarak denetim
-  kaydına alınır (`src/lib/api/operatorCredential.ts` içindeki
-  `requireOperatorCredential()`). Sıradan ayarlar (tema, görüntüleme tercihleri)
-  bir `manage` anahtarı veya bir `admin` erişim belirteciyle yazılabilir olmaya
-  devam eder. `/api/settings` üzerindeki her değişiklik (ve
-  `/api/settings/require-login` üzerindekiler) ayrıca `admin` erişim belirteci
-  kapsamını gerektirir (`src/server/authz/accessScopes.ts` içindeki
-  `ADMIN_MUTATION_EXACT_PATHS`, tam yol eşleşmesi); `GET`, `read` olarak kalır
-  ve diğer `/api/settings/*` alt rotaları (proxy'ler, birleşim varsayılanları,
-  model takma adları, sıkıştırma, temizlemeler…) yöntemden çıkarılan `write`
-  kapsamını korur.
-- `POST /api/settings/import-json`, bu yeniden kimlik doğrulamayı atlar; bu
-  nedenle yazmadan önce `IMPORT_STRIPPED_SETTINGS_KEYS` (aynı dosya) içindeki
-  her anahtarı çıkarır: parola ve `currentPassword`, tüm
-  `SECURITY_IMPACTING_SETTINGS_KEYS` girdileri ve kontrol paneli oturum durumu
-  (`sessionsValidAfter`, `revokedDashboardSessions`). Bu nedenle eski bir
-  yedeğin içe aktarılması, parola değişikliği veya oturum kapatma işlemiyle
-  sonlandırılmış bir oturumu yeniden etkinleştiremez.
+- Yalnızca `settings.oidcEnabled === true` **ve** `oidcIssuer` / `oidcClientId` / `oidcClientSecret` değerlerinin hepsi yapılandırılmışsa etkindir (Ayarlar → Kimlik Doğrulama). Aksi halde `GET /api/auth/oidc/login` `400` döner.
+- `GET /api/auth/oidc/login`, `authorization_endpoint` adresini sağlayıcının `/.well-known/openid-configuration` belgesinden keşfeder (bulunamazsa `<issuer>/authorize` kullanılır), yönlendirme URI'sini gelen istekten oluşturur (`x-forwarded-proto` farkındalığıyla) ve rastgele bir `state` değeriyle, `httpOnly` `oidc_state` çerezinde saklayarak IdP'ye yönlendirir.
+- `GET /api/auth/oidc/callback`, `state` değerini doğrular, yetkilendirme kodunu değiştirir ve ID token'ın imzasını sağlayıcının JWKS'i üzerinden doğrular (`jose` `createRemoteJWKSet`, JWKS URI başına önbelleğe alınır), `issuer`/`audience` denetimleriyle birlikte. `oidcAllowedSubjects` izin listesi zorunludur: token'ın `sub` iddiası veya `email` iddiasıyla eşleşir. E-posta iddiası yalnızca `email_verified === true` ise dikkate alınır; bu sayede IdP'de doğrulanmamış bir e-posta asla kapıdan geçemez. Girdi yoksa geri çağrı her girişi reddeder (`not_configured`).
+- Başarılı girişte, şifre girişinin ürettiği **aynı** 30 günlük `auth_token` JWT'sini üretir (`src/app/api/auth/login/route.ts`). Böylece kontrol paneli oturum hattının geri kalanı (otomatik yenileme, çerez bayrakları) değişmez — OIDC yalnızca çerezin nasıl üretildiğini değiştirir, neyi verdiğini değil.
+- Her `oidc*` ayarı (`oidcEnabled`, `oidcDisablePasswordLogin`, `oidcIssuer`, `oidcClientId`, `oidcClientSecret`, `oidcAllowedSubjects`, `oidcRedirectPath`, `oidcScopes`) `SECURITY_IMPACTING_SETTINGS_KEYS` listesindedir (`src/shared/constants/securityImpactingSettings.ts`): gövde `currentPassword` olarak yönetim şifresini içermedikçe `PATCH /api/settings` `400 PASSWORD_REQUIRED` döner (şifre yanlışsa `401 PASSWORD_MISMATCH`). `oidcDisablePasswordLogin`, şifreyle _girişi_ (`POST /api/auth/login`) engeller ama saklanan şifre karmasını korur; yeniden kimlik doğrulama yine de bunu `currentPassword` ile denetler.
+- `corsOrigins` ve `bruteForceProtection` de `SECURITY_IMPACTING_SETTINGS_KEYS` listesindedir: bunlardan birini gevşetmek giriş savunmasını zayıflatır, bu yüzden aynı yeniden kimlik doğrulamayı (`currentPassword`) isterler (Güvenlik sekmesi bunu sorar) ve JSON içe aktarma bunları atar.
+- Her güvenlik politikası anahtarı — `SECURITY_IMPACTING_SETTINGS_KEYS` girdileri, her `oidc*` anahtarı ve kontrol paneli oturum durumu — `PATCH /api/settings` üzerinde **yalnızca operatöre** özeldir: `manage` kapsamlı bir API anahtarı veya `oma_` erişim token'ı doğru `currentPassword` gönderse bile `403` alır ve reddedilme `reason: OPERATOR_REQUIRED` ile `settings.update_failed` olarak denetlenir (`src/lib/api/operatorCredential.ts` içindeki `requireOperatorCredential()`). Sıradan ayarlar (tema, görüntüleme tercihleri) `manage` anahtarı veya `admin` erişim token'ı için yazılabilir kalır. `/api/settings` üzerindeki her değişiklik (ve `/api/settings/require-login`) `admin` erişim token'ı kapsamı ister (`src/server/authz/accessScopes.ts` içindeki `ADMIN_MUTATION_EXACT_PATHS`, tam yol eşleşmesiyle); `GET` `read` ister, diğer `/api/settings/*` alt rotaları (proxy'ler, combo varsayılanları, model takma adları, sıkıştırma, temizlemeler…) yönteme göre çıkarılan `write` kapsamını korur.
+- `POST /api/settings/import-json` bu yeniden kimlik doğrulamayı atlar, bu yüzden yazmadan önce `IMPORT_STRIPPED_SETTINGS_KEYS` (aynı dosya) içindeki tüm anahtarları atar: şifreyi ve `currentPassword` değerini, her `SECURITY_IMPACTING_SETTINGS_KEYS` girdisini ve kontrol paneli oturum durumunu (`sessionsValidAfter`, `revokedDashboardSessions`). Bu nedenle eski bir yedeği içe aktarmak, şifre değişikliği veya çıkış yapılarak sonlandırılmış bir oturumu geri getiremez.
+- Yalnızca `settings.oidcEnabled === true` **ve** `oidcIssuer` / `oidcClientId` / `oidcClientSecret` değerlerinin hepsi yapılandırılmışsa etkindir (Ayarlar → Kimlik Doğrulama). Aksi halde `GET /api/auth/oidc/login` `400` döner.
+- `GET /api/auth/oidc/login`, `authorization_endpoint` adresini sağlayıcının `/.well-known/openid-configuration` belgesinden keşfeder (bulunamazsa `<issuer>/authorize` kullanılır), yönlendirme URI'sini gelen istekten oluşturur (`x-forwarded-proto` farkındalığıyla) ve rastgele bir `state` değeriyle, `httpOnly` `oidc_state` çerezinde saklayarak IdP'ye yönlendirir.
+- `GET /api/auth/oidc/callback`, `state` değerini doğrular, yetkilendirme kodunu değiştirir ve ID token'ın imzasını sağlayıcının JWKS'i üzerinden doğrular (`jose` `createRemoteJWKSet`, JWKS URI başına önbelleğe alınır), `issuer`/`audience` denetimleriyle birlikte. `oidcAllowedSubjects` izin listesi zorunludur: token'ın `sub` iddiası veya `email` iddiasıyla eşleşir. E-posta iddiası yalnızca `email_verified === true` ise dikkate alınır; bu sayede IdP'de doğrulanmamış bir e-posta asla kapıdan geçemez. Girdi yoksa geri çağrı her girişi reddeder (`not_configured`).
+- Başarılı girişte, şifre girişinin ürettiği **aynı** 30 günlük `auth_token` JWT'sini üretir (`src/app/api/auth/login/route.ts`). Böylece kontrol paneli oturum hattının geri kalanı (otomatik yenileme, çerez bayrakları) değişmez — OIDC yalnızca çerezin nasıl üretildiğini değiştirir, neyi verdiğini değil.
+- Her `oidc*` ayarı (`oidcEnabled`, `oidcDisablePasswordLogin`, `oidcIssuer`, `oidcClientId`, `oidcClientSecret`, `oidcAllowedSubjects`, `oidcRedirectPath`, `oidcScopes`) `SECURITY_IMPACTING_SETTINGS_KEYS` listesindedir (`src/shared/constants/securityImpactingSettings.ts`): gövde `currentPassword` olarak yönetim şifresini içermedikçe `PATCH /api/settings` `400 PASSWORD_REQUIRED` döner (şifre yanlışsa `401 PASSWORD_MISMATCH`). `oidcDisablePasswordLogin`, şifreyle _girişi_ (`POST /api/auth/login`) engeller ama saklanan şifre karmasını korur; yeniden kimlik doğrulama yine de bunu `currentPassword` ile denetler.
+- `corsOrigins` ve `bruteForceProtection` de `SECURITY_IMPACTING_SETTINGS_KEYS` listesindedir: bunlardan birini gevşetmek giriş savunmasını zayıflatır, bu yüzden aynı yeniden kimlik doğrulamayı (`currentPassword`) isterler (Güvenlik sekmesi bunu sorar) ve JSON içe aktarma bunları atar.
+- Her güvenlik politikası anahtarı — `SECURITY_IMPACTING_SETTINGS_KEYS` girdileri, her `oidc*` anahtarı ve kontrol paneli oturum durumu — `PATCH /api/settings` üzerinde **yalnızca operatöre** özeldir: `manage` kapsamlı bir API anahtarı veya `oma_` erişim token'ı doğru `currentPassword` gönderse bile `403` alır ve reddedilme `reason: OPERATOR_REQUIRED` ile `settings.update_failed` olarak denetlenir (`src/lib/api/operatorCredential.ts` içindeki `requireOperatorCredential()`). Sıradan ayarlar (tema, görüntüleme tercihleri) `manage` anahtarı veya `admin` erişim token'ı için yazılabilir kalır. `/api/settings` üzerindeki her değişiklik (ve `/api/settings/require-login`) `admin` erişim token'ı kapsamı ister (`src/server/authz/accessScopes.ts` içindeki `ADMIN_MUTATION_EXACT_PATHS`, tam yol eşleşmesiyle); `GET` `read` ister, diğer `/api/settings/*` alt rotaları (proxy'ler, combo varsayılanları, model takma adları, sıkıştırma, temizlemeler…) yönteme göre çıkarılan `write` kapsamını korur.
+- `POST /api/settings/import-json` bu yeniden kimlik doğrulamayı atlar, bu yüzden yazmadan önce `IMPORT_STRIPPED_SETTINGS_KEYS` (aynı dosya) içindeki tüm anahtarları atar: şifreyi ve `currentPassword` değerini, her `SECURITY_IMPACTING_SETTINGS_KEYS` girdisini ve kontrol paneli oturum durumunu (`sessionsValidAfter`, `revokedDashboardSessions`). Bu nedenle eski bir yedeği içe aktarmak, şifre değişikliği veya çıkış yapılarak sonlandırılmış bir oturumu geri getiremez.
 
 ## Rota Sınıfları
 
-`src/server/authz/types.ts` üç sınıf tanımlar; belirli bir şekilde sınıflandırılamayan tüm rotalar varsayılan olarak `MANAGEMENT` sınıfına girer.
+`src/server/authz/types.ts` üç sınıf tanımlar; deterministik olarak sınıflandırılamayan her rota `MANAGEMENT` sınıfına geri döner.
 
-| Sınıf        | Açıklama                                                                                                                                                | Gerekli kimlik doğrulama                                                     |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `PUBLIC`     | Açıkça güvenli rotalar — oturum açma, oturumu kapatma, durum, başlatma, sistem sağlığı, ilk katılım önyüklemesi.                                        | Yok                                                                          |
-| `CLIENT_API` | Model sunma uç noktaları — `/api/v1/*`, `/api/v1beta/*` ve `/v1/*`, `/v1beta/*`, `/chat/completions`, `/responses`, `/models`, `/codex/*` takma adları. | Etkin `REQUIRE_API_KEY` özellik bayrağı etkinleştirildiğinde Bearer anahtarı |
-| `MANAGEMENT` | Pano sayfaları, ayarlar, sağlayıcılar, anahtarlar, yönetici ve tanılama uç noktaları.                                                                   | Pano oturumu VEYA `manage` kapsamlı Bearer                                   |
+| Sınıf        | Açıklama                                                                                                                                                | Gerekli kimlik doğrulama                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `PUBLIC`     | Açıkça güvenli rotalar — giriş, çıkış, durum, başlatma, sağlık ve başlangıç kurulumu uç noktaları.                                                      | Yok                                                            |
+| `CLIENT_API` | Model sunum uç noktaları — `/api/v1/*`, `/api/v1beta/*` ve takma adlar: `/v1/*`, `/v1beta/*`, `/chat/completions`, `/responses`, `/models`, `/codex/*`. | Etkin `REQUIRE_API_KEY` özellik bayrağı açıksa Bearer anahtarı |
+| `MANAGEMENT` | Kontrol paneli sayfaları, ayarlar, sağlayıcılar, anahtarlar, yönetim ve tanılama uç noktaları.                                                          | Kontrol paneli oturumu VEYA `manage` kapsamlı Bearer           |
 
-Bazı `MANAGEMENT` eylemleri **yalnızca operatörlere açıktır**: `manage` anahtarı yeterli değildir. Saklanan
-kimlik bilgilerini dışa aktarmak (`GET /api/settings/export-json`, `GET /api/db-backups/export`,
-`GET /api/db-backups/exportAll`), canlı verilerin üzerine bir yedeği geri yüklemek
-(`dryRun=true` dahil `POST /api/db-backups/import`, kimliğe göre geri yükleme için `POST /api/db-backups`,
-`POST /api/settings/import-json`), geri yükleme noktalarını yok etmek (`DELETE /api/db-backups` ile temizleme
-ve kalıcı hâle getirdiği saklama politikası her yedeklemeden sonra otomatik budamayı yönettiği için
-`PATCH /api/db-backups`) için pano oturumu, yerel CLI öznesi veya oturum açmanın devre dışı olması gerekir. Bir
-senkronizasyon belirteci vermek (`POST /api/sync/tokens`) ve bir `admin` CLI erişim belirteci oluşturmak
-(`POST /api/cli/tokens`) için her oturum açma modunda pano oturumu veya yerel CLI öznesi gerekir.
-Herhangi bir kapsamdaki API anahtarları ve `oma_` erişim belirteçleri operatör kimlik bilgileri değildir:
-operatör kimlik bilgisi gerektiğinde `403` alırlar. Denetim
-`src/lib/api/operatorCredential.ts` içinde (`resolveOperatorCredential()` /
-`requireOperatorCredential()`) bulunur. Oturum açma ayarlarını değiştirmek de yalnızca operatörlere açıktır:
-`POST /api/settings/require-login` (yönetim parolasını ayarlama / `requireLogin` seçeneğini değiştirme),
-bir parola mevcut olduğunda yalnızca bu kimlik bilgilerini kabul eder — ilk çalıştırmadaki önyükleme
-penceresi (henüz parola yokken) değişmemiştir — ve pano oturumunun parolayı değiştirmek için
-`currentPassword` göndermesi gerekir (eksik veya yanlışsa `403`; `settings.update_failed` olarak denetlenir).
-Yerel CLI ve oturum açmanın devre dışı olduğu bir örnek, kurtarma yolunu korur ve her ikisi de veri dizininin
-sahibi olan ana makineye bağlı olduğundan parola olmadan yeni bir parola ayarlayabilir.
+Bazı `MANAGEMENT` işlemleri **yalnızca operatöre** özeldir: `manage` anahtarı yetmez. Saklanan kimlik bilgilerini dışa aktarmak (`GET /api/settings/export-json`, `GET /api/db-backups/export`, `GET /api/db-backups/exportAll`), canlı verilerin üzerine bir yedeği geri yüklemek (`dryRun=true` dahil `POST /api/db-backups/import`, kimlikle geri yükleme `POST /api/db-backups` ve `POST /api/settings/import-json`) ve geri yükleme noktalarını yok etmek (`DELETE /api/db-backups` temizliği ve `PATCH /api/db-backups`, çünkü kalıcı hale getirdiği saklama süresi her yedeklemeden sonraki otomatik temizliği yönetir) bir kontrol paneli oturumu, yerel CLI öznesi veya devre dışı bırakılmış giriş gerektirir. Senkronizasyon token'ı üretmek (`POST /api/sync/tokens`) ve `admin` CLI erişim token'ı basmak (`POST /api/cli/tokens`) her giriş modunda kontrol paneli oturumu veya yerel CLI öznesi gerektirir. Her kapsamdaki API anahtarları ve `oma_` erişim token'ları operatör kimlik bilgisi değildir: gerektiğinde `403` alırlar. Denetim `src/lib/api/operatorCredential.ts` içinde yapılır (`resolveOperatorCredential()` / `requireOperatorCredential()`). Giriş ayarlarını değiştirmek de yalnızca operatöre özeldir: `POST /api/settings/require-login` (yönetim şifresini ayarlama / `requireLogin` değiştirme), bir şifre var olduktan sonra yalnızca bu kimlik bilgilerini kabul eder — ilk kurulum önyükleme penceresi (henüz şifre yoksa) değişmez — ve bir kontrol paneli oturumunun şifreyi değiştirmek için `currentPassword` göndermesi gerekir (eksik veya yanlışsa `403`, `settings.update_failed` olarak denetlenir). Yerel CLI ve girişi devre dışı bırakılmış bir örnek kurtarma yolunu korur ve şifreyi onsuz ayarlayabilir; çünkü ikisi de veri dizinine sahip ana makineye bağlıdır.
 
 ## İşlem Hattı
 
@@ -282,15 +213,15 @@ Katalog ve eşleştirme kuralları (aynı dize veya `*` ile biten verilmiş bir 
 
 `oma_live_…` belirteçlerinde `read` / `write` / `admin`, `scopeSatisfies` (`src/lib/accessTokens/scopes.ts`) tarafından sıralanır. Bu sıralama yalnızca erişim belirteci kimlik bilgisi için geçerlidir. Bkz. [Yönetim Kimlik Doğrulaması](../guides/MANAGEMENT-AUTH.md).
 
-## Kimlik Doğrulama Gereksinimi Geçişi
+## Kimlik Doğrulama Gerekli Anahtarı
 
-`src/shared/utils/apiAuth.ts` içindeki `isAuthRequired()`, bir istek için **herhangi bir** kimlik doğrulamanın zorunlu tutulup tutulmayacağına karar verir:
+`src/shared/utils/apiAuth.ts` içindeki `isAuthRequired()`, bir istek için **herhangi bir** kimlik doğrulamanın zorunlu olup olmadığını belirler:
 
-- `settings.requireLogin === false` → her zaman korunan katman (bkz. [Rota Koruma Katmanları](../security/ROUTE_GUARD_TIERS.md)) ve kabul ettiği kimlik bilgilerini sağlayan çağrılar dışında kimlik doğrulama genel olarak devre dışıdır. Bu çağrılar, oturum açmanın etkin olduğu durumdakiyle aynı kimlik bilgisini gerektirir: senkronizasyon belirteçleri verme, herhangi bir kapsamda CLI erişim belirteçleri oluşturma ve `manage`/`admin` kapsamına sahip bir API anahtarı oluşturma, bir anahtara bu kapsamı verme ya da böyle bir anahtarı yeniden oluşturma veya gösterme (`src/lib/api/requireManagementAuth.ts` içindeki `requireCredentialForManagementScopedKey()`). Yalnızca çıkarım anahtarları açık kalır.
-- Yapılandırılmış parola **yoksa** ve `INITIAL_PASSWORD` ortam değişkeni de yoksa → önyükleme modu, ilk katılım sihirbazına ve loopback isteklerine izin verir; ancak dış ağa açık istekler için yine de kimlik bilgileri gerekir.
-- Herhangi bir DB hatası → erişim kapalı olacak şekilde başarısız olur (varsayılan olarak güvenli).
+- `settings.requireLogin === false` → kimlik doğrulama genel olarak kapalıdır; ancak her zaman korunan katman ([Rota Koruma Katmanları](../security/ROUTE_GUARD_TIERS.md)) ve kabul edilen bir kimlik bilgisini veren çağrılar bunun dışındadır. Bunlar, girişin açık olduğu durumdaki ile aynı kimlik bilgisini ister: senkronizasyon token'ları vermek, her kapsamda CLI erişim token'ları basmak ve `manage`/`admin` kapsamlı API anahtarı oluşturmak, bu kapsamı bir anahtara vermek veya böyle bir anahtarı yeniden üretmek/göstermek (`src/lib/api/requireManagementAuth.ts` içindeki `requireCredentialForManagementScopedKey()`). Çıkarım amaçlı anahtarlar açık kalır.
+- Yönetim şifresi yok **ve** `INITIAL_PASSWORD` ortam değişkeni yok → önyükleme modu: kurulum sihirbazına ve loopback isteklerine izin verilir, ancak dışarıdan gelen ağ isteklerinin yine kimlik bilgisi gerekir.
+- Herhangi bir veritabanı hatası → kapalı durumda başarısız olur (güvenli varsayılan).
 
-İstemci API anahtarı zorunluluğu, doğrudan `process.env.REQUIRE_API_KEY` okumasını değil, `src/shared/utils/featureFlags.ts` içindeki `isRequireApiKeyEnabled()` işlevini kullanır. Bu, dağıtılmış örnekler açısından önemlidir: Dashboard → Feature Flags bölümünde `REQUIRE_API_KEY` ayarını değiştirmek, bir DB geçersiz kılma değeri depolar ve `/v1/*`, `/v1beta/*`, `/models`, `/responses`, `/chat/completions`, `/codex/*` ile bu yardımcıyı paylaşan diğer istemci API kimlik doğrulama kontrollerini anında etkiler. Özellik bayrağı deposu okunamazsa istemci API kimlik doğrulaması erişim kapalı olacak şekilde başarısız olur ve bir anahtar gerektirir.
+İstemci API anahtarı zorlaması, doğrudan `process.env.REQUIRE_API_KEY` okumak yerine `src/shared/utils/featureFlags.ts` içindeki `isRequireApiKeyEnabled()` fonksiyonunu kullanır. Bu, dağıtılmış örnekler için önemlidir: Kontrol Paneli → Özellik Bayrakları içinde `REQUIRE_API_KEY` değiştirmek bir DB geçersiz kılma kaydeder ve `/v1/*`, `/v1beta/*`, `/models`, `/responses`, `/chat/completions`, `/codex/*` ve bu yardımcıyı paylaşan diğer istemci API kimlik denetimlerini anında etkiler. Özellik bayrağı deposu okunamıyorsa istemci API kimlik doğrulaması kapalı duruma geçer ve bir anahtar ister.
 
 ## Uyumluluğu Bozan Değişiklik — v3.8.0
 

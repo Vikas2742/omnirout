@@ -4,37 +4,37 @@
 
 ---
 
-OmniRoute rozpoznáva svoj ovládač SQLite pri spustení prostredníctvom 5-krokového reťazca záložných možností:
+OmniRoute vyhľadáva svoj ovládač SQLite pri spustení prostredníctvom 5-krokového reťazca záložných možností:
 
-1. **Pribalený `better-sqlite3`** (prostredníctvom `dependencies` v súbore `package.json`)
+1. **Pribalený `better-sqlite3`** (prostredníctvom `dependencies` v `package.json`)
    — najrýchlejší, natívny binárny súbor, nainštalovaný príkazom `npm install`, keď sú k dispozícii nástroje na zostavenie.
 
 2. **Ovládač `better-sqlite3` nainštalovaný za behu** (v `~/.omniroute/runtime/`)
-   — inštaluje sa odložene pri prvom spustení **ALEBO** prostredníctvom `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
+   — nainštaluje sa odložene pri prvom spustení **ALEBO** prostredníctvom `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
    Pred načítaním overuje magické bajty natívneho súboru `.node` (ELF / Mach-O / PE),
-   aby zabránil načítaniu poškodených binárnych súborov alebo súborov určených pre inú platformu.
+   aby zabránil načítaniu poškodených binárnych súborov alebo súborov pre nesprávnu platformu.
 
 3. **`node:sqlite`** (štandardná knižnica Node ≥22.5) — nevyžaduje natívne zostavenie; použije sa, keď
-   zlyhajú obe cesty k better-sqlite3. Má obmedzenú množinu funkcií.
+   zlyhajú obe možnosti better-sqlite3. Má obmedzenú množinu funkcií.
 
 4. **`sql.js`** (WASM) — posledná záložná možnosť. Funguje všade, ale je pomalšia
-   a zapisuje údaje v intervaloch namiesto synchrónneho zápisu.
+   a zapisuje údaje v intervaloch, nie synchrónne.
 
 ## Prečo je to také zložité?
 
-- **EBUSY vo Windows**: `npm install -g omniroute@latest` môže zlyhať, ak je súbor
-  `better_sqlite3.node` predchádzajúcej verzie uzamknutý spusteným procesom. Inštalácia
+- **Windows EBUSY**: `npm install -g omniroute@latest` môže zlyhať, ak je súbor
+  `better_sqlite3.node` z predchádzajúcej verzie uzamknutý spusteným procesom. Inštalácia
   za behu do `~/.omniroute/runtime/` obchádza globálnu vyrovnávaciu pamäť npm.
 - **Chýbajúce nástroje na zostavenie**: Niektoré prostredia (firemný Windows bez VS Build
-  Tools, minimálne obrazy Docker) nedokážu skompilovať `better-sqlite3`. Inštalátor
+  Tools, minimalistické obrazy Docker) nedokážu skompilovať `better-sqlite3`. Inštalátor
   za behu získa vopred zostavený binárny súbor z registra npm; záložné
-  ovládače zabezpečia, že sa OmniRoute spustí, aj keď tento postup zlyhá.
-- **Systémy bez prístupu k sieti**: Ak register npm nie je dostupný, `node:sqlite`
+  ovládače zabezpečia, že sa OmniRoute spustí aj v prípade, že tento postup zlyhá.
+- **Izolované systémy bez prístupu k sieti**: Ak register npm nie je dostupný, `node:sqlite`
   alebo `sql.js` zaručia základnú funkčnosť.
 
 ## Overovanie magických bajtov
 
-Pred načítaním súboru `.node` nainštalovaného za behu OmniRoute načíta prvých 8
+Pred načítaním súboru `.node` nainštalovaného za behu načíta OmniRoute prvých 8
 bajtov a porovná ich so známymi magickými hodnotami platforiem:
 
 | Platforma               | Bajty (hex)   | Označenie   |
@@ -60,12 +60,12 @@ const info = getDriverInfo();
 ## Manuálne ovládanie
 
 ```bash
-# Preskočenie zahrievania po inštalácii (pre rýchle inštalácie v CI)
+# Preskočenie úvodného načítania po inštalácii (pre rýchle inštalácie CI)
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
-# Vynútenie preinštalovania runtime verzie better-sqlite3
+# Vynútená preinštalácia runtime balíka better-sqlite3
 rm -rf ~/.omniroute/runtime
-omniroute  # pri ďalšom spustení sa preinštaluje
+omniroute  # preinštaluje sa pri ďalšom spustení
 
 # Kontrola aktívneho ovládača
 omniroute config db-info  # (ak príkaz CLI existuje)
@@ -73,48 +73,47 @@ omniroute config db-info  # (ak príkaz CLI existuje)
 
 ## Diagnostika synchrónnych pozastavení
 
-Pri použití `better-sqlite3` nastavte pred spustením `OMNIROUTE_SQLITE_SLOW_MS=200`,
-čím povolíte meranie času synchrónneho adaptéra. Predvolene je vypnuté. Dokončená
-operácia, ktorá trvá aspoň uvedený počet milisekúnd, vyvolá upozornenie
-`[SQLITE-SLOW]`, najviac raz za desať sekúnd pre každý adaptér. Upozornenie obsahuje
-iba ovládač, triedu operácie (`prepare`, `get`, `all`, `run`, `exec`, `pragma`,
-transakciu alebo údržbu) a uplynutý čas v milisekundách: neobsahuje SQL, väzby,
-riadky, cesty ani text výnimky.
+Pri použití `better-sqlite3` nastavte pred spustením `OMNIROUTE_SQLITE_SLOW_MS=200`, čím
+zapnete meranie času synchrónneho adaptéra. Predvolene je vypnuté. Dokončená operácia,
+ktorá trvá aspoň uvedený počet milisekúnd, vygeneruje upozornenie `[SQLITE-SLOW]`,
+najviac raz za desať sekúnd pre každý adaptér. Upozornenie obsahuje iba ovládač,
+triedu operácie (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, transakciu alebo údržbu)
+a uplynutý čas v milisekundách: neobsahuje SQL, väzby, riadky, cesty ani text výnimky.
 
-Ide o diagnostickú pomôcku, nie o časový limit ani optimalizáciu dopytov. Nedokáže
-ohlásiť operáciu, ktorá sa nikdy nevráti, rozlíšiť prácu procesora od čakania na disk,
-identifikovať presný príkaz SQL ani sledovať operácie vykonané prostredníctvom priameho
-rozhrania ovládača. Trvanie asynchrónneho zálohovania je zámerne vynechané; ostatné
-ovládače SQLite nie sú touto voliteľnou funkciou monitorované. Vypnutím premennej sa
-obnoví pôvodný adaptér bez obalov na meranie času. Schéma databázy ani uložená
-konfigurácia sa nemenia.
+Ide o diagnostickú pomôcku, nie o časový limit ani optimalizáciu dotazov. Nedokáže
+nahlásiť operáciu, ktorá sa nikdy nevráti, rozlíšiť prácu procesora od čakania na disk,
+identifikovať konkrétny príkaz SQL ani sledovať operácie vykonávané prostredníctvom
+nespracovaného prístupu k ovládaču. Trvanie asynchrónneho zálohovania je zámerne
+vylúčené; ostatné ovládače SQLite nie sú týmto voliteľným meraním vybavené. Vypnutím
+premennej sa obnoví pôvodný adaptér bez meracích obalov. Schéma databázy ani uložená
+konfigurácia sa nezmenia.
 
-Upozornenie na oneskorenie `/healthz` uvádza maximum slučky udalostí od predchádzajúcej
-vzorky, nie priemer za celú dobu prevádzky. Predtým, ako pozastavenie pripíšete SQLite
-alebo zlyhaniu disku, porovnajte jeho časové pečiatky s upozorneniami na pomalé operácie
-a metrikami hostiteľa či úložiska.
+Upozornenie na oneskorenie z `/healthz` hlási maximálne oneskorenie slučky udalostí od
+predchádzajúcej vzorky, nie priemer za celú dobu behu. Pred pripísaním pozastavenia
+databáze SQLite alebo zlyhaniu disku porovnajte jeho časové pečiatky s upozorneniami
+na pomalé operácie a metrikami hostiteľa či úložiska.
 
 ## Referencie
 
 Implementácia:
 
 - `bin/cli/runtime/magicBytes.mjs` — pomocné funkcie na overovanie magických bajtov binárnych súborov
-- `bin/cli/runtime/sqliteRuntime.mjs` — 5-krokový prekladač ovládača za behu + odložený inštalátor
+- `bin/cli/runtime/sqliteRuntime.mjs` — 5-krokový resolver za behu + odložený inštalátor
 - `bin/cli/runtime/index.mjs` — orchestrátor spustenia (`warmUpRuntimes()`)
-- `scripts/postinstall.mjs` — hák npm po inštalácii (nekritické zahriatie)
+- `scripts/postinstall.mjs` — hook npm po inštalácii (nekritické úvodné načítanie)
 - `src/lib/db/core.ts` — exporty `ensureDbInitialized()` / `getDriverInfo()`
 
 ## Topológia s jediným zapisujúcim procesom (HA nie je podporovaná)
 
 Vyššie uvedený reťazec záložných ovládačov stále beží v **jednom procese**. Predvolená
-konfigurácia OmniRoute so SQLite používa **jediný zapisujúci proces**:
+konfigurácia SQLite v OmniRoute má **jediný zapisujúci proces**:
 
 - Nepripájajte dve repliky OmniRoute k rovnakému súboru `storage.sqlite`.
 - Reštart kontajnera, nasadenie typu Recreate, ukončenie z dôvodu OOM alebo reštart
-  prostredníctvom HEALTHCHECK preruší každú prebiehajúcu reláciu SSE. V štandardnej
-  konfigurácii sa nevykonáva postupné ukončenie relácií.
-- Kontrola aktívnosti orchestrátora, ktorá považuje pomalú odpoveď `/healthz` za stav
-  mimo prevádzky, ukončí jedinú repliku. Uprednostnite kontrolu aktívnosti cez TCP
-  a kontrolu pripravenosti cez HTTP `/healthz`. Pozrite si
-  [Sprievodcu Dockerom — dostupnosť](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
+  prostredníctvom HEALTHCHECK ukončí každú prebiehajúcu reláciu SSE. Štandardný postup
+  neposkytuje riadené ukončenie relácií.
+- Kontrola živosti orchestrátora, ktorá pomalý `/healthz` považuje za nefunkčný stav,
+  ukončí jedinú repliku. Uprednostnite kontrolu živosti cez TCP + kontrolu pripravenosti
+  cez HTTP `/healthz`. Pozrite si
+  [Príručku pre Docker — dostupnosť](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
   a [odporúčania pre sondy Kubernetes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

@@ -17,128 +17,54 @@ OmniRoute ima sistem autorizacije svjestan ruta koji štiti svaki API zahtjev. K
 
 ### 1. API ključ (Bearer)
 
-Koristi se za klijentske API-je kompatibilne s OpenAI/Anthropic/Gemini i nekoliko ruta za upravljanje kada ključ ima opseg `manage`.
+Koristi se za klijentske API-je kompatibilne sa OpenAI/Anthropic/Gemini i za nekoliko ruta upravljanja kada ključ ima opseg `manage`.
 
 ```
 Authorization: Bearer <api-key>
 ```
 
-Validira se pomoću `isValidApiKey()` / `extractApiKey()` u `src/sse/services/auth.ts` i ponovo izvozi kroz `src/shared/utils/apiAuth.ts`. Validator također prihvata varijable okruženja `OMNIROUTE_API_KEY` / `ROUTER_API_KEY` kao trajne ključeve za direktno prosljeđivanje (problem #1350).
+Provjerava ga `isValidApiKey()` / `extractApiKey()` u `src/sse/services/auth.ts` i ponovo izvozi kroz `src/shared/utils/apiAuth.ts`. Validator također prihvata okolinske varijable `OMNIROUTE_API_KEY` / `ROUTER_API_KEY` kao trajne ključeve za prosljeđivanje (issue #1350).
 
-### 2. Sesija kontrolne ploče (auth_token kolačić)
+### 2. Sesija kontrolne table (kolačić auth_token)
 
-Za stranice kontrolne ploče i administratorske operacije.
+Za stranice kontrolne table i administrativne operacije.
 
 ```
 Cookie: auth_token=<JWT signed with JWT_SECRET>
 ```
 
-Kolačić predstavlja sesiju samo kada je JWT verificiran **i** sadrži `authenticated: true`
-(`src/shared/utils/dashboardSessionToken.ts` → `verifyDashboardSessionToken`). Svaki
-potrošač kolačića (zaštita ruta kontrolne ploče (`isDashboardSessionAuthenticated()`), osvježavanje authz cjevovoda, WebSocket uspostavljanje veze, aktivni
-server, `/api/settings/require-login`, `/api/auth/status`) koristi taj pomoćni program.
-Postoje i drugi JWT-ovi potpisani pomoću `JWT_SECRET` — direktno prosljeđivanje kroz Cursor CLI izdaje
-tokene s `iss "omniroute" / aud "cursor-cli"` za vlasnike ključeva — i oni se nikada ne smatraju sesijama
-(#13298).
+Kolačić je sesija samo ako JWT prođe provjeru **i** sadrži `authenticated: true` (`src/shared/utils/dashboardSessionToken.ts` → `verifyDashboardSessionToken`). Svaki primalac kolačića (čuvar ruta kontrolne table (`isDashboardSessionAuthenticated()`), osvježavanje u authz cjevovodu, WebSocket rukovanje, živi server, `/api/settings/require-login`, `/api/auth/status`) prolazi kroz ovaj pomoćnik. Postoje i drugi JWT-ovi potpisani s `JWT_SECRET` — prosljeđivanje CLI-ja Cursor izdaje vlasnicima ključa tokene `iss "omniroute" / aud "cursor-cli"` — i nikada nisu sesije (#13298).
 
-Verificira se pomoću `isDashboardSessionAuthenticated()` u `src/shared/utils/apiAuth.ts`. Cjevovod automatski osvježava JWT kada je preostalo manje od 7 dana od njegovog 30-dnevnog trajanja.
+Provjerava ga `isDashboardSessionAuthenticated()` u `src/shared/utils/apiAuth.ts`. Cjevovod automatski osvježava JWT kada mu preostane manje od 7 dana od njegovog 30-dnevnog vijeka trajanja.
 
-Sesija se može završiti i prije isteka 30 dana jer svaki izdavalac koristi `mintDashboardSessionToken` (vrijeme izdavanja `iat` i identifikator `jti`), a verifikator provjerava dvije postavke: `sessionsValidAfter`, koja se postavlja promjenom lozinke tako da se više ne mogu verificirati sesije izdate prije te promjene (preglednik u kojem je lozinka promijenjena dobija novi kolačić), i `revokedDashboardSessions`, u koju `POST /api/auth/logout` dodaje `jti` odjavljene sesije. Sesije koje je izdala starija verzija ne sadrže nijednu od ovih tvrdnji i ostaju važeće do prve promjene lozinke. Ako se postavke ne mogu pročitati, sesija se ne smatra pouzdanom.
+Sesija može završiti prije isteka 30 dana jer svaki izdavalac prolazi kroz `mintDashboardSessionToken` (vrijeme izdavanja `iat` i identifikator `jti`), a provjeravatelj provjerava dvije postavke: `sessionsValidAfter`, koju postavlja promjena lozinke, pa svaka sesija izdana prije nje prestaje važiti (preglednik koji je promijenio lozinku dobija novi kolačić), i `revokedDashboardSessions`, u koji `POST /api/auth/logout` dodaje `jti` odjavljene sesije. Sesije izdane starijom verzijom nemaju nijednu od tih tvrdnji i ostaju važeće do prve promjene lozinke. Ako se postavke ne mogu pročitati, sesija se ne smatra pouzdanom.
 
-Neke rute za upravljanje prihvataju **bilo koji** način: kolačić ILI `Bearer <key>` kada API ključ ima opseg `manage` (ili `admin`). To omogućava tok rada „podesivo putem API poziva“, dodan u v3.8.
+Neke rute upravljanja prihvataju **bilo koji** od dva načina: kolačić ILI `Bearer <key>` kada API ključ ima opseg `manage` (ili `admin`). Upravo to omogućava tok rada „konfigurabilno putem API poziva” dodan u v3.8.
 
-#### Opcionalna OIDC kontrola prijave (#6973)
+#### Opcionalna OIDC prijava (#6973)
 
-Administratorska prijava na kontrolnu ploču također podržava **opcioni** OIDC (OpenID Connect) tok
-uz zadanu prijavu pomoću lozinke — prijava pomoću lozinke nikada se ne uklanja, već se samo
-dopunjuje:
+Administratorska prijava na kontrolnu tablu podržava i opcionalni OIDC (OpenID Connect) tok uz zadanu prijavu lozinkom — prijava lozinkom se nikada ne uklanja, nego se samo dopunjuje:
 
-- Onemogućeno je osim ako je `settings.oidcEnabled === true` **i** ako su
-  `oidcIssuer` / `oidcClientId` / `oidcClientSecret` svi konfigurirani
-  (Postavke → Autentifikacija). U suprotnom `GET /api/auth/oidc/login` vraća `400`.
-- `GET /api/auth/oidc/login` otkriva `authorization_endpoint` iz
-  `/.well-known/openid-configuration` izdavaoca (uz rezervnu opciju
-  `<issuer>/authorize`), izrađuje URI za preusmjeravanje iz dolaznog zahtjeva
-  (uz podršku za `x-forwarded-proto`) i preusmjerava na IdP s nasumičnim `state`
-  pohranjenim u `httpOnly` kolačiću `oidc_state`.
-- `GET /api/auth/oidc/callback` provjerava `state`, razmjenjuje autorizacijski
-  kôd i provjerava potpis ID tokena putem JWKS-a izdavaoca
-  (`createRemoteJWKSet` iz paketa `jose`, keširan po JWKS URI-ju), uz provjere
-  `issuer`/`audience`. Lista dozvoljenih vrijednosti `oidcAllowedSubjects` je
-  obavezna: podudara se s tvrdnjom `sub` tokena ili njegovom tvrdnjom `email` —
-  tvrdnja e-pošte uzima se u obzir samo kada je `email_verified === true`, tako
-  da nepotvrđena e-pošta kod IdP-a nikada ne može proći provjeru — a bez ijednog
-  unosa povratni poziv odbija svaku prijavu (`not_configured`).
-- Nakon uspjeha generira **potpuno isti** 30-dnevni JWT `auth_token` koji izdaje
-  prijava lozinkom (`src/app/api/auth/login/route.ts`), tako da ostatak procesa
-  sesije kontrolne ploče (automatsko osvježavanje, zastavice kolačića) ostaje
-  nepromijenjen — OIDC samo zamjenjuje način na koji se kolačić generira, a ne
-  ovlaštenja koja daje.
-- Svaka postavka `oidc*` (`oidcEnabled`, `oidcDisablePasswordLogin`,
-  `oidcIssuer`, `oidcClientId`, `oidcClientSecret`, `oidcAllowedSubjects`,
-  `oidcRedirectPath`, `oidcScopes`) nalazi se u `SECURITY_IMPACTING_SETTINGS_KEYS`
-  (`src/shared/constants/securityImpactingSettings.ts`): `PATCH /api/settings`
-  odgovara sa `400 PASSWORD_REQUIRED` osim ako tijelo sadrži upravljačku
-  lozinku kao `currentPassword` (`401 PASSWORD_MISMATCH` kada je pogrešna).
-  `oidcDisablePasswordLogin` odbija _prijavu_ lozinkom (`POST /api/auth/login`),
-  ali zadržava pohranjeni hash lozinke, a ponovna autentifikacija i dalje
-  provjerava `currentPassword` u odnosu na njega.
-- `corsOrigins` i `bruteForceProtection` također se nalaze u
-  `SECURITY_IMPACTING_SETTINGS_KEYS`: ublažavanje bilo koje od ovih postavki
-  slabi zaštitu prijave, pa zahtijevaju istu ponovnu autentifikaciju putem
-  `currentPassword` (kartica Sigurnost je traži), dok ih JSON uvoz odbacuje.
-- Svaki ključ sigurnosne politike — unosi u `SECURITY_IMPACTING_SETTINGS_KEYS`,
-  svaki ključ `oidc*` i stanje sesije kontrolne ploče — dostupan je **samo
-  operateru** na `PATCH /api/settings`: API ključ s opsegom `manage` ili
-  pristupni token `oma_` odbija se sa `403` čak i kada šalje ispravan
-  `currentPassword`, a odbijanje se bilježi u dnevnik nadzora kao
-  `settings.update_failed` s `reason: OPERATOR_REQUIRED`
-  (`requireOperatorCredential()` u `src/lib/api/operatorCredential.ts`).
-  Obične postavke (tema, preference prikaza) ostaju izmjenjive pomoću ključa
-  `manage` ili pristupnog tokena `admin`. Svaka izmjena same rute
-  `/api/settings` (kao i `/api/settings/require-login`) također zahtijeva opseg
-  pristupnog tokena `admin` (`ADMIN_MUTATION_EXACT_PATHS` u
-  `src/server/authz/accessScopes.ts`, tačno podudaranje putanje); `GET` ostaje
-  `read`, dok druge podrute `/api/settings/*` (proxyji, zadane vrijednosti
-  kombinacija, aliasi modela, kompresija, čišćenja…) zadržavaju opseg `write`
-  izveden iz metode.
-- `POST /api/settings/import-json` preskače tu ponovnu autentifikaciju, pa prije
-  zapisivanja odbacuje svaki ključ iz `IMPORT_STRIPPED_SETTINGS_KEYS` (ista
-  datoteka): lozinku i `currentPassword`, svaki unos iz
-  `SECURITY_IMPACTING_SETTINGS_KEYS` te stanje sesije kontrolne ploče
-  (`sessionsValidAfter`, `revokedDashboardSessions`). Uvoz starije sigurnosne
-  kopije stoga ne može ponovo aktivirati sesiju koju je promjena lozinke ili
-  odjava već okončala.
+- Onemogućeno osim ako su `settings.oidcEnabled === true` **i** `oidcIssuer` / `oidcClientId` / `oidcClientSecret` svi postavljeni (Settings → Auth). `GET /api/auth/oidc/login` u suprotnom vraća `400`.
+- `GET /api/auth/oidc/login` otkriva `authorization_endpoint` iz `/.well-known/openid-configuration` izdavaoca (u suprotnom koristi `<issuer>/authorize`), gradi redirect URI iz dolaznog zahtjeva (uzima u obzir `x-forwarded-proto`) i preusmjerava na IdP sa nasumičnim `state` pohranjenim u kolačić `oidc_state` s oznakom `httpOnly`.
+- `GET /api/auth/oidc/callback` provjerava `state`, mijenja autorizacijski kod i provjerava potpis ID tokena putem JWKS-a izdavaoca (`createRemoteJWKSet` iz `jose`, keširano po JWKS URI-ju) uz provjeru `issuer`/`audience`. Lista `oidcAllowedSubjects` je obavezna: odgovara tvrdnji `sub` tokena ili tvrdnji `email` — tvrdnja e-pošte uzima se u obzir samo kada je `email_verified === true`, pa neprovjerena e-pošta kod IdP-a nikada ne može proći kroz kapiju — a bez unosa callback odbija svaku prijavu (`not_configured`).
+- Po uspjehu izdaje **potpuno isti** 30-dnevni JWT `auth_token` kao i prijava lozinkom (`src/app/api/auth/login/route.ts`), pa ostatak cjevovoda sesije kontrolne table (automatsko osvježavanje, zastavice kolačića) ostaje nepromijenjen — OIDC mijenja samo način izdavanja kolačića, a ne ono što on daje.
+- Svaka postavka `oidc*` (`oidcEnabled`, `oidcDisablePasswordLogin`, `oidcIssuer`, `oidcClientId`, `oidcClientSecret`, `oidcAllowedSubjects`, `oidcRedirectPath`, `oidcScopes`) nalazi se u `SECURITY_IMPACTING_SETTINGS_KEYS` (`src/shared/constants/securityImpactingSettings.ts`): `PATCH /api/settings` vraća `400 PASSWORD_REQUIRED` osim ako tijelo zahtjeva ne sadrži lozinku za upravljanje kao `currentPassword` (`401 PASSWORD_MISMATCH` ako je pogrešna). `oidcDisablePasswordLogin` onemogućava _prijavu_ lozinkom (`POST /api/auth/login`), ali zadržava pohranjeni hash lozinke, a ponovna autentifikacija i dalje provjerava `currentPassword` prema njemu.
+- `corsOrigins` i `bruteForceProtection` također su u `SECURITY_IMPACTING_SETTINGS_KEYS`: njihovo ublažavanje slabi odbranu prijave, pa zahtijevaju istu ponovnu autentifikaciju `currentPassword` (kartica Security je traži), a uvoz JSON-a ih izostavlja.
+- Svaki ključ sigurnosne politike — unosi `SECURITY_IMPACTING_SETTINGS_KEYS`, svaki ključ `oidc*` i stanje sesije kontrolne table — je **samo za operatera** na `PATCH /api/settings`: API ključ s opsegom manage ili `oma_` pristupni token dobija `403`, čak i kada pošalje ispravan `currentPassword`, a odbijanje se bilježi kao `settings.update_failed` s `reason: OPERATOR_REQUIRED` (`requireOperatorCredential()` u `src/lib/api/operatorCredential.ts`). Obične postavke (tema, postavke prikaza) ostaju upisive za ključ `manage` ili pristupni token `admin`. Svaka izmjena samog `/api/settings` (kao i `/api/settings/require-login`) također zahtijeva opseg pristupnog tokena `admin` (`ADMIN_MUTATION_EXACT_PATHS` u `src/server/authz/accessScopes.ts`, tačno podudaranje putanje); `GET` ostaje `read`, a ostale podrute `/api/settings/*` (proxyji, zadane postavke combo, aliasi modela, kompresija, čišćenja…) zadržavaju opseg `write` izveden iz metode.
+- `POST /api/settings/import-json` preskače tu ponovnu autentifikaciju, pa prije upisa uklanja svaki ključ iz `IMPORT_STRIPPED_SETTINGS_KEYS` (ista datoteka): lozinku i `currentPassword`, svaki unos `SECURITY_IMPACTING_SETTINGS_KEYS` te stanje sesije kontrolne table (`sessionsValidAfter`, `revokedDashboardSessions`). Uvoz starije sigurnosne kopije tako ne može oživjeti sesiju koju je završila promjena lozinke ili odjava.
 
 ## Klase ruta
 
-`src/server/authz/types.ts` definira tri klase; svaka ruta koja se ne može deterministički klasificirati svrstava se u `MANAGEMENT`.
+`src/server/authz/types.ts` definiše tri klase; svaka ruta koju nije moguće deterministički klasifikovati pada na `MANAGEMENT`.
 
-| Klasa        | Opis                                                                                                                                                              | Potrebna autentifikacija                                                          |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `PUBLIC`     | Eksplicitno sigurne rute — prijava, odjava, status, inicijalizacija, provjera ispravnosti, početno postavljanje.                                                  | Nije potrebna                                                                     |
-| `CLIENT_API` | Krajnje tačke za posluživanje modela — `/api/v1/*`, `/api/v1beta/*`, kao i aliasi `/v1/*`, `/v1beta/*`, `/chat/completions`, `/responses`, `/models`, `/codex/*`. | Bearer ključ kada je efektivna oznaka funkcionalnosti `REQUIRE_API_KEY` omogućena |
-| `MANAGEMENT` | Stranice kontrolne ploče, postavke, pružaoci usluga, ključevi te administratorske i dijagnostičke krajnje tačke.                                                  | Sesija kontrolne ploče ILI Bearer s opsegom `manage`                              |
+| Klasa        | Opis                                                                                                                                                          | Potrebna autentifikacija                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `PUBLIC`     | Izričito sigurne rute — prijava, odjava, status, inicijalizacija, health, bootstrap uvođenja.                                                                 | Nema                                                              |
+| `CLIENT_API` | Krajnje tačke za posluživanje modela — `/api/v1/*`, `/api/v1beta/*` te aliasi `/v1/*`, `/v1beta/*`, `/chat/completions`, `/responses`, `/models`, `/codex/*`. | Bearer ključ kada je omogućena efektivna oznaka `REQUIRE_API_KEY` |
+| `MANAGEMENT` | Stranice kontrolne table, postavke, provajderi, ključevi, administrativne i dijagnostičke krajnje tačke.                                                      | Sesija kontrolne table ILI Bearer s opsegom `manage`              |
 
-Nekoliko `MANAGEMENT` radnji dostupno je **samo operateru**: ključ s opsegom `manage` nije dovoljan. Izvoz pohranjenih
-vjerodajnica (`GET /api/settings/export-json`, `GET /api/db-backups/export`,
-`GET /api/db-backups/exportAll`), vraćanje sigurnosne kopije preko aktivnih podataka
-(`POST /api/db-backups/import`, uključujući `dryRun=true`, `POST /api/db-backups` vraćanje po ID-u,
-`POST /api/settings/import-json`), uništavanje tačaka vraćanja (`DELETE /api/db-backups` čišćenje
-i `PATCH /api/db-backups`, jer postavka zadržavanja koju čuva pokreće automatsko uklanjanje nakon
-svake sigurnosne kopije) zahtijevaju sesiju kontrolne ploče, lokalni CLI subjekt ili onemogućenu prijavu. Izdavanje
-tokena za sinhronizaciju (`POST /api/sync/tokens`) i generiranje CLI pristupnog tokena s opsegom `admin`
-(`POST /api/cli/tokens`) zahtijevaju sesiju kontrolne ploče ili lokalni CLI subjekt u svakom načinu prijave.
-API ključevi bilo kojeg opsega i `oma_` pristupni tokeni nisu vjerodajnice operatera: dobijaju `403`
-kad god je takva vjerodajnica potrebna. Provjera se
-nalazi u `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` /
-`requireOperatorCredential()`). Promjena postavki prijave također je dostupna samo operateru:
-`POST /api/settings/require-login` (postavljanje lozinke za upravljanje / uključivanje ili isključivanje `requireLogin`) prihvata
-samo te vjerodajnice nakon što lozinka postoji — početni period prvog pokretanja (dok lozinka još ne postoji)
-ostaje nepromijenjen — a sesija kontrolne ploče mora poslati `currentPassword` kako bi zamijenila lozinku
-(`403` kada nedostaje ili je netačna, evidentirano kao `settings.update_failed`). Lokalni CLI i
-instanca s onemogućenom prijavom zadržavaju način oporavka i mogu postaviti lozinku bez nje, jer su oba
-vezana za host koji posjeduje direktorij podataka.
+Nekoliko radnji `MANAGEMENT` je **samo za operatera**: ključ `manage` nije dovoljan. Izvoz pohranjenih vjerodajnica (`GET /api/settings/export-json`, `GET /api/db-backups/export`, `GET /api/db-backups/exportAll`), vraćanje sigurnosne kopije preko živih podataka (`POST /api/db-backups/import`, uključujući `dryRun=true`, `POST /api/db-backups` vraćanje po id-u, `POST /api/settings/import-json`) i uništavanje tačaka vraćanja (čišćenje putem `DELETE /api/db-backups` i također `PATCH /api/db-backups`, jer zadržavanje koje se snima pokreće automatsko orezivanje nakon svake sigurnosne kopije) zahtijevaju sesiju kontrolne table, lokalni CLI subjekat ili onemogućenu prijavu. Izdavanje sinhronizacijskog tokena (`POST /api/sync/tokens`) i kovanje CLI pristupnog tokena s opsegom `admin` (`POST /api/cli/tokens`) zahtijevaju sesiju kontrolne table ili lokalni CLI subjekat u svim načinima prijave. API ključevi bilo kojeg opsega i `oma_` pristupni tokeni nisu operaterske vjerodajnice: kada se traži operaterska vjerodajnica, dobijaju `403`. Provjera se nalazi u `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` / `requireOperatorCredential()`). Promjena postavki prijave također je rezervisana za operatera: `POST /api/settings/require-login` (postavljanje lozinke za upravljanje / prebacivanje `requireLogin`) prihvata samo te vjerodajnice kada lozinka već postoji — prozor prvog pokretanja (još bez lozinke) ostaje nepromijenjen — a sesija kontrolne table mora poslati `currentPassword` da bi zamijenila lozinku (`403` ako nedostaje ili je pogrešna, bilježi se kao `settings.update_failed`). Lokalni CLI i instanca s onemogućenom prijavom zadržavaju put oporavka i mogu postaviti lozinku bez nje, jer su obje vezane za host koji posjeduje direktorij podataka.
 
 ## Pipeline
 
@@ -290,21 +216,15 @@ Ostaje isključeno osim ako je `OMNIROUTE_MCP_ENFORCE_SCOPES=true`.
 (`src/lib/accessTokens/scopes.ts`). Ovo rangiranje primjenjuje se samo na
 vjerodajnicu pristupnog tokena. Pogledajte [Autentifikacija za upravljanje](../guides/MANAGEMENT-AUTH.md).
 
-## Prekidač za obaveznu autentifikaciju
+## Prekidač za zahtijevanu autentifikaciju
 
-`isAuthRequired()` u `src/shared/utils/apiAuth.ts` određuje da li se za zahtjev provodi **bilo kakva** autentifikacija:
+`isAuthRequired()` u `src/shared/utils/apiAuth.ts` odlučuje hoće li se za zahtjev provoditi **bilo kakva** autentifikacija:
 
-- `settings.requireLogin === false` → autentifikacija je globalno onemogućena, osim za uvijek zaštićeni
-  nivo (pogledajte [Nivoi zaštite ruta](../security/ROUTE_GUARD_TIERS.md)) i pozive koji izdaju
-  vjerodajnicu koju prihvataju, a koji zahtijevaju istu vjerodajnicu kao i kada je prijava uključena: izdavanje tokena za sinhronizaciju,
-  generisanje CLI pristupnih tokena bilo kojeg opsega te kreiranje API ključa s opsegom `manage`/`admin`,
-  dodjeljivanje tog opsega ključu ili ponovno generisanje ili otkrivanje takvog ključa
-  (`requireCredentialForManagementScopedKey()` u `src/lib/api/requireManagementAuth.ts`).
-  Ključevi namijenjeni samo za zaključivanje ostaju otvoreni.
-- Nije konfigurirana lozinka **i** ne postoji varijabla okruženja `INITIAL_PASSWORD` → režim početnog postavljanja omogućava čarobnjak za uvođenje i zahtjeve preko povratne petlje, ali mrežni zahtjevi izloženi prema vani i dalje zahtijevaju vjerodajnice.
-- Bilo koja greška baze podataka → pristup se odbija (sigurno prema zadanim postavkama).
+- `settings.requireLogin === false` → autentifikacija je globalno isključena, osim za trajno zaštićeni nivo (vidi [Route Guard Tiers](../security/ROUTE_GUARD_TIERS.md)) i pozive koji izdaju vjerodajnicu koju ona prihvata; oni zahtijevaju istu vjerodajnicu kao i pri uključenoj prijavi: izdavanje sinhronizacijskih tokena, kovanje CLI pristupnih tokena bilo kojeg opsega te kreiranje API ključa s opsegom `manage`/`admin`, dodjeljivanje tog opsega ključu, regeneriranje ili prikaz takvog ključa (`requireCredentialForManagementScopedKey()` u `src/lib/api/requireManagementAuth.ts`). Ključevi samo za inferenciju ostaju otvoreni.
+- Nije postavljena lozinka **i** nije postavljena okolinska varijabla `INITIAL_PASSWORD` → bootstrap način dopušta čarobnjaka za postavljanje i zahtjeve s loopbacka, ali mrežni zahtjevi izvana i dalje zahtijevaju vjerodajnice.
+- Svaka greška baze → zatvoreno (secure-by-default).
 
-Provjera API ključa klijenta koristi `isRequireApiKeyEnabled()` u `src/shared/utils/featureFlags.ts`, a ne direktno čitanje `process.env.REQUIRE_API_KEY`. Ovo je važno za implementirane instance: promjena opcije `REQUIRE_API_KEY` u Dashboard → Feature Flags pohranjuje zamjensku vrijednost u bazu podataka i odmah utiče na `/v1/*`, `/v1beta/*`, `/models`, `/responses`, `/chat/completions`, `/codex/*` i druge provjere autentifikacije klijentskog API-ja koje koriste ovaj pomoćni metod. Ako se spremište zastavica funkcionalnosti ne može pročitati, autentifikacija klijentskog API-ja odbija pristup i zahtijeva ključ.
+Provođenje API ključa klijenta koristi `isRequireApiKeyEnabled()` u `src/shared/utils/featureFlags.ts`, a ne direktno čitanje `process.env.REQUIRE_API_KEY`. To je važno za instalirane instance: prebacivanje `REQUIRE_API_KEY` u Dashboard → Feature Flags sprema nadjačavanje u bazu i odmah utiče na `/v1/*`, `/v1beta/*`, `/models`, `/responses`, `/chat/completions`, `/codex/*` i druge provjere autentifikacije klijentskog API-ja koje dijele ovaj pomoćnik. Ako se skladište oznaka ne može pročitati, autentifikacija klijentskog API-ja zatvara se i zahtijeva ključ.
 
 ## Promjena koja prekida kompatibilnost — v3.8.0
 

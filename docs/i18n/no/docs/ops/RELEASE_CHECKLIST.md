@@ -113,59 +113,59 @@ matrisen automatisk, uten noen etikett.
 
 ### Før utgivelse
 
-- [ ] Alle PR-er som er rettet mot denne utgivelsen, er slått sammen til `release/vX.Y.0`
+- [ ] Alle PR-er som er rettet mot denne utgivelsen, er slått sammen med `release/vX.Y.0`
 - [ ] Alle åpne Linear-/issue-elementer for denne versjonen er lukket eller flyttet til neste milepæl
 - [ ] CI er grønn på grenen `release/vX.Y.0`
 - [ ] Ingen `TODO(release)`-markører i koden: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] Docker-baseimaget er oppdatert (for øyeblikket `node:24.15.0-trixie-slim`)
+- [ ] Docker-basisimaget er oppdatert (for øyeblikket `node:24.15.0-trixie-slim`)
 
 ### Versjon og endringslogg
 
 - [ ] Kjør `/version-bump-cc <patch|minor|major>` (Claude Code-ferdighet)
-  - Oppdaterer versjonen i `package.json`, `electron/package.json`
-  - Regenererer `CHANGELOG.md` fra git-commiter siden siste tagg
+  - Oppdaterer versjonene i `package.json`, `electron/package.json`
+  - Regenererer `CHANGELOG.md` fra git-commits siden forrige tagg
   - Oppdaterer merkene i README.md
-- [ ] Gjennomgå CHANGELOG.md manuelt og rydd opp i commit-meldinger ved behov
+- [ ] Gjennomgå CHANGELOG.md manuelt, og rydd opp i commit-meldinger ved behov
 - [ ] Kontroller at den nyeste semver-seksjonen i `CHANGELOG.md` samsvarer med versjonen i `package.json`
 - [ ] Behold `## [Unreleased]` som den første seksjonen i endringsloggen for kommende arbeid
 - [ ] Oppdater `docs/openapi.yaml` → `info.version` må samsvare med versjonen i `package.json`
 
 ### Kodekvalitet
 
-- [ ] `npm run lint` — 0 feil (advarslene fantes fra før)
+- [ ] `npm run lint` — 0 feil (advarsler eksisterte fra før)
 - [ ] `npm run typecheck:core` — uten feil
 - [ ] `npm run typecheck:noimplicit:core` — uten feil (streng)
-- [ ] `npm run check:cycles:ratchet` — innenfor den fastlåste `metrics.cycles`-grensen (ren `check:cycles` avsluttes med kode 1 ved enhver syklus, #15281)
+- [ ] `npm run check:cycles:ratchet` — innenfor det låste `metrics.cycles`-taket (`check:cycles` alene avsluttes med 1 ved enhver syklus, #15281)
 - [ ] `npm run check:any-budget:t11` — innenfor budsjettet
 - [ ] `npm run check:route-validation:t06` — uten feil
-- [ ] `npm run check:node-runtime` — minimumskravet til støttet kjøretidsmiljø er oppfylt (`>=22.22.2 <23`, `>=24.0.0 <27`, i henhold til `SUPPORTED_NODE_RANGE` i `src/shared/utils/nodeRuntimeSupport.ts`; samordnet med `engines` i `package.json`)
+- [ ] `npm run check:node-runtime` — minimumskravet for støttet kjøretidsmiljø er oppfylt (`>=22.22.2 <23`, `>=24.0.0 <27`, i henhold til `SUPPORTED_NODE_RANGE` i `src/shared/utils/nodeRuntimeSupport.ts`; samstemt med `engines` i `package.json`)
 
 ### Testing
 
 - [ ] `npm run test:unit` — bestått
 - [ ] `npm run test:vitest` — bestått (MCP-server, autoCombo, hurtigbuffer)
-- [ ] `npm run test:coverage` — kravet på 60/60/60/60 er oppfylt (uttrykk/linjer/funksjoner/grener)
+- [ ] `npm run test:coverage` — kravet på 60/60/60/60 er oppfylt (setninger/linjer/funksjoner/grener)
 - [ ] `npm run test:integration` — bestått (hvis endringene berører DB/behandlere)
-- [ ] `npm run test:combo:matrix` — bestått (matrise for kombinasjonsstrategier: verifiserer valgene til alle de 19 offentlige rutingsstrategiene deterministisk; kjør ved endringer i kombinasjonsruting, strategioppløsning eller reservelogikk)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **valgfri/manuell** (kontrollert smoke-test mot reelle oppstrømstjenester; henter et skrivebeskyttet DB-øyeblikksbilde fra VPS-en `root@192.168.0.15`; kontakter reelle leverandører og koster kreditter; kjører aldri i CI; hoppes over uten feil når aktiveringen mangler)
-- [ ] `npm run test:combo:live:vps` — **valgfri/manuell** (fase 3-smoke-test på aktiv VPS: 7 HTTP-scenarioer mot den aktive `.15`-serveren via ren Node ESM; krever `ssh root@192.168.0.15`; oppretter/sletter bare `__live_test__*`-kombinasjoner; kontakter reelle leverandører; kjører aldri i CI)
+- [ ] `npm run test:combo:matrix` — bestått (matrise for combo-strategier: beviser deterministisk valgene til alle de 19 offentlige rutingsstrategiene; kjøres ved endringer i combo-ruting, strategioppløsning eller reservelogikk)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **valgfri/manuell** (betinget røyktest mot reelle oppstrømstjenester; henter et skrivebeskyttet DB-øyeblikksbilde fra VPS-en `root@192.168.0.15`; bruker reelle leverandører og koster kreditter; kjøres aldri i CI; hoppes over uten feil når betingelsen ikke er aktivert)
+- [ ] `npm run test:combo:live:vps` — **valgfri/manuell** (fase 3-røyktest på aktiv VPS: 7 HTTP-scenarioer mot den aktive `.15`-serveren via vanlig Node ESM; krever `ssh root@192.168.0.15`; oppretter/sletter bare `__live_test__*`-comboer; bruker reelle leverandører; kjøres aldri i CI)
 - [ ] `npm run test:e2e` — bestått (UI-endringer)
 - [ ] `npm run test:protocols:e2e` — bestått (MCP-/A2A-endringer)
 - [ ] `npm run test:ecosystem` — bestått
 
 ### Hooks (validert av Husky)
 
-Husky-hooks ligger i `.husky/` og kjører automatisk ved git-operasjoner.
+Husky-hooks ligger i `.husky/` og kjøres automatisk ved git-operasjoner.
 
 - **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** raske, deterministiske kontrollpunkter — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (aktivert 2026-06-13). Utelater med hensikt `test:unit` (treg; dekkes av CI-jobben `test-unit`).
+- **pre-push:** raske, deterministiske kontrollporter — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (aktivert 2026-06-13). Utelater bevisst `test:unit` (treg; dekkes av CI-jobben `test-unit`).
   - Kjør `npm run test:unit` manuelt før utgivelsesgrener pushes.
 
-Hvis en hook mislykkes: rett det underliggende problemet, ikke omgå det med `--no-verify`.
+Hvis en hook feiler: rett det underliggende problemet, ikke omgå den med `--no-verify`.
 
-### Conventional Commits
+### Konvensjonelle commits
 
-Alle commiter som skal med i utgivelsen, må følge formatet `type(scope): subject`.
+Alle commits som skal inngå i utgivelsen, må følge formatet `type(scope): subject`.
 
 **Gyldige typer:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
@@ -176,42 +176,42 @@ Brytende endringer: legg til bunnteksten `BREAKING CHANGE:` eller `!` etter scop
 ### Dokumentasjon
 
 - [ ] `npm run check:docs-sync` består (kjøres automatisk av pre-commit)
-- [ ] `npm run check:docs-all` består (samlet kontroll: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` avsluttes med kode 0 — miljøkontrakten mellom kode ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` er intakt
-- [ ] `npm run check:doc-links` avsluttes med kode 0 — ingen brutte interne markdown-referanser etter omstrukturering
+- [ ] `npm run check:docs-all` består (samlekontroll: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
+- [ ] `npm run check:env-doc-sync` avsluttes med 0 — kontrakten for miljøvariabler mellom kode ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` er intakt
+- [ ] `npm run check:doc-links` avsluttes med 0 — ingen brutte interne markdown-referanser etter omstrukturering
 - [ ] `docs/architecture/ARCHITECTURE.md` er gjennomgått for avvik i lagring/kjøretidsmiljø
 - [ ] `docs/guides/TROUBLESHOOTING.md` er gjennomgått for avvik i miljøvariabler og drift
 - [ ] Hvis `.env.example` er endret: `docs/reference/ENVIRONMENT.md` er oppdatert
-- [ ] Hvis en ny funksjon har et UI: `docs/guides/USER_GUIDE.md` omtaler den
+- [ ] Hvis en ny funksjon har et brukergrensesnitt: `docs/guides/USER_GUIDE.md` omtaler den
 - [ ] Hvis en ny funksjon har et API: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` er oppdatert
-- [ ] Hvis en ny funksjon er en modul: en egen `docs/<MODULE>.md` finnes
+- [ ] Hvis en ny funksjon er en modul: dedikert `docs/<MODULE>.md` finnes
 - [ ] Ved brytende endring: `docs/guides/TROUBLESHOOTING.md` har et migreringsnotat
 
 ### i18n
 
-- [ ] `npm run i18n:check` avsluttes med kode 0 — oversettelsestilstanden (`.i18n-state.json`) er synkronisert med kildedokumentene (ingen avvikende kilder i streng modus; veiledende advarsler i varselmodus er akseptable for dokumentasjonsjusteringer i siste liten, men resultatet bør være 0 før tagging)
-- [ ] `npm run i18n:check-ui-coverage` avsluttes med kode 0 — alle UI-lokaler ligger på eller over minimumskravet på 80 % dekning
+- [ ] `npm run i18n:check` avsluttes med 0 — oversettelsestilstanden (`.i18n-state.json`) er synkronisert med kildedokumentene (ingen avvikende kilder i streng modus; veiledende advarsler er akseptable for dokumentasjonsendringer i siste liten, men resultatet bør være 0 før tagging)
+- [ ] `npm run i18n:check-ui-coverage` avsluttes med 0 — alle UI-lokaler ligger på eller over minimumsgrensen på 80 % dekning
 - [ ] `npm run i18n:sync-ui:dry` rapporterer 0 manglende nøkler på tvers av alle de 66 mållokalene (alle lokaler unntatt kilden `en`)
-- [ ] Hvis de engelske kildedokumentene er endret, kjør `npm run i18n:run` (krever `OMNIROUTE_TRANSLATION_API_KEY` i `.env`) før tagging
-- [ ] Oversettelsesbidrag kan utsettes til neste utgivelse hvis de er mindre omfattende (spor dem i CHANGELOG)
+- [ ] Hvis engelske kildedokumenter er endret, kjør `npm run i18n:run` (krever `OMNIROUTE_TRANSLATION_API_KEY` i `.env`) før tagging
+- [ ] Oversettelsesbidrag kan utsettes til neste utgivelse hvis de er mindre omfattende (registrer i CHANGELOG)
 
 ### Databasemigreringer
 
 - [ ] Hvis `src/lib/db/migrations/` har nye filer:
   - [ ] Hver migrering er idempotent (`CREATE TABLE IF NOT EXISTS` osv.)
-  - [ ] Migreringene er pakket inn i transaksjoner
+  - [ ] Migreringer er pakket inn i transaksjoner
   - [ ] Riktig nummerert (ingen hull i sekvensen)
 - [ ] Test på en ny installasjon: slett `~/.omniroute/omniroute.db` og kjør `npm run dev`
-- [ ] Test på en eksisterende installasjon: sikkerhetskopier DB-en, kjør migreringen og verifiser skjemaet
+- [ ] Test på en eksisterende installasjon: sikkerhetskopier DB-en, kjør migreringen, verifiser skjemaet
 - [ ] WAL-filer (`-wal`, `-shm`) håndteres riktig hvis migreringen skriver tabeller på nytt
 
 ### Leverandørkatalog (Zod-validert)
 
-- [ ] Zod-skjemaet i `src/shared/constants/providers.ts` er gyldig ved innlasting
+- [ ] `src/shared/constants/providers.ts` har et Zod-skjema som er gyldig ved innlasting
   - [ ] Alle leverandører har obligatoriske felt (`id`, `label`, `kind` osv.)
   - [ ] `freeNote` er angitt for nye gratisleverandører
   - [ ] OAuth-leverandører har `oauthConfig` registrert i `src/lib/oauth/constants/oauth.ts`
-- [ ] Hvis en ny leverandør er lagt til: tilsvarende eksekveringskomponent i `open-sse/executors/`
+- [ ] Hvis en ny leverandør er lagt til: tilsvarende eksekutor i `open-sse/executors/`
 - [ ] Hvis formatet ikke er OpenAI: oversetter i `open-sse/translator/`
 - [ ] Modeller er registrert i `open-sse/config/providerRegistry.ts`
 - [ ] Enhetstester i `tests/unit/` dekker klassifisering og ruting av leverandører
@@ -224,96 +224,96 @@ Hvis `electron/` er endret:
 - [ ] Bygg er testet for minst én av `:win`, `:mac`, `:linux`
 - [ ] Sertifikater for kodesignering er ikke utløpt (hvis signering brukes)
 - [ ] Versjonen i `electron/package.json` samsvarer med rotens `package.json`
-- [ ] Kanalpekeren for automatisk oppdatering er oppdatert ved utgivelse til `stable`
+- [ ] Pekeren for kanalen for automatiske oppdateringer er oppdatert ved utgivelse til `stable`
 
 ### Byggoppsett
 
-Repositoriet bruker tre separate utdatakataloger — ikke bland dem:
+Repoet bruker tre separate utdatakataloger — bland dem aldri:
 
-| Katalog   | Formål                                                            | Versjonssporet?  |
-| --------- | ----------------------------------------------------------------- | ---------------- |
-| `src/`    | Applikasjonskilde (TypeScript / TSX)                              | Ja               |
-| `.build/` | Mellomprodukter fra bygging — utdata fra `next build` (`distDir`) | Nei (gitignored) |
-| `dist/`   | Distribuerbar npm-pakke — satt sammen av `assembleStandalone`     | Nei (gitignored) |
+| Katalog   | Formål                                                             | Versjonssporet?  |
+| --------- | ------------------------------------------------------------------ | ---------------- |
+| `src/`    | Applikasjonskilde (TypeScript / TSX)                               | Ja               |
+| `.build/` | Mellomresultater fra bygging — utdata fra `next build` (`distDir`) | Nei (gitignored) |
+| `dist/`   | Distribuerbar npm-pakke — satt sammen av `assembleStandalone`      | Nei (gitignored) |
 
-> **Operatørmerknad:** bildekatalogen på den eksterne VPS-en forblir `/usr/lib/node_modules/omniroute/app/`.
-> Bare byggutdataene **i repositoriet** er flyttet (`app/` → `dist/`). Deploy-ferdighetene synkroniserer
-> innholdet i `dist/` med rsync til den eksterne `app/`-katalogen — ingen endringer av VPS-stier er nødvendige.
+> **Operatørmerknad:** katalogen for det eksterne VPS-avbildet forblir `/usr/lib/node_modules/omniroute/app/`.
+> Bare byggutdataene **i repoet** ble flyttet (`app/` → `dist/`). Distribusjonsverktøyene bruker rsync til å
+> overføre innholdet i `dist/` til den eksterne `app/`-katalogen — ingen endringer av VPS-baner er nødvendige.
 
 **Flyt med ett enkelt bygg:**
 
 ```
 npm run build:release
-  └─ rm -rf .build dist          (rydd)
-  └─ next build → .build/next/   (mellomprodukter)
+  └─ rm -rf .build dist          (opprydding)
+  └─ next build → .build/next/   (mellomresultater)
   └─ assembleStandalone          (kopierer standalone + static + public + natives → dist/)
   └─ skriver dist/BUILD_SHA      (HEAD-kontrollverdi)
 ```
 
-IKKE kjør `npm run build` etterfulgt av en separat `npm run build:cli` for utrulling — bruk
-`npm run build:release`, som utfører en ren ombygging og oppretter kontrollverdien med én kommando.
+IKKE kjør `npm run build` etterfulgt av en separat `npm run build:cli` for distribusjon — bruk
+`npm run build:release`, som utfører en ren ombygging og oppretter kontrollverdien i én kommando.
 
 ### Validering av artefakter
 
 - [ ] `npm run build:release` fullføres, og `dist/BUILD_SHA` == `git rev-parse --short HEAD`
 - [ ] `npm run check:pack-artifact` er ren — ingen `app.__qa_backup`, `scripts/scratch`, `package-lock.json` eller andre lokale rester
 - [ ] `dist/server.js` finnes etter bygging
-- [ ] Valgfri lokal røyktest av pakket kjøretidsmiljø: `npm run dev:candidate -- validate` etter at `npm run dev:candidate -- build` starter den pakkede tarballen med en isolert `DATA_DIR` og kontrollerer `/api/health` + `/v1/models` (se [anbefalt bidragsflyt](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
+- [ ] Valgfri lokal røyktest av pakket kjøretidsmiljø: `npm run dev:candidate -- validate` etter `npm run dev:candidate -- build` starter den pakkede tarball-filen med en isolert `DATA_DIR` og kontrollerer `/api/health` + `/v1/models` (se [anbefalt arbeidsflyt for bidrag](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
 
-### Tagging og utgivelse
+### Merking og utgivelse
 
-- [ ] Kjør `/generate-release-cc` (Claude Code-ferdighet):
+- [ ] Kjør `/generate-release-cc` (Claude Code-verktøy):
   - Oppretter taggen `vX.Y.Z`
-  - Pusher taggen og grenen
-  - Oppretter en GitHub-utgivelse med endringsloggen som brødtekst
+  - Pusher tagg og gren
+  - Oppretter en GitHub-utgivelse med endringsloggen som beskrivelse
   - Legger ved Electron-installasjonsprogrammer (hvis de er bygget)
-- [ ] Eller manuelt:
+- [ ] Eller gjør det manuelt:
   ```bash
-  git tag -a vX.Y.Z -m "Utgivelse vX.Y.Z"
+  git tag -a vX.Y.Z -m "Release vX.Y.Z"
   git push origin vX.Y.Z
   gh release create vX.Y.Z --notes-from-tag
   ```
 
-### Utrulling
+### Distribusjon
 
-Deploy-ferdighetene bruker den lette rsync-flyten — ingen `npm pack`, ingen `npm i -g`:
+Distribusjonsverktøyene bruker den lette rsync-flyten — ingen `npm pack`, ingen `npm i -g`:
 
-- [ ] Bruk deploy-ferdigheten som samsvarer med målet:
+- [ ] Bruk distribusjonsverktøyet som samsvarer med målet:
   - `/deploy-vps-local-cc` — lokal VPS (192.168.0.15)
   - `/deploy-vps-akamai-cc` — Akamai-VPS (69.164.221.35)
   - `/deploy-vps-both-cc` — begge
-- [ ] Før utrulling må du bekrefte at `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] Bygget må kjøres der `node_modules` er reell (hovedutsjekkingen eller et arbeidstre der `npm ci` er kjørt — IKKE et symlenket arbeidstre)
-- [ ] Røyktest den utrullede instansen:
+- [ ] Før distribusjon må du bekrefte at `dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] Bygget må kjøres der `node_modules` er reell (hovedutsjekkingen eller et worktree der `npm ci` er kjørt — IKKE et worktree med symbolske lenker)
+- [ ] Røyktest den distribuerte instansen:
   - Åpne `/dashboard/health` → kontroller at versjonsstrengen samsvarer med utgivelsen
   - Kjør en `/v1/chat/completions`-forespørsel mot en kjent leverandør
-  - Kontroller at `/api/monitoring/health` returnerer effektbrytere med statusen `CLOSED`
+  - Bekreft at `/api/monitoring/health` returnerer effektbrytere med statusen `CLOSED`
   - Bekreft at MCP-transporter svarer (`/mcp` HTTP, `/mcp-sse` SSE)
 
 ### Etter utgivelsen
 
-- [ ] Kjør `/capture-release-evidences-cc` (Claude Code-ferdighet)
-  - Tar WebP-skjermbilder/-opptak av nye funksjoner
-  - Legger dem ved utgivelsesnotatene/blogginnlegget
-- [ ] Oppdater GitHub Discussions / Discord med utgivelseskunngjøringen
+- [ ] Kjør `/capture-release-evidences-cc` (Claude Code-verktøy)
+  - Tar WebP-skjermbilder/opptak av nye funksjoner
+  - Legger dem ved utgivelsesmerknadene/blogginnlegget
+- [ ] Oppdater GitHub Discussions / Discord med kunngjøringen om utgivelsen
 - [ ] Opprett en milepæl for neste versjon
 - [ ] Hvis kritisk: fest diskusjonen eller publiser i `news.json` for et banner i appen
 
-### Kontrollpunkt for offentlig lansering av Radar
+### Offentlig lanseringsport for Radar
 
-Radar-kunngjøringen er med hensikt sjekket inn med `active: false`. Aktivering er en separat
+Radar-kunngjøringen er med hensikt lagt inn med `active: false`. Aktivering er en separat
 endring etter at det foreligger dokumentasjon for hvert punkt nedenfor:
 
 - [ ] Alle stablede Radar-PR-er er slått sammen, og CI for utgivelsestoppen er grønn
-- [ ] Rull ut og røyktest OSS Radar-rutene med `RADAR_ENABLED` fortsatt avslått som standard
-- [ ] Røyktest `GET /planos`, `/termos`, `/privacidade` og `/reembolso` på det navngitte Radar-vertsnavnet
-- [ ] Registrer operatørens identitet/kontaktinformasjon/adresse og eiergodkjent juridisk gjennomgang i den private tjenesten
+- [ ] Distribuer og røyktest OSS Radar-rutene mens `RADAR_ENABLED` fortsatt er av som standard
+- [ ] Røyktest `GET /planos`, `/termos`, `/privacidade` og `/reembolso` på det angitte Radar-vertsnavnet
+- [ ] Registrer operatørens identitet/kontaktinformasjon/adresse og en eiergodkjent juridisk gjennomgang i den private tjenesten
 - [ ] Test Stripe Checkout og den signerte webhooken kun i testmodus
-- [ ] Test én kryptert levering av transaksjons-e-post med godkjent avsender/domene
-- [ ] Dokumenter gjenoppretting fra sikkerhetskopi og én overvåket forskningskjøring med kostnadstak
-- [ ] Godkjenn gjennomgangsreglene for BRL/PIX før dokumentasjon på donasjoner aksepteres
-- [ ] Aktiver offentlig Checkout først etter at de foregående kontrollpunktene er bestått, og aktiver deretter den nye ID-en i `news.json`
-- [ ] Kontroller at Hjem-banneret bruker lokalisert tekst, og at en ny ID vises igjen etter at en eldre ID er avvist
+- [ ] Test én kryptert levering av transaksjons-e-post med den godkjente avsenderen/domenet
+- [ ] Dokumenter gjenoppretting fra sikkerhetskopi og én overvåket forskningskjøring med et fastsatt kostnadstak
+- [ ] Godkjenn gjennomgangspolicyen for BRL/PIX før dokumentasjon på donasjoner godtas
+- [ ] Aktiver offentlig Checkout først etter at de foregående portene er passert, og aktiver deretter den nye `news.json`-ID-en
+- [ ] Bekreft at Hjem-banneret bruker lokalisert tekst, og at en ny ID vises igjen etter at en eldre ID er avvist
 
 ## Røyktest for innebygde tjenester (v3.8.4+)
 

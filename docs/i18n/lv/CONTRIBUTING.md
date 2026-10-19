@@ -20,7 +20,7 @@ ar to līgumiem, mērķētiem testiem, CI pārklājumu un saskaņošanas darbīb
 - **Node.js** `>=22.22.2 <23` vai `>=24.0.0 <27` (ieteicams: 24 LTS)
 - **npm** 10+
 
-> **npm v11+ lietotājiem (Node 24+):** Pēc `npm install` pārbaudiet, vai vietējie moduļi ir instalēti:
+> **npm v11+ lietotājiem (Node 24+):** pēc `npm install` izpildes pārbaudiet, vai vietējie moduļi ir instalēti:
 > `node -e "require('better-sqlite3')"`. Ja komanda neizdodas ar kļūdu `MODULE_NOT_FOUND`,
 > izpildiet `npm approve-scripts better-sqlite3 && npm install`. Skatiet
 > [Problēmu novēršana](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
@@ -51,19 +51,19 @@ Galvenie izstrādes vides mainīgie:
 | Mainīgais              | Izstrādes noklusējuma vērtība | Apraksts                      |
 | ---------------------- | ----------------------------- | ----------------------------- |
 | `PORT`                 | `20128`                       | Servera ports                 |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`      | Priekšgala bāzes URL          |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`      | Priekšgala pamata URL         |
 | `JWT_SECRET`           | (ģenerējiet iepriekš)         | JWT parakstīšanas noslēpums   |
 | `INITIAL_PASSWORD`     | `CHANGEME`                    | Pirmās pieteikšanās parole    |
-| `APP_LOG_LEVEL`        | `info`                        | Žurnālu detalizācijas līmenis |
+| `APP_LOG_LEVEL`        | `info`                        | Žurnāla detalizācijas līmenis |
 
 ### Informācijas paneļa iestatījumi
 
-Informācijas panelī ir pieejami funkciju saskarnes slēdži, kurus var konfigurēt arī ar vides mainīgajiem:
+Informācijas panelī ir pieejami funkciju UI pārslēgi, kuras var konfigurēt arī ar vides mainīgajiem:
 
-| Iestatījuma atrašanās vieta | Slēdzis             | Apraksts                                         |
+| Iestatījuma atrašanās vieta | Pārslēgs            | Apraksts                                         |
 | --------------------------- | ------------------- | ------------------------------------------------ |
 | Iestatījumi → Papildu       | Atkļūdošanas režīms | Iespējot atkļūdošanas pieprasījumu žurnālus (UI) |
-| Iestatījumi → Vispārīgi     | Sānjoslas redzamība | Rādīt/slēpt sānjoslas sadaļas                    |
+| Iestatījumi → Vispārīgi     | Sānjoslas redzamība | Rādīt/paslēpt sānjoslas sadaļas                  |
 
 Šie iestatījumi tiek glabāti datubāzē un saglabājas pēc restartēšanas, aizstājot vides mainīgo noklusējuma vērtības, ja tie ir iestatīti.
 
@@ -77,48 +77,48 @@ npm run dev
 npm run build    # next build → .build/next/, pēc tam assembleStandalone → dist/
 npm run start
 
-# Ātra tikai aizmugursistēmas/API kompilēšana līdzstrādnieku izmaiņām
+# Ātra tikai aizmugursistēmas/API kompilēšana līdzdalībnieku izmaiņām
 npm run build:contributor
 
-# Laidiena būvējums (tīra pārbūve + HEAD kontrolvērtība — nepieciešams izvietošanai)
-npm run build:release   # rm -rf .build dist && būvēšana + ieraksta dist/BUILD_SHA
+# Laidiena būvējums (tīra pārbūve + HEAD kontrolmarķieris — nepieciešams izvietošanai)
+npm run build:release   # rm -rf .build dist && build + ieraksta dist/BUILD_SHA
 
 # Bieži izmantota porta konfigurācija
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Līdzstrādnieku būvējums veic tikai kompilēšanas validāciju: tas neveido savrupo
-izplatījumu un nebūvē neobligātos vietējās pakošanas resursus. Izmantojiet parasto produkcijas būvējumu, ja
-nepieciešams pārbaudīt izplatāmo pakotni.
+Līdzdalībnieku būvējums veic tikai kompilēšanas validāciju: tas neizveido autonomo
+izplatījumu un nebūvē neobligātos vietējās pakotnes resursus. Izmantojiet parasto produkcijas būvējumu, kad
+nepieciešams validēt izplatāmo komplektu.
 
 ### Būvējuma izvades struktūra
 
-| Direktorijs | Saturs                                                                       | Izseko Git |
-| ----------- | ---------------------------------------------------------------------------- | ---------- |
-| `src/`      | Lietotnes pirmkods (TypeScript / TSX)                                        | Jā         |
-| `.build/`   | Starprezultāti — `next build` izvade (Git ignorēts, `distDir = .build/next`) | Nē         |
-| `dist/`     | Izplatāmā pakotne — to izveido `assembleStandalone` (Git ignorēts)           | Nē         |
+| Direktorijs | Saturs                                                                     | Izseko Git |
+| ----------- | -------------------------------------------------------------------------- | ---------- |
+| `src/`      | Lietotnes pirmkods (TypeScript / TSX)                                      | Jā         |
+| `.build/`   | Starprezultāti — `next build` izvade (Git ignorē, `distDir = .build/next`) | Nē         |
+| `dist/`     | Izplatāmais komplekts — izveido `assembleStandalone` (Git ignorē)          | Nē         |
 
 Būvēšanas konveijers tiek izpildīts vienā piegājienā:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (Next.js izvade)
-  └─ assembleStandalone()                 (kopē savrupo būvējumu + statiskos + publiskos + vietējos resursus)
+  └─ assembleStandalone()                 (kopē autonomo būvējumu + statiskos + publiskos + vietējos resursus)
        └─ izvade: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
 `npm run build:release` vispirms papildus iztīra abus direktorijus un ieraksta
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) kā izvietošanas integritātes kontrolvērtību.
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) kā izvietošanas integritātes kontrolmarķieri.
 
 `npm run build:contributor` izmanto tikai aizmugursistēmai paredzēto būvēšanas profilu. Būvēšanas laikā tas īslaicīgi aizstāj
 informācijas paneļa UI failus ar aizstājējiem, saglabā API maršrutu apstrādātājus un pēc būvēšanas atjauno sākotnējos failus.
 Izmantojiet `npm run build` izmaiņām, kas ietekmē informācijas paneļa UI, vai pilnai
-laidiena validācijai; līdzstrādnieku profils neaizstāj laidiena būvējumu.
+laidiena validācijai; līdzdalībnieku profils neaizstāj laidiena būvējumu.
 
 > **Piezīme par izvietošanu VPS:** attālā attēla direktorijs `/usr/lib/node_modules/omniroute/app/`
-> nav mainīts. Izvietošanas rīki ar rsync sinhronizē `dist/` saturu ar šo direktoriju.
-> Mainījās tikai repozitorijā esošais būvējuma izvades ceļš (`app/` → `dist/`).
+> nav mainīts. Izvietošanas rīki ar rsync sinhronizē `dist/` saturu uz šo direktoriju.
+> Mainījās tikai repozitorijā esošās būvējuma izvades ceļš (`app/` → `dist/`).
 
 Noklusējuma URL:
 
@@ -292,7 +292,7 @@ Skatiet `open-sse/utils/stream.ts` un `open-sse/utils/streamHandler.ts`, lai iep
 
 ```
 src/                        # TypeScript (.ts / .tsx)
-├── app/                    # Next.js 16 App Router
+├── app/                    # Next.js 16 lietotņu maršrutētājs
 │   ├── (dashboard)/        # Informācijas paneļa lapas (23 sadaļas)
 │   ├── api/                # API maršruti (51 direktorijs)
 │   └── login/              # Autentifikācijas lapas (.tsx)
@@ -306,9 +306,9 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── oauth/              # OAuth nodrošinātāji, pakalpojumi un utilītas
 │   ├── skills/             # Paplašināms prasmju ietvars
 │   ├── usage/              # Lietojuma uzskaite un izmaksu aprēķināšana
-│   └── localDb.ts          # Tikai atkārtotas eksportēšanas slānis — nekad nepievienojiet šeit loģiku
+│   └── localDb.ts          # Tikai atkārtota eksporta slānis — nekad nepievienojiet šeit loģiku
 ├── middleware/              # Pieprasījumu starpprogrammatūra (promptInjectionGuard)
-├── mitm/                   # MITM starpniekserveris (sertifikāts, DNS, mērķa maršrutēšana)
+├── mitm/                   # MITM starpniekserveris (sertifikāti, DNS, mērķu maršrutēšana)
 ├── shared/
 │   ├── components/         # React komponenti (.tsx)
 │   ├── constants/          # Nodrošinātāju definīcijas (329), MCP tvērumi, 20 maršrutēšanas stratēģijas
@@ -321,7 +321,7 @@ open-sse/                   # @omniroute/open-sse darbvieta
 ├── handlers/               # 11 pieprasījumu apstrādātāji (tērzēšana, atbildes, iegultnes, attēli u.c.)
 ├── mcp-server/             # MCP serveris (110 unikāli rīki, 3 transporti, 33 tvērumi)
 ├── services/               # 178 augstākā līmeņa pakalpojumi (combo, autoCombo, rateLimitManager u.c.)
-├── translator/             # Formātu pārveidotāji (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── translator/             # Formātu tulkotāji (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses API pārveidotājs
 └── utils/                  # 22 utilītu moduļi (straumēšana, TLS, starpniekserveris, žurnalēšana)
 
@@ -332,13 +332,13 @@ tests/
 ├── integration/            # Integrācijas testi
 ├── e2e/                    # Playwright testi
 ├── security/               # Drošības testi
-├── translator/             # Pārveidotājam specifiski testi
+├── translator/             # Tulkotājam specifiski testi
 └── load/                   # Slodzes testi
 
 docs/
 ├── adr/                     # Arhitektūras lēmumu ieraksti
 ├── architecture/            # Sistēmas arhitektūra un noturība
-├── comparison/              # OmniRoute salīdzinājumā ar alternatīvām
+├── comparison/              # OmniRoute salīdzinājums ar alternatīvām
 ├── compression/             # Saspiešanas rokasgrāmatas un noteikumi
 ├── dev/                     # Izstrādes rokasgrāmatas
 ├── diagrams/                # Arhitektūras diagrammas
@@ -348,11 +348,11 @@ docs/
 ├── marketing/               # Mārketinga materiāli
 ├── ops/                     # Izvietošana, starpniekserveris, pārklājums, laidieni
 ├── providers/               # Nodrošinātājiem specifiska dokumentācija
-├── reference/               # API uzziņa, vides mainīgie, CLI rīki, bezmaksas līmeņi
+├── reference/               # API uzziņas, vides mainīgie, CLI rīki, bezmaksas līmeņi
 ├── releases/                # Laidienu piezīmes
-├── routing/                 # Automātisko kombināciju dzinis, spriešanas atkārtošana
+├── routing/                 # Automātisko kombināciju dzinis, spriešanas atkārtota atskaņošana
 ├── screenshots/             # Informācijas paneļa ekrānuzņēmumi
-├── security/                # Aizsargmehānismi, atbilstība, slēpšana, pilnvaras
+├── security/                # Aizsargmehānismi, atbilstība, maskēšana, marķieri
 └── specs/                   # Projektējuma specifikācijas
 ```
 

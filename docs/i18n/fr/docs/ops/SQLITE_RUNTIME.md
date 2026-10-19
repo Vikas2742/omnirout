@@ -6,19 +6,19 @@
 
 OmniRoute résout son pilote SQLite au démarrage au moyen d’une chaîne de repli en 5 étapes :
 
-1. **`better-sqlite3` intégré** (via `dependencies` dans `package.json`)
+1. **`better-sqlite3` fourni** (via `dependencies` dans `package.json`)
    — le plus rapide, binaire natif, installé par `npm install` lorsque les outils de compilation sont présents.
 
 2. **`better-sqlite3` installé à l’exécution** (dans `~/.omniroute/runtime/`)
    — installé à la demande lors de la première exécution **OU** par `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
-   Valide les octets magiques du fichier natif `.node` (ELF / Mach-O / PE) avant son chargement
-   afin de se prémunir contre les binaires corrompus ou destinés à une autre plateforme.
+   Valide les octets magiques du fichier `.node` natif (ELF / Mach-O / PE) avant son chargement
+   afin d’éviter les binaires corrompus ou destinés à une autre plateforme.
 
-3. **`node:sqlite`** (bibliothèque standard de Node ≥22.5) — aucune compilation native requise ; utilisé lorsque
+3. **`node:sqlite`** (bibliothèque standard de Node ≥22.5) — aucune compilation native nécessaire ; utilisé lorsque
    les deux chemins de better-sqlite3 échouent. Ensemble de fonctionnalités limité.
 
 4. **`sql.js`** (WASM) — dernier recours. Fonctionne partout, mais est plus lent
-   et écrit les données périodiquement plutôt que de manière synchrone.
+   et écrit les données à intervalles réguliers plutôt que de manière synchrone.
 
 ## Pourquoi cette complexité ?
 
@@ -28,9 +28,9 @@ OmniRoute résout son pilote SQLite au démarrage au moyen d’une chaîne de re
 - **Absence d’outils de compilation** : certains environnements (Windows d’entreprise sans VS Build
   Tools, images Docker minimales) ne peuvent pas compiler `better-sqlite3`. Le programme d’installation
   à l’exécution récupère un binaire précompilé depuis le registre npm ; les pilotes de repli
-  garantissent qu’OmniRoute démarre malgré tout, même en cas d’échec.
+  garantissent qu’OmniRoute démarre quand même en cas d’échec.
 - **Systèmes isolés du réseau** : si le registre npm est inaccessible, `node:sqlite`
-  ou `sql.js` garantit les fonctionnalités de base.
+  ou `sql.js` garantit un fonctionnement de base.
 
 ## Validation des octets magiques
 
@@ -60,7 +60,7 @@ const info = getDriverInfo();
 ## Contrôle manuel
 
 ```bash
-# Ignorer le préchauffage post-installation (pour des installations CI rapides)
+# Ignorer le préchauffage après l’installation (pour des installations CI rapides)
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
 # Forcer la réinstallation de better-sqlite3 à l’exécution
@@ -74,42 +74,42 @@ omniroute config db-info  # (si la commande CLI existe)
 ## Diagnostic des blocages synchrones
 
 Avec `better-sqlite3`, définissez `OMNIROUTE_SQLITE_SLOW_MS=200` avant le démarrage pour activer
-la mesure temporelle de l’adaptateur synchrone. Elle est désactivée par défaut. Une opération terminée prenant
+la mesure du temps de l’adaptateur synchrone. Elle est désactivée par défaut. Une opération terminée prenant
 au moins ce nombre de millisecondes émet un avertissement `[SQLITE-SLOW]`, au maximum une fois toutes les
 dix secondes par adaptateur. L’avertissement contient uniquement le pilote, la classe d’opération
 (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, transaction ou maintenance) et
-le temps écoulé en millisecondes : ni SQL, ni paramètres liés, ni lignes, ni chemins, ni texte d’exception.
+le nombre de millisecondes écoulées : aucun SQL, paramètre, résultat, chemin ni texte d’exception.
 
-Il s’agit d’une aide au diagnostic, et non d’un délai d’expiration ou d’une optimisation des requêtes. Elle ne peut pas signaler
+Il s’agit d’une aide au diagnostic, et non d’un délai d’expiration ni d’une optimisation des requêtes. Elle ne peut pas signaler
 une opération qui ne se termine jamais, distinguer le travail du processeur des attentes disque, identifier
-l’instruction SQL exacte ni observer les opérations effectuées via le handle brut du pilote.
+le SQL exact ni observer les opérations effectuées directement au moyen du pilote brut.
 La durée des sauvegardes asynchrones est délibérément exclue ; les autres pilotes SQLite ne sont pas
-instrumentés par cette option. La désactivation de la variable rétablit l’adaptateur d’origine
-sans wrappers de mesure temporelle. Aucun schéma de base de données ni aucune configuration stockée n’est modifié.
+instrumentés par cette option. La désactivation de la variable restaure l’adaptateur d’origine
+sans enveloppes de mesure du temps. Aucun schéma de base de données ni aucune configuration stockée ne sont modifiés.
 
 L’avertissement de latence de `/healthz` indique le pic de la boucle d’événements depuis l’échantillon précédent,
 et non la moyenne sur toute la durée de vie. Corrélez ses horodatages avec les avertissements d’opérations lentes
-et les métriques de l’hôte/du stockage avant d’attribuer un blocage à SQLite ou à une défaillance du disque.
+et les métriques de l’hôte et du stockage avant d’attribuer un blocage à SQLite ou à une défaillance du disque.
 
 ## Référence
 
 Implémentation :
 
-- `bin/cli/runtime/magicBytes.mjs` — utilitaires de validation des octets magiques des binaires
+- `bin/cli/runtime/magicBytes.mjs` — fonctions auxiliaires de validation des octets magiques des binaires
 - `bin/cli/runtime/sqliteRuntime.mjs` — résolveur d’exécution en 5 étapes + programme d’installation à la demande
 - `bin/cli/runtime/index.mjs` — orchestrateur de démarrage (`warmUpRuntimes()`)
-- `scripts/postinstall.mjs` — hook npm de post-installation (préchauffage non bloquant)
-- `src/lib/db/core.ts` — exports de `ensureDbInitialized()` / `getDriverInfo()`
+- `scripts/postinstall.mjs` — hook npm après installation (préchauffage non bloquant)
+- `src/lib/db/core.ts` — exports `ensureDbInitialized()` / `getDriverInfo()`
 
-## Topologie à rédacteur unique (HA non prise en charge)
+## Topologie à processus d’écriture unique (HA non prise en charge)
 
 La chaîne de repli des pilotes ci-dessus s’exécute toujours dans **un seul processus**. Par défaut, SQLite
-dans OmniRoute utilise **un seul rédacteur** :
+dans OmniRoute n’autorise qu’**un seul processus d’écriture** :
 
 - Ne connectez pas deux répliques OmniRoute au même fichier `storage.sqlite`.
-- Un redémarrage de conteneur, un déploiement Recreate, un arrêt pour mémoire insuffisante (OOM) ou un redémarrage HEALTHCHECK interrompt
-  toutes les sessions SSE en cours. Aucun drainage des sessions n’est effectué avec le chemin standard.
-- Une vérification de disponibilité de l’orchestrateur qui considère un `/healthz` lent comme hors service tuera l’unique
-  réplique. Préférez une vérification de disponibilité TCP et une vérification de préparation HTTP sur `/healthz`. Consultez
+- Un redémarrage de conteneur, un déploiement Recreate, un arrêt pour dépassement de mémoire ou un redémarrage HEALTHCHECK interrompt
+  toutes les sessions SSE en cours. Aucun drainage des sessions n’est prévu dans le chemin standard.
+- Un contrôle de vivacité de l’orchestrateur qui considère un `/healthz` lent comme indisponible arrêtera l’unique
+  réplique. Préférez un contrôle de vivacité TCP et un contrôle de disponibilité HTTP sur `/healthz`. Consultez
   le [guide Docker — disponibilité](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
   et les [recommandations relatives aux sondes Kubernetes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

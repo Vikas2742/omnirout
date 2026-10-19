@@ -79,25 +79,25 @@ indicando o endpoint e o que foi perdido — assim, um seletor degradado nunca �
 | `apiKey`                         | credencial conectada, depois `OMNIROUTE_API_KEY` | Chave de chat para `/v1/*`                                                                                                                          |
 | `managementReadToken`            | usa `apiKey` como alternativa                    | Chave para `/api/*` — geralmente **não** é a mesma                                                                                                  |
 | `displayName`                    | `"OmniRoute"`                                    | Nome do provedor no seletor                                                                                                                         |
-| `timeoutMs`                      | `10000`                                          | Tempo limite de busca por endpoint (combinações automáticas usam 5 s)                                                                               |
-| `modelCacheTtlMs`                | `300000`                                         | TTL do cache do catálogo; um snapshot em disco agiliza inicializações a frio                                                                        |
+| `timeoutMs`                      | `10000`                                          | Tempo limite de busca por endpoint (combinações automáticas usam 5s)                                                                                |
+| `modelCacheTtlMs`                | `300000`                                         | TTL do cache do catálogo; um snapshot em disco acelera inicializações a frio                                                                        |
 | `timeouts`                       | usa `timeoutMs` como alternativa                 | Limites por endpoint em ms: `models`, `combos`, `autoCombos`, `enrichment`                                                                          |
 | `enrichment`                     | `true`                                           | Busca nomes, preços e limites do nível gratuito                                                                                                     |
-| `providerTag`                    | `true`                                           | Prefixa o nome de exibição com o provedor upstream para o qual ele roteia                                                                           |
-| `usableOnly`                     | `false`                                          | Mantém apenas os provedores que o gateway informa como provisionados                                                                                |
-| `combosSource`                   | `"api"`                                          | `"models"` ignora `/api/combos` e publica as linhas de combinações de `/v1/models`; filtros por membro mantêm `"api"`                               |
+| `providerTag`                    | `true`                                           | Adiciona ao nome de exibição o prefixo do provedor upstream para o qual ele roteia                                                                  |
+| `usableOnly`                     | `false`                                          | Mantém somente os provedores que o gateway informa como provisionados                                                                               |
+| `combosSource`                   | `"api"`                                          | `"models"` ignora `/api/combos` e publica as linhas de combinação de `/v1/models`; filtros por membro mantêm `"api"`                                |
 | `showcasePerOwner`               | `10`                                             | Entradas da visualização padrão mantidas por provedor                                                                                               |
 | `freshPerOwner`                  | `10`                                             | Entradas recentes da visualização padrão mantidas por provedor                                                                                      |
-| `freshWindowDays`                | `90`                                             | Janela de recência em dias para a ramificação de entradas recentes                                                                                  |
-| `usageMemory`                    | `true`                                           | Restaura entradas removidas estaticamente e identificadas pela análise de uso dos últimos 30 dias (requer um token de gerenciamento)                |
-| `visibleModels` / `hiddenModels` | `[]`                                             | Listas de permissão exatas ou por sufixo; a negação prevalece; `*` publica o catálogo completo (outros filtros ainda se aplicam)                    |
+| `freshWindowDays`                | `90`                                             | Janela de atualização, em dias, para a ramificação de itens recentes                                                                                |
+| `usageMemory`                    | `true`                                           | Restaura entradas removidas estaticamente e identificadas pelas análises de uso de 30 dias (requer um token de gerenciamento)                       |
+| `visibleModels` / `hiddenModels` | `[]`                                             | Listas de permissão por correspondência exata ou sufixo; a negação prevalece; `*` publica o catálogo completo (os demais filtros ainda se aplicam)  |
 | `geminiSanitization`             | `true`                                           | Remove dos esquemas de ferramentas as palavras-chave do JSON Schema rejeitadas pelo Gemini (ferramentas com `$ref` são encaminhadas sem alterações) |
-| `apiFormat.allowAnthropic`       | `false`                                          | Roteia IDs na lista de permissão pelo bloco da API Anthropic                                                                                        |
-| `apiFormat.anthropicModels`      | `[]`                                             | IDs completos de modelos roteados para a Anthropic                                                                                                  |
-| `logLevel` / `startupDebug`      | `warn` / `false`                                 | Nível de detalhamento dos logs                                                                                                                      |
+| `apiFormat.allowAnthropic`       | `false`                                          | Roteia IDs permitidos pelo bloco da API da Anthropic                                                                                                |
+| `apiFormat.anthropicModels`      | `[]`                                             | IDs completos dos modelos roteados para a Anthropic                                                                                                 |
+| `logLevel` / `startupDebug`      | `warn` / `false`                                 | Nível de detalhamento do logger                                                                                                                     |
 
 A memória de uso fica ativada por padrão. Sem um token de gerenciamento, ela permanece inativa
-(um aviso de inicialização é registrado) e nada é restaurado.
+(um aviso é registrado na inicialização) e nada é restaurado.
 
 ## Como o catálogo se mantém atualizado
 

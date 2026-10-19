@@ -20,7 +20,7 @@ dan langkah-langkah rekonsiliasinya.
 - **Node.js** `>=22.22.2 <23`, atau `>=24.0.0 <27` (direkomendasikan: 24 LTS)
 - **npm** 10+
 
-> **Pengguna npm v11+ (Node 24+):** Setelah `npm install`, pastikan modul native telah terinstal:
+> **Pengguna npm v11+ (Node 24+):** Setelah `npm install`, pastikan modul native telah diinstal:
 > `node -e "require('better-sqlite3')"`. Jika gagal dengan `MODULE_NOT_FOUND`,
 > jalankan `npm approve-scripts better-sqlite3 && npm install`. Lihat
 > [Pemecahan Masalah](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
@@ -52,25 +52,25 @@ Variabel utama untuk pengembangan:
 | ---------------------- | -------------------------- | -------------------------- |
 | `PORT`                 | `20128`                    | Port server                |
 | `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`   | URL dasar untuk frontend   |
-| `JWT_SECRET`           | (buat di atas)             | Secret penandatanganan JWT |
+| `JWT_SECRET`           | (buat seperti di atas)     | Secret penandatanganan JWT |
 | `INITIAL_PASSWORD`     | `CHANGEME`                 | Kata sandi login pertama   |
 | `APP_LOG_LEVEL`        | `info`                     | Tingkat verbositas log     |
 
 ### Pengaturan Dasbor
 
-Dasbor menyediakan tombol pengalih UI untuk fitur-fitur yang juga dapat dikonfigurasi melalui variabel lingkungan:
+Dasbor menyediakan tombol UI untuk fitur-fitur yang juga dapat dikonfigurasi melalui variabel lingkungan:
 
-| Lokasi Pengaturan     | Tombol Pengalih        | Deskripsi                               |
+| Lokasi Pengaturan     | Tombol                 | Deskripsi                               |
 | --------------------- | ---------------------- | --------------------------------------- |
 | Pengaturan → Lanjutan | Mode Debug             | Aktifkan log permintaan debug (UI)      |
 | Pengaturan → Umum     | Visibilitas Bilah Sisi | Tampilkan/sembunyikan bagian bilah sisi |
 
-Pengaturan ini disimpan dalam basis data dan tetap berlaku setelah dimulai ulang, serta menggantikan nilai default variabel lingkungan jika ditetapkan.
+Pengaturan ini disimpan dalam basis data dan tetap berlaku setelah proses dimulai ulang, serta mengesampingkan nilai default variabel lingkungan jika telah ditetapkan.
 
 ### Menjalankan Secara Lokal
 
 ```bash
-# Mode pengembangan (muat ulang otomatis)
+# Mode pengembangan (pemuatan ulang otomatis)
 npm run dev
 
 # Build produksi
@@ -80,45 +80,45 @@ npm run start
 # Kompilasi cepat khusus backend/API untuk perubahan kontributor
 npm run build:contributor
 
-# Build rilis (build ulang bersih + sentinel HEAD — wajib untuk deployment)
+# Build rilis (build ulang bersih + sentinel HEAD — diperlukan untuk deployment)
 npm run build:release   # rm -rf .build dist && build + menulis dist/BUILD_SHA
 
 # Konfigurasi port umum
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Build kontributor hanya melakukan validasi kompilasi: build ini tidak merakit
-distribusi mandiri atau membangun aset pengemasan native opsional. Gunakan build produksi biasa saat
+Build kontributor melakukan validasi kompilasi saja: build ini tidak merakit distribusi mandiri
+atau membangun aset pengemasan native opsional. Gunakan build produksi reguler ketika
 Anda perlu memvalidasi bundel yang siap didistribusikan.
 
-### Tata Letak Output Build
+### Tata Letak Keluaran Build
 
-| Direktori | Isi                                                                             | Dilacak |
-| --------- | ------------------------------------------------------------------------------- | ------- |
-| `src/`    | Sumber aplikasi (TypeScript / TSX)                                              | Ya      |
-| `.build/` | Berkas perantara — output `next build` (diabaikan git, `distDir = .build/next`) | Tidak   |
-| `dist/`   | Bundel siap didistribusikan — dirakit oleh `assembleStandalone` (diabaikan git) | Tidak   |
+| Direktori | Isi                                                                               | Dilacak |
+| --------- | --------------------------------------------------------------------------------- | ------- |
+| `src/`    | Sumber aplikasi (TypeScript / TSX)                                                | Ya      |
+| `.build/` | Berkas perantara — keluaran `next build` (diabaikan Git, `distDir = .build/next`) | Tidak   |
+| `dist/`   | Bundel siap didistribusikan — dirakit oleh `assembleStandalone` (diabaikan Git)   | Tidak   |
 
-Pipeline build berjalan dalam satu lintasan:
+Pipeline build dilakukan dalam satu lintasan:
 
 ```
 npm run build
-  └─ next build → .build/next/standalone  (output Next.js)
+  └─ next build → .build/next/standalone  (keluaran Next.js)
   └─ assembleStandalone()                 (menyalin standalone + static + public + aset native)
-       └─ output: dist/                   (server.js, .next/static/, public/, node_modules/)
+       └─ keluaran: dist/                 (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` juga terlebih dahulu membersihkan kedua direktori dan menulis
+`npm run build:release` juga membersihkan kedua direktori terlebih dahulu dan menulis
 `dist/BUILD_SHA` (= `git rev-parse --short HEAD`) sebagai sentinel integritas deployment.
 
-`npm run build:contributor` menggunakan profil build khusus backend. Perintah ini untuk sementara membuat stub
-bagi file UI dasbor selama proses build, mempertahankan handler rute API, dan memulihkan file asli
-setelah build. Gunakan `npm run build` untuk perubahan yang memengaruhi UI dasbor atau untuk
-validasi rilis penuh; profil kontributor bukan pengganti build rilis.
+`npm run build:contributor` menggunakan profil build khusus backend. Profil ini membuat stub sementara
+untuk berkas UI dasbor selama proses build, mempertahankan handler rute API, dan memulihkan berkas asli
+setelah build. Gunakan `npm run build` untuk perubahan yang memengaruhi UI dasbor atau untuk validasi
+rilis penuh; profil kontributor bukan pengganti build rilis.
 
 > **Catatan deployment VPS:** direktori image jarak jauh `/usr/lib/node_modules/omniroute/app/`
-> tidak berubah. Skill deployment menyinkronkan isi `dist/` ke dalamnya menggunakan rsync.
-> Hanya jalur output build di dalam repositori yang berpindah (`app/` → `dist/`).
+> tidak berubah. Skill deployment melakukan rsync terhadap isi `dist/` ke direktori tersebut.
+> Hanya jalur keluaran build di dalam repositori yang berubah (`app/` → `dist/`).
 
 URL default:
 
@@ -317,9 +317,9 @@ src/                        # TypeScript (.ts / .tsx)
 ├── shared/
 │   ├── components/         # Komponen React (.tsx)
 │   ├── constants/          # Definisi penyedia (329), cakupan MCP, 20 strategi perutean
-│   ├── utils/              # Pemutus sirkuit, penyanitasi, pembantu autentikasi
+│   ├── utils/              # Pemutus sirkuit, sanitizer, pembantu autentikasi
 │   └── validation/         # Skema Zod v4
-└── sse/                    # Alur proksi SSE
+└── sse/                    # Pipeline proksi SSE
 
 open-sse/                   # Ruang kerja @omniroute/open-sse
 ├── executors/              # 150 modul eksekutor (kelas eksekutor + pembantu per penyedia)
@@ -327,13 +327,13 @@ open-sse/                   # Ruang kerja @omniroute/open-sse
 ├── mcp-server/             # Server MCP (110 alat unik, 3 transportasi, 33 cakupan)
 ├── services/               # 178 layanan tingkat atas (combo, autoCombo, rateLimitManager, dll.)
 ├── translator/             # Penerjemah format (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Transformator Responses API
-└── utils/                  # 22 modul utilitas (stream, TLS, proksi, pencatatan)
+├── transformer/            # Transformer Responses API
+└── utils/                  # 22 modul utilitas (aliran, TLS, proksi, pencatatan)
 
 electron/                   # Aplikasi desktop Electron (lintas platform)
 
 tests/
-├── unit/                   # Pelaksana pengujian Node.js (1.574 berkas pengujian)
+├── unit/                   # Runner pengujian Node.js (1.574 berkas pengujian)
 ├── integration/            # Pengujian integrasi
 ├── e2e/                    # Pengujian Playwright
 ├── security/               # Pengujian keamanan
@@ -342,22 +342,22 @@ tests/
 
 docs/
 ├── adr/                     # Catatan Keputusan Arsitektur
-├── architecture/            # Arsitektur dan ketahanan sistem
+├── architecture/            # Arsitektur & ketahanan sistem
 ├── comparison/              # OmniRoute vs alternatif
-├── compression/             # Panduan dan aturan kompresi
+├── compression/             # Panduan & aturan kompresi
 ├── dev/                     # Panduan pengembangan
 ├── diagrams/                # Diagram arsitektur
-├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── frameworks/              # MCP, A2A, OpenCode, Memori, Keterampilan
 ├── guides/                  # Panduan pengguna, Docker, penyiapan, pemecahan masalah
-├── i18n/                    # Terjemahan README yang diinternasionalisasi
+├── i18n/                    # Terjemahan README yang diinternasionalkan
 ├── marketing/               # Materi pemasaran
-├── ops/                     # Penerapan, proksi, cakupan, rilis
+├── ops/                     # Deployment, proksi, cakupan, rilis
 ├── providers/               # Dokumentasi khusus penyedia
 ├── reference/               # Referensi API, variabel lingkungan, alat CLI, tingkat gratis
 ├── releases/                # Catatan rilis
 ├── routing/                 # Mesin auto-combo, pemutaran ulang penalaran
 ├── screenshots/             # Tangkapan layar dasbor
-├── security/                # Pagar pengaman, kepatuhan, penyamaran, token
+├── security/                # Pembatas, kepatuhan, mode tersamar, token
 └── specs/                   # Spesifikasi desain
 ```
 

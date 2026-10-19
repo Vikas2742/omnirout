@@ -13,7 +13,7 @@ e etapas de reconciliação.
 
 ---
 
-## Configuração do Ambiente de Desenvolvimento
+## Configuração de Desenvolvimento
 
 ### Pré-requisitos
 
@@ -27,7 +27,7 @@ e etapas de reconciliação.
 
 - **Git**
 
-### Clonar e instalar
+### Clonar e Instalar
 
 ```bash
 git clone https://github.com/diegosouzapw/OmniRoute.git
@@ -35,39 +35,39 @@ cd OmniRoute
 npm install
 ```
 
-### Variáveis de ambiente
+### Variáveis de Ambiente
 
 ```bash
-# Crie seu .env a partir do modelo
+# Crie seu arquivo .env a partir do modelo
 cp .env.example .env
 
-# Gere os segredos obrigatórios
+# Gere os segredos necessários
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
 Principais variáveis para desenvolvimento:
 
-| Variável               | Padrão de desenvolvimento | Descrição                      |
-| ---------------------- | ------------------------- | ------------------------------ |
-| `PORT`                 | `20128`                   | Porta do servidor              |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`  | URL base do frontend           |
-| `JWT_SECRET`           | (gerar acima)             | Segredo para assinatura do JWT |
-| `INITIAL_PASSWORD`     | `CHANGEME`                | Senha do primeiro login        |
-| `APP_LOG_LEVEL`        | `info`                    | Nível de detalhamento dos logs |
+| Variável               | Padrão de Desenvolvimento | Descrição                       |
+| ---------------------- | ------------------------- | ------------------------------- |
+| `PORT`                 | `20128`                   | Porta do servidor               |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`  | URL base do frontend            |
+| `JWT_SECRET`           | (gerar conforme acima)    | Segredo para assinatura de JWTs |
+| `INITIAL_PASSWORD`     | `CHANGEME`                | Senha do primeiro login         |
+| `APP_LOG_LEVEL`        | `info`                    | Nível de detalhamento dos logs  |
 
-### Configurações do painel
+### Configurações do Painel
 
 O painel fornece controles de interface para recursos que também podem ser configurados por meio de variáveis de ambiente:
 
-| Local da configuração    | Controle                      | Descrição                                      |
-| ------------------------ | ----------------------------- | ---------------------------------------------- |
-| Configurações → Avançado | Modo de depuração             | Habilita logs de requisições de depuração (UI) |
-| Configurações → Geral    | Visibilidade da barra lateral | Exibe/oculta seções da barra lateral           |
+| Local da Configuração    | Controle                      | Descrição                                   |
+| ------------------------ | ----------------------------- | ------------------------------------------- |
+| Configurações → Avançado | Modo de Depuração             | Ativa logs de depuração de requisições (UI) |
+| Configurações → Geral    | Visibilidade da Barra Lateral | Exibe/oculta seções da barra lateral        |
 
 Essas configurações são armazenadas no banco de dados e persistem após reinicializações, substituindo os valores padrão das variáveis de ambiente quando definidas.
 
-### Execução local
+### Execução Local
 
 ```bash
 # Modo de desenvolvimento (recarregamento automático)
@@ -80,18 +80,18 @@ npm run start
 # Compilação rápida somente do backend/API para alterações de contribuidores
 npm run build:contributor
 
-# Build de lançamento (rebuild limpo + sentinela HEAD — obrigatório para implantação)
+# Build de release (rebuild limpo + sentinela HEAD — obrigatório para deploy)
 npm run build:release   # rm -rf .build dist && build + grava dist/BUILD_SHA
 
 # Configuração comum de porta
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-O build de contribuidor realiza apenas a validação de compilação: ele não monta a
-distribuição autônoma nem compila recursos opcionais de empacotamento nativo. Use o build de produção normal quando
+O build de contribuidor realiza apenas a validação da compilação: ele não monta a distribuição
+autônoma nem compila recursos opcionais de empacotamento nativo. Use o build de produção normal quando
 precisar validar o pacote distribuível.
 
-### Estrutura da saída do build
+### Estrutura da Saída do Build
 
 | Diretório | Conteúdo                                                                                     | Rastreado |
 | --------- | -------------------------------------------------------------------------------------------- | --------- |
@@ -108,16 +108,16 @@ npm run build
        └─ saída: dist/                     (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` também limpa primeiro os dois diretórios e grava
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) como uma sentinela de integridade da implantação.
+`npm run build:release` também limpa primeiro ambos os diretórios e grava
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) como sentinela de integridade do deploy.
 
 `npm run build:contributor` usa o perfil de build somente do backend. Ele substitui temporariamente
 os arquivos da interface do painel por stubs durante o build, mantém os manipuladores de rotas da API e restaura os arquivos originais
-após o build. Use `npm run build` para alterações que afetem a interface do painel ou para uma
-validação completa do lançamento; o perfil de contribuidor não substitui o build de lançamento.
+após o build. Use `npm run build` para alterações que afetem a interface do painel ou para a validação completa
+da release; o perfil de contribuidor não substitui o build de release.
 
-> **Observação sobre implantação em VPS:** o diretório remoto da imagem `/usr/lib/node_modules/omniroute/app/`
-> permanece inalterado. As rotinas de implantação sincronizam via rsync o conteúdo de `dist/` com esse diretório.
+> **Observação sobre deploy em VPS:** o diretório remoto da imagem `/usr/lib/node_modules/omniroute/app/`
+> permanece inalterado. As rotinas de deploy sincronizam o conteúdo de `dist/` com ele via rsync.
 > Apenas o caminho da saída do build dentro do repositório foi alterado (`app/` → `dist/`).
 
 URLs padrão:
@@ -297,9 +297,9 @@ Consulte `open-sse/utils/stream.ts` e `open-sse/utils/streamHandler.ts` para ver
 
 ```
 src/                        # TypeScript (.ts / .tsx)
-├── app/                    # App Router do Next.js 16
-│   ├── (dashboard)/        # Páginas do dashboard (23 seções)
-│   ├── api/                # Rotas da API (51 diretórios)
+├── app/                    # Next.js 16 App Router
+│   ├── (dashboard)/        # Páginas do painel (23 seções)
+│   ├── api/                # Rotas de API (51 diretórios)
 │   └── login/              # Páginas de autenticação (.tsx)
 ├── domain/                 # Mecanismo de políticas (policyEngine, comboResolver, costRules etc.)
 ├── lib/                    # Lógica de negócios principal (.ts)
@@ -313,24 +313,24 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── usage/              # Rastreamento de uso e cálculo de custos
 │   └── localDb.ts          # Apenas camada de reexportação — nunca adicione lógica aqui
 ├── middleware/              # Middleware de requisições (promptInjectionGuard)
-├── mitm/                   # Proxy MITM (certificados, DNS, roteamento de destino)
+├── mitm/                   # Proxy MITM (certificado, DNS, roteamento de destino)
 ├── shared/
 │   ├── components/         # Componentes React (.tsx)
 │   ├── constants/          # Definições de provedores (329), escopos MCP, 20 estratégias de roteamento
-│   ├── utils/              # Circuit breaker, sanitizador, auxiliares de autenticação
+│   ├── utils/              # Disjuntor, sanitizador, auxiliares de autenticação
 │   └── validation/         # Esquemas Zod v4
 └── sse/                    # Pipeline de proxy SSE
 
 open-sse/                   # Workspace @omniroute/open-sse
 ├── executors/              # 150 módulos executores (classes executoras + auxiliares por provedor)
 ├── handlers/               # 11 manipuladores de requisições (chat, respostas, embeddings, imagens etc.)
-├── mcp-server/             # Servidor MCP (110 ferramentas exclusivas, 3 transportes, 33 escopos)
+├── mcp-server/             # Servidor MCP (110 ferramentas únicas, 3 transportes, 33 escopos)
 ├── services/               # 178 serviços de nível superior (combo, autoCombo, rateLimitManager etc.)
 ├── translator/             # Tradutores de formato (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Transformador da Responses API
 └── utils/                  # 22 módulos utilitários (stream, TLS, proxy, registro de logs)
 
-electron/                   # Aplicativo desktop Electron (multiplataforma)
+electron/                   # Aplicativo Electron para desktop (multiplataforma)
 
 tests/
 ├── unit/                   # Executor de testes do Node.js (1.574 arquivos de teste)
@@ -341,23 +341,23 @@ tests/
 └── load/                   # Testes de carga
 
 docs/
-├── adr/                     # Registros de Decisões de Arquitetura
+├── adr/                     # Registros de Decisões Arquiteturais
 ├── architecture/            # Arquitetura e resiliência do sistema
-├── comparison/              # OmniRoute em comparação com alternativas
-├── compression/             # Guias e regras de compactação
+├── comparison/              # OmniRoute vs. alternativas
+├── compression/             # Guias e regras de compressão
 ├── dev/                     # Guias de desenvolvimento
 ├── diagrams/                # Diagramas de arquitetura
-├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── frameworks/              # MCP, A2A, OpenCode, memória, habilidades
 ├── guides/                  # Guia do usuário, Docker, configuração, solução de problemas
 ├── i18n/                    # Traduções internacionalizadas do README
 ├── marketing/               # Materiais de marketing
 ├── ops/                     # Implantação, proxy, cobertura, lançamentos
-├── providers/               # Documentação específica de provedores
-├── reference/               # Referência da API, variáveis de ambiente, ferramentas CLI, níveis gratuitos
+├── providers/               # Documentação específica dos provedores
+├── reference/               # Referência da API, variáveis de ambiente, ferramentas de CLI, planos gratuitos
 ├── releases/                # Notas de versão
-├── routing/                 # Mecanismo de combinação automática, repetição de raciocínio
-├── screenshots/             # Capturas de tela do dashboard
-├── security/                # Proteções, conformidade, discrição, tokens
+├── routing/                 # Mecanismo de combinação automática, reprodução de raciocínio
+├── screenshots/             # Capturas de tela do painel
+├── security/                # Proteções, conformidade, furtividade, tokens
 └── specs/                   # Especificações de design
 ```
 

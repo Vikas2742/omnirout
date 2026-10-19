@@ -15,151 +15,147 @@ Die Registerkarte „Logs“ im Dashboard speichert den Anfrageverlauf in SQLite
 ```
 Server (Konfiguration entschlüsseln + validieren, Cursor abgleichen)
   → IPC starten → isolierter exportChild-Betriebssystemprozess
-    → schreibgeschützte storage.sqlite → gemeinsame Abfrage/Zuordnung des Aufrufprotokolls
-      → asynchrone Artefakt-Hydratation → prepare()/send() des Ziels
+    → schreibgeschützte storage.sqlite → gemeinsame Aufrufprotokoll-Abfrage/-Zuordnung
+      → asynchrone Artefakt-Hydratisierung → Ziel-prepare()/send()
         → Batch-IPC → Server persistiert Cursor → Bestätigungs-IPC
-          → nächster Batch; done-IPC → Server zeichnet Erfolg auf
+          → nächster Batch; Abschluss-IPC → Server zeichnet Erfolg auf
 ```
 
-- **Zeitplan** — ein `JobRegistry`-Cronjob, `log_export`, standardmäßig `0 * * * *` (stündlich,
-  UTC). Registriert in `src/lib/initCloudSync.ts`; überschreibbar mit `OMNIROUTE_LOG_EXPORT_CRON`.
-  Bei jeder Ausführung werden alle **aktivierten** Ziele nacheinander vollständig abgearbeitet.
+- **Zeitplan** — ein `JobRegistry`-Cronjob namens `log_export`, standardmäßig `0 * * * *` (stündlich,
+  UTC). Er wird in `src/lib/initCloudSync.ts` registriert und kann mit `OMNIROUTE_LOG_EXPORT_CRON`
+  überschrieben werden. Bei jedem Durchlauf werden nacheinander alle **aktivierten** Ziele abgearbeitet.
 - **Cursor** — das implizite `call_logs.rowid` von SQLite, pro Ziel in
-  `log_export_destinations.cursor_row_id` persistiert. `timestamp` dient bewusst nicht als Cursor:
-  Aufrufer können einen eigenen Wert angeben, sodass eine langsame Anfrage nach einer schnelleren
-  geschrieben werden kann, die später gestartet wurde; ein Zeitstempel-Cursor würde sie überspringen.
+  `log_export_destinations.cursor_row_id` persistiert. `timestamp` wird bewusst nicht als Cursor
+  verwendet: Aufrufer können einen eigenen Wert bereitstellen, sodass eine langsame Anfrage nach
+  einer schnelleren Anfrage geschrieben werden kann, die später gestartet wurde; ein
+  Zeitstempel-Cursor würde sie überspringen.
 - **Batchverarbeitung** — `batch_size` Zeilen pro Anfrage (Standardwert 500),
-  `max_rows_per_run` Zeilen pro Ausführung (Standardwert 10000), damit ein großer Rückstand über
-  mehrere Ausführungen hinweg abgearbeitet wird, anstatt eine einzelne zu blockieren.
+  `max_rows_per_run` Zeilen pro Durchlauf (Standardwert 10000), sodass ein großer Rückstand über
+  mehrere Durchläufe hinweg abgearbeitet wird, anstatt einen einzelnen zu blockieren.
 - **Zustellung** — der Cursor wird erst weitergesetzt, nachdem `send()` erfolgreich abgeschlossen
-  wurde. Bei einem fehlgeschlagenen Batch bleibt der Cursor unverändert, sodass dieselben Zeilen bei
-  der nächsten Ausführung erneut versucht werden. Garantiert wird eine mindestens einmalige
-  Zustellung mit zielseitiger Deduplizierung, nicht eine echte genau einmalige Zustellung: BigQuery
-  verwendet die Aufrufprotokoll-ID als Schlüssel für jede Zeile und berücksichtigt sie nach bestem
-  Bemühen innerhalb seines eigenen Deduplizierungsfensters.
-- **Überlappungsschutz** — der Cron-Tick und `POST .../run` können gleichzeitig ausgelöst werden.
-  Ein Ziel, das bereits abgearbeitet wird, wird übersprungen, anstatt ein zweites Mal abgearbeitet
-  zu werden (`skipped: true` im Ausführungsergebnis). Dadurch kann eine gleichzeitige Ausführung
-  weder einen Batch erneut senden noch den Cursor zurücksetzen.
-- **Wiederherstellung nach Bereinigung** — wenn `cursor_row_id` über `MAX(rowid)` liegt (weil die
-  gesamte Tabelle bereinigt wurde und die Zeilen-IDs neu begonnen haben), setzt der Runner ihn auf
-  0 zurück, anstatt dauerhaft keine neuen Datensätze mehr zu erkennen.
+  wurde. Bei einem fehlgeschlagenen Batch bleibt der Cursor unverändert, sodass dieselben Zeilen
+  beim nächsten Durchlauf erneut versucht werden. Garantiert wird eine mindestens einmalige
+  Zustellung mit zielseitiger Deduplizierung, keine echte Exakt-einmal-Zustellung: BigQuery
+  identifiziert jede Zeile anhand der Aufrufprotokoll-ID und berücksichtigt dies innerhalb seines
+  eigenen Deduplizierungsfensters nach dem Best-Effort-Prinzip.
+- **Schutz vor Überschneidungen** — der Cron-Durchlauf und `POST .../run` können gleichzeitig
+  ausgelöst werden. Ein Ziel, das bereits abgearbeitet wird, wird übersprungen, statt doppelt
+  abgearbeitet zu werden (`skipped: true` im Ausführungsergebnis), sodass ein gleichzeitiger
+  Durchlauf weder einen Batch erneut senden noch den Cursor zurücksetzen kann.
+- **Wiederherstellung nach Bereinigung** — wenn `cursor_row_id` oberhalb von `MAX(rowid)` liegt
+  (die gesamte Tabelle wurde bereinigt und die Zeilen-IDs wurden neu begonnen), setzt der Runner
+  ihn auf 0 zurück, anstatt dauerhaft keine neuen Daten mehr zu erkennen.
 
 ### Isolierter Runner und Grenzwerte
 
-Jede Zielausführung unter Node startet einen separaten, kurzlebigen Betriebssystem-Kindprozess
-(`child_process` mit IPC, nicht `worker_threads`). Das Lesen von Bodys, die
-JSON-Analyse/-Serialisierung von Nutzdaten, `prepare()` des Ziels und die Netzwerk-E/A des Ziels
-werden vollständig dort ausgeführt, nicht in der Ereignisschleife des Servers. Über IPC werden
-nur die Konfiguration und kleine Fortschrittsmeldungen übertragen; exportierte Datensätze kehren
-nie zum Server zurück. Der Cronjob und die „Jetzt ausführen“-Route behalten dasselbe öffentliche
-Ergebnis und denselben Überlappungsschutz bei.
+Jeder Ziellauf unter Node startet einen separaten, kurzlebigen untergeordneten Betriebssystemprozess
+(`child_process` mit IPC, nicht `worker_threads`). Das Lesen von Bodys, das Parsen/Serialisieren
+von Payload-JSON, das zielseitige `prepare()` sowie die Netzwerk-E/A des Ziels werden vollständig
+dort ausgeführt und nicht in der Ereignisschleife des Servers. Über IPC werden nur die Konfiguration
+und kleine Fortschrittsmeldungen übertragen; exportierte Datensätze kehren niemals zum Server
+zurück. Der Cronjob und die „Jetzt ausführen“-Route behalten dasselbe öffentliche Ergebnis und
+denselben Schutz vor Überschneidungen bei.
 
-Der Kindprozess öffnet die aufgelöste Datei `DATA_DIR/storage.sqlite` des Servers schreibgeschützt
-mit `node:sqlite`, mit `busy_timeout=5000` und `query_only=ON`. Er importiert keinen
-DB-Singleton und führt weder Migrationen noch Sicherungen oder SQLite-Aktualisierungen durch.
-Die Buchführung für fehlende/beschädigte Artefakte (einschließlich des UPDATE für beschädigte
-Artefakte) verbleibt ausschließlich im Detailpfad des Dashboards. Beide Pfade verwenden einen
-gemeinsamen, reinen Detail-Resolver; der Export verwendet asynchrone Dateisystemlesevorgänge und
-dieselbe Auflösungsreihenfolge: Artefakt → ältere Inline-Daten → ältere Datenträgerdaten → keine
-Daten. Eine Ausführung erstellt beim Öffnen des Readers durch den Kindprozess einen Snapshot der
-maximalen Einfügungs-Zeilen-ID; spätere Einfügungen warten bis zur nächsten Ausführung. Dies ist
-eine Einfügungsgrenze, keine langlebige SQLite-Transaktion: WAL-Schreibvorgänge und Checkpoints
-bleiben während Wartezeiten auf das Netzwerk ungehindert möglich. Aktualisierungen/Löschungen
-bestehender Zeilen werden durch diese Grenze nicht eingefroren.
+Der untergeordnete Prozess öffnet die vom Server aufgelöste Datei `DATA_DIR/storage.sqlite`
+mithilfe von `node:sqlite` schreibgeschützt und mit `busy_timeout=5000` sowie `query_only=ON`.
+Er importiert weder einen DB-Singleton noch führt er Migrationen, Sicherungen oder
+SQLite-Aktualisierungen aus. Die Buchführung zu fehlenden/beschädigten Artefakten (einschließlich
+des UPDATE für beschädigte Artefakte) verbleibt ausschließlich im Detailpfad des Dashboards.
+Beide Pfade verwenden denselben reinen Detail-Resolver; der Export nutzt asynchrone
+Dateisystem-Lesevorgänge und dieselbe Auflösungsreihenfolge: Artefakt → ältere Inline-Daten →
+ältere Datenträgerdaten → keine Daten. Ein Durchlauf erstellt beim Öffnen des Readers durch den
+untergeordneten Prozess einen Snapshot der maximalen Einfügungs-Zeilen-ID; spätere Einfügungen
+warten bis zum nächsten Durchlauf. Dies ist eine Einfügungsgrenze und keine langlebige
+SQLite-Transaktion: WAL-Writer und Checkpoints bleiben während Netzwerk-Wartezeiten ungehindert.
+Aktualisierungen und Löschungen vorhandener Zeilen werden durch diese Grenze nicht eingefroren.
 
-Nach jedem akzeptierten Batch wartet der Kindprozess auf eine Bestätigung. Der Server persistiert
-zunächst den Cursor mit `advanceLogExportCursor` und sendet dann `ack`; vor dieser Bestätigung
-wird kein weiterer Batch gestartet. Ein Sendefehler, Absturz oder Timeout wird als Fehler
+Nach jedem akzeptierten Batch wartet der untergeordnete Prozess auf eine Bestätigung. Der Server
+persistiert zunächst den Cursor mit `advanceLogExportCursor` und sendet anschließend `ack`;
+vorher wird kein neuer Batch gestartet. Ein Sendefehler, Absturz oder Timeout wird als Fehler
 aufgezeichnet, ohne den Cursor für diesen Batch weiterzusetzen. Zuvor bestätigte Batches bleiben
-festgeschrieben; höchstens der eine unbestätigte Batch kann erneut gesendet werden. Ein Erfolg
-wird erst nach `done` und einem ordnungsgemäßen Beenden des Kindprozesses aufgezeichnet. Bei
-Fehlern wird der Kindprozess mit SIGTERM beendet; nach 500 ms wird auf SIGKILL eskaliert, und
-der Runner wartet auf das Schließen des Prozesses.
+dauerhaft gespeichert; höchstens der eine unbestätigte Batch kann erneut gesendet werden.
+Ein Erfolg wird erst nach `done` und einem ordnungsgemäßen Beenden des untergeordneten Prozesses
+aufgezeichnet. Bei Fehlern wird der untergeordnete Prozess mit SIGTERM beendet; nach 500 ms wird
+auf SIGKILL eskaliert, und der Runner wartet auf das Schließen des Prozesses.
 
-| Umgebungsvariable                             | Standardwert | Zweck                              |
-| --------------------------------------------- | ------------ | ---------------------------------- |
-| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000       | Zeitlimit pro Ziel                 |
-| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024         | V8-Old-Space-Limit des Kinds in MB |
+| Umgebungsvariable                             | Standardwert | Zweck                                   |
+| --------------------------------------------- | ------------ | --------------------------------------- |
+| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000       | Zeitlimit pro Ziel                      |
+| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024         | V8-Old-Space-Grenzwert des Kindes in MB |
 
 Bei ungültigen, nicht positiven oder nicht ganzzahligen Werten werden die Standardwerte verwendet.
-Die Heap-Einstellung ist keine Begrenzung des gesamten RSS; sehr große Batches können dennoch den
-Speicher des Kindprozesses erschöpfen und die Ausführung kontrolliert fehlschlagen lassen. Der
-Standardwert von 1024 MB lässt ausreichend Spielraum für den standardmäßigen Batch mit 500 Zeilen
-und Artefakten von jeweils 512 KiB bei aktivierten Bodys, einschließlich der byteweise
-segmentierten JSON-Serialisierung von BigQuery. Er macht einen Bodies-Batch mit 10000 Zeilen nicht
+Die Heap-Einstellung ist kein Grenzwert für den gesamten RSS; sehr große Batches können weiterhin
+den Speicher des untergeordneten Prozesses erschöpfen und den Durchlauf kontrolliert fehlschlagen
+lassen. Der Standardwert von 1024 MB lässt ausreichend Spielraum für den standardmäßigen Batch
+mit 500 Zeilen und 512-KiB-Artefakten bei aktivierten Bodys, einschließlich der byteweise
+aufgeteilten JSON-Serialisierung von BigQuery. Er macht einen Bodies-Batch mit 10000 Zeilen nicht
 sicher. Eine Erschöpfung des V8-Heaps zeichnet einen Fehler mit konkreter Handlungsempfehlung auf:
-Batchgröße reduzieren oder `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` erhöhen; der Cursor bleibt
-beim letzten bestätigten Batch. Ältere Inline-/Datenträger-Bodys werden nicht durch das moderne
-Artefaktlimit abgedeckt. Betreiber müssen das RSS separat einplanen, insbesondere innerhalb von
+Batchgröße reduzieren oder `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` erhöhen; der Cursor
+verbleibt beim zuletzt bestätigten Batch. Ältere Inline-/Datenträger-Bodys werden durch die moderne
+Artefaktbegrenzung nicht abgedeckt. Betreiber müssen den RSS separat einplanen, insbesondere in
 Containern mit Speicherbegrenzung.
 
-Der Kindprozess erbt nur das aufgelöste `DATA_DIR`, `NODE_ENV`, ein explizites `TZ` (für die
-lokalzeitbasierte Auflösung älterer Dateinamen), `ELECTRON_RUN_AS_NODE`, sofern vorhanden, sowie
-die folgenden Eingaben für ausgehende Verbindungen: `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`,
-`NO_PROXY` (und deren kleingeschriebene Varianten), `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`,
-`NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`. Ein globaler Undici-Dispatcher verwendet
-dieselbe reine, umgebungsbasierte Proxy-Auflösung und dieselben Regeln zur Umgehung für lokale
-Hosts wie der Server, einschließlich `NO_PROXY`; er importiert weder `proxyFetch.ts` noch dessen
-DB-/Feature-Flags. Proxy-Zugangsdaten werden aus weitergeleiteten Ausgaben und aufgezeichneten
-Fehlern entfernt. Ziel-Zugangsdaten werden ausschließlich in einer einzigen IPC-Startnachricht
-übertragen, niemals über argv oder die Umgebung; die Weiterleitung von Ausgaben/Fehlern erhält
-ein Präfix und wird bereinigt. In den Ausführungsargumenten des Kindprozesses wird nur
-`ExperimentalWarning` deaktiviert, damit die SQLite-Warnung von Node nicht bei jeder
-Cron-Ausführung wiederholt wird; andere Warnungstypen bleiben sichtbar.
+Der untergeordnete Prozess erbt nur das aufgelöste `DATA_DIR`, `NODE_ENV`, ein explizites `TZ`
+(Auflösung älterer Dateinamen anhand der lokalen Zeit), `ELECTRON_RUN_AS_NODE`, sofern vorhanden,
+sowie die folgenden Eingaben für ausgehende Verbindungen:
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (und deren kleingeschriebene Varianten),
+`OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`.
+Ein globaler Undici-Dispatcher verwendet dieselbe reine, umgebungsbasierte Proxy-Auflösung und
+dieselben Umgehungsregeln für lokale Hosts wie der Server, einschließlich `NO_PROXY`; er importiert
+weder `proxyFetch.ts` noch dessen DB-/Feature-Flags. Proxy-Anmeldedaten werden in weitergeleiteten
+Ausgaben und aufgezeichneten Fehlern unkenntlich gemacht. Ziel-Anmeldedaten werden ausschließlich
+in einer einzelnen IPC-Startnachricht übertragen, niemals über argv oder die Umgebung; die
+Weiterleitung von Ausgaben und Fehlern erhält ein Präfix und wird bereinigt. In den
+Ausführungsargumenten des untergeordneten Prozesses wird nur `ExperimentalWarning` deaktiviert,
+um die SQLite-Warnung von Node nicht bei jedem Cron-Durchlauf zu wiederholen; andere Warnungstypen
+bleiben sichtbar.
 
-Zielmodule müssen ohne Next.js-/reine Server-Abhängigkeiten importierbar sein. Die bestehende
-BigQuery-Implementierung erfüllt diesen Vertrag bereits. Zugriffstoken-Caches gelten nur für den
-jeweiligen untergeordneten Lauf, nicht laufübergreifend. Node ist die unterstützte Laufzeitumgebung
-(`package.json` engines), doch der Bun-Installationsabschnitt in der README und `Dockerfile.bun`
-weisen ebenfalls einen produktiven Kompatibilitätspfad unter Verwendung von `bun:sqlite`
-(`src/lib/db/core.ts` / Adapter) aus. Unter Bun behalten Exporte daher den bisherigen
-prozessinternen Pfad bei und geben einmalig eine Warnung aus: Heap-/Timeout-Isolation durch
-Unterprozesse ist nicht verfügbar. Verwenden Sie Node für Ereignisschleifen- und OOM-Isolation;
-Bun wird hier nicht als reine Entwicklungsumgebung behandelt.
+Zielmodule müssen ohne Next.js-/Nur-Server-Abhängigkeiten importierbar sein. Die vorhandene
+BigQuery-Implementierung erfüllt diesen Vertrag bereits. Access-Token-Caches bestehen nur für den
+untergeordneten Prozess, nicht über mehrere Ausführungen hinweg. Node ist die unterstützte Laufzeitumgebung
+(`package.json` engines), aber der Bun-Installationsabschnitt der README und `Dockerfile.bun` weisen ebenfalls
+einen produktiven Kompatibilitätspfad über `bun:sqlite` (`src/lib/db/core.ts` / Adapter) aus. Unter Bun
+behalten Exporte daher den bisherigen prozessinternen Pfad bei und geben einmalig eine Warnung aus:
+Heap-/Timeout-Isolation durch einen untergeordneten Prozess ist nicht verfügbar. Verwenden Sie
+Node zur Isolation der Ereignisschleife und bei OOM-Fehlern; Bun wird hier nicht als reine Entwicklungsumgebung behandelt.
 
-Wenn `includeBodies` aktiviert ist, sollte ein minutenbasierter Zeitplan wie
-`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` bevorzugt werden, anstatt einen stündlichen
-Nutzlast-Rückstau anzusammeln. Batch- und Zeilenlimits begrenzen weiterhin jeden Lauf. Der
-Prozessstart fällt pro Ziel und Lauf an; dabei werden geringe Startkosten zugunsten der
-Server-Ereignisschleifen-Isolation in Kauf genommen, nicht um die gesamte CPU-Nutzung zu reduzieren.
+Wenn `includeBodies` aktiviert ist, sollte ein minutengenauer Zeitplan wie
+`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` bevorzugt werden, statt einen stündlichen Payload-Rückstau anzusammeln.
+Batch- und Zeilenlimits begrenzen weiterhin jede Ausführung. Der Prozessstart fällt pro Ziel und Ausführung an;
+dies tauscht geringe Startkosten gegen die Isolation der Server-Ereignisschleife ein, nicht gegen eine geringere CPU-Gesamtnutzung.
 
-### Nutzlasten (Prompts und Vervollständigungen)
+### Payloads (Prompts und Vervollständigungen)
 
-Standardmäßig enthält der Export nur die Zusammenfassungsfelder, die in der **Liste** der Logs
-angezeigt werden. Durch Aktivieren von **Prompts und Antworten exportieren** (`includeBodies`)
-werden zusätzlich die Informationen übertragen, die im **Detailbereich** der Logs für jeden
-Aufruf angezeigt werden:
+Standardmäßig enthält der Export nur die Zusammenfassungsfelder, die in der **Liste** der Logs angezeigt werden. Wenn
+**Prompts und Antworten exportieren** (`includeBodies`) aktiviert wird, werden zusätzlich die Inhalte übertragen, die der **Detailbereich**
+der Logs für jeden Aufruf anzeigt:
 
 | Feld                             | Inhalt                                                             |
 | -------------------------------- | ------------------------------------------------------------------ |
-| `request_body` / `response_body` | Die Aufrufnutzlasten, wie sie das Dashboard darstellt              |
+| `request_body` / `response_body` | Die Aufruf-Payloads in der Darstellung des Dashboards              |
 | `pipeline_route_decision`        | Welches Ziel und Modell der Router ausgewählt hat                  |
-| `pipeline_client_request`        | Die unveränderte Anfrage, genau wie sie vom Client gesendet wurde  |
+| `pipeline_client_request`        | Die unveränderte Anfrage, genau wie sie der Client gesendet hat    |
 | `pipeline_openai_request`        | Nach der Übersetzung in das interne OpenAI-Format                  |
 | `pipeline_provider_request`      | Wie tatsächlich an den Upstream gesendet, im Dialekt des Anbieters |
-| `pipeline_provider_response`     | Die rohe Upstream-Antwort                                          |
+| `pipeline_provider_response`     | Die unveränderte Upstream-Antwort                                  |
 | `pipeline_client_response`       | Was an den Aufrufer zurückgegeben wurde                            |
 | `pipeline_error`                 | Fehlerdetails auf Pipeline-Ebene für einen fehlgeschlagenen Aufruf |
 | `bodies_truncated`               | Wahr, wenn eines der obigen Felder `maxBodyBytes` erreicht hat     |
 
-Dabei handelt es sich um Prompt-Inhalte, daher ist diese Option **standardmäßig deaktiviert** und
-bewusst für jedes Ziel separat auswählbar. Übertragen wird, was das Dashboard anzeigt, da Export
-und `getCallLogById` dieselbe Detailauflösung verwenden: Nutzlasten werden bereits beim Schreiben
-von personenbezogenen Daten bereinigt und von Geheimnissen befreit. Bei einem Aufruf mit einem
-`noLog`-API-Schlüssel wird überhaupt keine Nutzlast gespeichert, sodass nichts exportiert werden
-kann.
+Dabei handelt es sich um Prompt-Inhalte. Daher ist diese Option **standardmäßig deaktiviert** und bewusst für jedes Ziel separat wählbar.
+Exportiert wird, was das Dashboard anzeigt, da Export und `getCallLogById` dieselbe
+Detailauflösung verwenden: Payloads werden
+bereits beim Schreiben von personenbezogenen Daten bereinigt und von Geheimnissen befreit, und bei einem Aufruf mit einem
+`noLog`-API-Schlüssel wird überhaupt kein Payload gespeichert, sodass nichts exportiert werden kann.
 
-Nutzlasten werden zeilenweise aus dem Dateisystemartefakt gelesen, sodass die Hydratisierung nur
-für Ziele erfolgt, die sie angefordert haben. Bei einem fehlenden oder beschädigten Artefakt wird
-dessen Zusammenfassung mit Null-Nutzlasten exportiert, anstatt den Batch fehlschlagen zu lassen
-und den Cursor zu blockieren.
+Payloads werden zeilenweise aus dem Dateisystem-Artefakt gelesen, sodass die Hydratisierung nur für Ziele
+erfolgt, die sie angefordert haben. Bei einem fehlenden oder beschädigten Artefakt wird dessen Zusammenfassung mit Null-Payloads
+exportiert, statt den Batch fehlschlagen zu lassen und den Cursor zu blockieren.
 
-`maxBodyBytes` (Standardwert 262144) begrenzt jedes Feld. Längere Nutzlasten werden **gekürzt,
-anstatt verworfen zu werden** — ein abgeschnittener Prompt beantwortet weiterhin die Frage „Was
-wurde gefragt?“ — und die Zeile wird mit `bodies_truncated` gekennzeichnet. Blockweise gestreamte
-Deltas werden nicht exportiert; die zusammengesetzte Antwort ist bereits in
-`pipeline_provider_response` und `pipeline_client_response` enthalten.
+`maxBodyBytes` (Standardwert 262144) begrenzt jedes Feld. Längere Payloads werden **gekürzt statt
+verworfen** — ein gekürzter Prompt beantwortet weiterhin die Frage „Was wurde gefragt?“ — und die Zeile wird mit
+`bodies_truncated` gekennzeichnet. Chunkweise gestreamte Deltas werden nicht exportiert; die zusammengesetzte Antwort ist
+bereits in `pipeline_provider_response` und `pipeline_client_response` enthalten.
 
 ---
 

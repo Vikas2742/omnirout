@@ -10,29 +10,29 @@ OmniRoute bepaalt bij het opstarten het SQLite-stuurprogramma via een fallbackke
    — het snelst, native binary, geïnstalleerd door `npm install` wanneer buildtools aanwezig zijn.
 
 2. **Tijdens runtime geïnstalleerde `better-sqlite3`** (in `~/.omniroute/runtime/`)
-   — wordt bij de eerste uitvoering indien nodig geïnstalleerd **OF** door `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
-   Valideert vóór het laden de magic bytes van het native `.node`-bestand (ELF / Mach-O / PE)
-   als bescherming tegen beschadigde binaries of binaries voor het verkeerde platform.
+   — wordt bij de eerste uitvoering lazy geïnstalleerd **OF** door `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
+   Valideert vóór het laden de magische bytes van het native `.node`-bestand (ELF / Mach-O / PE)
+   ter bescherming tegen beschadigde binaries of binaries voor het verkeerde platform.
 
-3. **`node:sqlite`** (Node ≥22.5-standaardbibliotheek) — geen native build nodig; wordt gebruikt wanneer
-   beide better-sqlite3-paden mislukken. Beperkte functionaliteit.
+3. **`node:sqlite`** (standaardbibliotheek van Node ≥22.5) — geen native build nodig; wordt gebruikt wanneer
+   beide paden voor better-sqlite3 mislukken. Beperkte functionaliteit.
 
-4. **`sql.js`** (WASM) — laatste fallback. Werkt overal, maar is langzamer
+4. **`sql.js`** (WASM) — laatste fallback. Werkt overal, maar is trager
    en schrijft gegevens periodiek in plaats van synchroon.
 
 ## Waarom deze complexiteit?
 
-- **Windows EBUSY**: `npm install -g omniroute@latest` kan mislukken als het
-  `better_sqlite3.node`-bestand van de vorige versie is vergrendeld door een actief proces. De runtime-installatie
+- **Windows EBUSY**: `npm install -g omniroute@latest` kan mislukken als
+  `better_sqlite3.node` van de vorige versie is vergrendeld door een actief proces. De runtime-installatie
   in `~/.omniroute/runtime/` omzeilt de globale npm-cache.
 - **Geen buildtools**: Sommige omgevingen (zakelijke Windows-systemen zonder VS Build
   Tools, minimale Docker-images) kunnen `better-sqlite3` niet compileren. Het runtime-installatieprogramma
   haalt een vooraf gebouwde binary op uit het npm-register; de fallbackstuurprogramma's
-  zorgen ervoor dat OmniRoute alsnog opstart, zelfs als dat mislukt.
-- **Air-gapped systemen**: Als het npm-register niet bereikbaar is, garanderen `node:sqlite`
+  zorgen ervoor dat OmniRoute zelfs opstart als dat mislukt.
+- **Systemen zonder netwerktoegang**: Als het npm-register niet bereikbaar is, garanderen `node:sqlite`
   of `sql.js` basisfunctionaliteit.
 
-## Validatie van magic bytes
+## Validatie van magische bytes
 
 Voordat een tijdens runtime geïnstalleerd `.node`-bestand wordt geladen, leest OmniRoute de eerste 8
 bytes en vergelijkt deze met bekende platformmagics:
@@ -40,8 +40,8 @@ bytes en vergelijkt deze met bekende platformmagics:
 | Platform               | Bytes (hex)   | Label       |
 | ---------------------- | ------------- | ----------- |
 | Linux                  | `7F 45 4C 46` | `elf`       |
-| macOS 64-bit BE        | `FE ED FA CF` | `macho`     |
-| macOS 64-bit LE        | `CF FA ED FE` | `macho-le`  |
+| macOS 64-bits BE       | `FE ED FA CF` | `macho`     |
+| macOS 64-bits LE       | `CF FA ED FE` | `macho-le`  |
 | macOS fat (universeel) | `CA FE BA BE` | `macho-fat` |
 | Windows                | `4D 5A` (MZ)  | `pe`        |
 
@@ -60,44 +60,44 @@ const info = getDriverInfo();
 ## Handmatige bediening
 
 ```bash
-# Opwarming na installatie overslaan (voor snelle CI-installaties)
+# Sla de postinstall-opwarming over (voor snelle CI-installaties)
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
-# better-sqlite3 voor runtime geforceerd opnieuw installeren
+# Installeer better-sqlite3 voor runtime geforceerd opnieuw
 rm -rf ~/.omniroute/runtime
 omniroute  # wordt bij de volgende start opnieuw geïnstalleerd
 
-# Controleren welk stuurprogramma actief is
+# Controleer welk stuurprogramma actief is
 omniroute config db-info  # (als de CLI-opdracht bestaat)
 ```
 
 ## Synchrone blokkeringen diagnosticeren
 
 Stel bij `better-sqlite3` vóór het opstarten `OMNIROUTE_SQLITE_SLOW_MS=200` in om
-timing van de synchrone adapter in te schakelen. Dit staat standaard uit. Voor een voltooide bewerking die
-minstens zoveel milliseconden duurt, wordt een `[SQLITE-SLOW]`-waarschuwing gegenereerd, maximaal eenmaal per
+timing van de synchrone adapter in te schakelen. Dit is standaard uitgeschakeld. Een voltooide bewerking die
+ten minste zoveel milliseconden duurt, genereert een `[SQLITE-SLOW]`-waarschuwing, maximaal eenmaal per
 tien seconden per adapter. De waarschuwing bevat alleen het stuurprogramma, de bewerkingsklasse
 (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, transactie of onderhoud) en
-het aantal verstreken milliseconden: geen SQL, bindingen, rijen, paden of uitzonderingstekst.
+het aantal verstreken milliseconden: geen SQL, bindings, rijen, paden of tekst van uitzonderingen.
 
-Dit is een diagnostisch hulpmiddel, geen time-out of queryoptimalisatie. Het kan geen melding maken van
-een bewerking die nooit terugkeert, CPU-werk niet onderscheiden van wachten op schijf-I/O, niet
+Dit is een diagnostisch hulpmiddel, geen timeout of queryoptimalisatie. Het kan geen melding maken van
+een bewerking die nooit terugkeert, geen onderscheid maken tussen CPU-werk en wachten op schijf-I/O, niet
 de exacte SQL identificeren en geen bewerkingen waarnemen die via de onbewerkte stuurprogrammahandle worden uitgevoerd.
 De duur van asynchrone back-ups wordt bewust uitgesloten; andere SQLite-stuurprogramma's worden niet
-geïnstrumenteerd door deze opt-infunctie. Als de variabele wordt uitgeschakeld, wordt de oorspronkelijke adapter
-zonder timingwrappers hersteld. Er worden geen databaseschema's of opgeslagen configuraties gewijzigd.
+geïnstrumenteerd door deze opt-in. Door de variabele uit te schakelen, wordt de oorspronkelijke adapter
+zonder timingwrappers hersteld. Het databaseschema en de opgeslagen configuratie worden niet gewijzigd.
 
-De vertragingswaarschuwing van `/healthz` meldt de event-looppiek sinds de vorige meting,
-niet het gemiddelde over de gehele levensduur. Vergelijk de tijdstempels met waarschuwingen voor trage bewerkingen
-en host-/opslagmetrieken voordat u een blokkering toeschrijft aan SQLite of een schijfstoring.
+De lagwaarschuwing van `/healthz` rapporteert de piek in de event loop sinds de vorige meting,
+niet het gemiddelde over de volledige levensduur. Correleer de tijdstempels ervan met waarschuwingen
+voor trage bewerkingen en host-/opslagstatistieken voordat u een blokkering aan SQLite of een schijffout toeschrijft.
 
 ## Referentie
 
 Implementatie:
 
-- `bin/cli/runtime/magicBytes.mjs` — helpers voor de validatie van binaire magic bytes
-- `bin/cli/runtime/sqliteRuntime.mjs` — runtime-resolver met 5 stappen + installatie indien nodig
-- `bin/cli/runtime/index.mjs` — opstartorchestrator (`warmUpRuntimes()`)
+- `bin/cli/runtime/magicBytes.mjs` — helpers voor validatie van magische bytes van binaries
+- `bin/cli/runtime/sqliteRuntime.mjs` — runtime-resolver met 5 stappen + lazy installatieprogramma
+- `bin/cli/runtime/index.mjs` — opstartcoördinator (`warmUpRuntimes()`)
 - `scripts/postinstall.mjs` — npm-hook na installatie (niet-fatale opwarming)
 - `src/lib/db/core.ts` — exports van `ensureDbInitialized()` / `getDriverInfo()`
 
@@ -108,8 +108,8 @@ in OmniRoute een systeem met **één schrijver**:
 
 - Koppel niet twee OmniRoute-replica's aan hetzelfde `storage.sqlite`-bestand.
 - Een herstart van een container, een Recreate-deployment, een OOM-kill of een HEALTHCHECK-herstart beëindigt
-  elke actieve SSE-sessie. Het standaardpad voorziet niet in het geleidelijk beëindigen van sessies.
-- Een livenesscontrole van de orchestrator die een trage `/healthz` als niet actief beschouwt, beëindigt de enige
-  replica. Geef de voorkeur aan TCP-liveness + HTTP `/healthz`-readiness. Zie
+  elke actieve SSE-sessie. Het standaardpad voert geen sessiedrain uit.
+- Livenesscontrole door een orchestrator die een trage `/healthz` als dood beschouwt, beëindigt de enige
+  replica. Geef de voorkeur aan TCP-liveness + HTTP `/healthz`-readiness. Zie de
   [Docker-handleiding — beschikbaarheid](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
   en [aanbevelingen voor Kubernetes-probes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

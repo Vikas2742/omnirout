@@ -16,151 +16,154 @@ Logs උපකරණ පුවරු ටැබය ඉල්ලීම් ඉත�
 
 ```
 සේවාදායකය (වින්යාසය විකේතනය + වලංගු කිරීම, කර්සරය සමථයකට පත් කිරීම)
-  → IPC ආරම්භ කරන්න → හුදකලා කළ exportChild OS ක්රියාවලිය
-    → කියවීමට පමණක් වූ storage.sqlite → හවුල් call-log විමසුම/සිතියම්කරණය
-      → අසමමුහුර්ත artifact පූරණය → ගමනාන්තයේ prepare()/send()
-        → කාණ්ඩ IPC → සේවාදායකය කර්සරය ස්ථිර කරයි → පිළිගැනීමේ IPC
+  → IPC ආරම්භ කිරීම → හුදකලා exportChild OS ක්රියාවලිය
+    → කියවීමට පමණක් ඇති storage.sqlite → හවුල් call-log විමසුම/සිතියම්ගත කිරීම
+      → අසමමුහුර්ත කලාකෘති පූරණය → ගමනාන්තයේ prepare()/send()
+        → කාණ්ඩ IPC → සේවාදායකය කර්සරය සුරකියි → පිළිගැනීමේ IPC
           → ඊළඟ කාණ්ඩය; අවසන් IPC → සේවාදායකය සාර්ථකත්වය සටහන් කරයි
 ```
 
-- **කාලසටහන** — එක් `JobRegistry` cron කාර්යයක්, `log_export`, පෙරනිමියෙන් `0 * * * *` (පැයකට වරක්,
+- **කාලසටහන** — එක් `JobRegistry` cron කාර්යයක් වන `log_export`, පෙරනිමියෙන් `0 * * * *` (පැයකට වරක්,
   UTC). `src/lib/initCloudSync.ts` තුළ ලියාපදිංචි කර ඇත; `OMNIROUTE_LOG_EXPORT_CRON` මඟින් අභිබවා සැකසිය හැක.
-  සෑම ක්රියාත්මක වීමකදීම **සක්රීය කර ඇති** සෑම ගමනාන්තයක්ම අනුක්රමිකව හිස් කරයි.
+  සෑම ක්රියාත්මක වීමකදීම **සක්රිය කර ඇති** සෑම ගමනාන්තයක්ම අනුක්රමිකව හිස් කරයි.
 - **කර්සරය** — SQLite හි ව්යංග `call_logs.rowid`, එක් එක් ගමනාන්තය සඳහා
-  `log_export_destinations.cursor_row_id` තුළ ස්ථිර කරයි. `timestamp` හිතාමතාම කර්සරය ලෙස භාවිත නොකෙරේ: ඇමතුම්කරුවන්ට
-  තමන්ගේම අගයක් සැපයිය හැකි බැවින්, පසුව ආරම්භ වූ වේගවත් ඉල්ලීමකට පසුව මන්දගාමී ඉල්ලීමක් ලිවිය හැකි අතර,
-  කාල මුද්රා කර්සරයක් එය මඟ හරිනු ඇත.
-- **කාණ්ඩගත කිරීම** — එක් ඉල්ලීමකට පේළි `batch_size` (පෙරනිමිය 500), එක් ධාවනයකට පේළි
-  `max_rows_per_run` (පෙරනිමිය 10000), එමඟින් විශාල පසුබැසීමක් එක් ධාවනයක් අවහිර කරනවා වෙනුවට
-  කාලසටහන් ක්රියාත්මක වීම් කිහිපයක් පුරා හිස් වේ.
-- **බෙදාහැරීම** — කර්සරය ඉදිරියට යන්නේ `send()` විසඳුණු පසුව පමණි. අසාර්ථක කාණ්ඩයක් කර්සරය
-  තිබූ තැනම තබන බැවින්, ඊළඟ ධාවනයේදී එම පේළිම නැවත උත්සාහ කරයි. සහතිකය වන්නේ
-  සත්ය වශයෙන්ම හරියටම එක් වරක් නොව, අවම වශයෙන් එක් වරක් බෙදාහැරීම සහ ගමනාන්ත පාර්ශ්වයේ අනුපිටපත් ඉවත් කිරීමයි: BigQuery සෑම
-  පේළියකටම call-log id මඟින් යතුරක් නියම කරන අතර, එය තමන්ගේ අනුපිටපත් ඉවත් කිරීමේ කාල කවුළුව තුළ හැකි උපරිමයෙන් පිළිපදියි.
-- **අතිච්ඡාදන ආරක්ෂණය** — cron ක්රියාත්මක වීම සහ `POST .../run` එකම වේලාවේ සිදුවිය හැක. දැනටමත්
-  හිස් කරමින් පවතින ගමනාන්තයක් දෙවරක් හිස් කරනවා වෙනුවට මඟ හරිනු ලැබේ (ධාවන ප්රතිඵලයේ `skipped: true`),
-  එබැවින් සමගාමී ධාවනයකට කාණ්ඩයක් නැවත යැවීමට හෝ කර්සරය පසුපසට ලිවීමට නොහැක.
-- **පිරිසිදු කිරීමෙන් පසු ප්රතිසාධනය** — `cursor_row_id` අගය `MAX(rowid)` ඉක්මවා ගියහොත් (සම්පූර්ණ වගුවම
-  පිරිසිදු කර පේළි හැඳුනුම් නැවත ආරම්භ වී ඇත්නම්), ධාවකය ස්ථිරව අන්ධ වීම වෙනුවට 0 වෙත ආපසු යයි.
+  `log_export_destinations.cursor_row_id` තුළ සුරකියි. `timestamp` කර්සරය ලෙස භාවිත නොකරන්නේ හිතාමතාය: කැඳවුම්කරුවන්ට
+  තමන්ගේම අගයක් සැපයිය හැකි බැවින්, ප්රමාද ඉල්ලීමක් පසුව ආරම්භ වූ වේගවත් ඉල්ලීමකට පසුව ලිවිය හැකි අතර,
+  timestamp කර්සරයක් එය මඟහරිනු ඇත.
+- **කාණ්ඩගත කිරීම** — එක් ඉල්ලීමකට `batch_size` පේළි (පෙරනිමිය 500), එක් ධාවනයකට
+  `max_rows_per_run` පේළි (පෙරනිමිය 10000); එමඟින් විශාල පසුබැසීමක් එක් ධාවනයක් අවහිර කිරීම වෙනුවට
+  ක්රියාත්මක වීම් කිහිපයක් පුරා හිස් වේ.
+- **බෙදාහැරීම** — කර්සරය ඉදිරියට යන්නේ `send()` විසඳුණු පසුව පමණි. අසාර්ථක කාණ්ඩයක්
+  කර්සරය තිබූ තැනම තබන බැවින්, ඊළඟ ධාවනයේදී එම පේළිම නැවත උත්සාහ කෙරේ. සහතිකය වන්නේ
+  සත්ය exactly-once ක්රියාකාරිත්වයක් නොව, අවම වශයෙන් එක් වරක් බෙදාහැරීම සහ ගමනාන්ත පාර්ශ්වයේ අනුපිටපත් ඉවත් කිරීමයි: BigQuery විසින් සෑම
+  පේළියක්ම call-log id අනුව යතුරුගත කරන අතර, තමන්ගේම අනුපිටපත් ඉවත් කිරීමේ කාල කවුළුව තුළ එය හැකි උපරිමයෙන් පිළිපදියි.
+- **අතිච්ඡාදන ආරක්ෂකය** — cron ක්රියාත්මක වීම සහ `POST .../run` එකවර සිදුවිය හැක. දැනටමත්
+  හිස් කරමින් පවතින ගමනාන්තයක් දෙවරක් හිස් කිරීම වෙනුවට මඟහරිනු ලැබේ (ධාවන ප්රතිඵලයේ `skipped: true`),
+  එම නිසා සමකාලීන ධාවනයකට කාණ්ඩයක් නැවත යැවීමට හෝ කර්සරය පසුපසට ලිවීමට නොහැක.
+- **පිරිසිදු කිරීමෙන් ප්රතිසාධනය** — `cursor_row_id` අගය `MAX(rowid)` ට ඉහළින් අවසන් වුවහොත් (මුළු වගුවම
+  පිරිසිදු කර rowids නැවත ආරම්භ කර ඇත්නම්), runner ස්ථිරවම දත්ත නොදකින තත්ත්වයකට පත්වීම වෙනුවට 0 වෙත ආපසු යයි.
 
-### හුදකලා ධාවකය සහ සීමාවන්
+### හුදකලා runner සහ සීමා
 
-Node මත සෑම ගමනාන්ත ධාවනයක්ම වෙනම, කෙටි කාලීන OS අනු ක්රියාවලියක් (`child_process`
-IPC සමඟ, `worker_threads` නොවේ) ආරම්භ කරයි. Body කියවීම්, payload JSON විග්රහය/අනුක්රමීකරණය, ගමනාන්ත
-`prepare()` සහ ගමනාන්ත ජාල I/O සියල්ලම සේවාදායකයේ event loop එක මත නොව එහි ක්රියාත්මක වේ.
-IPC හරහා ගමන් කරන්නේ වින්යාසය සහ කුඩා ප්රගති පණිවිඩ පමණි; නිර්යාත කළ වාර්තා කිසිවිටෙක සේවාදායකයට
-ආපසු නොඑයි. cron කාර්යය සහ දැන් ධාවනය කිරීමේ route එක එකම පොදු ප්රතිඵලය සහ අතිච්ඡාදන ආරක්ෂණය පවත්වා ගනී.
+Node මත සෑම ගමනාන්ත ධාවනයක්ම වෙනම, කෙටි කාලීන OS child process එකක් (`worker_threads` නොව, IPC සහිත `child_process`)
+ආරම්භ කරයි. Body කියවීම්, payload JSON විග්රහ කිරීම/අනුක්රමිකකරණය, ගමනාන්ත
+`prepare()` සහ ගමනාන්ත ජාල I/O යන සියල්ල සේවාදායකයේ event loop එක මත නොව එහි ක්රියාත්මක වේ.
+IPC හරහා ගමන් කරන්නේ වින්යාසය සහ කුඩා ප්රගති පණිවිඩ පමණි; අපනයනය කළ වාර්තා කිසිවිටෙක සේවාදායකයට ආපසු නොඑයි.
+cron කාර්යය සහ Run now route එක එකම පොදු ප්රතිඵලය සහ අතිච්ඡාදන ආරක්ෂකය පවත්වා ගනී.
 
-අනු ක්රියාවලිය `node:sqlite` භාවිතයෙන් සේවාදායකය විසඳාගත් `DATA_DIR/storage.sqlite` කියවීමට පමණක් විවෘත කරයි,
-`busy_timeout=5000` සහ `query_only=ON` සමඟ. එය කිසිදු DB singleton එකක් ආයාත නොකරන අතර
-migrations, backups හෝ SQLite යාවත්කාලීන කිසිවක් සිදු නොකරයි. අස්ථානගත/දූෂිත artifact ලේඛනගත කිරීම (දූෂිත-artifact
-UPDATE එක ඇතුළුව) dashboard විස්තර මාර්ගය තුළ පමණක් පවතී. මාර්ග දෙකම පිරිසිදු
-විස්තර විසඳුම්කාරකයක් හවුලේ භාවිත කරයි; නිර්යාතය අසමමුහුර්ත ගොනු පද්ධති කියවීම් සහ එකම artifact → පැරණි
-inline → පැරණි disk → කිසිවක් නැත යන විසඳුම් අනුපිළිවෙළ භාවිත කරයි. අනු ක්රියාවලිය තම කියවනය විවෘත කරන විට ධාවනයක් උපරිම ඇතුළත් කිරීමේ rowid එකේ
-ක්ෂණික පිටපතක් ගනී; පසුව ඇතුළත් කිරීම් ඊළඟ ධාවනය තෙක් රැඳී සිටියි. මෙය ඇතුළත් කිරීමේ
-සීමාවක් මිස දිගුකාලීන SQLite transaction එකක් නොවේ: ජාල රැඳී සිටීම් අතරතුර WAL ලියන්නන්ට සහ checkpoints වලට නිදහසේ
-ක්රියා කළ හැක. පවතින පේළිවල යාවත්කාලීන/මකාදැමීම් මෙම සීමාව මඟින් ස්ථිර නොකෙරේ.
+child එක සේවාදායකය විසඳාගත් `DATA_DIR/storage.sqlite`, `node:sqlite` භාවිතයෙන් කියවීමට පමණක් විවෘත කරයි,
+`busy_timeout=5000` සහ `query_only=ON` සමඟ. එය කිසිදු DB singleton එකක් import නොකරන අතර
+migrations, backups හෝ SQLite updates කිසිවක් සිදු නොකරයි. නැති/දූෂිත කලාකෘති පොත් තැබීම (`corrupt-artifact UPDATE` ද ඇතුළුව)
+dashboard විස්තර මාර්ගය තුළ පමණක් පවතී. මාර්ග දෙකම අතුරු ආබාධ රහිත
+විස්තර resolver එකක් හවුලේ භාවිත කරයි; export අසමමුහුර්ත filesystem කියවීම් සහ එකම artifact → legacy
+inline → legacy disk → none විසඳුම් අනුපිළිවෙළ භාවිත කරයි. child එක තම reader විවෘත කරන විට ධාවනයක් උපරිම ඇතුළත් කිරීමේ rowid එකේ
+snapshot එකක් ගනී; පසුව සිදු වන ඇතුළත් කිරීම් ඊළඟ ධාවනය තෙක් බලා සිටියි. මෙය දිගුකාලීන SQLite transaction එකක් නොව,
+ඇතුළත් කිරීමේ සීමාවකි: ජාලය සඳහා රැඳී සිටින අතරතුර WAL writers සහ checkpoints නිදහසේ ක්රියා කළ හැක.
+මෙම සීමාව මඟින් පවතින පේළිවල යාවත්කාලීන කිරීම්/මකා දැමීම් ස්ථිර නොකෙරේ.
 
-පිළිගත් සෑම කාණ්ඩයකටම පසුව, අනු ක්රියාවලිය පිළිගැනීමක් සඳහා රැඳී සිටියි. සේවාදායකය පළමුව
-`advanceLogExportCursor` සමඟ කර්සරය ස්ථිර කර, පසුව `ack` යවයි; ඊට පෙර ඊළඟ කාණ්ඩය ආරම්භ නොවේ.
-යැවීමේ අසාර්ථකත්වයක්, බිඳවැටීමක් හෝ කාලය ඉක්මවීමක් එම කාණ්ඩය ඉදිරියට ගෙන නොගොස් අසාර්ථකත්වයක් සටහන් කරයි. පෙර
-පිළිගත් කාණ්ඩ commit වී පවතී; නැවත යැවිය හැක්කේ පිළිගැනීම නොලැබුණු එක් කාණ්ඩය පමණි.
-සාර්ථකත්වය සටහන් කරන්නේ `done` ලැබීමෙන් සහ අනු ක්රියාවලිය පිරිසිදුව අවසන් වීමෙන් පසුව පමණි. අසාර්ථකත්වයන් අනු ක්රියාවලිය
-SIGTERM සමඟ අවසන් කරයි, 500 ms පසුව SIGKILL වෙත තීව්ර කරයි, සහ ධාවකය ක්රියාවලිය වැසෙන තෙක් රැඳී සිටියි.
+පිළිගත් සෑම කාණ්ඩයකටම පසුව, child එක පිළිගැනීමක් සඳහා රැඳී සිටියි. සේවාදායකය පළමුව
+`advanceLogExportCursor` මඟින් කර්සරය සුරකින අතර, පසුව `ack` යවයි; ඊට පෙර ඊළඟ කාණ්ඩය ආරම්භ නොවේ.
+යැවීමේ අසාර්ථකත්වයක්, බිඳවැටීමක් හෝ කාලය ඉක්මවීමක් එම කාණ්ඩය ඉදිරියට ගෙන නොයා අසාර්ථකත්වය සටහන් කරයි. පෙර
+පිළිගත් කාණ්ඩ commit වී පවතී; නැවත යැවිය හැක්කේ පිළිගැනීමක් නොලැබුණු එක් කාණ්ඩය උපරිම වශයෙනි.
+සාර්ථකත්වය සටහන් කරන්නේ `done` ලැබීමෙන් සහ child එක පිරිසිදුව exit වීමෙන් පසුව පමණි. අසාර්ථකත්වයකදී child එක
+SIGTERM මඟින් අවසන් කරන අතර, 500 ms පසුව SIGKILL දක්වා උත්සන්න කර, runner ක්රියාවලිය වැසෙන තෙක් රැඳී සිටියි.
 
-| පරිසර විචල්යය                                 | පෙරනිමිය | අරමුණ                                       |
-| --------------------------------------------- | -------- | ------------------------------------------- |
-| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000   | එක් ගමනාන්තයක wall-clock කාල සීමාව          |
-| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024     | අනු ක්රියාවලියේ V8 old-space සීමාව MB වලින් |
+| පරිසර විචල්යය                                 | පෙරනිමිය | අරමුණ                             |
+| --------------------------------------------- | -------- | --------------------------------- |
+| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000   | එක් ගමනාන්තයකට wall-clock සීමාව   |
+| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024     | child V8 old-space සීමාව MB වලින් |
 
-වලංගු නොවන/ධන නොවන/පූර්ණ සංඛ්යා නොවන අගයන් සඳහා පෙරනිමි භාවිත වේ. heap සැකසුම සම්පූර්ණ
-RSS සීමාවක් නොවේ; ඉතා විශාල කාණ්ඩවලට තවමත් අනු ක්රියාවලියේ මතකය අවසන් කර ධාවනය ආරක්ෂිතව අසාර්ථක කළ හැක.
-1024 MB පෙරනිමිය, bodies සක්රීය කර ඇති 512 KiB artifacts අඩංගු පෙරනිමි පේළි 500 කාණ්ඩයට,
-BigQuery හි byte-chunked JSON අනුක්රමීකරණය ද ඇතුළුව, අමතර ඉඩක් තබයි. එය
-පේළි 10000 ක bodies කාණ්ඩයක් ආරක්ෂිත නොකරයි. V8 heap අවසන් වීම ක්රියාකළ හැකි අසාර්ථකත්වයක් සටහන් කරයි: කාණ්ඩ
-ප්රමාණය අඩු කරන්න හෝ `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` වැඩි කරන්න; කර්සරය අවසන්
-පිළිගත් කාණ්ඩයේම පවතී. ඓතිහාසික inline/disk bodies නවීන artifact සීමාවෙන් ආවරණය නොවේ.
-විශේෂයෙන් මතක-සීමිත containers තුළ, ක්රියාකරුවන් RSS සඳහා වෙනම සැලසුම් කළ යුතුය.
+වලංගු නොවන/ධන නොවන/පූර්ණ සංඛ්යා නොවන අගයන් සඳහා පෙරනිමි භාවිත වේ. Heap සැකසුම සමස්ත
+RSS සීමාවක් නොවේ; ඉතා විශාල කාණ්ඩවලට තවමත් child මතකය අවසන් කර ධාවනය ආරක්ෂිතව අසාර්ථක කළ හැක.
+1024 MB පෙරනිමිය, bodies සක්රිය කර ඇති 512 KiB කලාකෘති 500ක පෙරනිමි කාණ්ඩය සඳහා,
+BigQuery හි byte-chunked JSON අනුක්රමිකකරණයද ඇතුළුව, අමතර ඉඩක් තබයි. එය
+පේළි 10000ක bodies කාණ්ඩයක් ආරක්ෂිත නොකරයි. V8 heap අවසන් වීම ක්රියාමාර්ග ගත හැකි අසාර්ථකත්වයක් ලෙස සටහන් වේ: කාණ්ඩ
+ප්රමාණය අඩු කරන්න හෝ `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` වැඩි කරන්න; කර්සරය අවසන් වරට
+පිළිගත් කාණ්ඩයේම පවතී. ඓතිහාසික inline/disk bodies නවීන artifact cap එකෙන් ආවරණය නොවේ.
+විශේෂයෙන්ම මතකය සීමා කළ containers තුළ, ක්රියාකරුවන් RSS සඳහා වෙනම සැලසුම් කළ යුතුය.
 
-අනු ක්රියාවලියට උරුම වන්නේ විසඳාගත් `DATA_DIR`, `NODE_ENV`, පැහැදිලි `TZ` (පැරණි ගොනු නාම
-දේශීය-වේලා විසඳීම), පවතින විට `ELECTRON_RUN_AS_NODE`, සහ පහත outbound inputs පමණි:
-`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (සහ ඒවායේ කුඩා අකුරු ආකාර),
+child එකට ලැබෙන්නේ විසඳාගත් `DATA_DIR`, `NODE_ENV`, පැහැදිලි `TZ` (legacy filename
+දේශීය වේලා විසඳුම), පවතින විට `ELECTRON_RUN_AS_NODE`, සහ පහත පිටතට යන inputs පමණි:
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (සහ ඒවායේ lowercase ආකාර),
 `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`.
-ගෝලීය Undici dispatcher එකක් සේවාදායකයේ පිරිසිදු environment-proxy විසඳීම සහ local-host
-bypass නීති, `NO_PROXY` ඇතුළුව, හවුලේ භාවිත කරයි; එය `proxyFetch.ts` හෝ එහි DB/feature flags ආයාත නොකරයි.
-ඉදිරියට යැවෙන ප්රතිදානයෙන් සහ සටහන් කරන ලද දෝෂවලින් proxy අක්තපත්ර වසන් කෙරේ. ගමනාන්ත අක්තපත්ර
-ගමන් කරන්නේ එක් ආරම්භක IPC පණිවිඩයක පමණි, argv හෝ environment හරහා කිසිවිටෙක නොවේ; ප්රතිදාන/දෝෂ ඉදිරියට යැවීමට
-උපසර්ග එක් කර පිරිසිදු කෙරේ. සෑම cron ධාවනයකදීම Node හි SQLite අනතුරු ඇඟවීම නැවත දැක්වීම වැළැක්වීමට,
-අනු ක්රියාවලියේ exec arguments තුළ අක්රීය කරන්නේ `ExperimentalWarning` පමණි; අනෙකුත් අනතුරු ඇඟවීම් දෘශ්යව පවතී.
+ගෝලීය Undici dispatcher එකක් සේවාදායකයේ අතුරු ආබාධ රහිත environment-proxy විසඳුම සහ `NO_PROXY` ඇතුළු local-host
+bypass නීති හවුලේ භාවිත කරයි; එය `proxyFetch.ts` හෝ එහි DB/feature flags import නොකරයි.
+ඉදිරියට යවන output සහ සටහන් කළ errors වලින් proxy credentials සඟවනු ලැබේ. ගමනාන්ත credentials
+ගමන් කරන්නේ එක් start IPC පණිවිඩයක් තුළ පමණක් වන අතර, කිසිවිටෙක argv හෝ environment තුළ නොවේ; output/error forwarding සඳහා
+prefix යොදා පිරිසිදු කෙරේ. සෑම cron ධාවනයකදීම Node හි SQLite warning එක නැවත පෙන්වීම වැළැක්වීමට child exec arguments තුළ
+අක්රිය කරන්නේ `ExperimentalWarning` පමණි; අනෙකුත් warning වර්ග දෘශ්යමානව පවතී.
 
 ගමනාන්ත මොඩියුල Next.js/server-only පරායත්තතා නොමැතිව import කළ හැකි විය යුතුය. පවතින
-BigQuery ක්රියාත්මක කිරීම දැනටමත් එම ගිවිසුම සපුරාලයි. Access-token caches පවතින්නේ child
-run එක තුළ පමණක් වන අතර runs අතර නොපවතී. Node යනු සහාය දක්වන runtime එකයි (`package.json` engines), නමුත් README හි Bun
-ස්ථාපන කොටස සහ `Dockerfile.bun` ද `bun:sqlite` භාවිත කරන නිෂ්පාදන අනුකූලතා මාර්ගයක්
-(`src/lib/db/core.ts` / adapters) ප්රචාරය කරයි. එබැවින් Bun යටතේ, exports පෙර පැවති
-in-process මාර්ගය රඳවාගෙන එක් වරක් පමණක් අනතුරු ඇඟවීමක් නිකුත් කරයි: child heap/timeout හුදකලා කිරීම ලබාගත නොහැක. Event-loop සහ OOM හුදකලා කිරීම සඳහා
-Node භාවිත කරන්න; මෙහිදී Bun dev-only ලෙස නොසලකයි.
+BigQuery ක්රියාත්මක කිරීම දැනටමත් එම ගිවිසුම සපුරාලයි. ප්රවේශ-ටෝකන හැඹිලි පවතින්නේ child
+ධාවනය සඳහා පමණක් වන අතර, ධාවන අතර නොපවතී. Node යනු සහාය දක්වන runtime එකයි (`package.json` engines), නමුත් README හි Bun
+ස්ථාපන කොටස සහ `Dockerfile.bun` ද `bun:sqlite` (`src/lib/db/core.ts` / adapters) භාවිත කරන නිෂ්පාදන
+අනුකූලතා මාර්ගයක් ප්රචාරය කරයි. එබැවින් Bun යටතේ, export ක්රියාවලි පෙර පැවති
+ක්රියාවලිය-තුළ මාර්ගය රඳවාගෙන එක් වරක් පමණක් අනතුරු ඇඟවීමක් නිකුත් කරයි: child heap/timeout හුදකලා කිරීම ලබා ගත නොහැක. Event-loop
+සහ OOM හුදකලා කිරීම සඳහා Node භාවිත කරන්න; මෙහිදී Bun සංවර්ධනයට පමණක් සීමා වූවක් ලෙස නොසලකයි.
 
-`includeBodies` සක්රීය කර ඇති විට, පැයක payload backlog එකක් රැස් කිරීම වෙනුවට
-`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` වැනි මිනිත්තු මට්ටමේ කාලසටහනක් වඩාත් සුදුසුය.
-Batch සහ row සීමා තවමත් එක් එක් run එක සීමා කරයි. එක් එක් run එකේ එක් එක් ගමනාන්තය සඳහා process startup පිරිවැය දැරිය යුතුය;
-මෙය සම්පූර්ණ CPU භාවිතය අඩු කිරීමක් නොව, server event-loop හුදකලා කිරීම වෙනුවෙන් කුඩා startup පිරිවැයක් හුවමාරු කිරීමකි.
+`includeBodies` සබල කර ඇති විට, පැයක payload පසුබැසීමක් රැස් කිරීම වෙනුවට
+`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` වැනි මිනිත්තු මට්ටමේ කාලසටහනක් භාවිත කිරීමට ප්රමුඛත්වය දෙන්න.
+Batch සහ row සීමා තවමත් එක් එක් ධාවනය සීමා කරයි. එක් ධාවනයකට එක් ගමනාන්තයක් සඳහා process startup පිරිවැය දැරිය යුතුය;
+මෙය සම්පූර්ණ CPU භාවිතය අඩු කිරීමක් නොව, server event-loop හුදකලා කිරීම වෙනුවෙන් කුඩා startup පිරිවැයක් හුවමාරු කරයි.
 
-### Payloads (prompts සහ completions)
+### Payload (ප්රේරක සහ සම්පූර්ණ කිරීම්)
 
-පෙරනිමියෙන් export එක රැගෙන යන්නේ Logs **list** එක පෙන්වන සාරාංශ fields පමණි. **Export prompts and responses** (`includeBodies`) සක්රීය කිරීමෙන්, එක් එක් call එක සඳහා Logs **detail**
-pane එක පෙන්වන දෑ ද අමතරව යවයි:
+පෙරනිමියෙන් export එක ගෙන යන්නේ Logs **ලැයිස්තුව** පෙන්වන සාරාංශ ක්ෂේත්ර පමණි. **ප්රේරක සහ ප්රතිචාර export කරන්න** (`includeBodies`)
+සක්රිය කිරීමෙන්, එක් එක් ඇමතුම සඳහා Logs **විස්තර**
+කවුළුව පෙන්වන දෑ අමතරව යවයි:
 
-| Field                            | එහි අඩංගු දේ                                                 |
-| -------------------------------- | ------------------------------------------------------------ |
-| `request_body` / `response_body` | Dashboard එක ඒවා render කරන ආකාරයේ call payloads             |
-| `pipeline_route_decision`        | Router එක තෝරාගත් target සහ model එක                         |
-| `pipeline_client_request`        | Client එක එවූ ආකාරයටම ඇති raw request එක                     |
-| `pipeline_openai_request`        | අභ්යන්තර OpenAI හැඩයට පරිවර්තනය කිරීමෙන් පසු                 |
-| `pipeline_provider_request`      | Provider dialect එකෙන් සැබවින්ම upstream වෙත යැවූ ආකාරය      |
-| `pipeline_provider_response`     | Raw upstream response එක                                     |
-| `pipeline_client_response`       | Caller වෙත ආපසු ලබාදුන් දේ                                   |
-| `pipeline_error`                 | අසාර්ථක call එකක් සඳහා pipeline මට්ටමේ error විස්තර          |
-| `bodies_truncated`               | ඉහත කිසියම් field එකක් `maxBodyBytes` සීමාවට ළඟා වූ විට True |
+| ක්ෂේත්රය                         | එහි අඩංගු දේ                                                      |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `request_body` / `response_body` | Dashboard එක ඒවා දක්වන ආකාරයේ ඇමතුම් payload                      |
+| `pipeline_route_decision`        | Router එක තෝරාගත් target එක සහ model එක                           |
+| `pipeline_client_request`        | Client එක එවූ ආකාරයටම ඇති අමු request එක                          |
+| `pipeline_openai_request`        | අභ්යන්තර OpenAI ආකෘතියට පරිවර්තනය කිරීමෙන් පසු                    |
+| `pipeline_provider_request`      | Provider උපභාෂාවෙන් upstream වෙත සැබැවින්ම යැවූ ආකාරය             |
+| `pipeline_provider_response`     | අමු upstream response එක                                          |
+| `pipeline_client_response`       | Caller වෙත ආපසු ලබා දුන් දේ                                       |
+| `pipeline_error`                 | අසාර්ථක ඇමතුමක් සඳහා pipeline-මට්ටමේ දෝෂ විස්තරය                  |
+| `bodies_truncated`               | ඉහත ක්ෂේත්රවලින් එකක් හෝ `maxBodyBytes` සීමාවට ළඟා වූ විට සත්ය වේ |
 
-මෙය prompt අන්තර්ගතය බැවින්, එය **පෙරනිමියෙන් අක්රීයයි** සහ හිතාමතාම එක් එක් ගමනාන්තය අනුව තෝරාගත හැක.
-Export කරන්නේ dashboard එක පෙන්වන දේමය, මන්ද export සහ `getCallLogById` එකම detail
-resolution එක බෙදාගනී: payloads ලියන අවස්ථාවේදීම
-PII-sanitised සහ secret-redacted කර ඇති අතර, `noLog` API key එකක් සමඟ කරන ලද call එකක් කිසිදු payload එකක් ගබඩා නොකරන බැවින් export කිරීමට කිසිවක් නොමැත.
+මෙය ප්රේරක අන්තර්ගතයක් බැවින්, එය **පෙරනිමියෙන් අක්රියයි** සහ හිතාමතාම එක් එක් ගමනාන්තය අනුව තෝරාගත හැක.
+යවනු ලබන්නේ dashboard එක පෙන්වන දේමයි, මන්ද export සහ `getCallLogById` එකම විස්තර
+විසඳීම බෙදාගන්නා බැවිනි: payload ලියන විටම ඒවායේ
+PII පිරිසිදු කර රහස් සංස්කරණය කර ඇති අතර, `noLog` API යතුරක් සමඟ සිදු කළ ඇමතුමක් කිසිදු payload එකක්
+ගබඩා නොකරන බැවින් export කිරීමට කිසිවක් නොමැත.
 
-Payloads filesystem artifact එකෙන් row එක බැගින් කියවනු ලබන බැවින් hydration ක්රියාත්මක වන්නේ එය ඉල්ලා ඇති ගමනාන්ත සඳහා පමණි.
-නොමැති හෝ දූෂිත artifact එකක් batch එක අසාර්ථක කර cursor එක සිරකර තැබීම වෙනුවට, null payloads සමඟ එහි සාරාංශය export කරයි.
+Payload එක් එක් row එක සඳහා filesystem artifact වෙතින් කියවනු ලබන බැවින්, දත්ත පිරවීම ක්රියාත්මක වන්නේ එය ඉල්ලා සිටි
+ගමනාන්ත සඳහා පමණි. අස්ථානගත හෝ දූෂිත artifact එකක්, batch එක අසාර්ථක කර cursor එක සිර කර තැබීම වෙනුවට,
+එහි සාරාංශය null payload සමඟ export කරයි.
 
-`maxBodyBytes` (පෙරනිමිය 262144) එක් එක් field එක සීමා කරයි. දිගු payloads **ඉවත් කිරීම වෙනුවට
-කප්පාදු කරනු ලැබේ** — කප්පාදු කළ prompt එකක් වුවත් "ඉල්ලා සිටියේ කුමක්ද" යන්නට පිළිතුරු දෙයි — සහ row එක
-`bodies_truncated` මඟින් සලකුණු කරයි. Stream කරන ලද chunk-by-chunk deltas export නොකෙරේ; එකලස් කළ response එක
+`maxBodyBytes` (පෙරනිමිය 262144) එක් එක් ක්ෂේත්රය සීමා කරයි. දිගු payload **ඉවත් කිරීම වෙනුවට
+කප්පාදු කරයි** — කප්පාදු කළ ප්රේරකයක් තවමත් "අසන ලද්දේ කුමක්ද" යන්නට පිළිතුරු දෙයි — සහ row එක
+`bodies_truncated` ලෙස සලකුණු කරයි. Stream කරන ලද chunk-by-chunk delta export නොකරයි; එකලස් කළ response එක
 දැනටමත් `pipeline_provider_response` සහ `pipeline_client_response` තුළ ඇත.
 
 ---
 
 ## 2. ගොනු
 
-| කොටස                     | පිහිටීම                                      |
-| ------------------------ | -------------------------------------------- |
-| ගමනාන්ත කොන්ත්රාත්තුව    | `src/lib/logExport/types.ts`                 |
-| රෙජිස්ට්රිය              | `src/lib/logExport/registry.ts`              |
-| රහස් හැසිරවීම            | `src/lib/logExport/secrets.ts`               |
-| ධාවකය (මව් IPC)          | `src/lib/logExport/runner.ts`                |
-| ක්රියාවලි ජීවන චක්රය     | `src/lib/logExport/childRunner.ts`           |
-| උප ක්රියාවලි පිවිසුම     | `src/lib/logExport/exportChild.ts`           |
-| කියවීමට පමණක් වන විවෘතකය | `src/lib/db/logExportReadOnly.ts`            |
-| හවුල් විමසුම/අනුරූපණය    | `src/lib/usage/callLogExportQueries.ts`      |
-| විස්තර නිරාකරණය          | `src/lib/usage/callLogDetailResolver.ts`     |
-| API ප්රක්ෂේපණය           | `src/lib/logExport/presenter.ts`             |
-| BigQuery ගමනාන්තය        | `src/lib/logExport/destinations/bigquery.ts` |
-| Google SA සත්යාපනය       | `src/lib/logExport/googleServiceAccount.ts`  |
-| ඇමතුම්-ලොග් මූලාශ්රය     | `src/lib/usage/callLogExportSource.ts`       |
-| ස්ථායි ගබඩාකරණය          | `src/lib/db/logExportDestinations.ts`        |
-| Cron කාර්යය              | `src/lib/jobs/logExportJob.ts`               |
-| REST ස්තරය               | `src/app/api/log-export/`                    |
-| උපකරණ පුවරු පිටුව        | `src/app/(dashboard)/dashboard/log-export/`  |
+| කොටස                    | පිහිටීම                                      |
+| ----------------------- | -------------------------------------------- |
+| ගමනාන්ත contract එක     | `src/lib/logExport/types.ts`                 |
+| Registry එක             | `src/lib/logExport/registry.ts`              |
+| රහස් හැසිරවීම           | `src/lib/logExport/secrets.ts`               |
+| Runner එක (මව් IPC)     | `src/lib/logExport/runner.ts`                |
+| Process ජීවන චක්රය      | `src/lib/logExport/childRunner.ts`           |
+| Child පිවිසුම           | `src/lib/logExport/exportChild.ts`           |
+| කියවීමට පමණක් opener එක | `src/lib/db/logExportReadOnly.ts`            |
+| හවුල් query/mapping     | `src/lib/usage/callLogExportQueries.ts`      |
+| විස්තර resolver එක      | `src/lib/usage/callLogDetailResolver.ts`     |
+| API projection එක       | `src/lib/logExport/presenter.ts`             |
+| BigQuery ගමනාන්තය       | `src/lib/logExport/destinations/bigquery.ts` |
+| Google SA සත්යාපනය      | `src/lib/logExport/googleServiceAccount.ts`  |
+| Call-log මූලාශ්රය       | `src/lib/usage/callLogExportSource.ts`       |
+| දත්ත ස්ථායිකරණය         | `src/lib/db/logExportDestinations.ts`        |
+| Cron කාර්යය             | `src/lib/jobs/logExportJob.ts`               |
+| REST ස්තරය              | `src/app/api/log-export/`                    |
+| Dashboard පිටුව         | `src/app/(dashboard)/dashboard/log-export/`  |
 
-යෝජනා ක්රමය: `src/lib/db/migrations/170_log_export_destinations.sql`.
+Schema එක: `src/lib/db/migrations/170_log_export_destinations.sql`.
 
 ---
 

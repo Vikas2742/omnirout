@@ -72,32 +72,32 @@ billi jsemmi l-endpoint u x’intilef — għalhekk selettur degradat qatt ma jk
 
 ## Għażliet
 
-| Ċavetta                          | Valur predefinit                                   | Noti                                                                                                                                         |
-| -------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `providerId`                     | `"omniroute"`                                      | ID tal-fornitur, ID tal-integrazzjoni, u l-prefiss li taħtu jidhru l-mudelli                                                                 |
-| `baseURL`                        | meħtieġ                                            | Għerq tal-gateway, `http(s)` biss; is-suffiss `/v1` jiżdied fejn meħtieġ                                                                     |
-| `apiKey`                         | kredenzjali konnessa, imbagħad `OMNIROUTE_API_KEY` | Ċavetta taċ-chat għal `/v1/*`                                                                                                                |
-| `managementReadToken`            | juża `apiKey` bħala alternattiva                   | Ċavetta għal `/api/*` — normalment **mhijiex** l-istess waħda                                                                                |
-| `displayName`                    | `"OmniRoute"`                                      | Isem il-fornitur fis-selettur                                                                                                                |
-| `timeoutMs`                      | `10000`                                            | Limitu ta' żmien għat-talba għal kull endpoint (il-kombinazzjonijiet awtomatiċi jużaw 5s)                                                    |
-| `modelCacheTtlMs`                | `300000`                                           | TTL tal-cache tal-katalgu; snapshot fuq id-diska jħaffef l-istartjar minn stat kiesaħ                                                        |
-| `timeouts`                       | juża `timeoutMs` bħala alternattiva                | Limiti ta' żmien għal kull endpoint f'ms: `models`, `combos`, `autoCombos`, `enrichment`                                                     |
-| `enrichment`                     | `true`                                             | Iġib l-ismijiet, l-ipprezzar u l-baġits tal-livell bla ħlas                                                                                  |
-| `providerTag`                    | `true`                                             | Iżid bħala prefiss ma' isem għall-wiri l-fornitur upstream li lejh jidderieġi                                                                |
-| `usableOnly`                     | `false`                                            | Iżomm biss il-fornituri li l-gateway jirrapporta bħala pprovduti                                                                             |
-| `combosSource`                   | `"api"`                                            | `"models"` jaqbeż `/api/combos` u jippubblika r-ringieli tal-kombinazzjonijiet ta' `/v1/models`; filtri fil-livell tal-membri jżommu `"api"` |
-| `showcasePerOwner`               | `10`                                               | Entrati tal-veduta predefinita miżmuma għal kull fornitur                                                                                    |
-| `freshPerOwner`                  | `10`                                               | Entrati ġodda tal-veduta predefinita miżmuma għal kull fornitur                                                                              |
-| `freshWindowDays`                | `90`                                               | Perjodu tal-freskezza f'jiem għall-fergħa tal-entrati ġodda                                                                                  |
-| `usageMemory`                    | `true`                                             | Jirrestawra entrati esklużi statikament li jissemmew fl-analitika tal-użu ta' 30 jum (jeħtieġ token tal-ġestjoni)                            |
-| `visibleModels` / `hiddenModels` | `[]`                                               | Listi ta' permessi għal taqbil eżatt jew bis-suffiss; iċ-ċaħda tirbaħ; `*` jippubblika l-katalgu kollu (filtri oħra xorta japplikaw)         |
-| `geminiSanitization`             | `true`                                             | Ineħħi l-kliem ewlieni ta' JSON-Schema li Gemini jirrifjuta mill-iskemi tal-għodod (għodod b'`$ref` jintbagħtu mingħajr tibdil)              |
-| `apiFormat.allowAnthropic`       | `false`                                            | Jidderieġi IDs fil-lista tal-permessi permezz tal-blokka tal-API ta' Anthropic                                                               |
-| `apiFormat.anthropicModels`      | `[]`                                               | IDs sħaħ tal-mudelli diretti lejn Anthropic                                                                                                  |
-| `logLevel` / `startupDebug`      | `warn` / `false`                                   | Livell ta' dettall tal-logger                                                                                                                |
+| Ċavetta                          | Valur predefinit                                   | Noti                                                                                                                                             |
+| -------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `providerId`                     | `"omniroute"`                                      | ID tal-fornitur, ID tal-integrazzjoni, u l-prefiss li taħtu jidhru l-mudelli                                                                     |
+| `baseURL`                        | meħtieġ                                            | L-għerq tal-gateway, `http(s)` biss; is-suffiss `/v1` jiżdied fejn ikun meħtieġ                                                                  |
+| `apiKey`                         | kredenzjali konnessa, imbagħad `OMNIROUTE_API_KEY` | Ċavetta taċ-chat għal `/v1/*`                                                                                                                    |
+| `managementReadToken`            | juża `apiKey` jekk ma jkunx issettjat              | Ċavetta għal `/api/*` — normalment **mhijiex** l-istess waħda                                                                                    |
+| `displayName`                    | `"OmniRoute"`                                      | Isem il-fornitur fis-selettur                                                                                                                    |
+| `timeoutMs`                      | `10000`                                            | Limitu ta’ żmien għal kull endpoint waqt fetch (il-kombinazzjonijiet awtomatiċi jużaw 5s)                                                        |
+| `modelCacheTtlMs`                | `300000`                                           | TTL tal-cache tal-katalgu; snapshot fuq id-diska jħaffef il-bidu kiesaħ                                                                          |
+| `timeouts`                       | juża `timeoutMs` jekk ma jkunx issettjat           | Limiti ta’ żmien għal kull endpoint f’ms: `models`, `combos`, `autoCombos`, `enrichment`                                                         |
+| `enrichment`                     | `true`                                             | Iġib l-ismijiet, il-prezzijiet u l-baġits tal-livell bla ħlas                                                                                    |
+| `providerTag`                    | `true`                                             | Iżid bħala prefiss mal-isem muri l-fornitur upstream li lejh jidderieġi                                                                          |
+| `usableOnly`                     | `false`                                            | Iżomm biss il-fornituri li l-gateway jirrapporta bħala pprovduti                                                                                 |
+| `combosSource`                   | `"api"`                                            | `"models"` jaqbeż `/api/combos` u jippubblika r-ringieli tal-kombinazzjonijiet minn `/v1/models`; il-filtri fil-livell tal-membri jżommu `"api"` |
+| `showcasePerOwner`               | `10`                                               | Entrati tal-veduta predefinita li jinżammu għal kull fornitur                                                                                    |
+| `freshPerOwner`                  | `10`                                               | Entrati ġodda tal-veduta predefinita li jinżammu għal kull fornitur                                                                              |
+| `freshWindowDays`                | `90`                                               | Perjodu tal-ġdid f’jiem għall-fergħa tal-entrati ġodda                                                                                           |
+| `usageMemory`                    | `true`                                             | Jirrestawra entrati eliminati statikament li jissemmew fl-analitika tal-użu ta’ 30 jum (jeħtieġ token tal-ġestjoni)                              |
+| `visibleModels` / `hiddenModels` | `[]`                                               | Listi ta’ permessi bi qbil eżatt jew bis-suffiss; iċ-ċaħda tipprevali; `*` jippubblika l-katalgu sħiħ (xorta japplikaw filtri oħra)              |
+| `geminiSanitization`             | `true`                                             | Ineħħi l-kliem ewlieni ta’ JSON-Schema li Gemini jirrifjuta mill-iskemi tal-għodod (għodod b’`$ref` jintbagħtu mingħajr tibdil)                  |
+| `apiFormat.allowAnthropic`       | `false`                                            | Jidderieġi l-IDs fil-lista tal-permessi permezz tal-blokka tal-API ta’ Anthropic                                                                 |
+| `apiFormat.anthropicModels`      | `[]`                                               | IDs sħaħ tal-mudelli diretti lejn Anthropic                                                                                                      |
+| `logLevel` / `startupDebug`      | `warn` / `false`                                   | Livell ta’ dettall tal-logger                                                                                                                    |
 
-Il-memorja tal-użu hija attivata b'mod predefinit. Mingħajr token tal-ġestjoni tibqa' inattiva
-(jiddaħħal avviż fil-log waqt l-istartjar) u ma jiġi rrestawrat xejn.
+Il-memorja tal-użu hija attivata b’mod predefinit. Mingħajr token tal-ġestjoni tibqa’ inattiva
+(jitniżżel avviż fil-log waqt l-istartjar) u ma jiġi rrestawrat xejn.
 
 ## Kif il-katalgu jibqa’ aġġornat
 

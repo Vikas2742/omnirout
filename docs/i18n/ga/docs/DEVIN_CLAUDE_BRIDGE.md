@@ -4,80 +4,85 @@
 
 ---
 
-Ligeann `devin-cli-agentic` d’am rite fíor Claude Code críochphointe áitiúil Anthropic
-Messages de chuid OmniRoute a úsáid agus freagraí samhla á soláthar ag Devin CLI oifigiúil thar ACP stdio. Ní
-athraíonn sé na soláthraithe Anthropic, Claude OAuth, Claude Web, ná `devin-cli` atá ann cheana.
+Ligeann `devin-cli-agentic` d'fhíor-thimpeallacht rite Claude Code críochphointe áitiúil
+Anthropic Messages de chuid OmniRoute a úsáid, agus soláthraíonn Devin CLI oifigiúil freagraí
+samhla thar ACP stdio. Ní mhodhnaíonn sé na soláthraithe Anthropic, Claude OAuth, Claude Web,
+ná `devin-cli` atá ann cheana.
 
-I gcás glaonna uirlise atá faoi úinéireacht an chliaint, déan an ródú trí `devin-cli-agentic` (ailias `dva`), an
-soláthraí atá cumasach ar uirlisí i bhformáid Claude. Is forghníomhaitheoir téacs-amháin é an sean-`devin-cli` (`dv`)
-ACP: ritheann sé achoimreoir Devin gan uirlisí agus ní féidir leis glaonna uirlise a sheoladh ar ais. Tá a mheiteashonraí
-samhla marcáilte dá réir sin ionas go seachnófar é le ródú teaglama a éilíonn uirlisí.
+I gcás glaonna uirlise atá faoi úinéireacht an chliaint, déan iad a ródú trí
+`devin-cli-agentic` (ailias `dva`), an soláthraí i bhformáid Claude atá in ann uirlisí a úsáid.
+Is riteoir ACP téacsamháin é an `devin-cli` (`dv`) oidhreachta: ritheann sé achoimreoir gan
+uirlisí Devin agus ní féidir leis glaonna uirlise a thabhairt ar ais. Tá meiteashonraí a
+shamhla marcáilte dá réir ionas go seachnóidh ródú teaglama a éilíonn uirlisí é.
 
-> **Stádas reatha: Claude Code `2.1.258` pionnáilte; taifeadadh bailíochtú as líne agus beo den uair dheireanach
-> ar `2.1.220`.** Chuir an leagan pionnáilte `2.1.220` trí chás leithlisithe i gcrích trí Devin CLI
-> `3000.2.17` agus samhail `swe-1-7-lightning`; chruthaigh an rith beo deiridh sin sealanna `Read`,
-> `Edit`, agus `Bash` faoi úinéireacht an chliaint, torthaí rathúla `npm test`, aimsiú orduithe agus scileanna
-> tionscadail, ródú Devin-amháin, agus gan aon eis-sreabhadh chuig Claude. Ardaíodh an leagan pionnáilte ansin go `2.1.258`
-> (an ghlúin CLI a ndéanann aitheantas Claude de chuid OmniRoute pearsanú uirthi, agus an chéad líne a sheolann
-> sraith Fable 5.1 go dúchasach). Ar an leagan nua, fíoraíodh an tsraith suiteála agus `claude --version`
-> ar íomhá bhunaidh phionnáilte, agus éiríonn le sraith aonad an droichid, `compose config` agus an
-> cruthúnas leithlisithe statach — ach níor athritheadh fós an cás bréige as líne ná an tsraith bheo
-> trí chás. Athrith iad (féach "Uirlisí pionnáilte a nuashonrú") sula mbraithfidh tú ar
-> an droichead leis an leagan pionnáilte seo.
+> **Stádas reatha: Claude Code `2.1.258` fosaithe; bailíochtú as líne agus beo taifeadta
+> go deireanach ar `2.1.220`.** Chuir an leagan fosaithe `2.1.220` trí chás leithlisithe i gcrích
+> trí Devin CLI `3000.2.17` agus samhail `swe-1-7-lightning`; chruthaigh an rith beo deiridh sin
+> babhtaí `Read`, `Edit`, agus `Bash` faoi úinéireacht an chliaint, torthaí rathúla `npm test`,
+> aimsiú orduithe agus scileanna tionscadail, ródú trí Devin amháin, agus gan aon trácht amach
+> chuig Claude. Ardaíodh an leagan fosaithe ansin go `2.1.258` (an ghlúin CLI a ndéanann
+> aitheantas Claude de chuid OmniRoute aithris uirthi, agus an chéad líne a sholáthraíonn
+> sraith Fable 5.1 go dúchasach). Ar an leagan fosaithe nua fíoraíodh an ciseal suiteála agus
+> `claude --version` ar an íomhá bhunaidh fhosaithe, agus éiríonn le sraith aonad an droichid,
+> `compose config`, agus an cruthúnas statach leithlisithe — ach níor ritheadh an cás bréige as
+> líne ná an tsraith bheo trí chás arís fós. Rith arís iad (féach "Uirlisí fosaithe a nuashonrú")
+> sula mbraitheann tú ar an droichead leis an leagan fosaithe seo.
 
 ## Ailtireacht
 
 ```text
-Claude Code 2.1.258 (coimeádán Linux leithlisithe nach bhfuil mar root)
+Claude Code 2.1.258 (coimeádán Linux leithlisithe neamh-root)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (formáid Claude, soláthraí gan fíordheimhniú)
+  -> devin-cli-agentic (i bhformáid Claude, soláthraí gan fíordheimhniú)
   -> devin acp --agent-type summarizer (ACP stdio oifigiúil, gan uirlisí Devin)
   -> Cuntas Devin san imleabhar tiomnaithe devin-auth
 ```
 
-Is féidir le gníomhaire réamhshocraithe ACP an CLI oifigiúil a uirlisí féin a fhorghníomhú, mar sin ní úsáideann an droichead seo
-é. Tosaíonn sé an gníomhaire seasta `summarizer` ACP, nach bhfuil aon uirlisí aige i mód oifigiúil an CLI, agus
-frámaíonn sé an t-iarratas sraitheachaithe Anthropic mar rian forghníomhaithe. Nuair a bhíonn gníomh eile faoi úinéireacht
-Claude de dhíth, ní mór don fhreagra clúdach uirlise cliaint amháin go díreach a bheith ann. Diúltaítear d’aon
-`tool_call` nó `tool_call_update` ACP sular féidir a thuairisciú gur éirigh le
-freagra.
+Is féidir le gníomhaire ACP réamhshocraithe an CLI oifigiúil a chuid uirlisí féin a rith, mar
+sin ní úsáideann an droichead seo é. Tosaíonn sé an gníomhaire seasta ACP `summarizer`, nach
+bhfuil aon uirlisí aige i mód oifigiúil an CLI, agus frámaíonn sé an t-iarratas sraitheachaithe
+Anthropic mar rian rite. Nuair is gá gníomh eile faoi úinéireacht Claude, ní mór go mbeadh
+go díreach aon imchlúdach uirlise cliaint amháin sa fhreagra. Diúltaítear d'aon `tool_call` nó
+`tool_call_update` ACP sular féidir freagra a thuairisciú mar fhreagra rathúil.
 
 Caomhnaíonn an sraitheoir in `open-sse/executors/devin-agentic/serializer.ts` `system`,
 `text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice`, agus na
-huirlisí a sholáthraíonn Claude Code. Teipeann go sainráite ar íomhánna agus ar bhloic anaithnide. Úsáideann torthaí móra uirlise
-marcóir infheicthe teasctha.
+huirlisí a sholáthraíonn Claude Code. Teipeann íomhánna agus bloic anaithnide go sainráite.
+Úsáideann torthaí móra uirlise marcóir infheicthe teasctha.
 
-Glacann an parsálaí le clúdach neamhspleách amháin `<tool>{...}</tool>` in aghaidh gach seal samhla. Seiceálann sé
-an t-ainm i gcoinne liosta uirlisí an iarratais, bailíochtaíonn sé argóintí i gcoinne JSON Schema na huirlise sin,
-diúltaíonn sé do mheascán insinte/gníomhartha, agus ceadaíonn sé deisiú teoranta amháin. Ansin
-forghníomhaíonn Claude Code an `tool_use` Anthropic a leanann as go háitiúil agus seolann sé an `tool_result` ar ais trí
+Glacann an parsálaí le himchlúdach neamhspleách amháin `<tool>{...}</tool>` in aghaidh gach
+babhta samhla. Seiceálann sé an t-ainm i gcoinne liosta uirlisí an iarratais, bailíochtaíonn
+sé na hargóintí i gcoinne Scéimre JSON na huirlise sin, diúltaíonn sé do mheascán insinte agus
+gníomhartha, agus ceadaíonn sé aon deisiú teoranta amháin. Ansin ritheann Claude Code an
+`tool_use` Anthropic a eascraíonn as go háitiúil agus seolann sé an `tool_result` ar ais trí
 OmniRoute.
 
 ## Uathródú
 
-Tá an soláthraí incháilithe i linnte iarrthóirí `auto/*` de chuid OmniRoute nuair nach bhfuil sé blocáilte.
-Ní ráthaíonn incháilitheacht iarrthóra go roghnófar é: d’fhéadfadh straitéis ródaithe an teaglama (mar shampla,
-an ceann deireanach ar eol go raibh sé maith) tús áite a thabhairt do sholáthraí eile. Úsáid `dva/<model>` nó teaglama ina bhfuil
-Devin chun tosaigh nuair is gá duit gach iarratas a chur trí Devin.
+Tá an soláthraí incháilithe i linnte iarrthóirí `auto/*` OmniRoute nuair nach bhfuil bac air.
+Ní ráthaíonn incháilitheacht iarrthóra go roghnófar é: d'fhéadfadh straitéis ródaithe an
+teaglama (mar shampla, an ceann deireanach ar eol gur éirigh leis) tús áite a thabhairt do
+sholáthraí eile. Úsáid `dva/<model>` nó teaglama a thugann tús áite do Devin nuair is gá duit
+gach iarratas a chur trí Devin.
 
 ## Leithlisiú agus samhail bhagartha
 
-Tá suiteáil, cuntas agus cumraíocht Claude ar an óstach lasmuigh den raon feidhme agus caitear
-leo mar nithe toirmiscthe. Déanann seirbhísí Compose an méid seo a leanas:
+Tá suiteáil Claude, cuntas agus cumraíocht an óstaigh lasmuigh den raon feidhme agus caitear leo mar
+nithe toirmiscthe. Déanann na seirbhísí Compose an méid seo a leanas:
 
-- ritheann siad mar UID/GID `10001:10001`, le córas fréamhchomhad inléite amháin, cumais ligthe ar lár, agus
+- ritheann siad mar UID/GID `10001:10001`, le córas comhad fréimhe inléite amháin, cumais bainte, agus
   `no-new-privileges`;
-- úsáideann siad `/home/bridge` príobháideach, imleabhar cumraíochta tiomnaithe Claude, sonraí leithlisithe OmniRoute,
+- úsáideann siad `/home/bridge` príobháideach, imleabhar tiomnaithe cumraíochta Claude, sonraí OmniRoute leithlisithe,
   agus imleabhar `devin-auth` ar leith;
-- ní fheistíonn siad ach spásanna oibre/fianaise indiúscartha `.sandbox`;
-- ní fheistíonn siad baile an óstaigh, Keychain, SSH, dintiúir néil ná soicéad Docker;
+- ní fheistíonn siad ach spásanna oibre/fianaise `.sandbox` indiúscartha;
+- ní fheistíonn siad eolaire baile an óstaigh, Keychain, SSH, dintiúir néil ná soicéad Docker;
 - cruthaíonn siad timpeallachtaí sainráite agus baineann siad athróga API/OAuth/ródaithe Anthropic;
-- treoraíonn siad tátal Claude Code chuig `http://omniroute:20128` amháin le heochair áitiúil amháin.
+- treoraíonn siad tátal Claude Code chuig `http://omniroute:20128` amháin, le heochair áitiúil amháin.
 
 Úsáideann an phróifíl as líne líonra inmheánach. Sa phróifíl bheo, ní shroicheann OmniRoute
-críochphointí oifigiúla Devin ach trí `network-guard`; diúltaítear do chinn scríbe neamhghaolmhara.
-Tá garda amachshreafa ar leith ag Claude Code a dhiúltaíonn do gach rud agus ní féidir leis ach an tseirbhís áitiúil OmniRoute
-a shroicheadh trí `NO_PROXY`. Ní fheistítear comhaid iniúchta na ngardaí ach ag a bpróiseas garda féin. Fíoraíonn na
+críochphointí oifigiúla Devin ach amháin trí `network-guard`; diúltaítear do chinn scríbe nach mbaineann leo.
+Tá garda imeachta ar leith ag Claude Code a dhiúltaíonn do gach rud agus ní féidir leis ach an tseirbhís áitiúil OmniRoute
+a bhaint amach trí `NO_PROXY`. Ní fheistítear comhaid iniúchta garda ach amháin dá bpróiseas garda féin. Deimhníonn na
 scripteanna úinéireacht comhad, mód, líon nasc agus gach cinneadh sula n-easpórtálann siad
 fianaise saor ó chomharthaí.
 
@@ -87,8 +92,8 @@ Rith an cruthúnas leithlisithe go neamhspleách:
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Fíoraíonn sé an toipeolaíocht, feistí ainmnithe, socruithe neamhfhréimhe/inléite amháin, ródú áitiúil sainráite,
-easpa athróg íogair timpeallachta, easpa shoicéad Docker, rochtain bhlocáilte ar
+Deimhníonn sé an topology, gléasanna feistithe ainmnithe, socruithe neamhfhréimhe/inléite amháin, ródú áitiúil sainráite,
+easpa athróg timpeallachta íogair, easpa shoicéad Docker, rochtain bhlocáilte ar
 `api.anthropic.com` agus `claude.ai`, roghnú soláthraí Devin amháin, agus teip shainráite nuair
 nach mbíonn inneall ACP ar fáil.
 
@@ -106,11 +111,11 @@ Fíordheimhnigh imleabhar leithlisithe Devin amháin:
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-Úsáideann an t-ordú logála isteach an sreabhadh oifigiúil comhartha láimhe atá beartaithe do thimpeallachtaí
-cianda/coimeádáin. Cuirtear an luach isteach go díreach ag leid an CLI; ní chuirtear ar aghaidh é mar
+Úsáideann an t-ordú logála isteach an sreabhadh oifigiúil comhartha láimhe atá ceaptha do thimpeallachtaí
+cianda/coimeádán. Cuirtear an luach isteach go díreach ag leid an CLI; ní chuirtear ar aghaidh é mar
 argóint phróisis, ní scríobhtar chuig Git é, agus ní chóipeáiltear ón óstach é.
 
-Seol timpeallacht rite leithlisithe Claude Code:
+Seol timpeallacht ama rite leithlisithe Claude Code:
 
 ```bash
 ./scripts/devin-bridge/launch
@@ -123,7 +128,7 @@ shocrú in `.env.devin-bridge`; ní mór do gach luach cumraithe an réimír
 
 ## Orduithe bailíochtaithe
 
-Ní theastaíonn cuntas Devin ón gconair in-atáirgthe as líne agus níl Idirlíon ar bith aici ag am rite:
+Ní éilíonn an chonair in-atáirgthe as líne cuntas Devin agus níl aon Idirlíon aici ag am rite:
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -132,22 +137,22 @@ Ní theastaíonn cuntas Devin ón gconair in-atáirgthe as líne agus níl Idirl
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Seo í an chonair bheo fhíordheimhnithe roghnach:
+Seo a leanas an chonair bheo fhíordheimhnithe roghnach:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
 Fanann an reathaí beo idir cásanna chun seisiúin ACP a sheachaint a oscailt ina rabharta agus
-bailíochtaíonn sé teagmhais struchtúrtha srutha Claude in ionad muinín a chur i maímh théacsúla. Cruthaíonn a thrí
-chás an méid seo a leanas:
+bailíochtaíonn sé teagmhais struchtúrtha srutha Claude in ionad muinín a chur i maímh théacsúla. Cruthaíonn na trí
+chás seo a leanas:
 
-1. léamha díreacha tionscadail agus anailís lochtanna;
-2. `Edit` iarbhír, `Bash` `npm test` faoi úinéireacht an chliaint, agus toradh teirminéil;
+1. léamha díreacha tionscadail agus anailís ar lochtanna;
+2. fíor-`Edit`, `Bash` `npm test` faoi úinéireacht an chliaint, agus toradh teirminéil;
 3. `/bridge-check` mar aon le haimsiú `bridge-proof`, léamha tionscadail, `npm test` rathúil eile
    faoi úinéireacht an chliaint, agus cur i gcrích gan obair ar feitheamh.
 
-Seiceálann an geata deiridh iniúchadh líonra Devin freisin agus éilíonn sé go bhfanfaidh iniúchadh amachshreafa Claude
+Seiceálann an geata deiridh iniúchadh líonra Devin freisin agus éilíonn sé go bhfanfaidh iniúchadh imeachta Claude
 folamh.
 
 ## Uirlisí pionnáilte a nuashonrú
@@ -156,10 +161,10 @@ Pionnálann an íomhá Node, Claude Code, agus Devin CLI in
 `docker/devin-bridge/Dockerfile`. Chun iad a nuashonrú:
 
 1. athraigh na leaganacha sainráite;
-2. cuir luachanna don déantán oifigiúil in ionad an dá shuim sheiceála do chartlann Devin atá sonrach don ailtireacht;
+2. cuir luachanna don déantán oifigiúil in ionad an dá shuim sheiceála do chartlanna Devin atá sonrach don ailtireacht;
 3. atóg agus rith gach ordú bailíochtaithe as líne;
 4. deimhnigh na leaganacha laistigh den íomhá;
-5. athrith an tsraith bheo fhíordheimhnithe ina bhfuil trí chás.
+5. rith arís an tsraith bheo fhíordheimhnithe ina bhfuil trí chás.
 
 Ná suiteáil ceachtar CLI go domhanda ar an óstríomhaire agus ná cuir íoslódáil
 neamhfhíoraithe in ionad fhíorú na suime seiceála.
@@ -169,18 +174,18 @@ neamhfhíoraithe in ionad fhíorú na suime seiceála.
 - Taispeánann `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
   ródú áitiúil agus earráidí sláintithe ón seiceadóir.
 - Taifeadann `.sandbox/evidence/mock-acp.jsonl` gníomhartha bréige cinntitheacha ACP.
-- Taifeadann `.sandbox/evidence/claude-stream.jsonl` fíor-rith as líne Claude Code.
-- Taifeadann `.sandbox/evidence/live-*.jsonl` na trí shruth bheo bhailíochtaithe.
-- Is cóipeanna bailíochtaithe, saor ó chomharthaí, de na hiniúchtaí cosanta iad
-  `.sandbox/evidence/egress.jsonl` agus `.sandbox/evidence/claude-egress.jsonl`.
+- Taifeadann `.sandbox/evidence/claude-stream.jsonl` fíorrith as líne Claude Code.
+- Taifeadann `.sandbox/evidence/live-*.jsonl` na trí shruth beo bhailíochtaithe.
+- Is cóipeanna bailíochtaithe, saor ó chomharthaí iad `.sandbox/evidence/egress.jsonl` agus `.sandbox/evidence/claude-egress.jsonl`
+  d’iniúchtaí na gcosaintí.
 
-Stop coimeádáin agus líonraí faoi úinéireacht agus caomhnaigh na himleabhair logála isteach/cumraíochta:
+Stop coimeádáin agus líonraí atá faoi úinéireacht an droichid agus caomhnaigh na himleabhair logála isteach/cumraíochta:
 
 ```bash
 ./scripts/devin-bridge/clean
 ```
 
-Bain an timpeallacht iomlán faoi úinéireacht an droichid, lena n-áirítear imleabhair ainmnithe:
+Bain an timpeallacht iomlán atá faoi úinéireacht an droichid, lena n-áirítear imleabhair ainmnithe:
 
 ```bash
 ./scripts/devin-bridge/clean --all
@@ -188,13 +193,15 @@ Bain an timpeallacht iomlán faoi úinéireacht an droichid, lena n-áirítear i
 
 ## Teorainneacha
 
-- Braitheann an droichead ar ról seasta `summarizer` gan uirlisí toisc nach soláthraíonn Devin CLI `3000.2.17`
-  gníomhaire neodrach ACP gan uirlisí. Cúitíonn an cuibheoir as freagraí idirmheánacha i bhfoirm achoimre,
-  ach is féidir le deisiú teoranta amháin teip go sainráite fós.
-- Is féidir le glaonna beo ACP freagraí sealadacha `502`/`504` a thabhairt ar ais. Cuireann an úim spás idir cásanna;
-  má mhaireann an teip, fanann sé dúnta ar theip agus ní roghnaíonn sé soláthraí eile choíche.
-- Atógtar comhthéacs ACP ó gach iarratas Anthropic; níl aon chleamhnas próisis/seisiúin ann.
+- Braitheann an droichead ar ról seasta `summarizer` gan uirlisí toisc nach nochtann Devin CLI `3000.2.17`
+  gníomhaire neodrach ACP gan uirlisí. Cúitíonn an cuibheoir as freagraí idirmheánacha
+  atá i gcruth achoimre, ach is féidir le deisiú teorantaithe amháin teip go sainráite fós.
+- Is féidir le glaonna beo ACP freagraí sealadacha `502`/`504` a thabhairt ar ais. Cuireann an leas a bhaint as na cásanna
+  amach óna chéile; má mhaireann an teip, teipeann sé go dúnta agus ní roghnaíonn sé soláthraí eile riamh.
+- Atógtar comhthéacs ACP ó gach iarratas Anthropic; níl aon chleamhnas
+  próisis/seisiúin ann.
 - Tacaítear le glao uirlise amháin in aghaidh gach freagra ón tsamhail; diúltaítear do ghlaonna comhthreomhara.
-- Ní thacaítear le híomhánna go sainráite. Ní fhógraítear fís, aschur smaointeoireachta, rialuithe iarrachta, ná fuinneog chomhthéacs 1M.
-- Úsáideann SSE teagmhais bhailí shaolré Anthropic, ach astaítear iad tar éis an seal teoranta ACP a bhailiú;
-  ní chuirtear smutáin ACP ar aghaidh go hincriminteach.
+- Ní thacaítear go sainráite le híomhánna. Ní fhógraítear fís, aschur smaointeoireachta, rialuithe díchill, ná fuinneog
+  chomhthéacs 1M.
+- Úsáideann SSE teagmhais bhailí shaolré Anthropic ach astaítear é tar éis an seal teorantaithe ACP a
+  bhailiú; ní chuirtear smutáin ACP ar aghaidh go hin incriminteach.

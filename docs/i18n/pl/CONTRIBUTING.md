@@ -46,79 +46,79 @@ echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
-Najważniejsze zmienne dla środowiska programistycznego:
+Kluczowe zmienne dla środowiska programistycznego:
 
-| Zmienna                | Domyślna wartość programistyczna | Opis                        |
-| ---------------------- | -------------------------------- | --------------------------- |
-| `PORT`                 | `20128`                          | Port serwera                |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`         | Bazowy adres URL frontendu  |
-| `JWT_SECRET`           | (wygeneruj powyżej)              | Sekret do podpisywania JWT  |
-| `INITIAL_PASSWORD`     | `CHANGEME`                       | Hasło pierwszego logowania  |
-| `APP_LOG_LEVEL`        | `info`                           | Poziom szczegółowości logów |
+| Zmienna                | Wartość domyślna w środowisku programistycznym | Opis                                    |
+| ---------------------- | ---------------------------------------------- | --------------------------------------- |
+| `PORT`                 | `20128`                                        | Port serwera                            |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`                       | Bazowy adres URL interfejsu użytkownika |
+| `JWT_SECRET`           | (wygeneruj powyżej)                            | Sekret do podpisywania tokenów JWT      |
+| `INITIAL_PASSWORD`     | `CHANGEME`                                     | Hasło pierwszego logowania              |
+| `APP_LOG_LEVEL`        | `info`                                         | Poziom szczegółowości dzienników        |
 
 ### Ustawienia panelu
 
-Panel udostępnia przełączniki interfejsu dla funkcji, które można również skonfigurować za pomocą zmiennych środowiskowych:
+Panel udostępnia przełączniki interfejsu użytkownika dla funkcji, które można również skonfigurować za pomocą zmiennych środowiskowych:
 
-| Lokalizacja ustawienia    | Przełącznik               | Opis                                      |
-| ------------------------- | ------------------------- | ----------------------------------------- |
-| Ustawienia → Zaawansowane | Tryb debugowania          | Włącza logi debugowania żądań (interfejs) |
-| Ustawienia → Ogólne       | Widoczność paska bocznego | Pokazuje/ukrywa sekcje paska bocznego     |
+| Lokalizacja ustawienia    | Przełącznik               | Opis                                           |
+| ------------------------- | ------------------------- | ---------------------------------------------- |
+| Ustawienia → Zaawansowane | Tryb debugowania          | Włącza dzienniki żądań debugowania (interfejs) |
+| Ustawienia → Ogólne       | Widoczność paska bocznego | Pokazuje/ukrywa sekcje paska bocznego          |
 
-Te ustawienia są przechowywane w bazie danych i zachowywane po ponownym uruchomieniu, zastępując po ustawieniu domyślne wartości zmiennych środowiskowych.
+Ustawienia te są przechowywane w bazie danych i zachowywane po ponownym uruchomieniu, a po ich ustawieniu zastępują domyślne wartości zmiennych środowiskowych.
 
 ### Uruchamianie lokalne
 
 ```bash
-# Tryb programistyczny (przeładowywanie na gorąco)
+# Tryb programistyczny (automatyczne przeładowywanie)
 npm run dev
 
 # Kompilacja produkcyjna
 npm run build    # next build → .build/next/, następnie assembleStandalone → dist/
 npm run start
 
-# Szybka kompilacja tylko backendu/API do weryfikacji zmian kontrybutorów
+# Szybka kompilacja samego backendu/API do weryfikacji zmian kontrybutorów
 npm run build:contributor
 
-# Kompilacja wydania (czysta kompilacja od nowa + znacznik HEAD — wymagana do wdrożenia)
-npm run build:release   # rm -rf .build dist && build + zapisuje dist/BUILD_SHA
+# Kompilacja wydania (czysta ponowna kompilacja + znacznik HEAD — wymagane do wdrożenia)
+npm run build:release   # rm -rf .build dist, następnie kompilacja + zapis dist/BUILD_SHA
 
 # Typowa konfiguracja portu
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Kompilacja dla kontrybutorów wykonuje wyłącznie walidację kompilacji: nie przygotowuje samodzielnej
+Kompilacja dla kontrybutorów wykonuje wyłącznie walidację kompilacji: nie tworzy samodzielnej
 dystrybucji ani opcjonalnych natywnych zasobów pakietu. Użyj standardowej kompilacji produkcyjnej,
-gdy musisz zweryfikować pakiet gotowy do dystrybucji.
+gdy musisz zweryfikować pakiet przeznaczony do dystrybucji.
 
-### Układ wyników kompilacji
+### Struktura wyników kompilacji
 
-| Katalog   | Zawartość                                                                                     | Śledzony |
-| --------- | --------------------------------------------------------------------------------------------- | -------- |
-| `src/`    | Kod źródłowy aplikacji (TypeScript / TSX)                                                     | Tak      |
-| `.build/` | Pliki pośrednie — wynik `next build` (ignorowany przez Git, `distDir = .build/next`)          | Nie      |
-| `dist/`   | Pakiet gotowy do dystrybucji — przygotowany przez `assembleStandalone` (ignorowany przez Git) | Nie      |
+| Katalog   | Zawartość                                                                            | Śledzony |
+| --------- | ------------------------------------------------------------------------------------ | -------- |
+| `src/`    | Kod źródłowy aplikacji (TypeScript / TSX)                                            | Tak      |
+| `.build/` | Pliki pośrednie — wynik `next build` (ignorowany przez git, `distDir = .build/next`) | Nie      |
+| `dist/`   | Pakiet dystrybucyjny — tworzony przez `assembleStandalone` (ignorowany przez git)    | Nie      |
 
-Potok kompilacji jest jednoprzebiegowy:
+Proces kompilacji przebiega w jednym przebiegu:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (wynik Next.js)
-  └─ assembleStandalone()                 (kopiuje pliki samodzielne + statyczne + publiczne + zasoby natywne)
-       └─ wynik: dist/                     (server.js, .next/static/, public/, node_modules/)
+  └─ assembleStandalone()                 (kopiuje pliki standalone + static + public + zasoby natywne)
+       └─ wynik: dist/                    (server.js, .next/static/, public/, node_modules/)
 ```
 
 `npm run build:release` dodatkowo najpierw czyści oba katalogi i zapisuje
 `dist/BUILD_SHA` (= `git rev-parse --short HEAD`) jako znacznik integralności wdrożenia.
 
-`npm run build:contributor` używa profilu kompilacji obejmującego wyłącznie backend. Tymczasowo zastępuje
+`npm run build:contributor` korzysta z profilu kompilacji obejmującego wyłącznie backend. Tymczasowo zastępuje
 pliki interfejsu panelu plikami zastępczymi na czas kompilacji, zachowuje procedury obsługi tras API i przywraca oryginalne pliki
-po zakończeniu kompilacji. Używaj `npm run build` w przypadku zmian wpływających na interfejs panelu lub do pełnej
+po zakończeniu kompilacji. Użyj `npm run build` w przypadku zmian wpływających na interfejs panelu lub do pełnej
 walidacji wydania; profil dla kontrybutorów nie zastępuje kompilacji wydania.
 
 > **Uwaga dotycząca wdrażania na VPS:** zdalny katalog obrazu `/usr/lib/node_modules/omniroute/app/`
-> pozostaje bez zmian. Mechanizmy wdrażania synchronizują do niego zawartość `dist/` za pomocą rsync.
-> Zmieniła się jedynie ścieżka wyniku kompilacji w repozytorium (`app/` → `dist/`).
+> pozostaje bez zmian. Narzędzia wdrożeniowe synchronizują do niego zawartość katalogu `dist/` za pomocą rsync.
+> Zmieniła się jedynie ścieżka wyników kompilacji w repozytorium (`app/` → `dist/`).
 
 Domyślne adresy URL:
 
@@ -297,43 +297,43 @@ Przykłady zastosowania znajdują się w `open-sse/utils/stream.ts` i `open-sse/
 
 ```
 src/                        # TypeScript (.ts / .tsx)
-├── app/                    # Next.js 16 App Router
+├── app/                    # Router aplikacji Next.js 16
 │   ├── (dashboard)/        # Strony panelu (23 sekcje)
 │   ├── api/                # Trasy API (51 katalogów)
 │   └── login/              # Strony uwierzytelniania (.tsx)
 ├── domain/                 # Silnik zasad (policyEngine, comboResolver, costRules itd.)
 ├── lib/                    # Podstawowa logika biznesowa (.ts)
 │   ├── a2a/                # Serwer protokołu Agent-to-Agent v0.3
-│   ├── acp/                # Rejestr Agent Communication Protocol
+│   ├── acp/                # Rejestr protokołu Agent Communication Protocol
 │   ├── compliance/         # Silnik zasad zgodności
 │   ├── db/                 # Moduły domenowe SQLite + 130 migracji
 │   ├── memory/             # Trwała pamięć konwersacyjna
-│   ├── oauth/              # Dostawcy OAuth, usługi i narzędzia
-│   ├── skills/             # Rozszerzalny framework umiejętności
+│   ├── oauth/              # Dostawcy, usługi i narzędzia OAuth
+│   ├── skills/             # Rozszerzalna platforma umiejętności
 │   ├── usage/              # Śledzenie użycia i obliczanie kosztów
-│   └── localDb.ts          # Wyłącznie warstwa reeksportu — nigdy nie dodawaj tutaj logiki
+│   └── localDb.ts          # Wyłącznie warstwa ponownego eksportu — nigdy nie dodawaj tutaj logiki
 ├── middleware/              # Oprogramowanie pośredniczące żądań (promptInjectionGuard)
-├── mitm/                   # Proxy MITM (certyfikat, DNS, routing docelowy)
+├── mitm/                   # Serwer proxy MITM (certyfikaty, DNS, trasowanie docelowe)
 ├── shared/
 │   ├── components/         # Komponenty React (.tsx)
-│   ├── constants/          # Definicje dostawców (329), zakresy MCP, 20 strategii routingu
-│   ├── utils/              # Wyłącznik obwodu, moduł oczyszczający, funkcje pomocnicze uwierzytelniania
+│   ├── constants/          # Definicje dostawców (329), zakresy MCP, 20 strategii trasowania
+│   ├── utils/              # Wyłącznik obwodu, narzędzie oczyszczające, pomocnicze funkcje uwierzytelniania
 │   └── validation/         # Schematy Zod v4
 └── sse/                    # Potok proxy SSE
 
 open-sse/                   # Obszar roboczy @omniroute/open-sse
 ├── executors/              # 150 modułów wykonawczych (klasy wykonawcze + funkcje pomocnicze dla poszczególnych dostawców)
-├── handlers/               # 11 modułów obsługi żądań (czat, odpowiedzi, osadzenia, obrazy itd.)
+├── handlers/               # 11 procedur obsługi żądań (czat, odpowiedzi, osadzenia, obrazy itd.)
 ├── mcp-server/             # Serwer MCP (110 unikalnych narzędzi, 3 transporty, 33 zakresy)
 ├── services/               # 178 usług najwyższego poziomu (combo, autoCombo, rateLimitManager itd.)
 ├── translator/             # Translatory formatów (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Transformator interfejsu Responses API
-└── utils/                  # 22 moduły narzędziowe (strumień, TLS, proxy, rejestrowanie)
+├── transformer/            # Transformator Responses API
+└── utils/                  # 22 moduły narzędziowe (strumienie, TLS, proxy, rejestrowanie)
 
 electron/                   # Wieloplatformowa aplikacja komputerowa Electron
 
 tests/
-├── unit/                   # Moduł uruchamiający testy Node.js (1574 pliki testowe)
+├── unit/                   # Mechanizm testowy Node.js (1574 pliki testowe)
 ├── integration/            # Testy integracyjne
 ├── e2e/                    # Testy Playwright
 ├── security/               # Testy bezpieczeństwa
@@ -351,13 +351,13 @@ docs/
 ├── guides/                  # Podręcznik użytkownika, Docker, konfiguracja, rozwiązywanie problemów
 ├── i18n/                    # Umiędzynarodowione tłumaczenia README
 ├── marketing/               # Materiały marketingowe
-├── ops/                     # Wdrażanie, proxy, pokrycie, wydania
+├── ops/                     # Wdrażanie, proxy, pokrycie testami, wydania
 ├── providers/               # Dokumentacja poszczególnych dostawców
-├── reference/               # Dokumentacja API, zmienne środowiskowe, narzędzia CLI, bezpłatne poziomy
+├── reference/               # Dokumentacja API, zmienne środowiskowe, narzędzia CLI, bezpłatne plany
 ├── releases/                # Informacje o wydaniach
-├── routing/                 # Silnik automatycznego łączenia, odtwarzanie rozumowania
+├── routing/                 # Silnik automatycznego łączenia, ponowne odtwarzanie rozumowania
 ├── screenshots/             # Zrzuty ekranu panelu
-├── security/                # Mechanizmy ochronne, zgodność, maskowanie, tokeny
+├── security/                # Mechanizmy ochronne, zgodność, tryb niewykrywalny, tokeny
 └── specs/                   # Specyfikacje projektowe
 ```
 

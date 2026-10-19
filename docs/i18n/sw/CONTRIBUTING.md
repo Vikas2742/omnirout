@@ -15,14 +15,14 @@ Thank you for your interest in contributing! This guide covers everything you ne
 - **Node.js** `>=22.22.2 <23`, au `>=24.0.0 <27` (inapendekezwa: 24 LTS)
 - **npm** 10+
 
-> **Watumiaji wa npm v11+ (Node 24+):** Baada ya `npm install`, hakikisha moduli asilia zilisakinishwa:
-> `node -e "require('better-sqlite3')"`. Ikishindwa kwa `MODULE_NOT_FOUND`,
+> **Watumiaji wa npm v11+ (Node 24+):** Baada ya `npm install`, thibitisha kuwa moduli asilia zilisakinishwa:
+> `node -e "require('better-sqlite3')"`. Ikiwa itashindwa kwa `MODULE_NOT_FOUND`,
 > endesha `npm approve-scripts better-sqlite3 && npm install`. Tazama
 > [Utatuzi wa Matatizo](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
 - **Git**
 
-### Kloni na Usakinishe
+### Nakili na Usakinishe
 
 ```bash
 git clone https://github.com/diegosouzapw/OmniRoute.git
@@ -30,7 +30,7 @@ cd OmniRoute
 npm install
 ```
 
-### Vigeu vya Mazingira
+### Vigezo vya Mazingira
 
 ```bash
 # Unda .env yako kutoka kwenye kiolezo
@@ -41,26 +41,26 @@ echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
-Vigeu muhimu kwa maendeleo:
+Vigezo muhimu kwa ajili ya maendeleo:
 
-| Kigeu                  | Chaguo-msingi la Maendeleo | Maelezo                            |
+| Kigezo                 | Chaguo-msingi la Maendeleo | Maelezo                            |
 | ---------------------- | -------------------------- | ---------------------------------- |
-| `PORT`                 | `20128`                    | Porti ya seva                      |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`   | URL msingi ya sehemu ya mbele      |
+| `PORT`                 | `20128`                    | Mlango wa seva                     |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`   | URL ya msingi ya upande wa mbele   |
 | `JWT_SECRET`           | (tengeneza hapo juu)       | Siri ya kutia saini JWT            |
 | `INITIAL_PASSWORD`     | `CHANGEME`                 | Nenosiri la kuingia mara ya kwanza |
-| `APP_LOG_LEVEL`        | `info`                     | Kiwango cha maelezo ya kumbukumbu  |
+| `APP_LOG_LEVEL`        | `info`                     | Kiwango cha kina cha kumbukumbu    |
 
 ### Mipangilio ya Dashibodi
 
-Dashibodi hutoa vitufe vya UI vya kuwasha au kuzima vipengele ambavyo vinaweza pia kusanidiwa kupitia vigeu vya mazingira:
+Dashibodi hutoa vitufe vya UI vya kuwasha au kuzima vipengele ambavyo vinaweza pia kusanidiwa kupitia vigezo vya mazingira:
 
-| Mahali pa Mpangilio | Kitufe cha Kuwasha/Kuzima     | Maelezo                                    |
-| ------------------- | ----------------------------- | ------------------------------------------ |
-| Mipangilio → Kina   | Hali ya Utatuzi               | Washa kumbukumbu za maombi ya utatuzi (UI) |
-| Mipangilio → Jumla  | Mwonekano wa Utepe wa Pembeni | Onyesha/ficha sehemu za utepe wa pembeni   |
+| Eneo la Mpangilio   | Kitufe                       | Maelezo                                    |
+| ------------------- | ---------------------------- | ------------------------------------------ |
+| Mipangilio → Mahiri | Hali ya Utatuzi              | Washa kumbukumbu za maombi ya utatuzi (UI) |
+| Mipangilio → Jumla  | Mwonekano wa Upau wa Pembeni | Onyesha/ficha sehemu za upau wa pembeni    |
 
-Mipangilio hii huhifadhiwa katika hifadhidata na huendelea kuwepo baada ya uanzishaji upya, ikibatilisha chaguo-msingi za vigeu vya mazingira inapowekwa.
+Mipangilio hii huhifadhiwa kwenye hifadhidata na huendelea kuwepo baada ya kuwasha upya, ikibatilisha chaguo-msingi za vigezo vya mazingira inapowekwa.
 
 ### Kuendesha Ndani ya Mfumo
 
@@ -72,48 +72,48 @@ npm run dev
 npm run build    # next build → .build/next/ kisha assembleStandalone → dist/
 npm run start
 
-# Uundaji wa haraka wa backend/API pekee kwa mabadiliko ya wachangiaji
+# Ukusanyaji wa haraka wa backend/API pekee kwa mabadiliko ya wachangiaji
 npm run build:contributor
 
-# Muundo wa toleo (uundaji upya safi + kiashiria cha HEAD — unahitajika kwa upelekaji)
+# Muundo wa toleo (ujenzi upya safi + kiashiria cha HEAD — unahitajika kwa upelekaji)
 npm run build:release   # rm -rf .build dist && build + huandika dist/BUILD_SHA
 
-# Usanidi wa kawaida wa porti
+# Usanidi wa kawaida wa mlango
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Muundo wa mchangiaji hufanya uthibitishaji wa uundaji pekee: haukusanyi
-usambazaji unaojitegemea wala kujenga vipengee asilia vya hiari vya ufungashaji. Tumia muundo wa kawaida wa uzalishaji unapohitaji
-kuthibitisha kifurushi kinachoweza kusambazwa.
+Muundo wa wachangiaji hufanya uthibitishaji wa ukusanyaji pekee: haukusanyi
+usambazaji wa pekee wala kujenga rasilimali za hiari za ufungashaji asilia. Tumia muundo wa kawaida wa uzalishaji wakati
+unahitaji kuthibitisha kifurushi kinachoweza kusambazwa.
 
 ### Mpangilio wa Matokeo ya Muundo
 
-| Saraka    | Yaliyomo                                                                                       | Inafuatiliwa |
-| --------- | ---------------------------------------------------------------------------------------------- | ------------ |
-| `src/`    | Chanzo cha programu (TypeScript / TSX)                                                         | Ndiyo        |
-| `.build/` | Vipengee vya kati — matokeo ya `next build` (yamepuuzwa na git, `distDir = .build/next`)       | Hapana       |
-| `dist/`   | Kifurushi kinachoweza kusambazwa — kilichokusanywa na `assembleStandalone` (kimepuuzwa na git) | Hapana       |
+| Saraka    | Yaliyomo                                                                                    | Inafuatiliwa |
+| --------- | ------------------------------------------------------------------------------------------- | ------------ |
+| `src/`    | Chanzo cha programu (TypeScript / TSX)                                                      | Ndiyo        |
+| `.build/` | Faili za kati — matokeo ya `next build` (yamepuuzwa na git, `distDir = .build/next`)        | Hapana       |
+| `dist/`   | Kifurushi kinachoweza kusambazwa — kimekusanywa na `assembleStandalone` (kimepuuzwa na git) | Hapana       |
 
-Mtiririko wa uundaji hupita mara moja:
+Mchakato wa ujenzi ni wa hatua moja:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (matokeo ya Next.js)
-  └─ assembleStandalone()                 (hunakili standalone + static + public + vipengee asilia)
-       └─ matokeo: dist/                   (server.js, .next/static/, public/, node_modules/)
+  └─ assembleStandalone()                 (hunakili standalone + static + public + rasilimali asilia)
+       └─ matokeo: dist/                  (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` pia husafisha saraka zote mbili kwanza na huandika
+`npm run build:release` pia husafisha saraka zote mbili kwanza na kuandika
 `dist/BUILD_SHA` (= `git rev-parse --short HEAD`) kama kiashiria cha uadilifu wa upelekaji.
 
-`npm run build:contributor` hutumia wasifu wa uundaji wa backend pekee. Kwa muda, huweka vibadala
-vya faili za UI za dashibodi wakati wa uundaji, huhifadhi vishughulikiaji vya njia za API, na kurejesha faili asili
-baada ya uundaji. Tumia `npm run build` kwa mabadiliko yanayoathiri UI ya dashibodi au kwa
-uthibitishaji kamili wa toleo; wasifu wa mchangiaji si mbadala wa muundo wa toleo.
+`npm run build:contributor` hutumia wasifu wa muundo wa backend pekee. Huweka vibadala kwa muda
+kwa faili za UI ya dashibodi wakati wa kujenga, huhifadhi vidhibiti vya njia za API, na kurejesha faili asili
+baada ya ujenzi. Tumia `npm run build` kwa mabadiliko yanayoathiri UI ya dashibodi au kwa uthibitishaji kamili
+wa toleo; wasifu wa wachangiaji si mbadala wa muundo wa toleo.
 
 > **Dokezo la upelekaji wa VPS:** saraka ya mbali ya taswira `/usr/lib/node_modules/omniroute/app/`
 > haijabadilika. Zana za upelekaji hutumia rsync kusawazisha yaliyomo kwenye `dist/` hadi humo.
-> Ni njia ya matokeo ya muundo ndani ya hazina pekee iliyohama (`app/` → `dist/`).
+> Ni njia ya matokeo ya muundo ndani ya hazina pekee ndiyo iliyohamishwa (`app/` → `dist/`).
 
 URL chaguo-msingi:
 
@@ -300,35 +300,35 @@ src/                        # TypeScript (.ts / .tsx)
 ├── lib/                    # Mantiki kuu ya biashara (.ts)
 │   ├── a2a/                # Seva ya itifaki ya Agent-to-Agent v0.3
 │   ├── acp/                # Sajili ya Agent Communication Protocol
-│   ├── compliance/         # Injini ya sera za uzingatiaji
+│   ├── compliance/         # Injini ya sera ya uzingatiaji
 │   ├── db/                 # Moduli za kikoa za SQLite + uhamishaji 130
 │   ├── memory/             # Kumbukumbu endelevu ya mazungumzo
-│   ├── oauth/              # Watoa huduma, huduma na zana za OAuth
-│   ├── skills/             # Mfumo wa ujuzi unaoweza kupanuliwa
+│   ├── oauth/              # Watoa huduma, huduma, na zana za OAuth
+│   ├── skills/             # Mfumo unaoweza kupanuliwa wa ujuzi
 │   ├── usage/              # Ufuatiliaji wa matumizi na ukokotoaji wa gharama
-│   └── localDb.ts          # Safu ya kusafirisha upya pekee — kamwe usiongeze mantiki hapa
-├── middleware/              # Middleware ya maombi (promptInjectionGuard)
+│   └── localDb.ts          # Safu ya kusafirisha upya pekee — usiongeze kamwe mantiki hapa
+├── middleware/              # Programu kati ya ombi (promptInjectionGuard)
 ├── mitm/                   # Proksi ya MITM (cheti, DNS, uelekezaji lengwa)
 ├── shared/
-│   ├── components/         # Vipengele vya React (.tsx)
+│   ├── components/         # Vijenzi vya React (.tsx)
 │   ├── constants/          # Ufafanuzi wa watoa huduma (329), mawanda ya MCP, mikakati 20 ya uelekezaji
-│   ├── utils/              # Kizuia mzunguko, kisafishaji, visaidizi vya uthibitishaji
+│   ├── utils/              # Kivunja saketi, kisafishaji, visaidizi vya uthibitishaji
 │   └── validation/         # Skima za Zod v4
-└── sse/                    # Mfululizo wa proksi ya SSE
+└── sse/                    # Msururu wa proksi wa SSE
 
 open-sse/                   # Nafasi ya kazi ya @omniroute/open-sse
 ├── executors/              # Moduli 150 za utekelezaji (madarasa ya utekelezaji + visaidizi vya kila mtoa huduma)
-├── handlers/               # Vishughulikiaji 11 vya maombi (gumzo, majibu, embeddings, picha, n.k.)
+├── handlers/               # Vishughulikiaji 11 vya maombi (gumzo, majibu, upachikaji, picha, n.k.)
 ├── mcp-server/             # Seva ya MCP (zana 110 za kipekee, njia 3 za usafirishaji, mawanda 33)
 ├── services/               # Huduma 178 za kiwango cha juu (combo, autoCombo, rateLimitManager, n.k.)
-├── translator/             # Vigeuzi vya miundo (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── translator/             # Vigeuzi vya umbizo (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Kigeuzi cha Responses API
 └── utils/                  # Moduli 22 za matumizi (mtiririko, TLS, proksi, uwekaji kumbukumbu)
 
-electron/                   # Programu ya eneo-kazi ya Electron (majukwaa mbalimbali)
+electron/                   # Programu ya eneo-kazi ya Electron (ya majukwaa mbalimbali)
 
 tests/
-├── unit/                   # Kiendeshaji cha majaribio cha Node.js (faili 1,574 za majaribio)
+├── unit/                   # Kiendesha majaribio cha Node.js (faili 1,574 za majaribio)
 ├── integration/            # Majaribio ya ujumuishaji
 ├── e2e/                    # Majaribio ya Playwright
 ├── security/               # Majaribio ya usalama
@@ -339,20 +339,20 @@ docs/
 ├── adr/                     # Rekodi za Maamuzi ya Usanifu
 ├── architecture/            # Usanifu na ustahimilivu wa mfumo
 ├── comparison/              # OmniRoute dhidi ya mbadala
-├── compression/             # Miongozo na kanuni za mgandamizo
-├── dev/                     # Miongozo ya uendelezaji
+├── compression/             # Miongozo na kanuni za ubanaji
+├── dev/                     # Miongozo ya usanidi
 ├── diagrams/                # Michoro ya usanifu
-├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── frameworks/              # MCP, A2A, OpenCode, Kumbukumbu, Ujuzi
 ├── guides/                  # Mwongozo wa mtumiaji, Docker, usanidi, utatuzi wa matatizo
-├── i18n/                    # Tafsiri za README za kimataifa
-├── marketing/               # Nyenzo za masoko
-├── ops/                     # Utekelezaji, proksi, ufikiaji, matoleo
+├── i18n/                    # Tafsiri za README zilizotafsiriwa kimataifa
+├── marketing/               # Nyenzo za uuzaji
+├── ops/                     # Usambazaji, proksi, ufunikaji, matoleo
 ├── providers/               # Nyaraka mahususi za watoa huduma
-├── reference/               # Marejeleo ya API, vigezo vya mazingira, zana za CLI, viwango vya bila malipo
+├── reference/               # Rejea ya API, vigeu vya mazingira, zana za CLI, viwango vya bila malipo
 ├── releases/                # Maelezo ya matoleo
-├── routing/                 # Injini ya mchanganyiko otomatiki, uchezaji upya wa hoja
+├── routing/                 # Injini ya mchanganyiko otomatiki, urudiaji wa mchakato wa kufikiri
 ├── screenshots/             # Picha za skrini za dashibodi
-├── security/                # Vizuizi, uzingatiaji, hali fiche, tokeni
+├── security/                # Vizuizi vya ulinzi, uzingatiaji, ufichaji, tokeni
 └── specs/                   # Vipimo vya usanifu
 ```
 
@@ -413,9 +413,12 @@ Andika majaribio ya vipengele katika `tests/unit/` yanayojumuisha angalau:
 
 ---
 
-## Releasing
+## Kutoa Toleo
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Matoleo yanasimamiwa kupitia mtiririko wa kazi wa `/generate-release`. GitHub Release mpya inapoundwa, kifurushi **huchapishwa kiotomatiki kwenye npm** kupitia GitHub Actions.
+
+Kwa upelekaji kwenye VPS, tumia `npm run build:release` (si `npm run build`) — hufanya ujenzi upya ulio safi, hukusanya kifurushi kwenye `dist/`, na huandika kiashiria cha `dist/BUILD_SHA`.
+Kisha tumia stadi za `/deploy-vps-*-cc` ambazo husawazisha `dist/` kupitia rsync hadi kwenye saraka ya mbali ya `app/`.
 
 ---
 

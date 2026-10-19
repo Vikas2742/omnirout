@@ -4,84 +4,84 @@
 
 ---
 
-`devin-cli-agentic` võimaldab tegelikul Claude Code'i täitmiskeskkonnal kasutada OmniRoute'i kohalikku Anthropic
-Messagesi otspunkti, samal ajal kui ametlik Devin CLI edastab mudeli vastused ACP stdio kaudu. See
-ei muuda olemasolevaid Anthropic-, Claude OAuth-, Claude Web- ega `devin-cli` pakkujaid.
+`devin-cli-agentic` võimaldab tegelikul Claude Code'i käituskeskkonnal kasutada OmniRoute'i kohalikku Anthropic
+Messagesi lõpp-punkti, samal ajal kui ametlik Devin CLI edastab mudeli vastused ACP stdio kaudu. See
+ei muuda olemasolevaid Anthropic, Claude OAuthi, Claude Webi ega `devin-cli` pakkujaid.
 
-Kliendi hallatavate tööriistakutsete puhul suunake päringud läbi `devin-cli-agentic`-u (alias `dva`),
-mis on Claude'i vormingus tööriistatoega pakkuja. Pärandpakkuja `devin-cli` (`dv`) ACP täitur on
-ainult tekstipõhine: see käitab Devini tööriistadeta kokkuvõtjat ega saa tagastada tööriistakutseid. Selle mudeli
-metaandmed on vastavalt märgistatud, et tööriistu nõudev kombineeritud marsruutimine seda väldiks.
+Kliendi hallatavate tööriistakutsete jaoks suunake päringud läbi `devin-cli-agentic`-u (alias `dva`),
+mis on Claude'i vormingus tööriistu toetav pakkuja. Pärandpakkuja `devin-cli` (`dv`) ACP-täitur on
+ainult tekstipõhine: see käitab Devini tööriistadeta summeerijat ega saa tagastada tööriistakutseid. Selle mudeli
+metaandmed on vastavalt märgitud, et tööriistu nõudev kombineeritud marsruutimine seda väldiks.
 
-> **Praegune olek: fikseeritud Claude Code `2.1.258`; võrguühenduseta ja reaalajas valideerimine registreeriti viimati
+> **Praegune olek: fikseeritud Claude Code `2.1.258`; võrguühenduseta ja reaalajas valideerimine viimati salvestatud
 > versioonil `2.1.220`.** Versiooni `2.1.220` fikseering läbis kolm isoleeritud stsenaariumi Devin CLI
-> `3000.2.17` ja mudeliga `swe-1-7-lightning`; see viimane reaalajas käitus tõestas kliendi hallatavaid `Read`-,
-> `Edit`- ja `Bash`-voore, edukaid `npm test` tulemusi, projekti käskude ja oskuste
-> tuvastamist, ainult Devini kaudu marsruutimist ning Claude'i väljamineva liikluse puudumist. Seejärel tõsteti fikseeritud versioon väärtusele `2.1.258`
-> (CLI põlvkond, mida OmniRoute'i Claude'i identiteet kehastab, ning esimene versiooniliin, mis sisaldab
-> Fable 5.1 taset loomupäraselt). Uue fikseeritud versiooniga kontrolliti installikihti ja käsku `claude --version`
-> fikseeritud baastõmmisel ning silla üksustestid, `compose config` ja
+> `3000.2.17` ja mudeliga `swe-1-7-lightning`; see viimane reaalajas käitus tõendas kliendi hallatavaid `Read`,
+> `Edit` ja `Bash` voore, edukaid `npm test` tulemusi, projekti käskude ja oskuste
+> tuvastamist, ainult Devini kaudu marsruutimist ning Claude'i väljamineva liikluse puudumist. Seejärel tõsteti fikseeritud versioon `2.1.258`-le
+> (CLI põlvkond, mida OmniRoute'i Claude'i identiteet jäljendab, ja esimene väljalase, mis sisaldab
+> Fable 5.1 taset loomupäraselt). Uue fikseeritud versiooniga kontrolliti installikihti ja `claude --version` käsku
+> fikseeritud baastõmmisel ning silla üksustestide komplekt, `compose config` ja
 > staatiline isolatsioonitõend läbivad kontrolli — kuid võrguühenduseta näidisstsenaariumi ja reaalajas kolme stsenaariumi
-> testikomplekti pole veel uuesti käitatud. Enne selle fikseeritud versiooniga silla usaldamist käitage need uuesti
-> (vt „Fikseeritud tööriistade uuendamine“).
+> komplekti ei ole veel uuesti käitatud. Käitage need uuesti (vt „Fikseeritud tööriistade värskendamine“), enne kui
+> selle fikseeritud versiooniga silda usaldate.
 
 ## Arhitektuur
 
 ```text
-Claude Code 2.1.258 (isoleeritud mitte-root Linuxi konteiner)
+Claude Code 2.1.258 (isoleeritud juurkasutaja õigusteta Linuxi konteiner)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (Claude'i vormingus, autentimiseta pakkuja)
+  -> devin-cli-agentic (Claude'i vorming, autentimiseta pakkuja)
   -> devin acp --agent-type summarizer (ametlik ACP stdio, Devini tööriistadeta)
-  -> Devini konto spetsiaalses devin-auth andmeköites
+  -> Devini konto spetsiaalses devin-auth köites
 ```
 
 Ametliku CLI vaikimisi ACP agent saab käitada oma tööriistu, mistõttu see sild seda ei kasuta.
-See käivitab fikseeritud `summarizer` ACP agendi, mille ametlikus CLI režiimis pole tööriistu, ning
-raamistab serialiseeritud Anthropicu päringu täitmisjäljena. Kui on vaja veel üht Claude'i hallatavat
-toimingut, peab vastus sisaldama täpselt üht kliendi tööriista ümbrist. Kõik ACP
-`tool_call`- või `tool_call_update`-kutsed lükatakse tagasi enne, kui vastuse saab märkida
+See käivitab fikseeritud `summarizer` ACP agendi, mille ametlikul CLI-režiimil puuduvad tööriistad, ning
+vormindab serialiseeritud Anthropicu päringu täitmisjäljeks. Kui on vaja mõnda muud Claude'i hallatavat
+toimingut, peab vastus sisaldama täpselt üht kliendi tööriistaümbrist. Kõik ACP
+`tool_call` või `tool_call_update` kutsed lükatakse tagasi enne, kui vastuse saab märkida
 edukaks.
 
-Serialiseerija failis `open-sse/executors/devin-agentic/serializer.ts` säilitab `system`-,
-`text`-, `tool_use`-, `tool_result`-, `thinking`-, `redacted_thinking`-, `tool_choice`-väljad ja Claude Code'i
-edastatud tööriistad. Pildid ja tundmatud plokid põhjustavad selgesõnalise tõrke. Suured tööriistatulemused
-kasutavad nähtavat kärpimistähist.
+Serialiseerija failis `open-sse/executors/devin-agentic/serializer.ts` säilitab `system`,
+`text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice` väljad ja
+Claude Code'i edastatud tööriistad. Pildid ja tundmatud plokid põhjustavad selgesõnalise tõrke. Suurte tööriistatulemuste
+korral kasutatakse nähtavat kärpimismarkerit.
 
 Parser aktsepteerib mudeli iga vooru kohta üht eraldiseisvat `<tool>{...}</tool>` ümbrist. See kontrollib
-nime päringu tööriistaloendi suhtes, valideerib argumendid selle tööriista JSON
-Schema järgi, lükkab tagasi narratiivi ja toimingute segud ning lubab ühe piiratud paranduse. Seejärel
-käivitab Claude Code saadud Anthropicu `tool_use`-i kohalikult ja saadab `tool_result`-i OmniRoute'i kaudu
-tagasi.
+nime päringu tööriistaloendi alusel, valideerib argumendid vastava tööriista JSON
+Schema järgi, lükkab segatud narratiivi/toimingud tagasi ja lubab ühe piiratud paranduse. Seejärel
+käitab Claude Code saadud Anthropicu `tool_use` kutse kohalikult ja saadab `tool_result` tulemuse OmniRoute'i
+kaudu tagasi.
 
 ## Automaatne marsruutimine
 
 Pakkuja sobib OmniRoute'i `auto/*` kandidaatide kogumitesse, kui see pole blokeeritud.
 Kandidaadiks sobivus ei taga valimist: kombinatsiooni marsruutimisstrateegia (näiteks
-viimati edukas) võib eelistada teist pakkujat. Kasutage `dva/<model>`-it või Devinit esimesena eelistavat kombinatsiooni,
-kui nõuate, et iga päring läbiks Devinit.
+viimane teadaolevalt toimiv) võib eelistada mõnda teist pakkujat. Kasutage `dva/<model>` või Devinit eelistavat kombinatsiooni, kui
+nõuate, et iga päring läbiks Devini.
 
 ## Isolatsioon ja ohumudel
 
-Hostarvuti Claude'i installatsioon, konto ja konfiguratsioon jäävad käsitlusalast välja ning neid käsitatakse
-keelatuna. Compose'i teenused:
+Hosti Claude’i installatsioon, konto ja konfiguratsioon jäävad käsitlusalast välja ning neid
+käsitletakse keelatuna. Compose’i teenused:
 
 - töötavad UID/GID-ga `10001:10001`, kirjutuskaitstud juurfailisüsteemi, eemaldatud õiguste ja
-  `no-new-privileges`-režiimiga;
-- kasutavad privaatset `/home/bridge`-kataloogi, spetsiaalset Claude'i konfiguratsiooniköidet, isoleeritud OmniRoute'i andmeid
-  ja eraldi `devin-auth`-köidet;
-- haagivad ainult ühekordselt kasutatavaid `.sandbox`-tööruume ja tõendeid;
-- ei haagi hostarvuti kodukataloogi, Keychaini, SSH-d, pilveteenuste pääsuandmeid ega Dockeri soklit;
-- koostavad keskkonnad eksplitsiitselt ning eemaldavad Anthropicu API-, OAuthi- ja marsruutimismuutujad;
-- suunavad Claude Code'i inferentsi ainult aadressile `http://omniroute:20128`, kasutades ainult kohalikku võtit.
+  valikuga `no-new-privileges`;
+- kasutavad privaatset kataloogi `/home/bridge`, spetsiaalset Claude’i konfiguratsiooniköidet, isoleeritud OmniRoute’i andmeid
+  ja eraldi `devin-auth` köidet;
+- haagivad ainult ühekordselt kasutatavaid `.sandbox` tööruume/tõendeid;
+- ei haagi hosti kodukataloogi, Keychaini, SSH-d, pilveteenuste autentimisandmeid ega Dockeri soklit;
+- koostavad keskkonnad eksplitsiitselt ning eemaldavad Anthropic API/OAuthi/marsruutimise muutujad;
+- suunavad Claude Code’i inferentsi ainult aadressile `http://omniroute:20128`, kasutades üksnes kohalikku võtit.
 
 Võrguühenduseta profiil kasutab sisevõrku. Reaalühendusega profiilis pääseb OmniRoute
-ametlikele Devini lõpp-punktidele ligi ainult `network-guard`-i kaudu; muud sihtkohad on keelatud.
-Claude Code'il on eraldi kogu väljaminevat liiklust keelav kaitse ning see pääseb ainult kohalikule OmniRoute'i
-teenusele `NO_PROXY` kaudu. Kaitse auditifailid haagitakse ainult vastava kaitseprotsessi külge.
-Skriptid kontrollivad failide omandiõigust, režiimi, linkide arvu ja iga otsust enne
-tokenivabade tõendite eksportimist.
+ametlikele Devini lõpp-punktidele juurde ainult `network-guard` kaudu; muud sihtkohad on keelatud.
+Claude Code’il on eraldi kogu väljaminevat liiklust keelav kaitse ning see pääseb `NO_PROXY` kaudu juurde ainult kohalikule OmniRoute’i
+teenusele. Kaitsete auditifailid on haagitud ainult vastava kaitseprotsessi külge.
+Skriptid kontrollivad enne lubadeta tõendite eksportimist failide omanikku, režiimi, linkide arvu
+ja kõiki otsuseid.
 
-Käivitage isolatsiooni tõendamine eraldi:
+Käivitage isolatsioonitõend eraldi:
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
@@ -89,12 +89,12 @@ Käivitage isolatsiooni tõendamine eraldi:
 
 See valideerib topoloogia, nimega haakepunktid, mitte-juurkasutaja ja kirjutuskaitstud sätted, eksplitsiitse kohaliku marsruutimise,
 tundlike keskkonnamuutujate puudumise, Dockeri sokli puudumise, blokeeritud juurdepääsu
-aadressidele `api.anthropic.com` ja `claude.ai`, ainult Devini teenusepakkuja valiku ning eksplitsiitse tõrke, kui
-ACP taustateenus pole saadaval.
+domeenidele `api.anthropic.com` ja `claude.ai`, ainult Devini pakkuja valimise ning eksplitsiitse tõrke, kui
+ACP tagasüsteem pole saadaval.
 
 ## Esmakordne seadistamine ja tavakasutus
 
-Koostage fikseeritud versiooniga tõmmis:
+Ehitage fikseeritud versiooniga tõmmis:
 
 ```bash
 ./scripts/devin-bridge/build
@@ -106,24 +106,24 @@ Autentige ainult isoleeritud Devini köide:
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-Sisselogimiskäsk kasutab ametlikku käsitsi sisestatava tokeni voogu, mis on mõeldud kaug- ja konteinerkeskkondadele.
+Sisselogimiskäsk kasutab ametlikku käsitsi sisestatava tõendi voogu, mis on mõeldud kaug- ja konteinerkeskkondadele.
 Väärtus sisestatakse otse CLI viibale; seda ei edastata
-protsessiargumendina, ei kirjutata Giti ega kopeerita hostarvutist.
+protsessiargumendina, ei kirjutata Giti ega kopeerita hostist.
 
-Käivitage isoleeritud Claude Code'i käituskeskkond:
+Käivitage isoleeritud Claude Code’i käituskeskkond:
 
 ```bash
 ./scripts/devin-bridge/launch
 ```
 
-`launch` kontrollib enne konteineris töötava Claude Code'i käivitamist uuesti isolatsiooni, Devini autentimist
-ja mudelite tuvastamist. See ei käivita kunagi hostarvuti Claude'i käivitatavat faili. Mudelite aliased saab
-määrata failis `.env.devin-bridge`; iga konfigureeritud väärtus peab säilitama
+`launch` kontrollib enne konteineris töötava Claude Code’i käivitamist uuesti isolatsiooni, Devini autentimist
+ja mudelite tuvastamist. See ei käivita kunagi hosti Claude’i täitmisfaili. Mudelite aliased saab
+määrata failis `.env.devin-bridge`; iga seadistatud väärtus peab säilitama
 prefiksi `devin-cli-agentic/`.
 
 ## Valideerimiskäsud
 
-Reprodutseeritav võrguühenduseta tee ei vaja Devini kontot ega käitusajal internetiühendust:
+Reprodutseeritav võrguühenduseta töövoog ei vaja Devini kontot ega käitusaegset internetiühendust:
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -132,56 +132,56 @@ Reprodutseeritav võrguühenduseta tee ei vaja Devini kontot ega käitusajal int
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Autenditud ja eraldi lubatav reaalühendusega tee on:
+Autenditud ja selgesõnaliselt lubatav reaalühendusega töövoog on:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-Reaalühendusega käitaja ootab stsenaariumide vahel, et vältida ACP seansside avamist korraga, ning
-valideerib tekstiliste väidete usaldamise asemel Claude'i struktureeritud voo sündmusi. Selle kolm
+Reaalühendusega käitaja ootab stsenaariumide vahel, et vältida ACP seansside avamist ühe puhanguna, ning
+valideerib tekstiliste väidete usaldamise asemel Claude’i struktureeritud voo sündmusi. Selle kolm
 stsenaariumi tõendavad:
 
-1. projekti vahetut lugemist ja defektide analüüsi;
-2. tegelikku `Edit`-toimingut, kliendi hallatavat `Bash`-toimingut `npm test` ning lõpptulemust;
-3. `/bridge-check`-i ja `bridge-proof`-i tuvastamist, projekti lugemist, veel üht edukat
-   kliendi hallatavat `npm test`-i ning lõpetamist ilma ootel tööta.
+1. projekti otsest lugemist ja defektide analüüsi;
+2. reaalset `Edit` toimingut, kliendi hallatavat `Bash`-i `npm test` käsku ja lõpptulemust;
+3. `/bridge-check` ning `bridge-proof` tuvastamist, projekti lugemist, veel üht edukat
+   kliendi hallatavat `npm test` käsku ja lõpetamist ilma ootel oleva tööta.
 
-Viimane kontroll kontrollib ka Devini võrguauditit ja nõuab, et Claude'i väljamineva liikluse audit
+Viimane kontroll kontrollib ka Devini võrguauditit ja nõuab, et Claude’i väljamineva liikluse audit
 jääks tühjaks.
 
-## Fikseeritud tööriistade uuendamine
+## Kinnitatud tööriistade uuendamine
 
-Tõmmis fikseerib Node'i, Claude Code'i ja Devin CLI versioonid failis
+Tõmmises on Node, Claude Code ja Devin CLI versioonid kinnitatud failis
 `docker/devin-bridge/Dockerfile`. Uuendamiseks:
 
-1. muutke selgesõnaliselt määratud versioone;
+1. muutke selgelt määratud versioone;
 2. asendage mõlemad arhitektuuripõhised Devini arhiivi kontrollsummad ametliku
    artefakti väärtustega;
-3. looge tõmmis uuesti ja käivitage kõik võrguühenduseta valideerimiskäsud;
-4. kontrollige tõmmises olevaid versioone;
-5. käivitage autentimist nõudev kolme stsenaariumiga reaaltestide komplekt uuesti.
+3. koostage tõmmis uuesti ja käivitage kõik võrguühenduseta valideerimiskäsud;
+4. kinnitage tõmmises olevad versioonid;
+5. käivitage autentimist nõudev kolme stsenaariumi reaaltestide komplekt uuesti.
 
-Ärge installige kumbagi CLI-d hostis globaalselt ega asendage kontrollsummade kontrollimist
+Ärge installige kumbagi CLI-d hosti globaalselt ega asendage kontrollsumma kontrollimist
 kontrollimata allalaadimisega.
 
 ## Diagnostika ja puhastamine
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
-  kuvab kohaliku marsruutimise ja puhastatud täituri vead.
-- `.sandbox/evidence/mock-acp.jsonl` talletab deterministlikud ACP simulaatori toimingud.
-- `.sandbox/evidence/claude-stream.jsonl` talletab Claude Code'i tegeliku võrguühenduseta käituse.
-- `.sandbox/evidence/live-*.jsonl` talletab kolm valideeritud reaalvoogu.
-- `.sandbox/evidence/egress.jsonl` ja `.sandbox/evidence/claude-egress.jsonl` on kaitsemeetmete auditite valideeritud,
+  kuvab kohaliku marsruutimise ja puhastatud käivitaja vead.
+- `.sandbox/evidence/mock-acp.jsonl` salvestab deterministlikud ACP näidistoimingud.
+- `.sandbox/evidence/claude-stream.jsonl` salvestab Claude Code'i tegeliku võrguühenduseta käituse.
+- `.sandbox/evidence/live-*.jsonl` salvestab kolm valideeritud reaalvoogu.
+- `.sandbox/evidence/egress.jsonl` ja `.sandbox/evidence/claude-egress.jsonl` on valvuri auditite valideeritud,
   tokenivabad koopiad.
 
-Peatage sillale kuuluvad konteinerid ja võrgud, säilitades sisselogimis- ja konfiguratsiooniköited:
+Peatage hallatavad konteinerid ja võrgud, säilitades sisselogimis- ja konfiguratsiooniköited:
 
 ```bash
 ./scripts/devin-bridge/clean
 ```
 
-Eemaldage kogu sillale kuuluv keskkond, sealhulgas nimega köited:
+Eemaldage kogu silla hallatav keskkond, sealhulgas nimega köited:
 
 ```bash
 ./scripts/devin-bridge/clean --all
@@ -189,15 +189,15 @@ Eemaldage kogu sillale kuuluv keskkond, sealhulgas nimega köited:
 
 ## Piirangud
 
-- Sild tugineb fikseeritud tööriistadeta rollile `summarizer`, sest Devin CLI `3000.2.17`
-  ei paku neutraalset tööriistadeta ACP agenti. Adapter kompenseerib kokkuvõttelaadseid
+- Sild tugineb fikseeritud tööriistadeta `summarizer`-rollile, sest Devin CLI `3000.2.17`
+  ei paku neutraalset tööriistadeta ACP agenti. Adapter kompenseerib kokkuvõttekujulisi
   vahevastuseid, kuid üks piiratud parandamiskatse võib siiski selgesõnaliselt nurjuda.
-- Reaalajas ACP-kutsed võivad tagastada ajutisi `502`/`504` vastuseid. Testiraamistik jätab stsenaariumide
-  vahele ajavahemiku; püsiva tõrke korral jääb süsteem turvaliselt suletuks ega vali kunagi teist teenusepakkujat.
-- ACP kontekst rekonstrueeritakse igast Anthropicu päringust; protsessi- ega seansipõhist
-  afiinsust ei ole.
-- Mudeli vastuse kohta toetatakse üht tööriistakutset; paralleelsed kutsed lükatakse tagasi.
-- Pilte selgesõnaliselt ei toetata. Nägemisvõimekust, mõttekäigu väljundit, pingutustaseme juhtelemente ega 1M
-  kontekstiakent ei deklareerita.
+- Reaalajas ACP-kutsed võivad tagastada ajutisi `502`/`504` vastuseid. Testiraamistik jätab stsenaariumide vahele aega;
+  püsiva tõrke korral jääb süsteem suletud tõrkerežiimi ega vali kunagi teist teenusepakkujat.
+- ACP kontekst rekonstrueeritakse igast Anthropicu päringust; protsessi- ega seansisidusust
+  ei ole.
+- Mudeli ühe vastuse kohta toetatakse üht tööriistakutset; paralleelsed kutsed lükatakse tagasi.
+- Pilte otseselt ei toetata. Nägemisvõimet, mõttekäigu väljundit, pingutustaseme juhtelemente ega 1M
+  kontekstiakent ei reklaamita.
 - SSE kasutab kehtivaid Anthropicu elutsüklisündmusi, kuid need väljastatakse pärast piiratud ACP-vooru
   kogumist; ACP fragmente ei edastata järk-järgult.

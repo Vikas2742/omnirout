@@ -5,94 +5,94 @@
 ---
 
 `devin-cli-agentic` អនុញ្ញាតឱ្យ runtime ពិតប្រាកដរបស់ Claude Code ប្រើ endpoint Anthropic
-Messages មូលដ្ឋានរបស់ OmniRoute ខណៈដែល Devin CLI ផ្លូវការផ្គត់ផ្គង់ការឆ្លើយតបរបស់ម៉ូដែលតាម ACP stdio។ វា
-មិនកែប្រែ provider Anthropic, Claude OAuth, Claude Web ឬ `devin-cli` ដែលមានស្រាប់ឡើយ។
+Messages មូលដ្ឋានរបស់ OmniRoute ខណៈដែល Devin CLI ផ្លូវការផ្តល់ចម្លើយពីម៉ូដែលតាមរយៈ ACP stdio។ វា
+មិនកែប្រែ provider Anthropic, Claude OAuth, Claude Web ឬ `devin-cli` ដែលមានស្រាប់ទេ។
 
-សម្រាប់ tool call ដែលគ្រប់គ្រងដោយ client សូម route តាម `devin-cli-agentic` (alias `dva`) ដែលជា
-provider មានសមត្ថភាពប្រើ tool ក្នុងទម្រង់ Claude។ ACP executor `devin-cli` (`dv`) ចាស់
-គាំទ្រតែអត្ថបទប៉ុណ្ណោះ៖ វាដំណើរការ summarizer គ្មាន tool របស់ Devin ហើយមិនអាចត្រឡប់ tool call បានទេ។ metadata របស់ម៉ូដែលវា
-ត្រូវបានសម្គាល់តាមនោះ ដូច្នេះ combo routing ដែលតម្រូវឱ្យមាន tool នឹងជៀសវាងវា។
+សម្រាប់ការហៅឧបករណ៍ដែលគ្រប់គ្រងដោយ client សូមបញ្ជូនតាម `devin-cli-agentic` (ឈ្មោះកាត់ `dva`) ដែលជា
+provider ទម្រង់ Claude ដែលអាចប្រើឧបករណ៍បាន។ ACP executor `devin-cli` (`dv`) ជំនាន់ចាស់
+គាំទ្រតែអត្ថបទប៉ុណ្ណោះ៖ វាដំណើរការ summarizer របស់ Devin ដែលគ្មានឧបករណ៍ ហើយមិនអាចត្រឡប់ការហៅឧបករណ៍បានទេ។ metadata របស់ម៉ូដែលវា
+ត្រូវបានសម្គាល់ទៅតាមនោះ ដូច្នេះ combo routing ដែលតម្រូវឱ្យប្រើឧបករណ៍នឹងចៀសវាងវា។
 
-> **ស្ថានភាពបច្ចុប្បន្ន៖ បាន pin Claude Code `2.1.258`; ការផ្ទៀងផ្ទាត់ offline និង live ដែលបានកត់ត្រាចុងក្រោយ
-> គឺនៅលើ `2.1.220`។** pin `2.1.220` បានបញ្ចប់សេណារីយ៉ូដាច់ដោយឡែកចំនួនបីតាមរយៈ Devin CLI
-> `3000.2.17` និងម៉ូដែល `swe-1-7-lightning`; ការដំណើរការ live ចុងក្រោយនោះបានបញ្ជាក់អំពីវេន `Read`,
-> `Edit` និង `Bash` ដែលគ្រប់គ្រងដោយ client, លទ្ធផល `npm test` ជោគជ័យ, ការរកឃើញ command និង skill
-> របស់ project, routing តាម Devin តែប៉ុណ្ណោះ និងគ្មាន egress ទៅ Claude។ បន្ទាប់មក pin ត្រូវបានដំឡើងទៅ `2.1.258`
-> (ជំនាន់ CLI ដែលអត្តសញ្ញាណ Claude របស់ OmniRoute ក្លែងធ្វើ និងជាជួរដំបូងដែលភ្ជាប់មកជាមួយ
-> tier Fable 5.1 ដោយផ្ទាល់)។ នៅលើ pin ថ្មី ស្រទាប់ដំឡើង និង `claude --version` ត្រូវបាន
+> **ស្ថានភាពបច្ចុប្បន្ន៖ បាន pin Claude Code `2.1.258`; ការផ្ទៀងផ្ទាត់ offline និង live ចុងក្រោយត្រូវបានកត់ត្រា
+> នៅលើ `2.1.220`។** pin `2.1.220` បានបញ្ចប់ scenario ដាច់ដោយឡែកចំនួនបីតាមរយៈ Devin CLI
+> `3000.2.17` និងម៉ូដែល `swe-1-7-lightning`; ការដំណើរការ live ចុងក្រោយនោះបានបញ្ជាក់ពី turn `Read`,
+> `Edit` និង `Bash` ដែលគ្រប់គ្រងដោយ client, លទ្ធផល `npm test` ដែលជោគជ័យ, ការរកឃើញ command និង skill
+> របស់ project, routing ដែលប្រើតែ Devin និងគ្មានទិន្នន័យចេញទៅ Claude។ បន្ទាប់មក pin ត្រូវបានដំឡើងទៅ `2.1.258`
+> (ជំនាន់ CLI ដែលអត្តសញ្ញាណ Claude របស់ OmniRoute ក្លែងធ្វើ និងជាជំនាន់ដំបូងដែលភ្ជាប់មកជាមួយ
+> tier Fable 5.1 ដោយផ្ទាល់)។ នៅលើ pin ថ្មី installation layer និង `claude --version` ត្រូវបាន
 > ផ្ទៀងផ្ទាត់លើ base image ដែលបាន pin ហើយ bridge unit suite, `compose config` និង
-> ភស្តុតាង isolation បែប static បានឆ្លងកាត់ — ប៉ុន្តែសេណារីយ៉ូ mock offline និង suite សេណារីយ៉ូ live ចំនួនបី
-> មិនទាន់ត្រូវបានដំណើរការឡើងវិញទេ។ សូមដំណើរការពួកវាឡើងវិញ (មើល "ការធ្វើបច្ចុប្បន្នភាព tool ដែលបាន pin") មុនពេលពឹងផ្អែកលើ
+> static isolation proof សុទ្ធតែឆ្លងកាត់ — ប៉ុន្តែ offline mock scenario និង live suite ដែលមានបី scenario
+> មិនទាន់ត្រូវបានដំណើរការឡើងវិញនៅឡើយទេ។ សូមដំណើរការពួកវាឡើងវិញ (មើល "ការធ្វើបច្ចុប្បន្នភាព tool ដែលបាន pin") មុនពេលពឹងផ្អែកលើ
 > bridge ជាមួយ pin នេះ។
 
 ## ស្ថាបត្យកម្ម
 
 ```text
-Claude Code 2.1.258 (container Linux non-root ដាច់ដោយឡែក)
+Claude Code 2.1.258 (កុងតឺន័រ Linux non-root ដែលដាច់ដោយឡែក)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (ទម្រង់ Claude, provider គ្មានការផ្ទៀងផ្ទាត់)
-  -> devin acp --agent-type summarizer (ACP stdio ផ្លូវការ, គ្មាន tool របស់ Devin)
-  -> គណនី Devin នៅក្នុង volume devin-auth ឯករាជ្យ
+  -> devin-cli-agentic (ទម្រង់ Claude, provider ដែលមិនទាមទារ auth)
+  -> devin acp --agent-type summarizer (ACP stdio ផ្លូវការ, គ្មានឧបករណ៍ Devin)
+  -> គណនី Devin នៅក្នុង volume devin-auth ពិសេស
 ```
 
-ACP agent លំនាំដើមរបស់ CLI ផ្លូវការអាចប្រតិបត្តិ tool របស់ខ្លួនបាន ដូច្នេះ bridge នេះមិនប្រើ
-វាទេ។ វាចាប់ផ្ដើម ACP agent `summarizer` ថេរ ដែល mode CLI ផ្លូវការរបស់វាមិនមាន tool ហើយ
-រៀបចំស៊ុម request Anthropic ដែលបាន serialize ជា execution trace។ នៅពេលត្រូវការសកម្មភាពផ្សេងទៀតដែលគ្រប់គ្រងដោយ Claude
-ការឆ្លើយតបត្រូវតែមាន client tool envelope តែមួយគត់។ ACP
-`tool_call` ឬ `tool_call_update` ណាមួយត្រូវបានបដិសេធ មុនពេលការឆ្លើយតបអាចត្រូវបានរាយការណ៍ថា
+ACP agent លំនាំដើមរបស់ CLI ផ្លូវការអាចប្រតិបត្តិឧបករណ៍របស់ខ្លួនបាន ដូច្នេះ bridge នេះមិនប្រើ
+វាទេ។ វាចាប់ផ្ដើម ACP agent `summarizer` ថេរ ដែល mode CLI ផ្លូវការរបស់វាមិនមានឧបករណ៍ ហើយ
+រៀបចំសំណើ Anthropic ដែលបាន serialize ជា execution trace។ នៅពេលត្រូវការសកម្មភាពផ្សេងទៀតដែលគ្រប់គ្រងដោយ Claude
+ចម្លើយត្រូវតែមាន client tool envelope តែមួយគត់។ ACP
+`tool_call` ឬ `tool_call_update` ណាមួយត្រូវបានបដិសេធ មុនពេលចម្លើយមួយអាចត្រូវបានរាយការណ៍ថា
 ជោគជ័យ។
 
-serializer នៅក្នុង `open-sse/executors/devin-agentic/serializer.ts` រក្សាទុក `system`,
+serializer ក្នុង `open-sse/executors/devin-agentic/serializer.ts` រក្សាទុក `system`,
 `text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice` និង
-tools ដែលផ្ដល់ដោយ Claude Code។ Image និង block ដែលមិនស្គាល់នឹងបរាជ័យយ៉ាងច្បាស់។ លទ្ធផល tool ធំៗ
-ប្រើសញ្ញាសម្គាល់ truncation ដែលអាចមើលឃើញ។
+ឧបករណ៍ដែលផ្តល់ដោយ Claude Code។ image និង block ដែលមិនស្គាល់នឹងបរាជ័យយ៉ាងច្បាស់។ លទ្ធផលឧបករណ៍ធំៗ
+ប្រើសញ្ញាសម្គាល់ការកាត់ខ្លីដែលអាចមើលឃើញ។
 
-parser ទទួលយក envelope `<tool>{...}</tool>` ឯករាជ្យតែមួយក្នុងមួយវេនរបស់ម៉ូដែល។ វាពិនិត្យ
-ឈ្មោះធៀបនឹងបញ្ជី tool របស់ request, ផ្ទៀងផ្ទាត់ argument ធៀបនឹង JSON
-Schema របស់ tool នោះ, បដិសេធការលាយបញ្ចូលគ្នារវាងការរៀបរាប់/សកម្មភាព និងអនុញ្ញាតឱ្យមានការជួសជុលមានដែនកំណត់មួយដង។ បន្ទាប់មក Claude Code
+parser ទទួលយក envelope `<tool>{...}</tool>` ឯករាជ្យតែមួយក្នុង model turn នីមួយៗ។ វាពិនិត្យ
+ឈ្មោះធៀបនឹងបញ្ជីឧបករណ៍របស់សំណើ ផ្ទៀងផ្ទាត់ argument ធៀបនឹង JSON
+Schema របស់ឧបករណ៍នោះ បដិសេធការលាយបញ្ចូល narrative/action និងអនុញ្ញាតការកែតម្រូវមានដែនកំណត់មួយលើក។ បន្ទាប់មក Claude Code
 ប្រតិបត្តិ Anthropic `tool_use` ដែលជាលទ្ធផលនៅមូលដ្ឋាន ហើយផ្ញើ `tool_result` ត្រឡប់មកវិញតាមរយៈ
 OmniRoute។
 
-## Routing ស្វ័យប្រវត្តិ
+## ការកំណត់ routing ដោយស្វ័យប្រវត្តិ
 
-provider នេះមានសិទ្ធិចូលរួមក្នុង candidate pool `auto/*` របស់ OmniRoute នៅពេលវាមិនត្រូវបានរារាំង។
+provider នេះមានសិទ្ធិចូលក្នុង candidate pool `auto/*` របស់ OmniRoute នៅពេលវាមិនត្រូវបាន block។
 សិទ្ធិជាបេក្ខភាពមិនធានាថានឹងត្រូវបានជ្រើសរើសទេ៖ យុទ្ធសាស្ត្រ routing របស់ combo (ឧទាហរណ៍
-last-known-good) អាចផ្ដល់អាទិភាពដល់ provider ផ្សេង។ ប្រើ `dva/<model>` ឬ combo ដែលផ្ដល់អាទិភាពដល់ Devin នៅពេល
-អ្នកតម្រូវឱ្យរាល់ request ទាំងអស់ឆ្លងកាត់ Devin។
+last-known-good) អាចផ្តល់អាទិភាពដល់ provider ផ្សេង។ ប្រើ `dva/<model>` ឬ combo ដែលផ្តល់អាទិភាពដល់ Devin នៅមុនគេ នៅពេល
+អ្នកតម្រូវឱ្យរាល់សំណើទាំងអស់ឆ្លងកាត់ Devin។
 
-## ភាពដាច់ដោយឡែក និងគំរូគំរាមកំហែង
+## ភាពឯកោ និងគំរូគំរាមកំហែង
 
-ការដំឡើង គណនី និងការកំណត់រចនាសម្ព័ន្ធ Claude របស់ម៉ាស៊ីនមេគឺនៅក្រៅវិសាលភាព ហើយត្រូវបានចាត់ទុកថា
-មិនអនុញ្ញាត។ សេវាកម្ម Compose៖
+ការដំឡើង Claude គណនី និងការកំណត់រចនាសម្ព័ន្ធរបស់ម៉ាស៊ីនមេ មិនស្ថិតក្នុងវិសាលភាពទេ ហើយត្រូវបានចាត់ទុកថា
+ហាមឃាត់។ សេវាកម្ម Compose៖
 
-- ដំណើរការជា UID/GID `10001:10001` ដោយមានប្រព័ន្ធឯកសារ root សម្រាប់តែអាន សមត្ថភាពត្រូវបានដកចេញ និង
+- ដំណើរការជា UID/GID `10001:10001` ជាមួយប្រព័ន្ធឯកសារឫសដែលបានតែអាន សមត្ថភាពដែលត្រូវបានដកចេញ និង
   `no-new-privileges`;
-- ប្រើ `/home/bridge` ឯកជន volume កំណត់រចនាសម្ព័ន្ធ Claude ជាក់លាក់ ទិន្នន័យ OmniRoute ដាច់ដោយឡែក
-  និង volume `devin-auth` មួយផ្សេងទៀត;
-- mount តែ workspace/evidence `.sandbox` ដែលអាចបោះចោលបាន;
-- មិន mount home របស់ម៉ាស៊ីនមេ Keychain អត្តសញ្ញាណបណ្ណ SSH ព័ត៌មានសម្ងាត់ cloud ឬ Docker socket;
-- បង្កើត environment ជាក់លាក់ និងលុបអថេរ Anthropic API/OAuth/routing;
-- បញ្ជូន inference របស់ Claude Code ទៅតែ `http://omniroute:20128` ដោយប្រើ key ដែលប្រើបានតែក្នុងមូលដ្ឋាន។
+- ប្រើ `/home/bridge` ឯកជន volume កំណត់រចនាសម្ព័ន្ធ Claude ជាក់លាក់ ទិន្នន័យ OmniRoute ដែលដាច់ដោយឡែក
+  និង volume `devin-auth` ដោយឡែកមួយ;
+- mount តែ workspace/ភស្តុតាង `.sandbox` ដែលអាចបោះចោលបាន;
+- មិន mount home របស់ម៉ាស៊ីនមេ Keychain ព័ត៌មានសម្ងាត់ SSH ព័ត៌មានសម្ងាត់ cloud ឬ Docker socket ទេ;
+- បង្កើត environment ជាក់លាក់ និងលុបអថេរ API/OAuth/routing របស់ Anthropic;
+- ដឹកនាំ inference របស់ Claude Code ទៅកាន់តែ `http://omniroute:20128` ជាមួយ key ដែលប្រើតែក្នុងមូលដ្ឋាន។
 
-ប្រូហ្វាល់ offline ប្រើបណ្តាញខាងក្នុង។ ក្នុងប្រូហ្វាល់ live OmniRoute អាចភ្ជាប់ទៅ
+ប្រូហ្វាល់ offline ប្រើបណ្ដាញខាងក្នុង។ នៅក្នុងប្រូហ្វាល់ live OmniRoute អាចទៅដល់
 endpoint ផ្លូវការរបស់ Devin បានតែតាមរយៈ `network-guard` ប៉ុណ្ណោះ; destination ដែលមិនពាក់ព័ន្ធត្រូវបានបដិសេធ។
-Claude Code មាន guard ទប់ស្កាត់ egress ទាំងអស់ដាច់ដោយឡែក ហើយអាចភ្ជាប់បានតែទៅសេវាកម្ម OmniRoute
-មូលដ្ឋានតាមរយៈ `NO_PROXY`។ ឯកសារ audit របស់ guard ត្រូវបាន mount សម្រាប់តែ process របស់ guard រៀងៗខ្លួន។
-script ទាំងនេះផ្ទៀងផ្ទាត់កម្មសិទ្ធិឯកសារ mode ចំនួន link និងរាល់សេចក្តីសម្រេច មុននឹង export
+Claude Code មាន guard egress បដិសេធទាំងអស់ដាច់ដោយឡែក ហើយអាចទៅដល់តែសេវាកម្ម OmniRoute ក្នុងមូលដ្ឋាន
+តាមរយៈ `NO_PROXY`។ ឯកសារសវនកម្មរបស់ guard ត្រូវបាន mount តែដោយដំណើរការ guard របស់វាប៉ុណ្ណោះ។ ស្គ្រីប
+ផ្ទៀងផ្ទាត់ភាពជាម្ចាស់ឯកសារ mode ចំនួន link និងរាល់សេចក្ដីសម្រេច មុនពេល export
 ភស្តុតាងដែលគ្មាន token។
 
-ដំណើរការភស្តុតាងនៃភាពដាច់ដោយឡែកដោយឯករាជ្យ៖
+ដំណើរការភស្តុតាងនៃភាពឯកោដោយឯករាជ្យ៖
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-វាផ្ទៀងផ្ទាត់ topology, named mount, ការកំណត់ non-root/read-only, routing មូលដ្ឋានជាក់លាក់,
+វាផ្ទៀងផ្ទាត់ topology, named mount, ការកំណត់ non-root/read-only, routing ក្នុងមូលដ្ឋានជាក់លាក់,
 អវត្តមាននៃអថេរ environment ដែលរសើប អវត្តមាននៃ Docker socket ការទប់ស្កាត់ការចូលប្រើ
-`api.anthropic.com` និង `claude.ai` ការជ្រើសរើស provider តែ Devin និងការបរាជ័យជាក់លាក់នៅពេល
-ACP backend មិនអាចប្រើបាន។
+`api.anthropic.com` និង `claude.ai` ការជ្រើសរើស provider សម្រាប់តែ Devin និងការបរាជ័យជាក់លាក់ នៅពេល
+backend ACP មិនអាចប្រើបាន។
 
-## ការរៀបចំលើកដំបូង និងការប្រើប្រាស់ធម្មតា
+## ការដំឡើងលើកដំបូង និងការប្រើប្រាស់ធម្មតា
 
 Build image ដែលបានកំណត់កំណែជាក់លាក់៖
 
@@ -100,30 +100,30 @@ Build image ដែលបានកំណត់កំណែជាក់លាក�
 ./scripts/devin-bridge/build
 ```
 
-ផ្ទៀងផ្ទាត់អត្តសញ្ញាណតែ volume Devin ដាច់ដោយឡែក៖
+ផ្ទៀងផ្ទាត់អត្តសញ្ញាណតែ volume Devin ដែលដាច់ដោយឡែក៖
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-ពាក្យបញ្ជា login ប្រើដំណើរការ manual-token ផ្លូវការដែលមានគោលបំណងសម្រាប់ environment
-remote/container។ តម្លៃត្រូវបានបញ្ចូលដោយផ្ទាល់ទៅក្នុង prompt របស់ CLI; វាមិនត្រូវបានបញ្ជូនជា
-argument របស់ process សរសេរទៅ Git ឬចម្លងពីម៉ាស៊ីនមេទេ។
+ពាក្យបញ្ជា login ប្រើលំហូរ manual-token ផ្លូវការ ដែលត្រូវបានបង្កើតឡើងសម្រាប់ environment
+ពីចម្ងាយ/container។ តម្លៃត្រូវបានបញ្ចូលដោយផ្ទាល់ទៅក្នុង prompt របស់ CLI; វាមិនត្រូវបានផ្ដល់ជា
+argument របស់ process សរសេរទៅក្នុង Git ឬចម្លងពីម៉ាស៊ីនមេឡើយ។
 
-បើកដំណើរការ runtime Claude Code ដែលដាច់ដោយឡែក៖
+ចាប់ផ្ដើម runtime របស់ Claude Code ដែលដាច់ដោយឡែក៖
 
 ```bash
 ./scripts/devin-bridge/launch
 ```
 
-`launch` ពិនិត្យភាពដាច់ដោយឡែក ការផ្ទៀងផ្ទាត់អត្តសញ្ញាណ Devin និងការរកឃើញ model ម្តងទៀត មុននឹងចាប់ផ្តើម
-Claude Code ក្នុង container។ វាមិនដែលដំណើរការ executable Claude របស់ម៉ាស៊ីនមេទេ។ អាចកំណត់ alias របស់ model
-នៅក្នុង `.env.devin-bridge`; រាល់តម្លៃដែលបានកំណត់ត្រូវតែរក្សាបុព្វបទ
+`launch` ពិនិត្យភាពឯកោ ការផ្ទៀងផ្ទាត់អត្តសញ្ញាណ Devin និងការរកឃើញ model ឡើងវិញ មុនពេលចាប់ផ្ដើម
+Claude Code ក្នុង container។ វាមិនដែលដំណើរការ executable Claude របស់ម៉ាស៊ីនមេទេ។ Alias របស់ model អាចត្រូវបាន
+កំណត់ក្នុង `.env.devin-bridge`; រាល់តម្លៃដែលបានកំណត់ត្រូវតែរក្សាបុព្វបទ
 `devin-cli-agentic/`។
 
 ## ពាក្យបញ្ជាសម្រាប់សុពលកម្ម
 
-ផ្លូវ offline ដែលអាចផលិតលទ្ធផលឡើងវិញបាន មិនត្រូវការគណនី Devin និងមិនមាន Internet នៅពេល runtime៖
+ផ្លូវ offline ដែលអាចផលិតលទ្ធផលដដែលឡើងវិញ មិនត្រូវការគណនី Devin និងមិនមាន Internet នៅពេល runtime ទេ៖
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -132,50 +132,49 @@ Claude Code ក្នុង container។ វាមិនដែលដំណើរ
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-ផ្លូវ live ដែលមានការផ្ទៀងផ្ទាត់អត្តសញ្ញាណ និងត្រូវជ្រើសរើសចូល គឺ៖
+ផ្លូវ live ដែលបានផ្ទៀងផ្ទាត់អត្តសញ្ញាណ និងត្រូវជ្រើសរើសចូល គឺ៖
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-កម្មវិធីដំណើរការ live រង់ចាំនៅចន្លោះ scenario ដើម្បីជៀសវាងការបើក session ACP ជាបន្តបន្ទាប់ក្នុងរយៈពេលខ្លី និង
-ផ្ទៀងផ្ទាត់ event នៃ stream Claude ដែលមានរចនាសម្ព័ន្ធ ជំនួសឱ្យការជឿទុកចិត្តលើការអះអាងជាអត្ថបទ។ scenario ទាំងបីរបស់វា
+កម្មវិធីដំណើរការ live រង់ចាំរវាង scenario នីមួយៗ ដើម្បីជៀសវាងការបើក session ACP ជាបន្តបន្ទាប់យ៉ាងលឿន និង
+ធ្វើសុពលកម្ម event stream ដែលមានរចនាសម្ព័ន្ធរបស់ Claude ជំនួសឱ្យការជឿទុកចិត្តលើការអះអាងជាអត្ថបទ។ scenario ទាំងបីរបស់វា
 បញ្ជាក់ថា៖
 
 1. ការអាន project ដោយផ្ទាល់ និងការវិភាគ defect;
-2. `Edit` ពិតប្រាកដ `Bash` `npm test` ដែលគ្រប់គ្រងដោយ client និងលទ្ធផល terminal;
+2. `Edit` ពិតប្រាកដមួយ `Bash` `npm test` ដែលគ្រប់គ្រងដោយ client និងលទ្ធផល terminal;
 3. `/bridge-check` រួមជាមួយការរកឃើញ `bridge-proof` ការអាន project ការដំណើរការ
-   `npm test` ដែលគ្រប់គ្រងដោយ client ដោយជោគជ័យមួយទៀត និងការបញ្ចប់ដោយគ្មានការងារនៅរង់ចាំ។
+   `npm test` ដែលគ្រប់គ្រងដោយ client និងជោគជ័យមួយទៀត ព្រមទាំងការបញ្ចប់ដោយគ្មានការងារដែលកំពុងរង់ចាំ។
 
-ច្រកត្រួតពិនិត្យចុងក្រោយក៏ពិនិត្យ network audit របស់ Devin និងតម្រូវឱ្យ egress audit របស់ Claude
+ច្រកត្រួតពិនិត្យចុងក្រោយក៏ពិនិត្យសវនកម្មបណ្ដាញ Devin ហើយតម្រូវឱ្យសវនកម្ម egress របស់ Claude
 នៅតែទទេ។
 
-## ការធ្វើបច្ចុប្បន្នភាពឧបករណ៍ដែលបានចាក់សោជំនាន់
+## ការធ្វើបច្ចុប្បន្នភាពឧបករណ៍ដែលបានកំណត់ជាប់
 
-Image ចាក់សោជំនាន់ Node, Claude Code និង Devin CLI នៅក្នុង
+Image នេះកំណត់ជាប់ Node, Claude Code និង Devin CLI នៅក្នុង
 `docker/devin-bridge/Dockerfile`។ ដើម្បីធ្វើបច្ចុប្បន្នភាព៖
 
-1. ផ្លាស់ប្តូរជំនាន់ដែលបានកំណត់ជាក់លាក់;
-2. ជំនួស checksum ទាំងពីររបស់ archive Devin តាម architecture ជាមួយនឹងតម្លៃសម្រាប់
-   artifact ផ្លូវការ;
+1. ផ្លាស់ប្តូរ version ដែលបានកំណត់ជាក់លាក់;
+2. ជំនួស checksum ទាំងពីរសម្រាប់បណ្ណសារ Devin ដែលជាក់លាក់តាម architecture ដោយតម្លៃសម្រាប់ artifact ផ្លូវការ;
 3. build ឡើងវិញ ហើយដំណើរការ command ផ្ទៀងផ្ទាត់ offline ទាំងអស់;
-4. បញ្ជាក់ជំនាន់នៅខាងក្នុង image;
-5. ដំណើរការ live suite ដែលបានផ្ទៀងផ្ទាត់អត្តសញ្ញាណ និងមានបី scenario ឡើងវិញ។
+4. បញ្ជាក់ version នៅក្នុង image;
+5. ដំណើរការ live suite ដែលមាន scenario បី និងតម្រូវឱ្យមានការផ្ទៀងផ្ទាត់អត្តសញ្ញាណឡើងវិញ។
 
 កុំដំឡើង CLI ណាមួយជាសកលនៅលើ host ឬជំនួសការផ្ទៀងផ្ទាត់ checksum ដោយការ
-ទាញយកដែលមិនបានផ្ទៀងផ្ទាត់។
+download ដែលមិនបានផ្ទៀងផ្ទាត់។
 
 ## ការធ្វើរោគវិនិច្ឆ័យ និងការសម្អាត
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
-  បង្ហាញ routing មូលដ្ឋាន និង error របស់ executor ដែលបានសម្អាតទិន្នន័យរសើប។
-- `.sandbox/evidence/mock-acp.jsonl` កត់ត្រា action របស់ mock ACP ដែលអាចកំណត់លទ្ធផលបានជាក់លាក់។
-- `.sandbox/evidence/claude-stream.jsonl` កត់ត្រាការដំណើរការ offline ពិតប្រាកដរបស់ Claude Code។
-- `.sandbox/evidence/live-*.jsonl` កត់ត្រា live stream ដែលបានផ្ទៀងផ្ទាត់ទាំងបី។
-- `.sandbox/evidence/egress.jsonl` និង `.sandbox/evidence/claude-egress.jsonl` គឺជាច្បាប់ចម្លង
-  នៃ guard audit ដែលបានផ្ទៀងផ្ទាត់ និងគ្មាន token។
+  បង្ហាញការកំណត់ផ្លូវក្នុងមូលដ្ឋាន និង error របស់ executor ដែលបានសម្អាតទិន្នន័យរសើប។
+- `.sandbox/evidence/mock-acp.jsonl` កត់ត្រា action របស់ mock ACP ដែលមានលទ្ធផលកំណត់ជាមុន។
+- `.sandbox/evidence/claude-stream.jsonl` កត់ត្រាការដំណើរការ Claude Code offline ពិតប្រាកដ។
+- `.sandbox/evidence/live-*.jsonl` កត់ត្រា live stream ទាំងបីដែលបានផ្ទៀងផ្ទាត់។
+- `.sandbox/evidence/egress.jsonl` និង `.sandbox/evidence/claude-egress.jsonl` គឺជាច្បាប់ចម្លងដែលបានផ្ទៀងផ្ទាត់,
+  គ្មាន token នៃការធ្វើ audit លើ guard។
 
-បញ្ឈប់ container និង network ដែលជាកម្មសិទ្ធិរបស់ bridge ខណៈពេលរក្សាទុក volume សម្រាប់ login/config៖
+បញ្ឈប់ container និង network ដែលជាកម្មសិទ្ធិរបស់ប្រព័ន្ធ ខណៈពេលរក្សាទុក volume សម្រាប់ login/config៖
 
 ```bash
 ./scripts/devin-bridge/clean
@@ -189,15 +188,15 @@ Image ចាក់សោជំនាន់ Node, Claude Code និង Devin CLI
 
 ## ដែនកំណត់
 
-- Bridge ពឹងផ្អែកលើ role `summarizer` ដែលបានកំណត់ថេរ និងគ្មាន tool ព្រោះ Devin CLI `3000.2.17`
-  មិនផ្តល់ neutral ACP agent ដែលគ្មាន tool ទេ។ Adapter ទូទាត់សម្រាប់ response កម្រិតមធ្យម
-  ដែលមានទម្រង់ជាសេចក្តីសង្ខេប ប៉ុន្តែការជួសជុលដែលមានព្រំដែនចំនួនមួយលើកនៅតែអាចបរាជ័យយ៉ាងច្បាស់លាស់។
-- ការ call ទៅ live ACP អាចត្រឡប់ response `502`/`504` បណ្តោះអាសន្ន។ Harness ទុកចន្លោះពេលរវាង scenario;
-  ការបរាជ័យជាប់លាប់នៅតែបិទជាសុវត្ថិភាព ហើយមិនជ្រើសរើស provider ផ្សេងទៀតឡើយ។
-- Context របស់ ACP ត្រូវបានស្ថាបនាឡើងវិញពី request Anthropic នីមួយៗ; មិនមានភាពជាប់ទាក់ទងតាម
-  process/session ទេ។
-- គាំទ្រ tool call មួយក្នុងមួយ model response; call ស្របគ្នាត្រូវបានបដិសេធ។
-- Image មិនត្រូវបានគាំទ្រយ៉ាងច្បាស់លាស់។ Vision, thinking output, effort control និង context window ទំហំ 1M
+- Bridge ពឹងផ្អែកលើ role `summarizer` ដែលគ្មាន tool និងត្រូវបានកំណត់ថេរ ព្រោះ Devin CLI `3000.2.17`
+  មិនបង្ហាញ ACP agent អព្យាក្រឹតដែលគ្មាន tool ទេ។ Adapter ផ្តល់សំណងសម្រាប់ response កម្រិតមធ្យម
+  ដែលមានទម្រង់ជាសេចក្តីសង្ខេប ប៉ុន្តែការកែតម្រូវមានដែនកំណត់មួយលើកនៅតែអាចបរាជ័យយ៉ាងច្បាស់លាស់។
+- ការ call ទៅ live ACP អាចត្រឡប់ response `502`/`504` ជាបណ្តោះអាសន្ន។ Harness ទុកចន្លោះពេលរវាង scenario;
+  ការបរាជ័យជាប់រហូតនៅតែបិទដោយសុវត្ថិភាព ហើយមិនដែលជ្រើសរើស provider ផ្សេងទៀតទេ។
+- Context របស់ ACP ត្រូវបានបង្កើតឡើងវិញពី request របស់ Anthropic នីមួយៗ; មិនមានភាពភ្ជាប់ជាប់នឹង process/session
+  ទេ។
+- គាំទ្រ tool call មួយក្នុង model response នីមួយៗ; call ស្របគ្នាត្រូវបានបដិសេធ។
+- Image មិនត្រូវបានគាំទ្រយ៉ាងច្បាស់លាស់។ សមត្ថភាពមើលឃើញ, thinking output, ការគ្រប់គ្រង effort និង context window ទំហំ 1M
   មិនត្រូវបានប្រកាសថាគាំទ្រទេ។
-- SSE ប្រើ lifecycle event របស់ Anthropic ដែលត្រឹមត្រូវ ប៉ុន្តែត្រូវបានបញ្ចេញបន្ទាប់ពីប្រមូល bounded ACP turn
-  រួចរាល់; chunk របស់ ACP មិនត្រូវបានបញ្ជូនបន្តជាបណ្តើរៗទេ។
+- SSE ប្រើ lifecycle event របស់ Anthropic ដែលត្រឹមត្រូវ ប៉ុន្តែត្រូវបានបញ្ចេញបន្ទាប់ពីប្រមូល ACP turn ដែលមានដែនកំណត់
+  រួចហើយ; chunk របស់ ACP មិនត្រូវបានបញ្ជូនបន្តជាបណ្តើរៗទេ។

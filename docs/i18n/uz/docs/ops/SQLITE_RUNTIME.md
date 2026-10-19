@@ -4,35 +4,35 @@
 
 ---
 
-OmniRoute ishga tushirilganda SQLite drayverini 5 bosqichli zaxira zanjiri orqali aniqlaydi:
+OmniRoute ishga tushish vaqtida SQLite drayverini 5 bosqichli zaxira variantlar zanjiri orqali aniqlaydi:
 
-1. **Paketga kiritilgan `better-sqlite3`** (`package.json` faylidagi `dependencies` orqali)
-   — eng tezkor, mahalliy ikkilik fayl; qurish vositalari mavjud bo‘lsa, `npm install` tomonidan o‘rnatiladi.
+1. **Birga yetkazib beriladigan `better-sqlite3`** (`package.json` ichidagi `dependencies` orqali)
+   — eng tezkor variant, mahalliy ikkilik fayl; yaratish vositalari mavjud bo‘lsa, `npm install` orqali o‘rnatiladi.
 
-2. **Ishlash vaqtida o‘rnatilgan `better-sqlite3`** (`~/.omniroute/runtime/` ichida)
-   — birinchi ishga tushirishda **YOKI** `scripts/build/postinstall.mjs → scripts/postinstall.mjs` orqali kechiktirib o‘rnatiladi.
-   Yuklashdan oldin buzilgan yoki noto‘g‘ri platformaga mo‘ljallangan ikkilik fayllardan
-   himoyalanish uchun mahalliy `.node` faylining sehrli baytlari (ELF / Mach-O / PE) tekshiriladi.
+2. **Ishlash vaqtida o‘rnatiladigan `better-sqlite3`** (`~/.omniroute/runtime/` ichida)
+   — birinchi ishga tushirishda **YOKI** `scripts/build/postinstall.mjs → scripts/postinstall.mjs` orqali zaruratga qarab o‘rnatiladi.
+   Yuklashdan oldin mahalliy `.node` faylining signatura baytlarini (ELF / Mach-O / PE) tekshiradi,
+   bu buzilgan yoki noto‘g‘ri platformaga mo‘ljallangan ikkilik fayllardan himoya qiladi.
 
-3. **`node:sqlite`** (Node ≥22.5 standart kutubxonasi) — mahalliy qurish talab qilinmaydi;
-   better-sqlite3 yo‘llarining ikkalasi ham ishlamasa qo‘llanadi. Imkoniyatlari cheklangan.
+3. **`node:sqlite`** (Node ≥22.5 standart kutubxonasi) — mahalliy yaratish talab qilinmaydi; har ikkala
+   better-sqlite3 yo‘li ham ishlamasa qo‘llanadi. Imkoniyatlari cheklangan.
 
 4. **`sql.js`** (WASM) — so‘nggi zaxira variant. Hamma joyda ishlaydi, ammo sekinroq
-   va ma’lumotlarni sinxron ravishda emas, belgilangan oraliqlarda yozadi.
+   va ma’lumotlarni sinxron tarzda emas, ma’lum oraliqlarda yozadi.
 
-## Nega buncha murakkab?
+## Nega bu qadar murakkab?
 
-- **Windows EBUSY**: agar avvalgi versiyaning `better_sqlite3.node` fayli ishlayotgan
-  jarayon tomonidan bloklangan bo‘lsa, `npm install -g omniroute@latest` muvaffaqiyatsiz
-  tugashi mumkin. `~/.omniroute/runtime/` ichidagi ish vaqti o‘rnatilishi global npm keshini chetlab o‘tadi.
-- **Qurish vositalari yo‘q**: ayrim muhitlar (VS Build Tools o‘rnatilmagan korporativ
-  Windows tizimlari, minimal Docker tasvirlari) `better-sqlite3` paketini kompilyatsiya
-  qila olmaydi. Ish vaqti o‘rnatuvchisi npm reyestridan oldindan qurilgan ikkilik faylni
-  oladi; bu ham muvaffaqiyatsiz bo‘lsa, zaxira drayverlar OmniRoute baribir ishga tushishini ta’minlaydi.
-- **Tarmoqdan uzilgan tizimlar**: npm reyestriga kirib bo‘lmasa, `node:sqlite`
+- **Windows EBUSY**: agar oldingi versiyaning `better_sqlite3.node` fayli ishlayotgan jarayon tomonidan
+  qulflangan bo‘lsa, `npm install -g omniroute@latest` muvaffaqiyatsiz tugashi mumkin. `~/.omniroute/runtime/`
+  ichidagi ish vaqti o‘rnatmasi global npm keshini chetlab o‘tadi.
+- **Yaratish vositalari yo‘q**: ayrim muhitlar (VS Build Tools mavjud bo‘lmagan korporativ Windows,
+  minimal Docker tasvirlari) `better-sqlite3` paketini kompilyatsiya qila olmaydi. Ish vaqti
+  o‘rnatuvchisi npm reyestridan oldindan yaratilgan ikkilik faylni oladi; bu ham ishlamasa,
+  zaxira drayverlar OmniRoute baribir ishga tushishini ta’minlaydi.
+- **Tarmoqdan uzilgan tizimlar**: npm reyestriga ulanib bo‘lmasa, `node:sqlite`
   yoki `sql.js` asosiy funksionallikni kafolatlaydi.
 
-## Sehrli baytlarni tekshirish
+## Signatura baytlarini tekshirish
 
 Ishlash vaqtida o‘rnatilgan `.node` faylini yuklashdan oldin OmniRoute dastlabki 8
 baytni o‘qiydi va ularni ma’lum platforma signaturalari bilan solishtiradi:
@@ -45,7 +45,7 @@ baytni o‘qiydi va ularni ma’lum platforma signaturalari bilan solishtiradi:
 | macOS fat (universal) | `CA FE BA BE` | `macho-fat` |
 | Windows               | `4D 5A` (MZ)  | `pe`        |
 
-Sehrli baytlar mos kelmasa → fayl e’tiborsiz qoldiriladi va zaxira zanjiri keyingi bosqichga o‘tadi.
+Signatura mos kelmasa → fayl e’tiborga olinmaydi, zaxira zanjiri keyingi bosqichga o‘tadi.
 
 ## Faol drayverni tekshirish
 
@@ -60,49 +60,48 @@ const info = getDriverInfo();
 ## Qo‘lda boshqarish
 
 ```bash
-# Tezkor CI o‘rnatishlari uchun postinstall oldindan qizdirishini o‘tkazib yuborish
+# Tezkor CI o‘rnatmalari uchun o‘rnatishdan keyingi dastlabki tayyorlashni o‘tkazib yuborish
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
 # Ish vaqtidagi better-sqlite3 paketini majburan qayta o‘rnatish
 rm -rf ~/.omniroute/runtime
 omniroute  # keyingi ishga tushirishda qayta o‘rnatiladi
 
-# Qaysi drayver faolligini tekshirish
+# Qaysi drayver faol ekanini tekshirish
 omniroute config db-info  # (agar CLI buyrug‘i mavjud bo‘lsa)
 ```
 
-## Sinxron to‘xtalishlarni diagnostika qilish
+## Sinxron to‘xtab qolishlarni aniqlash
 
-`better-sqlite3` bilan sinxron adapter vaqtini o‘lchashni yoqish uchun ishga tushirishdan
-oldin `OMNIROUTE_SQLITE_SLOW_MS=200` qiymatini belgilang. Standart holatda bu o‘chiq.
-Kamida shuncha millisekund davom etgan yakunlangan amal har bir adapter uchun ko‘pi
-bilan har o‘n soniyada bir marta `[SQLITE-SLOW]` ogohlantirishini chiqaradi.
-Ogohlantirish faqat drayver, amal sinfi (`prepare`, `get`, `all`, `run`, `exec`,
-`pragma`, tranzaksiya yoki texnik xizmat) va o‘tgan millisekundlar sonini o‘z ichiga
-oladi: SQL, bog‘langan qiymatlar, qatorlar, yo‘llar yoki istisno matni kiritilmaydi.
+`better-sqlite3` bilan sinxron adapter vaqtini o‘lchashni yoqish uchun ishga tushirishdan oldin
+`OMNIROUTE_SQLITE_SLOW_MS=200` ni o‘rnating. Standart holatda bu o‘chirilgan. Bajarilishi
+kamida shuncha millisekund davom etgan operatsiya har bir adapter uchun o‘n soniyada ko‘pi
+bilan bir marta `[SQLITE-SLOW]` ogohlantirishini chiqaradi. Ogohlantirish faqat drayver,
+operatsiya turi (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, tranzaksiya yoki texnik xizmat)
+va o‘tgan millisekundlar sonini o‘z ichiga oladi: SQL, bog‘lanmalar, qatorlar, yo‘llar yoki
+istisno matni kiritilmaydi.
 
-Bu taymaut yoki so‘rovlarni optimallashtirish vositasi emas, balki diagnostika
-yordamchisidir. U hech qachon qaytmaydigan amal haqida xabar bera olmaydi, CPU ishini
-disk kutishlaridan ajrata olmaydi, aniq SQL so‘rovini aniqlay olmaydi yoki bevosita
-drayver deskriptori orqali bajarilgan amallarni kuzata olmaydi. Asinxron zaxiralash
-davomiyligi ataylab hisobga olinmaydi; boshqa SQLite drayverlari ushbu ixtiyoriy
-instrumentatsiya bilan qamrab olinmagan. O‘zgaruvchini o‘chirib qo‘yish vaqtni
-o‘lchash o‘ramlarisiz asl adapterni tiklaydi. Ma’lumotlar bazasi sxemasi yoki
-saqlangan konfiguratsiya o‘zgarmaydi.
+Bu taym-aut yoki so‘rovni optimallashtirish vositasi emas, balki diagnostika yordamchisidir.
+U hech qachon qaytmaydigan operatsiya haqida xabar bera olmaydi, protsessor ishini disk kutishidan
+ajrata olmaydi, aniq SQL so‘rovini aniqlay olmaydi yoki drayverning bevosita deskriptori orqali
+bajarilgan operatsiyalarni kuzata olmaydi. Asinxron zaxiralash davomiyligi ataylab hisobga
+olinmaydi; boshqa SQLite drayverlari ushbu ixtiyoriy kuzatuv bilan jihozlanmagan. O‘zgaruvchini
+o‘chirib qo‘yish vaqt o‘lchash o‘ramlarisiz asl adapterni tiklaydi. Ma’lumotlar bazasi sxemasi
+yoki saqlangan konfiguratsiya o‘zgarmaydi.
 
-`/healthz` kechikish ogohlantirishi butun ishlash davridagi o‘rtacha qiymatni emas,
-oldingi namunadan beri voqealar siklining eng yuqori kechikishini bildiradi.
-To‘xtalishni SQLite yoki disk nosozligi bilan bog‘lashdan oldin uning vaqt belgilarini
-sekin amallar haqidagi ogohlantirishlar hamda xost/xotira qurilmasi metrikalari bilan solishtiring.
+`/healthz` kechikish ogohlantirishi butun ishlash davridagi o‘rtacha qiymatni emas, avvalgi
+namunadan keyingi hodisalar siklining eng yuqori kechikishini bildiradi. To‘xtab qolishni SQLite
+yoki disk nosozligi bilan bog‘lashdan oldin uning vaqt belgilarini sekin operatsiya
+ogohlantirishlari hamda xost/xotira qurilmasi ko‘rsatkichlari bilan solishtiring.
 
 ## Ma’lumotnoma
 
 Amalga oshirish:
 
-- `bin/cli/runtime/magicBytes.mjs` — ikkilik fayl sehrli baytlarini tekshirish yordamchilari
-- `bin/cli/runtime/sqliteRuntime.mjs` — 5 bosqichli ish vaqti aniqlagichi + kechiktirilgan o‘rnatuvchi
-- `bin/cli/runtime/index.mjs` — ishga tushirish koordinatori (`warmUpRuntimes()`)
-- `scripts/postinstall.mjs` — npm o‘rnatishdan keyingi ilgagi (xatolik halokatli emas)
+- `bin/cli/runtime/magicBytes.mjs` — ikkilik signatura baytlarini tekshirish yordamchilari
+- `bin/cli/runtime/sqliteRuntime.mjs` — 5 bosqichli ish vaqti aniqlagichi + zaruratga qarab o‘rnatuvchi
+- `bin/cli/runtime/index.mjs` — ishga tushirish orkestratori (`warmUpRuntimes()`)
+- `scripts/postinstall.mjs` — npm o‘rnatishdan keyingi xuki (xatolik yuz bersa ham davom etuvchi dastlabki tayyorlash)
 - `src/lib/db/core.ts` — `ensureDbInitialized()` / `getDriverInfo()` eksportlari
 
 ## Yagona yozuvchi topologiyasi (HA qo‘llab-quvvatlanmaydi)
@@ -110,12 +109,11 @@ Amalga oshirish:
 Yuqoridagi drayver zaxira zanjiri baribir **bitta jarayonda** ishlaydi. Standart SQLite
 bilan OmniRoute **yagona yozuvchi** hisoblanadi:
 
-- Ikki OmniRoute replikasini bir xil `storage.sqlite` fayliga ulamang.
-- Konteynerning qayta ishga tushirilishi, Recreate joylashtirishi, OOM sababli to‘xtatilishi
-  yoki HEALTHCHECK qayta ishga tushirishi jarayondagi barcha SSE seanslarini uzadi.
-  Standart yo‘lda seanslarni bosqichma-bosqich yakunlash mavjud emas.
-- Sekin ishlayotgan `/healthz` holatini nosozlik deb hisoblaydigan orkestrator
-  faollik tekshiruvi yagona replikani to‘xtatadi. TCP faollik tekshiruvi + HTTP
-  `/healthz` tayyorlik tekshiruvini afzal ko‘ring. Quyidagilarga qarang:
-  [Docker qo‘llanmasi — mavjudlik](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
-  va [Kubernetes tekshiruvlari bo‘yicha tavsiyalar](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).
+- Bitta `storage.sqlite` fayliga ikkita OmniRoute replikasini ulamang.
+- Konteynerning qayta ishga tushishi, Recreate joylashtirishi, OOM tufayli to‘xtatilishi yoki HEALTHCHECK
+  qayta ishga tushirishi bajarilayotgan barcha SSE seanslarini uzadi. Standart yo‘lda seanslarni
+  bosqichma-bosqich yakunlash mavjud emas.
+- Sekin ishlayotgan `/healthz` ni ishlamay qolgan deb hisoblaydigan orkestratorning faoliyat tekshiruvi
+  yagona replikani to‘xtatadi. TCP faoliyat tekshiruvi + HTTP `/healthz` tayyorlik tekshiruvini afzal
+  ko‘ring. [Docker qo‘llanmasi — mavjudlik](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
+  va [Kubernetes tekshiruvlari bo‘yicha tavsiyalar](./MONITORING_GUIDE.md#kubernetes-probe-recommendations)ga qarang.

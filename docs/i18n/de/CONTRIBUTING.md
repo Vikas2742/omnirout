@@ -8,14 +8,14 @@ Thank you for your interest in contributing! This guide covers everything you ne
 
 ---
 
-## Entwicklungsumgebung
+## Entwicklungsumgebung einrichten
 
 ### Voraussetzungen
 
 - **Node.js** `>=22.22.2 <23` oder `>=24.0.0 <27` (empfohlen: 24 LTS)
 - **npm** 10+
 
-> **Benutzer von npm v11+ (Node 24+):** Überprüfen Sie nach `npm install`, ob die nativen Module installiert wurden:
+> **Nutzer von npm v11+ (Node 24+):** Überprüfen Sie nach `npm install`, ob native Module installiert wurden:
 > `node -e "require('better-sqlite3')"`. Falls der Befehl mit `MODULE_NOT_FOUND` fehlschlägt,
 > führen Sie `npm approve-scripts better-sqlite3 && npm install` aus. Siehe
 > [Fehlerbehebung](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
@@ -36,20 +36,20 @@ npm install
 # Erstellen Sie Ihre .env anhand der Vorlage
 cp .env.example .env
 
-# Generieren Sie die erforderlichen Geheimnisse
+# Erforderliche Secrets generieren
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
 Wichtige Variablen für die Entwicklung:
 
-| Variable               | Standardwert für die Entwicklung | Beschreibung                             |
-| ---------------------- | -------------------------------- | ---------------------------------------- |
-| `PORT`                 | `20128`                          | Server-Port                              |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`         | Basis-URL für das Frontend               |
-| `JWT_SECRET`           | (wie oben generieren)            | Geheimnis zum Signieren von JWT          |
-| `INITIAL_PASSWORD`     | `CHANGEME`                       | Passwort für die erste Anmeldung         |
-| `APP_LOG_LEVEL`        | `info`                           | Ausführlichkeitsgrad der Protokollierung |
+| Variable               | Entwicklungsstandardwert | Beschreibung                             |
+| ---------------------- | ------------------------ | ---------------------------------------- |
+| `PORT`                 | `20128`                  | Server-Port                              |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | Basis-URL für das Frontend               |
+| `JWT_SECRET`           | (oben generieren)        | Secret zum Signieren von JWTs            |
+| `INITIAL_PASSWORD`     | `CHANGEME`               | Passwort für die erste Anmeldung         |
+| `APP_LOG_LEVEL`        | `info`                   | Ausführlichkeitsgrad der Protokollierung |
 
 ### Dashboard-Einstellungen
 
@@ -65,36 +65,34 @@ Diese Einstellungen werden in der Datenbank gespeichert, bleiben über Neustarts
 ### Lokal ausführen
 
 ```bash
-# Entwicklungsmodus (Hot Reload)
+# Entwicklungsmodus (automatisches Neuladen)
 npm run dev
 
 # Produktions-Build
 npm run build    # next build → .build/next/, dann assembleStandalone → dist/
 npm run start
 
-# Schnelle Kompilierung nur für Backend/API bei Änderungen von Mitwirkenden
+# Schnelles Kompilieren nur des Backends/der API für Änderungen von Mitwirkenden
 npm run build:contributor
 
-# Release-Build (vollständiger Neuaufbau + HEAD-Sentinel — für die Bereitstellung erforderlich)
+# Release-Build (vollständiger Neuaufbau + HEAD-Kennmarke — für die Bereitstellung erforderlich)
 npm run build:release   # rm -rf .build dist && Build + schreibt dist/BUILD_SHA
 
 # Übliche Port-Konfiguration
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Der Contributor-Build führt lediglich eine Kompilierungsvalidierung durch: Er erstellt weder die eigenständige
-Distribution noch optionale native Paketierungsressourcen. Verwenden Sie den regulären Produktions-Build, wenn
-Sie das auslieferbare Bundle validieren müssen.
+Der Contributor-Build führt ausschließlich eine Validierung durch Kompilierung aus: Er erstellt weder die eigenständige Distribution noch optionale native Paketierungsressourcen. Verwenden Sie den regulären Produktions-Build, wenn Sie das auslieferbare Bundle validieren müssen.
 
-### Struktur der Build-Ausgabe
+### Verzeichnisstruktur der Build-Ausgabe
 
-| Verzeichnis | Inhalt                                                                                  | Nachverfolgt |
-| ----------- | --------------------------------------------------------------------------------------- | ------------ |
-| `src/`      | Anwendungsquellcode (TypeScript / TSX)                                                  | Ja           |
-| `.build/`   | Zwischendateien — Ausgabe von `next build` (von Git ignoriert, `distDir = .build/next`) | Nein         |
-| `dist/`     | Auslieferbares Bundle — von `assembleStandalone` zusammengestellt (von Git ignoriert)   | Nein         |
+| Verzeichnis | Inhalt                                                                                     | Versioniert |
+| ----------- | ------------------------------------------------------------------------------------------ | ----------- |
+| `src/`      | Anwendungsquellcode (TypeScript / TSX)                                                     | Ja          |
+| `.build/`   | Zwischenergebnisse — Ausgabe von `next build` (von Git ignoriert, `distDir = .build/next`) | Nein        |
+| `dist/`     | Auslieferbares Bundle — von `assembleStandalone` zusammengestellt (von Git ignoriert)      | Nein        |
 
-Die Build-Pipeline wird in einem einzigen Durchlauf ausgeführt:
+Die Build-Pipeline besteht aus einem einzigen Durchlauf:
 
 ```
 npm run build
@@ -104,16 +102,16 @@ npm run build
 ```
 
 `npm run build:release` bereinigt zusätzlich zuerst beide Verzeichnisse und schreibt
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) als Integritäts-Sentinel für die Bereitstellung.
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) als Integritätskennmarke für die Bereitstellung.
 
-`npm run build:contributor` verwendet das reine Backend-Build-Profil. Während des Builds werden
-Dashboard-UI-Dateien vorübergehend durch Stubs ersetzt, API-Route-Handler beibehalten und die Originaldateien
-nach dem Build wiederhergestellt. Verwenden Sie `npm run build` für Änderungen, die sich auf die Dashboard-UI
-auswirken, oder für eine vollständige Release-Validierung; das Contributor-Profil ist kein Ersatz für den Release-Build.
+`npm run build:contributor` verwendet das reine Backend-Build-Profil. Während des Builds ersetzt es vorübergehend
+Dashboard-UI-Dateien durch Platzhalter, behält API-Routen-Handler bei und stellt nach dem Build die ursprünglichen Dateien
+wieder her. Verwenden Sie `npm run build` für Änderungen, die sich auf die Dashboard-UI auswirken, oder für eine vollständige
+Release-Validierung; das Contributor-Profil ist kein Ersatz für den Release-Build.
 
-> **Hinweis zur VPS-Bereitstellung:** Das Remote-Image-Verzeichnis `/usr/lib/node_modules/omniroute/app/`
-> bleibt unverändert. Die Bereitstellungs-Skills synchronisieren den Inhalt von `dist/` per rsync dorthin.
-> Nur der Pfad der Build-Ausgabe innerhalb des Repositorys wurde geändert (`app/` → `dist/`).
+> **Hinweis zur VPS-Bereitstellung:** Das entfernte Image-Verzeichnis `/usr/lib/node_modules/omniroute/app/`
+> bleibt unverändert. Die Deployment-Skills synchronisieren den Inhalt von `dist/` per rsync dorthin.
+> Nur der Build-Ausgabepfad innerhalb des Repositorys wurde verschoben (`app/` → `dist/`).
 
 Standard-URLs:
 
@@ -293,37 +291,37 @@ Anwendungsbeispiele findest du unter `open-sse/utils/stream.ts` und `open-sse/ut
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Dashboard-Seiten (23 Bereiche)
+│   ├── (dashboard)/        # Dashboard-Seiten (23 Abschnitte)
 │   ├── api/                # API-Routen (51 Verzeichnisse)
 │   └── login/              # Authentifizierungsseiten (.tsx)
 ├── domain/                 # Richtlinien-Engine (policyEngine, comboResolver, costRules usw.)
 ├── lib/                    # Zentrale Geschäftslogik (.ts)
 │   ├── a2a/                # Server für das Agent-to-Agent-v0.3-Protokoll
 │   ├── acp/                # Registry für das Agent Communication Protocol
-│   ├── compliance/         # Compliance-Richtlinien-Engine
+│   ├── compliance/         # Engine für Compliance-Richtlinien
 │   ├── db/                 # SQLite-Domänenmodule + 130 Migrationen
 │   ├── memory/             # Persistenter Konversationsspeicher
 │   ├── oauth/              # OAuth-Anbieter, -Dienste und -Hilfsprogramme
 │   ├── skills/             # Erweiterbares Skill-Framework
-│   ├── usage/              # Nutzungserfassung und Kostenberechnung
+│   ├── usage/              # Nutzungsverfolgung und Kostenberechnung
 │   └── localDb.ts          # Nur Reexport-Schicht — hier niemals Logik hinzufügen
 ├── middleware/              # Anfrage-Middleware (promptInjectionGuard)
-├── mitm/                   # MITM-Proxy (Zertifikate, DNS, Zielrouting)
+├── mitm/                   # MITM-Proxy (Zertifikate, DNS, Ziel-Routing)
 ├── shared/
 │   ├── components/         # React-Komponenten (.tsx)
-│   ├── constants/          # Anbieterdefinitionen (329), MCP-Berechtigungsbereiche, 20 Routingstrategien
-│   ├── utils/              # Schutzschalter, Bereinigung, Authentifizierungshilfen
-│   └── validation/         # Zod-v4-Schemata
+│   ├── constants/          # Anbieterdefinitionen (329), MCP-Berechtigungsbereiche, 20 Routing-Strategien
+│   ├── utils/              # Circuit Breaker, Bereinigung, Authentifizierungshilfen
+│   └── validation/         # Zod-v4-Schemas
 └── sse/                    # SSE-Proxy-Pipeline
 
 open-sse/                   # @omniroute/open-sse-Workspace
-├── executors/              # 150 Ausführungsmodule (Ausführungsklassen + anbieterspezifische Hilfen)
+├── executors/              # 150 Executor-Module (Executor-Klassen + anbieterspezifische Hilfsfunktionen)
 ├── handlers/               # 11 Anfrage-Handler (Chat, Antworten, Einbettungen, Bilder usw.)
-├── mcp-server/             # MCP-Server (110 einzigartige Tools, 3 Transporte, 33 Berechtigungsbereiche)
-├── services/               # 178 übergeordnete Dienste (combo, autoCombo, rateLimitManager usw.)
+├── mcp-server/             # MCP-Server (110 eindeutige Tools, 3 Transporte, 33 Berechtigungsbereiche)
+├── services/               # 178 Dienste der obersten Ebene (combo, autoCombo, rateLimitManager usw.)
 ├── translator/             # Formatübersetzer (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses-API-Transformer
-└── utils/                  # 22 Hilfsmodule (Stream, TLS, Proxy, Protokollierung)
+└── utils/                  # 22 Hilfsprogrammmodule (Streams, TLS, Proxy, Protokollierung)
 
 electron/                   # Plattformübergreifende Electron-Desktop-App
 
@@ -336,13 +334,13 @@ tests/
 └── load/                   # Lasttests
 
 docs/
-├── adr/                     # Architekturentscheidungsprotokolle
-├── architecture/            # Systemarchitektur und Ausfallsicherheit
+├── adr/                     # Aufzeichnungen zu Architekturentscheidungen
+├── architecture/            # Systemarchitektur und Resilienz
 ├── comparison/              # OmniRoute im Vergleich zu Alternativen
 ├── compression/             # Komprimierungsleitfäden und -regeln
 ├── dev/                     # Entwicklungsleitfäden
 ├── diagrams/                # Architekturdiagramme
-├── frameworks/              # MCP, A2A, OpenCode, Speicher, Skills
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
 ├── guides/                  # Benutzerhandbuch, Docker, Einrichtung, Fehlerbehebung
 ├── i18n/                    # Internationalisierte README-Übersetzungen
 ├── marketing/               # Marketingmaterialien
@@ -350,7 +348,7 @@ docs/
 ├── providers/               # Anbieterspezifische Dokumentation
 ├── reference/               # API-Referenz, Umgebungsvariablen, CLI-Tools, kostenlose Kontingente
 ├── releases/                # Versionshinweise
-├── routing/                 # Auto-Combo-Engine, Reasoning-Wiedergabe
+├── routing/                 # Auto-Combo-Engine, Wiedergabe von Schlussfolgerungen
 ├── screenshots/             # Dashboard-Screenshots
 ├── security/                # Schutzmechanismen, Compliance, Tarnung, Tokens
 └── specs/                   # Designspezifikationen
@@ -413,9 +411,13 @@ Unit-Tests in `tests/unit/` schreiben, die mindestens Folgendes abdecken:
 
 ---
 
-## Releasing
+## Veröffentlichung
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Veröffentlichungen werden über den Workflow `/generate-release` verwaltet. Wenn ein neues GitHub Release erstellt wird, wird das Paket über GitHub Actions **automatisch auf npm veröffentlicht**.
+
+Verwenden Sie für VPS-Deployments `npm run build:release` (nicht `npm run build`) — dieser Befehl führt einen sauberen
+Neuaufbau durch, stellt das Bundle in `dist/` zusammen und schreibt die Sentinel-Datei `dist/BUILD_SHA`.
+Verwenden Sie anschließend die Skills `/deploy-vps-*-cc`, die `dist/` per rsync mit dem Remote-Verzeichnis `app/` synchronisieren.
 
 ---
 

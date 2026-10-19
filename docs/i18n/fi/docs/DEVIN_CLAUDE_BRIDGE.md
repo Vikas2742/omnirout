@@ -4,93 +4,98 @@
 
 ---
 
-`devin-cli-agentic` antaa aidon Claude Code -suoritusympäristön käyttää OmniRouten paikallista Anthropic
-Messages -päätepistettä samalla, kun virallinen Devin CLI toimittaa mallivastaukset ACP stdio -rajapinnan kautta. Se
-ei muuta olemassa olevia Anthropic-, Claude OAuth-, Claude Web- tai `devin-cli`-palveluntarjoajia.
+`devin-cli-agentic` antaa aidon Claude Code -ajoympäristön käyttää OmniRouten paikallista Anthropic
+Messages -päätepistettä samalla, kun virallinen Devin CLI toimittaa mallivastaukset ACP:n stdio-rajapinnan kautta. Se
+ei muokkaa nykyisiä Anthropic-, Claude OAuth-, Claude Web- tai `devin-cli`-palveluntarjoajia.
 
-Asiakkaan hallinnoimat työkalukutsut reititetään `devin-cli-agentic`-palveluntarjoajan (alias `dva`) kautta. Se on
-Claude-muotoinen ja työkaluja tukeva palveluntarjoaja. Vanha `devin-cli` (`dv`) ACP -suorittaja on
-vain tekstimuotoinen: se suorittaa Devinin työkaluttoman summarizer-agentin eikä voi palauttaa työkalukutsuja. Sen mallin
+Asiakkaan hallitsemat työkalukutsut reititetään `devin-cli-agentic`-palveluntarjoajan (alias `dva`) kautta. Se on
+Claude-muotoinen ja työkaluja tukeva palveluntarjoaja. Vanha `devin-cli` (`dv`) ACP -suoritin on
+vain tekstipohjainen: se suorittaa Devinin työkaluttoman summarizer-agentin eikä voi palauttaa työkalukutsuja. Sen mallin
 metatiedot on merkitty vastaavasti, joten työkaluja edellyttävä yhdistelmäreititys välttää sitä.
 
-> **Nykyinen tila: Claude Code -versioksi on kiinnitetty `2.1.258`; offline- ja live-validointi on viimeksi kirjattu
-> versiolle `2.1.220`.** Version `2.1.220` kiinnitys suoritti kolme eristettyä skenaariota Devin CLI
-> `3000.2.17`:n ja mallin `swe-1-7-lightning` kautta. Viimeinen live-ajo vahvisti asiakkaan hallinnoimat `Read`-,
+> **Nykyinen tila: Claude Code on kiinnitetty versioon `2.1.258`; offline- ja live-validointi on viimeksi kirjattu
+> versiolle `2.1.220`.** Version `2.1.220` kiinnitys suoritti kolme eristettyä skenaariota Devin CLI:n
+> version `3000.2.17` ja mallin `swe-1-7-lightning` kautta. Viimeinen live-ajo varmisti asiakkaan hallitsemat `Read`-,
 > `Edit`- ja `Bash`-vuorot, onnistuneet `npm test` -tulokset, projektikomentojen ja taitojen
-> löytämisen, vain Deviniä käyttävän reitityksen sekä sen, ettei Claudeen lähtenyt lainkaan liikennettä. Kiinnitys nostettiin sen jälkeen versioon `2.1.258`
-> (CLI-sukupolvi, jota OmniRouten Claude-identiteetti jäljittelee, ja ensimmäinen versiolinja, joka sisältää
+> löytämisen, vain Deviniä käyttävän reitityksen sekä sen, ettei Claudeen lähtenyt lainkaan liikennettä. Kiinnitys nostettiin tämän jälkeen versioon `2.1.258`
+> (CLI-sukupolvi, jota OmniRouten Claude-identiteetti jäljittelee, sekä ensimmäinen versiosarja, joka sisältää
 > Fable 5.1 -tason natiivisti). Uudella kiinnityksellä asennuskerros ja `claude --version`
 > tarkistettiin kiinnitetyssä peruslevykuvassa, ja sillan yksikkötestisarja, `compose config` sekä
-> staattinen eristystodistus läpäisevät tarkistukset — mutta offline-mock-skenaariota ja kolmen skenaarion live-testisarjaa
-> ei ole vielä ajettu uudelleen. Aja ne uudelleen (katso "Kiinnitettyjen työkalujen päivittäminen") ennen kuin luotat
-> sillan toimintaan tällä kiinnityksellä.
+> staattinen eristystodistus läpäisevät tarkistukset — mutta offline-mock-skenaariota ja kolmen skenaarion live-
+> testisarjaa ei ole vielä suoritettu uudelleen. Suorita ne uudelleen (katso "Kiinnitettyjen työkalujen päivittäminen") ennen kuin luotat
+> siltaan tällä kiinnityksellä.
 
 ## Arkkitehtuuri
 
 ```text
-Claude Code 2.1.258 (eristetty muun kuin root-käyttäjän Linux-kontti)
+Claude Code 2.1.258 (eristetty Linux-säilö ilman root-oikeuksia)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (Claude-muotoinen, todennusta vaatimaton palveluntarjoaja)
+  -> devin-cli-agentic (Claude-muotoinen palveluntarjoaja ilman todennusta)
   -> devin acp --agent-type summarizer (virallinen ACP stdio, ei Devin-työkaluja)
-  -> Devin-tili erillisessä devin-auth-taltiopaketissa
+  -> Devin-tili erillisessä devin-auth-taltiolla
 ```
 
-Virallisen CLI:n ACP-oletusagentti voi suorittaa omia työkalujaan, joten tämä silta ei käytä
-sitä. Se käynnistää kiinteän `summarizer`-ACP-agentin, jonka virallisessa CLI-tilassa ei ole työkaluja, ja
-kehystää serialisoidun Anthropic-pyynnön suorituksen jäljitykseksi. Kun tarvitaan toinen Clauden hallinnoima
-toiminto, vastauksen on sisällettävä täsmälleen yksi asiakastyökalun verhokäyrä. Kaikki ACP:n
+Virallisen CLI:n oletusarvoinen ACP-agentti voi suorittaa omia työkalujaan, joten tämä silta ei käytä
+sitä. Silta käynnistää kiinteän `summarizer`-ACP-agentin, jonka virallisessa CLI-tilassa ei ole työkaluja, ja
+kehystää sarjallistetun Anthropic-pyynnön suorituksen jäljeksi. Kun tarvitaan toinen Clauden hallitsema
+toiminto, vastauksen on sisällettävä täsmälleen yksi asiakastyökalun kirjekuori. Kaikki ACP:n
 `tool_call`- tai `tool_call_update`-tapahtumat hylätään ennen kuin vastaus voidaan ilmoittaa
 onnistuneeksi.
 
-Tiedostossa `open-sse/executors/devin-agentic/serializer.ts` oleva serialisoija säilyttää `system`-,
-`text`-, `tool_use`-, `tool_result`-, `thinking`-, `redacted_thinking`- ja `tool_choice`-kentät sekä
-Claude Coden toimittamat työkalut. Kuvat ja tuntemattomat lohkot aiheuttavat eksplisiittisen virheen. Suurissa työkalutuloksissa
+Tiedostossa `open-sse/executors/devin-agentic/serializer.ts` oleva sarjallistaja säilyttää kentät `system`,
+`text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice` sekä Claude Coden
+toimittamat työkalut. Kuvat ja tuntemattomat lohkot aiheuttavat eksplisiittisen virheen. Suurissa työkalutuloksissa
 käytetään näkyvää katkaisumerkintää.
 
-Jäsennin hyväksyy yhden itsenäisen `<tool>{...}</tool>`-verhokäyrän mallin vuoroa kohden. Se tarkistaa
-nimen pyynnön työkaluluettelosta, validoi argumentit kyseisen työkalun JSON Scheman perusteella,
-hylkää kerronnan ja toimintojen yhdistelmät ja sallii yhden rajatun korjausyrityksen. Claude Code suorittaa sitten
-tuloksena saadun Anthropicin `tool_use`-toiminnon paikallisesti ja lähettää `tool_result`-tuloksen takaisin
+Jäsennin hyväksyy yhden itsenäisen `<tool>{...}</tool>`-kirjekuoren mallivuoroa kohden. Se tarkistaa
+nimen pyynnön työkaluluetteloa vasten, validoi argumentit kyseisen työkalun JSON Schema -skeemaa vasten,
+hylkää kerronnan ja toimintojen sekoitukset sekä sallii yhden rajatun korjausyrityksen. Claude Code suorittaa tämän jälkeen
+tuloksena saadun Anthropicin `tool_use`-kutsun paikallisesti ja lähettää `tool_result`-tuloksen takaisin
 OmniRouten kautta.
 
 ## Automaattinen reititys
 
 Palveluntarjoaja voidaan sisällyttää OmniRouten `auto/*`-ehdokasjoukkoihin, kun sitä ei ole estetty.
 Ehdokaskelpoisuus ei takaa valintaa: yhdistelmän reititysstrategia (esimerkiksi
-viimeisin toimivaksi todettu) voi suosia toista palveluntarjoajaa. Käytä `dva/<model>`-määritystä tai Devinin ensisijaiseksi asettavaa yhdistelmää, kun
+viimeisin toimivaksi tiedetty) voi suosia toista palveluntarjoajaa. Käytä muotoa `dva/<model>` tai Devinin ensisijaiseksi asettavaa yhdistelmää, kun
 jokaisen pyynnön on kuljettava Devinin kautta.
 
-## Eristys ja uhkamalli
+## Eristys- ja uhkamalli
 
-Isäntäjärjestelmän Claude-asennus, -tili ja -määritykset eivät kuulu tarkastelun piiriin, ja niiden käyttö on
-kielletty. Compose-palvelut:
+Isäntäkoneen Claude-asennus, tili ja määritykset eivät kuulu tarkastelun piiriin, ja niitä
+käsitellään kiellettyinä. Compose-palvelut:
 
-- suoritetaan UID/GID-tunnuksilla `10001:10001`, vain luku -tilassa olevalla juuritiedostojärjestelmällä, ilman lisäominaisuuksia ja
-  `no-new-privileges`-asetuksella;
-- käyttävät yksityistä `/home/bridge`-hakemistoa, erillistä Claude-määritystaltiota, eristettyjä OmniRoute-tietoja
-  sekä erillistä `devin-auth`-taltiota;
-- liittävät vain kertakäyttöisiä `.sandbox`-työtiloja ja -todisteita;
-- eivät liitä isäntäjärjestelmän kotihakemistoa, Keychainia, SSH:ta, pilvipalvelutunnuksia tai Docker-pistoketta;
-- muodostavat ympäristöt eksplisiittisesti ja poistavat Anthropicin API-/OAuth-/reititysmuuttujat;
-- ohjaavat Claude Coden päättelyn ainoastaan osoitteeseen `http://omniroute:20128` käyttäen vain paikallista avainta.
+- suoritetaan UID/GID-tunnuksilla `10001:10001`, vain luku -tilassa olevalla
+  juuritiedostojärjestelmällä, ilman ominaisuuksia ja `no-new-privileges`-asetuksella;
+- käyttävät yksityistä `/home/bridge`-hakemistoa, erillistä Claude-määritystaltiota,
+  eristettyjä OmniRoute-tietoja ja erillistä `devin-auth`-taltiota;
+- liittävät vain kertakäyttöisiä `.sandbox`-työtiloja ja todistusaineistoja;
+- eivät liitä isäntäkoneen kotihakemistoa, Keychainia, SSH-tunnistetietoja, pilvipalvelujen
+  tunnistetietoja tai Docker-socketia;
+- muodostavat ympäristöt eksplisiittisesti ja poistavat Anthropicin API-, OAuth- ja
+  reititysmuuttujat;
+- ohjaavat Claude Coden päättelyn ainoastaan osoitteeseen `http://omniroute:20128`
+  käyttäen vain paikallista avainta.
 
-Offline-profiili käyttää sisäistä verkkoa. Live-profiilissa OmniRoute muodostaa yhteyden
-virallisiin Devin-päätepisteisiin ainoastaan `network-guard`-palvelun kautta; yhteydet muihin kohteisiin estetään.
-Claude Codella on erillinen kaiken lähtevän liikenteen estävä suojaus, ja se voi saavuttaa vain paikallisen OmniRoute-
-palvelun `NO_PROXY`-muuttujan kautta. Suojauksen auditointitiedostot liitetään vain niitä vastaavaan suojausprosessiin.
-Komentosarjat tarkistavat tiedostojen omistajuuden, tilan, linkkien määrän ja jokaisen päätöksen ennen
-tunnuksettomien todisteiden vientiä.
+Offline-profiili käyttää sisäistä verkkoa. Live-profiilissa OmniRoute saavuttaa viralliset
+Devin-päätepisteet vain `network-guard`-palvelun kautta; yhteydet muihin kohteisiin estetään.
+Claude Codella on erillinen kaiken ulospäin suuntautuvan liikenteen estävä suojaus, ja se voi
+saavuttaa vain paikallisen OmniRoute-palvelun `NO_PROXY`-muuttujan kautta. Suojausten
+auditointitiedostot liitetään vain niitä vastaavaan suojausprosessiin. Komentosarjat
+tarkistavat tiedostojen omistajuuden, käyttöoikeustilan, linkkien määrän ja jokaisen päätöksen
+ennen tunnisteettoman todistusaineiston vientiä.
 
-Suorita eristyksen todennus itsenäisesti:
+Suorita eristyksen todennus erikseen:
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Se validoi topologian, nimetyt liitokset, muun kuin pääkäyttäjän käytön ja vain luku -asetukset, eksplisiittisen paikallisen reitityksen,
-arkaluonteisten ympäristömuuttujien puuttumisen, Docker-pistokkeen puuttumisen, pääsyn estymisen kohteisiin
-`api.anthropic.com` ja `claude.ai`, vain Deviniä käyttävän palveluntarjoajan valinnan sekä eksplisiittisen virheen,
-kun ACP-taustajärjestelmä ei ole käytettävissä.
+Se tarkistaa topologian, nimetyt liitokset, muun kuin pääkäyttäjän käytön ja vain luku
+-asetukset, eksplisiittisen paikallisen reitityksen, arkaluonteisten ympäristömuuttujien
+puuttumisen, Docker-socketin puuttumisen, estetyn pääsyn osoitteisiin
+`api.anthropic.com` ja `claude.ai`, vain Devinin palveluntarjoajan valinnan sekä
+eksplisiittisen epäonnistumisen, kun ACP-taustajärjestelmä ei ole käytettävissä.
 
 ## Ensimmäinen käyttöönotto ja normaali käyttö
 
@@ -100,30 +105,31 @@ Koosta kiinnitetty näköistiedosto:
 ./scripts/devin-bridge/build
 ```
 
-Todennus tehdään vain eristettyyn Devin-taltioon:
+Todenna vain eristetty Devin-taltio:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-Kirjautumiskomento käyttää virallista manuaalista tunnistekulkua, joka on tarkoitettu etä- ja säilöympäristöihin.
-Arvo syötetään suoraan CLI-kehotteeseen; sitä ei välitetä prosessiargumenttina, kirjoiteta Gitiin eikä
-kopioida isäntäjärjestelmästä.
+Kirjautumiskomento käyttää virallista manuaalista tunnistekulkua, joka on tarkoitettu
+etä- ja konttiympäristöihin. Arvo syötetään suoraan komentorivikäyttöliittymän kehotteeseen;
+sitä ei välitetä prosessin argumenttina, kirjoiteta Gitiin eikä kopioida isäntäkoneelta.
 
-Käynnistä eristetty Claude Code -ajoympäristö:
+Käynnistä eristetty Claude Code -suoritusympäristö:
 
 ```bash
 ./scripts/devin-bridge/launch
 ```
 
-`launch` tarkistaa eristyksen, Devin-todennuksen ja mallien löytymisen uudelleen ennen säilöön
-paketoidun Claude Coden käynnistämistä. Se ei koskaan suorita isäntäjärjestelmän Claude-ohjelmatiedostoa. Mallien aliakset voidaan
-määrittää tiedostossa `.env.devin-bridge`; jokaisen määritetyn arvon on säilytettävä
-`devin-cli-agentic/`-etuliite.
+`launch` tarkistaa eristyksen, Devin-todennuksen ja mallien löytämisen uudelleen ennen
+kontitetun Claude Coden käynnistämistä. Se ei koskaan suorita isäntäkoneen Claude-ohjelmaa.
+Mallien aliakset voidaan määrittää tiedostossa `.env.devin-bridge`; jokaisen määritetyn arvon
+on säilytettävä etuliite `devin-cli-agentic/`.
 
 ## Validointikomennot
 
-Toistettava offline-polku ei vaadi Devin-tiliä, eikä se käytä Internetiä suorituksen aikana:
+Toistettava offline-polku ei edellytä Devin-tiliä eikä sillä ole Internet-yhteyttä
+suorituksen aikana:
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -132,56 +138,58 @@ Toistettava offline-polku ei vaadi Devin-tiliä, eikä se käytä Internetiä su
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Erikseen käyttöön otettava todennettu live-polku on:
+Todennettu, erikseen käyttöön otettava live-polku on:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-Live-suoritin odottaa skenaarioiden välillä välttääkseen ACP-istuntojen avaamisen ryöppynä ja
-validoi rakenteiset Clauden suoratoistotapahtumat sen sijaan, että luottaisi tekstimuotoisiin väitteisiin. Sen kolme
-skenaariota todistavat:
+Live-testien suorittaja odottaa skenaarioiden välillä, jotta ACP-istuntoja ei avata
+ryppäänä, ja validoi rakenteelliset Claude-virtatapahtumat tekstimuotoisiin väitteisiin
+luottamisen sijaan. Sen kolme skenaariota todistavat:
 
-1. projektin tiedostojen suoran lukemisen ja vikojen analysoinnin;
-2. todellisen `Edit`-toiminnon, asiakkaan omistaman `Bash`-komennon `npm test` ja päätetuloksen;
-3. `/bridge-check`-toiminnon sekä `bridge-proof`-kohteen löytämisen, projektin tiedostojen lukemisen, toisen onnistuneen
-   asiakkaan omistaman `npm test`-komennon ja valmistumisen ilman odottavia töitä.
+1. projektin suorat lukutoiminnot ja vikojen analysoinnin;
+2. todellisen `Edit`-toiminnon, asiakkaan omistaman `Bash`-komennon `npm test` sekä
+   lopputuloksen;
+3. `/bridge-check`-toiminnon sekä `bridge-proof`-löytämisen, projektin lukutoiminnot,
+   toisen onnistuneen asiakkaan omistaman `npm test`-komennon ja valmistumisen ilman
+   keskeneräisiä töitä.
 
-Viimeinen tarkistuspiste tarkistaa myös Devin-verkon auditoinnin ja edellyttää, että Clauden lähtevän liikenteen auditointi
-pysyy tyhjänä.
+Viimeinen tarkistus tarkastaa myös Devinin verkkoauditoinnin ja edellyttää, että Clauden
+ulospäin suuntautuvan liikenteen auditointi pysyy tyhjänä.
 
 ## Kiinnitettyjen työkalujen päivittäminen
 
-Näköistiedostoon on kiinnitetty Node, Claude Code ja Devin CLI tiedostossa
+Näköistiedostossa Node, Claude Code ja Devin CLI on kiinnitetty tiettyihin versioihin tiedostossa
 `docker/devin-bridge/Dockerfile`. Päivittäminen:
 
 1. muuta eksplisiittiset versiot;
 2. korvaa molemmat arkkitehtuurikohtaiset Devin-arkistojen tarkistussummat virallisen
    artefaktin arvoilla;
 3. rakenna uudelleen ja suorita kaikki offline-validointikomennot;
-4. vahvista versiot näköistiedoston sisällä;
-5. suorita todennettu kolmen skenaarion live-testikokonaisuus uudelleen.
+4. vahvista näköistiedoston sisältämät versiot;
+5. suorita todennettu kolmen skenaarion live-testi uudelleen.
 
-Älä asenna kumpaakaan CLI:tä globaalisti isäntäkoneeseen äläkä korvaa tarkistussumman vahvistusta
-vahvistamattomalla latauksella.
+Älä asenna kumpaakaan CLI:tä globaalisti isäntäkoneeseen äläkä korvaa tarkistussumman varmennusta
+varmentamattomalla latauksella.
 
 ## Diagnosointi ja siivous
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
   näyttää paikallisen reitityksen ja puhdistetut suorittimen virheet.
 - `.sandbox/evidence/mock-acp.jsonl` tallentaa deterministiset ACP-mock-toiminnot.
-- `.sandbox/evidence/claude-stream.jsonl` tallentaa aidon Claude Code -offline-ajon.
-- `.sandbox/evidence/live-*.jsonl` tallentaa kolme validoitua live-tietovirtaa.
+- `.sandbox/evidence/claude-stream.jsonl` tallentaa todellisen Claude Code -offline-ajon.
+- `.sandbox/evidence/live-*.jsonl` tallentaa kolme validoitua live-virtaa.
 - `.sandbox/evidence/egress.jsonl` ja `.sandbox/evidence/claude-egress.jsonl` ovat validoituja,
-  tunnisteettomia kopioita suojaustoimintojen auditoinneista.
+  tunnisteettomia kopioita suojausten auditoinneista.
 
-Pysäytä omistetut säilöt ja verkot säilyttäen kirjautumis- ja määritysvolyymit:
+Pysäytä omistetut säilöt ja verkot säilyttäen kirjautumis- ja määritystaltiot:
 
 ```bash
 ./scripts/devin-bridge/clean
 ```
 
-Poista koko bridgen omistama ympäristö nimettyine volyymeineen:
+Poista koko sillan omistama ympäristö, nimetyt taltiot mukaan lukien:
 
 ```bash
 ./scripts/devin-bridge/clean --all
@@ -189,15 +197,15 @@ Poista koko bridgen omistama ympäristö nimettyine volyymeineen:
 
 ## Rajoitukset
 
-- Bridge käyttää kiinteää, työkalutonta `summarizer`-roolia, koska Devin CLI `3000.2.17`
-  ei tarjoa neutraalia, työkalutonta ACP-agenttia. Sovitin kompensoi yhteenvedon muotoisia
+- Silta käyttää kiinteää, työkaluja sisältämätöntä `summarizer`-roolia, koska Devin CLI `3000.2.17`
+  ei tarjoa neutraalia, työkaluja sisältämätöntä ACP-agenttia. Sovitin kompensoi yhteenvetomaisia
   välivastauksia, mutta yksi rajattu korjausyritys voi silti epäonnistua eksplisiittisesti.
-- Live-ACP-kutsut voivat palauttaa tilapäisiä `502`/`504`-vastauksia. Testikehys ajoittaa skenaariot
-  erilleen; jatkuva virhe toimii edelleen fail-closed-periaatteella eikä koskaan valitse toista palveluntarjoajaa.
+- Aktiiviset ACP-kutsut voivat palauttaa tilapäisiä `502`/`504`-vastauksia. Testijärjestelmä
+  porrastaa skenaariot; jatkuva virhe pysyy fail-closed-tilassa eikä koskaan valitse toista palveluntarjoajaa.
 - ACP-konteksti muodostetaan uudelleen jokaisesta Anthropic-pyynnöstä; prosessi- tai
   istuntoaffiniteettia ei ole.
-- Yhtä mallivastausta kohden tuetaan yhtä työkalukutsua; rinnakkaiset kutsut hylätään.
-- Kuvia ei nimenomaisesti tueta. Konenäköä, ajattelutulostetta, työmäärän säätimiä ja 1M:n
-  konteksti-ikkunaa ei mainosteta.
-- SSE käyttää kelvollisia Anthropicin elinkaaritapahtumia, mutta ne lähetetään vasta, kun rajattu ACP-vuoro on
-  koottu; ACP-osia ei välitetä inkrementaalisesti.
+- Mallivastausta kohden tuetaan yhtä työkalukutsua; rinnakkaiset kutsut hylätään.
+- Kuvia ei eksplisiittisesti tueta. Konenäköä, ajattelutulostetta, työmäärän hallintaa ja 1M:n
+  konteksti-ikkunaa ei ilmoiteta tuetuiksi.
+- SSE käyttää kelvollisia Anthropicin elinkaaritapahtumia, mutta ne lähetetään vasta rajatun
+  ACP-vuoron keräämisen jälkeen; ACP-osia ei välitetä inkrementaalisesti.

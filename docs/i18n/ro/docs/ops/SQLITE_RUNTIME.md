@@ -4,48 +4,48 @@
 
 ---
 
-OmniRoute își rezolvă driverul SQLite la pornire printr-un lanț de fallback în 5 pași:
+OmniRoute își determină driverul SQLite la pornire printr-un lanț de rezervă în 5 pași:
 
-1. **`better-sqlite3` inclus** (prin `dependencies` în `package.json`)
+1. **`better-sqlite3` inclus** (prin `dependencies` din `package.json`)
    — cea mai rapidă opțiune, binar nativ, instalat de `npm install` atunci când sunt disponibile instrumentele de compilare.
 
-2. **`better-sqlite3` instalat la runtime** (în `~/.omniroute/runtime/`)
-   — instalat în mod leneș la prima rulare **SAU** de `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
+2. **`better-sqlite3` instalat la rulare** (în `~/.omniroute/runtime/`)
+   — instalat la cerere la prima rulare **SAU** de `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
    Validează octeții magici ai fișierului nativ `.node` (ELF / Mach-O / PE) înainte de încărcare,
-   pentru a preveni utilizarea unor binare corupte sau destinate altei platforme.
+   pentru a evita binarele corupte sau destinate altei platforme.
 
-3. **`node:sqlite`** (biblioteca standard Node ≥22.5) — nu necesită compilare nativă; este utilizat atunci când
+3. **`node:sqlite`** (biblioteca standard Node ≥22.5) — nu necesită compilare nativă; este utilizat când
    ambele căi pentru better-sqlite3 eșuează. Set de funcționalități limitat.
 
-4. **`sql.js`** (WASM) — ultimul fallback. Funcționează peste tot, dar este mai lent
-   și scrie datele la intervale regulate, nu sincron.
+4. **`sql.js`** (WASM) — ultima opțiune de rezervă. Funcționează peste tot, dar este mai lent
+   și scrie datele la anumite intervale, nu sincron.
 
 ## De ce această complexitate?
 
 - **EBUSY pe Windows**: `npm install -g omniroute@latest` poate eșua dacă fișierul
-  `better_sqlite3.node` al versiunii anterioare este blocat de un proces în execuție. Instalarea la runtime
-  în `~/.omniroute/runtime/` evită cache-ul npm global.
-- **Lipsa instrumentelor de compilare**: Unele medii (Windows corporativ fără VS Build
-  Tools, imagini Docker minimale) nu pot compila `better-sqlite3`. Programul de instalare
-  la runtime obține un binar precompilat din registrul npm; driverele de fallback
-  asigură pornirea OmniRoute chiar dacă această operațiune eșuează.
+  `better_sqlite3.node` al versiunii anterioare este blocat de un proces în execuție. Instalarea
+  la rulare în `~/.omniroute/runtime/` ocolește memoria cache npm globală.
+- **Lipsa instrumentelor de compilare**: Unele medii (Windows în mediul corporativ fără VS Build
+  Tools, imagini Docker minimale) nu pot compila `better-sqlite3`. Programul de instalare la rulare
+  obține un binar precompilat din registrul npm; driverele de rezervă asigură pornirea OmniRoute
+  chiar dacă această operațiune eșuează.
 - **Sisteme izolate de rețea**: Dacă registrul npm nu este accesibil, `node:sqlite`
   sau `sql.js` garantează funcționalitatea de bază.
 
 ## Validarea octeților magici
 
-Înainte de a încărca un fișier `.node` instalat la runtime, OmniRoute citește primii 8
-octeți și îi compară cu semnăturile cunoscute ale platformelor:
+Înainte de a încărca un fișier `.node` instalat la rulare, OmniRoute citește primii 8
+octeți și îi compară cu valorile magice cunoscute ale platformelor:
 
 | Platformă             | Octeți (hex)  | Etichetă    |
 | --------------------- | ------------- | ----------- |
 | Linux                 | `7F 45 4C 46` | `elf`       |
-| macOS 64-bit BE       | `FE ED FA CF` | `macho`     |
-| macOS 64-bit LE       | `CF FA ED FE` | `macho-le`  |
+| macOS 64 de biți BE   | `FE ED FA CF` | `macho`     |
+| macOS 64 de biți LE   | `CF FA ED FE` | `macho-le`  |
 | macOS fat (universal) | `CA FE BA BE` | `macho-fat` |
 | Windows               | `4D 5A` (MZ)  | `pe`        |
 
-O semnătură care nu corespunde → fișierul este ignorat, iar fallback-ul continuă cu pasul următor.
+O valoare magică necorespunzătoare → fișierul este ignorat, iar lanțul de rezervă continuă cu pasul următor.
 
 ## Verificarea driverului activ
 
@@ -60,10 +60,10 @@ const info = getDriverInfo();
 ## Control manual
 
 ```bash
-# Omite încălzirea post-instalare (pentru instalări CI rapide)
+# Omite inițializarea post-instalare (pentru instalări CI rapide)
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
-# Reinstalează forțat better-sqlite3 la runtime
+# Reinstalează forțat better-sqlite3 pentru rulare
 rm -rf ~/.omniroute/runtime
 omniroute  # va fi reinstalat la următoarea pornire
 
@@ -74,42 +74,42 @@ omniroute config db-info  # (dacă există comanda CLI)
 ## Diagnosticarea blocajelor sincrone
 
 Cu `better-sqlite3`, setați `OMNIROUTE_SQLITE_SLOW_MS=200` înainte de pornire pentru a activa
-măsurarea timpului adaptorului sincron. Implicit, aceasta este dezactivată. O operațiune finalizată care durează
-cel puțin atâtea milisecunde emite un avertisment `[SQLITE-SLOW]`, cel mult o dată la
+măsurarea duratei operațiunilor adaptorului sincron. Aceasta este dezactivată în mod implicit. O operațiune finalizată care durează
+cel puțin acel număr de milisecunde generează un avertisment `[SQLITE-SLOW]`, cel mult o dată la
 zece secunde pentru fiecare adaptor. Avertismentul conține doar driverul, clasa operațiunii
 (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, tranzacție sau mentenanță) și
-timpul scurs în milisecunde: fără SQL, parametri, rânduri, căi sau textul excepției.
+durata în milisecunde: fără SQL, legături, rânduri, căi sau textul excepțiilor.
 
-Acesta este un instrument de diagnosticare, nu un timeout sau o optimizare a interogărilor. Nu poate raporta
-o operațiune care nu se termină niciodată, nu poate distinge procesarea CPU de așteptările după disc, nu poate identifica
-instrucțiunea SQL exactă și nu poate observa operațiunile efectuate prin handle-ul driverului brut.
-Durata backupului asincron este exclusă în mod intenționat; celelalte drivere SQLite nu sunt
-instrumentate prin această opțiune. Dezactivarea variabilei restaurează adaptorul original,
-fără wrapper-ele de măsurare a timpului. Schema bazei de date și configurația stocată nu se modifică.
+Acesta este un instrument de diagnosticare, nu un mecanism de expirare sau de optimizare a interogărilor. Nu poate raporta
+o operațiune care nu se finalizează niciodată, nu poate distinge activitatea procesorului de așteptările discului, nu poate identifica
+instrucțiunea SQL exactă și nu poate observa operațiunile efectuate prin descriptorul brut al driverului.
+Durata copierii de rezervă asincrone este exclusă în mod deliberat; celelalte drivere SQLite nu sunt
+instrumentate prin această opțiune. Dezactivarea variabilei restaurează adaptorul original
+fără componentele intermediare de măsurare a duratei. Schema bazei de date și configurația stocată nu sunt modificate.
 
-Avertismentul de latență `/healthz` raportează valoarea maximă a latenței buclei de evenimente de la eșantionul anterior,
-nu media pe întreaga durată de funcționare. Corelați marcajele sale temporale cu avertismentele privind operațiunile lente
-și cu metricile gazdei/stocării înainte de a atribui un blocaj unei defecțiuni SQLite sau a discului.
+Avertismentul de latență `/healthz` raportează valoarea maximă a întârzierii buclei de evenimente de la eșantionul precedent,
+nu media pe întreaga durată de funcționare. Corelați marcajele temporale ale acestuia cu avertismentele privind operațiunile lente
+și cu metricile gazdei și ale stocării înainte de a atribui un blocaj SQLite sau unei defecțiuni a discului.
 
 ## Referință
 
 Implementare:
 
-- `bin/cli/runtime/magicBytes.mjs` — funcții ajutătoare pentru validarea octeților magici ai binarelor
-- `bin/cli/runtime/sqliteRuntime.mjs` — rezolvator runtime în 5 pași + program de instalare leneșă
+- `bin/cli/runtime/magicBytes.mjs` — funcții auxiliare pentru validarea octeților magici ai binarelor
+- `bin/cli/runtime/sqliteRuntime.mjs` — mecanism de determinare la rulare în 5 pași + program de instalare la cerere
 - `bin/cli/runtime/index.mjs` — orchestrator de pornire (`warmUpRuntimes()`)
-- `scripts/postinstall.mjs` — hook npm post-instalare (încălzire necritică)
+- `scripts/postinstall.mjs` — hook npm post-instalare (inițializare necritică)
 - `src/lib/db/core.ts` — exporturile `ensureDbInitialized()` / `getDriverInfo()`
 
 ## Topologie cu un singur proces de scriere (HA nu este acceptată)
 
-Lanțul de fallback al driverului de mai sus rulează în continuare într-un **singur proces**. Configurația SQLite
-implicită a OmniRoute are un **singur proces de scriere**:
+Lanțul de rezervă pentru drivere descris mai sus rulează tot într-un **singur proces**. Configurația SQLite
+implicită din OmniRoute are **un singur proces de scriere**:
 
 - Nu conectați două replici OmniRoute la același fișier `storage.sqlite`.
-- O repornire a containerului, o implementare Recreate, o oprire cauzată de OOM sau o repornire HEALTHCHECK întrerupe
-  fiecare sesiune SSE aflată în desfășurare. Calea standard nu include golirea sesiunilor.
-- Verificarea liveness a orchestratorului care tratează un răspuns lent de la `/healthz` drept indisponibil va opri singura
-  replică. Preferați liveness prin TCP + readiness HTTP prin `/healthz`. Consultați
+- O repornire a containerului, o implementare Recreate, o oprire OOM sau o repornire HEALTHCHECK întrerupe
+  fiecare sesiune SSE în curs. Calea standard nu include golirea controlată a sesiunilor.
+- Verificarea liveness a orchestratorului care consideră un răspuns lent de la `/healthz` drept indisponibil va opri singura
+  replică. Preferați verificarea liveness prin TCP + verificarea readiness prin HTTP `/healthz`. Consultați
   [Ghidul Docker — disponibilitate](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
   și [Recomandările pentru probele Kubernetes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

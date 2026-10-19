@@ -4,127 +4,126 @@
 
 ---
 
-`devin-cli-agentic` na-eme ka ezigbo Claude Code runtime jiri endpoint Anthropic Messages
-mpaghara nke OmniRoute, ebe Devin CLI gọọmentị na-enye nzaghachi model site na ACP stdio. Ọ
-dịghị agbanwe ndị provider Anthropic, Claude OAuth, Claude Web, ma ọ bụ `devin-cli` dị adị.
+`devin-cli-agentic` na-eme ka runtime Claude Code n'ezie jiri endpoint Messages nke Anthropic
+dị n'ime mpaghara nke OmniRoute, ebe Devin CLI gọọmenti na-enye nzaghachi model site na ACP stdio. Ọ
+dịghị agbanwe ndị na-eweta Anthropic, Claude OAuth, Claude Web, ma ọ bụ `devin-cli` dị ugbu a.
 
-Maka oku tool nke client na-achịkwa, zipụ ha site na `devin-cli-agentic` (aha ọzọ `dva`), bụ
-provider nwere ikike tool nke usoro Claude. ACP executor ochie `devin-cli` (`dv`) bụ naanị
-ederede: ọ na-agba summarizer Devin na-enweghị tool, ọ nweghịkwa ike iweghachi oku tool. E
-debanyere metadata model ya dịka nke ahụ ka combo routing chọrọ tool wee zere ya.
+Maka oku ngwaọrụ nke client na-achịkwa, zipụ ha site na `devin-cli-agentic` (aha ọzọ `dva`), onye
+na-eweta nwere ike iji ngwaọrụ n'ụdị Claude. ACP executor ochie `devin-cli` (`dv`) bụ
+naanị ederede: ọ na-agba summarizer Devin na-enweghị ngwaọrụ, ọ pụghịkwa iweghachi oku ngwaọrụ. Akara
+metadata model ya n'ụzọ kwekọrọ na nke a ka routing combo chọrọ-ngwaọrụ ghara ịhọrọ ya.
 
-> **Ọnọdụ ugbu a: Claude Code akpọchiri na `2.1.258`; e dekọrọ nkwado offline na live ikpeazụ
-> na `2.1.220`.** Mkpọchi `2.1.220` mezuru ọnọdụ atọ dịpụrụ iche site na Devin CLI
-> `3000.2.17` na model `swe-1-7-lightning`; nnwale live ikpeazụ ahụ gosipụtara ntụgharị `Read`,
-> `Edit`, na `Bash` nke client na-achịkwa, nsonaazụ `npm test` gara nke ọma, nchọpụta command
-> na skill nke project, routing naanị site na Devin, nakwa enweghị ọpụpụ data Claude ọ bụla.
-> E mechara bulie mkpọchi ahụ gaa na `2.1.258`
-> (ọgbọ CLI nke njirimara Claude nke OmniRoute na-eme ka à ga-asị na ọ bụ ya, nakwa ahịrị mbụ
-> nke nwere tier Fable 5.1 n'ime ya ozugbo). N'elu mkpọchi ọhụrụ ahụ, a kwadoro layer
-> nrụnye na `claude --version` n'elu base image akpọchiri, ma bridge unit suite, `compose config`
-> na ihe akaebe static isolation gafere — mana amalitebeghị ọzọ ọnọdụ mock offline na
-> live suite nwere ọnọdụ atọ. Gbaa ha ọzọ (lee "Imelite tools akpọchiri") tupu ịdabere na
-> bridge nwere mkpọchi a.
+> **Ọnọdụ ugbu a: Claude Code `2.1.258` ka e kpọchiri; validation offline na live ikpeazụ edekọtara
+> bụ na `2.1.220`.** Mkpọchi `2.1.220` mezuru ọnọdụ atọ e kewapụrụ iche site na Devin CLI
+> `3000.2.17` na model `swe-1-7-lightning`; ọsọ live ikpeazụ ahụ gosipụtara ntụgharị `Read`,
+> `Edit`, na `Bash` nke client na-achịkwa, nsonaazụ `npm test` gara nke ọma, nchọpụta command na skill
+> nke project, routing naanị site na Devin, na egress Claude efu. E mechaziri bulie mkpọchi ahụ gaa `2.1.258`
+> (ọgbọ CLI nke njirimara Claude nke OmniRoute na-eme onwe ya ka ọ bụrụ ya, nakwa ahịrị mbụ na-ebunye
+> ọkwa Fable 5.1 n'ụzọ native). Na mkpọchi ọhụrụ ahụ, e nyochara layer install na `claude --version`
+> n'elu base image ahụ a kpọchiri, ma bridge unit suite, `compose config`, na
+> ihe akaebe static isolation na-agafe — mana emebeghịgharị ọnọdụ mock offline na suite live nwere ọnọdụ atọ
+> ahụ. Mee ha ọzọ (lee "Imelite ngwaọrụ ndị a kpọchiri") tupu ịdabere na
+> bridge ahụ na mkpọchi a.
 
 ## Nhazi ụlọ
 
 ```text
-Claude Code 2.1.258 (container Linux dịpụrụ iche nke na-abụghị root)
+Claude Code 2.1.258 (container Linux non-root e kewapụrụ iche)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (usoro Claude, provider na-enweghị auth)
-  -> devin acp --agent-type summarizer (ACP stdio gọọmentị, enweghị tools Devin)
+  -> devin-cli-agentic (ụdị Claude, onye na-eweta anaghị achọ auth)
+  -> devin acp --agent-type summarizer (ACP stdio gọọmenti, enweghị ngwaọrụ Devin)
   -> Akaụntụ Devin n'ime volume devin-auth raara onwe ya nye
 ```
 
-ACP agent ndabara nke CLI gọọmentị nwere ike ịrụ tools nke ya, ya mere bridge a anaghị eji
-ya. Ọ na-amalite ACP agent `summarizer` edoziri, nke mode CLI gọọmentị ya enweghị tools, ma
-na-ahazi arịrịọ Anthropic e mere serialize dịka trace mmezu. Mgbe achọrọ action ọzọ nke
-Claude na-achịkwa, nzaghachi ahụ ga-enwerịrị kpọmkwem otu envelope tool nke client. A na-ajụ
-ACP `tool_call` ma ọ bụ `tool_call_update` ọ bụla tupu enwee ike ịkọ na nzaghachi ahụ gara nke
-ọma.
+ACP agent ndabara nke CLI gọọmenti nwere ike iji ngwaọrụ nke ya, ya mere bridge a anaghị eji
+ya. Ọ na-amalite ACP agent `summarizer` ahụ edoziri, nke mode CLI gọọmenti ya enweghị ngwaọrụ, ma
+na-etinye arịrịọ Anthropic e mere serialized n'ụdị execution trace. Mgbe achọrọ action ọzọ
+Claude na-achịkwa, nzaghachi ahụ ga-enwerịrị kpọmkwem otu envelope ngwaọrụ client. A na-ajụ ACP
+`tool_call` ma ọ bụ `tool_call_update` ọ bụla tupu e nwee ike ịkọ na nzaghachi ahụ
+gara nke ọma.
 
 Serializer dị na `open-sse/executors/devin-agentic/serializer.ts` na-echekwa `system`,
-`text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice`, na tools
-Claude Code nyere. Images na blocks a na-amaghị na-adaghị nke ọma ma na-egosipụta njehie
-kpọmkwem. Nsonaazụ tool buru ibu na-eji akara truncation a na-ahụ anya.
+`text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice`, na
+ngwaọrụ Claude Code nyere. Images na block ndị a na-amaghị na-ada nke ọma na ozi doro anya. Nsonaazụ ngwaọrụ buru ibu
+na-eji akara truncation a na-ahụ anya.
 
-Parser na-anabata otu envelope `<tool>{...}</tool>` nke guzo naanị ya n'otu ntụgharị model. Ọ
-na-enyocha aha ahụ megide ndepụta tool nke arịrịọ ahụ, na-akwado arguments megide JSON
-Schema nke tool ahụ, na-ajụ ngwakọta akụkọ/actions, ma na-enye ohere otu mmezi nwere oke.
-Claude Code ga-emezi Anthropic `tool_use` si na ya pụta n'ime mpaghara ahụ, wee zipụ
-`tool_result` azụ site na OmniRoute.
+Parser na-anabata otu envelope `<tool>{...}</tool>` kwụụrụ onwe ya n'otu ntụgharị model. Ọ na-enyocha
+aha ahụ megide ndepụta ngwaọrụ dị na request, na-enyocha arguments megide JSON
+Schema nke ngwaọrụ ahụ, na-ajụ ngwakọta narrative/actions, ma na-enye ohere otu repair nwere oke. Claude Code na-esote
+na-eme Anthropic `tool_use` sitere na ya n'ime mpaghara ma zipụ `tool_result` ahụ laghachi site na
+OmniRoute.
 
-## Routing akpaghị aka
+## Routing akpaka
 
-Provider ahụ tozuru isonye na candidate pools `auto/*` nke OmniRoute mgbe a naghị egbochi ya.
-Itozu dịka candidate anaghị ekwe nkwa na a ga-ahọrọ ya: usoro routing nke combo ahụ (dịka
-last-known-good) nwere ike ịhọrọ provider ọzọ. Jiri `dva/<model>` ma ọ bụ combo na-ebute
-Devin ụzọ mgbe ịchọrọ ka arịrịọ ọ bụla gafee Devin.
+Onye na-eweta a tozuru isonye na candidate pools `auto/*` nke OmniRoute mgbe a naghị egbochi ya.
+Itozu dịka candidate anaghị ekwe nkwa na a ga-ahọrọ ya: usoro routing nke combo ahụ (dịka ọmụmaatụ,
+last-known-good) nwere ike ịhọrọ onye na-eweta ọzọ. Jiri `dva/<model>` ma ọ bụ combo na-ebute Devin ụzọ mgbe
+ịchọrọ ka request ọ bụla gafee Devin.
 
-## Mkpِuchi na usoro iyi egwu
+## Nkewapụ na usoro iyi egwu
 
-Nrụnye Claude, akaụntụ, na nhazi dị na kọmputa nnabata anọghị n'ime oke a ma a na-ewere ha dị ka ihe
-amachibidoro. Ọrụ Compose ndị a:
+Nrụnye Claude, akaụntụ, na nhazi dị na host anọghị n'ókè ihe a na-atụle, a na-ewerekwa ha dị ka
+ihe amachibidoro. Ọrụ Compose ndị a:
 
-- na-agba ọsọ dịka UID/GID `10001:10001`, jiri sistemụ faịlụ mgbọrọgwụ nke bụ naanị maka ọgụgụ, ikike ndị e wepụrụ, yana
+- na-agba dịka UID/GID `10001:10001`, nwere root filesystem nke a na-agụ naanị, ikike ndị e wepụrụ, na
   `no-new-privileges`;
-- na-eji `/home/bridge` nkeonwe, volume nhazi Claude raara onwe ya nye, data OmniRoute e kewapụrụ iche,
+- na-eji `/home/bridge` nkeonwe, volume nhazi Claude raara onwe ya nye, data OmniRoute e kewapụrụ,
   na volume `devin-auth` dị iche;
-- na-ejikọta naanị ebe ọrụ/ihe akaebe `.sandbox` a pụrụ ịtụfu;
-- anaghị ejikọta ebe obibi kọmputa nnabata, Keychain, SSH, nzere igwe ojii, ma ọ bụ socket Docker;
-- na-emepụta gburugburu ndị akọwapụtara nke ọma ma wepụ mgbanwe API/OAuth/ntụgharị-ụzọ nke Anthropic;
-- na-eziga naanị arịrịọ inference Claude Code na `http://omniroute:20128` site na iji igodo nke mpaghara naanị.
+- na-mount naanị ebeọrụ/ihe akaebe `.sandbox` ndị a pụrụ ịtụfu;
+- anaghị e-mount home nke host, Keychain, SSH, nzere cloud, ma ọ bụ socket Docker;
+- na-emepụta environment doro anya ma na-ewepụ mgbanwe Anthropic API/OAuth/routing;
+- na-eziga naanị inference Claude Code gaa na `http://omniroute:20128` site na key a na-eji naanị n'ime mpaghara.
 
-Profaịlụ na-anọghị n'ịntanetị na-eji netwọkụ ime. N'ime profaịlụ dị ndụ, OmniRoute na-erute naanị
-ebe njedebe Devin gọọmentị site na `network-guard`; a na-ajụ ebe njedebe ndị ọzọ na-enweghị njikọ.
-Claude Code nwere nchekwa egress dị iche nke na-ajụ ihe niile, ọ pụkwara iru naanị ọrụ OmniRoute
-mpaghara site na `NO_PROXY`. Naanị usoro nchekwa nke ọ bụla na-ejikọta faịlụ nyocha nke ya. Skript ndị ahụ
-na-enyocha onye nwe faịlụ, mode, ọnụọgụ njikọ, na mkpebi ọ bụla tupu ha ebupụ
+Profaịlụ offline na-eji netwọkụ dị n'ime. Na profaịlụ live, OmniRoute na-erute naanị
+endpoint Devin ndị gọọmentị kwadoro site na `network-guard`; a na-ajụ ebe ndị ọzọ na-enweghị njikọ.
+Claude Code nwere guard egress deny-all dị iche, ọ pụkwara iru naanị ọrụ OmniRoute nke mpaghara
+site na `NO_PROXY`. Ọ bụ naanị process guard nke ọ bụla ka a na-mount faịlụ audit ya nye. Script ndị ahụ
+na-enyocha onye nwe faịlụ, mode, ọnụọgụ link, na mkpebi ọ bụla tupu ha ebupụ
 ihe akaebe na-enweghị token.
 
-Gbaa akaebe mkpuchi ahụ n'onwe ya:
+Gbaa ihe akaebe nkewapụ ahụ n'onwe ya:
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Ọ na-enyocha topology, njikọ ndị nwere aha, ntọala onye na-abụghị root/nke bụ naanị maka ọgụgụ, ntụgharị-ụzọ mpaghara
-akọwapụtara nke ọma, enweghị mgbanwe gburugburu nwere mmetụta, enweghị socket Docker, igbochi nnweta
-`api.anthropic.com` na `claude.ai`, ịhọrọ naanị onye na-eweta Devin, yana ọdịda doro anya mgbe
+Ọ na-enyocha topology, mount ndị nwere aha, ntọala non-root/read-only, routing mpaghara akọwapụtara nke ọma,
+enweghị mgbanwe environment nwere ozi dị nro, enweghị socket Docker, igbochi ohere ịbanye
+`api.anthropic.com` na `claude.ai`, ịhọrọ naanị provider Devin, na ọdịda akọwapụtara nke ọma mgbe
 backend ACP adịghị.
 
-## Nhazi mbụ na ojiji nkịtị
+## Nhazi oge mbụ na ojiji nkịtị
 
-Wuo image ahụ a kpọgidere na ụdị a kapịrị ọnụ:
+Rụọ image ahụ e kpọchiri:
 
 ```bash
 ./scripts/devin-bridge/build
 ```
 
-Nyochaa njirimara naanị volume Devin e kewapụrụ iche:
+Mee authentication naanị na volume Devin e kewapụrụ:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-Iwu nbanye ahụ na-eji usoro manual-token gọọmentị emere maka gburugburu
-ime obodo dị anya/container. A na-etinye uru ahụ ozugbo na prompt CLI; anaghị ebufe ya dịka
-arụmụka process, dee ya na Git, ma ọ bụ depụta ya site na kọmputa nnabata.
+Iwu login ahụ na-eji usoro manual-token gọọmentị kwadoro nke e mere maka environment
+remote/container. A na-etinye uru ahụ ozugbo na prompt CLI; anaghị ebufe ya dịka
+argument process, ede ya na Git, ma ọ bụ depụta ya site na host.
 
-Bido gburugburu oge-ngagharị Claude Code e kewapụrụ iche:
+Bido runtime Claude Code e kewapụrụ:
 
 ```bash
 ./scripts/devin-bridge/launch
 ```
 
-`launch` na-enyocha ọzọ mkpuchi, nyocha njirimara Devin, na nchọpụta model tupu ọ malite
-Claude Code dị n'ime container. Ọ naghị agba executable Claude nke kọmputa nnabata ma ọlị. Enwere ike ịtọ
-aha nnọchi model na `.env.devin-bridge`; uru ọ bụla ahaziri ga-edobe
+`launch` na-enyochagharị nkewapụ, authentication Devin, na nchọpụta model tupu ọ malite
+Claude Code dị n'ime container. Ọ naghị agba executable Claude nke host. Enwere ike
+ịtọ alias model na `.env.devin-bridge`; uru ọ bụla ahaziri ga-edowe
 prefix `devin-cli-agentic/`.
 
 ## Iwu nkwado
 
-Ụzọ na-anọghị n'ịntanetị nke a pụrụ imegharị anaghị achọ akaụntụ Devin ma ọ nweghị Ịntanetị n'oge ngagharị:
+Ụzọ offline a pụrụ imeghachi anaghị achọ akaụntụ Devin, ọ nweghịkwa Internet n'oge runtime:
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -133,53 +132,53 @@ prefix `devin-cli-agentic/`.
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Ụzọ dị ndụ nke chọrọ nyocha njirimara ma bụrụ nke a na-ahọrọ ịbanye na ya bụ:
+Ụzọ live a ga-ahọrọ iji ya ma nwee authentication bụ:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-Onye na-agba ule dị ndụ na-eche n'etiti ọnọdụ ule iji zere imepe sessions ACP n'otu oge ma
-na-enyocha ihe omume stream Claude ahaziri ahazi kama ịtụkwasị obi na nkwupụta ederede. Ọnọdụ ule atọ ya
+Runner live ahụ na-echere n'etiti scenario iji zere imepe session ACP n'ìgwè n'otu oge, ma
+na-enyocha event stream Claude ahaziri nke ọma kama ịtụkwasị nkwupụta ederede obi. Scenario atọ ya
 na-egosi:
 
-1. ọgụgụ project ozugbo na nyocha ntụpọ;
-2. ezigbo `Edit`, `Bash` `npm test` nke client nwe, na nsonaazụ terminal;
-3. `/bridge-check` tinyere nchọpụta `bridge-proof`, ọgụgụ project, `npm test` ọzọ gara nke ọma
-   nke client nwe, na mmecha na-enweghị ọrụ na-echere.
+1. ịgụ project ozugbo na nyocha defect;
+2. `Edit` n'ezie, `Bash` `npm test` nke client na-achị, na nsonaazụ terminal;
+3. `/bridge-check` tinyere nchọpụta `bridge-proof`, ịgụ project, `npm test` ọzọ gara nke ọma
+   nke client na-achị, na mmecha na-enweghị ọrụ na-echere.
 
-Ọnụ ụzọ ikpeazụ ahụ na-enyochakwa nyocha netwọkụ Devin ma chọọ ka nyocha egress Claude
-nọgide tọgbọ chakoo.
+Gate ikpeazụ ahụ na-enyochakwa audit netwọkụ Devin ma chọọ ka audit egress Claude
+nọrọ n'efu.
 
-## Imelite ngwaọrụ ndị akpọchiri na ụdị kpọmkwem
+## Imelite ngwaọrụ ndị akpọchiri na ụdị akọwapụtara
 
-Image ahụ kpọchiri Node, Claude Code, na Devin CLI na
-`docker/devin-bridge/Dockerfile`. Iji melite:
+Oyiyi ahụ kpọchiri Node, Claude Code, na Devin CLI na
+`docker/devin-bridge/Dockerfile`. Iji melite ha:
 
-1. gbanwee ụdị ndị e depụtara kpọmkwem;
-2. dochie checksum abụọ nke Devin archive ndị metụtara architecture dị iche iche na uru nke artifact gọọmentị;
-3. wughachi ma mee iwu nkwado offline niile;
-4. gosi na ụdị ndị ahụ ziri ezi n'ime image ahụ;
-5. megharịa live suite nwere ọnọdụ atọ nke authentication kwadoro.
+1. gbanwee ụdị ndị akọwapụtara kpọmkwem;
+2. jiri uru checksum nke artifact gọọmentị dochie checksum abụọ nke archive Devin ndị metụtara architecture dị iche iche;
+3. wughachi ya ma mee iwu nkwado niile na-anọghị n'ịntanetị;
+4. gosi na ụdị ndị dị n'ime oyiyi ahụ ziri ezi;
+5. meegharị ngwugwu nnwale kpọmkwem nwere ọnọdụ atọ nke chọrọ nkwenye njirimara.
 
-Etinyela CLI ọ bụla n'ime ha globally na host ahụ, ma ọ bụ jiri nbudata a na-enyochaghị dochie nkwado checksum.
+Awụnyela CLI nke ọ bụla n'ime ha n'ụwa niile na host, ma ọ bụ jiri nbudata a na-enyochaghị dochie nkwenye checksum.
 
 ## Nchọpụta nsogbu na nhicha
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
-  na-egosi routing mpaghara na njehie executor e wepụụrụ ozi nzuzo.
-- `.sandbox/evidence/mock-acp.jsonl` na-edekọ omume mock ACP ndị na-agbanweghi agbanwe.
-- `.sandbox/evidence/claude-stream.jsonl` na-edekọ ezigbo Claude Code offline run.
-- `.sandbox/evidence/live-*.jsonl` na-edekọ live stream atọ ndị a kwadoro.
-- `.sandbox/evidence/egress.jsonl` na `.sandbox/evidence/claude-egress.jsonl` bụ oyiri guard audit ndị a kwadoro, na-enweghị token.
+  na-egosi nhazi ụzọ mpaghara na njehie executor ndị e wepụworo ozi nzuzo na ha.
+- `.sandbox/evidence/mock-acp.jsonl` na-edekọ omume mock ACP ndị na-enye otu nsonaazụ mgbe niile.
+- `.sandbox/evidence/claude-stream.jsonl` na-edekọ nnwale Claude Code n'ezie nke a na-emeghị n'ịntanetị.
+- `.sandbox/evidence/live-*.jsonl` na-edekọ iyi data kpọmkwem atọ ndị a kwadoro.
+- `.sandbox/evidence/egress.jsonl` na `.sandbox/evidence/claude-egress.jsonl` bụ mbipụta audit guard ndị a kwadoro na-enweghị token.
 
-Kwụsị container na network ndị metụtara ya ma chekwaa volume login/config:
+Kwụsị containers na networks ndị sistemụ a nwere, ma chekwaa volumes nbanye/nhazi:
 
 ```bash
 ./scripts/devin-bridge/clean
 ```
 
-Wepụ environment niile bridge nwere, gụnyere volume ndị nwere aha:
+Wepụ gburugburu ebe bridge ahụ nwere kpamkpam, gụnyere volumes ndị a kpọrọ aha:
 
 ```bash
 ./scripts/devin-bridge/clean --all
@@ -187,13 +186,14 @@ Wepụ environment niile bridge nwere, gụnyere volume ndị nwere aha:
 
 ## Oke
 
-- Bridge ahụ dabere na role `summarizer` enweghị tools nke edobere kpọmkwem n'ihi na Devin CLI `3000.2.17`
-  anaghị enye agent ACP na-anọpụ iche nke enweghị tools. Adapter ahụ na-edozi response etiti ndị yiri nchịkọta,
-  mana otu repair nwere oke ka nwere ike ịda n'ụzọ doro anya.
-- Oku live ACP nwere ike iweghachi response `502`/`504` nke na-adịru nwa oge. Harness ahụ na-enye ohere oge n'etiti scenario;
-  ọdịda na-aga n'ihu ka ga-adị fail-closed ma ọ dịghị mgbe ọ ga-ahọrọ provider ọzọ.
-- A na-ewughachi context ACP site na request Anthropic ọ bụla; enweghị njikọ pụrụ iche na process/session.
-- A na-akwado otu tool call maka model response ọ bụla; a na-ajụ oku ndị yiri ibe ha n'otu oge.
-- A naghị akwado image n'ụzọ doro anya. A naghị akpọsa vision, thinking output, effort controls, na context window 1M.
-- SSE na-eji event lifecycle Anthropic ziri ezi, mana a na-ewepụta ya mgbe a chịkọtachara ACP turn nwere oke;
-  anaghị eziga chunk ACP n'otu n'otu ozugbo.
+- Bridge ahụ na-adabere na role `summarizer` edobere nke na-enweghị ngwaọrụ n'ihi na Devin CLI `3000.2.17`
+  anaghị enye agent ACP na-anọpụ iche nke na-enweghị ngwaọrụ. Adapter ahụ na-emezi nzaghachi etiti
+  ndị yiri nchịkọta, mana otu mgbazi nwere oke ka nwere ike ịda ma gosipụta ọdịda ahụ n'ụzọ doro anya.
+- Oku ACP kpọmkwem nwere ike iweghachi nzaghachi `502`/`504` nwa oge. Harness ahụ na-enye oghere oge n'etiti ọnọdụ;
+  ọdịda na-adịgide adịgide na-eme ka usoro ahụ mechie mgbe ọdịda mere, ọ naghịkwa ahọrọ provider ọzọ.
+- A na-ewughachi context ACP site na arịrịọ Anthropic ọ bụla; enweghị njikọ pụrụ iche na process/session.
+- A na-akwado naanị otu oku ngwaọrụ n'otu nzaghachi model; a na-ajụ oku ndị a na-eme n'otu oge.
+- A naghị akwado oyiyi ma ọlị. A naghị akpọsa vision, thinking output, effort controls, ma ọ bụ
+  context window nke 1M.
+- SSE na-eji lifecycle events Anthropic ziri ezi, mana a na-ezipụ ya mgbe a chịkọtachara ACP turn
+  nwere oke; anaghị ezipụ ACP chunks nke nta nke nta.

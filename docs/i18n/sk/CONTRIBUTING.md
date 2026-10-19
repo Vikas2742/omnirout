@@ -15,7 +15,7 @@ a krokom zosúladenia.
 
 ## Nastavenie vývojového prostredia
 
-### Predpoklady
+### Požiadavky
 
 - **Node.js** `>=22.22.2 <23` alebo `>=24.0.0 <27` (odporúčané: 24 LTS)
 - **npm** 10+
@@ -41,31 +41,31 @@ npm install
 # Vytvorte súbor .env zo šablóny
 cp .env.example .env
 
-# Vygenerujte požadované tajné kľúče
+# Vygenerujte požadované tajné hodnoty
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
 Kľúčové premenné pre vývoj:
 
-| Premenná               | Predvolená hodnota pre vývoj | Popis                          |
-| ---------------------- | ---------------------------- | ------------------------------ |
-| `PORT`                 | `20128`                      | Port servera                   |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`     | Základná URL adresa frontendu  |
-| `JWT_SECRET`           | (vygenerujte vyššie)         | Tajný kľúč na podpisovanie JWT |
-| `INITIAL_PASSWORD`     | `CHANGEME`                   | Heslo na prvé prihlásenie      |
-| `APP_LOG_LEVEL`        | `info`                       | Úroveň podrobnosti záznamov    |
+| Premenná               | Predvolená hodnota pre vývoj | Popis                             |
+| ---------------------- | ---------------------------- | --------------------------------- |
+| `PORT`                 | `20128`                      | Port servera                      |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`     | Základná URL adresa frontendu     |
+| `JWT_SECRET`           | (vygenerujte vyššie)         | Tajný kľúč na podpisovanie JWT    |
+| `INITIAL_PASSWORD`     | `CHANGEME`                   | Heslo na prvé prihlásenie         |
+| `APP_LOG_LEVEL`        | `info`                       | Úroveň podrobnosti protokolovania |
 
 ### Nastavenia ovládacieho panela
 
-Ovládací panel poskytuje prepínače používateľského rozhrania pre funkcie, ktoré možno nakonfigurovať aj prostredníctvom premenných prostredia:
+Ovládací panel poskytuje prepínače používateľského rozhrania pre funkcie, ktoré možno nakonfigurovať aj pomocou premenných prostredia:
 
-| Umiestnenie nastavenia | Prepínač                   | Popis                                      |
-| ---------------------- | -------------------------- | ------------------------------------------ |
-| Nastavenia → Rozšírené | Režim ladenia              | Zapnúť záznamy požiadaviek na ladenie (UI) |
-| Nastavenia → Všeobecné | Viditeľnosť bočného panela | Zobraziť/skryť sekcie bočného panela       |
+| Umiestnenie nastavenia | Prepínač                   | Popis                                           |
+| ---------------------- | -------------------------- | ----------------------------------------------- |
+| Nastavenia → Pokročilé | Režim ladenia              | Zapnutie protokolov požiadaviek na ladenie (UI) |
+| Nastavenia → Všeobecné | Viditeľnosť bočného panela | Zobrazenie/skrytie sekcií bočného panela        |
 
-Tieto nastavenia sú uložené v databáze a zachovávajú sa aj po reštartoch. Ak sú nastavené, prepíšu predvolené hodnoty premenných prostredia.
+Tieto nastavenia sú uložené v databáze a zachovávajú sa aj po reštartovaní. Ak sú nastavené, majú prednosť pred predvolenými hodnotami premenných prostredia.
 
 ### Lokálne spustenie
 
@@ -81,15 +81,15 @@ npm run start
 npm run build:contributor
 
 # Vydávacie zostavenie (čisté opätovné zostavenie + kontrolný súbor HEAD — vyžaduje sa na nasadenie)
-npm run build:release   # rm -rf .build dist && zostavenie + zápis dist/BUILD_SHA
+npm run build:release   # rm -rf .build dist && zostavenie + zapísanie dist/BUILD_SHA
 
 # Bežná konfigurácia portu
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Zostavenie pre prispievateľov vykonáva iba validačnú kompiláciu: nevytvára samostatnú
-distribúciu ani voliteľné natívne balíkové artefakty. Keď potrebujete overiť distribuovateľný
-balík, použite bežné produkčné zostavenie.
+Zostavenie pre prispievateľov vykonáva iba overenie kompilácie: nevytvára samostatnú
+distribúciu ani voliteľné natívne balíčkové prostriedky. Keď potrebujete overiť
+distribuovateľný balík, použite bežné produkčné zostavenie.
 
 ### Rozloženie výstupu zostavenia
 
@@ -104,7 +104,7 @@ Proces zostavenia prebieha v jednom priechode:
 ```
 npm run build
   └─ next build → .build/next/standalone  (výstup Next.js)
-  └─ assembleStandalone()                 (skopíruje samostatné + statické + verejné + natívne súbory)
+  └─ assembleStandalone()                 (skopíruje samostatné + statické + verejné + natívne prostriedky)
        └─ výstup: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
@@ -112,12 +112,12 @@ npm run build
 `dist/BUILD_SHA` (= `git rev-parse --short HEAD`) ako kontrolný súbor integrity nasadenia.
 
 `npm run build:contributor` používa profil zostavenia iba pre backend. Počas zostavovania dočasne nahradí
-súbory používateľského rozhrania ovládacieho panela zástupnými súbormi, zachová obslužné rutiny trás API a po zostavení
-obnoví pôvodné súbory. Pre zmeny, ktoré ovplyvňujú používateľské rozhranie ovládacieho panela, alebo na úplné
+súbory používateľského rozhrania ovládacieho panela zástupnými súbormi, zachová obslužné rutiny trás API a po
+zostavení obnoví pôvodné súbory. Pre zmeny ovplyvňujúce používateľské rozhranie ovládacieho panela alebo úplné
 overenie vydania použite `npm run build`; profil pre prispievateľov nenahrádza vydávacie zostavenie.
 
 > **Poznámka k nasadeniu na VPS:** vzdialený adresár obrazu `/usr/lib/node_modules/omniroute/app/`
-> zostáva nezmenený. Nástroje nasadenia pomocou rsync synchronizujú jeho obsah s obsahom adresára `dist/`.
+> sa nemení. Nástroje na nasadenie pomocou rsync synchronizujú jeho obsah s obsahom adresára `dist/`.
 > Zmenila sa iba cesta k výstupu zostavenia v repozitári (`app/` → `dist/`).
 
 Predvolené URL adresy:
@@ -301,11 +301,11 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── (dashboard)/        # Stránky ovládacieho panela (23 sekcií)
 │   ├── api/                # Trasy API (51 adresárov)
 │   └── login/              # Stránky autentifikácie (.tsx)
-├── domain/                 # Modul pravidiel (policyEngine, comboResolver, costRules atď.)
+├── domain/                 # Mechanizmus pravidiel (policyEngine, comboResolver, costRules atď.)
 ├── lib/                    # Základná obchodná logika (.ts)
 │   ├── a2a/                # Server protokolu Agent-to-Agent v0.3
 │   ├── acp/                # Register protokolu Agent Communication Protocol
-│   ├── compliance/         # Modul pravidiel súladu
+│   ├── compliance/         # Mechanizmus pravidiel súladu
 │   ├── db/                 # Doménové moduly SQLite + 130 migrácií
 │   ├── memory/             # Trvalá konverzačná pamäť
 │   ├── oauth/              # Poskytovatelia, služby a nástroje OAuth
@@ -313,31 +313,31 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── usage/              # Sledovanie používania a výpočet nákladov
 │   └── localDb.ts          # Iba vrstva opätovného exportu — nikdy sem nepridávajte logiku
 ├── middleware/              # Middleware požiadaviek (promptInjectionGuard)
-├── mitm/                   # Proxy MITM (certifikát, DNS, smerovanie na cieľ)
+├── mitm/                   # Proxy MITM (certifikát, DNS, smerovanie cieľa)
 ├── shared/
 │   ├── components/         # Komponenty React (.tsx)
 │   ├── constants/          # Definície poskytovateľov (329), rozsahy MCP, 20 stratégií smerovania
-│   ├── utils/              # Istič, sanitizátor, pomocné funkcie autentifikácie
+│   ├── utils/              # Istič, sanitizátor, pomocné nástroje autentifikácie
 │   └── validation/         # Schémy Zod v4
-└── sse/                    # Reťazec proxy SSE
+└── sse/                    # Kanál proxy SSE
 
 open-sse/                   # Pracovný priestor @omniroute/open-sse
-├── executors/              # 150 modulov vykonávateľov (triedy vykonávateľov + pomocné funkcie pre jednotlivých poskytovateľov)
-├── handlers/               # 11 obslužných modulov požiadaviek (chat, odpovede, vnorenia, obrázky atď.)
+├── executors/              # 150 modulov vykonávateľov (triedy vykonávateľov + pomocné nástroje pre jednotlivých poskytovateľov)
+├── handlers/               # 11 obslužných programov požiadaviek (chat, odpovede, vnorenia, obrázky atď.)
 ├── mcp-server/             # Server MCP (110 jedinečných nástrojov, 3 transporty, 33 rozsahov)
 ├── services/               # 178 služieb najvyššej úrovne (combo, autoCombo, rateLimitManager atď.)
-├── translator/             # Prevodníky formátov (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Transformátor API Responses
-└── utils/                  # 22 pomocných modulov (stream, TLS, proxy, protokolovanie)
+├── translator/             # Prekladače formátov (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Transformátor Responses API
+└── utils/                  # 22 modulov nástrojov (stream, TLS, proxy, protokolovanie)
 
 electron/                   # Desktopová aplikácia Electron (multiplatformová)
 
 tests/
-├── unit/                   # Testovací nástroj Node.js (1 574 testovacích súborov)
+├── unit/                   # Nástroj na spúšťanie testov Node.js (1 574 testovacích súborov)
 ├── integration/            # Integračné testy
 ├── e2e/                    # Testy Playwright
 ├── security/               # Bezpečnostné testy
-├── translator/             # Testy špecifické pre prevodníky
+├── translator/             # Testy špecifické pre prekladač
 └── load/                   # Záťažové testy
 
 docs/
@@ -345,17 +345,17 @@ docs/
 ├── architecture/            # Architektúra a odolnosť systému
 ├── comparison/              # OmniRoute v porovnaní s alternatívami
 ├── compression/             # Príručky a pravidlá kompresie
-├── dev/                     # Vývojárske príručky
+├── dev/                     # Príručky pre vývoj
 ├── diagrams/                # Diagramy architektúry
 ├── frameworks/              # MCP, A2A, OpenCode, pamäť, zručnosti
 ├── guides/                  # Používateľská príručka, Docker, nastavenie, riešenie problémov
-├── i18n/                    # Lokalizované preklady README
+├── i18n/                    # Internacionalizované preklady README
 ├── marketing/               # Marketingové materiály
 ├── ops/                     # Nasadenie, proxy, pokrytie, vydania
 ├── providers/               # Dokumentácia pre jednotlivých poskytovateľov
-├── reference/               # Referenčná príručka API, premenné prostredia, nástroje CLI, bezplatné úrovne
+├── reference/               # Referenčná dokumentácia API, premenné prostredia, nástroje CLI, bezplatné úrovne
 ├── releases/                # Poznámky k vydaniam
-├── routing/                 # Modul automatických kombinácií, opätovné prehrávanie uvažovania
+├── routing/                 # Mechanizmus automatických kombinácií, opakované prehrávanie uvažovania
 ├── screenshots/             # Snímky obrazovky ovládacieho panela
 ├── security/                # Ochranné mechanizmy, súlad, utajenie, tokeny
 └── specs/                   # Špecifikácie návrhu

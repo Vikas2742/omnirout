@@ -111,59 +111,59 @@ matrix automatisch over, zonder label.
 
 ## Gedetailleerde checklist
 
-### Vóór de release
+### Voor de release
 
 - [ ] Alle PR's die voor deze release zijn bedoeld, zijn samengevoegd in `release/vX.Y.0`
 - [ ] Alle openstaande Linear-/issue-items voor deze versie zijn gesloten of doorgeschoven naar de volgende mijlpaal
-- [ ] CI is geslaagd op de branch `release/vX.Y.0`
+- [ ] CI is groen op de branch `release/vX.Y.0`
 - [ ] Geen `TODO(release)`-markeringen in de code: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] Docker-basisimage is actueel (momenteel `node:24.15.0-trixie-slim`)
+- [ ] Docker-basisimage is up-to-date (momenteel `node:24.15.0-trixie-slim`)
 
 ### Versie en changelog
 
 - [ ] Voer `/version-bump-cc <patch|minor|major>` uit (Claude Code-skill)
   - Verhoogt de versie in `package.json`, `electron/package.json`
   - Genereert `CHANGELOG.md` opnieuw op basis van git-commits sinds de laatste tag
-  - Werkt badges in README.md bij
+  - Werkt de badges in README.md bij
 - [ ] Controleer CHANGELOG.md handmatig en ruim commitberichten indien nodig op
-- [ ] Zorg ervoor dat de nieuwste semver-sectie in `CHANGELOG.md` gelijk is aan de versie in `package.json`
+- [ ] Zorg ervoor dat de nieuwste semver-sectie in `CHANGELOG.md` overeenkomt met de versie in `package.json`
 - [ ] Behoud `## [Unreleased]` als eerste changelogsectie voor toekomstig werk
-- [ ] Werk `docs/openapi.yaml` bij → `info.version` moet gelijk zijn aan de versie in `package.json`
+- [ ] Werk `docs/openapi.yaml` bij → `info.version` moet overeenkomen met de versie in `package.json`
 
 ### Codekwaliteit
 
 - [ ] `npm run lint` — 0 fouten (waarschuwingen bestonden al)
 - [ ] `npm run typecheck:core` — zonder fouten
 - [ ] `npm run typecheck:noimplicit:core` — zonder fouten (strikt)
-- [ ] `npm run check:cycles:ratchet` — binnen de vastgelegde bovengrens van `metrics.cycles` (`check:cycles` zonder verdere opties eindigt met code 1 bij elke cyclus, #15281)
+- [ ] `npm run check:cycles:ratchet` — binnen de vaste bovengrens voor `metrics.cycles` (de kale opdracht `check:cycles` sluit bij elke cyclus af met code 1, #15281)
 - [ ] `npm run check:any-budget:t11` — binnen het budget
 - [ ] `npm run check:route-validation:t06` — zonder fouten
-- [ ] `npm run check:node-runtime` — minimale ondersteunde runtime gehaald (`>=22.22.2 <23`, `>=24.0.0 <27`, volgens `SUPPORTED_NODE_RANGE` in `src/shared/utils/nodeRuntimeSupport.ts`; afgestemd op `engines` in `package.json`)
+- [ ] `npm run check:node-runtime` — ondersteunde minimale runtimeversie gehaald (`>=22.22.2 <23`, `>=24.0.0 <27`, volgens `SUPPORTED_NODE_RANGE` in `src/shared/utils/nodeRuntimeSupport.ts`; afgestemd op `engines` in `package.json`)
 
-### Tests
+### Testen
 
 - [ ] `npm run test:unit` — geslaagd
 - [ ] `npm run test:vitest` — geslaagd (MCP-server, autoCombo, cache)
-- [ ] `npm run test:coverage` — drempel van 60/60/60/60 gehaald (statements/regels/functies/branches)
+- [ ] `npm run test:coverage` — drempel van 60/60/60/60 gehaald (statements/lines/functions/branches)
 - [ ] `npm run test:integration` — geslaagd (als wijzigingen betrekking hebben op de database/handlers)
-- [ ] `npm run test:combo:matrix` — geslaagd (matrix van combo-strategieën: bewijst op deterministische wijze de selectiebeslissingen van alle 19 openbare routeringsstrategieën; uitvoeren bij wijzigingen aan combo-routering, strategieresolutie of fallback-logica)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **optioneel/handmatig** (afgeschermde smoke-test met echte upstreams; haalt een alleen-lezen databasesnapshot op van VPS `root@192.168.0.15`; benadert echte providers en kost credits; wordt nooit uitgevoerd in CI; wordt netjes overgeslagen zonder de gate)
-- [ ] `npm run test:combo:live:vps` — **optioneel/handmatig** (live smoke-test voor fase 3 op de VPS: 7 HTTP-scenario's tegen de live `.15`-server via gewone Node ESM; vereist `ssh root@192.168.0.15`; maakt/verwijdert uitsluitend `__live_test__*`-combo's; benadert echte providers; wordt nooit uitgevoerd in CI)
+- [ ] `npm run test:combo:matrix` — geslaagd (matrix met combinatiestrategieën: toont deterministisch de selectiebeslissingen van alle 19 openbare routeringsstrategieën aan; uitvoeren bij wijzigingen aan combinatieroutering, strategiebepaling of fallbacklogica)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **optioneel/handmatig** (afgeschermde smoke-test met echte upstreams; gebruikt een alleen-lezen databasesnapshot van VPS `root@192.168.0.15`; benadert echte providers en kost credits; wordt nooit in CI uitgevoerd; wordt zonder de activeringsvariabele netjes overgeslagen)
+- [ ] `npm run test:combo:live:vps` — **optioneel/handmatig** (live VPS-smoke-test uit fase 3: 7 HTTP-scenario's tegen de live `.15`-server via gewone Node ESM; vereist `ssh root@192.168.0.15`; maakt en verwijdert uitsluitend combinaties met `__live_test__*`; benadert echte providers; wordt nooit in CI uitgevoerd)
 - [ ] `npm run test:e2e` — geslaagd (UI-wijzigingen)
 - [ ] `npm run test:protocols:e2e` — geslaagd (MCP-/A2A-wijzigingen)
 - [ ] `npm run test:ecosystem` — geslaagd
 
 ### Hooks (gevalideerd door Husky)
 
-Husky-hooks bevinden zich in `.husky/` en worden automatisch uitgevoerd bij git-bewerkingen.
+Husky-hooks staan in `.husky/` en worden automatisch uitgevoerd bij git-bewerkingen.
 
 - **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** snelle, deterministische gates — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (geactiveerd op 2026-06-13). Sluit `test:unit` bewust uit (traag; afgedekt door de CI-job `test-unit`).
-  - Voer `npm run test:unit` handmatig uit voordat je releasebranches pusht.
+- **pre-push:** snelle, deterministische controles — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (geactiveerd op 2026-06-13). Sluit `test:unit` bewust uit (traag; afgedekt door de CI-job `test-unit`).
+  - Voer `npm run test:unit` handmatig uit voordat releasebranches worden gepusht.
 
 Als een hook mislukt: los het onderliggende probleem op en omzeil de hook niet met `--no-verify`.
 
-### Conventional Commits
+### Conventionele commits
 
 Alle commits die in de release worden opgenomen, moeten de indeling `type(scope): subject` volgen.
 
@@ -177,10 +177,10 @@ Incompatibele wijzigingen: voeg een `BREAKING CHANGE:`-footer of `!` na de scope
 
 - [ ] `npm run check:docs-sync` slaagt (automatisch uitgevoerd door pre-commit)
 - [ ] `npm run check:docs-all` slaagt (overkoepelend: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` eindigt met code 0 — het env-contract tussen code ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` is intact
-- [ ] `npm run check:doc-links` eindigt met code 0 — geen gebroken interne markdownverwijzingen na herstructurering
+- [ ] `npm run check:env-doc-sync` sluit af met code 0 — het omgevingscontract tussen code ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` is intact
+- [ ] `npm run check:doc-links` sluit af met code 0 — geen defecte interne markdownverwijzingen na herstructurering
 - [ ] `docs/architecture/ARCHITECTURE.md` gecontroleerd op afwijkingen in opslag/runtime
-- [ ] `docs/guides/TROUBLESHOOTING.md` gecontroleerd op afwijkingen in omgevingsvariabelen en operationele werking
+- [ ] `docs/guides/TROUBLESHOOTING.md` gecontroleerd op afwijkingen in omgevingsvariabelen en operationele informatie
 - [ ] Als `.env.example` is gewijzigd: `docs/reference/ENVIRONMENT.md` bijgewerkt
 - [ ] Als een nieuwe functie een UI heeft: `docs/guides/USER_GUIDE.md` vermeldt deze
 - [ ] Als een nieuwe functie een API heeft: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` bijgewerkt
@@ -189,28 +189,28 @@ Incompatibele wijzigingen: voeg een `BREAKING CHANGE:`-footer of `!` na de scope
 
 ### i18n
 
-- [ ] `npm run i18n:check` eindigt met code 0 — vertaalstatus (`.i18n-state.json`) is gesynchroniseerd met de brondocumentatie (geen afwijkende bronnen in strikte modus; een waarschuwing in waarschuwingsmodus is acceptabel voor documentatieaanpassingen op het laatste moment, maar de code moet vóór het taggen 0 zijn)
-- [ ] `npm run i18n:check-ui-coverage` eindigt met code 0 — elke UI-locale haalt ten minste de dekkingsdrempel van 80%
-- [ ] `npm run i18n:sync-ui:dry` rapporteert 0 ontbrekende sleutels voor alle 66 doellocales (elke locale behalve de bronlocale `en`)
+- [ ] `npm run i18n:check` sluit af met code 0 — de vertaalstatus (`.i18n-state.json`) is gesynchroniseerd met de brondocumentatie (geen afwijkende bronnen in strikte modus; een waarschuwing in waarschuwingsmodus is acceptabel voor lastminuteaanpassingen aan documentatie, maar de status moet vóór het taggen 0 zijn)
+- [ ] `npm run i18n:check-ui-coverage` sluit af met code 0 — elke UI-locale bevindt zich op of boven de minimale dekkingsgraad van 80%
+- [ ] `npm run i18n:sync-ui:dry` meldt 0 ontbrekende sleutels voor alle 66 doellocales (elke locale behalve de bronlocale `en`)
 - [ ] Als de Engelse brondocumentatie is gewijzigd, voer dan vóór het taggen `npm run i18n:run` uit (vereist `OMNIROUTE_TRANSLATION_API_KEY` in `.env`)
-- [ ] Vertaalbijdragen kunnen, als ze beperkt zijn, worden uitgesteld tot de volgende release (bijhouden in CHANGELOG)
+- [ ] Vertaalbijdragen kunnen bij kleine wijzigingen worden uitgesteld tot de volgende release (bijhouden in CHANGELOG)
 
 ### Databasemigraties
 
 - [ ] Als `src/lib/db/migrations/` nieuwe bestanden bevat:
   - [ ] Elke migratie is idempotent (`CREATE TABLE IF NOT EXISTS`, enz.)
-  - [ ] Migraties zijn in transacties verpakt
+  - [ ] Migraties zijn verpakt in transacties
   - [ ] Correct genummerd (geen gaten in de volgorde)
 - [ ] Test op een nieuwe installatie: verwijder `~/.omniroute/omniroute.db` en voer `npm run dev` uit
-- [ ] Test op een bestaande installatie: maak een databaseback-up, voer de migratie uit en verifieer het schema
+- [ ] Test op een bestaande installatie: maak een back-up van de database, voer de migratie uit en verifieer het schema
 - [ ] WAL-bestanden (`-wal`, `-shm`) worden correct afgehandeld als een migratie tabellen herschrijft
 
-### Providercatalogus (gevalideerd met Zod)
+### Providercatalogus (Zod-gevalideerd)
 
-- [ ] Zod-schema van `src/shared/constants/providers.ts` is geldig tijdens het laden
+- [ ] Zod-schema in `src/shared/constants/providers.ts` is geldig tijdens het laden
   - [ ] Alle providers hebben de vereiste velden (`id`, `label`, `kind`, enz.)
   - [ ] `freeNote` is opgegeven voor nieuwe gratis providers
-  - [ ] OAuth-providers hebben een `oauthConfig` dat is geregistreerd in `src/lib/oauth/constants/oauth.ts`
+  - [ ] OAuth-providers hebben een `oauthConfig` die is geregistreerd in `src/lib/oauth/constants/oauth.ts`
 - [ ] Als een nieuwe provider is toegevoegd: bijbehorende executor in `open-sse/executors/`
 - [ ] Bij een niet-OpenAI-indeling: translator in `open-sse/translator/`
 - [ ] Modellen zijn geregistreerd in `open-sse/config/providerRegistry.ts`
@@ -223,49 +223,49 @@ Als `electron/` is gewijzigd:
 - [ ] `npm run electron:smoke:packaged` slaagt
 - [ ] Builds zijn getest voor ten minste één van `:win`, `:mac`, `:linux`
 - [ ] Certificaten voor codeondertekening zijn niet verlopen (indien ondertekening wordt gebruikt)
-- [ ] Versie in `electron/package.json` komt overeen met die in het hoofd-`package.json`
+- [ ] Versie in `electron/package.json` komt overeen met die in het hoofdbestand `package.json`
 - [ ] Verwijzing naar het kanaal voor automatische updates is bijgewerkt bij een release naar `stable`
 
 ### Buildindeling
 
 De repository gebruikt drie afzonderlijke uitvoermappen — haal ze nooit door elkaar:
 
-| Map       | Doel                                                                | Gevolgd?                 |
-| --------- | ------------------------------------------------------------------- | ------------------------ |
-| `src/`    | Applicatiebroncode (TypeScript / TSX)                               | Ja                       |
-| `.build/` | Tussenbestanden van de build — uitvoer van `next build` (`distDir`) | Nee (genegeerd door git) |
-| `dist/`   | Distribueerbare npm-bundel — samengesteld door `assembleStandalone` | Nee (genegeerd door git) |
+| Map       | Doel                                                                | Gevolgd?         |
+| --------- | ------------------------------------------------------------------- | ---------------- |
+| `src/`    | Applicatiebroncode (TypeScript / TSX)                               | Ja               |
+| `.build/` | Tussenproducten van de build — uitvoer van `next build` (`distDir`) | Nee (gitignored) |
+| `dist/`   | Distribueerbare npm-bundel — samengesteld door `assembleStandalone` | Nee (gitignored) |
 
 > **Opmerking voor operators:** de map voor de externe VPS-image blijft `/usr/lib/node_modules/omniroute/app/`.
 > Alleen de builduitvoer **binnen de repository** is verplaatst (`app/` → `dist/`). De deploy-skills synchroniseren
 > de inhoud van `dist/` via rsync naar de externe map `app/` — er zijn geen wijzigingen aan VPS-paden nodig.
 
-**Flow met één build:**
+**Buildproces met één build:**
 
 ```
 npm run build:release
   └─ rm -rf .build dist          (opschonen)
-  └─ next build → .build/next/   (tussenbestanden)
+  └─ next build → .build/next/   (tussenproducten)
   └─ assembleStandalone          (kopieert standalone + static + public + natives → dist/)
-  └─ schrijft dist/BUILD_SHA     (HEAD-controlebestand)
+  └─ schrijft dist/BUILD_SHA     (HEAD-markering)
 ```
 
-Voer voor een deployment NIET eerst `npm run build` uit, gevolgd door een afzonderlijke `npm run build:cli` — gebruik
-`npm run build:release`, dat in één opdracht een volledig schone rebuild uitvoert en het controlebestand schrijft.
+Voer voor een deployment NIET eerst `npm run build` en daarna afzonderlijk `npm run build:cli` uit — gebruik
+`npm run build:release`, waarmee in één opdracht een schone rebuild en markering worden uitgevoerd.
 
-### Validatie van artefacten
+### Artefactvalidatie
 
 - [ ] `npm run build:release` slaagt en `dist/BUILD_SHA` == `git rev-parse --short HEAD`
 - [ ] `npm run check:pack-artifact` is schoon — geen `app.__qa_backup`, `scripts/scratch`, `package-lock.json` of andere lokale restbestanden
 - [ ] `dist/server.js` bestaat na de build
-- [ ] Optionele lokale smoketest van de verpakte runtime: `npm run dev:candidate -- validate` na `npm run dev:candidate -- build` start de verpakte tarball met een geïsoleerde `DATA_DIR` en controleert `/api/health` + `/v1/models` (zie [Gouden pad voor bijdragen](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
+- [ ] Optionele lokale rooktest van de verpakte runtime: `npm run dev:candidate -- validate` na `npm run dev:candidate -- build` start de verpakte tarball met een geïsoleerde `DATA_DIR` en controleert `/api/health` + `/v1/models` (zie [Gouden pad voor bijdragen](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
 
-### Taggen en releasen
+### Taggen en release
 
 - [ ] Voer `/generate-release-cc` uit (Claude Code-skill):
-  - Maakt tag `vX.Y.Z`
+  - Maakt de tag `vX.Y.Z`
   - Pusht de tag en branch
-  - Opent een GitHub Release met een changelogtekst
+  - Opent een GitHub Release met de changelog als inhoud
   - Voegt Electron-installatieprogramma's toe (indien gebouwd)
 - [ ] Of handmatig:
   ```bash
@@ -276,44 +276,44 @@ Voer voor een deployment NIET eerst `npm run build` uit, gevolgd door een afzond
 
 ### Deployment
 
-Deploy-skills gebruiken de lichte rsync-flow — geen `npm pack`, geen `npm i -g`:
+Deploy-skills gebruiken het lichte rsync-proces — geen `npm pack`, geen `npm i -g`:
 
 - [ ] Gebruik de deploy-skill die overeenkomt met het doel:
   - `/deploy-vps-local-cc` — lokale VPS (192.168.0.15)
   - `/deploy-vps-akamai-cc` — Akamai-VPS (69.164.221.35)
   - `/deploy-vps-both-cc` — beide
-- [ ] Bevestig vóór de deployment dat `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] De build moet worden uitgevoerd waar `node_modules` echt is (hoofdcheckout of worktree waarop `npm ci` is uitgevoerd — GEEN worktree met een symbolische link)
-- [ ] Voer een smoketest uit op de gedeployde instantie:
-  - Open `/dashboard/health` → controleer of de versietekst overeenkomt met de release
-  - Voer een `/v1/chat/completions`-request uit voor een bekende provider
-  - Controleer of `/api/monitoring/health` circuitbreakers met status `CLOSED` retourneert
+- [ ] Controleer vóór de deployment dat `dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] De build moet worden uitgevoerd waar `node_modules` echt is (hoofdcheckout of worktree waarop `npm ci` is uitgevoerd — GEEN worktree met symlinks)
+- [ ] Voer een rooktest uit op de gedeployde instantie:
+  - Open `/dashboard/health` → controleer of de versietekenreeks overeenkomt met de release
+  - Voer een `/v1/chat/completions`-verzoek uit bij een bekende provider
+  - Controleer of `/api/monitoring/health` circuitbreakers met de status `CLOSED` retourneert
   - Bevestig dat MCP-transports reageren (`/mcp` HTTP, `/mcp-sse` SSE)
 
 ### Na de release
 
 - [ ] Voer `/capture-release-evidences-cc` uit (Claude Code-skill)
   - Maakt WebP-schermafbeeldingen/-opnamen van nieuwe functies
-  - Voegt deze toe aan de releaseopmerkingen / blogpost
+  - Voegt deze toe aan de releaseopmerkingen/blogpost
 - [ ] Werk GitHub Discussions / Discord bij met de releaseaankondiging
 - [ ] Open een milestone voor de volgende versie
-- [ ] Indien kritiek: zet de discussie vast of plaats een bericht in `news.json` voor een banner in de app
+- [ ] Indien kritiek: zet de discussie vast of plaats deze in `news.json` voor een banner in de app
 
-### Gate voor de publieke lancering van Radar
+### Poort voor de openbare lancering van Radar
 
-De Radar-aankondiging is bewust gecommit met `active: false`. Activering is een afzonderlijke
-wijziging nadat voor elk onderstaand item bewijs is geleverd:
+De Radar-aankondiging is bewust vastgelegd met `active: false`. Activering is een afzonderlijke
+wijziging nadat voor elk onderstaand punt bewijs is geleverd:
 
-- [ ] Alle gestapelde Radar-PR's zijn gemerged en de CI van de releasetip is groen
-- [ ] Deploy en smoketest de OSS Radar-routes terwijl `RADAR_ENABLED` standaard nog uitgeschakeld is
-- [ ] Voer smoketests uit voor `GET /planos`, `/termos`, `/privacidade` en `/reembolso` op de opgegeven Radar-host
-- [ ] Registreer de identiteit/contactgegevens/het adres van de operator en een door de eigenaar goedgekeurde juridische beoordeling in de private service
+- [ ] Alle gestapelde Radar-PR's zijn samengevoegd en de CI van de release-tip is groen
+- [ ] Deploy en rooktest de OSS Radar-routes terwijl `RADAR_ENABLED` standaard nog steeds uitgeschakeld is
+- [ ] Voer rooktests uit voor `GET /planos`, `/termos`, `/privacidade` en `/reembolso` op de genoemde Radar-host
+- [ ] Leg de identiteit/contactgegevens/het adres van de operator en de door de eigenaar goedgekeurde juridische beoordeling vast in de private service
 - [ ] Test Stripe Checkout en de ondertekende webhook uitsluitend in testmodus
-- [ ] Test één versleutelde levering van een transactionele e-mail met de goedgekeurde afzender/het goedgekeurde domein
-- [ ] Toon aan dat een back-up kan worden hersteld en voer één begeleide onderzoeksrun met een budgetlimiet uit
-- [ ] Keur het BRL/PIX-beoordelingsbeleid goed voordat donatiebewijs wordt geaccepteerd
-- [ ] Schakel publieke Checkout pas in nadat de voorgaande gates zijn doorlopen en activeer vervolgens de nieuwe `news.json`-ID
-- [ ] Controleer of de Home-banner gelokaliseerde tekst gebruikt en of een nieuwe ID opnieuw verschijnt nadat een oudere ID is gesloten
+- [ ] Test één versleutelde levering van transactionele e-mail met de goedgekeurde afzender/het goedgekeurde domein
+- [ ] Toon aan dat een back-up kan worden hersteld en voer één begeleide onderzoekstaak met een budgetlimiet uit
+- [ ] Keur het beoordelingsbeleid voor BRL/PIX goed voordat donatiebewijs wordt geaccepteerd
+- [ ] Schakel openbare Checkout pas in nadat aan de voorgaande voorwaarden is voldaan en activeer vervolgens de nieuwe `news.json`-ID
+- [ ] Controleer of de banner op de startpagina gelokaliseerde tekst gebruikt en of een nieuwe ID opnieuw verschijnt nadat een oudere ID is weggeklikt
 
 ## Smoke-test voor ingebedde services (v3.8.4+)
 

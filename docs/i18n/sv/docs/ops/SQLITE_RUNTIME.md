@@ -11,25 +11,25 @@ OmniRoute identifierar sin SQLite-drivrutin vid start genom en reservkedja i fem
 
 2. **Körtidsinstallerad `better-sqlite3`** (i `~/.omniroute/runtime/`)
    — installeras vid behov vid första körningen **ELLER** av `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
-   Validerar magiska byte för den inbyggda `.node`-filen (ELF / Mach-O / PE) före inläsning
+   Validerar den inbyggda `.node`-filens magiska byte (ELF/Mach-O/PE) före inläsning
    för att skydda mot skadade binärfiler eller binärfiler för fel plattform.
 
-3. **`node:sqlite`** (Node ≥22.5-standardbiblioteket) — ingen inbyggd kompilering behövs; används när
+3. **`node:sqlite`** (Node ≥22.5-standarbibliotek) — ingen inbyggd kompilering krävs; används när
    båda sökvägarna för better-sqlite3 misslyckas. Begränsad funktionsuppsättning.
 
-4. **`sql.js`** (WASM) — sista reservalternativet. Fungerar överallt men är långsammare
-   och skriver data med intervall i stället för synkront.
+4. **`sql.js`** (WASM) — sista reservlösningen. Fungerar överallt men är långsammare
+   och skriver data med ett intervall i stället för synkront.
 
 ## Varför denna komplexitet?
 
 - **Windows EBUSY**: `npm install -g omniroute@latest` kan misslyckas om den tidigare
-  versionens `better_sqlite3.node` är låst av en process som körs. Körtidsinstallationen
+  versionens `better_sqlite3.node` är låst av en pågående process. Körtidsinstallationen
   i `~/.omniroute/runtime/` kringgår den globala npm-cachen.
 - **Inga byggverktyg**: Vissa miljöer (företags-Windows utan VS Build
-  Tools, minimala Docker-avbilder) kan inte kompilera `better-sqlite3`. Körtidsinstalleraren
-  hämtar en förkompilerad binärfil från npm-registret; reservdrivrutinerna
-  säkerställer att OmniRoute ändå kan starta även om detta misslyckas.
-- **Luftgapade system**: Om npm-registret inte går att nå garanterar `node:sqlite`
+  Tools, minimala Docker-avbildningar) kan inte kompilera `better-sqlite3`. Körtids-
+  installeraren hämtar en förkompilerad binärfil från npm-registret; reserv-
+  drivrutinerna säkerställer att OmniRoute ändå kan starta om detta misslyckas.
+- **Luftgapade system**: Om npm-registret inte kan nås garanterar `node:sqlite`
   eller `sql.js` grundläggande funktionalitet.
 
 ## Validering av magiska byte
@@ -45,7 +45,7 @@ byten och jämför dem med kända plattformssignaturer:
 | macOS fat (universell) | `CA FE BA BE` | `macho-fat` |
 | Windows                | `4D 5A` (MZ)  | `pe`        |
 
-En avvikande signatur → filen ignoreras och reservkedjan fortsätter till nästa steg.
+En signatur som inte matchar → filen ignoreras och reservkedjan fortsätter till nästa steg.
 
 ## Kontrollera den aktiva drivrutinen
 
@@ -60,7 +60,7 @@ const info = getDriverInfo();
 ## Manuell styrning
 
 ```bash
-# Hoppa över uppvärmningen efter installationen (för snabba CI-installationer)
+# Hoppa över uppvärmning efter installationen (för snabba CI-installationer)
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
 # Tvinga ominstallation av better-sqlite3 för körning
@@ -71,45 +71,45 @@ omniroute  # installeras om vid nästa start
 omniroute config db-info  # (om CLI-kommandot finns)
 ```
 
-## Diagnostisering av synkrona blockeringar
+## Diagnostisera synkrona blockeringar
 
-Med `better-sqlite3` anger du `OMNIROUTE_SQLITE_SLOW_MS=200` före start för att aktivera
-tidmätning i den synkrona adaptern. Detta är avstängt som standard. En slutförd operation som tar
-minst så många millisekunder avger en `[SQLITE-SLOW]`-varning, högst en gång per
-tio sekunder och adapter. Varningen innehåller endast drivrutinen, operationsklassen
+Med `better-sqlite3` kan du ange `OMNIROUTE_SQLITE_SLOW_MS=200` före start för att
+aktivera tidsmätning av den synkrona adaptern. Detta är inaktiverat som standard. En slutförd
+åtgärd som tar minst så många millisekunder genererar en `[SQLITE-SLOW]`-varning, högst en
+gång var tionde sekund per adapter. Varningen innehåller endast drivrutinen, åtgärdsklassen
 (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, transaktion eller underhåll) och
-förflutna millisekunder: ingen SQL, inga bindningar, rader, sökvägar eller undantagstexter.
+förfluten tid i millisekunder: ingen SQL, inga bindningar, rader, sökvägar eller undantagstexter.
 
 Detta är ett diagnostiskt hjälpmedel, inte en tidsgräns eller frågeoptimering. Det kan inte rapportera
-en operation som aldrig returnerar, skilja CPU-arbete från väntan på disk, identifiera
-exakt SQL eller observera operationer som utförs via det råa drivrutinshandtaget.
+en åtgärd som aldrig returnerar, skilja CPU-arbete från väntan på disk, identifiera
+exakt SQL eller observera åtgärder som utförs via det råa drivrutinshandtaget.
 Varaktigheten för asynkron säkerhetskopiering är avsiktligt undantagen; andra SQLite-drivrutiner
 instrumenteras inte genom denna aktivering. Om variabeln inaktiveras återställs den ursprungliga adaptern
-utan omslutande tidmätning. Databasschemat eller den lagrade konfigurationen ändras inte.
+utan omslutande tidsmätning. Inga ändringar görs i databasschemat eller den lagrade konfigurationen.
 
-Fördröjningsvarningen för `/healthz` rapporterar händelseloopens högsta värde sedan föregående mätning,
-inte genomsnittet under hela livslängden. Korrelera dess tidsstämplar med varningar om långsamma operationer
-och värd-/lagringsmätvärden innan en blockering tillskrivs SQLite eller ett diskfel.
+Fördröjningsvarningen från `/healthz` rapporterar händelseloopens högsta värde sedan föregående mätning,
+inte genomsnittet under hela livstiden. Korrelera dess tidsstämplar med varningar om långsamma åtgärder
+och värd-/lagringsmätvärden innan du tillskriver en blockering till SQLite eller ett diskfel.
 
 ## Referens
 
-Implementation:
+Implementering:
 
-- `bin/cli/runtime/magicBytes.mjs` — hjälpfunktioner för validering av binärfikers magiska byte
-- `bin/cli/runtime/sqliteRuntime.mjs` — körtidsidentifierare i fem steg + installation vid behov
+- `bin/cli/runtime/magicBytes.mjs` — hjälpfunktioner för validering av binära signaturbyte
+- `bin/cli/runtime/sqliteRuntime.mjs` — körtidsresolver i fem steg + behovsstyrd installerare
 - `bin/cli/runtime/index.mjs` — startorkestrerare (`warmUpRuntimes()`)
-- `scripts/postinstall.mjs` — npm-krok efter installation (icke-fatal uppvärmning)
-- `src/lib/db/core.ts` — exporterna `ensureDbInitialized()` / `getDriverInfo()`
+- `scripts/postinstall.mjs` — npm-krok efter installation (icke-kritiskt fel vid uppvärmning)
+- `src/lib/db/core.ts` — exporter för `ensureDbInitialized()`/`getDriverInfo()`
 
 ## Topologi med en enda skrivare (HA stöds inte)
 
-Reservkedjan för drivrutiner ovan körs fortfarande i **en process**. Med SQLite
-som standard är OmniRoute en **enskild skrivare**:
+Reservkedjan för drivrutiner ovan körs fortfarande i **en process**. OmniRoute med
+SQLite som standard har **en enda skrivare**:
 
 - Anslut inte två OmniRoute-repliker till samma `storage.sqlite`-fil.
-- En omstart av en container, en Recreate-distribution, en OOM-avslutning eller en HEALTHCHECK-omstart bryter
-  varje pågående SSE-session. Standardsökvägen saknar sessionsdränering.
-- Orkestrerarens liveness-kontroll som betraktar en långsam `/healthz` som död avslutar den enda
+- En omstart av en container, Recreate-distribution, OOM-avslutning eller HEALTHCHECK-omstart avslutar
+  varje pågående SSE-session. Standardsökvägen har ingen sessionsdränering.
+- Orkestrerarens liveness-kontroll som betraktar en långsam `/healthz` som död kommer att avsluta den enda
   repliken. Föredra TCP-liveness + HTTP `/healthz`-readiness. Se
   [Docker-guide — tillgänglighet](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
   och [rekommendationer för Kubernetes-prober](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

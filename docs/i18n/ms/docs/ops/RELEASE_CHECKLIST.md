@@ -113,32 +113,32 @@ secara automatik, tanpa sebarang label.
 
 ### Pra-keluaran
 
-- [ ] Semua PR yang disasarkan untuk keluaran ini telah digabungkan ke `release/vX.Y.0`
-- [ ] Semua item Linear/isu terbuka untuk versi ini telah ditutup atau ditunda ke pencapaian seterusnya
+- [ ] Semua PR yang disasarkan untuk keluaran ini telah digabungkan ke dalam `release/vX.Y.0`
+- [ ] Semua item Linear/isu yang masih terbuka untuk versi ini telah ditutup atau ditunda ke pencapaian seterusnya
 - [ ] CI berjaya pada cabang `release/vX.Y.0`
 - [ ] Tiada penanda `TODO(release)` dalam kod: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] Imej asas Docker dikemas kini (kini `node:24.15.0-trixie-slim`)
+- [ ] Imej asas Docker adalah terkini (kini `node:24.15.0-trixie-slim`)
 
 ### Versi & Log Perubahan
 
 - [ ] Jalankan `/version-bump-cc <patch|minor|major>` (kemahiran Claude Code)
-  - Menaikkan versi dalam `package.json`, `electron/package.json`
+  - Menaikkan versi `package.json`, `electron/package.json`
   - Menjana semula `CHANGELOG.md` daripada komit git sejak tag terakhir
   - Mengemas kini lencana README.md
 - [ ] Semak CHANGELOG.md secara manual dan kemaskan mesej komit jika perlu
-- [ ] Pastikan bahagian semver terkini dalam `CHANGELOG.md` sama dengan versi `package.json`
-- [ ] Kekalkan `## [Unreleased]` sebagai bahagian log perubahan pertama untuk kerja akan datang
-- [ ] Kemas kini `docs/openapi.yaml` → `info.version` mesti sama dengan versi `package.json`
+- [ ] Pastikan bahagian semver terkini dalam `CHANGELOG.md` sepadan dengan versi `package.json`
+- [ ] Kekalkan `## [Unreleased]` sebagai bahagian pertama log perubahan untuk kerja akan datang
+- [ ] Kemas kini `docs/openapi.yaml` → `info.version` mesti sepadan dengan versi `package.json`
 
 ### Kualiti Kod
 
-- [ ] `npm run lint` — 0 ralat (amaran telah wujud sebelum ini)
+- [ ] `npm run lint` — 0 ralat (amaran memang telah wujud)
 - [ ] `npm run typecheck:core` — bersih
 - [ ] `npm run typecheck:noimplicit:core` — bersih (ketat)
 - [ ] `npm run check:cycles:ratchet` — dalam had maksimum `metrics.cycles` yang dibekukan (`check:cycles` biasa keluar dengan kod 1 jika terdapat sebarang kitaran, #15281)
-- [ ] `npm run check:any-budget:t11` — dalam bajet
+- [ ] `npm run check:any-budget:t11` — dalam peruntukan
 - [ ] `npm run check:route-validation:t06` — bersih
-- [ ] `npm run check:node-runtime` — had minimum masa jalan yang disokong dipenuhi (`>=22.22.2 <23`, `>=24.0.0 <27`, mengikut `SUPPORTED_NODE_RANGE` dalam `src/shared/utils/nodeRuntimeSupport.ts`; diselaraskan dengan `engines` dalam `package.json`)
+- [ ] `npm run check:node-runtime` — had minimum masa jalan yang disokong dipenuhi (`>=22.22.2 <23`, `>=24.0.0 <27`, mengikut `SUPPORTED_NODE_RANGE` dalam `src/shared/utils/nodeRuntimeSupport.ts`; sejajar dengan `engines` dalam `package.json`)
 
 ### Pengujian
 
@@ -146,9 +146,9 @@ secara automatik, tanpa sebarang label.
 - [ ] `npm run test:vitest` — lulus (pelayan MCP, autoCombo, cache)
 - [ ] `npm run test:coverage` — ambang 60/60/60/60 dipenuhi (pernyataan/baris/fungsi/cabang)
 - [ ] `npm run test:integration` — lulus (jika perubahan melibatkan DB / pengendali)
-- [ ] `npm run test:combo:matrix` — lulus (matriks strategi kombo: membuktikan keputusan pemilihan kesemua 19 strategi penghalaan awam secara deterministik; jalankan apabila mengubah penghalaan kombo, peleraian strategi atau logik sandaran)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **pilihan/manual** (ujian ringkas huluan sebenar berpagar; mendapatkan petikan DB baca sahaja daripada VPS `root@192.168.0.15`; mengakses penyedia sebenar, menggunakan kredit; tidak pernah dijalankan dalam CI; dilangkau dengan baik tanpa pagar tersebut)
-- [ ] `npm run test:combo:live:vps` — **pilihan/manual** (ujian ringkas langsung VPS Fasa 3: 7 senario HTTP terhadap pelayan `.15` secara langsung melalui Node ESM biasa; memerlukan `ssh root@192.168.0.15`; mencipta/memadam hanya kombo `__live_test__*`; mengakses penyedia sebenar; tidak pernah dijalankan dalam CI)
+- [ ] `npm run test:combo:matrix` — lulus (matriks strategi gabungan: membuktikan secara deterministik keputusan pemilihan bagi kesemua 19 strategi penghalaan awam; jalankan apabila mengubah penghalaan gabungan, resolusi strategi atau logik sandaran)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **pilihan/manual** (ujian asap huluan sebenar yang dikawal; mendapatkan petikan DB baca sahaja daripada VPS `root@192.168.0.15`; mengakses penyedia sebenar dan menggunakan kredit; tidak pernah dijalankan dalam CI; dilangkau dengan bersih tanpa kawalan tersebut)
+- [ ] `npm run test:combo:live:vps` — **pilihan/manual** (ujian asap langsung VPS Fasa 3: 7 senario HTTP terhadap pelayan `.15` langsung melalui Node ESM biasa; memerlukan `ssh root@192.168.0.15`; hanya mencipta/memadam gabungan `__live_test__*`; mengakses penyedia sebenar; tidak pernah dijalankan dalam CI)
 - [ ] `npm run test:e2e` — lulus (perubahan UI)
 - [ ] `npm run test:protocols:e2e` — lulus (perubahan MCP/A2A)
 - [ ] `npm run test:ecosystem` — lulus
@@ -157,55 +157,55 @@ secara automatik, tanpa sebarang label.
 
 Cangkuk Husky terletak dalam `.husky/` dan dijalankan secara automatik semasa operasi git.
 
-- **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** semakan pantas dan deterministik — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (diaktifkan pada 2026-06-13). Sengaja tidak menyertakan `test:unit` (perlahan; diliputi oleh tugas CI `test-unit`).
+- **pra-komit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
+- **pra-tolak:** kawalan pantas dan deterministik — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (diaktifkan pada 2026-06-13). Sengaja mengecualikan `test:unit` (perlahan; diliputi oleh tugas CI `test-unit`).
   - Jalankan `npm run test:unit` secara manual sebelum menolak cabang keluaran.
 
 Jika cangkuk gagal: betulkan isu asas, jangan pintas dengan `--no-verify`.
 
 ### Komit Konvensional
 
-Semua komit yang akan dimasukkan dalam keluaran mesti mengikut format `type(scope): subject`.
+Semua komit yang akan dimasukkan ke dalam keluaran mesti mengikut format `type(scope): subject`.
 
 **Jenis yang sah:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
 **Skop yang sah:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
 
-Perubahan pemecah keserasian: tambah pengaki `BREAKING CHANGE:` atau `!` selepas skop (contohnya `feat(api)!: drop /v0`).
+Perubahan pecah serasi: tambahkan pengaki `BREAKING CHANGE:` atau `!` selepas skop (cth. `feat(api)!: drop /v0`).
 
 ### Dokumentasi
 
-- [ ] `npm run check:docs-sync` lulus (dijalankan secara automatik oleh pre-commit)
+- [ ] `npm run check:docs-sync` lulus (dijalankan secara automatik oleh pra-komit)
 - [ ] `npm run check:docs-all` lulus (menyeluruh: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` keluar dengan kod 0 — kontrak persekitaran kod ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` kekal utuh
+- [ ] `npm run check:env-doc-sync` keluar dengan kod 0 — kontrak persekitaran antara kod ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` kekal utuh
 - [ ] `npm run check:doc-links` keluar dengan kod 0 — tiada rujukan markdown dalaman yang rosak selepas penstrukturan semula
-- [ ] `docs/architecture/ARCHITECTURE.md` disemak untuk penyimpangan storan/masa jalan
-- [ ] `docs/guides/TROUBLESHOOTING.md` disemak untuk penyimpangan pemboleh ubah persekitaran dan operasi
+- [ ] `docs/architecture/ARCHITECTURE.md` telah disemak untuk penyimpangan storan/masa jalan
+- [ ] `docs/guides/TROUBLESHOOTING.md` telah disemak untuk penyimpangan pemboleh ubah persekitaran dan operasi
 - [ ] Jika `.env.example` berubah: `docs/reference/ENVIRONMENT.md` dikemas kini
 - [ ] Jika ciri baharu mempunyai UI: `docs/guides/USER_GUIDE.md` menyebutnya
 - [ ] Jika ciri baharu mempunyai API: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` dikemas kini
 - [ ] Jika ciri baharu ialah modul: `docs/<MODULE>.md` khusus wujud
-- [ ] Jika terdapat perubahan pemecah keserasian: `docs/guides/TROUBLESHOOTING.md` mempunyai nota migrasi
+- [ ] Jika terdapat perubahan pecah serasi: `docs/guides/TROUBLESHOOTING.md` mempunyai nota migrasi
 
 ### i18n
 
-- [ ] `npm run i18n:check` keluar dengan kod 0 — keadaan terjemahan (`.i18n-state.json`) diselaraskan dengan dokumen sumber (tiada sumber yang menyimpang dalam mod ketat; nasihat mod amaran boleh diterima untuk kemasan dokumen saat akhir, tetapi mestilah 0 sebelum pengetagan)
-- [ ] `npm run i18n:check-ui-coverage` keluar dengan kod 0 — setiap tempatan UI mencapai atau melebihi ambang liputan 80%
-- [ ] `npm run i18n:sync-ui:dry` melaporkan 0 kunci yang hilang merentas kesemua 66 tempatan sasaran (setiap tempatan kecuali sumber `en`)
+- [ ] `npm run i18n:check` keluar dengan kod 0 — keadaan terjemahan (`.i18n-state.json`) disegerakkan dengan dokumen sumber (tiada sumber yang menyimpang dalam mod ketat; nasihat mod amaran boleh diterima untuk kemasan dokumentasi saat akhir, tetapi seharusnya 0 sebelum pengetagan)
+- [ ] `npm run i18n:check-ui-coverage` keluar dengan kod 0 — setiap tempatan UI berada pada atau melebihi had minimum liputan 80%
+- [ ] `npm run i18n:sync-ui:dry` melaporkan 0 kunci yang tiada merentas kesemua 66 tempatan sasaran (setiap tempatan kecuali sumber `en`)
 - [ ] Jika dokumen sumber bahasa Inggeris berubah, jalankan `npm run i18n:run` (memerlukan `OMNIROUTE_TRANSLATION_API_KEY` dalam `.env`) sebelum pengetagan
-- [ ] Sumbangan terjemahan boleh ditunda ke keluaran seterusnya jika kecil (jejak dalam CHANGELOG)
+- [ ] Sumbangan terjemahan boleh ditunda ke keluaran seterusnya jika kecil (jejaki dalam CHANGELOG)
 
 ### Migrasi Pangkalan Data
 
 - [ ] Jika `src/lib/db/migrations/` mempunyai fail baharu:
-  - [ ] Setiap migrasi adalah idempoten (`CREATE TABLE IF NOT EXISTS`, dan sebagainya)
+  - [ ] Setiap migrasi adalah idempoten (`CREATE TABLE IF NOT EXISTS`, dsb.)
   - [ ] Migrasi dibalut dalam transaksi
   - [ ] Dinomborkan dengan betul (tiada jurang dalam jujukan)
 - [ ] Uji pada pemasangan baharu: padam `~/.omniroute/omniroute.db` dan jalankan `npm run dev`
 - [ ] Uji pada pemasangan sedia ada: sandarkan DB, jalankan migrasi, sahkan skema
 - [ ] Fail WAL (`-wal`, `-shm`) dikendalikan dengan betul jika migrasi menulis semula jadual
 
-### Katalog Penyedia (Disahkan oleh Zod)
+### Katalog Penyedia (disahkan oleh Zod)
 
 - [ ] Skema Zod `src/shared/constants/providers.ts` sah semasa dimuatkan
   - [ ] Semua penyedia mempunyai medan yang diperlukan (`id`, `label`, `kind`, dll.)
@@ -214,7 +214,7 @@ Perubahan pemecah keserasian: tambah pengaki `BREAKING CHANGE:` atau `!` selepas
 - [ ] Jika penyedia baharu ditambahkan: pelaksana yang sepadan dalam `open-sse/executors/`
 - [ ] Jika format bukan OpenAI: penterjemah dalam `open-sse/translator/`
 - [ ] Model didaftarkan dalam `open-sse/config/providerRegistry.ts`
-- [ ] Ujian unit dalam `tests/unit/` merangkumi pengelasan dan penghalaan penyedia
+- [ ] Ujian unit dalam `tests/unit/` meliputi pengelasan dan penghalaan penyedia
 
 ### Desktop (Electron)
 
@@ -222,7 +222,7 @@ Jika `electron/` berubah:
 
 - [ ] `npm run electron:smoke:packaged` berjaya
 - [ ] Binaan diuji untuk sekurang-kurangnya satu daripada `:win`, `:mac`, `:linux`
-- [ ] Sijil penandatanganan kod belum tamat tempoh (jika menandatangani)
+- [ ] Sijil tandatangan kod belum tamat tempoh (jika menandatangani)
 - [ ] Versi `electron/package.json` sepadan dengan `package.json` akar
 - [ ] Penuding saluran kemas kini automatik dikemas kini jika mengeluarkan ke `stable`
 
@@ -230,11 +230,11 @@ Jika `electron/` berubah:
 
 Repositori menggunakan tiga direktori output yang berbeza — jangan sesekali mencampuradukkannya:
 
-| Direktori | Tujuan                                                        | Dijejaki?          |
-| --------- | ------------------------------------------------------------- | ------------------ |
-| `src/`    | Sumber aplikasi (TypeScript / TSX)                            | Ya                 |
-| `.build/` | Perantaraan binaan — output `next build` (`distDir`)          | Tidak (gitignored) |
-| `dist/`   | Berkas npm boleh edar — dihimpunkan oleh `assembleStandalone` | Tidak (gitignored) |
+| Direktori | Tujuan                                                               | Dijejaki?          |
+| --------- | -------------------------------------------------------------------- | ------------------ |
+| `src/`    | Sumber aplikasi (TypeScript / TSX)                                   | Ya                 |
+| `.build/` | Perantaraan binaan — output `next build` (`distDir`)                 | Tidak (gitignored) |
+| `dist/`   | Himpunan npm boleh diedarkan — dihimpunkan oleh `assembleStandalone` | Tidak (gitignored) |
 
 > **Nota pengendali:** direktori imej VPS jauh kekal sebagai `/usr/lib/node_modules/omniroute/app/`.
 > Hanya output binaan **dalam repositori** yang dipindahkan (`app/` → `dist/`). Kemahiran pengerahan melakukan rsync
@@ -247,18 +247,18 @@ npm run build:release
   └─ rm -rf .build dist          (bersihkan)
   └─ next build → .build/next/   (perantaraan)
   └─ assembleStandalone          (menyalin standalone + static + public + natives → dist/)
-  └─ writes dist/BUILD_SHA       (penanda HEAD)
+  └─ menulis dist/BUILD_SHA      (sentinel HEAD)
 ```
 
-JANGAN jalankan `npm run build` diikuti dengan `npm run build:cli` yang berasingan untuk pengerahan — gunakan
-`npm run build:release` yang melakukan binaan semula bersih + penanda dalam satu perintah.
+JANGAN jalankan `npm run build` diikuti oleh `npm run build:cli` yang berasingan untuk pengerahan — gunakan
+`npm run build:release` yang menjalankan binaan semula bersih + sentinel dalam satu perintah.
 
 ### Pengesahan Artifak
 
 - [ ] `npm run build:release` berjaya dan `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] `npm run check:pack-artifact` bersih — tiada `app.__qa_backup`, `scripts/scratch`, `package-lock.json` atau sisa setempat lain
+- [ ] `npm run check:pack-artifact` bersih — tiada `app.__qa_backup`, `scripts/scratch`, `package-lock.json`, atau sisa setempat lain
 - [ ] `dist/server.js` wujud selepas binaan
-- [ ] Ujian asap masa jalan berpaket setempat pilihan: `npm run dev:candidate -- validate` selepas `npm run dev:candidate -- build` memulakan tarball berpaket pada `DATA_DIR` terpencil dan menyemak `/api/health` + `/v1/models` (lihat [Laluan Utama Sumbangan](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
+- [ ] Ujian asap masa jalan berpakej setempat pilihan: `npm run dev:candidate -- validate` selepas `npm run dev:candidate -- build` memulakan tarball berpakej pada `DATA_DIR` yang diasingkan dan memeriksa `/api/health` + `/v1/models` (lihat [Laluan Emas Sumbangan](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
 
 ### Pengetagan & Keluaran
 
@@ -269,7 +269,7 @@ JANGAN jalankan `npm run build` diikuti dengan `npm run build:cli` yang berasing
   - Melampirkan pemasang Electron (jika dibina)
 - [ ] Atau secara manual:
   ```bash
-  git tag -a vX.Y.Z -m "Release vX.Y.Z"
+  git tag -a vX.Y.Z -m "Keluaran vX.Y.Z"
   git push origin vX.Y.Z
   gh release create vX.Y.Z --notes-from-tag
   ```
@@ -283,17 +283,17 @@ Kemahiran pengerahan menggunakan aliran rsync ringan — tanpa `npm pack`, tanpa
   - `/deploy-vps-akamai-cc` — VPS Akamai (69.164.221.35)
   - `/deploy-vps-both-cc` — kedua-duanya
 - [ ] Sebelum mengerah, sahkan `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] Binaan mesti dijalankan di tempat `node_modules` adalah sebenar (checkout utama atau worktree yang telah menjalankan `npm ci` — BUKAN worktree berpautan simbolik)
+- [ ] Binaan mesti dijalankan di tempat `node_modules` adalah sebenar (checkout utama atau worktree yang telah menjalankan `npm ci` — BUKAN worktree dengan pautan simbolik)
 - [ ] Jalankan ujian asap pada tika yang dikerahkan:
   - Buka `/dashboard/health` → semak rentetan versi sepadan dengan keluaran
   - Jalankan permintaan `/v1/chat/completions` terhadap penyedia yang diketahui
   - Sahkan `/api/monitoring/health` mengembalikan pemutus litar `CLOSED`
   - Sahkan pengangkutan MCP memberikan respons (`/mcp` HTTP, `/mcp-sse` SSE)
 
-### Selepas Keluaran
+### Selepas keluaran
 
 - [ ] Jalankan `/capture-release-evidences-cc` (kemahiran Claude Code)
-  - Merakam tangkap layar/rakaman WebP bagi ciri baharu
+  - Menangkap tangkap layar/rakaman WebP bagi ciri baharu
   - Melampirkannya pada nota keluaran / catatan blog
 - [ ] Kemas kini GitHub Discussions / Discord dengan pengumuman keluaran
 - [ ] Buka pencapaian untuk versi seterusnya
@@ -304,16 +304,16 @@ Kemahiran pengerahan menggunakan aliran rsync ringan — tanpa `npm pack`, tanpa
 Pengumuman Radar sengaja dikomitkan dengan `active: false`. Pengaktifan ialah perubahan berasingan
 selepas bukti bagi setiap perkara di bawah tersedia:
 
-- [ ] Semua PR Radar bertindan telah digabungkan dan CI hujung keluaran berstatus hijau
-- [ ] Kerah dan uji asap laluan Radar OSS dengan `RADAR_ENABLED` masih dimatikan secara lalai
+- [ ] Semua PR Radar bertindan telah digabungkan dan CI pada hujung keluaran berstatus hijau
+- [ ] Kerah dan uji asap laluan Radar sumber terbuka dengan `RADAR_ENABLED` masih dimatikan secara lalai
 - [ ] Uji asap `GET /planos`, `/termos`, `/privacidade`, dan `/reembolso` pada hos Radar yang ditetapkan
-- [ ] Rekod identiti/maklumat hubungan/alamat pengendali dan semakan undang-undang yang diluluskan pemilik dalam perkhidmatan persendirian
+- [ ] Rekod identiti/maklumat hubungan/alamat pengendali dan semakan undang-undang yang diluluskan pemilik dalam perkhidmatan peribadi
 - [ ] Uji Stripe Checkout dan webhook bertandatangan dalam mod ujian sahaja
-- [ ] Uji satu penghantaran e-mel transaksi disulitkan dengan pengirim/domain yang diluluskan
-- [ ] Buktikan pemulihan sandaran dan satu pelaksanaan penyelidikan diselia yang dihadkan bajet
+- [ ] Uji satu penghantaran e-mel transaksi tersulit dengan pengirim/domain yang diluluskan
+- [ ] Buktikan pemulihan sandaran dan satu pelaksanaan penyelidikan terselia yang dihadkan bajet
 - [ ] Luluskan dasar semakan BRL/PIX sebelum menerima bukti sumbangan
-- [ ] Dayakan Checkout awam hanya selepas gerbang terdahulu dipenuhi, kemudian aktifkan ID `news.json` baharu
-- [ ] Sahkan sepanduk Home menggunakan teks tersetempat dan ID baharu muncul semula selepas ID lama ditutup
+- [ ] Dayakan Checkout awam hanya selepas gerbang terdahulu dilepasi, kemudian aktifkan ID `news.json` baharu
+- [ ] Sahkan sepanduk Laman Utama menggunakan salinan yang disetempatkan dan ID baharu muncul semula selepas ID lama ditutup
 
 ## Ujian asap Perkhidmatan Terbenam (v3.8.4+)
 

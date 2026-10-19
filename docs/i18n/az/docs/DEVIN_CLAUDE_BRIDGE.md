@@ -4,109 +4,110 @@
 
 ---
 
-`devin-cli-agentic` real Claude Code icra mühitinə OmniRoute-un yerli Anthropic
-Messages son nöqtəsindən istifadə etməyə imkan verir, rəsmi Devin CLI isə ACP stdio vasitəsilə model cavablarını təmin edir. O,
+`devin-cli-agentic` real Claude Code icra mühitinə OmniRoute-un lokal Anthropic
+Messages son nöqtəsindən istifadə etməyə imkan verir, rəsmi Devin CLI isə ACP stdio üzərindən model cavablarını təmin edir. O,
 mövcud Anthropic, Claude OAuth, Claude Web və ya `devin-cli` provayderlərini dəyişdirmir.
 
-Müştəriyə məxsus alət çağırışları üçün Claude formatlı, alət imkanlı provayder olan
-`devin-cli-agentic` (ləqəbi `dva`) üzərindən marşrutlaşdırın. Köhnə `devin-cli` (`dv`) ACP icraçısı
-yalnız mətn üçündür: o, Devin-in alətsiz xülasələyicisini işlədir və alət çağırışlarını qaytara bilmir. Onun model
-metadatası müvafiq şəkildə işarələnib ki, alət tələb edən kombinə edilmiş marşrutlaşdırma ondan yayınsın.
+Müştəri tərəfindən idarə olunan alət çağırışları üçün Claude formatında, alət dəstəkli provayder olan
+`devin-cli-agentic` (ləqəbi `dva`) vasitəsilə yönləndirin. Köhnə `devin-cli` (`dv`) ACP icraçısı
+yalnız mətn üçündür: o, Devin-in alətsiz xülasələyicisini işə salır və alət çağırışlarını qaytara bilmir. Onun model
+metadatası müvafiq şəkildə işarələnib ki, alət tələb edən kombinasiya yönləndirməsi ondan yayınsın.
 
-> **Cari vəziyyət: Claude Code `2.1.258` versiyasına sabitlənib; oflayn və canlı doğrulama sonuncu dəfə
+> **Cari vəziyyət: Claude Code `2.1.258` versiyasına sabitlənib; oflayn və canlı yoxlama sonuncu dəfə
 > `2.1.220` versiyasında qeydə alınıb.** `2.1.220` sabitləməsi Devin CLI
-> `3000.2.17` və `swe-1-7-lightning` modeli vasitəsilə üç təcrid olunmuş ssenarini tamamladı; həmin son canlı icra müştəriyə məxsus `Read`,
+> `3000.2.17` və `swe-1-7-lightning` modeli vasitəsilə üç təcrid olunmuş ssenarini tamamladı; həmin son canlı icra müştəri tərəfindən idarə olunan `Read`,
 > `Edit` və `Bash` gedişlərini, uğurlu `npm test` nəticələrini, layihə əmrlərinin və bacarıqlarının
-> aşkarlanmasını, yalnız Devin üzərindən marşrutlaşdırmanı və Claude-a sıfır xarici trafik ötürülməsini təsdiqlədi. Daha sonra sabitlənmiş versiya `2.1.258`-ə
-> yüksəldildi (OmniRoute-un Claude identikliyinin təqlid etdiyi CLI nəsli və
-> Fable 5.1 səviyyəsini yerli olaraq təqdim edən ilk versiya xətti). Yeni sabitlənmiş versiyada quraşdırma qatı və `claude --version`
-> sabitlənmiş baza təsvirində yoxlanıldı, həmçinin körpünün modul test dəsti, `compose config` və
-> statik təcridetmə sübutu uğurla keçdi — lakin oflayn saxta ssenari və canlı üç ssenarili
-> test dəsti hələ yenidən icra edilməyib. Bu sabitlənmiş versiya ilə körpüyə etibar etməzdən əvvəl onları yenidən icra edin
-> ("Sabitlənmiş alətlərin yenilənməsi" bölməsinə baxın).
+> aşkarlanmasını, yalnız Devin üzərindən yönləndirməni və Claude-a sıfır çıxış trafikini təsdiqlədi. Daha sonra versiya `2.1.258`-ə
+> qaldırıldı (OmniRoute-un Claude kimliyinin təqlid etdiyi CLI nəsli və
+> Fable 5.1 səviyyəsini yerli olaraq təqdim edən ilk versiya). Yeni sabitləmədə quraşdırma qatı və `claude --version`
+> sabitlənmiş baza təsvirində yoxlanıldı, körpünün modul testləri, `compose config` və
+> statik təcridetmə sübutu uğurla keçir — lakin oflayn maket ssenarisi və üç ssenaridən ibarət canlı
+> test dəsti hələ yenidən işə salınmayıb. Bu sabitləmə ilə körpüyə etibar etməzdən əvvəl onları yenidən işə salın
+> (“Sabitlənmiş alətlərin yenilənməsi” bölməsinə baxın).
 
 ## Arxitektura
 
 ```text
 Claude Code 2.1.258 (təcrid olunmuş, root olmayan Linux konteyneri)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (Claude formatlı, autentifikasiyasız provayder)
-  -> devin acp --agent-type summarizer (rəsmi ACP stdio, Devin alətləri yoxdur)
-  -> xüsusi devin-auth cildindəki Devin hesabı
+  -> devin-cli-agentic (Claude formatında, autentifikasiyasız provayder)
+  -> devin acp --agent-type summarizer (rəsmi ACP stdio, Devin alətləri olmadan)
+  -> ayrılmış devin-auth həcmindəki Devin hesabı
 ```
 
-Rəsmi CLI-nin standart ACP agenti öz alətlərini icra edə bildiyi üçün bu körpü
-ondan istifadə etmir. O, rəsmi CLI rejimində heç bir aləti olmayan sabit `summarizer` ACP agentini başladır və
-seriallaşdırılmış Anthropic sorğusunu icra izi kimi çərçivələyir. Claude-a məxsus başqa bir
-əməliyyat tələb olunduqda, cavabda dəqiq olaraq bir müştəri aləti zərfi olmalıdır. İstənilən ACP
-`tool_call` və ya `tool_call_update`, cavab uğurlu kimi bildirilməzdən əvvəl rədd edilir.
+Rəsmi CLI-ın standart ACP agenti öz alətlərini icra edə bildiyinə görə bu körpü ondan istifadə etmir.
+O, rəsmi CLI rejimində heç bir aləti olmayan sabit `summarizer` ACP agentini başladır və
+seriyalaşdırılmış Anthropic sorğusunu icra izi kimi çərçivələyir. Claude tərəfindən idarə olunan başqa
+əməl tələb olunduqda cavabda dəqiq bir müştəri aləti zərfi olmalıdır. İstənilən ACP
+`tool_call` və ya `tool_call_update`, cavab uğurlu kimi bildirilə bilməzdən əvvəl rədd edilir.
 
-`open-sse/executors/devin-agentic/serializer.ts` daxilindəki seriallaşdırıcı `system`,
+`open-sse/executors/devin-agentic/serializer.ts` daxilindəki serializator `system`,
 `text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice` və
-Claude Code tərəfindən təmin edilən alətləri qoruyur. Şəkillər və naməlum bloklar açıq şəkildə xəta ilə nəticələnir. Böyük alət nəticələrində
-görünən qısaltma işarəsindən istifadə olunur.
+Claude Code tərəfindən təqdim edilən alətləri qoruyur. Şəkillər və naməlum bloklar aşkar şəkildə xəta ilə nəticələnir. Böyük alət nəticələri
+görünən ixtisar işarəsindən istifadə edir.
 
-Parser hər model gedişi üçün bir müstəqil `<tool>{...}</tool>` zərfini qəbul edir. O,
+Parser hər model gedişində bir müstəqil `<tool>{...}</tool>` zərfini qəbul edir. O,
 adı sorğunun alətlər siyahısı ilə yoxlayır, arqumentləri həmin alətin JSON
-Schema-sına uyğun doğrulayır, qarışıq nəql/əməliyyat məzmununu rədd edir və bir məhdud düzəlişə icazə verir. Daha sonra Claude Code yaranan Anthropic `tool_use` əməliyyatını yerli olaraq icra edir və `tool_result` nəticəsini
-OmniRoute vasitəsilə geri göndərir.
+Schema-sına əsasən doğrulayır, qarışıq nəqli/əməlləri rədd edir və bir məhdud düzəlişə icazə verir. Daha sonra Claude Code
+nəticədə yaranan Anthropic `tool_use` çağırışını lokal olaraq icra edir və `tool_result` nəticəsini OmniRoute vasitəsilə
+geri göndərir.
 
-## Avtomatik marşrutlaşdırma
+## Avtomatik yönləndirmə
 
-Provayder bloklanmadıqda OmniRoute-un `auto/*` namizəd hovuzlarında uyğun namizəd sayılır.
-Namizəd uyğunluğu seçilməyə zəmanət vermir: kombinasiyanın marşrutlaşdırma strategiyası (məsələn,
-son məlum uğurlu seçim) başqa provayderə üstünlük verə bilər. Hər sorğunun Devin üzərindən keçməsini
-tələb etdikdə `dva/<model>` və ya Devin-ə üstünlük verən kombinasiyadan istifadə edin.
+Provayder bloklanmadığı zaman OmniRoute-un `auto/*` namizəd hovuzlarına daxil edilə bilər.
+Namizəd uyğunluğu seçilməyə zəmanət vermir: kombinasiyanın yönləndirmə strategiyası (məsələn,
+son məlum uğurlu seçim) başqa provayderə üstünlük verə bilər. Hər sorğunun
+Devin vasitəsilə göndərilməsini tələb etdiyiniz zaman `dva/<model>` və ya Devin-ə üstünlük verən kombinasiyadan istifadə edin.
 
 ## İzolyasiya və təhdid modeli
 
-Hostun Claude quraşdırması, hesabı və konfiqurasiyası əhatə dairəsindən kənardır və istifadəsi
+Hostdakı Claude quraşdırması, hesabı və konfiqurasiyası əhatə dairəsindən kənardır və
 qadağan edilmiş hesab olunur. Compose xidmətləri:
 
 - UID/GID `10001:10001` ilə, yalnız oxunan kök fayl sistemi, ləğv edilmiş imkanlar və
   `no-new-privileges` ilə işləyir;
-- şəxsi `/home/bridge`, xüsusi Claude konfiqurasiya həcmi, izolyasiya edilmiş OmniRoute məlumatları
+- məxfi `/home/bridge`, xüsusi Claude konfiqurasiya həcmi, izolyasiya edilmiş OmniRoute məlumatları
   və ayrıca `devin-auth` həcmindən istifadə edir;
 - yalnız birdəfəlik `.sandbox` iş sahələrini/sübutlarını qoşur;
-- hostun ev qovluğunu, Keychain-i, SSH, bulud giriş məlumatlarını və ya Docker soketini qoşmur;
+- hostun ev qovluğunu, Keychain-i, SSH-ni, bulud giriş məlumatlarını və ya Docker soketini qoşmur;
 - mühitləri açıq şəkildə qurur və Anthropic API/OAuth/marşrutlaşdırma dəyişənlərini silir;
 - Claude Code inferensiyasını yalnız lokal açarla `http://omniroute:20128` ünvanına yönləndirir.
 
 Oflayn profil daxili şəbəkədən istifadə edir. Canlı profildə OmniRoute rəsmi Devin son nöqtələrinə
-yalnız `network-guard` vasitəsilə çatır; əlaqəsiz təyinatlara giriş rədd edilir.
-Claude Code ayrıca bütün çıxış trafikini rədd edən qoruyucuya malikdir və yalnız `NO_PROXY`
-vasitəsilə lokal OmniRoute xidmətinə çata bilir. Qoruyucu audit faylları yalnız müvafiq qoruyucu
+yalnız `network-guard` vasitəsilə çatır; əlaqəsiz təyinat nöqtələri rədd edilir.
+Claude Code ayrıca bütün çıxışları rədd edən qoruyucuya malikdir və `NO_PROXY` vasitəsilə yalnız
+lokal OmniRoute xidmətinə çata bilər. Qoruyucuların audit faylları yalnız müvafiq qoruyucu
 prosesi tərəfindən qoşulur. Skriptlər tokensiz sübutları ixrac etməzdən əvvəl fayl sahibliyini,
 rejimi, keçid sayını və hər bir qərarı yoxlayır.
 
-İzolyasiya sübutunu müstəqil şəkildə işə salın:
+İzolyasiya sübutunu müstəqil şəkildə başladın:
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Bu, topologiyanı, adlandırılmış qoşulmaları, root olmayan/yalnız oxunan parametrləri, açıq lokal
-marşrutlaşdırmanı, həssas mühit dəyişənlərinin olmamasını, Docker soketinin olmamasını,
+O, topologiyanı, adlandırılmış qoşulmaları, root olmayan/yalnız oxunan parametrləri, açıq lokal
+marşrutlaşdırmanı, həssas mühit dəyişənlərinin və Docker soketinin mövcud olmamasını,
 `api.anthropic.com` və `claude.ai` ünvanlarına girişin bloklanmasını, yalnız Devin provayderinin
-seçilməsini və ACP arxa ucu əlçatan olmadıqda açıq xətanı yoxlayır.
+seçilməsini və ACP backend-i əlçatan olmadıqda açıq şəkildə xəta baş verməsini yoxlayır.
 
 ## İlk quraşdırma və normal istifadə
 
-Sabitlənmiş obrazı qurun:
+Sabitlənmiş image-i yaradın:
 
 ```bash
 ./scripts/devin-bridge/build
 ```
 
-Yalnız izolyasiya edilmiş Devin həcmində autentifikasiyadan keçin:
+Yalnız izolyasiya edilmiş Devin həcmi üçün autentifikasiyadan keçin:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-Giriş əmri uzaq/konteyner mühitləri üçün nəzərdə tutulmuş rəsmi əl ilə token daxil etmə
-prosesindən istifadə edir. Dəyər birbaşa CLI sorğusuna daxil edilir; proses arqumenti kimi
-ötürülmür, Git-ə yazılmır və hostdan kopyalanmır.
+Giriş əmri uzaq/konteyner mühitləri üçün nəzərdə tutulmuş rəsmi manual-token axınından istifadə
+edir. Dəyər birbaşa CLI sorğusuna daxil edilir; o, proses arqumenti kimi ötürülmür, Git-ə
+yazılmır və ya hostdan kopyalanmır.
 
 İzolyasiya edilmiş Claude Code icra mühitini başladın:
 
@@ -116,13 +117,12 @@ prosesindən istifadə edir. Dəyər birbaşa CLI sorğusuna daxil edilir; prose
 
 `launch` konteynerləşdirilmiş Claude Code-u başlatmazdan əvvəl izolyasiyanı, Devin
 autentifikasiyasını və model aşkarlanmasını yenidən yoxlayır. O, heç vaxt hostun Claude icra
-faylını işə salmır. Model aliasları `.env.devin-bridge` daxilində təyin edilə bilər; konfiqurasiya
-edilmiş hər bir dəyər `devin-cli-agentic/` prefiksini saxlamalıdır.
+faylını işə salmır. Model aliasları `.env.devin-bridge` daxilində təyin edilə bilər; hər bir
+konfiqurasiya edilmiş dəyər `devin-cli-agentic/` prefiksini saxlamalıdır.
 
-## Validasiya əmrləri
+## Yoxlama əmrləri
 
-Təkrarlana bilən oflayn yol Devin hesabı tələb etmir və icra zamanı internet bağlantısından
-istifadə etmir:
+Təkrarlana bilən oflayn yol Devin hesabı tələb etmir və icra zamanı internetə çıxışı yoxdur:
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -131,23 +131,23 @@ istifadə etmir:
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Autentifikasiya edilmiş, seçimlə aktivləşdirilən canlı yol:
+Autentifikasiya tələb edən və könüllü aktivləşdirilən canlı yol belədir:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-Canlı icraçı ACP sessiyalarının birdən-birə açılmasının qarşısını almaq üçün ssenarilər arasında
-gözləyir və mətn iddialarına etibar etmək əvəzinə strukturlaşdırılmış Claude axın hadisələrini
-yoxlayır. Onun üç ssenarisi bunları sübut edir:
+Canlı icraçı ACP sessiyalarını eyni anda çoxsaylı açmamaq üçün ssenarilər arasında gözləyir və
+mətn iddialarına etibar etmək əvəzinə strukturlaşdırılmış Claude axın hadisələrini yoxlayır. Onun
+üç ssenarisi aşağıdakıları sübut edir:
 
-1. layihə fayllarının birbaşa oxunması və qüsur analizi;
-2. real `Edit`, müştəriyə məxsus `Bash` `npm test` əməliyyatı və terminal nəticəsi;
-3. `/bridge-check` və `bridge-proof` aşkarlanması, layihə fayllarının oxunması, müştəriyə məxsus
-   daha bir uğurlu `npm test` əməliyyatı və gözləyən iş olmadan tamamlanma.
+1. layihənin birbaşa oxunması və qüsurların təhlili;
+2. real `Edit`, müştəriyə məxsus `Bash` `npm test` və terminal nəticəsi;
+3. `/bridge-check` və `bridge-proof` aşkarlanması, layihənin oxunması, müştəriyə məxsus daha bir
+   uğurlu `npm test` və gözləmədə olan iş qalmadan tamamlanma.
 
-Son yoxlama mərhələsi həmçinin Devin şəbəkə auditini yoxlayır və Claude çıxış trafiki auditinin
-boş qalmasını tələb edir.
+Son yoxlama həmçinin Devin şəbəkə auditini yoxlayır və Claude çıxış auditinin boş qalmasını
+tələb edir.
 
 ## Sabitlənmiş alətlərin yenilənməsi
 
@@ -155,31 +155,32 @@ boş qalmasını tələb edir.
 `docker/devin-bridge/Dockerfile` faylında sabitləyir. Yeniləmək üçün:
 
 1. açıq şəkildə göstərilmiş versiyaları dəyişdirin;
-2. arxitekturaya xas hər iki Devin arxivinin yoxlama cəmini rəsmi artefakt üçün olan dəyərlərlə əvəz edin;
-3. yenidən qurun və bütün oflayn yoxlama komandalarını işə salın;
+2. arxitekturaya xas olan hər iki Devin arxivinin yoxlama cəmini rəsmi
+   artefaktın dəyərləri ilə əvəz edin;
+3. yenidən qurun və bütün oflayn doğrulama əmrlərini icra edin;
 4. imaj daxilindəki versiyaları təsdiqləyin;
-5. autentifikasiyadan keçmiş üç ssenarili canlı test dəstini yenidən işə salın.
+5. autentifikasiya tələb edən üç ssenarili canlı test dəstini yenidən işə salın.
 
-Heç bir CLI-ni host sistemdə qlobal şəkildə quraşdırmayın və yoxlama cəminin təsdiqlənməsini
+Heç bir CLI-ni hostda qlobal olaraq quraşdırmayın və yoxlama cəminin təsdiqlənməsini
 təsdiqlənməmiş endirmə ilə əvəz etməyin.
 
 ## Diaqnostika və təmizləmə
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
-  lokal marşrutlaşdırmanı və həssas məlumatlardan təmizlənmiş icraçı xətalarını göstərir.
+  lokal marşrutlaşdırmanı və məxfiləşdirilmiş icraçı xətalarını göstərir.
 - `.sandbox/evidence/mock-acp.jsonl` deterministik saxta ACP əməliyyatlarını qeydə alır.
 - `.sandbox/evidence/claude-stream.jsonl` real Claude Code oflayn icrasını qeydə alır.
-- `.sandbox/evidence/live-*.jsonl` təsdiqlənmiş üç canlı axını qeydə alır.
-- `.sandbox/evidence/egress.jsonl` və `.sandbox/evidence/claude-egress.jsonl` qoruyucu auditlərin təsdiqlənmiş,
-  tokensiz nüsxələridir.
+- `.sandbox/evidence/live-*.jsonl` doğrulanmış üç canlı axını qeydə alır.
+- `.sandbox/evidence/egress.jsonl` və `.sandbox/evidence/claude-egress.jsonl` qoruma auditlərinin
+  doğrulanmış, tokensiz surətləridir.
 
-Giriş/konfiqurasiya volumlarını qoruyaraq layihəyə məxsus konteynerləri və şəbəkələri dayandırın:
+Giriş/konfiqurasiya volumlarını qoruyaraq bu mühitə aid konteynerləri və şəbəkələri dayandırın:
 
 ```bash
 ./scripts/devin-bridge/clean
 ```
 
-Adlandırılmış volumlar da daxil olmaqla, körpüyə məxsus bütün mühiti silin:
+Adlandırılmış volumlar da daxil olmaqla körpüyə aid bütün mühiti silin:
 
 ```bash
 ./scripts/devin-bridge/clean --all
@@ -187,15 +188,15 @@ Adlandırılmış volumlar da daxil olmaqla, körpüyə məxsus bütün mühiti 
 
 ## Məhdudiyyətlər
 
-- Körpü sabitlənmiş, alətsiz `summarizer` roluna əsaslanır, çünki Devin CLI `3000.2.17`
-  neytral, alətsiz ACP agenti təqdim etmir. Adapter xülasə formasında olan aralıq
+- Körpü sabit, alətsiz `summarizer` roluna əsaslanır, çünki Devin CLI `3000.2.17`
+  neytral, alətsiz ACP agenti təqdim etmir. Adapter xülasə formasındakı aralıq
   cavabları kompensasiya edir, lakin bir məhdud təmir cəhdi yenə də açıq şəkildə uğursuz ola bilər.
-- Canlı ACP çağırışları keçici `502`/`504` cavabları qaytara bilər. Test mexanizmi ssenarilər
-  arasında fasilə saxlayır; davamlı xəta zamanı sistem qapalı vəziyyətdə uğursuz olur və heç vaxt başqa provayder seçmir.
+- Canlı ACP çağırışları keçici `502`/`504` cavabları qaytara bilər. Test sistemi ssenariyalar
+  arasında fasilə verir; davamlı nasazlıq halında sistem qapalı uğursuzluq rejimində qalır və heç vaxt başqa provayder seçmir.
 - ACP konteksti hər Anthropic sorğusundan yenidən qurulur; proses/sessiya
   bağlılığı yoxdur.
 - Hər model cavabı üçün bir alət çağırışı dəstəklənir; paralel çağırışlar rədd edilir.
-- İmajlar açıq şəkildə dəstəklənmir. Görüntü emalı, düşünmə nəticəsi, səy idarəetmələri və 1M
+- İmajlar açıq şəkildə dəstəklənmir. Görüntü emalı, düşünmə çıxışı, səy idarəetmələri və 1M
   kontekst pəncərəsi elan edilmir.
 - SSE etibarlı Anthropic həyat dövrü hadisələrindən istifadə edir, lakin məhdud ACP gedişi
-  toplandıqdan sonra göndərilir; ACP fraqmentləri mərhələli şəkildə ötürülmür.
+  toplandıqdan sonra ötürülür; ACP fraqmentləri mərhələli şəkildə yönləndirilmir.

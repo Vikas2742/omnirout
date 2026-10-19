@@ -6,26 +6,36 @@
 
 OmniRoute işə salınarkən SQLite drayverini 5 mərhələli ehtiyat keçid zənciri vasitəsilə müəyyən edir:
 
-1. **Paketə daxil edilmiş `better-sqlite3`** (`package.json` faylındakı `dependencies` vasitəsilə)
-   — ən sürətli variantdır, yerli binar fayldan istifadə edir və yığım alətləri mövcud olduqda `npm install` tərəfindən quraşdırılır.
+1. **Paketə daxil edilmiş `better-sqlite3`** (`package.json` daxilindəki `dependencies` vasitəsilə)
+   — ən sürətli variantdır, yerli ikili fayldan istifadə edir və qurma alətləri mövcud olduqda `npm install` tərəfindən quraşdırılır.
 
 2. **İcra zamanı quraşdırılan `better-sqlite3`** (`~/.omniroute/runtime/` daxilində)
-   — ilk işə salınma zamanı tənbəl şəkildə **VƏ YA** `scripts/build/postinstall.mjs → scripts/postinstall.mjs` tərəfindən quraşdırılır.
-   Zədələnmiş və ya yanlış platformaya aid binar fayllardan qorunmaq üçün yüklənməzdən əvvəl yerli `.node` faylının sehrli baytları (ELF / Mach-O / PE) yoxlanılır.
+   — ilk işə salınma zamanı **VƏ YA** `scripts/build/postinstall.mjs → scripts/postinstall.mjs` tərəfindən təxirə salınaraq quraşdırılır.
+   Yükləməzdən əvvəl yerli `.node` faylının magic baytlarını (ELF / Mach-O / PE) yoxlayaraq
+   zədələnmiş və ya yanlış platformaya aid ikili fayllardan qoruyur.
 
-3. **`node:sqlite`** (Node ≥22.5 standart kitabxanası) — yerli yığım tələb etmir; hər iki better-sqlite3 yolu uğursuz olduqda istifadə edilir. Funksiyalar dəsti məhduddur.
+3. **`node:sqlite`** (Node ≥22.5 standart kitabxanası) — yerli qurma tələb etmir; hər iki
+   better-sqlite3 yolu uğursuz olduqda istifadə edilir. Məhdud funksiyalar dəstinə malikdir.
 
-4. **`sql.js`** (WASM) — son ehtiyat variantıdır. Hər yerdə işləyir, lakin daha yavaşdır və məlumatları sinxron şəkildə deyil, müəyyən intervallarla yazır.
+4. **`sql.js`** (WASM) — son ehtiyat variantdır. Hər yerdə işləyir, lakin daha yavaşdır
+   və məlumatları sinxron şəkildə deyil, müəyyən intervallarla yazır.
 
-## Bu mürəkkəblik nəyə görədir?
+## Bu mürəkkəblik nə üçün lazımdır?
 
-- **Windows EBUSY**: Əvvəlki versiyanın `better_sqlite3.node` faylı işləyən proses tərəfindən kilidlənibsə, `npm install -g omniroute@latest` uğursuz ola bilər. `~/.omniroute/runtime/` daxilində icra zamanı quraşdırma qlobal npm keşindən yan keçir.
-- **Yığım alətləri yoxdur**: Bəzi mühitlər (VS Build Tools olmayan korporativ Windows sistemləri, minimal Docker obrazları) `better-sqlite3` paketini kompilyasiya edə bilmir. İcra zamanı quraşdırıcı npm reyestrindən əvvəlcədən yığılmış binar faylı əldə edir; bu uğursuz olsa belə, ehtiyat drayverlər OmniRoute-un yenə də işə düşməsini təmin edir.
-- **Şəbəkədən təcrid olunmuş sistemlər**: npm reyestri əlçatmazdırsa, `node:sqlite` və ya `sql.js` baza funksionallığını təmin edir.
+- **Windows EBUSY**: Əvvəlki versiyanın `better_sqlite3.node` faylı işləyən proses
+  tərəfindən kilidlənibsə, `npm install -g omniroute@latest` uğursuz ola bilər. İcra zamanı
+  `~/.omniroute/runtime/` daxilində quraşdırma qlobal npm keşindən yan keçir.
+- **Qurma alətlərinin olmaması**: Bəzi mühitlər (VS Build Tools olmayan korporativ Windows
+  sistemləri, minimal Docker təsvirləri) `better-sqlite3` paketini kompilyasiya edə bilmir. İcra zamanı
+  quraşdırıcı npm reyestrindən əvvəlcədən qurulmuş ikili faylı əldə edir; ehtiyat
+  drayverlər isə bu proses uğursuz olsa belə OmniRoute-un işə düşməsini təmin edir.
+- **Şəbəkədən təcrid olunmuş sistemlər**: npm reyestri əlçatmazdırsa, `node:sqlite`
+  və ya `sql.js` baza funksionallığına zəmanət verir.
 
-## Sehrli baytların yoxlanması
+## Magic baytların yoxlanması
 
-İcra zamanı quraşdırılmış `.node` faylını yükləməzdən əvvəl OmniRoute ilk 8 baytı oxuyur və onları məlum platforma sehrli dəyərləri ilə müqayisə edir:
+İcra zamanı quraşdırılmış `.node` faylını yükləməzdən əvvəl OmniRoute ilk 8
+baytı oxuyur və onları məlum platforma magic baytları ilə müqayisə edir:
 
 | Platforma             | Baytlar (hex) | Etiket      |
 | --------------------- | ------------- | ----------- |
@@ -35,7 +45,7 @@ OmniRoute işə salınarkən SQLite drayverini 5 mərhələli ehtiyat keçid zə
 | macOS fat (universal) | `CA FE BA BE` | `macho-fat` |
 | Windows               | `4D 5A` (MZ)  | `pe`        |
 
-Sehrli dəyər uyğun gəlmirsə → fayl nəzərə alınmır və ehtiyat keçid növbəti mərhələ ilə davam edir.
+Magic baytlar uyğun gəlmədikdə → fayl nəzərə alınmır və ehtiyat keçid növbəti mərhələdən davam edir.
 
 ## Aktiv drayverin yoxlanması
 
@@ -47,44 +57,60 @@ const info = getDriverInfo();
 //   kind: "better-sqlite3" | "node-sqlite" | "sql-js" }
 ```
 
-## Əllə idarəetmə
+## Əl ilə idarəetmə
 
 ```bash
-# Sürətli CI quraşdırmaları üçün postinstall ilkin hazırlığını keçin
+# Sürətli CI quraşdırmaları üçün postinstall hazırlığını keç
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
-# İcra zamanı istifadə olunan better-sqlite3 paketini məcburi şəkildə yenidən quraşdırın
+# İcra zamanı istifadə edilən better-sqlite3 paketini məcburi şəkildə yenidən quraşdır
 rm -rf ~/.omniroute/runtime
 omniroute  # növbəti işə salınmada yenidən quraşdırılacaq
 
-# Hansı drayverin aktiv olduğunu yoxlayın
+# Hansı drayverin aktiv olduğunu yoxla
 omniroute config db-info  # (CLI əmri mövcuddursa)
 ```
 
-## Sinxron ilişmələrin diaqnostikası
+## Sinxron ləngimələrin diaqnostikası
 
-Sinxron adapterin vaxt ölçməsini aktivləşdirmək üçün `better-sqlite3` ilə işə salınmadan əvvəl `OMNIROUTE_SQLITE_SLOW_MS=200` təyin edin. Standart olaraq bu funksiya deaktivdir. Ən azı göstərilən sayda millisaniyə çəkən tamamlanmış əməliyyat hər adapter üzrə on saniyədə ən çox bir dəfə `[SQLITE-SLOW]` xəbərdarlığı yaradır. Xəbərdarlıq yalnız drayveri, əməliyyat sinfini (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, tranzaksiya və ya texniki xidmət) və keçən millisaniyə sayını ehtiva edir: SQL, bağlamalar, sətirlər, yollar və ya istisna mətni daxil edilmir.
+`better-sqlite3` ilə sinxron adapter vaxt ölçməsini aktivləşdirmək üçün işə salmazdan əvvəl
+`OMNIROUTE_SQLITE_SLOW_MS=200` təyin edin. Standart olaraq bu funksiya deaktivdir. Tamamlanmış
+əməliyyat ən azı göstərilən sayda millisaniyə çəkdikdə hər adapter üçün ən çoxu on saniyədə
+bir dəfə `[SQLITE-SLOW]` xəbərdarlığı yaradılır. Xəbərdarlıq yalnız drayveri, əməliyyat sinfini
+(`prepare`, `get`, `all`, `run`, `exec`, `pragma`, tranzaksiya və ya texniki xidmət) və
+keçən millisaniyə sayını ehtiva edir: SQL, bağlamalar, sətirlər, yollar və ya istisna mətni daxil edilmir.
 
-Bu, taymaut və ya sorğu optimallaşdırması deyil, diaqnostik köməkçi vasitədir. O, heç vaxt qayıtmayan əməliyyat barədə məlumat verə, CPU işini disk gözləmələrindən fərqləndirə, dəqiq SQL-i müəyyənləşdirə və ya birbaşa drayver deskriptoru vasitəsilə yerinə yetirilən əməliyyatları müşahidə edə bilməz. Asinxron ehtiyat nüsxələmənin müddəti qəsdən nəzərə alınmır; digər SQLite drayverləri bu seçimlə instrumentasiya edilmir. Dəyişənin deaktiv edilməsi vaxt ölçmə sarğıları olmadan ilkin adapteri bərpa edir. Verilənlər bazası sxemində və ya saxlanılan konfiqurasiyada heç bir dəyişiklik edilmir.
+Bu, taymaut və ya sorğu optimallaşdırması deyil, diaqnostik köməkçi vasitədir. O, heç vaxt
+geri qayıtmayan əməliyyat barədə məlumat verə, CPU işini disk gözləmələrindən fərqləndirə, dəqiq
+SQL-i müəyyən edə və ya xam drayver handle-i vasitəsilə yerinə yetirilən əməliyyatları müşahidə
+edə bilməz. Asinxron ehtiyat nüsxələmənin müddəti qəsdən istisna edilir; digər SQLite drayverləri
+bu seçimlə instrumentasiya edilmir. Dəyişənin deaktiv edilməsi vaxt ölçmə örtükləri olmadan
+orijinal adapteri bərpa edir. Verilənlər bazası sxemində və ya saxlanmış konfiqurasiyada heç bir dəyişiklik edilmir.
 
-`/healthz` gecikmə xəbərdarlığı ümumi istifadə müddətinin orta göstəricisini deyil, əvvəlki nümunədən bəri hadisələr dövrəsinin pik göstəricisini bildirir. İlişməni SQLite və ya disk nasazlığı ilə əlaqələndirməzdən əvvəl onun vaxt nişanlarını yavaş əməliyyat xəbərdarlıqları və host/yaddaş qurğusu metrikləri ilə müqayisə edin.
+`/healthz` gecikmə xəbərdarlığı bütün işləmə müddətinin ortalamasını deyil, əvvəlki nümunədən
+bəri hadisə dövrəsinin pik göstəricisini bildirir. Ləngiməni SQLite və ya disk nasazlığı ilə
+əlaqələndirməzdən əvvəl onun zaman nişanlarını yavaş əməliyyat xəbərdarlıqları və host/yaddaş
+metrikləri ilə tutuşdurun.
 
 ## İstinad
 
-Realizasiya:
+İmplementasiya:
 
-- `bin/cli/runtime/magicBytes.mjs` — binar sehrli baytların yoxlanması üçün köməkçi vasitələr
-- `bin/cli/runtime/sqliteRuntime.mjs` — 5 mərhələli icra zamanı həlledicisi + tənbəl quraşdırıcı
+- `bin/cli/runtime/magicBytes.mjs` — ikili faylların magic baytlarını yoxlamaq üçün köməkçi funksiyalar
+- `bin/cli/runtime/sqliteRuntime.mjs` — 5 mərhələli icra zamanı müəyyənləşdirici + təxirə salınmış quraşdırıcı
 - `bin/cli/runtime/index.mjs` — işəsalma orkestratoru (`warmUpRuntimes()`)
-- `scripts/postinstall.mjs` — npm quraşdırmadan sonrakı qarmağı (kritik olmayan ilkin hazırlıq)
+- `scripts/postinstall.mjs` — npm quraşdırmadan sonrakı hook-u (kritik olmayan hazırlıq)
 - `src/lib/db/core.ts` — `ensureDbInitialized()` / `getDriverInfo()` ixracları
 
-## Tək yazıcı topologiyası (HA dəstəklənmir)
+## Tək-yazıcı topologiyası (HA dəstəklənmir)
 
-Yuxarıdakı drayver ehtiyat keçid zənciri yenə də **bir prosesdə** işləyir. Standart SQLite ilə OmniRoute **tək yazıcıdır**:
+Yuxarıdakı drayver ehtiyat keçid zənciri yenə də **bir prosesdə** işləyir. Standart SQLite
+ilə OmniRoute **tək yazıcıdır**:
 
 - İki OmniRoute replikasını eyni `storage.sqlite` faylına qoşmayın.
-- Konteynerin yenidən başladılması, Recreate yerləşdirməsi, OOM səbəbli dayandırma və ya HEALTHCHECK yenidən başlatması icra prosesində olan bütün SSE sessiyalarını sonlandırır. Standart icra yolunda sessiyaların tədricən boşaldılması yoxdur.
-- Yavaş `/healthz` cavabını dayanmış hesab edən orkestrator canlılıq yoxlaması yeganə replikanı sonlandıracaq. TCP canlılıq yoxlaması + HTTP `/healthz` hazırlıq yoxlamasına üstünlük verin. Baxın:
+- Konteynerin yenidən başladılması, Recreate yerləşdirməsi, OOM səbəbilə dayandırılması və ya HEALTHCHECK tərəfindən yenidən başladılması
+  icrada olan bütün SSE sessiyalarını kəsir. Standart yolda sessiyaların mərhələli bağlanması yoxdur.
+- Yavaş `/healthz` cavabını dayanmış vəziyyət kimi qəbul edən orkestrator liveness yoxlaması yeganə
+  replikanı dayandıracaq. TCP liveness + HTTP `/healthz` readiness yoxlamalarına üstünlük verin. Baxın:
   [Docker Təlimatı — əlçatanlıq](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
-  və [Kubernetes yoxlama tövsiyələri](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).
+  və [Kubernetes probe tövsiyələri](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

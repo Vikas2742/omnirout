@@ -16,7 +16,7 @@ Thank you for your interest in contributing! This guide covers everything you ne
 - **npm** 10+
 
 > **Pengguna npm v11+ (Node 24+):** Selepas `npm install`, sahkan bahawa modul natif telah dipasang:
-> `node -e "require('better-sqlite3')"`. Jika gagal dengan `MODULE_NOT_FOUND`,
+> `node -e "require('better-sqlite3')"`. Jika arahan tersebut gagal dengan `MODULE_NOT_FOUND`,
 > jalankan `npm approve-scripts better-sqlite3 && npm install`. Lihat
 > [Penyelesaian Masalah](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
@@ -43,29 +43,29 @@ echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 
 Pemboleh ubah utama untuk pembangunan:
 
-| Pemboleh Ubah          | Lalai Pembangunan        | Perihalan                     |
-| ---------------------- | ------------------------ | ----------------------------- |
-| `PORT`                 | `20128`                  | Port pelayan                  |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | URL asas untuk bahagian depan |
-| `JWT_SECRET`           | (jana di atas)           | Rahsia penandatanganan JWT    |
-| `INITIAL_PASSWORD`     | `CHANGEME`               | Kata laluan log masuk pertama |
-| `APP_LOG_LEVEL`        | `info`                   | Tahap keterperincian log      |
+| Pemboleh Ubah          | Lalai Pembangunan        | Penerangan                      |
+| ---------------------- | ------------------------ | ------------------------------- |
+| `PORT`                 | `20128`                  | Port pelayan                    |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | URL asas untuk bahagian hadapan |
+| `JWT_SECRET`           | (jana di atas)           | Rahsia penandatanganan JWT      |
+| `INITIAL_PASSWORD`     | `CHANGEME`               | Kata laluan log masuk pertama   |
+| `APP_LOG_LEVEL`        | `info`                   | Tahap keterperincian log        |
 
 ### Tetapan Papan Pemuka
 
 Papan pemuka menyediakan togol UI untuk ciri yang juga boleh dikonfigurasikan melalui pemboleh ubah persekitaran:
 
-| Lokasi Tetapan     | Togol                 | Perihalan                               |
+| Lokasi Tetapan     | Togol                 | Penerangan                              |
 | ------------------ | --------------------- | --------------------------------------- |
 | Tetapan → Lanjutan | Mod Nyahpepijat       | Dayakan log permintaan nyahpepijat (UI) |
 | Tetapan → Umum     | Keterlihatan Bar Sisi | Tunjukkan/sembunyikan bahagian bar sisi |
 
-Tetapan ini disimpan dalam pangkalan data dan kekal merentas mula semula, serta mengatasi nilai lalai pemboleh ubah persekitaran apabila ditetapkan.
+Tetapan ini disimpan dalam pangkalan data dan dikekalkan selepas mula semula, serta mengatasi nilai lalai pemboleh ubah persekitaran apabila ditetapkan.
 
 ### Menjalankan Secara Setempat
 
 ```bash
-# Mod pembangunan (muat semula pantas)
+# Mod pembangunan (muat semula segera)
 npm run dev
 
 # Binaan pengeluaran
@@ -75,44 +75,44 @@ npm run start
 # Kompilasi pantas bahagian belakang/API sahaja untuk perubahan penyumbang
 npm run build:contributor
 
-# Binaan keluaran (binaan semula bersih + penanda HEAD — diperlukan untuk penggunaan)
-npm run build:release   # rm -rf .build dist && bina + menulis dist/BUILD_SHA
+# Binaan keluaran (binaan semula bersih + penanda sentinel HEAD — diperlukan untuk penggunaan)
+npm run build:release   # rm -rf .build dist && bina + tulis dist/BUILD_SHA
 
-# Konfigurasi port biasa
+# Konfigurasi port lazim
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Binaan penyumbang melaksanakan pengesahan kompilasi sahaja: ia tidak menghimpunkan
+Binaan penyumbang melakukan pengesahan kompilasi sahaja: ia tidak menghimpunkan
 pengedaran kendiri atau membina aset pembungkusan natif pilihan. Gunakan binaan pengeluaran biasa apabila
-anda perlu mengesahkan berkas yang boleh diedarkan.
+anda perlu mengesahkan berkas yang boleh dihantar.
 
 ### Susun Atur Output Binaan
 
-| Direktori | Kandungan                                                                  | Dijejaki |
-| --------- | -------------------------------------------------------------------------- | -------- |
-| `src/`    | Sumber aplikasi (TypeScript / TSX)                                         | Ya       |
-| `.build/` | Perantaraan — output `next build` (diabaikan git, `distDir = .build/next`) | Tidak    |
-| `dist/`   | Berkas boleh edar — dihimpunkan oleh `assembleStandalone` (diabaikan git)  | Tidak    |
+| Direktori | Kandungan                                                                     | Dijejaki |
+| --------- | ----------------------------------------------------------------------------- | -------- |
+| `src/`    | Sumber aplikasi (TypeScript / TSX)                                            | Ya       |
+| `.build/` | Perantaraan — output `next build` (diabaikan Git, `distDir = .build/next`)    | Tidak    |
+| `dist/`   | Berkas boleh dihantar — dihimpunkan oleh `assembleStandalone` (diabaikan Git) | Tidak    |
 
 Saluran binaan ialah satu laluan:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (output Next.js)
-  └─ assembleStandalone()                 (menyalin kendiri + statik + awam + aset natif)
+  └─ assembleStandalone()                 (menyalin aset kendiri + statik + awam + natif)
        └─ output: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` juga membersihkan kedua-dua direktori terlebih dahulu dan menulis
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) sebagai penanda integriti penggunaan.
+`npm run build:release` turut membersihkan kedua-dua direktori terlebih dahulu dan menulis
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) sebagai penanda sentinel integriti penggunaan.
 
 `npm run build:contributor` menggunakan profil binaan bahagian belakang sahaja. Ia menggantikan sementara
-fail UI papan pemuka dengan stub semasa membina, mengekalkan pengendali laluan API dan memulihkan fail asal
-selepas binaan. Gunakan `npm run build` untuk perubahan yang mempengaruhi UI papan pemuka atau untuk
-pengesahan keluaran penuh; profil penyumbang bukan pengganti bagi binaan keluaran.
+fail UI papan pemuka dengan stub semasa pembinaan, mengekalkan pengendali laluan API dan memulihkan fail asal
+selepas binaan selesai. Gunakan `npm run build` untuk perubahan yang mempengaruhi UI papan pemuka atau bagi
+pengesahan keluaran penuh; profil penyumbang bukan pengganti kepada binaan keluaran.
 
 > **Nota penggunaan VPS:** direktori imej jauh `/usr/lib/node_modules/omniroute/app/`
-> tidak berubah. Kemahiran penggunaan melakukan rsync kandungan `dist/` ke dalamnya.
+> tidak berubah. Kemahiran penggunaan menggunakan rsync untuk menyalin kandungan `dist/` ke dalamnya.
 > Hanya laluan output binaan dalam repositori yang berubah (`app/` → `dist/`).
 
 URL lalai:
@@ -298,14 +298,14 @@ src/                        # TypeScript (.ts / .tsx)
 ├── domain/                 # Enjin dasar (policyEngine, comboResolver, costRules, dll.)
 ├── lib/                    # Logik perniagaan teras (.ts)
 │   ├── a2a/                # Pelayan protokol Agent-to-Agent v0.3
-│   ├── acp/                # Pendaftar Agent Communication Protocol
+│   ├── acp/                # Daftar Agent Communication Protocol
 │   ├── compliance/         # Enjin dasar pematuhan
 │   ├── db/                 # Modul domain SQLite + 130 migrasi
-│   ├── memory/             # Memori perbualan berterusan
+│   ├── memory/             # Memori perbualan kekal
 │   ├── oauth/              # Penyedia, perkhidmatan dan utiliti OAuth
-│   ├── skills/             # Rangka kerja kemahiran boleh diperluas
+│   ├── skills/             # Rangka kerja kemahiran yang boleh diperluas
 │   ├── usage/              # Penjejakan penggunaan dan pengiraan kos
-│   └── localDb.ts          # Lapisan eksport semula sahaja — jangan sekali-kali tambahkan logik di sini
+│   └── localDb.ts          # Lapisan eksport semula sahaja — jangan sekali-kali tambah logik di sini
 ├── middleware/              # Perisian tengah permintaan (promptInjectionGuard)
 ├── mitm/                   # Proksi MITM (sijil, DNS, penghalaan sasaran)
 ├── shared/
@@ -313,13 +313,13 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── constants/          # Takrif penyedia (329), skop MCP, 20 strategi penghalaan
 │   ├── utils/              # Pemutus litar, pensanitasi, pembantu pengesahan
 │   └── validation/         # Skema Zod v4
-└── sse/                    # Saluran pemprosesan proksi SSE
+└── sse/                    # Talian paip proksi SSE
 
 open-sse/                   # Ruang kerja @omniroute/open-sse
 ├── executors/              # 150 modul pelaksana (kelas pelaksana + pembantu bagi setiap penyedia)
 ├── handlers/               # 11 pengendali permintaan (sembang, respons, pembenaman, imej, dll.)
 ├── mcp-server/             # Pelayan MCP (110 alat unik, 3 pengangkutan, 33 skop)
-├── services/               # 178 perkhidmatan peringkat atas (combo, autoCombo, rateLimitManager, dll.)
+├── services/               # 178 perkhidmatan peringkat teratas (combo, autoCombo, rateLimitManager, dll.)
 ├── translator/             # Penterjemah format (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Pengubah Responses API
 └── utils/                  # 22 modul utiliti (strim, TLS, proksi, pengelogan)
@@ -341,7 +341,7 @@ docs/
 ├── compression/             # Panduan dan peraturan pemampatan
 ├── dev/                     # Panduan pembangunan
 ├── diagrams/                # Rajah seni bina
-├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── frameworks/              # MCP, A2A, OpenCode, Memori, Kemahiran
 ├── guides/                  # Panduan pengguna, Docker, persediaan, penyelesaian masalah
 ├── i18n/                    # Terjemahan README yang diantarabangsakan
 ├── marketing/               # Bahan pemasaran
@@ -351,7 +351,7 @@ docs/
 ├── releases/                # Nota keluaran
 ├── routing/                 # Enjin auto-combo, main semula penaakulan
 ├── screenshots/             # Tangkapan skrin papan pemuka
-├── security/                # Pagar keselamatan, pematuhan, penyamaran, token
+├── security/                # Pagar keselamatan, pematuhan, mod senyap, token
 └── specs/                   # Spesifikasi reka bentuk
 ```
 
@@ -412,9 +412,12 @@ Tulis ujian unit dalam `tests/unit/` yang sekurang-kurangnya merangkumi:
 
 ---
 
-## Releasing
+## Pengeluaran
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Pengeluaran diurus melalui aliran kerja `/generate-release`. Apabila GitHub Release baharu dicipta, pakej tersebut **diterbitkan secara automatik ke npm** melalui GitHub Actions.
+
+Untuk penggunaan VPS, gunakan `npm run build:release` (bukan `npm run build`) — arahan ini menjalankan binaan semula yang bersih, menghimpunkan berkas ke dalam `dist/`, dan menulis penanda `dist/BUILD_SHA`.
+Kemudian gunakan kemahiran `/deploy-vps-*-cc` yang menyegerakkan `dist/` melalui rsync ke direktori `app/` jauh.
 
 ---
 

@@ -13,17 +13,17 @@ UI/UX፣ i18n፣ CLI፣ database እና build/deploy ለውጦችን ከውሎ�
 
 ---
 
-## የልማት ማዋቀር
+## የልማት ዝግጅት
 
 ### ቅድመ ሁኔታዎች
 
-- **Node.js** `>=22.22.2 <23`፣ ወይም `>=24.0.0 <27` (የሚመከረው፦ 24 LTS)
+- **Node.js** `>=22.22.2 <23`፣ ወይም `>=24.0.0 <27` (የሚመከር፦ 24 LTS)
 - **npm** 10+
 
-> **የnpm v11+ ተጠቃሚዎች (Node 24+)፦** `npm install`ን ካስኬዱ በኋላ፣ ቤተኛ ሞጁሎች መጫናቸውን ያረጋግጡ፦
+> **የnpm v11+ ተጠቃሚዎች (Node 24+)፦** `npm install`ን ካስኬዱ በኋላ ኔቲቭ ሞጁሎች መጫናቸውን ያረጋግጡ፦
 > `node -e "require('better-sqlite3')"`. በ`MODULE_NOT_FOUND` ካልተሳካ፣
 > `npm approve-scripts better-sqlite3 && npm install`ን ያስኪዱ።
-> [የችግር መፍቻ](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module)ን ይመልከቱ።
+> [ችግር መፍቻ](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module)ን ይመልከቱ።
 
 - **Git**
 
@@ -38,89 +38,89 @@ npm install
 ### የአካባቢ ተለዋዋጮች
 
 ```bash
-# የእርስዎን .env ከአብነቱ ይፍጠሩ
+# .envዎን ከአብነቱ ይፍጠሩ
 cp .env.example .env
 
-# አስፈላጊ ሚስጥሮችን ይፍጠሩ
+# አስፈላጊ ምስጢሮችን ይፍጠሩ
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
 ለልማት ቁልፍ ተለዋዋጮች፦
 
-| ተለዋዋጭ                  | የልማት ነባሪ                 | መግለጫ                |
+| ተለዋዋጭ                  | ነባሪ የልማት እሴት             | መግለጫ                |
 | ---------------------- | ------------------------ | ------------------- |
-| `PORT`                 | `20128`                  | የአገልጋይ ወደብ          |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | የፊት ገጽ መሠረታዊ URL    |
-| `JWT_SECRET`           | (ከላይ ይፍጠሩ)               | የJWT ፊርማ ሚስጥር       |
+| `PORT`                 | `20128`                  | የሰርቨር ወደብ           |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | የፍሮንትኤንድ መሠረታዊ URL  |
+| `JWT_SECRET`           | (ከላይ ይፍጠሩ)               | የJWT ፊርማ ምስጢር       |
 | `INITIAL_PASSWORD`     | `CHANGEME`               | የመጀመሪያ መግቢያ የይለፍ ቃል |
-| `APP_LOG_LEVEL`        | `info`                   | የምዝግብ ዝርዝር ደረጃ      |
+| `APP_LOG_LEVEL`        | `info`                   | የሎግ ዝርዝርነት ደረጃ      |
 
 ### የዳሽቦርድ ቅንብሮች
 
-ዳሽቦርዱ በአካባቢ ተለዋዋጮችም ሊዋቀሩ ለሚችሉ ባህሪያት የUI ማብሪያ/ማጥፊያዎችን ያቀርባል፦
+ዳሽቦርዱ በአካባቢ ተለዋዋጮችም ሊዋቀሩ ለሚችሉ ባህሪያት የUI ማብሪያና ማጥፊያዎችን ያቀርባል፦
 
-| የቅንብር መገኛ     | ማብሪያ/ማጥፊያ    | መግለጫ                      |
-| ------------- | ------------ | ------------------------- |
-| ቅንብሮች → የላቀ   | የማረሚያ ሁነታ    | የማረሚያ ጥያቄ ምዝግቦችን ያንቁ (UI) |
-| ቅንብሮች → አጠቃላይ | የጎን አሞሌ ታይነት | የጎን አሞሌ ክፍሎችን አሳይ/ደብቅ     |
+| የቅንብር ቦታ      | ማብሪያና ማጥፊያ   | መግለጫ                    |
+| ------------- | ------------ | ----------------------- |
+| ቅንብሮች → የላቀ   | የማረሚያ ሁነታ    | የማረሚያ ጥያቄ ሎጎችን አንቃ (UI) |
+| ቅንብሮች → አጠቃላይ | የጎን አሞሌ ታይነት | የጎን አሞሌ ክፍሎችን አሳይ/ደብቅ   |
 
-እነዚህ ቅንብሮች በውሂብ ጎታው ውስጥ ይከማቻሉ፣ እንደገና ከተጀመረም በኋላ ይቆያሉ፤ ሲዋቀሩም የenv var ነባሪዎችን ይተካሉ።
+እነዚህ ቅንብሮች በውሂብ ጎታው ውስጥ ይቀመጣሉ፣ እንደገና ከተጀመረም በኋላ ይቆያሉ፤ ሲዋቀሩም የአካባቢ ተለዋዋጭ ነባሪ እሴቶችን ይተካሉ።
 
-### በአካባቢያዊ ማስኬድ
+### በአካባቢያዊ ሁኔታ ማስኬድ
 
 ```bash
-# የልማት ሁነታ (ፈጣን ዳግም ጭነት)
+# የልማት ሁነታ (በቀጥታ እንደገና መጫን)
 npm run dev
 
 # የምርት ግንባታ
 npm run build    # next build → .build/next/ ከዚያ assembleStandalone → dist/
 npm run start
 
-# ለአስተዋጽዖ አድራጊ ለውጦች ፈጣን የጀርባ/API-ብቻ ማጠናቀር
+# ለአስተዋጽኦ አቅራቢ ለውጦች ፈጣን የባክኤንድ/API-ብቻ ማጠናቀር
 npm run build:contributor
 
-# የልቀት ግንባታ (ንጹሕ ዳግም ግንባታ + HEAD መመልከቻ — ለማሰማራት ያስፈልጋል)
+# የልቀት ግንባታ (ንጹሕ ዳግም ግንባታ + HEAD ጠቋሚ — ለማሰማራት አስፈላጊ)
 npm run build:release   # rm -rf .build dist && build + dist/BUILD_SHAን ይጽፋል
 
 # የተለመደ የወደብ ውቅር
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-የአስተዋጽዖ አድራጊው ግንባታ የማጠናቀር-ብቻ ማረጋገጫን ያከናውናል፦ ራሱን የቻለውን
-ስርጭት አያዘጋጅም፣ እንዲሁም አማራጭ ቤተኛ የማሸጊያ ሀብቶችን አይገነባም። ለማሰራጨት ዝግጁ የሆነውን ጥቅል
-ማረጋገጥ ሲፈልጉ መደበኛውን የምርት ግንባታ ይጠቀሙ።
+የአስተዋጽኦ አቅራቢው ግንባታ የማጠናቀር-ብቻ ማረጋገጥን ያከናውናል፦ ራሱን የቻለውን
+ስርጭት አያዘጋጅም፣ እንዲሁም አማራጭ የኔቲቭ ማሸጊያ ንብረቶችን አይገነባም። ለመላክ ዝግጁ የሆነውን ጥቅል
+ማረጋገጥ ሲያስፈልግዎ መደበኛውን የምርት ግንባታ ይጠቀሙ።
 
 ### የግንባታ ውጤት አቀማመጥ
 
-| ማውጫ       | ይዘቶች                                                                 | ክትትል ይደረግበታል |
-| --------- | -------------------------------------------------------------------- | ------------ |
-| `src/`    | የመተግበሪያ ምንጭ (TypeScript / TSX)                                       | አዎ           |
-| `.build/` | መካከለኛ ውጤቶች — የ`next build` ውጤት (gitignored፣ `distDir = .build/next`) | አይ           |
-| `dist/`   | ለማሰራጨት ዝግጁ ጥቅል — በ`assembleStandalone` የተዘጋጀ (gitignored)            | አይ           |
+| ማውጫ       | ይዘቶች                                                                   | በGit የሚከታተል |
+| --------- | ---------------------------------------------------------------------- | ----------- |
+| `src/`    | የመተግበሪያ ምንጭ (TypeScript / TSX)                                         | አዎ          |
+| `.build/` | መካከለኛ ውጤቶች — የ`next build` ውጤት (በgit ችላ የተባለ፣ `distDir = .build/next`) | አይ          |
+| `dist/`   | ለመላክ ዝግጁ የሆነ ጥቅል — በ`assembleStandalone` የተዘጋጀ (በgit ችላ የተባለ)          | አይ          |
 
-የግንባታ ሂደቱ አንድ ዙር ነው፦
+የግንባታ የሥራ ሂደቱ ነጠላ ዙር ነው፦
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (የNext.js ውጤት)
-  └─ assembleStandalone()                 (ራሱን የቻለውን + static + public + ቤተኛ ሀብቶችን ይቀዳል)
+  └─ assembleStandalone()                 (ራሱን የቻለውን + ስታቲክ + ይፋዊ + ኔቲቭ ንብረቶችን ይቀዳል)
        └─ ውጤት፦ dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` በተጨማሪ መጀመሪያ ሁለቱንም ማውጫዎች ያጸዳል፣ እና
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`)ን እንደ የማሰማራት ታማኝነት መመልከቻ ይጽፋል።
+`npm run build:release` በተጨማሪም መጀመሪያ ሁለቱንም ማውጫዎች ያጸዳል፣ እና
+`dist/BUILD_SHA`ን (= `git rev-parse --short HEAD`) እንደ የማሰማራት ትክክለኛነት ጠቋሚ ይጽፋል።
 
-`npm run build:contributor` የጀርባ-ብቻ ግንባታ መገለጫውን ይጠቀማል። በግንባታ ጊዜ ለጊዜው
-የዳሽቦርድ UI ፋይሎችን በተተኪዎች ይተካል፣ የAPI መስመር አስተናጋጆችን ይጠብቃል፣ እና ከግንባታው በኋላ ዋናዎቹን ፋይሎች
-ይመልሳል። የዳሽቦርድ UIን ለሚነኩ ለውጦች ወይም ለሙሉ
-የልቀት ማረጋገጫ `npm run build`ን ይጠቀሙ፤ የአስተዋጽዖ አድራጊው መገለጫ የልቀት ግንባታውን አይተካም።
+`npm run build:contributor` የባክኤንድ-ብቻ ግንባታ መገለጫውን ይጠቀማል። በግንባታ ጊዜ
+የዳሽቦርድ UI ፋይሎችን በጊዜያዊነት በተተኪ ይቀይራል፣ የAPI መስመር አስተናጋጆችን ያቆያል፣ እና ከግንባታው በኋላ
+ዋናዎቹን ፋይሎች ይመልሳል። የዳሽቦርድ UIን ለሚነኩ ለውጦች ወይም ለሙሉ
+የልቀት ማረጋገጫ `npm run build`ን ይጠቀሙ፤ የአስተዋጽኦ አቅራቢው መገለጫ የልቀት ግንባታውን አይተካም።
 
 > **የVPS ማሰማራት ማስታወሻ፦** የርቀት ምስል ማውጫ `/usr/lib/node_modules/omniroute/app/`
-> አልተለወጠም። የማሰማራት ክህሎቶቹ የ`dist/`ን ይዘቶች ወደዚያ rsync ያደርጋሉ።
-> የተለወጠው በማከማቻው ውስጥ ያለው የግንባታ ውጤት ዱካ ብቻ ነው (`app/` → `dist/`)።
+> አልተቀየረም። የማሰማራት ክህሎቶቹ የ`dist/`ን ይዘቶች ወደዚያ rsync ያደርጋሉ።
+> የተቀየረው በማከማቻው ውስጥ ያለው የግንባታ ውጤት ዱካ ብቻ ነው (`app/` → `dist/`)።
 
-ነባሪ URLዎች፦
+ነባሪ URLs፦
 
 - **ዳሽቦርድ**፦ `http://localhost:20128/dashboard`
 - **API**፦ `http://localhost:20128/v1`
@@ -299,63 +299,63 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── api/                # API መስመሮች (51 ማውጫዎች)
 │   └── login/              # የማረጋገጫ ገጾች (.tsx)
 ├── domain/                 # የፖሊሲ ሞተር (policyEngine, comboResolver, costRules, ወዘተ.)
-├── lib/                    # ዋና የንግድ ሥርዓተ-አመክንዮ (.ts)
-│   ├── a2a/                # የAgent-to-Agent v0.3 ፕሮቶኮል ሰርቨር
-│   ├── acp/                # የAgent Communication Protocol መዝገብ
+├── lib/                    # ዋና የንግድ ሎጂክ (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 ፕሮቶኮል አገልጋይ
+│   ├── acp/                # Agent Communication Protocol መዝገብ
 │   ├── compliance/         # የተገዢነት ፖሊሲ ሞተር
-│   ├── db/                 # የSQLite ዶሜይን ሞጁሎች + 130 ማይግሬሽኖች
+│   ├── db/                 # SQLite የጎራ ሞጁሎች + 130 ሽግግሮች
 │   ├── memory/             # ቋሚ የውይይት ማህደረ ትውስታ
-│   ├── oauth/              # የOAuth አቅራቢዎች፣ አገልግሎቶች እና መገልገያዎች
-│   ├── skills/             # ሊስፋፋ የሚችል የክህሎት ማዕቀፍ
+│   ├── oauth/              # OAuth አቅራቢዎች፣ አገልግሎቶች እና መገልገያዎች
+│   ├── skills/             # ሊሰፋ የሚችል የክህሎት ማዕቀፍ
 │   ├── usage/              # የአጠቃቀም ክትትል እና የወጪ ስሌት
-│   └── localDb.ts          # ዳግም-ወደውጪ መላኪያ ንብርብር ብቻ — እዚህ ፈጽሞ ሥርዓተ-አመክንዮ አይጨምሩ
+│   └── localDb.ts          # እንደገና ወደ ውጭ የመላኪያ ንብርብር ብቻ — እዚህ ሎጂክ ፈጽሞ አይጨምሩ
 ├── middleware/              # የጥያቄ middleware (promptInjectionGuard)
-├── mitm/                   # MITM ፕሮክሲ (ሰርቲፊኬት፣ DNS፣ የዒላማ ማዘዋወር)
+├── mitm/                   # MITM ፕሮክሲ (የምስክር ወረቀት፣ DNS፣ የመዳረሻ ማዘዋወር)
 ├── shared/
-│   ├── components/         # የReact ኮምፖነንቶች (.tsx)
-│   ├── constants/          # የአቅራቢ መግለጫዎች (329)፣ የMCP ወሰኖች፣ 20 የማዘዋወር ስልቶች
-│   ├── utils/              # የወረዳ ተቋራጭ፣ ማጽጃ፣ የማረጋገጫ አጋዥ መሣሪያዎች
-│   └── validation/         # የZod v4 መርሐግብሮች
-└── sse/                    # የSSE ፕሮክሲ ቧንቧ መስመር
+│   ├── components/         # React ኮምፖነንቶች (.tsx)
+│   ├── constants/          # የአቅራቢ ትርጓሜዎች (329)፣ MCP ወሰኖች፣ 20 የማዘዋወር ስልቶች
+│   ├── utils/              # የወረዳ መቋረጫ፣ ማጽጃ፣ የማረጋገጫ ረዳቶች
+│   └── validation/         # Zod v4 ንድፎች
+└── sse/                    # SSE የፕሮክሲ ቧንቧ መስመር
 
 open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 150 የማስፈጸሚያ ሞጁሎች (የማስፈጸሚያ ክፍሎች + ለእያንዳንዱ አቅራቢ የተዘጋጁ አጋዥ መሣሪያዎች)
-├── handlers/               # 11 የጥያቄ ተቆጣጣሪዎች (ውይይት፣ ምላሾች፣ embeddings፣ ምስሎች፣ ወዘተ.)
-├── mcp-server/             # MCP ሰርቨር (110 ልዩ መሣሪያዎች፣ 3 ማጓጓዣዎች፣ 33 ወሰኖች)
+├── executors/              # 150 የአስፈጻሚ ሞጁሎች (የአስፈጻሚ ክፍሎች + የእያንዳንዱ አቅራቢ ረዳቶች)
+├── handlers/               # 11 የጥያቄ ተቆጣጣሪዎች (ውይይት፣ ምላሾች፣ መክተቻዎች፣ ምስሎች፣ ወዘተ.)
+├── mcp-server/             # MCP አገልጋይ (110 ልዩ መሣሪያዎች፣ 3 ማጓጓዣዎች፣ 33 ወሰኖች)
 ├── services/               # 178 ከፍተኛ-ደረጃ አገልግሎቶች (combo, autoCombo, rateLimitManager, ወዘተ.)
 ├── translator/             # የቅርጸት ተርጓሚዎች (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # የResponses API ቀያሪ
+├── transformer/            # Responses API ቀያሪ
 └── utils/                  # 22 የመገልገያ ሞጁሎች (ዥረት፣ TLS፣ ፕሮክሲ፣ ምዝግብ ማስቀመጥ)
 
-electron/                   # Electron የዴስክቶፕ መተግበሪያ (ባለብዙ መድረክ)
+electron/                   # Electron የዴስክቶፕ መተግበሪያ (መድረክ-ተሻጋሪ)
 
 tests/
-├── unit/                   # የNode.js የሙከራ አስኬጅ (1,574 የሙከራ ፋይሎች)
+├── unit/                   # Node.js የሙከራ አስኪያጅ (1,574 የሙከራ ፋይሎች)
 ├── integration/            # የውህደት ሙከራዎች
-├── e2e/                    # የPlaywright ሙከራዎች
+├── e2e/                    # Playwright ሙከራዎች
 ├── security/               # የደህንነት ሙከራዎች
-├── translator/             # ለተርጓሚው የተለዩ ሙከራዎች
+├── translator/             # ተርጓሚ-ተኮር ሙከራዎች
 └── load/                   # የጭነት ሙከራዎች
 
 docs/
 ├── adr/                     # የሥነ-ሕንፃ ውሳኔ መዝገቦች
-├── architecture/            # የሥርዓት ሥነ-ሕንፃ እና የመቋቋም ችሎታ
-├── comparison/              # OmniRoute ከአማራጮች ጋር ሲነጻጸር
-├── compression/             # የማመቅ መመሪያዎች እና ደንቦች
+├── architecture/            # የስርዓት ሥነ-ሕንፃ እና የመቋቋም ችሎታ
+├── comparison/              # OmniRoute ከአማራጮች ጋር ንጽጽር
+├── compression/             # የመጭመቂያ መመሪያዎች እና ደንቦች
 ├── dev/                     # የልማት መመሪያዎች
-├── diagrams/                # የሥነ-ሕንፃ ንድፎች
-├── frameworks/              # MCP፣ A2A፣ OpenCode፣ ማህደረ ትውስታ፣ ክህሎቶች
+├── diagrams/                # የሥነ-ሕንፃ ሥዕላዊ መግለጫዎች
+├── frameworks/              # MCP፣ A2A፣ OpenCode፣ Memory፣ Skills
 ├── guides/                  # የተጠቃሚ መመሪያ፣ Docker፣ ማዋቀር፣ መላ መፈለግ
-├── i18n/                    # ወደ ተለያዩ ቋንቋዎች የተተረጎሙ README ትርጉሞች
+├── i18n/                    # ዓለም አቀፋዊ የተደረጉ README ትርጉሞች
 ├── marketing/               # የግብይት ቁሳቁሶች
 ├── ops/                     # ማሰማራት፣ ፕሮክሲ፣ ሽፋን፣ ልቀቶች
-├── providers/               # ለአቅራቢዎች የተለዩ ሰነዶች
-├── reference/               # የAPI ማጣቀሻ፣ የenv ተለዋዋጮች፣ CLI መሣሪያዎች፣ ነፃ ደረጃዎች
+├── providers/               # አቅራቢ-ተኮር ሰነዶች
+├── reference/               # API ማጣቀሻ፣ የአካባቢ ተለዋዋጮች፣ CLI መሣሪያዎች፣ ነጻ ደረጃዎች
 ├── releases/                # የልቀት ማስታወሻዎች
-├── routing/                 # የራስ-ሰር ጥምር ሞተር፣ የማመዛዘን ዳግም አጫውት
-├── screenshots/             # የዳሽቦርድ ቅጽበታዊ ምስሎች
-├── security/                # መከላከያዎች፣ ተገዢነት፣ ስውርነት፣ ቶከኖች
-└── specs/                   # የንድፍ ዝርዝር መግለጫዎች
+├── routing/                 # ራስ-ሰር የጥምረት ሞተር፣ የምክንያታዊነት ድጋሚ ማጫወት
+├── screenshots/             # የዳሽቦርድ ቅጽበታዊ ገጽ ዕይታዎች
+├── security/                # የመከላከያ ገደቦች፣ ተገዢነት፣ ስውርነት፣ ቶከኖች
+└── specs/                   # የንድፍ ዝርዝር መስፈርቶች
 ```
 
 ---

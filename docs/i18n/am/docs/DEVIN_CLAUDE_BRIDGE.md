@@ -5,122 +5,125 @@
 ---
 
 `devin-cli-agentic` እውነተኛው Claude Code runtime የOmniRouteን አካባቢያዊ Anthropic
-Messages endpoint እንዲጠቀም ያስችላል፤ በዚህ ጊዜ ኦፊሴላዊው Devin CLI የሞዴል ምላሾችን በACP stdio ያቀርባል።
-ነባሮቹን Anthropic፣ Claude OAuth፣ Claude Web ወይም `devin-cli` providers አያሻሽልም።
+Messages endpoint እንዲጠቀም ሲያደርግ፣ ኦፊሴላዊው Devin CLI ደግሞ በACP stdio በኩል የሞዴል ምላሾችን
+ያቀርባል። ነባሮቹን Anthropic፣ Claude OAuth፣ Claude Web ወይም `devin-cli` providers
+አይቀይርም።
 
-በደንበኛው ለሚተዳደሩ tool calls፣ የClaude-format tool-capable provider በሆነው
-`devin-cli-agentic` (alias `dva`) በኩል route ያድርጉ። ነባሩ `devin-cli` (`dv`) ACP executor
-text-only ነው፦ የDevinን no-tools summarizer ያስኬዳል እና tool calls መመለስ አይችልም። የሞዴሉ
-metadata በዚሁ መሠረት ምልክት ተደርጎበታል፣ ስለዚህ tool-required combo routing ከእሱ ይርቃል።
+በደንበኛው የሚተዳደሩ የመሣሪያ ጥሪዎችን በ`devin-cli-agentic` (ቅጽል ስሙ `dva`)፣
+መሣሪያዎችን መጠቀም በሚችለው Claude-format provider በኩል ያስተላልፉ። ቀድሞው `devin-cli` (`dv`) ACP executor
+ጽሑፍ-ብቻ ነው፦ የDevinን መሣሪያ-አልባ summarizer ያስኬዳል፣ እና የመሣሪያ ጥሪዎችን መመለስ አይችልም። የሞዴሉ
+metadata በዚሁ መሠረት ምልክት ስለተደረገበት፣ መሣሪያ የሚያስፈልገው combo routing እሱን ያስወግደዋል።
 
-> **የአሁኑ ሁኔታ፦ Claude Code `2.1.258` ተወስኖ ተቆልፏል፤ offline እና live validation ለመጨረሻ ጊዜ
-> በ`2.1.220` ላይ ተመዝግቧል።** የ`2.1.220` pin በDevin CLI
-> `3000.2.17` እና model `swe-1-7-lightning` በኩል ሦስት የተነጣጠሉ scenarios አጠናቋል፤ ያ የመጨረሻ live run በደንበኛው የሚተዳደሩ `Read`፣
-> `Edit` እና `Bash` turns፣ የተሳኩ `npm test` ውጤቶች፣ project command እና skill
-> discovery፣ Devin-only routing እና ዜሮ Claude egress አረጋግጧል። ከዚያም pin ወደ `2.1.258`
-> ከፍ ተደርጓል (የOmniRoute Claude identity የሚመስለው የCLI generation፣ እና
-> የFable 5.1 tierን በተፈጥሮ የሚያካትት የመጀመሪያው line)። በአዲሱ pin ላይ install layer እና `claude --version`
-> በተወሰነው base image ላይ ተረጋግጠዋል፣ እንዲሁም bridge unit suite፣ `compose config` እና
-> static isolation proof ያልፋሉ — ነገር ግን offline mock scenario እና live three-scenario
-> suite እስካሁን እንደገና አልተካሄዱም። በዚህ pin ድልድዩ ላይ ከመተማመንዎ በፊት እንደገና ያካሂዷቸው ("Updating pinned tools"ን ይመልከቱ)።
+> **የአሁኑ ሁኔታ፦ Claude Code `2.1.258` ላይ ተቆልፏል፤ offline እና live ማረጋገጫ ለመጨረሻ ጊዜ
+> በ`2.1.220` ላይ ተመዝግቧል።** የ`2.1.220` ቁልፍ በDevin CLI
+> `3000.2.17` እና model `swe-1-7-lightning` በኩል ሦስት የተነጠሉ scenariosን አጠናቋል፤ ያ የመጨረሻው live ሙከራ በደንበኛው የሚተዳደሩ `Read`፣
+> `Edit` እና `Bash` turns፣ የተሳካ `npm test` ውጤቶች፣ የproject command እና skill
+> discovery፣ በDevin-ብቻ routing እና ዜሮ Claude egress መኖሩን አረጋግጧል። ከዚያም ቁልፉ ወደ `2.1.258`
+> ከፍ ተደርጓል (ይህም የOmniRoute Claude identity የሚመስለው የCLI generation እና
+> የFable 5.1 tierን በተፈጥሯዊ ሁኔታ የሚያካትት የመጀመሪያው line ነው)። በአዲሱ ቁልፍ ላይ install layer እና `claude --version`
+> በተቆለፈው base image ላይ ተረጋግጠዋል፣ እንዲሁም bridge unit suite፣ `compose config` እና
+> static isolation proof ያልፋሉ—ነገር ግን offline mock scenario እና live የሦስት-scenario
+> suite እስካሁን እንደገና አልተካሄዱም። በዚህ ቁልፍ bridgeን ከመታመንዎ በፊት እንደገና ያስኪዷቸው
+> ("የተቆለፉ መሣሪያዎችን ማዘመን" የሚለውን ይመልከቱ)።
 
-## አርክቴክቸር
+## አወቃቀር
 
 ```text
-Claude Code 2.1.258 (የተነጠለ non-root Linux container)
+Claude Code 2.1.258 (በተነጠለ root ያልሆነ Linux container ውስጥ)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (Claude-format፣ no-auth provider)
-  -> devin acp --agent-type summarizer (ኦፊሴላዊ ACP stdio፣ የDevin tools የሉትም)
-  -> በወሰነው devin-auth volume ውስጥ ያለ Devin account
+  -> devin-cli-agentic (Claude-format፣ ማረጋገጫ የማይፈልግ provider)
+  -> devin acp --agent-type summarizer (ኦፊሴላዊ ACP stdio፣ ያለ Devin መሣሪያዎች)
+  -> በተወሰነው devin-auth volume ውስጥ ያለ Devin account
 ```
 
-የኦፊሴላዊው CLI default ACP agent የራሱን tools ማስኬድ ስለሚችል፣ ይህ bridge አይጠቀምበትም።
-የtools የሌሉት ኦፊሴላዊ CLI mode ያለውን የተወሰነ `summarizer` ACP agent ያስጀምራል፣ እና
-serialized Anthropic requestን እንደ execution trace ይቀርጻል። ሌላ Claude-owned
-action በሚያስፈልግበት ጊዜ፣ ምላሹ በትክክል አንድ client tool envelope መያዝ አለበት። ማንኛውም ACP
-`tool_call` ወይም `tool_call_update` ምላሹ እንደተሳካ ሪፖርት ከመደረጉ በፊት ውድቅ ይደረጋል።
+የኦፊሴላዊው CLI ነባሪ ACP agent የራሱን መሣሪያዎች ማስኬድ ስለሚችል፣ ይህ bridge
+እሱን አይጠቀምም። ቋሚውን `summarizer` ACP agent ያስጀምራል፤ የእሱ ኦፊሴላዊ CLI mode መሣሪያዎች የሉትም፣ እና
+ተከታታይ የተደረገውን Anthropic request እንደ execution trace ያዋቅረዋል። ሌላ በClaude የሚተዳደር
+እርምጃ ሲያስፈልግ፣ ምላሹ በትክክል አንድ የደንበኛ መሣሪያ envelope መያዝ አለበት። ማንኛውም ACP
+`tool_call` ወይም `tool_call_update` አንድ ምላሽ ስኬታማ ተብሎ ከመዘገቡ በፊት ውድቅ ይደረጋል።
 
 በ`open-sse/executors/devin-agentic/serializer.ts` ውስጥ ያለው serializer `system`፣
 `text`፣ `tool_use`፣ `tool_result`፣ `thinking`፣ `redacted_thinking`፣ `tool_choice` እና
-በClaude Code የቀረቡትን tools እንዳሉ ያቆያል። Images እና ያልታወቁ blocks በግልጽ ሁኔታ ይወድቃሉ። ትላልቅ tool results
-የሚታይ truncation marker ይጠቀማሉ።
+በClaude Code የቀረቡትን መሣሪያዎች እንዳሉ ይጠብቃል። Images እና ያልታወቁ blocks በግልጽ ሁኔታ እንዲሳኩ ያደርጋሉ። ትልልቅ የመሣሪያ ውጤቶች
+የሚታይ የመቆረጥ ምልክት ይጠቀማሉ።
 
-parser በእያንዳንዱ model turn አንድ ራሱን የቻለ `<tool>{...}</tool>` envelope ይቀበላል።
-ስሙን ከrequest tool list ጋር ያረጋግጣል፣ argumentsን በtool JSON
-Schema መሠረት ያረጋግጣል፣ የተቀላቀለ narrative/actionsን ውድቅ ያደርጋል፣ እና አንድ bounded repair ይፈቅዳል። ከዚያ Claude Code
-የተገኘውን Anthropic `tool_use` በአካባቢው ያስኬዳል እና `tool_result`ን በOmniRoute በኩል
-መልሶ ይልካል።
+parser በእያንዳንዱ የሞዴል turn አንድ ለብቻው የቆመ `<tool>{...}</tool>` envelope ይቀበላል። ስሙን
+ከrequestው የመሣሪያዎች ዝርዝር ጋር ያረጋግጣል፣ argumentsን ከዚያ መሣሪያ JSON
+Schema ጋር ያረጋግጣል፣ የተቀላቀለ narrative/actionsን ውድቅ ያደርጋል፣ እንዲሁም አንድ የተገደበ repair ይፈቅዳል። ከዚያ Claude Code
+የተገኘውን Anthropic `tool_use` በአካባቢው ያስኬዳል፣ እና `tool_result`ን በOmniRoute በኩል መልሶ
+ይልካል።
 
 ## ራስ-ሰር routing
 
-provider ካልታገደ በOmniRoute `auto/*` candidate pools ውስጥ ብቁ ነው።
-የCandidate eligibility መኖር selectionን አያረጋግጥም፦ የcombo routing strategy (ለምሳሌ፣
-last-known-good) ሌላ provider ሊመርጥ ይችላል። እያንዳንዱ request በDevin በኩል
+providerው ካልታገደ በOmniRoute `auto/*` candidate pools ውስጥ ለመመረጥ ብቁ ነው።
+የcandidate ብቁነት መመረጥን ዋስትና አይሰጥም፦ የcomboው routing strategy (ለምሳሌ፣
+last-known-good) ሌላ providerን ሊመርጥ ይችላል። እያንዳንዱ request በDevin በኩል
 እንዲያልፍ ሲፈልጉ `dva/<model>` ወይም Devin-first combo ይጠቀሙ።
 
 ## ማግለል እና የስጋት ሞዴል
 
-የአስተናጋጁ Claude ጭነት፣ መለያ እና ውቅር ከወሰን ውጭ ሲሆኑ እንደ
-የተከለከሉ ይቆጠራሉ። የCompose አገልግሎቶቹ፦
+የአስተናጋጁ Claude ጭነት፣ መለያ እና ውቅር ከዚህ ወሰን ውጭ ሲሆኑ
+እንደ የተከለከሉ ይቆጠራሉ። የCompose አገልግሎቶቹ፦
 
-- እንደ UID/GID `10001:10001`፣ ለንባብ ብቻ ከተፈቀደ የስር ፋይል ስርዓት፣ ከተወገዱ ችሎታዎች እና
-  `no-new-privileges` ጋር ይሰራሉ፤
-- የግል `/home/bridge`፣ ለClaude ውቅር የተወሰነ የማከማቻ ቦሊዩም፣ የተነጠለ OmniRoute ውሂብ
-  እና የተለየ `devin-auth` ቦሊዩም ይጠቀማሉ፤
-- ጊዜያዊ `.sandbox` የስራ ቦታዎችን/ማስረጃዎችን ብቻ ይጭናሉ፤
-- የአስተናጋጁን መነሻ ማውጫ፣ Keychain፣ SSH፣ የደመና ማረጋገጫዎች ወይም Docker socket አይጭኑም፤
+- በUID/GID `10001:10001`፣ ለንባብ ብቻ በሆነ የስር ፋይል ስርዓት፣ በተወገዱ ችሎታዎች እና
+  በ`no-new-privileges` ይሰራሉ፤
+- የግል `/home/bridge`፣ የተለየ የClaude ውቅር ቮልዩም፣ የተገለለ የOmniRoute ውሂብ
+  እና የተለየ `devin-auth` ቮልዩም ይጠቀማሉ፤
+- የሚጫኑት ሊጣሉ የሚችሉ `.sandbox` የሥራ ቦታዎችን/ማስረጃዎችን ብቻ ነው፤
+- የአስተናጋጁን መነሻ ማውጫ፣ Keychain፣ SSH፣ የደመና ማረጋገጫዎች ወይም የDocker ሶኬት አይጭኑም፤
 - ግልጽ አካባቢዎችን ይገነባሉ እና የAnthropic API/OAuth/ማዘዋወሪያ ተለዋዋጮችን ያስወግዳሉ፤
-- የClaude Code ኢንፈረንስን በአካባቢው ብቻ የሚሰራ ቁልፍ በመጠቀም ወደ `http://omniroute:20128` ብቻ ይመራሉ።
+- የClaude Code ኢንፈረንስን በአካባቢያዊ-ብቻ ቁልፍ ወደ `http://omniroute:20128` ብቻ ይመራሉ።
 
-ከመስመር ውጭ ያለው መገለጫ ውስጣዊ አውታረ መረብ ይጠቀማል። በቀጥታ መገለጫው ውስጥ OmniRoute ወደ
-ይፋዊዎቹ የDevin መዳረሻዎች የሚደርሰው በ`network-guard` ብቻ ነው፤ ያልተዛመዱ መዳረሻዎች ይከለከላሉ።
-Claude Code የተለየ ሁሉንም ወጪ ትራፊክ የሚከለክል ጠባቂ አለው፣ እና በ`NO_PROXY` አማካኝነት መድረስ የሚችለው የአካባቢውን OmniRoute
-አገልግሎት ብቻ ነው። የጠባቂ ኦዲት ፋይሎች የሚጫኑት በየራሳቸው የጠባቂ ሂደት ብቻ ነው።
-ስክሪፕቶቹ ከቶከን ነጻ የሆነ ማስረጃን ከመላካቸው በፊት የፋይል ባለቤትነትን፣ ሁነታን፣ የአገናኝ ብዛትን እና እያንዳንዱን ውሳኔ
+ከመስመር ውጭ ያለው መገለጫ ውስጣዊ አውታረ መረብ ይጠቀማል። በቀጥታ መገለጫው ውስጥ፣ OmniRoute ይፋዊ
+የDevin መዳረሻዎችን የሚደርሰው በ`network-guard` በኩል ብቻ ነው፤ ያልተዛመዱ መዳረሻዎች ይከለከላሉ።
+Claude Code የተለየ ሁሉንም የወጪ ትራፊክ የሚከለክል ጠባቂ አለው፣ እና በ`NO_PROXY` በኩል የአካባቢውን OmniRoute
+አገልግሎት ብቻ መድረስ ይችላል። የጠባቂው የኦዲት ፋይሎች የሚጫኑት በየራሳቸው የጠባቂ ሂደት ብቻ ነው።
+ስክሪፕቶቹ ከቶከን ነፃ የሆነ ማስረጃ ከመላካቸው በፊት የፋይል ባለቤትነትን፣ ሁነታን፣ የአገናኝ ብዛትን እና እያንዳንዱን ውሳኔ
 ያረጋግጣሉ።
 
-የማግለል ማረጋገጫውን በተናጠል ያስኪዱ፦
+የማግለል ማረጋገጫውን በተናጥል ያስኪዱ፦
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-ይህም ቶፖሎጂን፣ በስም የተሰየሙ ጭነቶችን፣ root ያልሆኑ/ለንባብ ብቻ የተፈቀዱ ቅንብሮችን፣ ግልጽ የአካባቢ ማዘዋወሪያን፣
-ስሱ የአካባቢ ተለዋዋጮች አለመኖራቸውን፣ Docker socket አለመኖሩን፣ ወደ
-`api.anthropic.com` እና `claude.ai` መድረስ መከልከሉን፣ Devin-ብቻ የሆነ የአቅራቢ ምርጫን እና
-የACP የጀርባ አገልግሎት በማይገኝበት ጊዜ ግልጽ ውድቀትን ያረጋግጣል።
+ይህም ቶፖሎጂን፣ ስም ያላቸው ጭነቶችን፣ root ያልሆኑ/ለንባብ ብቻ የሆኑ ቅንብሮችን፣ ግልጽ የአካባቢ ማዘዋወሪያን፣
+ሚስጥራዊ የአካባቢ ተለዋዋጮች አለመኖራቸውን፣ የDocker ሶኬት አለመኖሩን፣ ወደ
+`api.anthropic.com` እና `claude.ai` የታገደ መዳረሻን፣ Devin-ብቻ የአቅራቢ ምርጫን፣ እና
+የACP የኋላ አገልግሎት በማይገኝበት ጊዜ ግልጽ ውድቀትን ያረጋግጣል።
 
 ## የመጀመሪያ ጊዜ ማዋቀር እና መደበኛ አጠቃቀም
 
-የተወሰነ ስሪት ያለውን image ይገንቡ፦
+የተወሰነ ስሪት ያለውን ምስል ይገንቡ፦
 
 ```bash
 ./scripts/devin-bridge/build
 ```
 
-የተነጠለውን የDevin ቦሊዩም ብቻ ያረጋግጡ፦
+የተገለለውን የDevin ቮልዩም ብቻ ያረጋግጡ፦
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-የመግቢያ ትእዛዙ ለርቀት/container አካባቢዎች የታሰበውን ይፋዊ በእጅ የሚከናወን የቶከን ፍሰት
-ይጠቀማል። እሴቱ በቀጥታ በCLI ጥያቄ ውስጥ ይገባል፤ እንደ የሂደት ነጋሪ እሴት አይተላለፍም፣
-ወደ Git አይጻፍም ወይም ከአስተናጋጁ አይቀዳም።
+የመግቢያ ትዕዛዙ ለርቀት/ኮንቴይነር አካባቢዎች የታሰበውን ይፋዊ በእጅ የቶከን ፍሰት
+ይጠቀማል። እሴቱ በቀጥታ በCLI መጠየቂያው ውስጥ ይገባል፤ እንደ የሂደት
+ነጋሪ እሴት አይተላለፍም፣ ወደ Git አይጻፍም ወይም ከአስተናጋጁ አይገለበጥም።
 
-የተነጠለውን የClaude Code የአሂድ ጊዜ ያስጀምሩ፦
+የተገለለውን የClaude Code የአሂድ ጊዜ ያስጀምሩ፦
 
 ```bash
 ./scripts/devin-bridge/launch
 ```
 
-`launch` containerized Claude Codeን ከማስጀመሩ በፊት ማግለሉን፣ የDevin ማረጋገጫን እና የሞዴል ፍለጋን እንደገና ይፈትሻል።
-የአስተናጋጁን Claude executable ፈጽሞ አያስኬድም። የሞዴል ተለዋጭ ስሞች በ`.env.devin-bridge` ውስጥ ሊዋቀሩ ይችላሉ፤ እያንዳንዱ የተዋቀረ እሴት
-የ`devin-cli-agentic/` ቅድመ ቅጥያን መጠበቅ አለበት።
+`launch` በኮንቴይነር ውስጥ ያለውን Claude Code ከማስጀመሩ በፊት ማግለሉን፣ የDevin ማረጋገጫን እና የሞዴል ፍለጋን
+እንደገና ይፈትሻል። የአስተናጋጁን Claude ተፈጻሚ ፋይል በፍጹም አያስኬድም። የሞዴል ተለዋጭ ስሞች በ
+`.env.devin-bridge` ውስጥ ሊቀናበሩ ይችላሉ፤ እያንዳንዱ የተዋቀረ እሴት የ
+`devin-cli-agentic/` ቅድመ ቅጥያውን መያዝ አለበት።
 
-## የማረጋገጫ ትእዛዞች
+## የማረጋገጫ ትዕዛዞች
 
-እንደገና ሊደገም የሚችለው ከመስመር ውጭ መንገድ የDevin መለያ አይፈልግም እና በአሂድ ጊዜ ኢንተርኔት የለውም፦
+ሊደገም የሚችለው ከመስመር ውጭ መንገድ ምንም የDevin መለያ አይፈልግም፣ እና በአሂድ ጊዜ በይነመረብ የለውም፦
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -129,56 +132,55 @@ ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-ማረጋገጫ የሚፈልገው በፈቃድ የሚነቃ የቀጥታ መንገድ፦
+የተረጋገጠው በፈቃድ የሚነቃ የቀጥታ መንገድ፦
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-የቀጥታ አስኪያጁ የACP ክፍለ ጊዜዎችን በአንድ ጊዜ በብዛት እንዳይከፍት በሁኔታዎች መካከል ይጠብቃል፣ እና
-የጽሑፍ ይገባኛል ጥያቄዎችን ከማመን ይልቅ የተዋቀሩ የClaude ዥረት ክስተቶችን ያረጋግጣል። ሦስቱ
-ሁኔታዎቹ የሚያረጋግጡት፦
+የቀጥታ አስኪያጁ የACP ክፍለ ጊዜዎችን በአንድ ጊዜ በብዛት እንዳይከፍት በሁኔታዎቹ መካከል ይጠብቃል፣ እና
+ጽሑፋዊ የይገባኛል ጥያቄዎችን ከማመን ይልቅ የተዋቀሩ የClaude ዥረት ክስተቶችን ያረጋግጣል። ሦስቱ
+ሁኔታዎች የሚከተሉትን ያረጋግጣሉ፦
 
-1. ቀጥተኛ የፕሮጀክት ንባቦችን እና የጉድለት ትንተናን፤
-2. እውነተኛ `Edit`ን፣ በደንበኛው ባለቤትነት የሚካሄድ `Bash` `npm test`ን እና የመጨረሻ ውጤትን፤
-3. `/bridge-check`ን ከ`bridge-proof` ፍለጋ፣ ከፕሮጀክት ንባቦች፣ ከሌላ ስኬታማ
-   በደንበኛው ባለቤትነት የሚካሄድ `npm test` እና በመጠባበቅ ላይ ያለ ሥራ ሳይኖር ከሚጠናቀቅ ሂደት ጋር።
+1. ቀጥተኛ የፕሮጀክት ንባብ እና የጉድለት ትንተና፤
+2. እውነተኛ `Edit`፣ በደንበኛው የሚተዳደር `Bash` `npm test`፣ እና የመጨረሻ ውጤት፤
+3. `/bridge-check` ከ`bridge-proof` ፍለጋ ጋር፣ የፕሮጀክት ንባብ፣ ሌላ የተሳካ
+   በደንበኛው የሚተዳደር `npm test`፣ እና በመጠባበቅ ላይ ያለ ሥራ ሳይኖር ማጠናቀቅ።
 
-የመጨረሻው መግቢያ መቆጣጠሪያ የDevin አውታረ መረብ ኦዲትንም ይፈትሻል፣ እና የClaude የወጪ ትራፊክ ኦዲት ባዶ ሆኖ እንዲቆይ
-ይጠይቃል።
+የመጨረሻው መግቢያ መቆጣጠሪያ የDevin አውታረ መረብ ኦዲትንም ይፈትሻል፣ እና የClaude ወጪ ትራፊክ ኦዲት
+ባዶ ሆኖ እንዲቀጥል ይጠይቃል።
 
-## የተወሰኑ የመሳሪያ ስሪቶችን ማዘመን
+## የተወሰኑ የመሣሪያ ስሪቶችን ማዘመን
 
-ኢሜጁ Node፣ Claude Code እና Devin CLIን በ
-`docker/devin-bridge/Dockerfile` ውስጥ በተወሰኑ ስሪቶች ይቆልፋል። ለማዘመን፦
+ምስሉ Node፣ Claude Code እና Devin CLIን በ
+`docker/devin-bridge/Dockerfile` ውስጥ በተወሰኑ ስሪቶች ያስቀምጣል። ለማዘመን፦
 
 1. በግልጽ የተጠቀሱትን ስሪቶች ይቀይሩ፤
-2. ሁለቱንም ለየአርክቴክቸሩ የተወሰኑ የDevin ማህደር checksums በይፋዊው
-   artifact እሴቶች ይተኩ፤
-3. እንደገና ይገንቡ እና ሁሉንም ከመስመር ውጭ የማረጋገጫ ትዕዛዞች ያስኪዱ፤
-4. በኢሜጁ ውስጥ ያሉትን ስሪቶች ያረጋግጡ፤
-5. ማንነት ማረጋገጫ ያለውን የሶስት ሁኔታዎች live suite እንደገና ያስኪዱ።
+2. ሁለቱንም ለእያንዳንዱ አርክቴክቸር የተወሰኑ የDevin ማህደር checksum እሴቶችን በይፋዊው artifact እሴቶች ይተኩ፤
+3. እንደገና ይገንቡ እና ሁሉንም የከመስመር-ውጭ ማረጋገጫ ትዕዛዞች ያስኪዱ፤
+4. በምስሉ ውስጥ ያሉትን ስሪቶች ያረጋግጡ፤
+5. ማንነት ማረጋገጫ ያለውን የሦስት-ሁኔታዎች ቀጥታ ስብስብ እንደገና ያስኪዱ።
 
-ሁለቱንም CLI በhost ላይ globally አይጫኑ ወይም የchecksum ማረጋገጫን
-ባልተረጋገጠ ማውረድ አይተኩ።
+ሁለቱንም CLI በአስተናጋጁ ላይ በዓለም አቀፍ ደረጃ አይጫኑ፤ እንዲሁም checksum ማረጋገጥን
+ባልተረጋገጠ ውርድ አይተኩ።
 
 ## ምርመራ እና ማጽዳት
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
-  አካባቢያዊ routingን እና ከስሱ መረጃ የጸዱ executor ስህተቶችን ያሳያል።
-- `.sandbox/evidence/mock-acp.jsonl` ተደጋግመው ተመሳሳይ ውጤት የሚሰጡ mock ACP ድርጊቶችን ይመዘግባል።
-- `.sandbox/evidence/claude-stream.jsonl` እውነተኛውን የClaude Code ከመስመር ውጭ አሂድ ይመዘግባል።
-- `.sandbox/evidence/live-*.jsonl` ሶስቱን የተረጋገጡ live streams ይመዘግባል።
-- `.sandbox/evidence/egress.jsonl` እና `.sandbox/evidence/claude-egress.jsonl` የguard audits የተረጋገጡ፣
-  token የሌላቸው ቅጂዎች ናቸው።
+  አካባቢያዊ ማስተላለፍን እና የተጣሩ የአስፈጻሚ ስህተቶችን ያሳያል።
+- `.sandbox/evidence/mock-acp.jsonl` ሁልጊዜ ተመሳሳይ ውጤት የሚሰጡ አስመሳይ ACP ድርጊቶችን ይመዘግባል።
+- `.sandbox/evidence/claude-stream.jsonl` እውነተኛውን የClaude Code ከመስመር-ውጭ አሂድ ይመዘግባል።
+- `.sandbox/evidence/live-*.jsonl` ሦስቱን የተረጋገጡ ቀጥታ ዥረቶች ይመዘግባል።
+- `.sandbox/evidence/egress.jsonl` እና `.sandbox/evidence/claude-egress.jsonl` የተረጋገጡ፣
+  ቶከን የሌላቸው የጥበቃ ኦዲቶች ቅጂዎች ናቸው።
 
-የlogin/config volumesን በመጠበቅ በዚህ ስርዓት የሚተዳደሩ containers እና networksን ያቁሙ፦
+የመግቢያ/ውቅር ቮልዩሞችን እንደተጠበቁ በማቆየት ባለቤትነታቸው የድልድዩ የሆኑ ኮንቴይነሮችን እና አውታረ መረቦችን ያቁሙ፦
 
 ```bash
 ./scripts/devin-bridge/clean
 ```
 
-named volumesን ጨምሮ ሙሉውን በbridge የሚተዳደር environment ያስወግዱ፦
+ስም የተሰጣቸውን ቮልዩሞች ጨምሮ፣ ባለቤትነቱ የድልድዩ የሆነውን ሙሉ አካባቢ ያስወግዱ፦
 
 ```bash
 ./scripts/devin-bridge/clean --all
@@ -186,15 +188,13 @@ named volumesን ጨምሮ ሙሉውን በbridge የሚተዳደር environment
 
 ## ገደቦች
 
-- bridgeው በተወሰነው no-tools `summarizer` role ላይ ይመሰረታል፤ ምክንያቱም Devin CLI `3000.2.17`
-  ገለልተኛ no-tools ACP agent አያቀርብም። adapterው ማጠቃለያ ቅርጽ ያላቸውን
-  መካከለኛ ምላሾች ያስተካክላል፣ ነገር ግን አንድ ገደብ ያለው repair አሁንም በግልጽ ሊወድቅ ይችላል።
-- Live ACP ጥሪዎች ጊዜያዊ `502`/`504` ምላሾችን ሊመልሱ ይችላሉ። harnessው በscenarios መካከል የጊዜ ልዩነት ያደርጋል፤
-  ቀጣይነት ያለው ውድቀት fail-closed ሆኖ ይቀራል እና ሌላ provider ፈጽሞ አይመርጥም።
-- የACP context ከእያንዳንዱ የAnthropic ጥያቄ እንደገና ይገነባል፤ የprocess/session
-  affinity የለም።
-- በእያንዳንዱ የmodel ምላሽ አንድ tool call ብቻ ይደገፋል፤ ትይዩ ጥሪዎች ውድቅ ይደረጋሉ።
-- ኢሜጆች በግልጽ አይደገፉም። Vision፣ thinking output፣ effort controls እና የ1M
-  context window እንደሚደገፉ አይገለጽም።
-- SSE ትክክለኛ የAnthropic lifecycle eventsን ይጠቀማል፣ ነገር ግን ገደብ ያለው የACP turn
-  ከተሰበሰበ በኋላ ይላካል፤ የACP chunks በየደረጃው ወደፊት አይተላለፉም።
+- Devin CLI `3000.2.17` ገለልተኛ መሣሪያ-አልባ ACP ወኪል ስለማያቀርብ፣ ድልድዩ በተወሰነው መሣሪያ-አልባ `summarizer` ሚና ላይ ይመረኮዛል። አስማሚው የማጠቃለያ ቅርጽ ያላቸውን
+  መካከለኛ ምላሾች ያስተካክላል፤ ሆኖም አንድ የተገደበ ጥገና አሁንም በግልጽ ሊሳካ ይችላል።
+- ቀጥታ ACP ጥሪዎች ጊዜያዊ `502`/`504` ምላሾችን ሊመልሱ ይችላሉ። የሙከራ ማዕቀፉ በሁኔታዎቹ መካከል የጊዜ ክፍተት ያደርጋል፤
+  ቀጣይነት ያለው አለመሳካት በዝግ ሁኔታ ይቀራል እና ሌላ አቅራቢን ፈጽሞ አይመርጥም።
+- የACP ዐውድ ከእያንዳንዱ የAnthropic ጥያቄ እንደገና ይገነባል፤ ከሂደት/ክፍለ-ጊዜ ጋር ቋሚ ትስስር የለም።
+- በእያንዳንዱ የሞዴል ምላሽ አንድ የመሣሪያ ጥሪ ይደገፋል፤ ትይዩ ጥሪዎች ውድቅ ይደረጋሉ።
+- ምስሎች በግልጽ አይደገፉም። የእይታ ችሎታ፣ የአስተሳሰብ ውጤት፣ የጥረት መቆጣጠሪያዎች እና የ1M
+  ዐውድ መስኮት አይገለጹም።
+- SSE ትክክለኛ የAnthropic የሕይወት ዑደት ክስተቶችን ይጠቀማል፤ ነገር ግን የተገደበው ACP ተራ ከተሰበሰበ በኋላ ይለቀቃል፤
+  የACP ክፍሎች በየደረጃው አይተላለፉም።

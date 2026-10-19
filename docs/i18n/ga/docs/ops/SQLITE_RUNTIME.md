@@ -7,34 +7,34 @@
 Réitíonn OmniRoute a thiománaí SQLite ag am tosaithe trí shlabhra cúltaca 5 chéim:
 
 1. **`better-sqlite3` cuachta** (trí `dependencies` in `package.json`)
-   — an rogha is tapúla, dénártha dúchasach, suiteáilte ag `npm install` nuair atá uirlisí tógála ar fáil.
+   — an ceann is tapa, dénártha dúchasach, suiteáilte ag `npm install` nuair atá uirlisí tógála ar fáil.
 
 2. **`better-sqlite3` suiteáilte ag am rite** (in `~/.omniroute/runtime/`)
    — suiteáilte go leisciúil ar an gcéad rith **NÓ** ag `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
-   Bailíochtaíonn sé bearta draíochta dúchasacha `.node` (ELF / Mach-O / PE) roimh luchtú
-   chun cosaint ar dhénártha truaillithe nó ar dhénártha don ardán mícheart.
+   Bailíochtaíonn sé bearta draíochta dúchasacha `.node` (ELF / Mach-O / PE) sula lódáiltear iad
+   chun cosaint ar dhénártha truaillithe nó dénártha don ardán mícheart.
 
-3. **`node:sqlite`** (leabharlann chaighdeánach Node ≥22.5) — níl tógáil dhúchasach de dhíth; úsáidtear é nuair a
-   theipeann ar an dá chonair better-sqlite3. Tacar gnéithe teoranta.
+3. **`node:sqlite`** (leabharlann chaighdeánach Node ≥22.5) — ní gá tógáil dhúchasach; úsáidtear é nuair a
+   theipeann ar an dá chonair better-sqlite3. Tacar teoranta gnéithe.
 
 4. **`sql.js`** (WASM) — an cúltaca deiridh. Oibríonn sé i ngach áit ach tá sé níos moille
-   agus scríobhann sé sonraí ag eatraimh seachas go sioncrónach.
+   agus scríobhann sé sonraí ag eatraimh seachas go sioncronach.
 
-## Cén fáth a bhfuil an chastacht seo ann?
+## Cén fáth a bhfuil sé chomh casta sin?
 
-- **EBUSY ar Windows**: Is féidir le `npm install -g omniroute@latest` teip má tá
-  `better_sqlite3.node` na leagan roimhe seo faoi ghlas ag próiseas atá ar siúl. Seachnaíonn
+- **Windows EBUSY**: Is féidir le `npm install -g omniroute@latest` teip má tá
+  `better_sqlite3.node` na leaganacha roimhe seo faoi ghlas ag próiseas atá ag rith. Seachnaíonn
   an tsuiteáil ag am rite in `~/.omniroute/runtime/` taisce dhomhanda npm.
 - **Gan uirlisí tógála**: Ní féidir le roinnt timpeallachtaí (Windows corparáideach gan VS Build
-  Tools, íomhánna íosta Docker) `better-sqlite3` a thiomsú. Réitíonn an suiteálaí ag am rite
+  Tools, íomhánna íosta Docker) `better-sqlite3` a thiomsú. Faigheann an suiteálaí ag am rite
   dénártha réamhthógtha ó chlárlann npm; cinntíonn na tiománaithe cúltaca
   go dtosóidh OmniRoute fós fiú má theipeann air sin.
-- **Córais aerbhearnaithe**: Mura féidir clárlann npm a rochtain, ráthaíonn `node:sqlite`
-  nó `sql.js` bunfheidhmiúlacht.
+- **Córais aerbhearnaithe**: Mura féidir clárlann npm a bhaint amach, ráthaíonn `node:sqlite`
+  nó `sql.js` feidhmiúlacht bhunúsach.
 
 ## Bailíochtú beart draíochta
 
-Sula luchtaíonn OmniRoute comhad `.node` atá suiteáilte ag am rite, léann sé na chéad 8
+Sula lódálann OmniRoute comhad `.node` atá suiteáilte ag am rite, léann sé na chéad 8
 mbeart agus cuireann sé iad i gcomparáid le bearta draíochta aitheanta na n-ardán:
 
 | Ardán                  | Bearta (heics) | Lipéad      |
@@ -45,7 +45,7 @@ mbeart agus cuireann sé iad i gcomparáid le bearta draíochta aitheanta na n-a
 | macOS ramhar (uilíoch) | `CA FE BA BE`  | `macho-fat` |
 | Windows                | `4D 5A` (MZ)   | `pe`        |
 
-Beart draíochta nach meaitseálann → déantar neamhaird den chomhad agus leanann an cúltaca ar aghaidh chuig an gcéad chéim eile.
+Má tá na bearta draíochta mí-oiriúnach → déantar neamhaird den chomhad, agus leanann an cúltaca ar aghaidh go dtí an chéad chéim eile.
 
 ## An tiománaí gníomhach a sheiceáil
 
@@ -60,10 +60,10 @@ const info = getDriverInfo();
 ## Rialú de láimh
 
 ```bash
-# Scipeáil réamhullmhú iarsuiteála (le haghaidh suiteálacha tapa CI)
+# Scipeáil réamhullmhú iarshuiteála (le haghaidh suiteálacha tapa CI)
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
-# Athshuiteáil éigeantach ar better-sqlite3 ag am rite
+# Athshuiteáil better-sqlite3 ag am rite le fórsa
 rm -rf ~/.omniroute/runtime
 omniroute  # athshuiteálfar é ag an gcéad tosú eile
 
@@ -71,45 +71,45 @@ omniroute  # athshuiteálfar é ag an gcéad tosú eile
 omniroute config db-info  # (má tá an t-ordú CLI ann)
 ```
 
-## Moilleanna sioncrónacha a dhiagnóisiú
+## Moilleanna sioncronacha a dhiagnóisiú
 
-Le `better-sqlite3`, socraigh `OMNIROUTE_SQLITE_SLOW_MS=200` roimh an tosú chun
-uainiú sioncrónach an oiriúnaitheora a chumasú. Bíonn sé díchumasaithe de réir réamhshocraithe. Má thógann oibríocht chríochnaithe
-an méid sin milleasoicindí ar a laghad, astaítear rabhadh `[SQLITE-SLOW]`, uair amháin ar a mhéad in aghaidh gach
-deich soicind do gach oiriúnaitheoir. Ní bhíonn sa rabhadh ach an tiománaí, aicme na hoibríochta
+Le `better-sqlite3`, socraigh `OMNIROUTE_SQLITE_SLOW_MS=200` roimh thosú chun
+tomhas ama an oiriúnaitheora shioncronaigh a chumasú. Tá sé díchumasaithe de réir réamhshocraithe. Má thógann oibríocht chríochnaithe
+an líon sin milleasoicindí ar a laghad, astaítear rabhadh `[SQLITE-SLOW]`, uair amháin ar a mhéad gach
+deich soicind in aghaidh an oiriúnaitheora. Ní bhíonn sa rabhadh ach an tiománaí, aicme na hoibríochta
 (`prepare`, `get`, `all`, `run`, `exec`, `pragma`, idirbheart nó cothabháil), agus
-na milleasoicindí atá caite: gan SQL, ceangail, rónna, conairí ná téacs eisceachta.
+na milleasoicindí atá imithe thart: gan SQL, ceangail, rónna, conairí ná téacs eisceachta.
 
-Áis dhiagnóiseach atá anseo, ní teorainn ama ná barrfheabhsú fiosrúcháin. Ní féidir léi tuairisc a thabhairt ar
-oibríocht nach bhfilleann choíche, obair LAP a idirdhealú ó fheitheamh diosca, an SQL
-beacht a shainaithint, ná oibríochtaí a dhéantar trí láimhseálaí amh an tiománaí a bhreathnú.
-Fágtar fad cúltaca asincrónaí as an áireamh d'aon ghnó; ní dhéantar ionstraimíocht
-ar thiománaithe SQLite eile leis an rogha seo. Má dhíchumasaítear an athróg, cuirtear an bun-oiriúnaitheoir
-ar ais gan chumhdaigh uainithe. Ní athraítear aon scéimre bunachair sonraí ná cumraíocht stóráilte.
+Áis dhiagnóiseach í seo, ní teorainn ama ná optamú iarratais. Ní féidir léi tuairisc a thabhairt ar
+oibríocht nach bhfilleann choíche, obair LAP a idirdhealú ó fheitheamh diosca, an
+SQL beacht a shainaithint, ná oibríochtaí a dhéantar trí hanla amh an tiománaí a bhreathnú.
+Fágtar fad cúltaca asincronaigh ar lár d'aon ghnó; ní ionstraimítear tiománaithe SQLite eile
+leis an rogha seo. Má dhíchumasaítear an athróg, cuirtear an t-oiriúnaitheoir bunaidh ar ais
+gan fillteáin tomhais ama. Ní athraítear scéimre bunachar sonraí ná cumraíocht stóráilte ar bith.
 
-Tuairiscíonn rabhadh moille `/healthz` buaic an lúba teagmhas ón sampla roimhe seo,
-ní an meán thar shaolré iomlán. Déan a stampaí ama a chomhghaolú le rabhaidh faoi oibríochtaí malla
-agus le méadracht an óstaigh/stórála sula gcuirtear moill i leith teip SQLite nó diosca.
+Tuairiscíonn rabhadh moille `/healthz` buaic na lúibe teagmhas ón sampla roimhe seo,
+ní an meán ar feadh an tsaoil. Déan a stampaí ama a chomhghaolú le rabhaidh faoi oibríochtaí malla
+agus le méadrachtaí an óstaigh/stórála sula gcuirtear moill i leith SQLite nó teip diosca.
 
 ## Tagairt
 
 Cur chun feidhme:
 
-- `bin/cli/runtime/magicBytes.mjs` — cúntóirí bailíochtaithe do bhearta draíochta dénártha
+- `bin/cli/runtime/magicBytes.mjs` — cúntóirí bailíochtaithe beart draíochta dénártha
 - `bin/cli/runtime/sqliteRuntime.mjs` — réiteoir 5 chéim ag am rite + suiteálaí leisciúil
-- `bin/cli/runtime/index.mjs` — ceolfhoireann tosaithe (`warmUpRuntimes()`)
-- `scripts/postinstall.mjs` — duán iarsuiteála npm (réamhullmhú neamh-mharfach)
+- `bin/cli/runtime/index.mjs` — ceolfhoireannaitheoir tosaithe (`warmUpRuntimes()`)
+- `scripts/postinstall.mjs` — crúca iarshuiteála npm (réamhullmhú neamh-mharfach)
 - `src/lib/db/core.ts` — easpórtálacha `ensureDbInitialized()` / `getDriverInfo()`
 
-## Toipeolaíocht aon-scríbhneora (ní thacaítear le HA)
+## Toipeolaíocht scríbhneora aonair (ní thacaítear le HA)
 
-Ritheann slabhra cúltaca na dtiománaithe thuas fós in **aon phróiseas amháin**. Is
+Ritheann slabhra cúltaca an tiománaí thuas fós in **aon phróiseas amháin**. Is
 **scríbhneoir aonair** é SQLite réamhshocraithe OmniRoute:
 
-- Ná ceangail dhá mhacasamhail OmniRoute leis an gcomhad céanna `storage.sqlite`.
+- Ná ceangail dhá mhacasamhail OmniRoute leis an gcomhad `storage.sqlite` céanna.
 - Scaoileann atosú coimeádáin, imscaradh Recreate, marú OOM, nó atosú HEALTHCHECK
-  gach seisiún SSE atá ar siúl. Níl aon taoscadh seisiúin sa ghnáthchonair.
-- Maróidh seiceáil beocht an cheolfhoirneora a mheasann `/healthz` mall a bheith marbh an t-aon
-  mhacasamhail. B'fhearr beocht TCP + ullmhacht HTTP `/healthz`. Féach
+  gach seisiún SSE atá ar siúl. Níl aon fholmhú seisiúin ar an gconair chaighdeánach.
+- Maróidh beogacht an cheolfhoireannaitheora a mheasann `/healthz` mall a bheith marbh an t-aon
+  mhacasamhail amháin. Is fearr beogacht TCP + ullmhacht HTTP `/healthz`. Féach
   [Treoir Docker — infhaighteacht](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
-  agus [moltaí tóraire Kubernetes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).
+  agus [moltaí tóireadóra Kubernetes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

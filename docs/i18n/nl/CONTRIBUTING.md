@@ -33,7 +33,7 @@ npm install
 ### Omgevingsvariabelen
 
 ```bash
-# Maak je .env aan op basis van de sjabloon
+# Maak uw .env aan op basis van de sjabloon
 cp .env.example .env
 
 # Genereer de vereiste geheimen
@@ -55,10 +55,10 @@ Belangrijke variabelen voor ontwikkeling:
 
 Het dashboard biedt UI-schakelaars voor functies die ook via omgevingsvariabelen kunnen worden geconfigureerd:
 
-| Locatie van instelling     | Schakelaar            | Beschrijving                                            |
-| -------------------------- | --------------------- | ------------------------------------------------------- |
-| Instellingen → Geavanceerd | Foutopsporingsmodus   | Logboeken voor foutopsporingsverzoeken inschakelen (UI) |
-| Instellingen → Algemeen    | Zichtbaarheid zijbalk | Secties in de zijbalk tonen/verbergen                   |
+| Locatie van instelling     | Schakelaar            | Beschrijving                                   |
+| -------------------------- | --------------------- | ---------------------------------------------- |
+| Instellingen → Geavanceerd | Debugmodus            | Logboeken voor debugverzoeken inschakelen (UI) |
+| Instellingen → Algemeen    | Zichtbaarheid zijbalk | Secties in de zijbalk tonen/verbergen          |
 
 Deze instellingen worden in de database opgeslagen en blijven behouden na herstarts. Wanneer ze zijn ingesteld, overschrijven ze de standaardwaarden van omgevingsvariabelen.
 
@@ -72,29 +72,29 @@ npm run dev
 npm run build    # next build → .build/next/ en vervolgens assembleStandalone → dist/
 npm run start
 
-# Snelle compilatie van alleen de backend/API voor wijzigingen van bijdragers
+# Snelle compilatie van alleen backend/API voor wijzigingen van bijdragers
 npm run build:contributor
 
 # Releasebuild (schone herbouw + HEAD-controlebestand — vereist voor implementatie)
 npm run build:release   # rm -rf .build dist && build + schrijft dist/BUILD_SHA
 
-# Veelgebruikte poortconfiguratie
+# Gebruikelijke poortconfiguratie
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-De bijdragersbuild voert uitsluitend compilatievalidatie uit: deze stelt de zelfstandige
-distributie niet samen en bouwt geen optionele native pakketassets. Gebruik de reguliere
-productiebuild wanneer je de distribueerbare bundel moet valideren.
+De bijdragersbuild voert alleen compilatievalidatie uit: deze stelt de zelfstandige
+distributie niet samen en bouwt geen optionele native pakketassets. Gebruik de reguliere productiebuild wanneer
+u de distribueerbare bundel moet valideren.
 
-### Indeling van build-uitvoer
+### Indeling van builduitvoer
 
-| Map       | Inhoud                                                                                    | Gevolgd |
-| --------- | ----------------------------------------------------------------------------------------- | ------- |
-| `src/`    | Broncode van de applicatie (TypeScript / TSX)                                             | Ja      |
-| `.build/` | Tussenresultaten — uitvoer van `next build` (genegeerd door Git, `distDir = .build/next`) | Nee     |
-| `dist/`   | Distribueerbare bundel — samengesteld door `assembleStandalone` (genegeerd door Git)      | Nee     |
+| Map       | Inhoud                                                                                   | Bijgehouden |
+| --------- | ---------------------------------------------------------------------------------------- | ----------- |
+| `src/`    | Broncode van de applicatie (TypeScript / TSX)                                            | Ja          |
+| `.build/` | Tussenbestanden — uitvoer van `next build` (genegeerd door Git, `distDir = .build/next`) | Nee         |
+| `dist/`   | Distribueerbare bundel — samengesteld door `assembleStandalone` (genegeerd door Git)     | Nee         |
 
-De buildpijplijn bestaat uit één doorgang:
+De buildpipeline bestaat uit één doorgang:
 
 ```
 npm run build
@@ -106,15 +106,14 @@ npm run build
 `npm run build:release` maakt bovendien eerst beide mappen leeg en schrijft
 `dist/BUILD_SHA` (= `git rev-parse --short HEAD`) als controlebestand voor de integriteit van de implementatie.
 
-`npm run build:contributor` gebruikt het buildprofiel voor alleen de backend. Tijdens de build worden
-dashboard-UI-bestanden tijdelijk vervangen door tijdelijke bestanden, blijven API-routehandlers behouden
-en worden de oorspronkelijke bestanden na de build hersteld. Gebruik `npm run build` voor wijzigingen
-die invloed hebben op de dashboard-UI of voor volledige releasevalidatie; het bijdragersprofiel is geen
-vervanging voor de releasebuild.
+`npm run build:contributor` gebruikt het buildprofiel voor alleen de backend. Tijdens het builden worden
+dashboard-UI-bestanden tijdelijk vervangen door stubs, blijven API-routehandlers behouden en worden de oorspronkelijke bestanden
+na de build hersteld. Gebruik `npm run build` voor wijzigingen die invloed hebben op de dashboard-UI of voor volledige
+releasevalidatie; het bijdragersprofiel is geen vervanging voor de releasebuild.
 
-> **Opmerking voor implementatie op een VPS:** de externe installatiekopiemap `/usr/lib/node_modules/omniroute/app/`
-> blijft ongewijzigd. De implementatiescripts synchroniseren de inhoud van `dist/` ernaartoe met rsync.
-> Alleen het pad voor build-uitvoer in de repository is gewijzigd (`app/` → `dist/`).
+> **Opmerking voor VPS-implementatie:** de externe image-map `/usr/lib/node_modules/omniroute/app/`
+> blijft ongewijzigd. De implementatietaken synchroniseren de inhoud van `dist/` er via rsync naartoe.
+> Alleen het pad voor builduitvoer binnen de repository is gewijzigd (`app/` → `dist/`).
 
 Standaard-URL's:
 
@@ -298,32 +297,32 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── api/                # API-routes (51 mappen)
 │   └── login/              # Authenticatiepagina's (.tsx)
 ├── domain/                 # Beleidsengine (policyEngine, comboResolver, costRules, enz.)
-├── lib/                    # Kernbedrijfslogica (.ts)
+├── lib/                    # Kernlogica voor bedrijfsprocessen (.ts)
 │   ├── a2a/                # Agent-to-Agent v0.3-protocolserver
-│   ├── acp/                # Agent Communication Protocol-register
-│   ├── compliance/         # Compliancebeleidsengine
+│   ├── acp/                # Register voor het Agent Communication Protocol
+│   ├── compliance/         # Beleidsengine voor compliance
 │   ├── db/                 # SQLite-domeinmodules + 130 migraties
-│   ├── memory/             # Permanent conversatiegeheugen
+│   ├── memory/             # Permanent gespreksgeheugen
 │   ├── oauth/              # OAuth-providers, -services en -hulpprogramma's
-│   ├── skills/             # Uitbreidbaar vaardigheidsframework
+│   ├── skills/             # Uitbreidbaar skill-framework
 │   ├── usage/              # Gebruiksregistratie en kostenberekening
-│   └── localDb.ts          # Alleen herexportlaag — voeg hier nooit logica toe
-├── middleware/              # Middleware voor verzoeken (promptInjectionGuard)
+│   └── localDb.ts          # Alleen re-exportlaag — voeg hier nooit logica toe
+├── middleware/              # Request-middleware (promptInjectionGuard)
 ├── mitm/                   # MITM-proxy (certificaat, DNS, doelroutering)
 ├── shared/
 │   ├── components/         # React-componenten (.tsx)
 │   ├── constants/          # Providerdefinities (329), MCP-scopes, 20 routeringsstrategieën
-│   ├── utils/              # Circuitonderbreker, opschoning, authenticatiehelpers
+│   ├── utils/              # Circuitbreaker, sanitizer en authenticatiehulpprogramma's
 │   └── validation/         # Zod v4-schema's
 └── sse/                    # SSE-proxypijplijn
 
 open-sse/                   # @omniroute/open-sse-workspace
-├── executors/              # 150 uitvoermodules (uitvoerklassen + helpers per provider)
-├── handlers/               # 11 verzoekhandlers (chat, antwoorden, embeddings, afbeeldingen, enz.)
+├── executors/              # 150 executormodules (executorklassen + helpers per provider)
+├── handlers/               # 11 requesthandlers (chat, responses, embeddings, afbeeldingen, enz.)
 ├── mcp-server/             # MCP-server (110 unieke tools, 3 transportmethoden, 33 scopes)
 ├── services/               # 178 services op het hoogste niveau (combo, autoCombo, rateLimitManager, enz.)
 ├── translator/             # Formaatvertalers (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API-transformator
+├── transformer/            # Responses API-transformer
 └── utils/                  # 22 hulpprogrammamodules (stream, TLS, proxy, logging)
 
 electron/                   # Electron-desktopapp (platformonafhankelijk)
@@ -337,23 +336,23 @@ tests/
 └── load/                   # Belastingtests
 
 docs/
-├── adr/                     # Architectuurbesluitdocumenten
+├── adr/                     # Architectuurbesluiten
 ├── architecture/            # Systeemarchitectuur en veerkracht
 ├── comparison/              # OmniRoute versus alternatieven
 ├── compression/             # Compressiehandleidingen en -regels
 ├── dev/                     # Ontwikkelhandleidingen
 ├── diagrams/                # Architectuurdiagrammen
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Gebruikershandleiding, Docker, configuratie, probleemoplossing
+├── guides/                  # Gebruikershandleiding, Docker, installatie, probleemoplossing
 ├── i18n/                    # Geïnternationaliseerde README-vertalingen
 ├── marketing/               # Marketingmateriaal
 ├── ops/                     # Implementatie, proxy, dekking, releases
 ├── providers/               # Providerspecifieke documentatie
 ├── reference/               # API-referentie, omgevingsvariabelen, CLI-tools, gratis niveaus
 ├── releases/                # Releaseopmerkingen
-├── routing/                 # Auto-combo-engine, herhaling van redeneerstappen
+├── routing/                 # Auto-combo-engine, herhaling van redeneringen
 ├── screenshots/             # Dashboardschermafbeeldingen
-├── security/                # Beveiligingsrails, compliance, stealth, tokens
+├── security/                # Vangrails, compliance, stealth, tokens
 └── specs/                   # Ontwerpspecificaties
 ```
 
@@ -414,9 +413,13 @@ Schrijf unittests in `tests/unit/` die minimaal het volgende afdekken:
 
 ---
 
-## Releasing
+## Releases uitbrengen
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Releases worden beheerd via de `/generate-release`-workflow. Wanneer er een nieuwe GitHub Release wordt aangemaakt, wordt het pakket via GitHub Actions **automatisch naar npm gepubliceerd**.
+
+Gebruik voor VPS-deployments `npm run build:release` (niet `npm run build`) — deze opdracht voert een schone
+rebuild uit, stelt de bundel samen in `dist/` en schrijft het sentinelbestand `dist/BUILD_SHA`.
+Gebruik vervolgens de `/deploy-vps-*-cc`-skills, die `dist/` via rsync naar de externe map `app/` synchroniseren.
 
 ---
 

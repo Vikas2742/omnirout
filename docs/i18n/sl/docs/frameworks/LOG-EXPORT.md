@@ -17,151 +17,152 @@ uporablja register, zato je mogoče dodajati nove cilje.
 
 ```
 strežnik (dešifriranje + preverjanje konfiguracije, uskladitev kazalca)
-  → zagon IPC → izoliran proces OS exportChild
-    → storage.sqlite samo za branje → skupna poizvedba/preslikava dnevnika klicev
-      → asinhrona hidracija artefaktov → prepare()/send() cilja
-        → paketni IPC → strežnik shrani kazalec → potrditveni IPC
-          → naslednji paket; IPC done → strežnik zabeleži uspeh
+  → zagon IPC → izolirani proces OS exportChild
+    → samo za branje storage.sqlite → skupno poizvedovanje/preslikava dnevnika klicev
+      → asinhrono nalaganje artefaktov → prepare()/send() cilja
+        → paket prek IPC → strežnik shrani kazalec → potrditev prek IPC
+          → naslednji paket; done prek IPC → strežnik zabeleži uspeh
 ```
 
-- **Razpored** — eno opravilo cron `JobRegistry`, `log_export`, s privzeto vrednostjo `0 * * * *` (vsako uro,
+- **Razpored** — eno opravilo cron v `JobRegistry`, `log_export`, s privzeto vrednostjo `0 * * * *` (vsako uro,
   UTC). Registrirano je v `src/lib/initCloudSync.ts`; preglasiti ga je mogoče z `OMNIROUTE_LOG_EXPORT_CRON`.
-  Ob vsakem proženju zaporedno izprazni vsak **omogočen** cilj.
-- **Kazalec** — implicitni `call_logs.rowid` zbirke SQLite, ki se za vsak cilj shrani v
+  Vsak cikel zaporedno obdela vse **omogočene** cilje.
+- **Kazalec** — implicitni `call_logs.rowid` zbirke SQLite, shranjen za vsak cilj v
   `log_export_destinations.cursor_row_id`. `timestamp` namenoma ni kazalec: klicatelji
-  lahko navedejo lastno vrednost, zato se lahko počasna zahteva zapiše za hitrejšo, ki se je začela
+  lahko posredujejo lastno vrednost, zato je lahko počasna zahteva zapisana za hitrejšo, ki se je začela
   pozneje, kazalec na podlagi časovnega žiga pa bi jo preskočil.
 - **Paketna obdelava** — `batch_size` vrstic na zahtevo (privzeto 500), `max_rows_per_run` vrstic na izvajanje
-  (privzeto 10000), tako da se velika količina čakajočih podatkov izprazni skozi več proženj, namesto da bi blokirala eno samo.
-- **Dostava** — kazalec napreduje šele, ko se `send()` razreši. Neuspešen paket pusti
+  (privzeto 10000), da se velika količina zaostankov obdela v več ciklih, namesto da bi enega blokirala.
+- **Dostava** — kazalec se premakne šele, ko se `send()` uspešno zaključi. Ob neuspelem paketu ostane
   kazalec na istem mestu, zato se iste vrstice znova poskusijo poslati pri naslednjem izvajanju. Zagotovilo je
-  vsaj enkratna dostava skupaj z odstranjevanjem dvojnikov na strani cilja, ne pa prava dostava natanko enkrat: BigQuery vsako
-  vrstico opredeli s ključem ID-ja dnevnika klicev, kar upošteva po najboljših močeh znotraj lastnega časovnega okna za odstranjevanje dvojnikov.
-- **Zaščita pred prekrivanjem** — proženje cron in `POST .../run` se lahko izvedeta hkrati. Cilj,
-  ki se že prazni, je preskočen, namesto da bi se izpraznil dvakrat (`skipped: true` v rezultatu izvajanja),
-  zato sočasno izvajanje ne more znova poslati paketa ali zapisati kazalca nazaj.
-- **Obnovitev po čiščenju** — če `cursor_row_id` preseže `MAX(rowid)` (celotna tabela je bila
-  počiščena in so se ID-ji vrstic začeli znova), izvajalnik kazalec ponastavi na 0, namesto da bi trajno izgubil pregled.
+  dostava vsaj enkrat skupaj z odstranjevanjem podvojenih zapisov na strani cilja, ne pa resnična dostava natanko enkrat: BigQuery vsako
+  vrstico označi z ID-jem dnevniškega zapisa klica, ki ga znotraj lastnega časovnega okna za odstranjevanje dvojnikov upošteva
+  po najboljših močeh.
+- **Zaščita pred prekrivanjem** — cikel cron in `POST .../run` se lahko sprožita hkrati. Cilj,
+  ki se že obdeluje, je preskočen, namesto da bi bil obdelan dvakrat (`skipped: true` v rezultatu izvajanja),
+  zato sočasno izvajanje ne more znova poslati paketa ali premakniti kazalca nazaj.
+- **Obnovitev po čiščenju** — če `cursor_row_id` pristane nad `MAX(rowid)` (celotna tabela je bila
+  počiščena in oštevilčenje rowid se je začelo znova), izvajalnik kazalec vrne na 0, namesto da bi trajno izgubil pregled.
 
 ### Izolirani izvajalnik in omejitve
 
-Vsako izvajanje cilja v okolju Node zažene ločen, kratkoživ podrejeni proces OS (`child_process`
-z IPC, ne `worker_threads`). Branje teles, razčlenjevanje/serializacija koristne vsebine JSON, ciljni
-`prepare()` in ciljna omrežna V/I se izvajajo v njem, ne v dogodkovni zanki strežnika.
+Vsako izvajanje cilja v okolju Node zažene ločen, kratkoživ proces OS (`child_process`
+z IPC, ne `worker_threads`). Branje teles, razčlenjevanje/serializacija podatkov JSON, ciljni
+`prepare()` in omrežni V/I cilja se izvajajo v njem, ne v dogodkovni zanki strežnika.
 Prek IPC se prenašajo samo konfiguracija in majhna sporočila o napredku; izvoženi zapisi se nikoli ne vrnejo v
-strežnik. Opravilo cron in pot Zaženi zdaj ohranita isti javni rezultat in zaščito pred prekrivanjem.
+strežnik. Opravilo cron in pot Zaženi zdaj ohranita enak javni rezultat ter zaščito pred prekrivanjem.
 
-Podrejeni proces odpre strežnikovo razrešeno zbirko `DATA_DIR/storage.sqlite` samo za branje z uporabo `node:sqlite`,
-z `busy_timeout=5000` in `query_only=ON`. Ne uvozi nobenega enotnega primerka podatkovne zbirke in ne izvaja
+Podrejeni proces odpre strežnikov razrešeni `DATA_DIR/storage.sqlite` samo za branje z uporabo `node:sqlite`,
+z `busy_timeout=5000` in `query_only=ON`. Ne uvaža nobenega skupnega primerka podatkovne zbirke in ne izvaja
 selitev, varnostnih kopij ali posodobitev SQLite. Evidentiranje manjkajočih/poškodovanih artefaktov (vključno z
-ukazom UPDATE za poškodovan artefakt) ostane samo v poti s podrobnostmi nadzorne plošče. Obe poti si delita čisti
-razreševalnik podrobnosti; izvoz uporablja asinhrono branje datotečnega sistema in enak vrstni red razreševanja:
-artefakt → starejša vdelana vsebina → starejša vsebina na disku → nič. Izvajanje naredi posnetek največjega ID-ja vstavljene vrstice,
-ko podrejeni proces odpre svoj bralnik; poznejši vnosi počakajo na naslednje izvajanje. To je meja
-vstavljanja, ne dolgotrajna transakcija SQLite: zapisovalci WAL in kontrolne točke ostanejo prosti med
-čakanjem na omrežje. Posodobitve/izbrisi obstoječih vrstic s to mejo niso zamrznjeni.
+UPDATE za poškodovan artefakt) ostane samo v poti podrobnosti nadzorne plošče. Obe poti uporabljata skupen čisti
+razreševalnik podrobnosti; izvoz uporablja asinhrono branje datotečnega sistema in enak vrstni red razreševanja
+artefakt → starejši vdelani podatki → starejši podatki na disku → brez podatkov. Izvajanje zajame največji rowid vstavljanja
+ob odprtju bralnika v podrejenem procesu; poznejši vnosi počakajo do naslednjega izvajanja. To je meja
+vstavljanja, ne dolgotrajna transakcija SQLite: zapisovalci WAL in kontrolne točke lahko med
+čakanjem na omrežje nemoteno delujejo. Posodobitve/izbrisi obstoječih vrstic s to mejo niso zamrznjeni.
 
 Po vsakem sprejetem paketu podrejeni proces počaka na potrditev. Strežnik najprej shrani
 kazalec z `advanceLogExportCursor`, nato pošlje `ack`; pred tem se ne začne noben naslednji paket.
-Napaka pri pošiljanju, sesutje ali časovna omejitev zabeleži neuspeh brez napredovanja tega paketa. Predhodno
-potrjeni paketi ostanejo uveljavljeni; znova se lahko pošlje največ en nepotrjeni paket.
-Uspeh se zabeleži šele po `done` in čistem izhodu podrejenega procesa. Ob napakah se podrejeni proces
-konča s SIGTERM, ki se po 500 ms stopnjuje v SIGKILL, izvajalnik pa počaka na zaprtje procesa.
+Napaka pri pošiljanju, zrušitev ali časovna omejitev zabeleži neuspeh brez premika kazalca za ta paket. Predhodno
+potrjeni paketi ostanejo trajno zapisani; znova je lahko poslan največ en nepotrjen paket.
+Uspeh se zabeleži šele po `done` in pravilnem zaključku podrejenega procesa. Ob neuspehu je podrejeni proces
+končan s SIGTERM, ki se po 500 ms stopnjuje v SIGKILL, izvajalnik pa počaka, da se proces zapre.
 
-| Okoljska spremenljivka                        | Privzeto | Namen                              |
-| --------------------------------------------- | -------- | ---------------------------------- |
-| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000   | Časovna omejitev posameznega cilja |
-| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024     | Omejitev starega prostora V8 v MB  |
+| Okoljska spremenljivka                        | Privzeto | Namen                                          |
+| --------------------------------------------- | -------- | ---------------------------------------------- |
+| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000   | Časovna omejitev cilja po stenski uri          |
+| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024     | Omejitev old-space V8 podrejenega procesa v MB |
 
-Pri neveljavnih/nepozitivnih/necelih vrednostih se uporabijo privzete vrednosti. Nastavitev kopice ni omejitev skupnega
-RSS-a; zelo veliki paketi lahko še vedno izčrpajo pomnilnik podrejenega procesa in varno povzročijo neuspeh izvajanja.
-Privzeta vrednost 1024 MB pušča dovolj rezerve za privzeti paket s 500 vrsticami in artefakti velikosti 512 KiB z
-omogočenimi telesi, vključno z BigQueryjevo serializacijo JSON po bajtnih kosih. Zaradi tega paket teles z
-10000 vrsticami ni varen. Izčrpanje kopice V8 zabeleži napako z jasnim ukrepom: zmanjšajte velikost paketa
-ali povečajte `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB`; kazalec ostane pri zadnjem
-potrjenem paketu. Zgodovinska vdelana telesa/telesa na disku niso zajeta v sodobni omejitvi artefaktov.
-Upravljavci morajo RSS načrtovati ločeno, zlasti znotraj vsebnikov z omejenim pomnilnikom.
+Pri neveljavnih/nepozitivnih/necelih vrednostih se uporabijo privzete vrednosti. Nastavitev kopice ni omejitev celotnega
+RSS; zelo veliki paketi lahko še vedno izčrpajo pomnilnik podrejenega procesa in varno povzročijo neuspeh izvajanja.
+Privzeta vrednost 1024 MB pušča dovolj rezerve za privzeti paket 500 artefaktov po 512 KiB z omogočenimi
+telesi, vključno z BigQueryjevo serializacijo JSON v kosih po bajtih. Zaradi tega paket
+10000 vrstic s telesi ni varen. Izčrpanje kopice V8 zabeleži napako z navodilom za ukrepanje: zmanjšajte velikost
+paketa ali povečajte `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB`; kazalec ostane pri zadnjem
+potrjenem paketu. Za starejša vdelana telesa/telesa na disku sodobna omejitev artefaktov ne velja.
+Upravljavci morajo RSS načrtovati ločeno, zlasti v vsebnikih z omejenim pomnilnikom.
 
 Podrejeni proces podeduje samo razrešeni `DATA_DIR`, `NODE_ENV`, izrecni `TZ` (razreševanje lokalnega časa
-za starejša imena datotek), `ELECTRON_RUN_AS_NODE`, kadar je prisoten, in naslednje izhodne vhode:
-`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (in njihove oblike z malimi črkami),
+za starejša imena datotek), `ELECTRON_RUN_AS_NODE`, kadar je prisoten, in naslednje vhodne nastavitve za odhodne povezave:
+`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (ter njihove različice z malimi črkami),
 `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`.
-Globalni odpremnik Undici uporablja strežnikovo čisto razreševanje posredniškega strežnika iz okolja in pravila za
-izogibanje posredniškemu strežniku za lokalne gostitelje, vključno z `NO_PROXY`; ne uvozi `proxyFetch.ts` ali njegovih zastavic podatkovne zbirke/funkcij.
-Poverilnice posredniškega strežnika se odstranijo iz posredovanega izhoda in zabeleženih napak. Poverilnice cilja
-se prenesejo samo v enem začetnem sporočilu IPC, nikoli prek argv ali okolja; posredovanemu izhodu/napakam se
-doda predpona in občutljivi podatki se odstranijo. V argumentih za izvajanje podrejenega procesa je onemogočen samo `ExperimentalWarning`, da se
-opozorilo okolja Node glede SQLite ne bi ponavljalo ob vsakem izvajanju cron; druge vrste opozoril ostanejo vidne.
+Globalni razpošiljevalnik Undici uporablja strežnikovo čisto razreševanje posredniškega strežnika iz okolja in pravila za
+obhod pri lokalnih gostiteljih, vključno z `NO_PROXY`; ne uvaža `proxyFetch.ts` ali njegovih zastavic podatkovne zbirke/funkcionalnosti.
+Poverilnice posredniškega strežnika so odstranjene iz posredovanega izhoda in zabeleženih napak. Poverilnice cilja
+se prenesejo samo v enem začetnem sporočilu IPC, nikoli prek argv ali okolja; posredovani izhod/napake imajo
+predpono in so prečiščeni. V argumentih za zagon podrejenega procesa je onemogočen samo `ExperimentalWarning`, da se
+ob vsakem izvajanju cron ne ponavlja opozorilo Node za SQLite; druge vrste opozoril ostanejo vidne.
 
-Ciljni moduli morajo biti uvozljivi brez odvisnosti od Next.js oziroma odvisnosti, namenjenih samo strežniku. Obstoječa
-implementacija za BigQuery že izpolnjuje to zahtevo. Predpomnilniki žetonov za dostop veljajo samo med podrejenim
-izvajanjem, ne pa med več izvajanji. Node je podprto izvajalno okolje (`package.json` engines), vendar razdelek za
-namestitev okolja Bun v datoteki README in `Dockerfile.bun` oglašujeta tudi pot združljivosti za produkcijsko okolje z uporabo
+Ciljne module mora biti mogoče uvoziti brez odvisnosti od Next.js oziroma odvisnosti, namenjenih samo strežniku. Obstoječa
+implementacija BigQuery že izpolnjuje to zahtevo. Predpomnilniki dostopnih žetonov se ohranijo samo med podrejenim
+izvajanjem, ne pa med posameznimi izvajanji. Node je podprto izvajalno okolje (`package.json` engines), vendar razdelek
+README za namestitev okolja Bun in `Dockerfile.bun` oglašujeta tudi združljivostno pot za produkcijo z uporabo
 `bun:sqlite` (`src/lib/db/core.ts` / prilagojevalniki). V okolju Bun izvozi zato ohranijo prejšnjo
-pot znotraj procesa in enkrat prikažejo opozorilo: izolacija kopice in časovne omejitve podrejenega procesa ni na voljo. Uporabite
-Node za izolacijo zanke dogodkov in napak zaradi pomanjkanja pomnilnika (OOM); Bun tukaj ni obravnavan kot okolje samo za razvoj.
+pot znotraj procesa in prikažejo enkratno opozorilo: izolacija kopice in časovne omejitve podrejenega procesa ni na voljo. Uporabite
+Node za izolacijo dogodkovne zanke in napak zaradi pomanjkanja pomnilnika; Bun tukaj ni obravnavan kot okolje, namenjeno samo razvoju.
 
-Ko je omogočen `includeBodies`, priporočamo interval na ravni minut, na primer
-`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`, namesto kopičenja urnega zaostanka koristnih vsebin.
+Ko je omogočen `includeBodies`, uporabite pogostost na ravni minut, na primer
+`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`, namesto da kopičite enourni zaostanek koristnih vsebin.
 Omejitve paketov in vrstic še vedno omejujejo vsako izvajanje. Zagon procesa se izvede za vsak cilj pri vsakem izvajanju;
-to zamenja majhen strošek zagona za izolacijo strežniške zanke dogodkov, ne pa za zmanjšanje skupne porabe procesorja.
+to majhen strošek zagona zamenja za izolacijo strežniške dogodkovne zanke, ne pa za manjšo skupno porabo CPE.
 
 ### Koristne vsebine (pozivi in dokončanja)
 
-Izvoz privzeto vsebuje samo polja s povzetkom, ki jih prikazuje **seznam** dnevnikov. Če omogočite
-**Izvoz pozivov in odgovorov** (`includeBodies`), se dodatno pošlje tudi vsebina, ki jo podokno s **podrobnostmi**
-dnevnikov prikaže za vsak klic:
+Izvoz privzeto vsebuje samo polja povzetka, ki jih prikazuje **seznam** dnevnikov. Če vklopite
+**Izvozi pozive in odgovore** (`includeBodies`), se dodatno pošlje vse, kar podokno s **podrobnostmi**
+dnevnikov prikazuje za vsak klic:
 
-| Polje                            | Kaj vsebuje                                                        |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `request_body` / `response_body` | Koristne vsebine klica, kot jih upodobi nadzorna plošča            |
-| `pipeline_route_decision`        | Kateri cilj in model je izbral usmerjevalnik                       |
-| `pipeline_client_request`        | Neobdelana zahteva natanko tako, kot jo je poslal odjemalec        |
-| `pipeline_openai_request`        | Zahteva po pretvorbi v notranjo obliko OpenAI                      |
-| `pipeline_provider_request`      | Zahteva, kot je bila dejansko poslana navzgor, v narečju ponudnika |
-| `pipeline_provider_response`     | Neobdelani odgovor iz nadrejenega sistema                          |
-| `pipeline_client_response`       | Vsebina, vrnjena klicatelju                                        |
-| `pipeline_error`                 | Podrobnosti napake na ravni cevovoda za neuspešen klic             |
-| `bodies_truncated`               | Vrednost True, ko katero koli zgornje polje doseže `maxBodyBytes`  |
+| Polje                            | Kaj vsebuje                                                          |
+| -------------------------------- | -------------------------------------------------------------------- |
+| `request_body` / `response_body` | Koristne vsebine klica, kot jih prikaže nadzorna plošča              |
+| `pipeline_route_decision`        | Cilj in model, ki ju je izbral usmerjevalnik                         |
+| `pipeline_client_request`        | Neobdelana zahteva v natanko taki obliki, kot jo je poslal odjemalec |
+| `pipeline_openai_request`        | Po pretvorbi v interno obliko OpenAI                                 |
+| `pipeline_provider_request`      | Kot je bila dejansko poslana navzgor, v narečju ponudnika            |
+| `pipeline_provider_response`     | Neobdelani odgovor nadrejenega ponudnika                             |
+| `pipeline_client_response`       | Kar je bilo vrnjeno klicatelju                                       |
+| `pipeline_error`                 | Podrobnosti napake na ravni cevovoda za neuspešen klic               |
+| `bodies_truncated`               | True, ko je katero koli zgornje polje doseglo `maxBodyBytes`         |
 
-To je vsebina poziva, zato je **privzeto izklopljena** in namenoma nastavljiva za vsak cilj posebej.
-Pošlje se tisto, kar prikazuje nadzorna plošča, ker izvoz in `getCallLogById` uporabljata isto razreševanje
+To je vsebina pozivov, zato je možnost **privzeto izklopljena** in namerno nastavljiva za vsak cilj posebej.
+Pošlje se to, kar prikazuje nadzorna plošča, ker izvoz in `getCallLogById` uporabljata skupno razreševanje
 podrobnosti: iz koristnih vsebin so
-osebno določljivi podatki že odstranjeni, skrivnosti pa zakrite, ko se zapišejo; klic, opravljen s ključem API
-`noLog`, sploh ne shrani koristne vsebine, zato ni ničesar za izvoz.
+osebni podatki že odstranjeni, skrivnosti pa zakrite, ko se vsebine zapišejo; klic, izveden z API-ključem
+`noLog`, pa sploh ne shrani koristne vsebine, zato ni ničesar za izvoz.
 
-Koristne vsebine se za vsako vrstico preberejo iz artefakta datotečnega sistema, zato se obogatitev izvede samo za cilje,
-ki so jo zahtevali. Če artefakt manjka ali je poškodovan, se njegov povzetek izvozi z ničelnimi koristnimi vsebinami,
-namesto da bi paket spodletel in bi kazalec obtičal.
+Koristne vsebine se za vsako vrstico preberejo iz artefakta datotečnega sistema, zato se hidracija izvede samo za cilje,
+ki so jo zahtevali. Če artefakt manjka ali je poškodovan, se izvozi njegov povzetek z ničelnimi koristnimi vsebinami,
+namesto da bi paket spodletel in kazalec obtičal.
 
-`maxBodyBytes` (privzeto 262144) omejuje vsako polje. Daljše koristne vsebine so **prirezane, ne pa
-izpuščene** — prirezan poziv še vedno odgovori na vprašanje »kaj je bilo zahtevano« — vrstica pa je označena z
-`bodies_truncated`. Pretočno prejeti inkrementalni deli niso izvoženi; sestavljeni odgovor je
+`maxBodyBytes` (privzeto 262144) omejuje vsako polje. Daljše koristne vsebine so **skrajšane, ne
+zavržene** — odrezani poziv še vedno odgovori na vprašanje »kaj je bilo vprašano« — vrstica pa je označena z
+`bodies_truncated`. Pretočne spremembe, poslane kos za kosom, se ne izvozijo; sestavljeni odgovor je
 že v `pipeline_provider_response` in `pipeline_client_response`.
 
 ---
 
 ## 2. Datoteke
 
-| Del                              | Lokacija                                     |
-| -------------------------------- | -------------------------------------------- |
-| Pogodba cilja                    | `src/lib/logExport/types.ts`                 |
-| Register                         | `src/lib/logExport/registry.ts`              |
-| Obravnava skrivnosti             | `src/lib/logExport/secrets.ts`               |
-| Izvajalnik (nadrejeni IPC)       | `src/lib/logExport/runner.ts`                |
-| Življenjski cikel procesa        | `src/lib/logExport/childRunner.ts`           |
-| Vstopna točka podprocesa         | `src/lib/logExport/exportChild.ts`           |
-| Odpiralnik samo za branje        | `src/lib/db/logExportReadOnly.ts`            |
-| Skupna poizvedba/preslikava      | `src/lib/usage/callLogExportQueries.ts`      |
-| Razreševalnik podrobnosti        | `src/lib/usage/callLogDetailResolver.ts`     |
-| Projekcija API-ja                | `src/lib/logExport/presenter.ts`             |
-| Cilj BigQuery                    | `src/lib/logExport/destinations/bigquery.ts` |
-| Preverjanje pristnosti Google SA | `src/lib/logExport/googleServiceAccount.ts`  |
-| Vir dnevnika klicev              | `src/lib/usage/callLogExportSource.ts`       |
-| Trajno shranjevanje              | `src/lib/db/logExportDestinations.ts`        |
-| Opravilo cron                    | `src/lib/jobs/logExportJob.ts`               |
-| Plast REST                       | `src/app/api/log-export/`                    |
-| Stran nadzorne plošče            | `src/app/(dashboard)/dashboard/log-export/`  |
+| Del                               | Lokacija                                     |
+| --------------------------------- | -------------------------------------------- |
+| Pogodba cilja                     | `src/lib/logExport/types.ts`                 |
+| Register                          | `src/lib/logExport/registry.ts`              |
+| Obravnava skrivnosti              | `src/lib/logExport/secrets.ts`               |
+| Izvajalnik (nadrejeni IPC)        | `src/lib/logExport/runner.ts`                |
+| Življenjski cikel procesa         | `src/lib/logExport/childRunner.ts`           |
+| Vstopna točka podrejenega procesa | `src/lib/logExport/exportChild.ts`           |
+| Odpiralnik samo za branje         | `src/lib/db/logExportReadOnly.ts`            |
+| Skupna poizvedba/preslikava       | `src/lib/usage/callLogExportQueries.ts`      |
+| Razreševalnik podrobnosti         | `src/lib/usage/callLogDetailResolver.ts`     |
+| Projekcija API-ja                 | `src/lib/logExport/presenter.ts`             |
+| Cilj BigQuery                     | `src/lib/logExport/destinations/bigquery.ts` |
+| Preverjanje pristnosti Google SA  | `src/lib/logExport/googleServiceAccount.ts`  |
+| Vir dnevnika klicev               | `src/lib/usage/callLogExportSource.ts`       |
+| Trajna hramba                     | `src/lib/db/logExportDestinations.ts`        |
+| Opravilo cron                     | `src/lib/jobs/logExportJob.ts`               |
+| Plast REST                        | `src/app/api/log-export/`                    |
+| Stran nadzorne plošče             | `src/app/(dashboard)/dashboard/log-export/`  |
 
 Shema: `src/lib/db/migrations/170_log_export_destinations.sql`.
 

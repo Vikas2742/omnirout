@@ -15,8 +15,8 @@ Thank you for your interest in contributing! This guide covers everything you ne
 - **Node.js** `>=22.22.2 <23`, vagy `>=24.0.0 <27` (ajánlott: 24 LTS)
 - **npm** 10+
 
-> **npm v11+ felhasználók (Node 24+):** Az `npm install` után ellenőrizze, hogy a natív modulok telepítve lettek-e:
-> `node -e "require('better-sqlite3')"`. Ha a parancs `MODULE_NOT_FOUND` hibával meghiúsul,
+> **npm v11+ felhasználók (Node 24+):** Az `npm install` futtatása után ellenőrizze, hogy a natív modulok telepítve lettek-e:
+> `node -e "require('better-sqlite3')"`. Ha `MODULE_NOT_FOUND` hibával meghiúsul,
 > futtassa az `npm approve-scripts better-sqlite3 && npm install` parancsot. Lásd:
 > [Hibaelhárítás](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
@@ -41,26 +41,26 @@ echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
-A fejlesztéshez szükséges főbb változók:
+A fejlesztés legfontosabb változói:
 
-| Változó                | Fejlesztési alapérték    | Leírás                         |
-| ---------------------- | ------------------------ | ------------------------------ |
-| `PORT`                 | `20128`                  | Szerver portja                 |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | A frontend alap-URL-je         |
-| `JWT_SECRET`           | (létrehozás fent)        | JWT-aláírás titka              |
-| `INITIAL_PASSWORD`     | `CHANGEME`               | Első bejelentkezési jelszó     |
-| `APP_LOG_LEVEL`        | `info`                   | Naplózás részletességi szintje |
+| Változó                | Fejlesztési alapérték    | Leírás                           |
+| ---------------------- | ------------------------ | -------------------------------- |
+| `PORT`                 | `20128`                  | A kiszolgáló portja              |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | A frontend alap URL-je           |
+| `JWT_SECRET`           | (létrehozása fent)       | JWT-aláírási titkos kulcs        |
+| `INITIAL_PASSWORD`     | `CHANGEME`               | Az első bejelentkezés jelszava   |
+| `APP_LOG_LEVEL`        | `info`                   | A naplózás részletességi szintje |
 
-### Vezérlőpult beállításai
+### A vezérlőpult beállításai
 
-A vezérlőpult felhasználói felületi kapcsolókat biztosít olyan funkciókhoz, amelyek környezeti változókkal is konfigurálhatók:
+A vezérlőpult felületi kapcsolókat biztosít olyan funkciókhoz, amelyek környezeti változókkal is konfigurálhatók:
 
-| Beállítás helye         | Kapcsoló             | Leírás                                                        |
-| ----------------------- | -------------------- | ------------------------------------------------------------- |
-| Beállítások → Speciális | Hibakeresési mód     | Hibakeresési kérésnaplók engedélyezése (felhasználói felület) |
-| Beállítások → Általános | Oldalsáv láthatósága | Oldalsávrészek megjelenítése/elrejtése                        |
+| Beállítás helye         | Kapcsoló             | Leírás                                             |
+| ----------------------- | -------------------- | -------------------------------------------------- |
+| Beállítások → Speciális | Hibakeresési mód     | A hibakeresési kérésnaplók engedélyezése (felület) |
+| Beállítások → Általános | Oldalsáv láthatósága | Az oldalsáv szakaszainak megjelenítése/elrejtése   |
 
-Ezek a beállítások az adatbázisban tárolódnak, az újraindítások után is megmaradnak, és beállításuk esetén felülírják a környezeti változók alapértelmezett értékeit.
+Ezeket a beállításokat az adatbázis tárolja, így újraindítások után is megmaradnak, és beállításuk esetén felülírják a környezeti változók alapértékeit.
 
 ### Helyi futtatás
 
@@ -68,52 +68,52 @@ Ezek a beállítások az adatbázisban tárolódnak, az újraindítások után i
 # Fejlesztői mód (automatikus újratöltés)
 npm run dev
 
-# Éles build
+# Éles összeállítás
 npm run build    # next build → .build/next/, majd assembleStandalone → dist/
 npm run start
 
-# Gyors, csak backend/API fordítás a közreműködők módosításaihoz
+# Gyors, csak háttérrendszer/API-fordítás a közreműködők módosításaihoz
 npm run build:contributor
 
-# Kiadási build (tiszta újraépítés + HEAD ellenőrzőfájl — telepítéshez kötelező)
-npm run build:release   # rm -rf .build dist && build + létrehozza a dist/BUILD_SHA fájlt
+# Kiadási összeállítás (tiszta újraépítés + HEAD-ellenőrzőjel — kötelező a telepítéshez)
+npm run build:release   # rm -rf .build dist, majd összeállítás + a dist/BUILD_SHA kiírása
 
 # Gyakori portkonfiguráció
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-A közreműködői build csak fordítási ellenőrzést végez: nem állítja össze az önálló
-disztribúciót, és nem készíti el az opcionális natív csomagolási elemeket. Használja a szokásos éles buildet, amikor
-a kiadható csomagot kell ellenőriznie.
+A közreműködői összeállítás csak fordítási ellenőrzést végez: nem állítja össze az önálló
+disztribúciót, és nem készíti el az opcionális natív csomagolási összetevőket. Használja a szokásos éles összeállítást,
+ha a szállítható csomagot kell ellenőriznie.
 
-### A build kimeneti könyvtárszerkezete
+### Az összeállítás kimeneti elrendezése
 
-| Könyvtár  | Tartalom                                                                                            | Követve |
-| --------- | --------------------------------------------------------------------------------------------------- | ------- |
-| `src/`    | Az alkalmazás forráskódja (TypeScript / TSX)                                                        | Igen    |
-| `.build/` | Köztes fájlok — a `next build` kimenete (git által figyelmen kívül hagyva, `distDir = .build/next`) | Nem     |
-| `dist/`   | Kiadható csomag — az `assembleStandalone` állítja össze (git által figyelmen kívül hagyva)          | Nem     |
+| Könyvtár  | Tartalom                                                                                            | Verziókövetett |
+| --------- | --------------------------------------------------------------------------------------------------- | -------------- |
+| `src/`    | Az alkalmazás forráskódja (TypeScript / TSX)                                                        | Igen           |
+| `.build/` | Köztes fájlok — a `next build` kimenete (git által figyelmen kívül hagyva, `distDir = .build/next`) | Nem            |
+| `dist/`   | Szállítható csomag — az `assembleStandalone` állítja össze (git által figyelmen kívül hagyva)       | Nem            |
 
-A buildfolyamat egyetlen menetből áll:
+Az összeállítási folyamat egyetlen menetből áll:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (Next.js-kimenet)
-  └─ assembleStandalone()                 (önálló csomag + statikus fájlok + public + natív elemek másolása)
+  └─ assembleStandalone()                 (átmásolja az önálló csomagot, valamint a static, public és natív összetevőket)
        └─ kimenet: dist/                  (server.js, .next/static/, public/, node_modules/)
 ```
 
-Az `npm run build:release` ezenfelül először mindkét könyvtárat megtisztítja, majd létrehozza
-a `dist/BUILD_SHA` fájlt (= `git rev-parse --short HEAD`) a telepítés integritását jelző ellenőrzőfájlként.
+Az `npm run build:release` ezenfelül először mindkét könyvtárat megtisztítja, majd
+telepítési integritást ellenőrző jelként kiírja a `dist/BUILD_SHA` fájlt (= `git rev-parse --short HEAD`).
 
-Az `npm run build:contributor` a csak backendet tartalmazó buildprofilt használja. A build során ideiglenesen helyettesíti
-a vezérlőpult felhasználói felületének fájljait, megtartja az API-útvonalkezelőket, majd a build után visszaállítja az eredeti fájlokat.
-A vezérlőpult felhasználói felületét érintő módosításokhoz vagy a kiadás teljes körű ellenőrzéséhez használja az `npm run build`
-parancsot; a közreműködői profil nem helyettesíti a kiadási buildet.
+Az `npm run build:contributor` a csak háttérrendszeres összeállítási profilt használja. Az összeállítás során ideiglenesen helyettesíti
+a vezérlőpult felületének fájljait, megtartja az API-útvonalkezelőket, majd az összeállítás után visszaállítja az eredeti fájlokat.
+A vezérlőpult felületét érintő módosításokhoz vagy a kiadás teljes körű ellenőrzéséhez használja az `npm run build` parancsot;
+a közreműködői profil nem helyettesíti a kiadási összeállítást.
 
-> **Megjegyzés VPS-telepítéshez:** a távoli rendszerképkönyvtár, `/usr/lib/node_modules/omniroute/app/`,
-> változatlan marad. A telepítési folyamatok az rsync használatával másolják bele a `dist/` tartalmát.
-> Csak a tárolón belüli buildkimeneti útvonal változott (`app/` → `dist/`).
+> **Megjegyzés VPS-re történő telepítéshez:** a távoli lemezkép `/usr/lib/node_modules/omniroute/app/`
+> könyvtára változatlan marad. A telepítési eljárások a `dist/` tartalmát szinkronizálják bele az rsync segítségével.
+> Csak a repozitóriumon belüli összeállítási kimenet elérési útja változott (`app/` → `dist/`).
 
 Alapértelmezett URL-ek:
 
@@ -297,15 +297,15 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── (dashboard)/        # Irányítópultoldalak (23 szakasz)
 │   ├── api/                # API-útvonalak (51 könyvtár)
 │   └── login/              # Hitelesítési oldalak (.tsx)
-├── domain/                 # Szabálymotor (policyEngine, comboResolver, costRules stb.)
+├── domain/                 # Házirendmotor (policyEngine, comboResolver, costRules stb.)
 ├── lib/                    # Alapvető üzleti logika (.ts)
 │   ├── a2a/                # Agent-to-Agent v0.3 protokollkiszolgáló
 │   ├── acp/                # Agent Communication Protocol-nyilvántartás
-│   ├── compliance/         # Megfelelőségi szabálymotor
-│   ├── db/                 # SQLite tartományi modulok + 130 migráció
+│   ├── compliance/         # Megfelelőségi házirendmotor
+│   ├── db/                 # SQLite-tartománymodulok + 130 migráció
 │   ├── memory/             # Tartós társalgási memória
-│   ├── oauth/              # OAuth-szolgáltatók, -szolgáltatások és -segédprogramok
-│   ├── skills/             # Bővíthető készségkeretrendszer
+│   ├── oauth/              # OAuth-szolgáltatók, szolgáltatások és segédprogramok
+│   ├── skills/             # Bővíthető képesség-keretrendszer
 │   ├── usage/              # Használatkövetés és költségszámítás
 │   └── localDb.ts          # Kizárólag újraexportálási réteg — soha ne adj hozzá logikát
 ├── middleware/              # Kérésköztesréteg (promptInjectionGuard)
@@ -313,20 +313,20 @@ src/                        # TypeScript (.ts / .tsx)
 ├── shared/
 │   ├── components/         # React-komponensek (.tsx)
 │   ├── constants/          # Szolgáltatódefiníciók (329), MCP-hatókörök, 20 útválasztási stratégia
-│   ├── utils/              # Áramkör-megszakító, tisztító és hitelesítési segédprogramok
+│   ├── utils/              # Áramkör-megszakító, tisztító, hitelesítési segédfüggvények
 │   └── validation/         # Zod v4-sémák
-└── sse/                    # SSE-proxyfeldolgozási folyamat
+└── sse/                    # SSE-proxyfeldolgozási lánc
 
-open-sse/                   # @omniroute/open-sse-munkaterület
-├── executors/              # 150 végrehajtómodul (végrehajtóosztályok + szolgáltatónkénti segédprogramok)
+open-sse/                   # @omniroute/open-sse munkaterület
+├── executors/              # 150 végrehajtómodul (végrehajtóosztályok + szolgáltatónkénti segédfüggvények)
 ├── handlers/               # 11 kéréskezelő (csevegés, válaszok, beágyazások, képek stb.)
 ├── mcp-server/             # MCP-kiszolgáló (110 egyedi eszköz, 3 átviteli mód, 33 hatókör)
-├── services/               # 178 felső szintű szolgáltatás (combo, autoCombo, rateLimitManager stb.)
+├── services/               # 178 legfelső szintű szolgáltatás (combo, autoCombo, rateLimitManager stb.)
 ├── translator/             # Formátumfordítók (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses API-átalakító
 └── utils/                  # 22 segédmodul (adatfolyam, TLS, proxy, naplózás)
 
-electron/                   # Többplatformos Electron asztali alkalmazás
+electron/                   # Electron asztali alkalmazás (platformfüggetlen)
 
 tests/
 ├── unit/                   # Node.js tesztfuttató (1 574 tesztfájl)
@@ -334,16 +334,16 @@ tests/
 ├── e2e/                    # Playwright-tesztek
 ├── security/               # Biztonsági tesztek
 ├── translator/             # Fordítóspecifikus tesztek
-└── load/                   # Terhelési tesztek
+└── load/                   # Terheléses tesztek
 
 docs/
-├── adr/                     # Architektúradöntési feljegyzések
-├── architecture/            # Rendszerarchitektúra és ellenálló képesség
+├── adr/                     # Architektúrális döntési naplók
+├── architecture/            # Rendszerarchitektúra és hibatűrés
 ├── comparison/              # OmniRoute és alternatíváinak összehasonlítása
 ├── compression/             # Tömörítési útmutatók és szabályok
 ├── dev/                     # Fejlesztési útmutatók
 ├── diagrams/                # Architektúradiagramok
-├── frameworks/              # MCP, A2A, OpenCode, memória, készségek
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
 ├── guides/                  # Felhasználói útmutató, Docker, beállítás, hibaelhárítás
 ├── i18n/                    # Nemzetköziesített README-fordítások
 ├── marketing/               # Marketinganyagok
@@ -351,9 +351,9 @@ docs/
 ├── providers/               # Szolgáltatóspecifikus dokumentáció
 ├── reference/               # API-referencia, környezeti változók, CLI-eszközök, ingyenes csomagok
 ├── releases/                # Kiadási megjegyzések
-├── routing/                 # Automatikus kombinációs motor, következtetés-visszajátszás
-├── screenshots/             # Képernyőképek az irányítópultról
-├── security/                # Védőkorlátok, megfelelőség, rejtett működés, tokenek
+├── routing/                 # Auto-combo motor, következtetési visszajátszás
+├── screenshots/             # Irányítópult-képernyőképek
+├── security/                # Védőkorlátok, megfelelőség, rejtőzködés, tokenek
 └── specs/                   # Tervezési specifikációk
 ```
 
@@ -414,9 +414,13 @@ Adja hozzá a modelldefiníciókat az `open-sse/config/providerRegistry.ts` fáj
 
 ---
 
-## Releasing
+## Kiadás
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+A kiadások kezelése a `/generate-release` munkafolyamaton keresztül történik. Új GitHub Release létrehozásakor a csomag a GitHub Actions segítségével **automatikusan közzétételre kerül az npm-en**.
+
+VPS-telepítésekhez az `npm run build:release` parancsot használja (ne az `npm run build` parancsot) — ez tiszta
+újrafordítást végez, összeállítja a csomagot a `dist/` könyvtárban, és létrehozza a `dist/BUILD_SHA` jelzőfájlt.
+Ezután használja a `/deploy-vps-*-cc` készségeket, amelyek az rsync segítségével szinkronizálják a `dist/` tartalmát a távoli `app/` könyvtárba.
 
 ---
 

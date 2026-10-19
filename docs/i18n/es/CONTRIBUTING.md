@@ -15,7 +15,7 @@ Thank you for your interest in contributing! This guide covers everything you ne
 - **Node.js** `>=22.22.2 <23`, o `>=24.0.0 <27` (recomendado: 24 LTS)
 - **npm** 10+
 
-> **Usuarios de npm v11+ (Node 24+):** Después de `npm install`, verifica que se hayan instalado los módulos nativos:
+> **Usuarios de npm v11+ (Node 24+):** Después de ejecutar `npm install`, verifica que los módulos nativos se hayan instalado:
 > `node -e "require('better-sqlite3')"`. Si falla con `MODULE_NOT_FOUND`,
 > ejecuta `npm approve-scripts better-sqlite3 && npm install`. Consulta
 > [Solución de problemas](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
@@ -36,20 +36,20 @@ npm install
 # Crea tu archivo .env a partir de la plantilla
 cp .env.example .env
 
-# Genera los secretos requeridos
+# Genera los secretos necesarios
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
 Variables clave para el desarrollo:
 
-| Variable               | Valor predeterminado de desarrollo | Descripción                       |
-| ---------------------- | ---------------------------------- | --------------------------------- |
-| `PORT`                 | `20128`                            | Puerto del servidor               |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`           | URL base para el frontend         |
-| `JWT_SECRET`           | (generar como se indica arriba)    | Secreto para la firma de JWT      |
-| `INITIAL_PASSWORD`     | `CHANGEME`                         | Contraseña para el primer inicio  |
-| `APP_LOG_LEVEL`        | `info`                             | Nivel de detalle de los registros |
+| Variable               | Valor predeterminado de desarrollo | Descripción                                |
+| ---------------------- | ---------------------------------- | ------------------------------------------ |
+| `PORT`                 | `20128`                            | Puerto del servidor                        |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`           | URL base para el frontend                  |
+| `JWT_SECRET`           | (generar como se indica arriba)    | Secreto para la firma de JWT               |
+| `INITIAL_PASSWORD`     | `CHANGEME`                         | Contraseña para el primer inicio de sesión |
+| `APP_LOG_LEVEL`        | `info`                             | Nivel de detalle de los registros          |
 
 ### Configuración del panel
 
@@ -58,9 +58,9 @@ El panel proporciona controles de interfaz para funciones que también pueden co
 | Ubicación de la configuración | Control                         | Descripción                                              |
 | ----------------------------- | ------------------------------- | -------------------------------------------------------- |
 | Configuración → Avanzado      | Modo de depuración              | Habilita los registros de solicitudes de depuración (IU) |
-| Configuración → General       | Visibilidad de la barra lateral | Muestra u oculta secciones de la barra lateral           |
+| Configuración → General       | Visibilidad de la barra lateral | Muestra/oculta secciones de la barra lateral             |
 
-Esta configuración se almacena en la base de datos y persiste entre reinicios; cuando está establecida, reemplaza los valores predeterminados de las variables de entorno.
+Esta configuración se almacena en la base de datos y se conserva entre reinicios, reemplazando los valores predeterminados de las variables de entorno cuando se establece.
 
 ### Ejecución local
 
@@ -68,23 +68,23 @@ Esta configuración se almacena en la base de datos y persiste entre reinicios; 
 # Modo de desarrollo (recarga en caliente)
 npm run dev
 
-# Compilación de producción
-npm run build    # next build → .build/next/ y después assembleStandalone → dist/
+# Compilación para producción
+npm run build    # next build → .build/next/ y luego assembleStandalone → dist/
 npm run start
 
-# Compilación rápida solo del backend/API para cambios de colaboradores
+# Compilación rápida únicamente del backend/API para cambios de colaboradores
 npm run build:contributor
 
-# Compilación de lanzamiento (recompilación limpia + centinela HEAD — obligatoria para el despliegue)
+# Compilación de versión (recompilación limpia + centinela HEAD — necesaria para el despliegue)
 npm run build:release   # rm -rf .build dist && build + escribe dist/BUILD_SHA
 
 # Configuración habitual del puerto
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-La compilación para colaboradores realiza únicamente la validación de compilación: no ensambla la
-distribución independiente ni compila recursos opcionales de empaquetado nativo. Usa la compilación
-de producción normal cuando necesites validar el paquete distribuible.
+La compilación para colaboradores realiza una validación exclusivamente de compilación: no ensambla la
+distribución independiente ni compila recursos opcionales de empaquetado nativo. Utiliza la compilación normal para producción cuando
+necesites validar el paquete distribuible.
 
 ### Estructura de la salida de compilación
 
@@ -100,21 +100,20 @@ La canalización de compilación consta de una sola pasada:
 npm run build
   └─ next build → .build/next/standalone  (salida de Next.js)
   └─ assembleStandalone()                 (copia el paquete independiente + archivos estáticos + públicos + recursos nativos)
-       └─ salida: dist/                    (server.js, .next/static/, public/, node_modules/)
+       └─ salida: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
 `npm run build:release` también limpia primero ambos directorios y escribe
 `dist/BUILD_SHA` (= `git rev-parse --short HEAD`) como centinela de integridad del despliegue.
 
-`npm run build:contributor` utiliza el perfil de compilación exclusivo para el backend. Sustituye
-temporalmente por stubs los archivos de la interfaz del panel durante la compilación, conserva los
-manejadores de rutas de la API y restaura los archivos originales después de la compilación. Usa
-`npm run build` para cambios que afecten a la interfaz del panel o para una validación completa del
-lanzamiento; el perfil para colaboradores no sustituye la compilación de lanzamiento.
+`npm run build:contributor` utiliza el perfil de compilación exclusivo del backend. Sustituye temporalmente por stubs
+los archivos de la interfaz del panel durante la compilación, conserva los controladores de rutas de la API y restaura los archivos originales
+después de la compilación. Utiliza `npm run build` para cambios que afecten a la interfaz del panel o para una validación
+completa de la versión; el perfil para colaboradores no sustituye a la compilación de versión.
 
 > **Nota sobre el despliegue en VPS:** el directorio remoto de la imagen `/usr/lib/node_modules/omniroute/app/`
-> no cambia. Las automatizaciones de despliegue sincronizan mediante rsync el contenido de `dist/` en él.
-> Solo cambió la ruta de salida de compilación dentro del repositorio (`app/` → `dist/`).
+> no cambia. Las herramientas de despliegue sincronizan mediante rsync el contenido de `dist/` en él.
+> Solo se ha movido la ruta de salida de compilación dentro del repositorio (`app/` → `dist/`).
 
 URL predeterminadas:
 
@@ -299,37 +298,37 @@ src/                        # TypeScript (.ts / .tsx)
 │   └── login/              # Páginas de autenticación (.tsx)
 ├── domain/                 # Motor de políticas (policyEngine, comboResolver, costRules, etc.)
 ├── lib/                    # Lógica de negocio principal (.ts)
-│   ├── a2a/                # Servidor del protocolo Agent-to-Agent v0.3
-│   ├── acp/                # Registro de Agent Communication Protocol
+│   ├── a2a/                # Servidor del protocolo de agente a agente v0.3
+│   ├── acp/                # Registro del protocolo de comunicación entre agentes
 │   ├── compliance/         # Motor de políticas de cumplimiento
 │   ├── db/                 # Módulos de dominio de SQLite + 130 migraciones
 │   ├── memory/             # Memoria conversacional persistente
 │   ├── oauth/              # Proveedores, servicios y utilidades de OAuth
-│   ├── skills/             # Marco extensible de habilidades
+│   ├── skills/             # Framework extensible de habilidades
 │   ├── usage/              # Seguimiento del uso y cálculo de costes
 │   └── localDb.ts          # Solo capa de reexportación; nunca añada lógica aquí
 ├── middleware/              # Middleware de solicitudes (promptInjectionGuard)
-├── mitm/                   # Proxy MITM (certificados, DNS, enrutamiento de destinos)
+├── mitm/                   # Proxy MITM (certificados, DNS, enrutamiento de destino)
 ├── shared/
 │   ├── components/         # Componentes de React (.tsx)
 │   ├── constants/          # Definiciones de proveedores (329), ámbitos de MCP, 20 estrategias de enrutamiento
-│   ├── utils/              # Disyuntor, sanitizador y utilidades de autenticación
+│   ├── utils/              # Disyuntor, saneador y funciones auxiliares de autenticación
 │   └── validation/         # Esquemas de Zod v4
 └── sse/                    # Canalización del proxy SSE
 
 open-sse/                   # Espacio de trabajo de @omniroute/open-sse
-├── executors/              # 150 módulos ejecutores (clases ejecutoras + asistentes por proveedor)
-├── handlers/               # 11 controladores de solicitudes (chat, respuestas, embeddings, imágenes, etc.)
+├── executors/              # 150 módulos ejecutores (clases ejecutoras + funciones auxiliares por proveedor)
+├── handlers/               # 11 gestores de solicitudes (chat, respuestas, embeddings, imágenes, etc.)
 ├── mcp-server/             # Servidor MCP (110 herramientas únicas, 3 transportes, 33 ámbitos)
 ├── services/               # 178 servicios de nivel superior (combo, autoCombo, rateLimitManager, etc.)
 ├── translator/             # Traductores de formatos (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Transformador de la API Responses
-└── utils/                  # 22 módulos de utilidades (streaming, TLS, proxy, registro)
+└── utils/                  # 22 módulos de utilidades (transmisión, TLS, proxy, registro)
 
 electron/                   # Aplicación de escritorio Electron (multiplataforma)
 
 tests/
-├── unit/                   # Ejecutor de pruebas de Node.js (1574 archivos de prueba)
+├── unit/                   # Ejecutor de pruebas de Node.js (1,574 archivos de prueba)
 ├── integration/            # Pruebas de integración
 ├── e2e/                    # Pruebas de Playwright
 ├── security/               # Pruebas de seguridad
@@ -343,17 +342,17 @@ docs/
 ├── compression/             # Guías y reglas de compresión
 ├── dev/                     # Guías de desarrollo
 ├── diagrams/                # Diagramas de arquitectura
-├── frameworks/              # MCP, A2A, OpenCode, memoria y habilidades
-├── guides/                  # Guía del usuario, Docker, configuración y solución de problemas
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # Guía del usuario, Docker, configuración, solución de problemas
 ├── i18n/                    # Traducciones internacionalizadas del README
 ├── marketing/               # Materiales de marketing
-├── ops/                     # Despliegue, proxy, cobertura y versiones
+├── ops/                     # Despliegue, proxy, cobertura, lanzamientos
 ├── providers/               # Documentación específica de proveedores
-├── reference/               # Referencia de la API, variables de entorno, herramientas de CLI y niveles gratuitos
+├── reference/               # Referencia de la API, variables de entorno, herramientas de CLI, niveles gratuitos
 ├── releases/                # Notas de la versión
-├── routing/                 # Motor de combinación automática y reproducción del razonamiento
+├── routing/                 # Motor de combinación automática, reproducción de razonamiento
 ├── screenshots/             # Capturas de pantalla del panel
-├── security/                # Barreras de seguridad, cumplimiento, ocultación y tokens
+├── security/                # Medidas de protección, cumplimiento, ocultación, tokens
 └── specs/                   # Especificaciones de diseño
 ```
 
@@ -414,9 +413,12 @@ Escribe pruebas unitarias en `tests/unit/` que cubran, como mínimo:
 
 ---
 
-## Releasing
+## Publicación de versiones
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Las versiones se gestionan mediante el flujo de trabajo `/generate-release`. Cuando se crea una nueva versión en GitHub, el paquete se **publica automáticamente en npm** mediante GitHub Actions.
+
+Para despliegues en VPS, usa `npm run build:release` (no `npm run build`): realiza una recompilación limpia, ensambla el paquete en `dist/` y escribe el marcador `dist/BUILD_SHA`.
+Después, usa las habilidades `/deploy-vps-*-cc`, que sincronizan `dist/` mediante rsync con el directorio remoto `app/`.
 
 ---
 

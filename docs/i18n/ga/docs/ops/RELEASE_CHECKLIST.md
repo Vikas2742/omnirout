@@ -109,25 +109,25 @@ mbrainse eisiúna (glas leanúnach eisiúna) — scipeálann an lána FEITHEAMH,
 Scipeálann difríochtaí tástálacha amháin (gach comhad faoi `tests/`, gan aon cheann faoi `tests/e2e/`) an mhaitrís E2E
 go huathoibríoch, gan aon lipéad.
 
-## Seicliosta Mionsonraithe
+## Liosta Seiceála Mionsonraithe
 
-### Roimh an eisiúint
+### Réamh-eisiúint
 
 - [ ] Tá gach PR atá dírithe ar an eisiúint seo cumaiscthe isteach i `release/vX.Y.0`
-- [ ] Tá gach mír oscailte in Linear nó gach saincheist oscailte don leagan seo dúnta nó bogtha chuig an gcéad chloch mhíle eile
+- [ ] Tá gach mír oscailte Linear/saincheiste don leagan seo dúnta nó curtha ar aghaidh chuig an gcéad chloch mhíle eile
 - [ ] Tá CI glas ar an mbrainse `release/vX.Y.0`
 - [ ] Níl aon mharcóir `TODO(release)` sa chód: `grep -r "TODO(release)" src/ open-sse/`
 - [ ] Tá buníomhá Docker cothrom le dáta (`node:24.15.0-trixie-slim` faoi láthair)
 
-### Leagan & Log Athruithe
+### Leagan & Logchomhad Athruithe
 
 - [ ] Rith `/version-bump-cc <patch|minor|major>` (scil Claude Code)
-  - Méadaíonn sé an leagan in `package.json`, `electron/package.json`
-  - Athghineann sé `CHANGELOG.md` ó na gealltanais git ón gclib dheireanach
+  - Méadaíonn sé na leaganacha in `package.json`, `electron/package.json`
+  - Athghineann sé `CHANGELOG.md` ó na tiomantais git ón gclib dheireanach
   - Nuashonraíonn sé suaitheantais README.md
-- [ ] Déan athbhreithniú de láimh ar CHANGELOG.md agus glan suas teachtaireachtaí gealltanais más gá
+- [ ] Athbhreithnigh CHANGELOG.md de láimh agus glan teachtaireachtaí tiomantais más gá
 - [ ] Cinntigh go bhfuil an rannán semver is déanaí in `CHANGELOG.md` cothrom leis an leagan in `package.json`
-- [ ] Coinnigh `## [Unreleased]` mar an chéad rannán den log athruithe don obair atá le teacht
+- [ ] Coinnigh `## [Unreleased]` mar an chéad rannán den logchomhad athruithe don obair atá le teacht
 - [ ] Nuashonraigh `docs/openapi.yaml` → caithfidh `info.version` a bheith cothrom leis an leagan in `package.json`
 
 ### Cáilíocht an Chóid
@@ -135,7 +135,7 @@ go huathoibríoch, gan aon lipéad.
 - [ ] `npm run lint` — 0 earráid (bhí na rabhaidh ann cheana)
 - [ ] `npm run typecheck:core` — glan
 - [ ] `npm run typecheck:noimplicit:core` — glan (docht)
-- [ ] `npm run check:cycles:ratchet` — laistigh den uasteorainn reoite `metrics.cycles` (scoireann `check:cycles` lom le 1 má bhíonn timthriall ar bith ann, #15281)
+- [ ] `npm run check:cycles:ratchet` — laistigh den uasteorainn reoite `metrics.cycles` (scoireann `check:cycles` lom le 1 má bhíonn aon timthriall ann, #15281)
 - [ ] `npm run check:any-budget:t11` — laistigh den bhuiséad
 - [ ] `npm run check:route-validation:t06` — glan
 - [ ] `npm run check:node-runtime` — comhlíontar íosteorainn an ama rite a dtacaítear leis (`>=22.22.2 <23`, `>=24.0.0 <27`, de réir `SUPPORTED_NODE_RANGE` in `src/shared/utils/nodeRuntimeSupport.ts`; ailínithe le `engines` in `package.json`)
@@ -144,76 +144,76 @@ go huathoibríoch, gan aon lipéad.
 
 - [ ] `npm run test:unit` — éiríonn leis
 - [ ] `npm run test:vitest` — éiríonn leis (freastalaí MCP, autoCombo, taisce)
-- [ ] `npm run test:coverage` — sásaítear tairseach 60/60/60/60 (ráitis/línte/feidhmeanna/brainsí)
-- [ ] `npm run test:integration` — éiríonn leis (má bhaineann na hathruithe leis an DB / le láimhseálaithe)
-- [ ] `npm run test:combo:matrix` — éiríonn leis (maitrís straitéisí combo: cruthaíonn sí cinntí roghnúcháin gach ceann de na 19 straitéis ródúcháin phoiblí ar bhealach cinntitheach; rith í agus tú ag athrú ródú combo, réiteach straitéise nó loighic chúltaca)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **roghnach/de láimh** (tástáil bheo dheataigh le fíorsheirbhís réamhtheachtach, cosanta ag geata; faigheann sí seat DB inléite amháin ó VPS `root@192.168.0.15`; téann sí i dteagmháil le fíorsholáthraithe agus cosnaíonn sí creidmheasanna; ní ritheann sí riamh in CI; scipeálann sí go glan gan an geata)
-- [ ] `npm run test:combo:live:vps` — **roghnach/de láimh** (tástáil bheo dheataigh VPS do Chéim 3: 7 gcás HTTP i gcoinne an fhreastalaí bheo `.15` trí Node ESM simplí; teastaíonn `ssh root@192.168.0.15`; ní chruthaíonn agus ní scriosann sí ach comboanna `__live_test__*`; téann sí i dteagmháil le fíorsholáthraithe; ní ritheann sí riamh in CI)
+- [ ] `npm run test:coverage` — comhlíontar an tairseach 60/60/60/60 (ráitis/línte/feidhmeanna/brainsí)
+- [ ] `npm run test:integration` — éiríonn leis (má bhaineann na hathruithe leis an mbunachar sonraí / láimhseálaithe)
+- [ ] `npm run test:combo:matrix` — éiríonn leis (maitrís straitéisí teaglama: cruthaíonn sí cinntí roghnúcháin gach ceann de na 19 straitéis ródúcháin phoiblí go cinntitheach; rith í agus tú ag athrú ródú teaglama, réiteach straitéise, nó loighic chúltaca)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **roghnach/de láimh** (tástáil dheataigh rialaithe ar fhíorfhoinse réamhtheachtach; faigheann sí seat bunachair sonraí inléite amháin ó VPS `root@192.168.0.15`; déanann sí iarratais chuig fíorsholáthraithe agus cosnaíonn sí creidmheasanna; ní ritheann sí riamh in CI; scipeálann sí go néata gan an geata)
+- [ ] `npm run test:combo:live:vps` — **roghnach/de láimh** (tástáil dheataigh bheo VPS Chéim 3: 7 gcás HTTP i gcoinne an fhreastalaí bheo `.15` trí Node ESM lom; teastaíonn `ssh root@192.168.0.15`; ní chruthaíonn/scriosann sí ach teaglamaí `__live_test__*`; déanann sí iarratais chuig fíorsholáthraithe; ní ritheann sí riamh in CI)
 - [ ] `npm run test:e2e` — éiríonn leis (athruithe UI)
 - [ ] `npm run test:protocols:e2e` — éiríonn leis (athruithe MCP/A2A)
 - [ ] `npm run test:ecosystem` — éiríonn leis
 
-### Crúcaí (bailíochtaithe ag Husky)
+### Crúcaí (Bailíochtaithe ag Husky)
 
 Tá crúcaí Husky in `.husky/` agus ritheann siad go huathoibríoch le linn oibríochtaí git.
 
 - **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** geataí tapa cinntitheacha — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (gníomhachtaithe 2026-06-13). Fágtar `test:unit` ar lár d'aon ghnó (mall; clúdaítear é le jab CI `test-unit`).
+- **pre-push:** geataí tapa cinntitheacha — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (gníomhachtaithe 2026-06-13). Fágann sé `test:unit` ar lár d'aon ghnó (mall; clúdaítear é le jab CI `test-unit`).
   - Rith `npm run test:unit` de láimh sula mbrúnn tú brainsí eisiúna.
 
-Má theipeann ar chrúca: ceartaigh an bhunfhadhb, ná seachain é le `--no-verify`.
+Má theipeann ar chrúca: ceartaigh an bhunfhadhb, ná téigh timpeall air le `--no-verify`.
 
-### Gealltanais Choinbhinsiúnacha
+### Tiomantais Choinbhinsiúnacha
 
-Caithfidh gach gealltanas atá ceaptha don eisiúint an fhormáid `type(scope): subject` a leanúint.
+Caithfidh gach tiomantas atá beartaithe d'eisiúint an fhormáid `type(scope): subject` a leanúint.
 
 **Cineálacha bailí:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
 **Scóip bhailí:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
 
-Athruithe bristeacha: cuir buntásc `BREAKING CHANGE:` leis nó `!` tar éis na scóipe (m.sh. `feat(api)!: drop /v0`).
+Athruithe neamh-chomhoiriúnacha: cuir buntásc `BREAKING CHANGE:` leis nó `!` i ndiaidh na scóipe (m.sh. `feat(api)!: drop /v0`).
 
 ### Doiciméadacht
 
 - [ ] Éiríonn le `npm run check:docs-sync` (ritheann pre-commit é go huathoibríoch)
-- [ ] Éiríonn le `npm run check:docs-all` (scáthordú: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
+- [ ] Éiríonn le `npm run check:docs-all` (scáthsheiceáil: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
 - [ ] Scoireann `npm run check:env-doc-sync` le 0 — tá an conradh timpeallachta idir an cód ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` slán
-- [ ] Scoireann `npm run check:doc-links` le 0 — níl aon tagairt inmheánach markdown briste tar éis athstruchtúrú
-- [ ] Rinneadh athbhreithniú ar `docs/architecture/ARCHITECTURE.md` le haghaidh éagsúlacht stórála/ama rite
-- [ ] Rinneadh athbhreithniú ar `docs/guides/TROUBLESHOOTING.md` le haghaidh éagsúlacht athróg timpeallachta agus éagsúlacht oibríochtúil
+- [ ] Scoireann `npm run check:doc-links` le 0 — níl aon tagairt markdown inmheánach briste i ndiaidh athstruchtúrú
+- [ ] Athbhreithníodh `docs/architecture/ARCHITECTURE.md` le haghaidh neamhréireachta stórála/ama rite
+- [ ] Athbhreithníodh `docs/guides/TROUBLESHOOTING.md` le haghaidh neamhréireachta athróg timpeallachta agus oibríochtúil
 - [ ] Má athraíodh `.env.example`: nuashonraíodh `docs/reference/ENVIRONMENT.md`
 - [ ] Má tá UI ag gné nua: luaitear í in `docs/guides/USER_GUIDE.md`
 - [ ] Má tá API ag gné nua: nuashonraíodh `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml`
-- [ ] Más modúl í gné nua: tá `docs/<MODULE>.md` tiomnaithe ann
-- [ ] Más athrú bristeach é: tá nóta aistrithe in `docs/guides/TROUBLESHOOTING.md`
+- [ ] Más modúl é an ghné nua: tá `docs/<MODULE>.md` tiomnaithe ann
+- [ ] Más athrú neamh-chomhoiriúnach é: tá nóta imirce in `docs/guides/TROUBLESHOOTING.md`
 
-### i18n
+### Idirnáisiúnú
 
-- [ ] Scoireann `npm run i18n:check` le 0 — tá staid an aistriúcháin (`.i18n-state.json`) sioncronaithe leis na doiciméid fhoinseacha (níl aon fhoinse imithe óna chéile sa mhód docht; tá comhairle sa mhód rabhaidh inghlactha le haghaidh mionathruithe nóiméid dheireanaigh ar dhoiciméid, ach ba cheart dó a bheith ag 0 roimh chlibeáil)
-- [ ] Scoireann `npm run i18n:check-ui-coverage` le 0 — tá gach logchaighdeán UI ag tairseach cumhdaigh 80% nó os a cionn
-- [ ] Tuairiscíonn `npm run i18n:sync-ui:dry` 0 eochair ar iarraidh ar fud na 66 logchaighdeán sprice ar fad (gach logchaighdeán seachas an fhoinse `en`)
+- [ ] Scoireann `npm run i18n:check` le 0 — tá staid an aistriúcháin (`.i18n-state.json`) sioncronaithe leis na doiciméid fhoinseacha (níl aon fhoinse imithe as sioncrónú sa mhód docht; tá comhairle mhód na rabhadh inghlactha do mhionathruithe nóiméid dheireanaigh ar dhoiciméid, ach ba cheart gur 0 a bheadh ann roimh chlibeáil)
+- [ ] Scoireann `npm run i18n:check-ui-coverage` le 0 — tá gach logchaighdeán UI ag tairseach clúdaigh 80% nó os a cionn
+- [ ] Tuairiscíonn `npm run i18n:sync-ui:dry` 0 eochair ar iarraidh ar fud na 66 logchaighdeán sprice uile (gach logchaighdeán seachas an fhoinse `en`)
 - [ ] Má athraíodh na doiciméid fhoinseacha Bhéarla, rith `npm run i18n:run` (teastaíonn `OMNIROUTE_TRANSLATION_API_KEY` in `.env`) roimh chlibeáil
-- [ ] Is féidir rannchuidithe aistriúcháin a chur siar go dtí an chéad eisiúint eile más mionathruithe iad (rianaigh in CHANGELOG iad)
+- [ ] Is féidir rannchuidithe aistriúcháin a chur siar go dtí an chéad eisiúint eile más mionathruithe iad (rian iad in CHANGELOG)
 
-### Aistrithe Bunachair Sonraí
+### Imircí Bunachair Sonraí
 
 - [ ] Má tá comhaid nua in `src/lib/db/migrations/`:
-  - [ ] Tá gach aistriú féinchomhsheasmhach (`CREATE TABLE IF NOT EXISTS`, srl.)
-  - [ ] Tá aistrithe fillte in idirbhearta
-  - [ ] Tá siad uimhrithe i gceart (gan bhearnaí sa seicheamh)
+  - [ ] Tá gach imirce idéimitheach (`CREATE TABLE IF NOT EXISTS`, srl.)
+  - [ ] Tá imircí fillte in idirbhearta
+  - [ ] Tá siad uimhrithe i gceart (gan aon bhearna sa seicheamh)
 - [ ] Déan tástáil ar shuiteáil úr: scrios `~/.omniroute/omniroute.db` agus rith `npm run dev`
-- [ ] Déan tástáil ar shuiteáil atá ann cheana: déan cúltaca den DB, rith an t-aistriú, fíoraigh an scéimre
-- [ ] Láimhseáiltear comhaid WAL (`-wal`, `-shm`) i gceart má athscríobhann an t-aistriú táblaí
+- [ ] Déan tástáil ar shuiteáil atá ann cheana: déan cúltaca den bhunachar sonraí, rith an imirce, fíoraigh an scéimre
+- [ ] Láimhseáiltear comhaid WAL (`-wal`, `-shm`) i gceart má athscríobhann an imirce táblaí
 
-### Catalóg Soláthraithe (bailíochtaithe le Zod)
+### Catalóg Soláthraithe (bailíochtaithe ag Zod)
 
-- [ ] Tá scéimre Zod `src/shared/constants/providers.ts` bailí tráth luchtaithe
-  - [ ] Tá na réimsí riachtanacha (`id`, `label`, `kind`, srl.) ag gach soláthraí
-  - [ ] Tá `freeNote` curtha ar fáil do sholáthraithe nua saor in aisce
+- [ ] Scéimre Zod `src/shared/constants/providers.ts` bailí ag am luchtaithe
+  - [ ] Tá na réimsí riachtanacha uile ag gach soláthraí (`id`, `label`, `kind`, etc.)
+  - [ ] `freeNote` curtha ar fáil do sholáthraithe nua saor in aisce
   - [ ] Tá `oauthConfig` ag soláthraithe OAuth cláraithe in `src/lib/oauth/constants/oauth.ts`
-- [ ] Má chuirtear soláthraí nua leis: tá seiceadóir comhfhreagrach in `open-sse/executors/`
-- [ ] Má úsáidtear formáid nach formáid OpenAI í: tá aistritheoir in `open-sse/translator/`
-- [ ] Tá samhlacha cláraithe in `open-sse/config/providerRegistry.ts`
+- [ ] Má cuireadh soláthraí nua leis: feidhmitheoir comhfhreagrach in `open-sse/executors/`
+- [ ] Más formáid neamh-OpenAI í: aistritheoir in `open-sse/translator/`
+- [ ] Samhlacha cláraithe in `open-sse/config/providerRegistry.ts`
 - [ ] Clúdaíonn tástálacha aonaid in `tests/unit/` aicmiú agus ródú soláthraithe
 
 ### Deasc (Electron)
@@ -221,55 +221,55 @@ Athruithe bristeacha: cuir buntásc `BREAKING CHANGE:` leis nó `!` tar éis na 
 Má athraíodh `electron/`:
 
 - [ ] Éiríonn le `npm run electron:smoke:packaged`
-- [ ] Tástáladh leaganacha tógála do cheann amháin ar a laghad de `:win`, `:mac`, `:linux`
-- [ ] Níl teastais sínithe cóid imithe in éag (má tá síniú á dhéanamh)
-- [ ] Meaitseálann leagan `electron/package.json` leagan fhréamh-`package.json`
-- [ ] Nuashonraíodh pointeoir an chainéil uathnuashonraithe má táthar ag eisiúint chuig `stable`
+- [ ] Tástáladh tógálacha do cheann amháin ar a laghad de `:win`, `:mac`, `:linux`
+- [ ] Níl teastais sínithe cóid as feidhm (má tá síniú á dhéanamh)
+- [ ] Meaitseálann leagan `electron/package.json` leis an `package.json` fréimhe
+- [ ] Nuashonraíodh pointeoir an chainéil uathnuashonraithe má tá eisiúint á déanamh chuig `stable`
 
 ### Leagan Amach na Tógála
 
-Úsáideann an stór trí chomhadlann aschuir ar leith — ná measc iad riamh:
+Úsáideann an stór trí chomhadlann aschuir ar leith — ná measc suas iad choíche:
 
-| Comhadlann | Cuspóir                                                       | Rianaithe?       |
-| ---------- | ------------------------------------------------------------- | ---------------- |
-| `src/`     | Foinse an fheidhmchláir (TypeScript / TSX)                    | Tá               |
-| `.build/`  | Earraí idirmheánacha tógála — aschur `next build` (`distDir`) | Níl (gitignored) |
-| `dist/`    | Beart npm in-dáileacháin — cóimeáilte ag `assembleStandalone` | Níl (gitignored) |
+| Comhadlann | Cuspóir                                                          | Rianaithe?             |
+| ---------- | ---------------------------------------------------------------- | ---------------------- |
+| `src/`     | Foinse an fheidhmchláir (TypeScript / TSX)                       | Tá                     |
+| `.build/`  | Idirmheáin tógála — aschur `next build` (`distDir`)              | Níl (neamhaird ag git) |
+| `dist/`    | Beart npm inseachadta — curtha le chéile ag `assembleStandalone` | Níl (neamhaird ag git) |
 
 > **Nóta don oibreoir:** fanann comhadlann íomhá an VPS chianda mar `/usr/lib/node_modules/omniroute/app/`.
-> Níor bogadh ach an t-aschur tógála **laistigh den stór** (`app/` → `dist/`). Déanann na scileanna imscartha rsync
-> ar inneachar `dist/` isteach sa chomhadlann chianda `app/` — ní gá conairí VPS a athrú.
+> Níor bogadh ach aschur tógála **laistigh den stór** (`app/` → `dist/`). Déanann na scileanna imscartha inneachar
+> `dist/` a shioncronú le rsync isteach sa chomhadlann chianda `app/` — ní gá aon chosáin VPS a athrú.
 
 **Sreabhadh aon tógála amháin:**
 
 ```
 npm run build:release
   └─ rm -rf .build dist          (glanadh)
-  └─ next build → .build/next/   (earraí idirmheánacha)
-  └─ assembleStandalone          (cóipeálann standalone + static + public + natives → dist/)
-  └─ writes dist/BUILD_SHA       (faireoir HEAD)
+  └─ next build → .build/next/   (idirmheáin)
+  └─ assembleStandalone          (cóipeálann neamhspleách + statach + poiblí + dúchasach → dist/)
+  └─ scríobhann dist/BUILD_SHA   (fairtheoir HEAD)
 ```
 
-NÁ rith `npm run build` agus ansin `npm run build:cli` ar leith don imscaradh — úsáid
-`npm run build:release`, a dhéanann atógáil ghlan agus a scríobhann an faireoir in aon ordú amháin.
+NÁ rith `npm run build` agus ansin `npm run build:cli` ar leith le haghaidh imscartha — úsáid
+`npm run build:release`, a dhéanann atógáil ghlan + fairtheoir in aon ordú amháin.
 
 ### Bailíochtú Déantáin
 
 - [ ] Éiríonn le `npm run build:release` agus tá `dist/BUILD_SHA` == `git rev-parse --short HEAD`
 - [ ] Tá `npm run check:pack-artifact` glan — níl `app.__qa_backup`, `scripts/scratch`, `package-lock.json`, ná aon iarmhar áitiúil eile ann
 - [ ] Tá `dist/server.js` ann tar éis na tógála
-- [ ] Tástáil dheataigh roghnach áitiúil ar an am rite pacáistithe: tosaíonn `npm run dev:candidate -- validate`, tar éis `npm run dev:candidate -- build`, an tarball pacáistithe ar `DATA_DIR` leithlisithe agus seiceálann sé `/api/health` + `/v1/models` (féach [Conair Órga na Rannpháirtíochta](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
+- [ ] Tástáil deataigh roghnach áitiúil ar an am rite pacáistithe: tar éis `npm run dev:candidate -- build`, tosaíonn `npm run dev:candidate -- validate` an tarball pacáistithe ar `DATA_DIR` leithlisithe agus seiceálann sé `/api/health` + `/v1/models` (féach [Conair Órga Rannchuidithe](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
 
 ### Clibeáil & Eisiúint
 
 - [ ] Rith `/generate-release-cc` (scil Claude Code):
   - Cruthaíonn sé clib `vX.Y.Z`
   - Brúnn sé an chlib agus an brainse
-  - Osclaíonn sé Eisiúint GitHub le corp loga athruithe
+  - Osclaíonn sé Eisiúint GitHub le corp an loga athruithe
   - Ceanglaíonn sé suiteálaithe Electron (má tógadh iad)
 - [ ] Nó de láimh:
   ```bash
-  git tag -a vX.Y.Z -m "Eisiúint vX.Y.Z"
+  git tag -a vX.Y.Z -m "Release vX.Y.Z"
   git push origin vX.Y.Z
   gh release create vX.Y.Z --notes-from-tag
   ```
@@ -283,37 +283,37 @@ NÁ rith `npm run build` agus ansin `npm run build:cli` ar leith don imscaradh �
   - `/deploy-vps-akamai-cc` — VPS Akamai (69.164.221.35)
   - `/deploy-vps-both-cc` — an dá cheann
 - [ ] Sula ndéantar imscaradh, deimhnigh go bhfuil `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] Ní mór an tógáil a rith san áit a bhfuil `node_modules` fíor (an príomhsheiceáil amach nó worktree ar ritheadh `npm ci` ann — NÍ worktree siombailcheangailte)
-- [ ] Déan tástáil dheataigh ar an ásc imscartha:
-  - Oscail `/dashboard/health` → seiceáil go meaitseálann teaghrán an leagain an eisiúint
-  - Rith iarratas `/v1/chat/completions` ar sholáthraí aitheanta
+- [ ] Ní mór an tógáil a rith san áit a bhfuil `node_modules` fíor (an príomhsheiceáil amach nó crann oibre ar ritheadh `npm ci` air — NÍ crann oibre le nasc siombalach)
+- [ ] Déan tástáil deataigh ar an ásc imscartha:
+  - Oscail `/dashboard/health` → seiceáil go meaitseálann teaghrán an leagain leis an eisiúint
+  - Rith iarratas `/v1/chat/completions` i gcoinne soláthraí aitheanta
   - Deimhnigh go dtugann `/api/monitoring/health` scoradáin chiorcaid `CLOSED` ar ais
-  - Deimhnigh go bhfreagraíonn iompróirí MCP (`/mcp` HTTP, `/mcp-sse` SSE)
+  - Deimhnigh go bhfreagraíonn iompair MCP (`/mcp` HTTP, `/mcp-sse` SSE)
 
-### Iar-eisiúint
+### Tar éis na hEisiúna
 
 - [ ] Rith `/capture-release-evidences-cc` (scil Claude Code)
   - Gabhann sé gabhálacha scáileáin/taifeadtaí WebP de ghnéithe nua
-  - Ceanglaíonn sé iad le nótaí eisiúna / blagphost
-- [ ] Nuashonraigh GitHub Discussions / Discord le fógra na heisiúna
+  - Ceanglaíonn sé iad le nótaí eisiúna / postáil bhlag
+- [ ] Nuashonraigh Pléití GitHub / Discord le fógra eisiúna
 - [ ] Oscail cloch mhíle don chéad leagan eile
-- [ ] Más criticiúil é: pionnáil an plé nó postáil in `news.json` le haghaidh meirge laistigh den fheidhmchlár
+- [ ] Más rud criticiúil é: pionnáil an plé nó postáil in `news.json` le haghaidh meirge laistigh den fheidhmchlár
 
-### Geata seolta phoiblí Radar
+### Geata seolta poiblí Radar
 
-Tá fógra Radar tiomnaithe d'aon ghnó le `active: false`. Is athrú ar leith é an gníomhachtú
-tar éis fianaise a chur ar fáil do gach mír thíos:
+Tá an fógra Radar tiomnaithe d'aon ghnó le `active: false`. Is athrú ar leith é an gníomhachtú
+tar éis fianaise a bheith ann do gach mír thíos:
 
 - [ ] Tá gach PR cruachta Radar cumaiscthe agus tá CI bharr na heisiúna glas
-- [ ] Imscar agus déan tástáil dheataigh ar bhealaí OSS Radar agus `RADAR_ENABLED` fós múchta de réir réamhshocraithe
-- [ ] Déan tástáil dheataigh ar `GET /planos`, `/termos`, `/privacidade`, agus `/reembolso` ar an óstach Radar ainmnithe
-- [ ] Taifead aitheantas/teagmháil/seoladh an oibreora agus athbhreithniú dlíthiúil atá faofa ag an úinéir sa tseirbhís phríobháideach
-- [ ] Tástáil Stripe Checkout agus an webhook sínithe i mód tástála amháin
-- [ ] Tástáil seachadadh ríomhphoist idirbheartaigh criptithe amháin leis an seoltóir/bhfearann faofa
-- [ ] Cruthaigh go n-oibríonn athchóiriú cúltaca agus aon rith taighde maoirsithe amháin a bhfuil teorainn bhuiséid leis
-- [ ] Faomh an beartas athbhreithnithe BRL/PIX sula nglacfar le fianaise síntiúis
-- [ ] Ná cumasaigh Checkout poiblí go dtí go mbeidh na geataí roimhe seo comhlíonta, agus ansin gníomhachtaigh an ID nua `news.json`
-- [ ] Deimhnigh go n-úsáideann an meirge Baile cóip logánaithe agus go dtagann ID nua chun cinn arís tar éis ID níos sine a dhíbhe
+- [ ] Imscar agus déan tástáil deataigh ar bhealaí OSS Radar agus `RADAR_ENABLED` fós múchta de réir réamhshocraithe
+- [ ] Déan tástáil deataigh ar `GET /planos`, `/termos`, `/privacidade`, agus `/reembolso` ar an óstach ainmnithe Radar
+- [ ] Taifead céannacht/teagmháil/seoladh an oibreora agus athbhreithniú dlíthiúil ceadaithe ag an úinéir sa tseirbhís phríobháideach
+- [ ] Tástáil Stripe Checkout agus an webhook sínithe sa mhód tástála amháin
+- [ ] Tástáil seachadadh ríomhphoist idirbheartaigh criptithe amháin leis an seoltóir/fearann ceadaithe
+- [ ] Cruthaigh athchóiriú cúltaca agus rith taighde amháin faoi mhaoirseacht agus le teorainn bhuiséid
+- [ ] Faomh polasaí athbhreithnithe BRL/PIX sula nglactar le fianaise síntiúis
+- [ ] Cumasaigh Checkout poiblí ach amháin tar éis na ngeataí roimhe seo, ansin gníomhachtaigh ID nua `news.json`
+- [ ] Deimhnigh go n-úsáideann meirge an Leathanaigh Baile cóip logánaithe agus go dtagann ID nua chun cinn arís tar éis ID níos sine a dhíbhe
 
 ## Tástáil deataigh na Seirbhísí Leabaithe (v3.8.4+)
 

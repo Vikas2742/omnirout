@@ -15,19 +15,19 @@ UI/UX、i18n、CLI、数据库和构建/部署更改到其合同、重点测试�
 
 ## 开发环境设置
 
-### 前置条件
+### 前置要求
 
 - **Node.js** `>=22.22.2 <23`，或 `>=24.0.0 <27`（推荐：24 LTS）
 - **npm** 10+
 
 > **npm v11+ 用户（Node 24+）：** 执行 `npm install` 后，请验证原生模块是否已安装：
-> `node -e "require('better-sqlite3')"`。如果执行失败并显示 `MODULE_NOT_FOUND`，
+> `node -e "require('better-sqlite3')"`。如果执行失败并提示 `MODULE_NOT_FOUND`，
 > 请运行 `npm approve-scripts better-sqlite3 && npm install`。请参阅
 > [故障排除](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module)。
 
 - **Git**
 
-### 克隆并安装
+### 克隆与安装
 
 ```bash
 git clone https://github.com/diegosouzapw/OmniRoute.git
@@ -38,10 +38,10 @@ npm install
 ### 环境变量
 
 ```bash
-# 根据模板创建 .env
+# 使用模板创建 .env
 cp .env.example .env
 
-# 生成所需的密钥
+# 生成所需密钥
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
@@ -52,7 +52,7 @@ echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 | ---------------------- | ------------------------ | ---------------- |
 | `PORT`                 | `20128`                  | 服务器端口       |
 | `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | 前端基础 URL     |
-| `JWT_SECRET`           | （在上方生成）           | JWT 签名密钥     |
+| `JWT_SECRET`           | （按上述方式生成）       | JWT 签名密钥     |
 | `INITIAL_PASSWORD`     | `CHANGEME`               | 首次登录密码     |
 | `APP_LOG_LEVEL`        | `info`                   | 日志详细程度级别 |
 
@@ -63,9 +63,9 @@ echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 | 设置位置    | 开关         | 说明                   |
 | ----------- | ------------ | ---------------------- |
 | 设置 → 高级 | 调试模式     | 启用调试请求日志（UI） |
-| 设置 → 常规 | 侧边栏可见性 | 显示/隐藏侧边栏部分    |
+| 设置 → 常规 | 侧边栏可见性 | 显示/隐藏侧边栏区域    |
 
-这些设置存储在数据库中，并在重启后保持不变；设置后，它们会覆盖环境变量的默认值。
+这些设置存储在数据库中，并在重启后继续保留；设置后，它们将覆盖环境变量的默认值。
 
 ### 在本地运行
 
@@ -74,20 +74,20 @@ echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 npm run dev
 
 # 生产构建
-npm run build    # next build → .build/next/，然后 assembleStandalone → dist/
+npm run build    # next build → .build/next/，然后执行 assembleStandalone → dist/
 npm run start
 
-# 面向贡献者变更的快速仅后端/API 编译
+# 针对贡献者更改的快速后端/API 单独编译
 npm run build:contributor
 
-# 发布构建（全新重建 + HEAD 哨兵文件——部署必需）
-npm run build:release   # rm -rf .build dist && build + 写入 dist/BUILD_SHA
+# 发布构建（全新构建 + HEAD 哨兵文件——部署时必需）
+npm run build:release   # rm -rf .build dist && 执行构建 + 写入 dist/BUILD_SHA
 
 # 常用端口配置
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-贡献者构建仅执行编译验证：它不会组装独立发行包，也不会构建可选的原生打包资源。需要验证可发布的软件包时，请使用常规生产构建。
+贡献者构建仅执行编译验证：它不会组装独立分发包，也不会构建可选的原生打包资源。当你需要验证可发布的软件包时，请使用常规生产构建。
 
 ### 构建输出布局
 
@@ -97,26 +97,23 @@ PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 | `.build/` | 中间产物——`next build` 输出（被 git 忽略，`distDir = .build/next`） | 否       |
 | `dist/`   | 可发布软件包——由 `assembleStandalone` 组装（被 git 忽略）           | 否       |
 
-构建流水线为单次执行：
+构建流水线仅执行一次：
 
 ```
 npm run build
   └─ next build → .build/next/standalone  （Next.js 输出）
-  └─ assembleStandalone()                 （复制独立包 + 静态文件 + public + 原生资源）
+  └─ assembleStandalone()                 （复制 standalone + static + public + 原生资源）
        └─ 输出：dist/                     （server.js、.next/static/、public/、node_modules/）
 ```
 
 `npm run build:release` 还会先清理这两个目录，并写入
 `dist/BUILD_SHA`（= `git rev-parse --short HEAD`）作为部署完整性哨兵文件。
 
-`npm run build:contributor` 使用仅后端构建配置。它会在构建期间临时替换
-仪表板 UI 文件，同时保留 API 路由处理程序，并在构建后恢复原始文件。
-对于影响仪表板 UI 的变更或完整的发布验证，请使用 `npm run build`；
-贡献者配置不能替代发布构建。
+`npm run build:contributor` 使用仅后端构建配置。它会在构建期间临时存根化仪表板 UI 文件，保留 API 路由处理程序，并在构建后恢复原始文件。对于影响仪表板 UI 的更改或完整发布验证，请使用 `npm run build`；贡献者配置不能替代发布构建。
 
 > **VPS 部署说明：** 远程镜像目录 `/usr/lib/node_modules/omniroute/app/`
-> 保持不变。部署技能会通过 rsync 将 `dist/` 的内容同步到该目录。
-> 仅仓库内的构建输出路径发生了变化（`app/` → `dist/`）。
+> 保持不变。部署技能会通过 rsync 将 `dist/` 的内容同步到其中。
+> 只有仓库内的构建输出路径发生了变化（`app/` → `dist/`）。
 
 默认 URL：
 
@@ -308,19 +305,19 @@ src/                        # TypeScript（.ts / .tsx）
 │   ├── oauth/              # OAuth 提供者、服务和实用工具
 │   ├── skills/             # 可扩展技能框架
 │   ├── usage/              # 使用量跟踪和成本计算
-│   └── localDb.ts          # 仅用于重新导出的层——切勿在此添加逻辑
+│   └── localDb.ts          # 仅限重新导出层——切勿在此添加逻辑
 ├── middleware/              # 请求中间件（promptInjectionGuard）
 ├── mitm/                   # MITM 代理（证书、DNS、目标路由）
 ├── shared/
 │   ├── components/         # React 组件（.tsx）
 │   ├── constants/          # 提供者定义（329 个）、MCP 作用域、20 种路由策略
-│   ├── utils/              # 断路器、清理器、身份验证辅助工具
+│   ├── utils/              # 熔断器、清理器、身份验证辅助工具
 │   └── validation/         # Zod v4 模式
 └── sse/                    # SSE 代理管道
 
 open-sse/                   # @omniroute/open-sse 工作区
 ├── executors/              # 150 个执行器模块（执行器类 + 各提供者辅助工具）
-├── handlers/               # 11 个请求处理程序（聊天、响应、嵌入、图像等）
+├── handlers/               # 11 个请求处理器（聊天、响应、嵌入、图像等）
 ├── mcp-server/             # MCP 服务器（110 个独立工具、3 种传输方式、33 个作用域）
 ├── services/               # 178 个顶层服务（combo、autoCombo、rateLimitManager 等）
 ├── translator/             # 格式转换器（OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama）
@@ -354,7 +351,7 @@ docs/
 ├── releases/                # 发布说明
 ├── routing/                 # 自动组合引擎、推理重放
 ├── screenshots/             # 仪表板截图
-├── security/                # 防护机制、合规性、隐匿性、令牌
+├── security/                # 防护措施、合规、隐匿、令牌
 └── specs/                   # 设计规范
 ```
 

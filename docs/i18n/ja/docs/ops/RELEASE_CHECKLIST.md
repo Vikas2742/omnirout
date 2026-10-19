@@ -115,8 +115,8 @@ quality-gate、quality-extended）をスキップし、高速で検出力の高�
 
 - [ ] このリリースを対象とするすべての PR が `release/vX.Y.0` にマージされている
 - [ ] このバージョンに関する未完了の Linear/issue 項目がすべてクローズされているか、次のマイルストーンに移されている
-- [ ] `release/vX.Y.0` ブランチの CI がグリーンである
-- [ ] コード内に `TODO(release)` マーカーがない：`grep -r "TODO(release)" src/ open-sse/`
+- [ ] `release/vX.Y.0` ブランチの CI が成功している
+- [ ] コード内に `TODO(release)` マーカーがない: `grep -r "TODO(release)" src/ open-sse/`
 - [ ] Docker ベースイメージが最新である（現在は `node:24.15.0-trixie-slim`）
 
 ### バージョンと変更履歴
@@ -125,110 +125,110 @@ quality-gate、quality-extended）をスキップし、高速で検出力の高�
   - `package.json`、`electron/package.json` のバージョンを更新する
   - 前回のタグ以降の git コミットから `CHANGELOG.md` を再生成する
   - README.md のバッジを更新する
-- [ ] CHANGELOG.md を手動でレビューし、必要に応じてコミットメッセージを整理する
+- [ ] CHANGELOG.md を手動で確認し、必要に応じてコミットメッセージを整理する
 - [ ] `CHANGELOG.md` の最新 semver セクションが `package.json` のバージョンと一致することを確認する
-- [ ] 今後の作業向けに `## [Unreleased]` を変更履歴の最初のセクションとして維持する
-- [ ] `docs/openapi.yaml` を更新する → `info.version` は `package.json` のバージョンと一致していなければならない
+- [ ] 今後の作業用として `## [Unreleased]` を変更履歴の最初のセクションに維持する
+- [ ] `docs/openapi.yaml` を更新する → `info.version` は `package.json` のバージョンと一致しなければならない
 
 ### コード品質
 
 - [ ] `npm run lint` — エラー 0 件（警告は既存のもの）
 - [ ] `npm run typecheck:core` — 問題なし
-- [ ] `npm run typecheck:noimplicit:core` — 問題なし（strict）
-- [ ] `npm run check:cycles:ratchet` — 固定された `metrics.cycles` の上限以内（通常の `check:cycles` は循環が 1 件でもあると終了コード 1、#15281）
-- [ ] `npm run check:any-budget:t11` — 予算以内
+- [ ] `npm run typecheck:noimplicit:core` — 問題なし（厳格）
+- [ ] `npm run check:cycles:ratchet` — 固定された `metrics.cycles` の上限内である（単独の `check:cycles` は循環が 1 つでもあると終了コード 1 になる、#15281）
+- [ ] `npm run check:any-budget:t11` — 予算内である
 - [ ] `npm run check:route-validation:t06` — 問題なし
-- [ ] `npm run check:node-runtime` — サポート対象ランタイムの下限を満たしている（`src/shared/utils/nodeRuntimeSupport.ts` の `SUPPORTED_NODE_RANGE` に従い、`>=22.22.2 <23`、`>=24.0.0 <27`。`package.json` の `engines` と整合）
+- [ ] `npm run check:node-runtime` — サポート対象ランタイムの下限を満たしている（`src/shared/utils/nodeRuntimeSupport.ts` の `SUPPORTED_NODE_RANGE` に従い、`>=22.22.2 <23`、`>=24.0.0 <27`。`package.json` の `engines` と整合している）
 
 ### テスト
 
 - [ ] `npm run test:unit` — 成功
 - [ ] `npm run test:vitest` — 成功（MCP サーバー、autoCombo、キャッシュ）
-- [ ] `npm run test:coverage` — 60/60/60/60 のゲートを満たす（ステートメント/行/関数/分岐）
+- [ ] `npm run test:coverage` — 60/60/60/60 のゲートを満たしている（ステートメント/行/関数/分岐）
 - [ ] `npm run test:integration` — 成功（変更が DB / ハンドラーに影響する場合）
-- [ ] `npm run test:combo:matrix` — 成功（コンボ戦略マトリックス：公開されている 19 個すべてのルーティング戦略の選択判断を決定論的に検証。コンボルーティング、戦略解決、またはフォールバックロジックを変更した場合に実行）
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **任意/手動**（ゲート付きの実アップストリームスモークテスト。VPS `root@192.168.0.15` から読み取り専用 DB スナップショットを読み込み、実際のプロバイダーにアクセスするためクレジットを消費する。CI では実行されない。ゲートがなければ正常にスキップされる）
-- [ ] `npm run test:combo:live:vps` — **任意/手動**（フェーズ 3 の VPS ライブスモークテスト：プレーンな Node ESM を使用し、稼働中の `.15` サーバーに対して 7 つの HTTP シナリオを実行。`ssh root@192.168.0.15` が必要。`__live_test__*` コンボのみを作成・削除する。実際のプロバイダーにアクセスする。CI では実行されない）
+- [ ] `npm run test:combo:matrix` — 成功（combo 戦略マトリクス: 公開されている 19 種類すべてのルーティング戦略の選択結果を決定論的に実証する。combo ルーティング、戦略解決、またはフォールバックロジックに変更を加えた場合に実行する）
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **任意/手動**（ゲート付きの実アップストリームスモークテスト。VPS `root@192.168.0.15` から読み取り専用の DB スナップショットを取得する。実際のプロバイダーにアクセスし、クレジットを消費する。CI では実行されない。ゲートがなければ問題なくスキップされる）
+- [ ] `npm run test:combo:live:vps` — **任意/手動**（フェーズ 3 の VPS ライブスモークテスト: 素の Node ESM を使用し、稼働中の `.15` サーバーに対して 7 つの HTTP シナリオを実行する。`ssh root@192.168.0.15` が必要。`__live_test__*` combo のみを作成/削除する。実際のプロバイダーにアクセスする。CI では実行されない）
 - [ ] `npm run test:e2e` — 成功（UI の変更）
 - [ ] `npm run test:protocols:e2e` — 成功（MCP/A2A の変更）
 - [ ] `npm run test:ecosystem` — 成功
 
-### フック（Husky で検証）
+### フック（Husky で検証済み）
 
 Husky フックは `.husky/` にあり、git 操作時に自動的に実行されます。
 
 - **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** 高速かつ決定論的なゲート — `npm run check:any-budget:t11 && npm run check:tracked-artifacts`（2026-06-13 に有効化）。`test:unit` は意図的に除外（低速であり、CI の `test-unit` ジョブでカバーされる）。
-  - リリースブランチをプッシュする前に、`npm run test:unit` を手動で実行する。
+- **pre-push:** 高速で決定論的なゲート — `npm run check:any-budget:t11 && npm run check:tracked-artifacts`（2026-06-13 に有効化）。`test:unit` は意図的に除外されている（低速であり、CI の `test-unit` ジョブでカバーされる）。
+  - リリースブランチを push する前に、`npm run test:unit` を手動で実行する。
 
-フックが失敗した場合：根本的な問題を修正し、`--no-verify` で回避しないこと。
+フックが失敗した場合: 根本的な問題を修正し、`--no-verify` で回避しないこと。
 
 ### Conventional Commits
 
-リリース対象のすべてのコミットは `type(scope): subject` 形式に従う必要があります。
+リリース対象のすべてのコミットは、`type(scope): subject` 形式に従う必要があります。
 
-**有効なタイプ：** `feat`、`fix`、`refactor`、`docs`、`test`、`chore`、`perf`、`style`、`ci`
+**有効な type:** `feat`、`fix`、`refactor`、`docs`、`test`、`chore`、`perf`、`style`、`ci`
 
-**有効なスコープ：** `db`、`sse`、`oauth`、`dashboard`、`api`、`cli`、`docker`、`ci`、`mcp`、`a2a`、`memory`、`skills`、`cloud-agent`、`guardrails`、`compression`、`auto-combo`、`resilience`、`providers`、`executors`、`translator`、`domain`、`authz`
+**有効な scope:** `db`、`sse`、`oauth`、`dashboard`、`api`、`cli`、`docker`、`ci`、`mcp`、`a2a`、`memory`、`skills`、`cloud-agent`、`guardrails`、`compression`、`auto-combo`、`resilience`、`providers`、`executors`、`translator`、`domain`、`authz`
 
-破壊的変更：`BREAKING CHANGE:` フッター、またはスコープの後に `!` を追加する（例：`feat(api)!: drop /v0`）。
+破壊的変更: `BREAKING CHANGE:` フッターを追加するか、scope の後に `!` を付ける（例: `feat(api)!: drop /v0`）。
 
 ### ドキュメント
 
-- [ ] `npm run check:docs-sync` が成功する（pre-commit により自動実行）
-- [ ] `npm run check:docs-all` が成功する（包括的チェック：docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links）
-- [ ] `npm run check:env-doc-sync` が終了コード 0 で終了する — コード ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` の環境変数コントラクトが保たれている
-- [ ] `npm run check:doc-links` が終了コード 0 で終了する — 再構成後の内部 Markdown 参照にリンク切れがない
-- [ ] ストレージ/ランタイムとの乖離がないか `docs/architecture/ARCHITECTURE.md` をレビューする
-- [ ] 環境変数および運用との乖離がないか `docs/guides/TROUBLESHOOTING.md` をレビューする
-- [ ] `.env.example` を変更した場合：`docs/reference/ENVIRONMENT.md` を更新する
-- [ ] 新機能に UI がある場合：`docs/guides/USER_GUIDE.md` に記載する
-- [ ] 新機能に API がある場合：`docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` を更新する
-- [ ] 新機能がモジュールである場合：専用の `docs/<MODULE>.md` が存在する
-- [ ] 破壊的変更の場合：`docs/guides/TROUBLESHOOTING.md` に移行に関する注記を追加する
+- [ ] `npm run check:docs-sync` が成功する（pre-commit により自動実行される）
+- [ ] `npm run check:docs-all` が成功する（包括チェック: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links）
+- [ ] `npm run check:env-doc-sync` が終了コード 0 になる — コード ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` の環境変数契約が維持されている
+- [ ] `npm run check:doc-links` が終了コード 0 になる — 再構成後に壊れた内部 Markdown 参照がない
+- [ ] `docs/architecture/ARCHITECTURE.md` について、ストレージ/ランタイムとの乖離がないか確認済み
+- [ ] `docs/guides/TROUBLESHOOTING.md` について、環境変数および運用との乖離がないか確認済み
+- [ ] `.env.example` を変更した場合: `docs/reference/ENVIRONMENT.md` が更新されている
+- [ ] 新機能に UI がある場合: `docs/guides/USER_GUIDE.md` に記載されている
+- [ ] 新機能に API がある場合: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` が更新されている
+- [ ] 新機能がモジュールの場合: 専用の `docs/<MODULE>.md` が存在する
+- [ ] 破壊的変更の場合: `docs/guides/TROUBLESHOOTING.md` に移行に関する注記がある
 
 ### i18n
 
-- [ ] `npm run i18n:check` が終了コード 0 で終了する — 翻訳状態（`.i18n-state.json`）がソースドキュメントと同期している（strict モードでは乖離したソースがないこと。直前のドキュメント微調整では warn モードの警告は許容されるが、タグ付け前には 0 にする）
-- [ ] `npm run i18n:check-ui-coverage` が終了コード 0 で終了する — すべての UI ロケールがカバレッジの下限 80% 以上である
-- [ ] `npm run i18n:sync-ui:dry` が 66 個すべての対象ロケール（ソースである `en` を除く全ロケール）で欠落キー 0 件と報告する
+- [ ] `npm run i18n:check` が終了コード 0 になる — 翻訳状態（`.i18n-state.json`）がソースドキュメントと同期している（strict モードでは乖離したソースがない。直前の軽微なドキュメント修正については warn モードの勧告を許容できるが、タグ付け前には 0 にする必要がある）
+- [ ] `npm run i18n:check-ui-coverage` が終了コード 0 になる — すべての UI ロケールがカバレッジ下限の 80% 以上である
+- [ ] `npm run i18n:sync-ui:dry` で、対象となる 66 の全ロケール（ソースである `en` を除くすべてのロケール）の欠落キーが 0 件と報告される
 - [ ] 英語のソースドキュメントを変更した場合、タグ付け前に `npm run i18n:run` を実行する（`.env` に `OMNIROUTE_TRANSLATION_API_KEY` が必要）
-- [ ] 軽微な翻訳コントリビューションは次のリリースに延期可能（CHANGELOG で追跡する）
+- [ ] 翻訳への貢献が軽微な場合は、次のリリースに延期できる（CHANGELOG で追跡する）
 
 ### データベースマイグレーション
 
-- [ ] `src/lib/db/migrations/` に新しいファイルがある場合：
+- [ ] `src/lib/db/migrations/` に新しいファイルがある場合:
   - [ ] 各マイグレーションが冪等である（`CREATE TABLE IF NOT EXISTS` など）
   - [ ] マイグレーションがトランザクションでラップされている
   - [ ] 正しく採番されている（連番に欠番がない）
-- [ ] 新規インストールでテストする：`~/.omniroute/omniroute.db` を削除し、`npm run dev` を実行する
-- [ ] 既存インストールでテストする：DB をバックアップし、マイグレーションを実行して、スキーマを検証する
+- [ ] 新規インストールでテストする: `~/.omniroute/omniroute.db` を削除し、`npm run dev` を実行する
+- [ ] 既存インストールでテストする: DB をバックアップし、マイグレーションを実行して、スキーマを確認する
 - [ ] マイグレーションでテーブルを書き換える場合、WAL ファイル（`-wal`、`-shm`）が正しく処理される
 
 ### プロバイダーカタログ（Zod 検証済み）
 
-- [ ] `src/shared/constants/providers.ts` の Zod スキーマが読み込み時に有効
+- [ ] `src/shared/constants/providers.ts` の Zod スキーマが読み込み時に有効である
   - [ ] すべてのプロバイダーに必須フィールド（`id`、`label`、`kind` など）がある
-  - [ ] 新しい無料プロバイダーに `freeNote` が設定されている
+  - [ ] 新しい無料プロバイダーに `freeNote` が指定されている
   - [ ] OAuth プロバイダーの `oauthConfig` が `src/lib/oauth/constants/oauth.ts` に登録されている
 - [ ] 新しいプロバイダーを追加した場合：対応する executor が `open-sse/executors/` にある
-- [ ] OpenAI 形式ではない場合：translator が `open-sse/translator/` にある
+- [ ] OpenAI 形式でない場合：translator が `open-sse/translator/` にある
 - [ ] モデルが `open-sse/config/providerRegistry.ts` に登録されている
-- [ ] `tests/unit/` のユニットテストがプロバイダーの分類とルーティングをカバーしている
+- [ ] `tests/unit/` のユニットテストがプロバイダーの分類とルーティングを網羅している
 
 ### デスクトップ（Electron）
 
 `electron/` を変更した場合：
 
 - [ ] `npm run electron:smoke:packaged` が成功する
-- [ ] `:win`、`:mac`、`:linux` のうち少なくとも1つでビルドをテスト済み
-- [ ] コード署名を行う場合、署名証明書の有効期限が切れていない
+- [ ] `:win`、`:mac`、`:linux` のうち少なくとも1つでビルドをテスト済みである
+- [ ] コード署名証明書の有効期限が切れていない（署名する場合）
 - [ ] `electron/package.json` のバージョンがルートの `package.json` と一致している
 - [ ] `stable` にリリースする場合、自動更新チャネルのポインターが更新されている
 
 ### ビルドレイアウト
 
-このリポジトリでは、3つの異なる出力ディレクトリを使用します。絶対に混同しないでください：
+このリポジトリでは、用途の異なる3つの出力ディレクトリを使用します。決して混同しないでください：
 
 | ディレクトリ | 用途                                                      | 追跡対象？               |
 | ------------ | --------------------------------------------------------- | ------------------------ |
@@ -236,8 +236,8 @@ Husky フックは `.husky/` にあり、git 操作時に自動的に実行さ�
 | `.build/`    | ビルド中間生成物 — `next build` の出力（`distDir`）       | いいえ（gitignore 対象） |
 | `dist/`      | 配布可能な npm バンドル — `assembleStandalone` により構成 | いいえ（gitignore 対象） |
 
-> **運用担当者向けメモ：** リモート VPS のイメージディレクトリは引き続き `/usr/lib/node_modules/omniroute/app/` です。
-> 変更されたのは**リポジトリ内**のビルド出力のみです（`app/` → `dist/`）。デプロイスキルは
+> **運用者向け注記：** リモート VPS のイメージディレクトリは引き続き `/usr/lib/node_modules/omniroute/app/` です。
+> 移動したのは**リポジトリ内**のビルド出力のみです（`app/` → `dist/`）。デプロイスキルは
 > `dist/` の内容をリモートの `app/` ディレクトリへ rsync するため、VPS のパスを変更する必要はありません。
 
 **単一ビルドフロー：**
@@ -247,27 +247,27 @@ npm run build:release
   └─ rm -rf .build dist          （クリーンアップ）
   └─ next build → .build/next/   （中間生成物）
   └─ assembleStandalone          （standalone + static + public + natives を dist/ へコピー）
-  └─ writes dist/BUILD_SHA       （HEAD センチネル）
+  └─ dist/BUILD_SHA を書き込む   （HEAD センチネル）
 ```
 
 デプロイ時に `npm run build` を実行した後、別途 `npm run build:cli` を実行しないでください。
-1つのコマンドでクリーンな再ビルドとセンチネルの生成を行う `npm run build:release` を使用してください。
+クリーンな再ビルドとセンチネルの生成を1つのコマンドで行う `npm run build:release` を使用してください。
 
 ### アーティファクトの検証
 
 - [ ] `npm run build:release` が成功し、`dist/BUILD_SHA` == `git rev-parse --short HEAD` である
-- [ ] `npm run check:pack-artifact` がクリーンな状態で成功する — `app.__qa_backup`、`scripts/scratch`、`package-lock.json`、その他のローカル残留物がない
+- [ ] `npm run check:pack-artifact` がクリーンである — `app.__qa_backup`、`scripts/scratch`、`package-lock.json`、その他のローカル残留物がない
 - [ ] ビルド後に `dist/server.js` が存在する
-- [ ] 任意のローカルパッケージ済みランタイムスモークテスト：`npm run dev:candidate -- build` の後に `npm run dev:candidate -- validate` を実行すると、分離された `DATA_DIR` 上でパッケージ済み tarball が起動し、`/api/health` + `/v1/models` が確認される（[コントリビューションのゴールデンパス](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop)を参照）
+- [ ] 任意のローカルパッケージ済みランタイムスモークテスト：`npm run dev:candidate -- build` の後に `npm run dev:candidate -- validate` を実行すると、分離された `DATA_DIR` 上でパッケージ済み tarball が起動し、`/api/health` + `/v1/models` が検証される（[コントリビューションのゴールデンパス](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop)を参照）
 
 ### タグ付けとリリース
 
-- [ ] `/generate-release-cc`（Claude Code スキル）を実行：
+- [ ] `/generate-release-cc`（Claude Code スキル）を実行する：
   - タグ `vX.Y.Z` を作成する
   - タグとブランチを push する
-  - 変更履歴を本文に含む GitHub Release を作成する
+  - 変更履歴を本文として GitHub Release を作成する
   - Electron インストーラーを添付する（ビルドした場合）
-- [ ] または手動で実行：
+- [ ] または手動で実行する：
   ```bash
   git tag -a vX.Y.Z -m "Release vX.Y.Z"
   git push origin vX.Y.Z
@@ -282,8 +282,8 @@ npm run build:release
   - `/deploy-vps-local-cc` — ローカル VPS（192.168.0.15）
   - `/deploy-vps-akamai-cc` — Akamai VPS（69.164.221.35）
   - `/deploy-vps-both-cc` — 両方
-- [ ] デプロイ前に、`dist/BUILD_SHA` == `git rev-parse --short HEAD` であることを確認する
-- [ ] ビルドは `node_modules` が実体として存在する場所で実行する必要がある（メインのチェックアウト、または `npm ci` を実行した worktree。シンボリックリンクされた worktree は不可）
+- [ ] デプロイ前に `dist/BUILD_SHA` == `git rev-parse --short HEAD` であることを確認する
+- [ ] ビルドは実体のある `node_modules` が存在する場所で実行する必要がある（メインチェックアウト、または `npm ci` を実行済みの worktree。シンボリックリンクされた worktree は不可）
 - [ ] デプロイ済みインスタンスをスモークテストする：
   - `/dashboard/health` を開く → バージョン文字列がリリースと一致することを確認する
   - 既知のプロバイダーに対して `/v1/chat/completions` リクエストを実行する
@@ -297,23 +297,23 @@ npm run build:release
   - リリースノート／ブログ記事に添付する
 - [ ] GitHub Discussions／Discord をリリース告知で更新する
 - [ ] 次のバージョン用のマイルストーンを作成する
-- [ ] 重要な場合：ディスカッションをピン留めするか、アプリ内バナー用に `news.json` に投稿する
+- [ ] 重要な場合：ディスカッションをピン留めするか、アプリ内バナー用に `news.json` へ投稿する
 
-### Radar 公開ローンチゲート
+### Radar 一般公開ゲート
 
-Radar の告知は意図的に `active: false` の状態でコミットされています。以下のすべての項目について
-エビデンスが揃った後、別の変更として有効化します：
+Radar の告知は意図的に `active: false` の状態でコミットされています。有効化は、
+以下のすべての項目について証跡が揃った後に行う別個の変更です：
 
-- [ ] スタックされたすべての Radar PR がマージされ、リリース先端の CI が成功している
-- [ ] `RADAR_ENABLED` をデフォルトで無効にしたまま、OSS Radar ルートをデプロイしてスモークテストする
-- [ ] 指定された Radar ホスト上で `GET /planos`、`/termos`、`/privacidade`、`/reembolso` をスモークテストする
-- [ ] 非公開サービスに、運用担当者の身元／連絡先／住所と、所有者が承認した法務レビューを記録する
-- [ ] Stripe Checkout と署名付き webhook をテストモードのみで検証する
-- [ ] 承認済みの送信者／ドメインを使用して、暗号化されたトランザクションメールを1件配信して検証する
-- [ ] バックアップの復元と、監督下で予算上限を設定したリサーチ実行を1回行い、正常性を証明する
-- [ ] 寄付のエビデンスを受け入れる前に、BRL/PIX のレビューポリシーを承認する
+- [ ] スタックされたすべての Radar PR がマージされ、リリース先端の CI が green である
+- [ ] `RADAR_ENABLED` をデフォルトで無効のまま、OSS Radar ルートをデプロイしてスモークテストする
+- [ ] 指定された Radar ホストで `GET /planos`、`/termos`、`/privacidade`、`/reembolso` をスモークテストする
+- [ ] 非公開サービスに運用者の本人情報／連絡先／住所、および所有者承認済みの法務レビューを記録する
+- [ ] テストモードのみで Stripe Checkout と署名付き webhook を実行する
+- [ ] 承認済みの送信者／ドメインを使用して、暗号化されたトランザクションメールを1件配信する
+- [ ] バックアップからの復元と、監督下で予算上限を設定した調査実行を1回実証する
+- [ ] 寄付証跡を受け入れる前に BRL/PIX のレビューポリシーを承認する
 - [ ] 上記のゲートをすべて通過した後にのみ公開 Checkout を有効化し、その後、新しい `news.json` ID を有効化する
-- [ ] ホームバナーがローカライズされたコピーを使用し、古い ID を閉じた後でも新しい ID が再表示されることを確認する
+- [ ] Home バナーがローカライズされた文言を使用し、古い ID を閉じた後でも新しい ID が再表示されることを確認する
 
 ## 組み込みサービスのスモークテスト (v3.8.4+)
 

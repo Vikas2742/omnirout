@@ -13,154 +13,153 @@ Logs டாஷ்போர்டு தாவல் கோரிக்கை வ
 ## 1. இது எவ்வாறு செயல்படுகிறது
 
 ```
-சேவையகம் (கட்டமைப்பை மறைகுறிநீக்கம் செய்து சரிபார்த்தல், cursor-ஐ ஒத்திசைத்தல்)
-  → IPC-ஐத் தொடங்குதல் → தனிமைப்படுத்தப்பட்ட exportChild OS செயல்முறை
-    → வாசிப்புக்கு மட்டும் storage.sqlite → பகிரப்பட்ட call-log வினவல்/மேப்பிங்
-      → ஒத்திசைவற்ற artifact hydration → இலக்கின் prepare()/send()
-        → தொகுதி IPC → சேவையகம் cursor-ஐ நிலைநிறுத்துகிறது → ஒப்புகை IPC
-          → அடுத்த தொகுதி; நிறைவு IPC → சேவையகம் வெற்றியைப் பதிவுசெய்கிறது
+server (config-ஐ மறைகுறிநீக்கி + சரிபார்த்து, cursor-ஐ ஒத்திசைக்கிறது)
+  → IPC-ஐத் தொடங்கு → தனிமைப்படுத்தப்பட்ட exportChild OS process
+    → வாசிக்க மட்டும் இயலும் storage.sqlite → பகிரப்பட்ட call-log query/mapping
+      → ஒத்திசைவற்ற artifact hydration → destination prepare()/send()
+        → batch IPC → server cursor-ஐ நிலைநிறுத்துகிறது → ack IPC
+          → அடுத்த batch; done IPC → server வெற்றியைப் பதிவு செய்கிறது
 ```
 
-- **அட்டவணை** — ஒரே ஒரு `JobRegistry` cron பணி, `log_export`; இயல்புநிலையாக `0 * * * *` (மணிநேரத்திற்கு ஒருமுறை,
-  UTC). இது `src/lib/initCloudSync.ts`-இல் பதிவுசெய்யப்படுகிறது; `OMNIROUTE_LOG_EXPORT_CRON` மூலம் மாற்றியமைக்கலாம்.
-  ஒவ்வொரு tick-உம் **இயக்கப்பட்டுள்ள** அனைத்து இலக்குகளையும் ஒன்றன்பின் ஒன்றாக முழுமையாகச் செயலாக்குகிறது.
-- **Cursor** — SQLite-இன் மறைமுக `call_logs.rowid`, ஒவ்வொரு இலக்கிற்கும்
-  `log_export_destinations.cursor_row_id`-இல் நிலைநிறுத்தப்படுகிறது. `timestamp` திட்டமிட்டே cursor ஆகப் பயன்படுத்தப்படவில்லை: அழைப்பாளர்கள்
-  தங்களுடைய மதிப்பை வழங்கக்கூடும்; எனவே மெதுவான ஒரு கோரிக்கை, அதற்குப் பின்னர் தொடங்கிய வேகமான கோரிக்கைக்குப் பிறகு எழுதப்படலாம்,
-  மேலும் timestamp cursor அதைக் கடந்து தவறவிடும்.
-- **தொகுதியாக்கம்** — ஒரு கோரிக்கைக்கு `batch_size` வரிசைகள் (இயல்புநிலை 500), ஒரு இயக்கத்திற்கு
-  `max_rows_per_run` வரிசைகள் (இயல்புநிலை 10000); இதனால் பெரிய நிலுவை ஒரே இயக்கத்தைத் தடுப்பதற்குப் பதிலாகப் பல tick-களில் செயலாக்கப்படும்.
-- **வழங்கல்** — `send()` நிறைவேறிய பிறகே cursor முன்னேறும். தோல்வியடைந்த தொகுதி cursor-ஐ
-  இருந்த இடத்திலேயே விட்டுவிடும்; எனவே அடுத்த இயக்கத்தில் அதே வரிசைகள் மீண்டும் முயற்சிக்கப்படும். வழங்கப்படும் உத்தரவாதம்
-  குறைந்தபட்சம்-ஒருமுறை மற்றும் இலக்கு-தரப்பு நகல் நீக்கம் மட்டுமே; உண்மையான சரியாக-ஒருமுறை அல்ல: BigQuery ஒவ்வொரு
-  வரிசைக்கும் call-log id-ஐக் key ஆகப் பயன்படுத்துகிறது; அதன் சொந்த நகல் நீக்கக் காலவரம்பிற்குள் இதை best-effort அடிப்படையில் மதிக்கிறது.
-- **ஒன்றுடன் ஒன்று மேற்படும் இயக்கங்களுக்கான பாதுகாப்பு** — cron tick மற்றும் `POST .../run` ஆகியவை ஒரே நேரத்தில் இயக்கப்படலாம். ஏற்கெனவே
-  செயலாக்கப்பட்டுக் கொண்டிருக்கும் இலக்கு இருமுறை செயலாக்கப்படாமல் தவிர்க்கப்படும் (இயக்க முடிவில் `skipped: true`);
-  எனவே ஒரே நேரத்தில் நடைபெறும் மற்றொரு இயக்கம் ஒரு தொகுதியை மீண்டும் அனுப்பவோ cursor-ஐப் பின்னோக்கி எழுதவோ முடியாது.
-- **அழித்தலுக்குப் பிந்தைய மீட்பு** — `cursor_row_id`, `MAX(rowid)`-ஐ விட அதிகமாகிவிட்டால் (முழு அட்டவணையும்
-  அழிக்கப்பட்டு rowid-கள் மீண்டும் தொடங்கியிருந்தால்), runner நிரந்தரமாகத் தரவைக் காணாமல் போவதற்குப் பதிலாக 0-க்கு மீளச் செல்லும்.
+- **அட்டவணை** — ஒரே ஒரு `JobRegistry` cron job, `log_export`; இயல்புநிலை `0 * * * *` (ஒவ்வொரு மணிநேரமும்,
+  UTC). இது `src/lib/initCloudSync.ts`-இல் பதிவு செய்யப்படுகிறது; `OMNIROUTE_LOG_EXPORT_CRON` மூலம் மாற்றியமைக்கலாம்.
+  ஒவ்வொரு tick-உம் **இயக்கப்பட்டுள்ள** அனைத்து destination-களையும் வரிசையாக முழுமையாகச் செயலாக்குகிறது.
+- **Cursor** — SQLite-இன் மறைமுகமான `call_logs.rowid`, ஒவ்வொரு destination-க்கும்
+  `log_export_destinations.cursor_row_id`-இல் நிலைநிறுத்தப்படுகிறது. `timestamp` வேண்டுமென்றே cursor-ஆகப் பயன்படுத்தப்படுவதில்லை: அழைப்பாளர்கள்
+  தங்களுடைய சொந்த மதிப்பை வழங்கக்கூடும்; எனவே பின்னர் தொடங்கிய வேகமான request-க்குப் பிறகு மெதுவான request எழுதப்படலாம்,
+  மேலும் timestamp cursor அதைத் தவிர்த்துவிடும்.
+- **Batching** — ஒவ்வொரு request-க்கும் `batch_size` rows (இயல்புநிலை 500), ஒவ்வொரு run-க்கும்
+  `max_rows_per_run` rows (இயல்புநிலை 10000); இதனால் பெரிய backlog ஒன்று ஒரே tick-ஐத் தடுப்பதற்குப் பதிலாகப்
+  பல tick-களில் படிப்படியாகச் செயலாக்கப்படும்.
+- **வழங்கல்** — `send()` நிறைவடைந்த பின்னரே cursor முன்னேறும். தோல்வியுற்ற batch,
+  cursor-ஐ இருந்த இடத்திலேயே விட்டுவிடும்; எனவே அடுத்த run-இல் அதே rows மீண்டும் முயற்சிக்கப்படும். உத்தரவாதம்
+  at-least-once மற்றும் destination-பக்க de-duplication ஆகியவையே; உண்மையான exactly-once அல்ல: BigQuery ஒவ்வொரு
+  row-க்கும் call-log id-ஐ key-ஆகப் பயன்படுத்துகிறது; தனது சொந்த dedup window-க்குள் best-effort அடிப்படையில் இதை மதிக்கிறது.
+- **Overlap guard** — cron tick மற்றும் `POST .../run` ஆகியவை ஒரே நேரத்தில் இயங்கலாம். ஏற்கெனவே
+  செயலாக்கப்பட்டுக் கொண்டிருக்கும் destination இரண்டாவது முறையாகச் செயலாக்கப்படாமல் தவிர்க்கப்படும் (run result-இல் `skipped: true`);
+  எனவே ஒரே நேரத்தில் நடக்கும் run ஒரு batch-ஐ மீண்டும் அனுப்பவோ cursor-ஐப் பின்னோக்கி எழுதவோ முடியாது.
+- **Purge recovery** — `cursor_row_id`, `MAX(rowid)`-ஐவிட அதிகமாக இருந்தால் (முழு table-உம்
+  purge செய்யப்பட்டு rowid-கள் மீண்டும் தொடங்கியிருந்தால்), runner நிரந்தரமாகத் தரவைப் பார்க்க முடியாமல் போவதற்குப் பதிலாக 0-க்கு மீள்கிறது.
 
 ### தனிமைப்படுத்தப்பட்ட runner மற்றும் வரம்புகள்
 
-Node-இல் ஒவ்வொரு இலக்கு இயக்கமும் தனியான, குறுகிய ஆயுளுடைய OS child process-ஐத் தொடங்குகிறது (`child_process`
-மற்றும் IPC; `worker_threads` அல்ல). Body வாசிப்புகள், payload JSON parsing/serialization, இலக்கின்
-`prepare()` மற்றும் இலக்கின் network I/O அனைத்தும் அங்கேயே இயங்குகின்றன; சேவையகத்தின் event loop-இல் அல்ல.
-கட்டமைப்பும் சிறிய முன்னேற்றச் செய்திகளும் மட்டுமே IPC வழியாகச் செல்கின்றன; export செய்யப்பட்ட பதிவுகள் ஒருபோதும்
-சேவையகத்திற்குத் திரும்புவதில்லை. cron பணியும் Run now route-உம் அதே பொது முடிவையும் மேற்படல் பாதுகாப்பையும் தக்கவைக்கின்றன.
+Node-இல் ஒவ்வொரு destination run-உம் தனியான, குறுகிய காலம் மட்டுமே இயங்கும் OS child process-ஐ (`child_process`
+மற்றும் IPC; `worker_threads` அல்ல) தொடங்குகிறது. Body வாசிப்புகள், payload JSON parsing/serialization, destination
+`prepare()` மற்றும் destination network I/O அனைத்தும் server-இன் event loop-இல் அல்லாமல் அங்கேயே இயங்குகின்றன.
+Configuration மற்றும் சிறிய progress message-கள் மட்டுமே IPC வழியாகச் செல்கின்றன; export செய்யப்பட்ட record-கள் ஒருபோதும்
+server-க்குத் திரும்புவதில்லை. cron job மற்றும் இப்போது இயக்கு route ஆகியவை அதே public result மற்றும் overlap guard-ஐத் தக்கவைக்கின்றன.
 
-child, சேவையகத்தால் தீர்மானிக்கப்பட்ட `DATA_DIR/storage.sqlite`-ஐ `node:sqlite` பயன்படுத்தி வாசிப்புக்கு மட்டும் திறக்கிறது;
-இதில் `busy_timeout=5000` மற்றும் `query_only=ON` பயன்படுத்தப்படுகின்றன. இது எந்த DB singleton-ஐயும் import செய்யாது; மேலும்
-migrations, backups அல்லது SQLite updates எதையும் செய்யாது. காணாமல் போன/சிதைந்த artifact bookkeeping (சிதைந்த-artifact UPDATE உட்பட)
-dashboard detail path-இல் மட்டுமே தொடர்கிறது. இரு பாதைகளும் side effect இல்லாத பொதுவான detail resolver-ஐப் பகிர்கின்றன; export,
-ஒத்திசைவற்ற filesystem வாசிப்புகளையும் அதே artifact → பழைய inline → பழைய disk → எதுவுமில்லை என்ற தீர்வு வரிசையையும் பயன்படுத்துகிறது.
-child தனது reader-ஐத் திறக்கும்போது ஒரு இயக்கம் அதிகபட்ச insertion rowid-ஐ snapshot எடுக்கிறது; அதன் பின்னர் சேர்க்கப்படுபவை அடுத்த
-இயக்கம் வரை காத்திருக்கும். இது insertion boundary மட்டுமே; நீண்டகால SQLite transaction அல்ல: network காத்திருப்புகளின்போது
-WAL writers மற்றும் checkpoints சுதந்திரமாகத் தொடரலாம். ஏற்கெனவே உள்ள வரிசைகளுக்கான updates/deletions இந்த எல்லையால் உறையவைக்கப்படுவதில்லை.
+Child, server தீர்மானித்த `DATA_DIR/storage.sqlite`-ஐ `node:sqlite` பயன்படுத்தி வாசிக்க மட்டும் இயலும் வகையில் திறக்கிறது;
+இதில் `busy_timeout=5000` மற்றும் `query_only=ON` பயன்படுத்தப்படுகின்றன. இது எந்த DB singleton-ஐயும் import செய்வதில்லை; மேலும்
+migration, backup அல்லது SQLite update எதையும் மேற்கொள்வதில்லை. காணாமல் போன/சிதைந்த artifact bookkeeping (சிதைந்த-artifact
+UPDATE உட்பட) dashboard detail path-இல் மட்டுமே தொடர்கிறது. இரண்டு path-களும் ஒரு pure
+detail resolver-ஐப் பகிர்கின்றன; export ஒத்திசைவற்ற filesystem வாசிப்புகளையும் அதே artifact → legacy
+inline → legacy disk → none resolution order-ஐயும் பயன்படுத்துகிறது. Child தனது reader-ஐத் திறக்கும்போது, ஒரு run அதிகபட்ச insertion rowid-ஐ
+snapshot எடுக்கிறது; அதற்குப் பிறகான insert-கள் அடுத்த run வரை காத்திருக்கும். இது insertion
+boundary மட்டுமே; நீண்ட காலம் நீடிக்கும் SQLite transaction அல்ல: network காத்திருப்புகளின்போது WAL writer-களும் checkpoint-களும் தடையின்றி இயங்கலாம்.
+ஏற்கெனவே உள்ள row-களின் update/delete செயல்பாடுகள் இந்த boundary மூலம் உறையவைக்கப்படுவதில்லை.
 
-ஏற்றுக்கொள்ளப்பட்ட ஒவ்வொரு தொகுதிக்குப் பிறகும் child ஒப்புகைக்காகக் காத்திருக்கும். சேவையகம் முதலில்
-`advanceLogExportCursor` மூலம் cursor-ஐ நிலைநிறுத்தி, பின்னர் `ack` அனுப்புகிறது; அதற்கு முன் அடுத்த தொகுதி தொடங்காது.
-அனுப்பல் தோல்வி, crash அல்லது timeout ஏற்பட்டால், அந்தத் தொகுதியின் cursor முன்னேற்றப்படாமல் தோல்வி பதிவுசெய்யப்படும். முன்பு
-ஒப்புகையளிக்கப்பட்ட தொகுதிகள் commit செய்யப்பட்டவையாகவே இருக்கும்; ஒப்புகையளிக்கப்படாத அந்த ஒரு தொகுதி மட்டுமே அதிகபட்சமாக மீண்டும் அனுப்பப்படலாம்.
-`done` கிடைத்து child பிழையின்றி வெளியேறிய பிறகே வெற்றி பதிவுசெய்யப்படும். தோல்விகள் child-ஐ
-SIGTERM மூலம் நிறுத்தும்; 500 ms-க்குப் பிறகும் நிற்காவிட்டால் SIGKILL பயன்படுத்தப்படும்; மேலும் runner செயல்முறை முழுமையாக மூடப்படும் வரை காத்திருக்கும்.
+ஏற்றுக்கொள்ளப்பட்ட ஒவ்வொரு batch-க்குப் பிறகும் child acknowledgement-க்காகக் காத்திருக்கும். Server முதலில்
+`advanceLogExportCursor` மூலம் cursor-ஐ நிலைநிறுத்தி, பின்னர் `ack`-ஐ அனுப்புகிறது; அதற்கு முன் அடுத்த batch தொடங்காது.
+Send தோல்வி, crash அல்லது timeout ஏற்பட்டால், அந்த batch முன்னேற்றப்படாமல் தோல்வி பதிவு செய்யப்படும். முன்பு
+acknowledge செய்யப்பட்ட batch-கள் commit செய்யப்பட்ட நிலையிலேயே இருக்கும்; acknowledge செய்யப்படாத ஒரே ஒரு batch மட்டுமே மீண்டும் அனுப்பப்படலாம்.
+`done` கிடைத்து child சீராக exit ஆன பின்னரே வெற்றி பதிவு செய்யப்படும். தோல்விகள் child-ஐ
+SIGTERM மூலம் நிறுத்துகின்றன; 500 ms கழித்தும் அது நிற்காவிட்டால் SIGKILL பயன்படுத்தப்படும், மேலும் runner process மூடப்படும் வரை காத்திருக்கும்.
 
-| சூழல் மாறி                                    | இயல்புநிலை | நோக்கம்                                 |
-| --------------------------------------------- | ---------- | --------------------------------------- |
-| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000     | ஒவ்வொரு இலக்கிற்குமான wall-clock வரம்பு |
-| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024       | child V8 old-space வரம்பு, MB-இல்       |
+| சூழல் மாறி                                    | இயல்புநிலை | நோக்கம்                                       |
+| --------------------------------------------- | ---------- | --------------------------------------------- |
+| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000     | ஒவ்வொரு destination-க்குமான wall-clock வரம்பு |
+| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024       | MB-இல் child V8 old-space வரம்பு              |
 
-செல்லாத/நேர்மறையல்லாத/முழு எண்ணல்லாத மதிப்புகளுக்கு இயல்புநிலைகள் பயன்படுத்தப்படும். heap அமைப்பு மொத்த
-RSS வரம்பு அல்ல; மிகப் பெரிய தொகுதிகள் இன்னும் child memory-ஐத் தீர்த்துவிட்டு இயக்கத்தைப் பாதுகாப்பாகத் தோல்வியடையச் செய்யலாம்.
-512 KiB artifacts கொண்ட இயல்புநிலை 500-வரிசைத் தொகுதிக்கு, bodies இயக்கப்பட்டிருந்தாலும், BigQuery-இன் byte-chunked JSON serialization
-உட்பட போதுமான கூடுதல் இடம் கிடைக்க 1024 MB இயல்புநிலை உதவுகிறது. இது 10000-வரிசை bodies தொகுதியைப் பாதுகாப்பானதாக மாற்றாது.
-V8 heap தீர்ந்துவிட்டால் செயல்படுத்தக்கூடிய தோல்விச் செய்தி பதிவாகும்: batch size-ஐக் குறைக்கவும் அல்லது
-`OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB`-ஐ உயர்த்தவும்; கடைசியாக ஒப்புகையளிக்கப்பட்ட தொகுதியிலேயே cursor இருக்கும்.
-வரலாற்று inline/disk bodies, நவீன artifact வரம்பிற்குள் அடங்காது.
-குறிப்பாக memory வரம்புள்ள containers-இல், இயக்குநர்கள் RSS-க்கு தனியாக வளம் ஒதுக்க வேண்டும்.
+செல்லாத/நேர்மறையல்லாத/முழு எண் அல்லாத மதிப்புகளுக்கு இயல்புநிலைகள் பயன்படுத்தப்படும். Heap அமைப்பு மொத்த
+RSS வரம்பு அல்ல; மிகப் பெரிய batch-கள் இன்னும் child memory-ஐத் தீர்த்துவிட்டு run-ஐப் பாதுகாப்பாகத் தோல்வியடையச் செய்யலாம்.
+1024 MB இயல்புநிலை, body-கள் இயக்கப்பட்டுள்ள நிலையில் 512 KiB artifact-களைக் கொண்ட இயல்புநிலை 500-row batch-க்கு,
+BigQuery-இன் byte-chunked JSON serialization உட்பட, கூடுதல் இடத்தை வழங்குகிறது. ஆனால் இது
+10000-row body batch-ஐப் பாதுகாப்பானதாக மாற்றாது. V8 heap தீர்ந்துபோவது, செயல்படுத்தக்கூடிய தோல்விச் செய்தியைப் பதிவு செய்யும்: batch
+அளவைக் குறைக்கவும் அல்லது `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB`-ஐ உயர்த்தவும்; cursor கடைசியாக
+acknowledge செய்யப்பட்ட batch-இலேயே இருக்கும். வரலாற்றுச் சார்ந்த inline/disk body-கள் நவீன artifact வரம்புக்குள் வராது.
+குறிப்பாக memory வரம்புள்ள container-களுக்குள், operator-கள் RSS-ஐத் தனியாகத் திட்டமிட வேண்டும்.
 
-child, தீர்மானிக்கப்பட்ட `DATA_DIR`, `NODE_ENV`, வெளிப்படையாக அமைக்கப்பட்ட `TZ` (பழைய filename-களுக்கான
-உள்ளூர்-நேரத் தீர்மானம்), இருந்தால் `ELECTRON_RUN_AS_NODE`, மற்றும் பின்வரும் outbound inputs ஆகியவற்றை மட்டுமே inherit செய்கிறது:
+Child, தீர்மானிக்கப்பட்ட `DATA_DIR`, `NODE_ENV`, வெளிப்படையாக அமைக்கப்பட்ட `TZ` (legacy filename-இன்
+local-time resolution), இருப்பின் `ELECTRON_RUN_AS_NODE`, மற்றும் பின்வரும் outbound input-களை மட்டுமே பெறுகிறது:
 `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (மற்றும் அவற்றின் lowercase வடிவங்கள்),
 `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`.
-ஒரு global Undici dispatcher, சேவையகத்தின் side effect இல்லாத environment-proxy resolution மற்றும் local-host
-bypass விதிகளைப் பகிர்கிறது; இதில் `NO_PROXY`-வும் அடங்கும். இது `proxyFetch.ts` அல்லது அதன் DB/feature flags-ஐ import செய்வதில்லை.
-முன்னோக்கி அனுப்பப்படும் output மற்றும் பதிவுசெய்யப்பட்ட errors-இலிருந்து proxy credentials மறைக்கப்படுகின்றன. இலக்கின் credentials
-ஒரே ஒரு தொடக்க IPC செய்தியில் மட்டுமே செல்கின்றன; argv அல்லது environment வழியாக ஒருபோதும் செல்லாது; output/error forwarding-க்கு
-prefix சேர்க்கப்பட்டு sanitized செய்யப்படுகிறது. ஒவ்வொரு cron இயக்கத்திலும் Node-இன் SQLite warning மீண்டும் தோன்றுவதைத் தவிர்க்க,
-child exec arguments-இல் `ExperimentalWarning` மட்டும் முடக்கப்படுகிறது; பிற warning வகைகள் தொடர்ந்து காண்பிக்கப்படும்.
+ஒரு global Undici dispatcher, server-இன் pure environment-proxy resolution மற்றும் local-host
+bypass விதிகளை, `NO_PROXY` உட்பட, பகிர்கிறது; இது `proxyFetch.ts` அல்லது அதன் DB/feature flag-களை import செய்வதில்லை.
+Forward செய்யப்படும் output மற்றும் பதிவு செய்யப்பட்ட error-களிலிருந்து proxy credential-கள் மறைக்கப்படுகின்றன. Destination credential-கள்
+ஒரே ஒரு start IPC message-இல் மட்டுமே பயணிக்கின்றன; argv அல்லது environment வழியாக ஒருபோதும் அனுப்பப்படுவதில்லை; output/error forwarding-க்கு
+prefix சேர்க்கப்பட்டு sanitize செய்யப்படுகிறது. ஒவ்வொரு cron run-இலும் Node-இன் SQLite warning மீண்டும் தோன்றுவதைத் தவிர்க்க,
+child exec argument-களில் `ExperimentalWarning` மட்டுமே முடக்கப்படுகிறது; மற்ற warning வகைகள் தொடர்ந்து காண்பிக்கப்படும்.
 
-இலக்கு மாட்யூல்களை Next.js/server-only சார்புகள் இல்லாமல் import செய்ய முடிய வேண்டும். ஏற்கனவே உள்ள
-BigQuery செயலாக்கம் அந்த ஒப்பந்தத்தைப் பூர்த்தி செய்கிறது. அணுகல்-டோக்கன் தற்காலிகச் சேமிப்புகள் துணை
-இயக்கத்தின் காலம் வரை மட்டுமே நீடிக்கும்; இயக்கங்களுக்கு இடையே நீடிக்காது. ஆதரிக்கப்படும் இயக்கச் சூழல் Node
-(`package.json` engines), ஆனால் README-இன் Bun நிறுவல் பகுதியும் `Dockerfile.bun` கோப்பும்
-`bun:sqlite` (`src/lib/db/core.ts` / adapters) பயன்படுத்தும் தயாரிப்பு இணக்கப் பாதையையும் விளம்பரப்படுத்துகின்றன.
-எனவே Bun-இன் கீழ், exports முந்தைய in-process பாதையைத் தக்கவைத்து, ஒரே முறை எச்சரிக்கையை வெளியிடும்:
-துணைச் செயல்முறை heap/timeout தனிமைப்படுத்தல் கிடைக்காது. event-loop மற்றும் OOM தனிமைப்படுத்தலுக்கு
-Node-ஐப் பயன்படுத்தவும்; இங்கு Bun என்பது dev-only ஆகக் கருதப்படவில்லை.
+இலக்கு மாட்யூல்களை Next.js/சர்வர்-மட்டும் சார்புகள் இல்லாமல் இறக்குமதி செய்யக்கூடியதாக இருக்க வேண்டும். தற்போதுள்ள
+BigQuery செயலாக்கம் ஏற்கனவே அந்த ஒப்பந்தத்தைப் பூர்த்தி செய்கிறது. அணுகல்-டோக்கன் தற்காலிகச் சேமிப்புகள் துணை
+இயக்கத்தின் காலத்திற்கு மட்டுமே நீடிக்கும்; இயக்கங்களுக்கு இடையே நீடிக்காது. Node தான் ஆதரிக்கப்படும் இயக்கச்சூழல் (`package.json` engines), ஆனால் README-இன் Bun
+நிறுவல் பகுதியும் `Dockerfile.bun`-உம் `bun:sqlite`-ஐ (`src/lib/db/core.ts` / அடாப்டர்கள்) பயன்படுத்தும்
+உற்பத்தி இணக்கப் பாதையையும் அறிவிக்கின்றன. எனவே Bun-இன் கீழ், ஏற்றுமதிகள் முந்தைய
+செயல்முறைக்குள்ளான பாதையையே தக்கவைத்து, ஒருமுறை மட்டும் எச்சரிக்கையை வெளியிடும்: துணை heap/timeout தனிமைப்படுத்தல் கிடைக்காது.
+event-loop மற்றும் OOM தனிமைப்படுத்தலுக்கு Node-ஐப் பயன்படுத்தவும்; இங்கே Bun உருவாக்கத்திற்காக மட்டும் பயன்படுத்தப்படுவதாகக் கருதப்படவில்லை.
 
-`includeBodies` இயக்கப்பட்டிருக்கும்போது, மணிநேர payload நிலுவையைக் குவிப்பதற்குப் பதிலாக
-`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` போன்ற நிமிட அளவிலான இடைவெளியைப் பயன்படுத்துவது சிறந்தது.
-தொகுதி மற்றும் வரம்பு வரையறைகள் ஒவ்வொரு இயக்கத்தையும் தொடர்ந்து கட்டுப்படுத்தும். ஒவ்வொரு இயக்கத்திலும் ஒவ்வொரு
-இலக்கிற்கும் செயல்முறைத் தொடக்கச் செலவு ஏற்படும்; இது மொத்த CPU பயன்பாட்டைக் குறைப்பதற்காக அல்ல, ஒரு சிறிய
-தொடக்கச் செலவுக்குப் பதிலாக server event-loop தனிமைப்படுத்தலை வழங்குவதற்காகும்.
+`includeBodies` இயக்கப்பட்டிருக்கும்போது, மணிநேர payload பின்னடைவைச் சேர விடாமல்
+`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` போன்ற நிமிட-அளவிலான கால அட்டவணையை விரும்பவும்.
+தொகுதி மற்றும் வரம்புகள் ஒவ்வொரு இயக்கத்தையும் தொடர்ந்து கட்டுப்படுத்துகின்றன. ஒவ்வொரு இயக்கத்திலும் ஒவ்வொரு இலக்கிற்கும்
+செயல்முறைத் தொடக்கச் செலவு ஏற்படும்; இது மொத்த CPU பயன்பாட்டைக் குறைப்பதற்காக அல்ல, சர்வர் event-loop தனிமைப்படுத்தலுக்காக
+சிறிய தொடக்கச் செலவை ஏற்கிறது.
 
-### Payloads (prompts மற்றும் completions)
+### Payload-கள் (prompt-களும் completion-களும்)
 
-இயல்பாக, Logs **list** காட்டும் சுருக்கப் புலங்களை மட்டுமே export கொண்டிருக்கும். **Export prompts and responses**
-(`includeBodies`) என்பதை இயக்கினால், ஒவ்வொரு அழைப்பிற்கும் Logs **detail** பலகம் காட்டும் பின்வரும் தகவல்களும்
-கூடுதலாக அனுப்பப்படும்:
+இயல்பாக, Logs **பட்டியல்** காட்டும் சுருக்கப் புலங்களை மட்டுமே ஏற்றுமதி கொண்டிருக்கும். **Prompt-களையும் பதில்களையும் ஏற்றுமதி செய்** என்பதை (`includeBodies`) இயக்குவது, ஒவ்வொரு அழைப்பிற்கும் Logs **விவர**
+பலகம் காட்டுவதையும் கூடுதலாக அனுப்பும்:
 
-| Field                            | அதில் இருப்பது                                                      |
-| -------------------------------- | ------------------------------------------------------------------- |
-| `request_body` / `response_body` | dashboard அவற்றை வழங்கிக் காட்டும் வடிவிலான அழைப்பு payloads        |
-| `pipeline_route_decision`        | router தேர்ந்தெடுத்த target மற்றும் model                           |
-| `pipeline_client_request`        | client அனுப்பிய அதே வடிவிலான மூல request                            |
-| `pipeline_openai_request`        | உள் OpenAI வடிவத்துக்கு மொழிமாற்றம் செய்யப்பட்ட பின்                |
-| `pipeline_provider_request`      | provider dialect-இல் upstream-க்கு உண்மையில் அனுப்பப்பட்டது         |
-| `pipeline_provider_response`     | மூல upstream response                                               |
-| `pipeline_client_response`       | அழைப்பாளருக்குத் திருப்பி வழங்கப்பட்டது                             |
-| `pipeline_error`                 | தோல்வியடைந்த அழைப்பிற்கான pipeline-நிலை பிழை விவரம்                 |
-| `bodies_truncated`               | மேலே உள்ள ஏதேனும் புலம் `maxBodyBytes` வரம்பை எட்டியிருந்தால் உண்மை |
+| புலம்                            | அதில் உள்ளவை                                                      |
+| -------------------------------- | ----------------------------------------------------------------- |
+| `request_body` / `response_body` | dashboard காட்டும் விதத்தில் அழைப்பின் payload-கள்                |
+| `pipeline_route_decision`        | router தேர்ந்தெடுத்த இலக்கும் model-உம்                           |
+| `pipeline_client_request`        | client அனுப்பியபடியே உள்ள அசல் request                            |
+| `pipeline_openai_request`        | உள்நிலை OpenAI வடிவத்திற்கு மாற்றப்பட்ட பிந்தைய request           |
+| `pipeline_provider_request`      | provider dialect-இல் upstream-க்கு உண்மையில் அனுப்பப்பட்டது       |
+| `pipeline_provider_response`     | அசல் upstream response                                            |
+| `pipeline_client_response`       | அழைப்பாளருக்குத் திருப்பி வழங்கப்பட்டது                           |
+| `pipeline_error`                 | தோல்வியடைந்த அழைப்பிற்கான pipeline-நிலை error விவரம்              |
+| `bodies_truncated`               | மேலுள்ள ஏதேனும் புலம் `maxBodyBytes` வரம்பை எட்டியிருந்தால் உண்மை |
 
-இது prompt உள்ளடக்கம் என்பதால், இயல்பாக இது **முடக்கப்பட்டிருக்கும்**; மேலும் இது வேண்டுமென்றே ஒவ்வொரு
-இலக்கிற்கும் தனித்தனியாகத் தேர்ந்தெடுக்கப்படுகிறது. dashboard காட்டுவதுதான் அனுப்பப்படும், ஏனெனில் export மற்றும்
-`getCallLogById` ஆகியவை ஒரே detail resolution-ஐப் பகிர்கின்றன: payloads எழுதப்படும்போதே
-PII-sanitised மற்றும் secret-redacted செய்யப்பட்டிருக்கும்; மேலும் `noLog` API key கொண்டு செய்யப்பட்ட அழைப்பு
-எந்த payload-ஐயும் சேமிக்காது, எனவே export செய்ய எதுவும் இருக்காது.
+இது prompt உள்ளடக்கம் என்பதால், இது **இயல்பாக முடக்கப்பட்டிருக்கும்**; மேலும் திட்டமிட்டே ஒவ்வொரு இலக்கிற்குமான தனிப்பட்ட தேர்வாகும்.
+அனுப்பப்படுவது dashboard காட்டுவதுதான், ஏனெனில் ஏற்றுமதியும் `getCallLogById`-உம் ஒரே விவரத்
+தீர்மானத்தைப் பகிர்கின்றன: payload-கள் எழுதப்படும்போதே
+PII அகற்றிச் சுத்திகரிக்கப்பட்டு, ரகசியங்கள் மறைக்கப்படுகின்றன; மேலும் `noLog` API key மூலம் செய்யப்பட்ட அழைப்பு
+எந்த payload-ஐயும் சேமிக்காது, எனவே ஏற்றுமதி செய்வதற்கு எதுவும் இருக்காது.
 
-Payloads filesystem artifact-இலிருந்து ஒவ்வொரு வரியாகப் படிக்கப்படுகின்றன; எனவே அதைக் கோரிய இலக்குகளுக்கு மட்டுமே
-hydration இயங்கும். artifact காணாமல் போனாலோ சிதைந்திருந்தாலோ, batch தோல்வியடைந்து cursor முடங்குவதற்குப் பதிலாக,
-அதன் summary null payloads உடன் export செய்யப்படும்.
+ஒவ்வொரு வரிக்கும் filesystem artifact-இலிருந்து payload-கள் படிக்கப்படுகின்றன, எனவே அதைக் கோரிய இலக்குகளுக்கு மட்டுமே
+hydration இயங்கும். artifact இல்லாவிட்டாலோ சிதைந்திருந்தாலோ, தொகுதி தோல்வியடைந்து cursor சிக்கிக்கொள்வதற்குப் பதிலாக,
+அதன் சுருக்கம் null payload-களுடன் ஏற்றுமதி செய்யப்படும்.
 
-`maxBodyBytes` (இயல்புநிலை 262144) ஒவ்வொரு புலத்திற்கும் உச்ச வரம்பை நிர்ணயிக்கிறது. நீளமான payloads
-**நீக்கப்படுவதற்குப் பதிலாகத் துண்டிக்கப்படும்** — வெட்டப்பட்ட prompt-ம்கூட "என்ன கேட்கப்பட்டது" என்பதற்குப்
-பதிலளிக்கும் — மேலும் அந்த வரி `bodies_truncated` கொண்டு குறிக்கப்படும். chunk-by-chunk ஆக stream செய்யப்பட்ட
-deltas export செய்யப்படாது; ஒருங்கிணைக்கப்பட்ட response ஏற்கனவே `pipeline_provider_response` மற்றும்
-`pipeline_client_response` ஆகியவற்றில் உள்ளது.
+`maxBodyBytes` (இயல்புநிலை 262144) ஒவ்வொரு புலத்திற்கும் உச்ச வரம்பை விதிக்கிறது. நீளமான payload-கள் **நீக்கப்படுவதற்குப் பதிலாக
+துண்டிக்கப்படும்** — துண்டிக்கப்பட்ட prompt-உம் "என்ன கேட்கப்பட்டது" என்பதற்குப் பதிலளிக்கும் — மேலும் அந்த வரி
+`bodies_truncated` மூலம் குறிக்கப்படும். ஸ்ட்ரீம் செய்யப்பட்ட துண்டு-துண்டான delta-கள் ஏற்றுமதி செய்யப்படாது; ஒன்றுசேர்க்கப்பட்ட response ஏற்கனவே
+`pipeline_provider_response` மற்றும் `pipeline_client_response`-இல் உள்ளது.
 
 ---
 
 ## 2. கோப்புகள்
 
-| பகுதி                          | இருப்பிடம்                                   |
-| ------------------------------ | -------------------------------------------- |
-| இலக்கு ஒப்பந்தம்               | `src/lib/logExport/types.ts`                 |
-| பதிவகம்                        | `src/lib/logExport/registry.ts`              |
-| ரகசியங்களைக் கையாளுதல்         | `src/lib/logExport/secrets.ts`               |
-| இயக்கி (பெற்றோர் IPC)          | `src/lib/logExport/runner.ts`                |
-| செயல்முறை வாழ்க்கைச் சுழற்சி   | `src/lib/logExport/childRunner.ts`           |
-| சேய் நுழைவுப்புள்ளி            | `src/lib/logExport/exportChild.ts`           |
-| வாசிப்பு-மட்டும் திறப்பான்     | `src/lib/db/logExportReadOnly.ts`            |
-| பகிரப்பட்ட வினவல்/வரைபொருத்தம் | `src/lib/usage/callLogExportQueries.ts`      |
-| விவரத் தீர்வி                  | `src/lib/usage/callLogDetailResolver.ts`     |
-| API முன்னிறுத்தம்              | `src/lib/logExport/presenter.ts`             |
-| BigQuery இலக்கு                | `src/lib/logExport/destinations/bigquery.ts` |
-| Google SA அங்கீகாரம்           | `src/lib/logExport/googleServiceAccount.ts`  |
-| அழைப்புப் பதிவு மூலம்          | `src/lib/usage/callLogExportSource.ts`       |
-| நிலைத்த சேமிப்பு               | `src/lib/db/logExportDestinations.ts`        |
-| Cron பணி                       | `src/lib/jobs/logExportJob.ts`               |
-| REST அடுக்கு                   | `src/app/api/log-export/`                    |
-| கட்டுப்பாட்டுப் பலகைப் பக்கம்  | `src/app/(dashboard)/dashboard/log-export/`  |
+| பகுதி                         | இருப்பிடம்                                   |
+| ----------------------------- | -------------------------------------------- |
+| இலக்கு ஒப்பந்தம்              | `src/lib/logExport/types.ts`                 |
+| பதிவகம்                       | `src/lib/logExport/registry.ts`              |
+| ரகசியக் கையாளுதல்             | `src/lib/logExport/secrets.ts`               |
+| இயக்கி (பெற்றோர் IPC)         | `src/lib/logExport/runner.ts`                |
+| செயல்முறை வாழ்க்கைச் சுழற்சி  | `src/lib/logExport/childRunner.ts`           |
+| சேய் நுழைவுப்புள்ளி           | `src/lib/logExport/exportChild.ts`           |
+| வாசிக்க மட்டும் திறப்பான்     | `src/lib/db/logExportReadOnly.ts`            |
+| பகிரப்பட்ட வினவல்/வரைபடுத்தல் | `src/lib/usage/callLogExportQueries.ts`      |
+| விவரத் தீர்வி                 | `src/lib/usage/callLogDetailResolver.ts`     |
+| API முன்னிறுத்தல்             | `src/lib/logExport/presenter.ts`             |
+| BigQuery இலக்கு               | `src/lib/logExport/destinations/bigquery.ts` |
+| Google SA அங்கீகரிப்பு        | `src/lib/logExport/googleServiceAccount.ts`  |
+| அழைப்புப் பதிவு மூலம்         | `src/lib/usage/callLogExportSource.ts`       |
+| நிலைத்த சேமிப்பு              | `src/lib/db/logExportDestinations.ts`        |
+| Cron பணி                      | `src/lib/jobs/logExportJob.ts`               |
+| REST அடுக்கு                  | `src/app/api/log-export/`                    |
+| கட்டுப்பாட்டுப் பலகைப் பக்கம் | `src/app/(dashboard)/dashboard/log-export/`  |
 
 தரவுத்தளத் திட்டம்: `src/lib/db/migrations/170_log_export_destinations.sql`.
 

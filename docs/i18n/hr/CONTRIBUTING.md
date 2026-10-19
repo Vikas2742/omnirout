@@ -20,7 +20,7 @@ pokrivenost i korake usklađivanja.
 - **Node.js** `>=22.22.2 <23` ili `>=24.0.0 <27` (preporučeno: 24 LTS)
 - **npm** 10+
 
-> **Korisnici npm-a v11+ (Node 24+):** Nakon naredbe `npm install` provjerite jesu li nativni moduli instalirani:
+> **Korisnici verzije npm v11+ (Node 24+):** Nakon naredbe `npm install` provjerite jesu li nativni moduli instalirani:
 > `node -e "require('better-sqlite3')"`. Ako naredba ne uspije uz pogrešku `MODULE_NOT_FOUND`,
 > pokrenite `npm approve-scripts better-sqlite3 && npm install`. Pogledajte
 > [Rješavanje problema](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
@@ -38,34 +38,34 @@ npm install
 ### Varijable okruženja
 
 ```bash
-# Izradite svoj .env iz predloška
+# Izradite svoj .env prema predlošku
 cp .env.example .env
 
-# Generirajte potrebne tajne
+# Generirajte potrebne tajne ključeve
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
 Ključne varijable za razvoj:
 
-| Varijabla              | Zadana vrijednost za razvoj | Opis                        |
-| ---------------------- | --------------------------- | --------------------------- |
-| `PORT`                 | `20128`                     | Port poslužitelja           |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`    | Osnovni URL za sučelje      |
-| `JWT_SECRET`           | (generirajte iznad)         | Tajna za potpisivanje JWT-a |
-| `INITIAL_PASSWORD`     | `CHANGEME`                  | Lozinka za prvu prijavu     |
-| `APP_LOG_LEVEL`        | `info`                      | Razina opširnosti zapisnika |
+| Varijabla              | Zadana razvojna vrijednost | Opis                              |
+| ---------------------- | -------------------------- | --------------------------------- |
+| `PORT`                 | `20128`                    | Port poslužitelja                 |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`   | Osnovni URL za sučelje            |
+| `JWT_SECRET`           | (generirajte iznad)        | Tajni ključ za potpisivanje JWT-a |
+| `INITIAL_PASSWORD`     | `CHANGEME`                 | Lozinka za prvu prijavu           |
+| `APP_LOG_LEVEL`        | `info`                     | Razina opširnosti zapisnika       |
 
 ### Postavke nadzorne ploče
 
 Nadzorna ploča pruža kontrole korisničkog sučelja za značajke koje se također mogu konfigurirati putem varijabli okruženja:
 
-| Lokacija postavke   | Kontrola                    | Opis                                                       |
-| ------------------- | --------------------------- | ---------------------------------------------------------- |
-| Postavke → Napredno | Način otklanjanja pogrešaka | Omogućuje zapisnike zahtjeva za otklanjanje pogrešaka (UI) |
-| Postavke → Općenito | Vidljivost bočne trake      | Prikazuje ili skriva odjeljke bočne trake                  |
+| Lokacija postavke   | Kontrola                            | Opis                                                       |
+| ------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| Postavke → Napredno | Način rada za otklanjanje pogrešaka | Omogućuje zapisnike zahtjeva za otklanjanje pogrešaka (UI) |
+| Postavke → Općenito | Vidljivost bočne trake              | Prikazuje/skriva odjeljke bočne trake                      |
 
-Te se postavke pohranjuju u bazu podataka i ostaju sačuvane nakon ponovnih pokretanja te, kada su postavljene, nadjačavaju zadane vrijednosti varijabli okruženja.
+Te se postavke pohranjuju u bazu podataka i zadržavaju nakon ponovnih pokretanja, pri čemu, ako su postavljene, nadjačavaju zadane vrijednosti varijabli okruženja.
 
 ### Lokalno pokretanje
 
@@ -77,34 +77,34 @@ npm run dev
 npm run build    # next build → .build/next/, zatim assembleStandalone → dist/
 npm run start
 
-# Brzo prevođenje samo pozadinskog sustava/API-ja za promjene suradnika
+# Brzo kompajliranje samo pozadinskog sustava/API-ja za izmjene suradnika
 npm run build:contributor
 
-# Izgradnja izdanja (čista ponovna izgradnja + HEAD kontrolna oznaka — obavezno za implementaciju)
+# Izgradnja izdanja (čista ponovna izgradnja + kontrolna oznaka HEAD — obavezno za implementaciju)
 npm run build:release   # rm -rf .build dist && izgradnja + zapisuje dist/BUILD_SHA
 
 # Uobičajena konfiguracija porta
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Izgradnja za suradnike provodi samo provjeru prevođenja: ne sastavlja samostalnu
-distribuciju niti izrađuje neobavezne resurse za nativno pakiranje. Upotrijebite uobičajenu produkcijsku izgradnju kada
+Izgradnja za suradnike provodi samo provjeru kompajliranjem: ne sastavlja samostalnu
+distribuciju niti izrađuje dodatne nativne resurse za pakiranje. Upotrijebite uobičajenu produkcijsku izgradnju kada
 trebate provjeriti paket spreman za isporuku.
 
 ### Raspored izlaznih datoteka izgradnje
 
-| Direktorij | Sadržaj                                                                                | Praćeno |
-| ---------- | -------------------------------------------------------------------------------------- | ------- |
-| `src/`     | Izvorni kod aplikacije (TypeScript / TSX)                                              | Da      |
-| `.build/`  | Međurezultati — izlaz naredbe `next build` (zanemaren u Gitu, `distDir = .build/next`) | Ne      |
-| `dist/`    | Paket spreman za isporuku — sastavlja ga `assembleStandalone` (zanemaren u Gitu)       | Ne      |
+| Direktorij | Sadržaj                                                                                | Prati se |
+| ---------- | -------------------------------------------------------------------------------------- | -------- |
+| `src/`     | Izvorni kod aplikacije (TypeScript / TSX)                                              | Da       |
+| `.build/`  | Međurezultati — izlaz naredbe `next build` (zanemaren u Gitu, `distDir = .build/next`) | Ne       |
+| `dist/`    | Paket spreman za isporuku — sastavlja ga `assembleStandalone` (zanemaren u Gitu)       | Ne       |
 
-Proces izgradnje izvodi se u jednom prolazu:
+Proces izgradnje odvija se u jednom prolazu:
 
 ```
 npm run build
-  └─ next build → .build/next/standalone  (izlaz Next.js-a)
-  └─ assembleStandalone()                 (kopira samostalni paket + statičke + javne + nativne resurse)
+  └─ next build → .build/next/standalone  (izlaz alata Next.js)
+  └─ assembleStandalone()                 (kopira samostalnu verziju + statičke + javne + nativne resurse)
        └─ izlaz: dist/                    (server.js, .next/static/, public/, node_modules/)
 ```
 
@@ -113,11 +113,11 @@ npm run build
 
 `npm run build:contributor` koristi profil izgradnje samo za pozadinski sustav. Tijekom izgradnje privremeno zamjenjuje
 datoteke korisničkog sučelja nadzorne ploče pomoćnim datotekama, zadržava rukovatelje API ruta i vraća izvorne datoteke
-nakon izgradnje. Upotrijebite `npm run build` za promjene koje utječu na korisničko sučelje nadzorne ploče ili za potpunu
+nakon izgradnje. Upotrijebite `npm run build` za izmjene koje utječu na korisničko sučelje nadzorne ploče ili za potpunu
 provjeru izdanja; profil za suradnike nije zamjena za izgradnju izdanja.
 
-> **Napomena za implementaciju na VPS-u:** udaljeni direktorij slike `/usr/lib/node_modules/omniroute/app/`
-> nije promijenjen. Vještine za implementaciju putem rsync-a sinkroniziraju sadržaj direktorija `dist/` u njega.
+> **Napomena o implementaciji na VPS-u:** udaljeni direktorij slike `/usr/lib/node_modules/omniroute/app/`
+> ostaje nepromijenjen. Postupci implementacije pomoću alata rsync sinkroniziraju sadržaj direktorija `dist/` s njim.
 > Promijenjena je samo putanja izlaza izgradnje unutar repozitorija (`app/` → `dist/`).
 
 Zadani URL-ovi:
@@ -295,7 +295,7 @@ Pogledajte `open-sse/utils/stream.ts` i `open-sse/utils/streamHandler.ts` za pri
 
 ```
 src/                        # TypeScript (.ts / .tsx)
-├── app/                    # Usmjerivač aplikacije Next.js 16
+├── app/                    # Next.js 16 App Router
 │   ├── (dashboard)/        # Stranice nadzorne ploče (23 odjeljka)
 │   ├── api/                # API rute (51 direktorij)
 │   └── login/              # Stranice za autentifikaciju (.tsx)
@@ -304,58 +304,58 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── a2a/                # Poslužitelj protokola Agent-to-Agent v0.3
 │   ├── acp/                # Registar protokola Agent Communication Protocol
 │   ├── compliance/         # Mehanizam pravila usklađenosti
-│   ├── db/                 # Domenski moduli za SQLite + 130 migracija
+│   ├── db/                 # SQLite domenski moduli + 130 migracija
 │   ├── memory/             # Trajna konverzacijska memorija
-│   ├── oauth/              # OAuth pružatelji, usluge i pomoćni alati
+│   ├── oauth/              # OAuth pružatelji, servisi i pomoćni alati
 │   ├── skills/             # Proširivi okvir vještina
 │   ├── usage/              # Praćenje upotrebe i izračun troškova
-│   └── localDb.ts          # Samo sloj za ponovni izvoz — ovdje nikada ne dodavati logiku
+│   └── localDb.ts          # Samo sloj za ponovni izvoz — ovdje nikada nemojte dodavati logiku
 ├── middleware/              # Posrednički softver zahtjeva (promptInjectionGuard)
-├── mitm/                   # MITM proxy (certifikati, DNS, usmjeravanje cilja)
+├── mitm/                   # MITM proxy (certifikat, DNS, usmjeravanje prema odredištu)
 ├── shared/
 │   ├── components/         # React komponente (.tsx)
 │   ├── constants/          # Definicije pružatelja (329), MCP opsezi, 20 strategija usmjeravanja
-│   ├── utils/              # Prekidač strujnog kruga, alat za sanitizaciju, pomoćne funkcije za autentifikaciju
+│   ├── utils/              # Prekidač strujnog kruga, alat za sanitizaciju, pomoćni alati za autentifikaciju
 │   └── validation/         # Zod v4 sheme
 └── sse/                    # SSE proxy cjevovod
 
-open-sse/                   # Radni prostor @omniroute/open-sse
-├── executors/              # 150 izvršnih modula (izvršne klase + pomoćne funkcije za pojedine pružatelje)
+open-sse/                   # @omniroute/open-sse radni prostor
+├── executors/              # 150 modula izvršitelja (klase izvršitelja + pomoćni alati po pružatelju)
 ├── handlers/               # 11 rukovatelja zahtjevima (razgovor, odgovori, ugradnje, slike itd.)
-├── mcp-server/             # MCP poslužitelj (110 jedinstvenih alata, 3 prijenosa, 33 opsega)
-├── services/               # 178 usluga najviše razine (combo, autoCombo, rateLimitManager itd.)
+├── mcp-server/             # MCP poslužitelj (110 jedinstvenih alata, 3 transporta, 33 opsega)
+├── services/               # 178 servisa najviše razine (combo, autoCombo, rateLimitManager itd.)
 ├── translator/             # Prevoditelji formata (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Transformator za Responses API
+├── transformer/            # Transformator Responses API-ja
 └── utils/                  # 22 pomoćna modula (tok, TLS, proxy, zapisivanje)
 
 electron/                   # Electron aplikacija za stolna računala (višeplatformska)
 
 tests/
-├── unit/                   # Pokretač testova Node.js (1.574 testne datoteke)
+├── unit/                   # Node.js pokretač testova (1.574 datoteke testova)
 ├── integration/            # Integracijski testovi
 ├── e2e/                    # Playwright testovi
 ├── security/               # Sigurnosni testovi
-├── translator/             # Testovi specifični za prevoditelje
+├── translator/             # Testovi specifični za prevoditelj
 └── load/                   # Testovi opterećenja
 
 docs/
 ├── adr/                     # Zapisi o arhitektonskim odlukama
-├── architecture/            # Arhitektura i otpornost sustava
+├── architecture/            # Arhitektura sustava i otpornost
 ├── comparison/              # OmniRoute u usporedbi s alternativama
 ├── compression/             # Vodiči i pravila za kompresiju
-├── dev/                     # Razvojni vodiči
+├── dev/                     # Vodiči za razvoj
 ├── diagrams/                # Arhitektonski dijagrami
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Korisnički vodič, Docker, postavljanje, otklanjanje poteškoća
-├── i18n/                    # Internacionalizirani prijevodi datoteke README
+├── guides/                  # Korisnički vodič, Docker, postavljanje, rješavanje problema
+├── i18n/                    # Internacionalizirani prijevodi README-a
 ├── marketing/               # Marketinški materijali
 ├── ops/                     # Implementacija, proxy, pokrivenost, izdanja
 ├── providers/               # Dokumentacija specifična za pružatelje
-├── reference/               # API referenca, varijable okruženja, CLI alati, besplatne razine
+├── reference/               # Referenca API-ja, varijable okruženja, CLI alati, besplatne razine
 ├── releases/                # Napomene uz izdanja
-├── routing/                 # Mehanizam automatskih kombinacija, ponavljanje zaključivanja
+├── routing/                 # Mehanizam automatskog kombiniranja, ponovna reprodukcija zaključivanja
 ├── screenshots/             # Snimke zaslona nadzorne ploče
-├── security/                # Zaštitne mjere, usklađenost, prikrivenost, tokeni
+├── security/                # Zaštitne mjere, usklađenost, prikrivanje, tokeni
 └── specs/                   # Specifikacije dizajna
 ```
 

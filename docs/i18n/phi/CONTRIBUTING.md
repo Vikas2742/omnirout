@@ -8,7 +8,7 @@ Thank you for your interest in contributing! This guide covers everything you ne
 
 ---
 
-## Pag-set Up ng Development
+## Pag-setup ng Development
 
 ### Mga Kinakailangan
 
@@ -16,7 +16,7 @@ Thank you for your interest in contributing! This guide covers everything you ne
 - **npm** 10+
 
 > **Mga gumagamit ng npm v11+ (Node 24+):** Pagkatapos ng `npm install`, tiyaking na-install ang mga native module:
-> `node -e "require('better-sqlite3')"`. Kung mabigo ito gamit ang `MODULE_NOT_FOUND`,
+> `node -e "require('better-sqlite3')"`. Kung mabigo ito nang may `MODULE_NOT_FOUND`,
 > patakbuhin ang `npm approve-scripts better-sqlite3 && npm install`. Tingnan ang
 > [Pag-troubleshoot](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
@@ -41,7 +41,7 @@ echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
-Mga pangunahing variable para sa development:
+Mahahalagang variable para sa development:
 
 | Variable               | Default sa Development   | Paglalarawan                |
 | ---------------------- | ------------------------ | --------------------------- |
@@ -53,14 +53,14 @@ Mga pangunahing variable para sa development:
 
 ### Mga Setting ng Dashboard
 
-Nagbibigay ang dashboard ng mga UI toggle para sa mga feature na maaari ding i-configure sa pamamagitan ng mga environment variable:
+Nagbibigay ang dashboard ng mga UI toggle para sa mga feature na maaari ring i-configure sa pamamagitan ng mga environment variable:
 
 | Lokasyon ng Setting | Toggle             | Paglalarawan                             |
 | ------------------- | ------------------ | ---------------------------------------- |
-| Settings → Advanced | Debug Mode         | I-enable ang mga debug request log (UI)  |
+| Settings → Advanced | Debug Mode         | Paganahin ang mga debug request log (UI) |
 | Settings → General  | Sidebar Visibility | Ipakita/itago ang mga seksyon ng sidebar |
 
-Iniimbak ang mga setting na ito sa database at nananatili ang mga ito sa bawat pag-restart, na ino-override ang mga default ng env var kapag itinakda.
+Iniimbak ang mga setting na ito sa database at nananatili ang mga ito sa bawat pag-restart, na pumapalit sa mga default ng env var kapag itinakda.
 
 ### Lokal na Pagpapatakbo
 
@@ -75,8 +75,8 @@ npm run start
 # Mabilis na backend/API-only compile para sa mga pagbabago ng contributor
 npm run build:contributor
 
-# Release build (malinis na rebuild + HEAD sentinel — kinakailangan para sa deploy)
-npm run build:release   # rm -rf .build dist && build + isinusulat ang dist/BUILD_SHA
+# Release build (malinis na rebuild + HEAD sentinel — kinakailangan para sa pag-deploy)
+npm run build:release   # rm -rf .build dist && build + nagsusulat sa dist/BUILD_SHA
 
 # Karaniwang configuration ng port
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
@@ -86,34 +86,34 @@ Nagsasagawa ang contributor build ng compile-only na validation: hindi nito binu
 distribution o ang mga opsyonal na native packaging asset. Gamitin ang karaniwang production build kapag
 kailangan mong i-validate ang bundle na maaaring i-release.
 
-### Layout ng Build Output
+### Ayos ng Build Output
 
-| Directory | Mga Nilalaman                                                                   | Tracked |
-| --------- | ------------------------------------------------------------------------------- | ------- |
-| `src/`    | Source ng application (TypeScript / TSX)                                        | Oo      |
-| `.build/` | Mga intermediate — output ng `next build` (gitignored, `distDir = .build/next`) | Hindi   |
-| `dist/`   | Bundle na maaaring i-release — binuo ng `assembleStandalone` (gitignored)       | Hindi   |
+| Directory | Mga Nilalaman                                                                   | Sinusubaybayan |
+| --------- | ------------------------------------------------------------------------------- | -------------- |
+| `src/`    | Source ng application (TypeScript / TSX)                                        | Oo             |
+| `.build/` | Mga intermediate — output ng `next build` (gitignored, `distDir = .build/next`) | Hindi          |
+| `dist/`   | Bundle na maaaring i-release — binuo ng `assembleStandalone` (gitignored)       | Hindi          |
 
 Iisang pass ang build pipeline:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (output ng Next.js)
-  └─ assembleStandalone()                 (kinokopya ang standalone + static + public + native asset)
+  └─ assembleStandalone()                 (kinokopya ang standalone + static + public + mga native asset)
        └─ output: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
 Nililinis din muna ng `npm run build:release` ang parehong directory at isinusulat ang
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) bilang deploy integrity sentinel.
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) bilang sentinel ng integridad ng pag-deploy.
 
-Ginagamit ng `npm run build:contributor` ang backend-only na build profile. Pansamantala nitong pinapalitan ng stub ang
-mga dashboard UI file habang nagbu-build, pinananatili ang mga API route handler, at ibinabalik ang mga orihinal na file
-pagkatapos ng build. Gamitin ang `npm run build` para sa mga pagbabagong nakaaapekto sa dashboard UI o para sa buong
-release validation; hindi pamalit sa release build ang contributor profile.
+Ginagamit ng `npm run build:contributor` ang backend-only na build profile. Pansamantala nitong pinapalitan
+ng mga stub ang mga dashboard UI file habang nagbu-build, pinananatili ang mga API route handler, at ibinabalik ang mga orihinal na file
+pagkatapos ng build. Gamitin ang `npm run build` para sa mga pagbabagong nakaaapekto sa dashboard UI o para sa ganap na
+validation ng release; hindi pamalit sa release build ang contributor profile.
 
-> **Tala para sa VPS deploy:** hindi nagbago ang remote image directory na `/usr/lib/node_modules/omniroute/app/`.
+> **Paalala sa pag-deploy sa VPS:** hindi nagbago ang remote image directory na `/usr/lib/node_modules/omniroute/app/`.
 > Ini-rsync ng mga deploy skill ang mga nilalaman ng `dist/` papunta rito.
-> Tanging ang build output path sa loob ng repository ang lumipat (`app/` → `dist/`).
+> Tanging ang path ng build output sa repository ang nagbago (`app/` → `dist/`).
 
 Mga default na URL:
 
@@ -296,39 +296,39 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── (dashboard)/        # Mga pahina ng dashboard (23 seksyon)
 │   ├── api/                # Mga ruta ng API (51 direktoryo)
 │   └── login/              # Mga pahina ng pagpapatotoo (.tsx)
-├── domain/                 # Engine ng patakaran (policyEngine, comboResolver, costRules, at iba pa)
+├── domain/                 # Engine ng patakaran (policyEngine, comboResolver, costRules, atbp.)
 ├── lib/                    # Pangunahing lohika ng negosyo (.ts)
 │   ├── a2a/                # Server ng Agent-to-Agent v0.3 protocol
 │   ├── acp/                # Registry ng Agent Communication Protocol
 │   ├── compliance/         # Engine ng patakaran sa pagsunod
-│   ├── db/                 # Mga domain module ng SQLite + 130 migration
+│   ├── db/                 # Mga domain module ng SQLite + 130 migrasyon
 │   ├── memory/             # Persistent na memorya ng pag-uusap
 │   ├── oauth/              # Mga provider, serbisyo, at utility ng OAuth
 │   ├── skills/             # Napapalawak na framework ng kasanayan
 │   ├── usage/              # Pagsubaybay sa paggamit at pagkalkula ng gastos
-│   └── localDb.ts          # Layer lamang para sa muling pag-export — huwag kailanman magdagdag ng lohika rito
-├── middleware/              # Middleware ng kahilingan (promptInjectionGuard)
-├── mitm/                   # MITM proxy (certificate, DNS, pagruruta ng target)
+│   └── localDb.ts          # Re-export layer lamang — huwag kailanman magdagdag ng lohika rito
+├── middleware/              # Middleware ng request (promptInjectionGuard)
+├── mitm/                   # MITM proxy (sertipiko, DNS, pagruruta ng target)
 ├── shared/
 │   ├── components/         # Mga React component (.tsx)
-│   ├── constants/          # Mga depinisyon ng provider (329), mga saklaw ng MCP, 20 estratehiya sa pagruruta
+│   ├── constants/          # Mga depinisyon ng provider (329), MCP scope, 20 estratehiya sa pagruruta
 │   ├── utils/              # Circuit breaker, sanitizer, mga helper sa pagpapatotoo
-│   └── validation/         # Mga schema ng Zod v4
+│   └── validation/         # Mga Zod v4 schema
 └── sse/                    # Pipeline ng SSE proxy
 
 open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 150 module ng executor (mga klase ng executor + mga helper para sa bawat provider)
-├── handlers/               # 11 handler ng kahilingan (chat, mga tugon, embedding, larawan, at iba pa)
-├── mcp-server/             # MCP server (110 natatanging tool, 3 transport, 33 saklaw)
-├── services/               # 178 nangungunang serbisyo (combo, autoCombo, rateLimitManager, at iba pa)
+├── executors/              # 150 executor module (mga executor class + helper para sa bawat provider)
+├── handlers/               # 11 request handler (chat, responses, embeddings, images, atbp.)
+├── mcp-server/             # MCP server (110 natatanging tool, 3 transport, 33 scope)
+├── services/               # 178 nangungunang antas na serbisyo (combo, autoCombo, rateLimitManager, atbp.)
 ├── translator/             # Mga tagasalin ng format (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Transformer ng Responses API
-└── utils/                  # 22 module ng utility (stream, TLS, proxy, logging)
+└── utils/                  # 22 utility module (stream, TLS, proxy, logging)
 
 electron/                   # Electron desktop app (cross-platform)
 
 tests/
-├── unit/                   # Test runner ng Node.js (1,574 test file)
+├── unit/                   # Node.js test runner (1,574 test file)
 ├── integration/            # Mga integration test
 ├── e2e/                    # Mga Playwright test
 ├── security/               # Mga security test
@@ -343,14 +343,14 @@ docs/
 ├── dev/                     # Mga gabay sa development
 ├── diagrams/                # Mga diagram ng arkitektura
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Gabay ng user, Docker, pag-setup, troubleshooting
+├── guides/                  # Gabay ng user, Docker, setup, troubleshooting
 ├── i18n/                    # Mga internasyonal na salin ng README
 ├── marketing/               # Mga materyal sa marketing
 ├── ops/                     # Deployment, proxy, coverage, mga release
 ├── providers/               # Dokumentasyong partikular sa provider
-├── reference/               # Sanggunian ng API, mga env var, mga CLI tool, mga libreng tier
+├── reference/               # Sanggunian ng API, mga env var, CLI tool, mga libreng tier
 ├── releases/                # Mga tala sa release
-├── routing/                 # Auto-combo engine, pag-replay ng reasoning
+├── routing/                 # Auto-combo engine, reasoning replay
 ├── screenshots/             # Mga screenshot ng dashboard
 ├── security/                # Mga guardrail, pagsunod, stealth, mga token
 └── specs/                   # Mga espesipikasyon ng disenyo
@@ -413,9 +413,13 @@ Sumulat ng mga unit test sa `tests/unit/` na sumasaklaw, bilang minimum, sa:
 
 ---
 
-## Releasing
+## Paglalabas ng Release
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Pinamamahalaan ang mga release sa pamamagitan ng workflow na `/generate-release`. Kapag gumawa ng bagong GitHub Release, **awtomatikong inilalathala sa npm** ang package sa pamamagitan ng GitHub Actions.
+
+Para sa mga pag-deploy sa VPS, gamitin ang `npm run build:release` (hindi ang `npm run build`) — nagsasagawa ito ng malinis na
+muling pag-build, binubuo ang bundle sa `dist/`, at isinusulat ang sentinel na `dist/BUILD_SHA`.
+Pagkatapos, gamitin ang mga skill na `/deploy-vps-*-cc`, na gumagamit ng rsync upang ilipat ang `dist/` sa remote na direktoryong `app/`.
 
 ---
 

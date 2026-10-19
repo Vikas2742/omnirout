@@ -72,32 +72,32 @@ yóò sì dárúkọ endpoint náà àti ohun tí ó sọnù — nítorí náà 
 
 ## Àwọn Àṣàyàn
 
-| Kókó                             | Àìyẹsẹ̀                                               | Àwọn Àkíyèsí                                                                                                                   |
+| Kọ́kọ́rọ́                           | Àkọ́ṣe                                                | Àwọn Àkíyèsí                                                                                                                   |
 | -------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `providerId`                     | `"omniroute"`                                        | Id olùpèsè, id ìṣọ̀kan, àti ìpele ìṣáájú tí àwọn mọ́dẹ̀lì yóò fara hàn lábẹ́ rẹ̀                                                    |
-| `baseURL`                        | ó ṣe pàtàkì                                          | Gbòǹgbò ẹnu-ọ̀nà, `http(s)` nìkan; a ó fi ìfikún `/v1` kún un níbi tí ó bá yẹ                                                   |
-| `apiKey`                         | ẹ̀rí ìdánimọ̀ tí a sopọ̀, lẹ́yìn náà `OMNIROUTE_API_KEY` | Kókó ìfọ̀rọ̀wérọ̀ fún `/v1/*`                                                                                                     |
-| `managementReadToken`            | yóò lo `apiKey` bí kò bá sí                          | Kókó fún `/api/*` — ní ọ̀pọ̀ ìgbà, **kì í ṣe** kókó kan náà                                                                      |
-| `displayName`                    | `"OmniRoute"`                                        | Orúkọ olùpèsè nínú olùyan                                                                                                      |
-| `timeoutMs`                      | `10000`                                              | Àkókò ìdádúró tó pọ̀ jù fún gbígba láti ọ̀dọ̀ endpoint kọ̀ọ̀kan (àwọn àkópọ̀ aládàáṣe ń lo 5s)                                       |
-| `modelCacheTtlMs`                | `300000`                                             | TTL kaṣe àkójọ; àwòrán ìpamọ́ disiki ń mú àwọn ìbẹ̀rẹ̀ tútù yára                                                                  |
-| `timeouts`                       | yóò lo `timeoutMs` bí kò bá sí                       | Ìwọ̀n àkókò fún endpoint kọ̀ọ̀kan ní ms: `models`, `combos`, `autoCombos`, `enrichment`                                           |
-| `enrichment`                     | `true`                                               | Gba àwọn orúkọ, iye owó àti àwọn ìwọ̀n ìlò ọ̀fẹ́                                                                                  |
-| `providerTag`                    | `true`                                               | Fi olùpèsè orísun tí ó ń darí sí síwájú orúkọ àfihàn                                                                           |
-| `usableOnly`                     | `false`                                              | Fi àwọn olùpèsè tí ẹnu-ọ̀nà sọ pé a ti pèsè sílẹ̀ nìkan pamọ́                                                                     |
-| `combosSource`                   | `"api"`                                              | `"models"` máa fo `/api/combos` kọjá, yóò sì ṣe àtẹ̀jáde àwọn ìlà àkópọ̀ `/v1/models`; àwọn àsẹ ipele ọmọ-ẹgbẹ́ máa pa `"api"` mọ́ |
-| `showcasePerOwner`               | `10`                                                 | Àwọn àkọsílẹ̀ ìwòye àìyẹsẹ̀ tí a pa mọ́ fún olùpèsè kọ̀ọ̀kan                                                                        |
-| `freshPerOwner`                  | `10`                                                 | Àwọn àkọsílẹ̀ tuntun ìwòye àìyẹsẹ̀ tí a pa mọ́ fún olùpèsè kọ̀ọ̀kan                                                                 |
-| `freshWindowDays`                | `90`                                                 | Àkókò ìtuntun ní ọjọ́ fún ẹ̀ka tuntun                                                                                            |
-| `usageMemory`                    | `true`                                               | Dá àwọn àkọsílẹ̀ tí a yọ kúrò lọ́nà àìyípadà, tí ìtúpalẹ̀ ìlò ọjọ́ 30 dárúkọ, padà (ó nílò token ìṣàkóso)                          |
-| `visibleModels` / `hiddenModels` | `[]`                                                 | Àwọn àtòjọ ìyọ̀nda ìbámu pípé-tàbí-ìfikún; ìkọ̀ máa ń borí; `*` máa ń ṣe àtẹ̀jáde gbogbo àkójọ (àwọn àsẹ mìíràn ṣì máa lò)        |
-| `geminiSanitization`             | `true`                                               | Yọ àwọn ọ̀rọ̀-àmì JSON-Schema tí Gemini kọ̀ láti inú àwọn schema irinṣẹ́ (a máa ń fi àwọn irinṣẹ́ `$ref` ránṣẹ́ láìyípadà)           |
-| `apiFormat.allowAnthropic`       | `false`                                              | Darí àwọn id inú àtòjọ ìyọ̀nda gba inú ìdínà Anthropic API                                                                      |
-| `apiFormat.anthropicModels`      | `[]`                                                 | Àwọn id mọ́dẹ̀lì kíkún tí a darí sí Anthropic                                                                                    |
-| `logLevel` / `startupDebug`      | `warn` / `false`                                     | Ìwọ̀n àlàyé logger                                                                                                              |
+| `providerId`                     | `"omniroute"`                                        | ID olùpèsè, ID ìṣọ̀kan, àti ìpele ìṣáájú tí àwọn awoṣe yóò fara hàn lábẹ́ rẹ̀                                                     |
+| `baseURL`                        | ó pọndandan                                          | Gbòngbò ẹnubodè, `http(s)` nìkan; a máa fi ìfikún `/v1` kún un níbi tí ó bá yẹ                                                 |
+| `apiKey`                         | ẹ̀rí ìdánimọ̀ tí a sopọ̀, lẹ́yìn náà `OMNIROUTE_API_KEY` | Kọ́kọ́rọ́ ìfọ̀rọ̀wérọ̀ fún `/v1/*`                                                                                                   |
+| `managementReadToken`            | máa lo `apiKey` bí kò bá sí                          | Kọ́kọ́rọ́ fún `/api/*` — ní ọ̀pọ̀ ìgbà, ó **kì í ṣe** ọ̀kan náà                                                                      |
+| `displayName`                    | `"OmniRoute"`                                        | Orúkọ olùpèsè nínú ohun ìṣàyàn                                                                                                 |
+| `timeoutMs`                      | `10000`                                              | Àkókò ìdádúró tó pọ̀ jù fún ìgbà ìgbàlódé kọ̀ọ̀kan (àwọn àkópọ̀ aládàáṣiṣẹ́ máa ń lo 5s)                                            |
+| `modelCacheTtlMs`                | `300000`                                             | TTL kaṣe katalọ́ọ̀gù; àwòrán-ìpamọ́ lórí disiki máa ń mú ìbẹ̀rẹ̀ tútù yára                                                          |
+| `timeouts`                       | máa lo `timeoutMs` bí kò bá sí                       | Àwọn ààlà àkókò fún ibi ìpè kọ̀ọ̀kan ní ms: `models`, `combos`, `autoCombos`, `enrichment`                                       |
+| `enrichment`                     | `true`                                               | Gba àwọn orúkọ, iye owó àti àwọn ààlà ìpele ọ̀fẹ́                                                                                |
+| `providerTag`                    | `true`                                               | Fi olùpèsè òkè tí ó ń darí sí gẹ́gẹ́ bí ìpele ìṣáájú orúkọ àfihàn                                                                |
+| `usableOnly`                     | `false`                                              | Pa àwọn olùpèsè tí ẹnubodè sọ pé a ti pèsè sílẹ̀ nìkan mọ́                                                                       |
+| `combosSource`                   | `"api"`                                              | `"models"` máa fo `/api/combos` kọjá, yóò sì tẹ àwọn ìlà àkópọ̀ `/v1/models` jáde; àwọn àsẹ ipele ọmọ ẹgbẹ́ máa jẹ́ kí `"api"` wà |
+| `showcasePerOwner`               | `10`                                                 | Àwọn àkọsílẹ̀ ojú-ìwòye àkọ́kọ́ tí a pa mọ́ fún olùpèsè kọ̀ọ̀kan                                                                     |
+| `freshPerOwner`                  | `10`                                                 | Àwọn àkọsílẹ̀ tuntun ojú-ìwòye àkọ́kọ́ tí a pa mọ́ fún olùpèsè kọ̀ọ̀kan                                                              |
+| `freshWindowDays`                | `90`                                                 | Fèrèsé tuntun ní ọjọ́ fún ẹ̀ka tuntun                                                                                            |
+| `usageMemory`                    | `true`                                               | Dá àwọn àkọsílẹ̀ tí a yọ kúrò lọ́nà àìyípadà tí ìtúpalẹ̀ lílò ọjọ́ 30 dárúkọ padà (ó nílò àmì ìṣàkóso)                             |
+| `visibleModels` / `hiddenModels` | `[]`                                                 | Àwọn àtòjọ ìyọ̀nda tó bá mu gan-an tàbí nípa ìparí; ìkọ̀sílẹ̀ ló borí; `*` máa tẹ gbogbo katalọ́ọ̀gù jáde (àwọn àsẹ míì ṣì wúlò)    |
+| `geminiSanitization`             | `true`                                               | Yọ àwọn ọ̀rọ̀-kókó JSON-Schema tí Gemini kọ̀ láti inú àwọn àwòrán irinṣẹ́ (a máa rán àwọn irinṣẹ́ `$ref` lọ láìyípadà)              |
+| `apiFormat.allowAnthropic`       | `false`                                              | Darí àwọn ID inú àtòjọ ìyọ̀nda gba inú búlọ́ọ̀kù API Anthropic                                                                    |
+| `apiFormat.anthropicModels`      | `[]`                                                 | Gbogbo ID awoṣe tí a darí sí Anthropic                                                                                         |
+| `logLevel` / `startupDebug`      | `warn` / `false`                                     | Bí àkọsílẹ̀ ìṣẹ̀lẹ̀ ṣe máa kún tó                                                                                                 |
 
-Ìrántí ìlò máa ń ṣiṣẹ́ ní àìyẹsẹ̀. Láìsí token ìṣàkóso, kò ní ṣe ohunkóhun
-(a máa kọ ìfitónilétí ìbẹ̀rẹ̀ sínú log), kò sì sí ohun tí a máa dá padà.
+Ìrántí lílò máa ń ṣiṣẹ́ láti ìbẹ̀rẹ̀. Láìsí àmì ìṣàkóso, kò ní ṣe ohunkóhun
+(a máa kọ ìfitónilétí ìbẹ̀rẹ̀ sínú àkọsílẹ̀ ìṣẹ̀lẹ̀), kò sì sí ohun tí a máa dá padà.
 
 ## Bí katalogi ṣe ń wà ní ìmúdójúìwọ̀n
 

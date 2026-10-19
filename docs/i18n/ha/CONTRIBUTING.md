@@ -13,9 +13,9 @@ da matakan daidaitawa.
 
 ---
 
-## Saitin Haɓakawa
+## Saitin Ci Gaba
 
-### Abubuwan da ake Buƙata
+### Abubuwan da Ake Bukata
 
 - **Node.js** `>=22.22.2 <23`, ko `>=24.0.0 <27` (shawarar da aka bayar: 24 LTS)
 - **npm** 10+
@@ -27,7 +27,7 @@ da matakan daidaitawa.
 
 - **Git**
 
-### Kwafi & Shigarwa
+### Clone da Shigarwa
 
 ```bash
 git clone https://github.com/diegosouzapw/OmniRoute.git
@@ -38,7 +38,7 @@ npm install
 ### Masu Sauyin Muhalli
 
 ```bash
-# Ƙirƙiri .env ɗinka daga samfuri
+# Ƙirƙiri .env naka daga samfurin
 cp .env.example .env
 
 # Samar da sirrukan da ake buƙata
@@ -46,80 +46,79 @@ echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
-Muhimman masu sauyi don haɓakawa:
+Muhimman masu sauyi don ci gaba:
 
-| Mai Sauyi              | Tsohon Ƙimar Haɓakawa    | Bayani                       |
+| Mai Sauyi              | Tsohuwar Ƙimar Ci Gaba   | Bayani                       |
 | ---------------------- | ------------------------ | ---------------------------- |
-| `PORT`                 | `20128`                  | Tashar uwar garke            |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | URL na tushe don frontend    |
-| `JWT_SECRET`           | (samar a sama)           | Sirrin sa hannun JWT         |
+| `PORT`                 | `20128`                  | Port na sabar                |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | Tushen URL na frontend       |
+| `JWT_SECRET`           | (samar da shi a sama)    | Sirrin sanya hannu na JWT    |
 | `INITIAL_PASSWORD`     | `CHANGEME`               | Kalmar sirrin shiga ta farko |
 | `APP_LOG_LEVEL`        | `info`                   | Matakin yawan bayanan log    |
 
 ### Saitunan Dashboard
 
-Dashboard yana samar da maɓallan kunnawa/kashewa na UI don fasalullukan da kuma za a iya saita su ta masu sauyin muhalli:
+Dashboard yana samar da maɓallan UI na kunnawa da kashewa don fasalolin da kuma za a iya saita su ta hanyar masu sauyin muhalli:
 
 | Wurin Saiti          | Maɓallin Kunnawa/Kashewa | Bayani                          |
 | -------------------- | ------------------------ | ------------------------------- |
-| Saituna → Na Ci-gaba | Yanayin Debug            | Kunna log na buƙatun debug (UI) |
-| Saituna → Gaba ɗaya  | Bayyanar Sidebar         | Nuna/ɓoye sassan sidebar        |
+| Saituna → Na Ci Gaba | Yanayin Debug            | Kunna log na buƙatun debug (UI) |
+| Saituna → Gabaɗaya   | Bayyanar Sidebar         | Nuna/ɓoye sassan sidebar        |
 
-Ana adana waɗannan saitunan a cikin ma'ajiyar bayanai kuma suna ci gaba da kasancewa bayan sake kunnawa, tare da maye gurbin tsoffin ƙimomin env var idan an saita su.
+Ana adana waɗannan saituna a cikin database kuma suna ci gaba da kasancewa bayan sake farawa, suna maye gurbin tsoffin ƙimomin env var idan an saita su.
 
 ### Gudanarwa a Na'ura
 
 ```bash
-# Yanayin haɓakawa (sake lodawa kai tsaye)
+# Yanayin ci gaba (sake lodawa kai tsaye)
 npm run dev
 
-# Gina na samarwa
+# Gina na production
 npm run build    # next build → .build/next/ sannan assembleStandalone → dist/
 npm run start
 
-# Saurin compile na backend/API kaɗai don sauye-sauyen masu ba da gudummawa
+# Gina backend/API kawai cikin sauri don sauye-sauyen masu ba da gudummawa
 npm run build:contributor
 
-# Gina na fitarwa (sake ginawa daga tsaf + alamar HEAD — wajibi don deploy)
-npm run build:release   # rm -rf .build dist && build + rubuta dist/BUILD_SHA
+# Gina na fitarwa (sake ginawa daga tsabta + alamar HEAD — wajibi don deploy)
+npm run build:release   # rm -rf .build dist && gini + rubuta dist/BUILD_SHA
 
-# Saitin tashar da aka saba amfani da shi
+# Saitin port da aka saba amfani da shi
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Ginin masu ba da gudummawa yana yin tantancewar compile kaɗai: ba ya haɗa rarrabawar standalone
-ko gina kadarorin native packaging na zaɓi. Yi amfani da ginin samarwa na yau da kullum lokacin da
-kake buƙatar tantance bundle ɗin da za a iya fitarwa.
+Ginin mai ba da gudummawa yana yin tabbatarwar compile kawai: ba ya haɗa standalone
+distribution ko gina kadarorin native packaging na zaɓi. Yi amfani da ginin production na yau da kullum idan
+kana buƙatar tabbatar da kunshin da za a iya turawa.
 
-### Tsarin Sakamakon Gina
+### Tsarin Abubuwan da Gina Ya Fitar
 
 | Kundin Adireshi | Abubuwan da ke Ciki                                                                 | Ana Bibiyarsa |
 | --------------- | ----------------------------------------------------------------------------------- | ------------- |
-| `src/`          | Tushen manhaja (TypeScript / TSX)                                                   | Eh            |
+| `src/`          | Lambar tushe ta manhaja (TypeScript / TSX)                                          | Eh            |
 | `.build/`       | Abubuwan tsaka-tsaki — sakamakon `next build` (gitignored, `distDir = .build/next`) | A'a           |
-| `dist/`         | Bundle da za a iya fitarwa — wanda `assembleStandalone` ya haɗa (gitignored)        | A'a           |
+| `dist/`         | Kunshin da za a iya turawa — wanda `assembleStandalone` ya haɗa (gitignored)        | A'a           |
 
-Tsarin ginin yana gudana sau ɗaya:
+Tsarin ginin yana gudana sau ɗaya ne:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (sakamakon Next.js)
-  └─ assembleStandalone()                 (yana kwafe standalone + static + public + native assets)
+  └─ assembleStandalone()                 (yana kwafar standalone + static + public + native assets)
        └─ sakamako: dist/                 (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` yana kuma fara da share kundin adireshin biyu sannan ya rubuta
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) a matsayin alamar tabbatar da ingancin deploy.
+`npm run build:release` yana kuma tsabtace kundin adireshin biyu da farko sannan ya rubuta
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) a matsayin alamar tabbatar da sahihancin deploy.
 
-`npm run build:contributor` yana amfani da tsarin gina backend kaɗai. Yana maye gurbin
-fayilolin UI na dashboard na ɗan lokaci yayin gini, yana riƙe da API route handlers, sannan yana
-maido da fayilolin asali bayan ginin. Yi amfani da `npm run build` don sauye-sauyen da suka shafi
-UI na dashboard ko don cikakken tantancewar fitarwa; tsarin masu ba da gudummawa ba madadin ginin
-fitarwa ba ne.
+`npm run build:contributor` yana amfani da tsarin gina backend kawai. Yana maye gurbin
+fayilolin UI na dashboard na ɗan lokaci da stubs yayin gini, yana riƙe da masu sarrafa hanyoyin API, sannan ya dawo da ainihin fayilolin
+bayan ginin. Yi amfani da `npm run build` don sauye-sauyen da suka shafi UI na dashboard ko don cikakkiyar
+tabbatarwar fitarwa; tsarin mai ba da gudummawa ba madadin ginin fitarwa ba ne.
 
-> **Bayanin deploy na VPS:** kundin hoton nesa `/usr/lib/node_modules/omniroute/app/`
-> bai canza ba. Kayan aikin deploy suna rsync abubuwan da ke cikin `dist/` zuwa gare shi.
-> Hanyar sakamakon gini da ke cikin repo kaɗai ce ta sauya (`app/` → `dist/`).
+> **Lura kan deploy zuwa VPS:** kundin adireshin image na nesa `/usr/lib/node_modules/omniroute/app/`
+> bai canza ba. Kayan aikin deploy suna yin rsync na abubuwan da ke cikin `dist/` zuwa cikinsa.
+> Hanyar sakamakon gini da ke cikin repo ce kawai ta sauya (`app/` → `dist/`).
 
 Tsoffin URLs:
 
@@ -299,37 +298,37 @@ Duba `open-sse/utils/stream.ts` da `open-sse/utils/streamHandler.ts` don misalan
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Shafukan dashboard (sassa 23)
+│   ├── (dashboard)/        # Shafukan dashboard (ɓangarori 23)
 │   ├── api/                # Hanyoyin API (kundin adireshi 51)
 │   └── login/              # Shafukan tantancewa (.tsx)
 ├── domain/                 # Injin manufofi (policyEngine, comboResolver, costRules, da sauransu)
 ├── lib/                    # Babban dabarun kasuwanci (.ts)
-│   ├── a2a/                # Sabar yarjejeniyar Agent-to-Agent v0.3
-│   ├── acp/                # Rijistar Agent Communication Protocol
-│   ├── compliance/         # Injin manufofin bin ƙa’idoji
-│   ├── db/                 # Rukunin domain na SQLite + ƙaura 130
+│   ├── a2a/                # Uwar garken yarjejeniyar Agent-to-Agent v0.3
+│   ├── acp/                # Rajistar Agent Communication Protocol
+│   ├── compliance/         # Injin manufofin bin ƙa'idoji
+│   ├── db/                 # Kayayyakin domain na SQLite + ƙaura 130
 │   ├── memory/             # Ƙwaƙwalwar tattaunawa mai ɗorewa
-│   ├── oauth/              # Masu samar da OAuth, ayyuka, da kayan taimako
+│   ├── oauth/              # Masu samar da OAuth, ayyuka, da kayan aiki
 │   ├── skills/             # Tsarin ƙwarewa mai faɗaɗawa
 │   ├── usage/              # Bibiyar amfani da lissafin kuɗi
-│   └── localDb.ts          # Matakin sake fitarwa kawai — kada a taɓa ƙara dabaru a nan
+│   └── localDb.ts          # Matakin sake fitarwa kawai — kada a taɓa ƙara dabara a nan
 ├── middleware/              # Middleware na buƙata (promptInjectionGuard)
-├── mitm/                   # Wakilin MITM (takardar shaida, DNS, zaɓen hanyar manufa)
+├── mitm/                   # Wakilin MITM (takardar shaida, DNS, tsara hanyar manufa)
 ├── shared/
 │   ├── components/         # Abubuwan React (.tsx)
-│   ├── constants/          # Ma’anonin masu samarwa (329), iyakokin MCP, dabarun zaɓen hanya 20
-│   ├── utils/              # Mai katse da’ira, mai tsabtace bayanai, kayan taimakon tantancewa
-│   └── validation/         # Tsare-tsaren Zod v4
+│   ├── constants/          # Ma'anar masu samarwa (329), iyakokin MCP, dabarun tsara hanya 20
+│   ├── utils/              # Mai katse da'ira, mai tsabtace bayanai, mataimakan tantancewa
+│   └── validation/         # Tsarukan Zod v4
 └── sse/                    # Bututun wakilin SSE
 
-open-sse/                   # Wurin aiki na @omniroute/open-sse
-├── executors/              # Rukunin masu aiwatarwa 150 (azuzuwan masu aiwatarwa + mataimaka na kowane mai samarwa)
-├── handlers/               # Masu sarrafa buƙata 11 (chat, responses, embeddings, images, da sauransu)
-├── mcp-server/             # Sabar MCP (kayan aiki na musamman 110, hanyoyin sufuri 3, iyakoki 33)
-├── services/               # Manyan ayyuka 178 (combo, autoCombo, rateLimitManager, da sauransu)
+open-sse/                   # Filin aikin @omniroute/open-sse
+├── executors/              # Kayayyakin aiwatarwa 150 (azuzuwan executor + mataimaka na kowane mai samarwa)
+├── handlers/               # Masu sarrafa buƙata 11 (taɗi, martani, embeddings, hotuna, da sauransu)
+├── mcp-server/             # Uwar garken MCP (kayan aiki na musamman 110, hanyoyin sufuri 3, iyakoki 33)
+├── services/               # Ayyuka 178 na matakin sama (combo, autoCombo, rateLimitManager, da sauransu)
 ├── translator/             # Masu fassara tsari (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Mai sauya Responses API
-└── utils/                  # Rukunin kayan taimako 22 (stream, TLS, proxy, logging)
+└── utils/                  # Kayayyakin amfani 22 (stream, TLS, proxy, logging)
 
 electron/                   # Manhajar tebur ta Electron (mai aiki a dandamali daban-daban)
 
@@ -342,23 +341,23 @@ tests/
 └── load/                   # Gwaje-gwajen nauyi
 
 docs/
-├── adr/                     # Bayanan Shawarwarin Gine-gine
-├── architecture/            # Gine-ginen tsarin da juriya
-├── comparison/              # OmniRoute da madadinsa
-├── compression/             # Jagorori da ƙa’idojin matse bayanai
+├── adr/                     # Bayanan Shawarar Gine-gine
+├── architecture/            # Gine-ginen tsarin da juriyarsa
+├── comparison/              # Kwatanta OmniRoute da wasu hanyoyi
+├── compression/             # Jagorori da ƙa'idojin matsawa
 ├── dev/                     # Jagororin haɓakawa
 ├── diagrams/                # Zane-zanen gine-gine
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Jagorar mai amfani, Docker, saiti, warware matsaloli
+├── guides/                  # Jagorar mai amfani, Docker, saitawa, warware matsaloli
 ├── i18n/                    # Fassarar README zuwa harsuna daban-daban
-├── marketing/               # Kayan tallace-tallace
-├── ops/                     # Turawa, proxy, ɗaukar gwaji, fitowar sigogi
+├── marketing/               # Kayan talla
+├── ops/                     # Turawa, proxy, ɗaukar gwaji, fitar da sigogi
 ├── providers/               # Takardu na musamman ga masu samarwa
 ├── reference/               # Manazartar API, env vars, kayan aikin CLI, matakan kyauta
-├── releases/                # Bayanan fitowar sigogi
-├── routing/                 # Injin auto-combo, sake kunna tunani
+├── releases/                # Bayanan sigogin da aka fitar
+├── routing/                 # Injin auto-combo, sake kunna tsarin tunani
 ├── screenshots/             # Hotunan allo na dashboard
-├── security/                # Matakan kariya, bin ƙa’idoji, ɓoyewa, tokens
+├── security/                # Matakan kariya, bin ƙa'idoji, ɓoyewa, tokens
 └── specs/                   # Ƙayyadaddun ƙira
 ```
 

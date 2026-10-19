@@ -111,136 +111,136 @@ quality-gate, quality-extended) ומשאיר את שערי הבדיקה המהי
 
 ## רשימת תיוג מפורטת
 
-### טרום-הפצה
+### לפני ההפצה
 
-- [ ] כל בקשות המשיכה המיועדות להפצה זו מוזגו אל `release/vX.Y.0`
-- [ ] כל פריטי Linear/הבעיות הפתוחים עבור גרסה זו נסגרו או הועברו לאבן הדרך הבאה
-- [ ] תהליך ה-CI תקין בענף `release/vX.Y.0`
+- [ ] כל בקשות המשיכה (PRs) המיועדות לגרסה זו מוזגו אל `release/vX.Y.0`
+- [ ] כל פריטי Linear/הסוגיות הפתוחים עבור גרסה זו נסגרו או הועברו לאבן הדרך הבאה
+- [ ] ה-CI ירוק בענף `release/vX.Y.0`
 - [ ] אין סמני `TODO(release)` בקוד: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] תמונת הבסיס של Docker מעודכנת (כרגע `node:24.15.0-trixie-slim`)
+- [ ] תמונת הבסיס של Docker מעודכנת (נכון לעכשיו `node:24.15.0-trixie-slim`)
 
 ### גרסה ויומן שינויים
 
-- [ ] הריצו `/version-bump-cc <patch|minor|major>` (מיומנות של Claude Code)
-  - מעדכן את הגרסאות ב-`package.json`, `electron/package.json`
-  - מייצר מחדש את `CHANGELOG.md` מהתחייבויות git שבוצעו מאז התג האחרון
+- [ ] הריצו `/version-bump-cc <patch|minor|major>` (מיומנות Claude Code)
+  - מעדכן את הגרסה ב-`package.json`, `electron/package.json`
+  - יוצר מחדש את `CHANGELOG.md` מה-commits של git מאז התג האחרון
   - מעדכן את התגים ב-README.md
-- [ ] סקרו ידנית את CHANGELOG.md ונקו הודעות התחייבות לפי הצורך
-- [ ] ודאו שמקטע ה-semver העדכני ביותר ב-`CHANGELOG.md` תואם לגרסה שב-`package.json`
-- [ ] השאירו את `## [Unreleased]` כמקטע הראשון ביומן השינויים עבור עבודה עתידית
-- [ ] עדכנו את `docs/openapi.yaml` ← הערך `info.version` חייב להיות זהה לגרסה שב-`package.json`
+- [ ] סקרו ידנית את CHANGELOG.md ונקו הודעות commit לפי הצורך
+- [ ] ודאו שסעיף ה-semver האחרון ב-`CHANGELOG.md` תואם לגרסה ב-`package.json`
+- [ ] השאירו את `## [Unreleased]` כסעיף הראשון ביומן השינויים עבור עבודה עתידית
+- [ ] עדכנו את `docs/openapi.yaml` ← `info.version` חייב להיות זהה לגרסה ב-`package.json`
 
 ### איכות הקוד
 
-- [ ] `npm run lint` — 0 שגיאות (האזהרות כבר היו קיימות)
-- [ ] `npm run typecheck:core` — תקין
-- [ ] `npm run typecheck:noimplicit:core` — תקין (מחמיר)
-- [ ] `npm run check:cycles:ratchet` — בתוך התקרה המקובעת של `metrics.cycles` (`check:cycles` לבדו יוצא עם 1 כשיש מחזור כלשהו, #15281)
-- [ ] `npm run check:any-budget:t11` — במסגרת התקציב
-- [ ] `npm run check:route-validation:t06` — תקין
-- [ ] `npm run check:node-runtime` — עומד בסף המינימלי של סביבת הריצה הנתמכת (`>=22.22.2 <23`, `>=24.0.0 <27`, לפי `SUPPORTED_NODE_RANGE` ב-`src/shared/utils/nodeRuntimeSupport.ts`; תואם ל-`engines` ב-`package.json`)
+- [ ] `npm run lint` — 0 שגיאות (האזהרות היו קיימות קודם לכן)
+- [ ] `npm run typecheck:core` — נקי
+- [ ] `npm run typecheck:noimplicit:core` — נקי (מחמיר)
+- [ ] `npm run check:cycles:ratchet` — בתוך התקרה הקפואה של `metrics.cycles` ‏(`check:cycles` לבדו מסתיים עם קוד 1 בכל מחזור, #15281)
+- [ ] `npm run check:any-budget:t11` — בתוך התקציב
+- [ ] `npm run check:route-validation:t06` — נקי
+- [ ] `npm run check:node-runtime` — סף סביבת הריצה הנתמכת מתקיים (`>=22.22.2 <23`, `>=24.0.0 <27`, לפי `SUPPORTED_NODE_RANGE` ב-`src/shared/utils/nodeRuntimeSupport.ts`; תואם ל-`engines` ב-`package.json`)
 
 ### בדיקות
 
 - [ ] `npm run test:unit` — עובר
-- [ ] `npm run test:vitest` — עובר (שרת MCP, autoCombo, מטמון)
-- [ ] `npm run test:coverage` — עומד בסף 60/60/60/60 (פקודות/שורות/פונקציות/הסתעפויות)
-- [ ] `npm run test:integration` — עובר (אם השינויים נוגעים במסד הנתונים / במטפלים)
-- [ ] `npm run test:combo:matrix` — עובר (מטריצת אסטרטגיות combo: מוכיחה באופן דטרמיניסטי את החלטות הבחירה של כל 19 אסטרטגיות הניתוב הציבוריות; יש להריץ בעת שינוי ניתוב combo, פתרון אסטרטגיה או לוגיקת נסיגה)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **אופציונלי/ידני** (בדיקת עשן מול ספקים אמיתיים המוגנת בשער; טוענת תמונת מצב לקריאה בלבד של מסד הנתונים מ-VPS‏ `root@192.168.0.15`; פונה לספקים אמיתיים וצורכת נקודות זכות; לעולם אינה רצה ב-CI; מדלגת באופן תקין ללא השער)
-- [ ] `npm run test:combo:live:vps` — **אופציונלי/ידני** (בדיקת עשן חיה של VPS בשלב 3: שבעה תרחישי HTTP מול שרת `.15` החי באמצעות Node ESM רגיל; דורשת `ssh root@192.168.0.15`; יוצרת/מוחקת רק שילובי `__live_test__*`; פונה לספקים אמיתיים; לעולם אינה רצה ב-CI)
+- [ ] `npm run test:vitest` — עובר (שרת MCP, ‏autoCombo, מטמון)
+- [ ] `npm run test:coverage` — סף 60/60/60/60 מתקיים (פקודות/שורות/פונקציות/הסתעפויות)
+- [ ] `npm run test:integration` — עובר (אם השינויים נוגעים במסד הנתונים / מטפלים)
+- [ ] `npm run test:combo:matrix` — עובר (מטריצת אסטרטגיות combo: מוכיחה באופן דטרמיניסטי את החלטות הבחירה של כל 19 אסטרטגיות הניתוב הציבוריות; יש להריץ בעת שינוי ניתוב combo, הכרעת אסטרטגיה או לוגיקת גיבוי)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **אופציונלי/ידני** (בדיקת smoke מול שירותי upstream אמיתיים, המוגנת בשער; טוענת תמונת מצב לקריאה בלבד של מסד הנתונים מ-VPS ‏`root@192.168.0.15`; פונה לספקים אמיתיים, צורכת נקודות זכות; לעולם אינה רצה ב-CI; מדלגת באופן נקי ללא השער)
+- [ ] `npm run test:combo:live:vps` — **אופציונלי/ידני** (בדיקת smoke חיה של VPS בשלב 3: שבעה תרחישי HTTP מול שרת `.15` החי באמצעות Node ESM רגיל; דורשת `ssh root@192.168.0.15`; יוצרת/מוחקת רק צירופי `__live_test__*`; פונה לספקים אמיתיים; לעולם אינה רצה ב-CI)
 - [ ] `npm run test:e2e` — עובר (שינויים בממשק המשתמש)
-- [ ] `npm run test:protocols:e2e` — עובר (שינויי MCP/A2A)
+- [ ] `npm run test:protocols:e2e` — עובר (שינויים ב-MCP/A2A)
 - [ ] `npm run test:ecosystem` — עובר
 
-### קרסים (מאומתים באמצעות Husky)
+### Hooks (מאומתים באמצעות Husky)
 
-הקרסים של Husky נמצאים ב-`.husky/` ורצים אוטומטית בעת פעולות git.
+ה-hooks של Husky נמצאים ב-`.husky/` ורצים אוטומטית בפעולות git.
 
 - **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** שערים דטרמיניסטיים מהירים — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (הופעל ב-2026-06-13). אינו כולל בכוונה את `test:unit` (איטי; מכוסה על ידי משימת ה-CI‏ `test-unit`).
+- **pre-push:** שערים מהירים ודטרמיניסטיים — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (הופעל ב-2026-06-13). אינו כולל בכוונה את `test:unit` (איטי; מכוסה על ידי משימת ה-CI ‏`test-unit`).
   - הריצו ידנית את `npm run test:unit` לפני דחיפת ענפי הפצה.
 
-אם קרס נכשל: תקנו את הבעיה שבבסיס הכשל, אל תעקפו אותה באמצעות `--no-verify`.
+אם hook נכשל: תקנו את הבעיה הבסיסית, אל תעקפו באמצעות `--no-verify`.
 
-### התחייבויות קונבנציונליות
+### Conventional Commits
 
-כל ההתחייבויות המיועדות להפצה חייבות להיות בתבנית `type(scope): subject`.
+כל ה-commits המיועדים להפצה חייבים לעמוד בתבנית `type(scope): subject`.
 
-**סוגים תקפים:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
+**סוגים תקינים:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
-**תחומים תקפים:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
+**תחומים תקינים:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
 
-שינויים שוברים: הוסיפו הערת שוליים `BREAKING CHANGE:` או `!` אחרי התחום (לדוגמה, `feat(api)!: drop /v0`).
+שינויים שוברים: הוסיפו שורת סיום `BREAKING CHANGE:` או `!` אחרי התחום (לדוגמה `feat(api)!: drop /v0`).
 
 ### תיעוד
 
 - [ ] `npm run check:docs-sync` עובר (רץ אוטומטית על ידי pre-commit)
-- [ ] `npm run check:docs-all` עובר (מעטפת: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` יוצא עם 0 — החוזה בין הקוד ↔ `.env.example` ↔ משתני הסביבה שב-`docs/reference/ENVIRONMENT.md` נשאר תקין
-- [ ] `npm run check:doc-links` יוצא עם 0 — אין הפניות Markdown פנימיות שבורות לאחר שינוי המבנה
-- [ ] `docs/architecture/ARCHITECTURE.md` נסקר כדי לזהות סטיות באחסון/בסביבת הריצה
-- [ ] `docs/guides/TROUBLESHOOTING.md` נסקר כדי לזהות סטיות במשתני סביבה ובתפעול
+- [ ] `npm run check:docs-all` עובר (בדיקת-על: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
+- [ ] `npm run check:env-doc-sync` מסתיים עם קוד 0 — החוזה של משתני הסביבה בין הקוד ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` נשאר תקין
+- [ ] `npm run check:doc-links` מסתיים עם קוד 0 — אין הפניות Markdown פנימיות שבורות לאחר הארגון מחדש
+- [ ] `docs/architecture/ARCHITECTURE.md` נסקר לאיתור אי-התאמות באחסון/בסביבת הריצה
+- [ ] `docs/guides/TROUBLESHOOTING.md` נסקר לאיתור אי-התאמות במשתני סביבה ובתפעול
 - [ ] אם `.env.example` השתנה: `docs/reference/ENVIRONMENT.md` עודכן
-- [ ] אם לתכונה חדשה יש ממשק משתמש: `docs/guides/USER_GUIDE.md` מזכיר אותה
-- [ ] אם לתכונה חדשה יש API:‏ `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` עודכנו
-- [ ] אם תכונה חדשה היא מודול: קיים עבורה `docs/<MODULE>.md` ייעודי
-- [ ] אם יש שינוי שובר: `docs/guides/TROUBLESHOOTING.md` כולל הערת הגירה
+- [ ] אם לתכונה חדשה יש ממשק משתמש: `docs/guides/USER_GUIDE.md` מציין אותה
+- [ ] אם לתכונה חדשה יש API: ‏`docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` עודכנו
+- [ ] אם התכונה החדשה היא מודול: קיים עבורה `docs/<MODULE>.md` ייעודי
+- [ ] אם מדובר בשינוי שובר: `docs/guides/TROUBLESHOOTING.md` כולל הערת מיגרציה
 
 ### i18n
 
-- [ ] `npm run i18n:check` יוצא עם 0 — מצב התרגום (`.i18n-state.json`) מסונכרן עם מסמכי המקור (אין מקורות שסטו במצב מחמיר; התראה במצב אזהרה מקובלת עבור תיקוני תיעוד של הרגע האחרון, אך הערך צריך להיות 0 לפני התיוג)
-- [ ] `npm run i18n:check-ui-coverage` יוצא עם 0 — כל אזור בממשק המשתמש עומד בסף הכיסוי של 80% ומעלה
-- [ ] `npm run i18n:sync-ui:dry` מדווח על 0 מפתחות חסרים בכל 66 אזורי היעד (כל אזור למעט מקור ה-`en`)
+- [ ] `npm run i18n:check` מסתיים עם קוד 0 — מצב התרגום (`.i18n-state.json`) מסונכרן עם מסמכי המקור (אין מקורות שסטו במצב מחמיר; התראה במצב אזהרה קבילה עבור תיקוני תיעוד ברגע האחרון, אך התוצאה צריכה להיות 0 לפני התיוג)
+- [ ] `npm run i18n:check-ui-coverage` מסתיים עם קוד 0 — כל שפת ממשק משתמש נמצאת בסף הכיסוי של 80% או מעליו
+- [ ] `npm run i18n:sync-ui:dry` מדווח על 0 מפתחות חסרים בכל 66 שפות היעד (כל שפה למעט מקור `en`)
 - [ ] אם מסמכי המקור באנגלית השתנו, הריצו `npm run i18n:run` (דורש `OMNIROUTE_TRANSLATION_API_KEY` ב-`.env`) לפני התיוג
-- [ ] ניתן לדחות תרומות תרגום להפצה הבאה אם הן שוליות (יש לעקוב אחריהן ב-CHANGELOG)
+- [ ] ניתן לדחות תרומות תרגום קלות לגרסה הבאה (יש לעקוב אחריהן ב-CHANGELOG)
 
-### הגירות מסד נתונים
+### מיגרציות של מסד הנתונים
 
 - [ ] אם קיימים קבצים חדשים ב-`src/lib/db/migrations/`:
-  - [ ] כל הגירה היא אידמפוטנטית (`CREATE TABLE IF NOT EXISTS` וכו')
-  - [ ] ההגירות עטופות בטרנזקציות
-  - [ ] ממוספרות כראוי (ללא פערים ברצף)
+  - [ ] כל מיגרציה היא אידמפוטנטית (`CREATE TABLE IF NOT EXISTS` וכו')
+  - [ ] המיגרציות עטופות בטרנזקציות
+  - [ ] המספור נכון (ללא פערים ברצף)
 - [ ] בדקו בהתקנה חדשה: מחקו את `~/.omniroute/omniroute.db` והריצו `npm run dev`
-- [ ] בדקו בהתקנה קיימת: גבו את מסד הנתונים, הריצו את ההגירה ואמתו את הסכמה
-- [ ] קובצי WAL‏ (`-wal`, `-shm`) מטופלים כראוי אם ההגירה כותבת מחדש טבלאות
+- [ ] בדקו בהתקנה קיימת: גבו את מסד הנתונים, הריצו את המיגרציה ואמתו את הסכמה
+- [ ] קובצי WAL ‏(`-wal`, `-shm`) מטופלים כראוי אם המיגרציה משכתבת טבלאות
 
 ### קטלוג ספקים (מאומת באמצעות Zod)
 
-- [ ] סכמת Zod בקובץ `src/shared/constants/providers.ts` תקינה בזמן הטעינה
-  - [ ] לכל הספקים יש את שדות החובה (`id`, `label`, `kind` וכו')
-  - [ ] `freeNote` סופק עבור ספקים חינמיים חדשים
+- [ ] הסכימה של `src/shared/constants/providers.ts` תקפה בזמן הטעינה
+  - [ ] לכל הספקים יש את השדות הנדרשים (`id`, `label`, `kind` וכו׳)
+  - [ ] `freeNote` מוגדר עבור ספקים חינמיים חדשים
   - [ ] לספקי OAuth יש `oauthConfig` הרשום ב-`src/lib/oauth/constants/oauth.ts`
-- [ ] אם נוסף ספק חדש: מממש תואם ב-`open-sse/executors/`
-- [ ] אם הפורמט אינו OpenAI: מתרגם ב-`open-sse/translator/`
+- [ ] אם נוסף ספק חדש: קיים executor תואם ב-`open-sse/executors/`
+- [ ] אם הפורמט אינו OpenAI: קיים מתרגם ב-`open-sse/translator/`
 - [ ] המודלים רשומים ב-`open-sse/config/providerRegistry.ts`
-- [ ] בדיקות יחידה ב-`tests/unit/` מכסות סיווג וניתוב של ספקים
+- [ ] בדיקות יחידה ב-`tests/unit/` מכסות את סיווג הספקים והניתוב
 
 ### שולחן עבודה (Electron)
 
 אם `electron/` השתנה:
 
 - [ ] `npm run electron:smoke:packaged` עובר בהצלחה
-- [ ] גרסאות הבנייה נבדקו עבור לפחות אחת מבין `:win`, `:mac`, `:linux`
-- [ ] תוקף האישורים לחתימת קוד לא פג (אם מתבצעת חתימה)
+- [ ] ה-builds נבדקו עבור לפחות אחת מהאפשרויות `:win`, `:mac`, `:linux`
+- [ ] אישורי חתימת הקוד לא פגו (אם מתבצעת חתימה)
 - [ ] הגרסה ב-`electron/package.json` תואמת לזו שב-`package.json` הראשי
-- [ ] מצביע ערוץ העדכון האוטומטי עודכן אם ההפצה היא ל-`stable`
+- [ ] המצביע לערוץ העדכון האוטומטי עודכן אם ההפצה היא ל-`stable`
 
-### פריסת תוצרי הבנייה
+### מבנה ה-build
 
 המאגר משתמש בשלוש תיקיות פלט נפרדות — לעולם אין לערבב ביניהן:
 
-| תיקייה    | מטרה                                                        | במעקב?          |
-| --------- | ----------------------------------------------------------- | --------------- |
-| `src/`    | קוד המקור של היישום (TypeScript / TSX)                      | כן              |
-| `.build/` | תוצרי ביניים של הבנייה — פלט `next build` (`distDir`)       | לא (gitignored) |
-| `dist/`   | חבילת npm הניתנת להפצה — מורכבת על ידי `assembleStandalone` | לא (gitignored) |
+| תיקייה    | מטרה                                                   | במעקב?          |
+| --------- | ------------------------------------------------------ | --------------- |
+| `src/`    | קוד המקור של היישום (TypeScript / TSX)                 | כן              |
+| `.build/` | תוצרי ביניים של ה-build — פלט `next build` (`distDir`) | לא (gitignored) |
+| `dist/`   | חבילת npm להפצה — מורכבת על ידי `assembleStandalone`   | לא (gitignored) |
 
 > **הערה למפעיל:** תיקיית התמונה ב-VPS המרוחק נשארת `/usr/lib/node_modules/omniroute/app/`.
-> רק פלט הבנייה **בתוך המאגר** הועבר (`app/` → `dist/`). מיומנויות הפריסה מסנכרנות באמצעות rsync
-> את תוכן `dist/` אל תיקיית `app/` המרוחקת — אין צורך בשינוי נתיבים ב-VPS.
+> רק פלט ה-build **בתוך המאגר** עבר (`app/` → `dist/`). מיומנויות הפריסה מסנכרנות באמצעות rsync את
+> תוכן `dist/` אל תיקיית `app/` המרוחקת — לא נדרשים שינויים בנתיבי ה-VPS.
 
-**זרימת בנייה יחידה:**
+**זרימת build יחיד:**
 
 ```
 npm run build:release
@@ -251,23 +251,23 @@ npm run build:release
 ```
 
 אין להריץ `npm run build` ולאחר מכן `npm run build:cli` נפרד לצורך פריסה — יש להשתמש ב-
-`npm run build:release`, שמבצע בנייה נקייה מחדש וכותב סמן בפקודה אחת.
+`npm run build:release`, שמבצע build נקי מחדש וכותב סמן בפקודה אחת.
 
-### אימות תוצרים
+### אימות תוצרי build
 
 - [ ] `npm run build:release` מסתיים בהצלחה ו-`dist/BUILD_SHA` == `git rev-parse --short HEAD`
 - [ ] `npm run check:pack-artifact` נקי — ללא `app.__qa_backup`,‏ `scripts/scratch`,‏ `package-lock.json` או שאריות מקומיות אחרות
-- [ ] `dist/server.js` קיים לאחר הבנייה
-- [ ] בדיקת עשן מקומית אופציונלית של סביבת הרצה ארוזה: `npm run dev:candidate -- validate` לאחר `npm run dev:candidate -- build` מפעילה את קובץ ה-tarball הארוז עם `DATA_DIR` מבודד ובודקת את `/api/health` ואת `/v1/models` (ראו [הנתיב המומלץ לתרומה](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
+- [ ] `dist/server.js` קיים לאחר ה-build
+- [ ] בדיקת smoke מקומית אופציונלית של סביבת הריצה הארוזה: `npm run dev:candidate -- validate` לאחר `npm run dev:candidate -- build` מפעילה את קובץ ה-tarball הארוז עם `DATA_DIR` מבודד ובודקת את `/api/health` ואת `/v1/models` (ראו [נתיב הזהב לתרומה](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
 
 ### תיוג והפצה
 
-- [ ] הפעילו את `/generate-release-cc` (מיומנות Claude Code):
+- [ ] יש להריץ את `/generate-release-cc` (מיומנות Claude Code):
   - יוצרת את התג `vX.Y.Z`
   - דוחפת את התג ואת הענף
-  - פותחת מהדורת GitHub עם גוף יומן שינויים
-  - מצרפת תוכניות התקנה של Electron (אם נבנו)
-- [ ] או באופן ידני:
+  - פותחת GitHub Release עם גוף יומן שינויים
+  - מצרפת מתקיני Electron (אם נבנו)
+- [ ] לחלופין, באופן ידני:
   ```bash
   git tag -a vX.Y.Z -m "Release vX.Y.Z"
   git push origin vX.Y.Z
@@ -278,42 +278,42 @@ npm run build:release
 
 מיומנויות הפריסה משתמשות בזרימת rsync קלה — ללא `npm pack` וללא `npm i -g`:
 
-- [ ] השתמשו במיומנות הפריסה התואמת ליעד:
+- [ ] יש להשתמש במיומנות הפריסה התואמת ליעד:
   - `/deploy-vps-local-cc` — VPS מקומי (192.168.0.15)
   - `/deploy-vps-akamai-cc` — VPS של Akamai‏ (69.164.221.35)
   - `/deploy-vps-both-cc` — שניהם
-- [ ] לפני הפריסה, ודאו ש-`dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] הבנייה חייבת לרוץ במקום שבו `node_modules` אמיתי (עותק העבודה הראשי או worktree שבו הורץ `npm ci` — לא worktree עם קישור סמלי)
-- [ ] בצעו בדיקת עשן למופע שנפרס:
-  - פתחו את `/dashboard/health` ← בדקו שמחרוזת הגרסה תואמת למהדורה
-  - הריצו בקשת `/v1/chat/completions` מול ספק מוכר
-  - ודאו ש-`/api/monitoring/health` מחזיר מפסקי זרם במצב `CLOSED`
-  - ודאו שתעבורות MCP מגיבות (`/mcp` ב-HTTP,‏ `/mcp-sse` ב-SSE)
+- [ ] לפני הפריסה, יש לוודא ש-`dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] ה-build חייב לרוץ במקום שבו `node_modules` אמיתי (ה-checkout הראשי או worktree שבו הורץ `npm ci` — לא worktree עם קישור סמלי)
+- [ ] יש לבצע בדיקת smoke למופע שנפרס:
+  - לפתוח את `/dashboard/health` → לבדוק שמחרוזת הגרסה תואמת להפצה
+  - להריץ בקשת `/v1/chat/completions` מול ספק מוכר
+  - לוודא ש-`/api/monitoring/health` מחזיר מפסקי מעגל במצב `CLOSED`
+  - לוודא שתעבורות MCP מגיבות (`/mcp` ב-HTTP,‏ `/mcp-sse` ב-SSE)
 
 ### לאחר ההפצה
 
-- [ ] הפעילו את `/capture-release-evidences-cc` (מיומנות Claude Code)
-  - מצלמת צילומי מסך/הקלטות WebP של תכונות חדשות
-  - מצרפת אותם להערות המהדורה / לרשומת הבלוג
-- [ ] עדכנו את GitHub Discussions / Discord בהכרזה על המהדורה
-- [ ] פתחו אבן דרך לגרסה הבאה
-- [ ] אם מדובר בעדכון קריטי: הצמידו דיון או פרסמו ב-`news.json` עבור כרזה בתוך היישום
+- [ ] יש להריץ את `/capture-release-evidences-cc` (מיומנות Claude Code)
+  - לוכדת צילומי מסך/הקלטות WebP של תכונות חדשות
+  - מצרפת אותם להערות ההפצה / לפוסט בבלוג
+- [ ] לעדכן את GitHub Discussions / Discord בהכרזת ההפצה
+- [ ] לפתוח אבן דרך עבור הגרסה הבאה
+- [ ] אם מדובר בעדכון קריטי: להצמיד דיון או לפרסם ב-`news.json` עבור כרזה בתוך היישום
 
 ### שער ההשקה הציבורית של Radar
 
-ההכרזה של Radar נשמרה במכוון עם `active: false`. ההפעלה היא שינוי נפרד
-לאחר שסופקו ראיות לכל אחד מהפריטים הבאים:
+הכרזת Radar נכללת במכוון ב-commit עם `active: false`. ההפעלה היא שינוי נפרד
+לאחר שסופקו ראיות לכל הפריטים הבאים:
 
-- [ ] כל בקשות המשיכה המדורגות של Radar מוזגו וה-CI של קצה המהדורה ירוק
-- [ ] פרסו ובצעו בדיקת עשן לנתיבי Radar בקוד הפתוח, כאשר `RADAR_ENABLED` עדיין כבוי כברירת מחדל
-- [ ] בצעו בדיקת עשן ל-`GET /planos`,‏ `/termos`,‏ `/privacidade` ו-`/reembolso` במארח Radar הייעודי
-- [ ] תעדו את זהות/פרטי הקשר/כתובת של המפעיל ואת הבדיקה המשפטית שאושרה על ידי הבעלים בשירות הפרטי
-- [ ] בדקו את Stripe Checkout ואת ה-webhook החתום במצב בדיקה בלבד
-- [ ] בדקו מסירה אחת של הודעת דוא"ל מוצפנת לביצוע עסקה עם השולח/הדומיין המאושרים
-- [ ] הוכיחו שחזור מגיבוי והרצת מחקר אחת בפיקוח עם מגבלת תקציב
-- [ ] אשרו את מדיניות הבדיקה של BRL/PIX לפני קבלת ראיות לתרומות
-- [ ] הפעילו Checkout ציבורי רק לאחר השלמת השערים הקודמים, ולאחר מכן הפעילו את המזהה החדש ב-`news.json`
-- [ ] ודאו שהכרזה בדף הבית משתמשת בטקסט מותאם לשפה ושמזהה חדש מופיע מחדש לאחר שמזהה ישן יותר נסגר
+- [ ] כל בקשות המשיכה המוערמות של Radar מוזגו וה-CI בקצה ההפצה ירוק
+- [ ] לפרוס ולבצע בדיקת smoke לנתיבי Radar של OSS כאשר `RADAR_ENABLED` עדיין כבוי כברירת מחדל
+- [ ] לבצע בדיקת smoke ל-`GET /planos`,‏ `/termos`,‏ `/privacidade` ו-`/reembolso` במארח Radar שהוגדר
+- [ ] לתעד בשירות הפרטי את זהות המפעיל/פרטי הקשר/הכתובת ואת הבדיקה המשפטית שאושרה על ידי הבעלים
+- [ ] לבדוק את Stripe Checkout ואת ה-webhook החתום במצב בדיקה בלבד
+- [ ] לבדוק מסירה אחת של הודעת דוא״ל מוצפנת לביצוע עסקה באמצעות השולח/הדומיין המאושרים
+- [ ] להוכיח שחזור מגיבוי והרצת מחקר אחת תחת פיקוח ובמגבלת תקציב
+- [ ] לאשר את מדיניות הבדיקה של BRL/PIX לפני קבלת ראיות לתרומה
+- [ ] להפעיל Checkout ציבורי רק לאחר מעבר השערים הקודמים, ולאחר מכן להפעיל את ה-ID החדש ב-`news.json`
+- [ ] לוודא שהכרזה בדף הבית משתמשת בטקסט מותאם לשפה וש-ID חדש מופיע מחדש לאחר ש-ID ישן יותר נסגר
 
 ## בדיקות עשן לשירותים מוטמעים (v3.8.4+)
 

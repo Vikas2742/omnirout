@@ -4,37 +4,37 @@
 
 ---
 
-OmniRoute jiddetermina d-driver SQLite tiegħu waqt l-istartjar permezz ta’ katina ta’ fallback f’5 passi:
+OmniRoute jiddetermina d-driver SQLite tiegħu waqt l-istartjar permezz ta’ katina ta’ riżerva f’5 passi:
 
-1. **`better-sqlite3` inkluż mal-pakkett** (permezz ta’ `dependencies` f’`package.json`)
-   — l-aktar veloċi, binarju nattiv, installat minn `npm install` meta jkunu disponibbli l-għodod tal-build.
+1. **`better-sqlite3` inkluż** (permezz ta’ `dependencies` f’`package.json`)
+   — l-aktar veloċi, binarju nattiv, installat minn `npm install` meta jkunu preżenti l-għodod tal-build.
 
-2. **`better-sqlite3` installat waqt ir-runtime** (f’`~/.omniroute/runtime/`)
-   — jiġi installat b’mod differit mal-ewwel tħaddim **JEW** minn `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
-   Jivvalida l-magic bytes tal-fajl nattiv `.node` (ELF / Mach-O / PE) qabel ma jgħabbih
-   biex jipproteġi kontra binarji korrotti jew għal pjattaforma ħażina.
+2. **`better-sqlite3` installat waqt it-tħaddim** (f’`~/.omniroute/runtime/`)
+   — installat biss meta jkun meħtieġ fl-ewwel tħaddim **JEW** minn `scripts/build/postinstall.mjs → scripts/postinstall.mjs`.
+   Jivvalida l-magic bytes nattivi ta’ `.node` (ELF / Mach-O / PE) qabel it-tagħbija
+   sabiex jipproteġi kontra binarji korrotti jew għal pjattaforma żbaljata.
 
-3. **`node:sqlite`** (librerija standard ta’ Node ≥22.5) — ma jeħtieġ l-ebda build nattiv; jintuża meta
-   ż-żewġ mogħdijiet ta’ better-sqlite3 ifallu. Sett limitat ta’ funzjonalitajiet.
+3. **`node:sqlite`** (librerija standard ta’ Node ≥22.5) — ma jeħtieġ ebda build nattiv; jintuża meta
+   jfallu ż-żewġ mogħdijiet ta’ better-sqlite3. Sett limitat ta’ funzjonalitajiet.
 
-4. **`sql.js`** (WASM) — l-aħħar fallback. Jaħdem kullimkien iżda huwa aktar bil-mod
+4. **`sql.js`** (WASM) — l-aħħar għażla ta’ riżerva. Jaħdem kullimkien iżda huwa aktar bil-mod
    u jikteb id-data f’intervalli minflok b’mod sinkroniku.
 
 ## Għaliex din il-kumplessità?
 
 - **Windows EBUSY**: `npm install -g omniroute@latest` jista’ jfalli jekk
   `better_sqlite3.node` tal-verżjoni preċedenti jkun imsakkar minn proċess li jkun qed jaħdem. L-installazzjoni
-  waqt ir-runtime f’`~/.omniroute/runtime/` tevita l-cache globali ta’ npm.
+  waqt it-tħaddim f’`~/.omniroute/runtime/` tevita l-cache globali ta’ npm.
 - **Ebda għodda tal-build**: Xi ambjenti (Windows korporattiv mingħajr VS Build
   Tools, immaġnijiet Docker minimi) ma jistgħux jikkompilaw `better-sqlite3`. L-installatur
-  tar-runtime jakkwista binarju mibni minn qabel mir-reġistru ta’ npm; id-drivers
-  ta’ fallback jiżguraw li OmniRoute xorta jibda anki jekk dan ifalli.
+  waqt it-tħaddim isib binarju mibni minn qabel mir-reġistru ta’ npm; id-drivers
+  ta’ riżerva jiżguraw li OmniRoute xorta jistartja anki jekk dan ifalli.
 - **Sistemi iżolati min-network**: Jekk ir-reġistru ta’ npm ma jkunx aċċessibbli, `node:sqlite`
   jew `sql.js` jiggarantixxu funzjonalità bażika.
 
 ## Validazzjoni tal-magic bytes
 
-Qabel ma jgħabbi fajl `.node` installat waqt ir-runtime, OmniRoute jaqra l-ewwel 8
+Qabel it-tagħbija ta’ fajl `.node` installat waqt it-tħaddim, OmniRoute jaqra l-ewwel 8
 bytes u jqabbilhom mal-magic bytes magħrufa tal-pjattaformi:
 
 | Pjattaforma            | Bytes (hex)   | Tikketta    |
@@ -45,7 +45,7 @@ bytes u jqabbilhom mal-magic bytes magħrufa tal-pjattaformi:
 | macOS fat (universali) | `CA FE BA BE` | `macho-fat` |
 | Windows                | `4D 5A` (MZ)  | `pe`        |
 
-Magic byte li ma jaqbilx → il-fajl jiġi injorat, u l-fallback ikompli għall-pass li jmiss.
+Magic byte li ma jaqbilx → il-fajl jiġi injorat u l-proċess ta’ riżerva jkompli għall-pass li jmiss.
 
 ## Verifika tad-driver attiv
 
@@ -63,53 +63,56 @@ const info = getDriverInfo();
 # Aqbeż it-tħejjija ta’ postinstall (għal installazzjonijiet CI veloċi)
 OMNIROUTE_SKIP_POSTINSTALL=1 npm install -g omniroute
 
-# Erġa’ installa bilfors better-sqlite3 tar-runtime
+# Erġa’ installa bil-forza l-better-sqlite3 waqt it-tħaddim
 rm -rf ~/.omniroute/runtime
 omniroute  # jerġa’ jiġi installat fl-istartjar li jmiss
 
 # Iċċekkja liema driver huwa attiv
-omniroute config db-info  # (jekk il-kmand CLI jeżisti)
+omniroute config db-info  # (jekk jeżisti l-kmand CLI)
 ```
 
 ## Dijanjosi ta’ waqfiet sinkroniċi
 
-B’`better-sqlite3`, issettja `OMNIROUTE_SQLITE_SLOW_MS=200` qabel l-istartjar biex tagħżel
-il-kejl tal-ħin tal-adapter sinkroniku. B’mod awtomatiku dan ikun mitfi. Operazzjoni kompluta li tieħu
-mill-inqas dak l-ammont ta’ millisekondi toħroġ twissija `[SQLITE-SLOW]`, mhux aktar minn darba kull
-għaxar sekondi għal kull adapter. It-twissija jkun fiha biss id-driver, il-klassi tal-operazzjoni
-(`prepare`, `get`, `all`, `run`, `exec`, `pragma`, tranżazzjoni jew manutenzjoni), u
-l-millisekondi li għaddew: ebda SQL, bindings, ringieli, mogħdijiet jew test tal-eċċezzjoni.
+B’`better-sqlite3`, issettja `OMNIROUTE_SQLITE_SLOW_MS=200` qabel l-istartjar sabiex
+tattiva l-kejl tal-ħin sinkroniku tal-adapter. B’mod predefinit dan ikun diżattivat. Operazzjoni
+kompluta li tieħu mill-inqas dak l-ammont ta’ millisekondi toħroġ twissija `[SQLITE-SLOW]`,
+mhux aktar minn darba kull għaxar sekondi għal kull adapter. It-twissija jkun fiha biss
+id-driver, il-klassi tal-operazzjoni (`prepare`, `get`, `all`, `run`, `exec`, `pragma`,
+tranżazzjoni jew manutenzjoni), u l-millisekondi li jkunu għaddew: ebda SQL, bindings,
+ringieli, mogħdijiet jew test tal-eċċezzjoni.
 
 Din hija għajnuna dijanjostika, mhux timeout jew ottimizzazzjoni tal-query. Ma tistax tirrapporta
-operazzjoni li qatt ma tirritorna, tiddistingwi xogħol tas-CPU minn stennija għad-diska, tidentifika
-l-SQL eżatt, jew tosserva operazzjonijiet imwettqa permezz tal-handle tad-driver mhux ipproċessat.
-It-tul tal-backup asinkroniku huwa eskluż apposta; drivers SQLite oħrajn mhumiex
-strumentati b’din l-għażla. Meta l-varjabbli jiġi diżattivat, l-adapter oriġinali jerġa’ jiġi
-rrestawrat mingħajr wrappers tal-kejl tal-ħin. Ma jinbidlu l-ebda skema tad-database jew konfigurazzjoni maħżuna.
+operazzjoni li qatt ma tirritorna, tiddistingwi xogħol tas-CPU minn stennija għad-diska,
+tidentifika l-SQL eżatt, jew tosserva operazzjonijiet imwettqa permezz tal-handle mhux ipproċessat
+tad-driver. It-tul ta’ backup asinkroniku huwa eskluż apposta; drivers SQLite oħrajn mhumiex
+strumentati minn din l-għażla fakultattiva. Id-diżattivazzjoni tal-varjabbli tirrestawra l-adapter
+oriġinali mingħajr wrappers għall-kejl tal-ħin. Ma jsir ebda tibdil fl-iskema tad-database jew
+fil-konfigurazzjoni maħżuna.
 
-It-twissija ta’ dewmien ta’ `/healthz` tirrapporta l-ogħla dewmien tal-event loop mill-kampjun preċedenti,
-mhux il-medja tul il-ħajja kollha. Ikkorrelata t-timestamps tagħha mat-twissijiet ta’ operazzjonijiet bil-mod
-u mal-metriċi tal-host/tal-ħażna qabel tattribwixxi waqfa lil SQLite jew lil ħsara fid-diska.
+It-twissija dwar id-dewmien ta’ `/healthz` tirrapporta l-ogħla valur tal-event loop mill-kampjun
+preċedenti, mhux il-medja tul il-ħajja kollha. Qabbel it-timestamps tagħha mat-twissijiet dwar
+operazzjonijiet bil-mod u mal-metriċi tal-host/tal-ħażna qabel tattribwixxi waqfa lil SQLite jew
+lil ħsara fid-diska.
 
 ## Referenza
 
 Implimentazzjoni:
 
-- `bin/cli/runtime/magicBytes.mjs` — funzjonijiet ta’ għajnuna għall-validazzjoni tal-magic bytes binarji
-- `bin/cli/runtime/sqliteRuntime.mjs` — resolver tar-runtime f’5 passi + installatur differit
+- `bin/cli/runtime/magicBytes.mjs` — utilitajiet għall-validazzjoni tal-magic bytes tal-binarji
+- `bin/cli/runtime/sqliteRuntime.mjs` — resolver f’5 passi waqt it-tħaddim + installatur lazy
 - `bin/cli/runtime/index.mjs` — orkestratur tal-istartjar (`warmUpRuntimes()`)
 - `scripts/postinstall.mjs` — hook ta’ npm wara l-installazzjoni (tħejjija mhux fatali)
 - `src/lib/db/core.ts` — exports ta’ `ensureDbInitialized()` / `getDriverInfo()`
 
 ## Topoloġija b’kittieb wieħed (HA mhux appoġġjat)
 
-Il-katina ta’ fallback tad-driver hawn fuq xorta taħdem fi **proċess wieħed**. SQLite
-awtomatiku ta’ OmniRoute huwa **kittieb wieħed**:
+Il-katina ta’ drivers ta’ riżerva hawn fuq xorta taħdem fi **proċess wieħed**. Bil-konfigurazzjoni
+SQLite predefinita, OmniRoute għandu **kittieb wieħed**:
 
-- Tikkonnettjax żewġ repliki ta’ OmniRoute mal-istess fajl `storage.sqlite`.
-- Restart ta’ container, deploy Recreate, OOM kill, jew restart ta’ HEALTHCHECK iwaqqaf
-  kull sessjoni SSE li tkun għaddejja. Ma hemm l-ebda tbattil tas-sessjonijiet fil-mogħdija standard.
-- Liveness tal-orkestratur li jqis `/healthz` bil-mod bħala mejjet se jwaqqaf l-unika
-  replika. Ippreferi liveness TCP + readiness HTTP ta’ `/healthz`. Ara
-  [Gwida Docker — disponibbiltà](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
-  u [rakkomandazzjonijiet għall-probes ta’ Kubernetes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).
+- Tqabbadx żewġ repliki ta’ OmniRoute mal-istess fajl `storage.sqlite`.
+- Ristartjar ta’ container, deploy Recreate, OOM kill, jew ristartjar minn HEALTHCHECK iwaqqaf
+  kull sessjoni SSE li tkun għaddejja. Fil-mogħdija standard ma jsir ebda tbattil tas-sessjonijiet.
+- Kontroll tal-liveness tal-orkestratur li jqis `/healthz` bil-mod bħala mejjet joqtol l-unika
+  replika. Ippreferi TCP liveness + readiness ta’ HTTP `/healthz`. Ara
+  [Gwida ta’ Docker — disponibbiltà](../guides/DOCKER_GUIDE.md#availability-default-sqlite-is-single-replica)
+  u [Rakkomandazzjonijiet għall-probes ta’ Kubernetes](./MONITORING_GUIDE.md#kubernetes-probe-recommendations).

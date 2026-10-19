@@ -5,7 +5,7 @@
 ---
 
 `devin-cli-agentic` ļauj īstajai Claude Code izpildvidei izmantot OmniRoute lokālo Anthropic
-Messages galapunktu, kamēr oficiālais Devin CLI nodrošina modeļa atbildes, izmantojot ACP stdio. Tas
+Messages galapunktu, kamēr oficiālā Devin CLI nodrošina modeļa atbildes, izmantojot ACP stdio. Tas
 nemaina esošos Anthropic, Claude OAuth, Claude Web vai `devin-cli` nodrošinātājus.
 
 Klienta pārvaldītiem rīku izsaukumiem maršrutējiet caur `devin-cli-agentic` (aizstājvārds `dva`) —
@@ -14,17 +14,17 @@ atbalsta tikai tekstu: tas palaiž Devin kopsavilkuma veidotāju bez rīkiem un 
 izsaukumus. Tā modeļa metadati ir attiecīgi atzīmēti, lai kombinētā maršrutēšana, kurai nepieciešami
 rīki, to neizvēlētos.
 
-> **Pašreizējais statuss: piesaistīts Claude Code `2.1.258`; bezsaistes un tiešsaistes validācija pēdējoreiz reģistrēta
-> versijai `2.1.220`.** Piesaistītajai versijai `2.1.220` tika izpildīti trīs izolēti scenāriji, izmantojot Devin CLI
-> `3000.2.17` un modeli `swe-1-7-lightning`; šī pēdējā tiešsaistes izpilde apliecināja klienta pārvaldītus `Read`,
+> **Pašreizējais statuss: fiksēta Claude Code versija `2.1.258`; bezsaistes un tiešsaistes validācija pēdējoreiz reģistrēta
+> versijai `2.1.220`.** Fiksētajai versijai `2.1.220` tika pabeigti trīs izolēti scenāriji, izmantojot Devin CLI
+> `3000.2.17` un modeli `swe-1-7-lightning`; šī pēdējā tiešsaistes izpilde apstiprināja klienta pārvaldītus `Read`,
 > `Edit` un `Bash` soļus, veiksmīgus `npm test` rezultātus, projekta komandu un prasmju
-> atklāšanu, maršrutēšanu tikai caur Devin un to, ka uz Claude netika nosūtīti nekādi dati. Pēc tam piesaistītā versija tika paaugstināta uz `2.1.258`
-> (CLI paaudzi, par kuru uzdodas OmniRoute Claude identitāte, un pirmo laidienu, kurā
-> Fable 5.1 līmenis tiek nodrošināts iebūvēti). Jaunajai piesaistītajai versijai instalācijas slānis un `claude --version` tika
-> pārbaudīti piesaistītajā bāzes attēlā, un tilta vienību testu komplekts, `compose config` un
-> statiskais izolācijas pierādījums ir sekmīgi — taču bezsaistes imitācijas scenārijs un tiešsaistes trīs scenāriju
-> komplekts vēl nav palaisti atkārtoti. Pirms paļaušanās uz tiltu ar šo piesaistīto versiju palaidiet tos atkārtoti
-> (skatiet sadaļu "Piesaistīto rīku atjaunināšana").
+> atrašanu, maršrutēšanu tikai caur Devin un nulles izejošo datplūsmu uz Claude. Pēc tam fiksētā versija tika paaugstināta uz `2.1.258`
+> (CLI paaudzi, ko atdarina OmniRoute Claude identitāte, un pirmo laidienu, kas iebūvēti
+> nodrošina Fable 5.1 līmeni). Jaunajai fiksētajai versijai piesaistītajā bāzes attēlā tika
+> pārbaudīts instalēšanas slānis un `claude --version`, un sekmīgi darbojas tilta vienību testu komplekts, `compose config` un
+> statiskais izolācijas apliecinājums, taču bezsaistes imitācijas scenārijs un tiešsaistes trīs scenāriju
+> komplekts vēl nav izpildīti atkārtoti. Pirms paļauties uz tiltu ar šo fiksēto versiju, izpildiet tos
+> atkārtoti (skatiet sadaļu "Fiksēto rīku atjaunināšana").
 
 ## Arhitektūra
 
@@ -33,68 +33,69 @@ Claude Code 2.1.258 (izolēts Linux konteiners bez root tiesībām)
   -> http://omniroute:20128/v1/messages
   -> devin-cli-agentic (Claude formāts, nodrošinātājs bez autentifikācijas)
   -> devin acp --agent-type summarizer (oficiālais ACP stdio, bez Devin rīkiem)
-  -> Devin konts īpaši paredzētajā devin-auth sējumā
+  -> Devin konts īpašajā devin-auth sējumā
 ```
 
-Oficiālā CLI noklusējuma ACP aģents var izpildīt pats savus rīkus, tāpēc šis tilts to
+Oficiālās CLI noklusējuma ACP aģents var izpildīt savus rīkus, tāpēc šis tilts to
 neizmanto. Tas palaiž fiksēto `summarizer` ACP aģentu, kura oficiālajam CLI režīmam nav rīku, un
-ietver serializēto Anthropic pieprasījumu izpildes trasē. Ja ir nepieciešama cita Claude pārvaldīta
-darbība, atbildē jābūt tieši vienai klienta rīka aploksnei. Jebkurš ACP
-`tool_call` vai `tool_call_update` tiek noraidīts, pirms atbildi var atzīt par
+ietver serializēto Anthropic pieprasījumu izpildes trasē. Ja nepieciešama vēl kāda Claude pārvaldīta
+darbība, atbildē jābūt tieši vienam klienta rīka aploksnes elementam. Jebkurš ACP
+`tool_call` vai `tool_call_update` tiek noraidīts, pirms atbildi var paziņot kā
 veiksmīgu.
 
 Serializētājs failā `open-sse/executors/devin-agentic/serializer.ts` saglabā `system`,
 `text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice` un
-Claude Code nodrošinātos rīkus. Attēli un nezināmi bloki tiek nepārprotami noraidīti. Lieliem rīku rezultātiem
-tiek izmantots redzams saīsināšanas marķieris.
+Claude Code nodrošinātos rīkus. Attēli un nezināmi bloki izraisa skaidri norādītu kļūmi. Lieliem rīku rezultātiem
+tiek izmantota redzama saīsināšanas atzīme.
 
-Parsētājs katrā modeļa solī pieņem vienu savrupu `<tool>{...}</tool>` aploksni. Tas pārbauda
-nosaukumu pret pieprasījuma rīku sarakstu, validē argumentus atbilstoši šī rīka JSON
-Schema, noraida jauktu aprakstu un darbības un pieļauj vienu ierobežotu labojumu. Pēc tam Claude Code
-lokāli izpilda iegūto Anthropic `tool_use` un nosūta `tool_result` atpakaļ, izmantojot
+Parsētājs katrā modeļa solī pieņem vienu atsevišķu `<tool>{...}</tool>` aploksni. Tas pārbauda
+nosaukumu, salīdzinot to ar pieprasījuma rīku sarakstu, validē argumentus atbilstoši attiecīgā rīka JSON
+Schema, noraida stāstījuma un darbību sajaukumu un pieļauj vienu ierobežotu labojumu. Pēc tam Claude Code
+lokāli izpilda iegūto Anthropic `tool_use` un nosūta `tool_result` atpakaļ caur
 OmniRoute.
 
 ## Automātiskā maršrutēšana
 
-Nodrošinātājs var tikt iekļauts OmniRoute `auto/*` kandidātu kopās, ja tas nav bloķēts.
-Kandidāta atbilstība negarantē izvēli: kombinācijas maršrutēšanas stratēģija (piemēram,
-pēdējais zināmais labais variants) var dot priekšroku citam nodrošinātājam. Izmantojiet `dva/<model>` vai kombināciju, kurā
-Devin ir pirmajā vietā, ja nepieciešams, lai katrs pieprasījums tiktu maršrutēts caur Devin.
+Nodrošinātāju var iekļaut OmniRoute `auto/*` kandidātu kopās, ja tas nav bloķēts.
+Atbilstība kandidāta prasībām negarantē izvēli: kombinācijas maršrutēšanas stratēģija (piemēram,
+pēdējais zināmais darbspējīgais variants) var dot priekšroku citam nodrošinātājam. Izmantojiet `dva/<model>` vai kombināciju, kurā
+Devin ir pirmais, ja nepieciešams, lai katrs pieprasījums tiktu maršrutēts caur Devin.
 
 ## Izolācija un apdraudējumu modelis
 
-Resursdatora Claude instalācija, konts un konfigurācija neietilpst tvērumā un tiek uzskatīti par aizliegtiem. Compose pakalpojumi:
+Resursdatora Claude instalācija, konts un konfigurācija neietilpst tvērumā un tiek uzskatīti par
+aizliegtiem. Compose pakalpojumi:
 
-- darbojas ar UID/GID `10001:10001`, izmantojot tikai lasāmu saknes failu sistēmu, atmestas iespējas un
+- darbojas ar UID/GID `10001:10001`, tikai lasāmu saknes failu sistēmu, noņemtām iespējām un
   `no-new-privileges`;
-- izmanto privātu `/home/bridge`, īpašu Claude konfigurācijas sējumu, izolētus OmniRoute datus
+- izmanto privātu `/home/bridge`, atsevišķu Claude konfigurācijas sējumu, izolētus OmniRoute datus
   un atsevišķu `devin-auth` sējumu;
 - montē tikai vienreizlietojamas `.sandbox` darbvietas/pierādījumus;
 - nemontē resursdatora mājas direktoriju, Keychain, SSH, mākoņpakalpojumu akreditācijas datus vai Docker ligzdu;
-- izveido skaidri definētas vides un noņem Anthropic API/OAuth/maršrutēšanas mainīgos;
-- novirza Claude Code inferenci tikai uz `http://omniroute:20128`, izmantojot tikai lokālu atslēgu.
+- izveido precīzi definētas vides un noņem Anthropic API/OAuth/maršrutēšanas mainīgos;
+- novirza Claude Code secinājumu izpildi tikai uz `http://omniroute:20128`, izmantojot tikai lokālu atslēgu.
 
 Bezsaistes profils izmanto iekšēju tīklu. Tiešsaistes profilā OmniRoute sasniedz
-oficiālos Devin galapunktus tikai caur `network-guard`; nesaistīti galamērķi tiek bloķēti.
-Claude Code ir atsevišķs visu izejošo savienojumu bloķēšanas mehānisms, un tas var sasniegt tikai lokālo OmniRoute
-pakalpojumu, izmantojot `NO_PROXY`. Aizsardzības audita faili tiek montēti tikai attiecīgā aizsardzības procesa vajadzībām.
-Skripti pārbauda failu īpašumtiesības, režīmu, saišu skaitu un katru lēmumu pirms
-pierādījumu bez marķieriem eksportēšanas.
+oficiālos Devin galapunktus tikai caur `network-guard`; nesaistīti galamērķi tiek liegti.
+Claude Code ir atsevišķs visu izejošo savienojumu liegšanas aizsargs, un tas var sasniegt tikai lokālo OmniRoute
+pakalpojumu, izmantojot `NO_PROXY`. Aizsargu audita failus montē tikai attiecīgais aizsarga process.
+Skripti pārbauda failu īpašumtiesības, režīmu, saišu skaitu un katru lēmumu, pirms eksportē
+pierādījumus bez marķieriem.
 
-Palaidiet izolācijas pierādījumu neatkarīgi:
+Izpildiet izolācijas pārbaudi neatkarīgi:
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Tas validē topoloģiju, nosauktos montējumus, iestatījumus darbībai bez root tiesībām un tikai lasīšanas režīmā, skaidri definētu lokālo maršrutēšanu,
+Tā pārbauda topoloģiju, nosauktos montējumus, iestatījumus darbībai bez root tiesībām un tikai lasīšanas režīmā, precīzi definētu lokālo maršrutēšanu,
 sensitīvu vides mainīgo neesamību, Docker ligzdas neesamību, bloķētu piekļuvi
 `api.anthropic.com` un `claude.ai`, tikai Devin nodrošinātāja atlasi un nepārprotamu kļūmi, kad
 ACP aizmugursistēma nav pieejama.
 
-## Sākotnējā iestatīšana un parastā lietošana
+## Sākotnējā iestatīšana un parasta lietošana
 
-Izveidojiet fiksētās versijas attēlu:
+Izveidojiet piesaistīto attēlu:
 
 ```bash
 ./scripts/devin-bridge/build
@@ -106,24 +107,24 @@ Autentificējiet tikai izolēto Devin sējumu:
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-Pieteikšanās komanda izmanto oficiālo manuālo marķiera plūsmu, kas paredzēta attālām/konteineru
+Pieteikšanās komanda izmanto oficiālo manuālā marķiera plūsmu, kas paredzēta attālinātām/konteineru
 vidēm. Vērtība tiek ievadīta tieši CLI uzvednē; tā netiek nodota kā
 procesa arguments, ierakstīta Git vai kopēta no resursdatora.
 
-Palaidiet izolēto Claude Code izpildlaika vidi:
+Palaidiet izolēto Claude Code izpildvidi:
 
 ```bash
 ./scripts/devin-bridge/launch
 ```
 
 `launch` pirms konteinerizētā Claude Code palaišanas atkārtoti pārbauda izolāciju, Devin autentifikāciju
-un modeļu atrašanu. Tas nekad nepalaiž resursdatora Claude izpildāmo failu. Modeļu aizstājvārdus var
+un modeļu atklāšanu. Tas nekad nepalaiž resursdatora Claude izpildāmo failu. Modeļu aizstājvārdus var
 iestatīt failā `.env.devin-bridge`; katrai konfigurētajai vērtībai jāsaglabā
-`devin-cli-agentic/` prefikss.
+prefikss `devin-cli-agentic/`.
 
 ## Validācijas komandas
 
-Reproducējamajam bezsaistes ceļam nav nepieciešams Devin konts, un izpildlaikā tam nav piekļuves internetam:
+Reproducējamajam bezsaistes procesam nav nepieciešams Devin konts, un izpildes laikā tam nav piekļuves internetam:
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -132,22 +133,22 @@ Reproducējamajam bezsaistes ceļam nav nepieciešams Devin konts, un izpildlaik
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Autentificētais, pēc izvēles iespējojamais tiešsaistes ceļš ir:
+Autentificētais, pēc izvēles aktivizējamais tiešsaistes process ir:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-Tiešsaistes izpildītājs starp scenārijiem nogaida, lai izvairītos no ACP sesiju vienlaicīgas
-atvēršanas, un validē strukturētus Claude straumes notikumus, nevis uzticas teksta apgalvojumiem. Tā trīs
+Tiešsaistes izpildītājs nogaida starp scenārijiem, lai neatvērtu ACP sesijas straujā secībā, un
+validē strukturētus Claude straumes notikumus, nevis uzticas tekstuāliem apgalvojumiem. Tā trīs
 scenāriji pierāda:
 
-1. tiešu projektu lasīšanu un defektu analīzi;
-2. īstu `Edit`, klienta pārvaldītu `Bash` `npm test` un terminālu rezultātu;
-3. `/bridge-check` kopā ar `bridge-proof` atrašanu, projektu lasīšanu, vēl vienu veiksmīgu
+1. tiešu projekta failu lasīšanu un defektu analīzi;
+2. īstu `Edit`, klienta pārvaldītu `Bash` komandu `npm test` un gala rezultātu;
+3. `/bridge-check` un `bridge-proof` atklāšanu, projekta failu lasīšanu, vēl vienu sekmīgu
    klienta pārvaldītu `npm test` un pabeigšanu bez neizpildītiem darbiem.
 
-Pēdējā pārbaude pārbauda arī Devin tīkla auditu un pieprasa, lai Claude izejošo savienojumu audits
+Noslēguma pārbaude pārbauda arī Devin tīkla auditu un pieprasa, lai Claude izejošās datplūsmas audits
 paliktu tukšs.
 
 ## Piesprausto rīku atjaunināšana
@@ -155,27 +156,27 @@ paliktu tukšs.
 Attēlā Node, Claude Code un Devin CLI versijas ir piespraustas failā
 `docker/devin-bridge/Dockerfile`. Lai tās atjauninātu:
 
-1. mainiet tieši norādītās versijas;
+1. mainiet skaidri norādītās versijas;
 2. aizstājiet abu arhitektūru Devin arhīvu kontrolsummas ar oficiālā
    artefakta vērtībām;
 3. atkārtoti izveidojiet attēlu un izpildiet visas bezsaistes validācijas komandas;
 4. pārbaudiet versijas attēlā;
-5. atkārtoti izpildiet autentificēto trīs scenāriju tiešsaistes testu komplektu.
+5. atkārtoti palaidiet autentificēto trīs scenāriju tiešsaistes testu komplektu.
 
-Neinstalējiet nevienu no CLI globāli resursdatorā un neaizstājiet kontrolsummu pārbaudi ar
+Neinstalējiet nevienu no šiem CLI globāli resursdatorā un neaizstājiet kontrolsummu pārbaudi ar
 nepārbaudītu lejupielādi.
 
 ## Diagnostika un tīrīšana
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
-  parāda lokālo maršrutēšanu un sanitizētas izpildītāja kļūdas.
+  parāda lokālo maršrutēšanu un attīrītas izpildītāja kļūdas.
 - `.sandbox/evidence/mock-acp.jsonl` reģistrē deterministiskas imitētā ACP darbības.
 - `.sandbox/evidence/claude-stream.jsonl` reģistrē reālo Claude Code bezsaistes izpildi.
 - `.sandbox/evidence/live-*.jsonl` reģistrē trīs validētās tiešsaistes straumes.
 - `.sandbox/evidence/egress.jsonl` un `.sandbox/evidence/claude-egress.jsonl` ir validētas,
-  tokenus nesaturošas aizsardzības auditu kopijas.
+  no marķieriem attīrītas aizsardzības auditu kopijas.
 
-Apturiet piederošos konteinerus un tīklus, saglabājot pieteikšanās/konfigurācijas sējumus:
+Apturiet tiltam piederošos konteinerus un tīklus, saglabājot pieteikšanās/konfigurācijas sējumus:
 
 ```bash
 ./scripts/devin-bridge/clean
@@ -189,15 +190,15 @@ Noņemiet visu tiltam piederošo vidi, tostarp nosauktos sējumus:
 
 ## Ierobežojumi
 
-- Tilts izmanto fiksēto bezrīku `summarizer` lomu, jo Devin CLI `3000.2.17`
-  nenodrošina neitrālu ACP aģentu bez rīkiem. Adapteris kompensē kopsavilkumam līdzīgas
+- Tilts izmanto fiksēto lomu `summarizer` bez rīkiem, jo Devin CLI `3000.2.17`
+  nepiedāvā neitrālu ACP aģentu bez rīkiem. Adapteris kompensē kopsavilkumam līdzīgas
   starpatbildes, taču viens ierobežots labošanas mēģinājums joprojām var nepārprotami neizdoties.
-- Tiešsaistes ACP izsaukumi var atgriezt īslaicīgas `502`/`504` atbildes. Testēšanas ietvars starp scenārijiem ievēro pauzes;
-  pastāvīga kļūme joprojām tiek apstrādāta pēc fail-closed principa, un cits nodrošinātājs nekad netiek atlasīts.
-- ACP konteksts tiek rekonstruēts no katra Anthropic pieprasījuma; nav procesa/sesijas
-  piesaistes.
-- Vienā modeļa atbildē tiek atbalstīts viens rīka izsaukums; paralēli izsaukumi tiek noraidīti.
-- Attēli nepārprotami netiek atbalstīti. Redzes funkcijas, domāšanas izvade, piepūles vadīklas un 1M
-  konteksta logs netiek piedāvāti.
-- SSE izmanto derīgus Anthropic dzīves cikla notikumus, taču tie tiek izvadīti pēc ierobežotā ACP soļa
-  apkopošanas; ACP fragmenti netiek pārsūtīti pakāpeniski.
+- Tiešsaistes ACP izsaukumi var atgriezt īslaicīgas `502`/`504` atbildes. Testēšanas sistēma izpilda scenārijus ar intervāliem;
+  pastāvīgas kļūmes gadījumā darbība tiek droši apturēta un nekad netiek izvēlēts cits nodrošinātājs.
+- ACP konteksts tiek rekonstruēts no katra Anthropic pieprasījuma; nav piesaistes
+  procesam vai sesijai.
+- Katrā modeļa atbildē tiek atbalstīts viens rīka izsaukums; paralēli izsaukumi tiek noraidīti.
+- Attēli nepārprotami netiek atbalstīti. Netiek piedāvāta vizuālā analīze, domāšanas izvade, piepūles vadīklas un 1M
+  konteksta logs.
+- SSE izmanto derīgus Anthropic dzīves cikla notikumus, taču tie tiek izvadīti pēc tam, kad ir
+  apkopots ierobežotais ACP mijiedarbības cikls; ACP fragmenti netiek pārsūtīti pakāpeniski.

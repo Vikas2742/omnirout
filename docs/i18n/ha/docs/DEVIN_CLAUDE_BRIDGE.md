@@ -4,125 +4,126 @@
 
 ---
 
-`devin-cli-agentic` yana bai wa ainihin runtime na Claude Code damar amfani da endpoint na Anthropic
-Messages na gida na OmniRoute, yayin da Devin CLI na hukuma ke samar da amsoshin model ta ACP stdio. Ba ya
-gyara providers na Anthropic, Claude OAuth, Claude Web, ko `devin-cli` da ake da su.
+`devin-cli-agentic` yana ba ainihin muhallin tafiyar da Claude Code damar amfani da maƙurar
+Anthropic Messages ta gida ta OmniRoute, yayin da Devin CLI na hukuma ke samar da amsoshin samfuri ta ACP stdio. Ba ya
+gyara masu samarwa na Anthropic, Claude OAuth, Claude Web, ko `devin-cli` da suke akwai.
 
-Don tool calls mallakar client, a bi ta `devin-cli-agentic` (alias `dva`), wato
-provider mai goyon bayan tools a tsarin Claude. Tsohon ACP executor na `devin-cli` (`dv`)
-rubutu-kawai ne: yana gudanar da summarizer na Devin mara tools kuma ba zai iya mayar da tool calls ba. An
-sanya alama ga metadata na model ɗinsa yadda ya kamata domin combo routing da ke buƙatar tools ya guje masa.
+Don kiran kayan aiki mallakar abokin ciniki, bi ta `devin-cli-agentic` (laƙabi `dva`), wato
+mai samarwa mai iya amfani da kayan aiki a tsarin Claude. Tsohon mai aiwatar da ACP na `devin-cli` (`dv`)
+rubutu-kawai ne: yana gudanar da mai taƙaita bayanai na Devin wanda ba ya da kayan aiki kuma ba zai iya mayar da kiran kayan aiki ba. An yi wa
+metadata na samfurinsa alama daidai da haka domin sarrafa haɗin da ke buƙatar kayan aiki ya kauce masa.
 
-> **Matsayi na yanzu: an kulle Claude Code zuwa `2.1.258`; an rubuta ingantawar offline da live ta ƙarshe
-> a kan `2.1.220`.** Kullen `2.1.220` ya kammala scenarios guda uku da aka ware ta Devin CLI
-> `3000.2.17` da model `swe-1-7-lightning`; wannan gwajin live na ƙarshe ya tabbatar da turns na `Read`,
-> `Edit`, da `Bash` mallakar client, sakamakon `npm test` mai nasara, gano project command da skill,
-> routing na Devin-kawai, da rashin wani Claude egress gaba ɗaya. Daga nan aka ɗaga kullen zuwa `2.1.258`
-> (tsarin CLI da shaidar Claude ta OmniRoute ke kwaikwaya, kuma layi na farko da ke zuwa da
-> tier na Fable 5.1 kai tsaye). A sabon kullen, an tabbatar da install layer da `claude --version`
-> a kan base image da aka kulle, sannan bridge unit suite, `compose config`, da
-> hujjar static isolation sun yi nasara — amma har yanzu ba a sake gudanar da offline mock scenario da live three-scenario
-> suite ba. Sake gudanar da su (duba "Sabunta tools da aka kulle") kafin dogaro da
-> bridge da wannan kullen.
+> **Matsayi na yanzu: an ƙayyade Claude Code `2.1.258`; an yi rikodin ingantawar offline da kai-tsaye na ƙarshe
+> a kan `2.1.220`.** Ƙayyadadden `2.1.220` ya kammala yanayi guda uku da aka ware ta Devin CLI
+> `3000.2.17` da samfurin `swe-1-7-lightning`; wannan gwajin kai-tsaye na ƙarshe ya tabbatar da zagayen `Read`,
+> `Edit`, da `Bash` mallakar abokin ciniki, sakamakon `npm test` mai nasara, gano umarnin aikin da ƙwarewa,
+> sarrafawa ta Devin kawai, da rashin fitar bayanai zuwa Claude kwata-kwata. Daga nan aka ɗaga ƙayyadadden zuwa `2.1.258`
+> (ƙarni na CLI da asalin Claude na OmniRoute ke kwaikwaya, kuma layi na farko da ya zo
+> da matakin Fable 5.1 kai-tsaye). A sabon ƙayyadadden, an tabbatar da shimfiɗar girkawa da `claude --version`
+> a kan base image ɗin da aka ƙayyade, kuma jerin gwaje-gwajen unit na gada, `compose config`, da
+> tabbataccen gwajin warewa na tsaye sun yi nasara — amma har yanzu ba a sake gudanar da yanayin kwaikwayo na offline da
+> jerin yanayi uku na kai-tsaye ba. Sake gudanar da su (duba "Sabunta kayan aikin da aka ƙayyade") kafin dogaro da
+> gadar tare da wannan ƙayyadadden.
 
 ## Tsarin gine-gine
 
 ```text
-Claude Code 2.1.258 (isolated non-root Linux container)
+Claude Code 2.1.258 (akwatin Linux da aka ware mai amfani marar root)
   -> http://omniroute:20128/v1/messages
-  -> devin-cli-agentic (Claude-format, no-auth provider)
-  -> devin acp --agent-type summarizer (official ACP stdio, no Devin tools)
-  -> Devin account in the dedicated devin-auth volume
+  -> devin-cli-agentic (mai samarwa a tsarin Claude, ba tare da tantancewa ba)
+  -> devin acp --agent-type summarizer (ACP stdio na hukuma, babu kayan aikin Devin)
+  -> Asusun Devin a cikin keɓaɓɓen volume na devin-auth
 ```
 
-Default ACP agent na CLI na hukuma zai iya aiwatar da nasa tools, saboda haka wannan bridge ba ya amfani da
-shi. Yana fara tsayayyen ACP agent na `summarizer`, wanda yanayin CLI na hukuma ba shi da tools, sannan ya
-tsara serialized Anthropic request a matsayin execution trace. Idan ana buƙatar wani action mallakar Claude,
-dole ne response ɗin ya ƙunshi client tool envelope guda ɗaya tak. Duk wani ACP
-`tool_call` ko `tool_call_update` ana ƙin amincewa da shi kafin a iya bayar da rahoton response a matsayin
+Tsohon wakilin ACP na CLI na hukuma zai iya aiwatar da nasa kayan aikin, don haka wannan gada ba ta amfani da
+shi. Tana fara tabbataccen wakilin ACP na `summarizer`, wanda yanayin CLI ɗinsa na hukuma ba shi da kayan aiki, sannan
+ta tsara buƙatar Anthropic da aka serialized a matsayin tarihin aiwatarwa. Idan ana buƙatar wani aiki
+mallakar Claude, dole ne amsar ta ƙunshi envelope guda ɗaya tak na kayan aikin abokin ciniki. Duk wani
+`tool_call` ko `tool_call_update` na ACP za a ƙi shi kafin a iya bayar da rahoton amsa a matsayin
 mai nasara.
 
-Serializer da ke cikin `open-sse/executors/devin-agentic/serializer.ts` yana kiyaye `system`,
+Serializer da ke `open-sse/executors/devin-agentic/serializer.ts` yana kiyaye `system`,
 `text`, `tool_use`, `tool_result`, `thinking`, `redacted_thinking`, `tool_choice`, da
-tools da Claude Code ya samar. Images da blocks da ba a sani ba suna faduwa a sarari. Manyan tool results
-suna amfani da alamar truncation da ake iya gani.
+kayan aikin da Claude Code ya samar. Hotuna da tubalan da ba a sani ba suna haifar da gazawa a bayyane. Manyan sakamakon kayan aiki
+suna amfani da alamar yanke bayanai da ake iya gani.
 
-Parser yana karɓar standalone `<tool>{...}</tool>` envelope guda ɗaya a kowane model turn. Yana duba
-sunan da tool list na request, yana tantance arguments da JSON
-Schema na wannan tool, yana ƙin gaurayen narrative/actions, kuma yana ba da damar bounded repair guda ɗaya. Daga nan Claude Code
-yana aiwatar da sakamakon Anthropic `tool_use` a gida sannan ya tura `tool_result` ɗin baya ta
+Parser yana karɓar envelope guda ɗaya mai zaman kansa na `<tool>{...}</tool>` a kowane zagayen samfuri. Yana tantance
+sunan da jerin kayan aikin buƙatar, yana tabbatar da arguments bisa JSON Schema na wannan kayan aikin,
+yana ƙin haɗa bayani da ayyuka, kuma yana ba da damar gyara guda ɗaya mai iyaka. Daga nan Claude Code
+zai aiwatar da sakamakon Anthropic `tool_use` a cikin gida kuma ya aika da `tool_result` ɗin baya ta
 OmniRoute.
 
-## Routing na atomatik
+## Sarrafawa ta atomatik
 
-Provider ɗin ya cancanci shiga candidate pools na `auto/*` na OmniRoute idan ba a toshe shi ba.
-Cancantar candidate ba ta tabbatar da zaɓuwa ba: routing strategy na combo (misali,
-last-known-good) na iya fifita wani provider. Yi amfani da `dva/<model>` ko combo mai fifita Devin idan
-kana buƙatar kowace request ta bi ta Devin.
+Mai samarwar ya cancanci shiga rukunin ’yan takara na `auto/*` na OmniRoute idan ba a toshe shi ba.
+Cancantar zama ɗan takara ba ta tabbatar da zaɓinsa ba: dabarar sarrafa hanyar haɗin (misali,
+na ƙarshe da aka san yana aiki) na iya fifita wani mai samarwa. Yi amfani da `dva/<model>` ko haɗi mai ba
+Devin fifiko idan kana buƙatar kowace buƙata ta bi ta Devin.
 
-## Keɓewa da tsarin barazana
+## Keɓewa da samfurin barazana
 
-An ɗauki shigarwar Claude ta na'urar mai masauki, asusu, da saitunanta a matsayin abubuwan da ba sa cikin wannan fanni kuma an haramta su. Sabis-sabis na Compose:
+Shigarwar Claude ta na'urar mai masaukin baki, asusunta, da saitunanta ba sa cikin wannan aiki kuma ana
+ɗaukar su a matsayin abubuwan da aka haramta. Sabis na Compose:
 
-- suna aiki da UID/GID `10001:10001`, tare da tsarin fayilolin tushe na karantawa-kawai, an cire capabilities, kuma suna amfani da
-  `no-new-privileges`;
-- suna amfani da `/home/bridge` mai zaman kansa, volume na musamman don saitunan Claude, bayanan OmniRoute da aka keɓe,
-  da kuma volume na `devin-auth` daban;
-- suna mount ɗin wuraren aiki/shaidu na `.sandbox` masu yarwa kawai;
-- ba sa mount ɗin home na na'urar mai masauki, Keychain, SSH, bayanan shaidar cloud, ko Docker socket;
-- suna ƙirƙirar environments a sarari kuma suna cire variables na Anthropic API/OAuth/routing;
-- suna tura inference na Claude Code zuwa `http://omniroute:20128` kawai tare da maɓalli na gida-kawai.
+- suna gudana da UID/GID `10001:10001`, tare da tsarin fayil na tushe mai karatu-kawai, an cire damar musamman, kuma
+  da `no-new-privileges`;
+- suna amfani da `/home/bridge` mai zaman kansa, keɓaɓɓen volume na saitunan Claude, bayanan OmniRoute da aka keɓe,
+  da kuma wani volume na `devin-auth` daban;
+- suna mount ne kawai wuraren aiki/hujjojin `.sandbox` waɗanda za a iya yarwa;
+- ba sa mount kundin gida na na'urar mai masaukin baki, Keychain, SSH, bayanan shaidar cloud, ko Docker socket;
+- suna gina muhallai a sarari kuma suna cire masu sauyin API/OAuth/routing na Anthropic;
+- suna tura inference na Claude Code zuwa `http://omniroute:20128` kawai tare da maɓalli na cikin gida kawai.
 
-Profile na offline yana amfani da internal network. A cikin profile na live, OmniRoute yana isa ga
-official Devin endpoints ne kawai ta hanyar `network-guard`; ana hana destinations marasa alaƙa.
-Claude Code yana da egress guard na deny-all na daban kuma yana iya isa ga sabis ɗin OmniRoute
-na gida kawai ta hanyar `NO_PROXY`. Fayilolin audit na guard ana mount ɗinsu ne kawai ga guard process nasu. Scripts ɗin
-suna tabbatar da mallakar fayil, mode, link count, da kowace shawara kafin su fitar da
-shaidar da ba ta ɗauke da token.
+Furofayil na offline yana amfani da hanyar sadarwa ta ciki. A furofayil na live, OmniRoute yana isa
+endpoints na Devin na hukuma ne kawai ta hanyar `network-guard`; ana hana wuraren da ba su da alaƙa.
+Claude Code yana da keɓaɓɓen kariyar egress mai hana komai kuma yana iya isa sabis na OmniRoute
+na cikin gida kawai ta hanyar `NO_PROXY`. Fayilolin binciken guard ana mount ɗinsu ne kawai ga tsarin guard ɗin da ya dace.
+Scripts ɗin suna tabbatar da mallakar fayil, mode, adadin link, da kowace shawara kafin su fitar da
+hujjar da ba ta ƙunshi token ba.
 
-Gudanar da hujjar keɓewa da kanta:
+Gudanar da gwajin tabbatar da keɓewar da kansa:
 
 ```bash
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Tana tabbatar da topology, named mounts, saitunan non-root/read-only, explicit local routing,
-rashin sensitive environment variables, rashin Docker socket, toshe damar shiga
-`api.anthropic.com` da `claude.ai`, zaɓin provider na Devin-kawai, da gazawa a sarari idan
-ACP backend ba ya samuwa.
+Yana tabbatar da topology, mounts masu suna, saitunan non-root/read-only, routing na cikin gida da aka bayyana a sarari,
+rashin masu sauyin muhalli masu muhimmanci, rashin Docker socket, toshe damar zuwa
+`api.anthropic.com` da `claude.ai`, zaɓin provider na Devin kawai, da gazawa a sarari lokacin da
+backend na ACP ba ya samuwa.
 
 ## Saitin farko da amfani na yau da kullum
 
-Gina image ɗin da aka kayyade:
+Gina image ɗin da aka tsayar da sigarsa:
 
 ```bash
 ./scripts/devin-bridge/build
 ```
 
-Yi authentication ga isolated Devin volume kawai:
+Tabbatar da ainihi ga keɓaɓɓen volume na Devin kawai:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/login-devin
 ```
 
-Umarnin login yana amfani da official manual-token flow da aka tsara don remote/container
-environments. Ana shigar da ƙimar kai tsaye cikin CLI prompt; ba a aika ta a matsayin
-process argument, ba a rubuta ta zuwa Git, kuma ba a kwafe ta daga na'urar mai masauki.
+Umarnin shiga yana amfani da hanyar manual-token ta hukuma da aka tanada don muhallan
+remote/container. Ana shigar da ƙimar kai tsaye cikin tambayar CLI; ba a miƙa ta a matsayin
+argument na process, rubuta ta zuwa Git, ko kwafe ta daga na'urar mai masaukin baki.
 
-Kaddamar da isolated Claude Code runtime:
+Ƙaddamar da runtime na Claude Code da aka keɓe:
 
 ```bash
 ./scripts/devin-bridge/launch
 ```
 
-`launch` yana sake duba keɓewa, Devin authentication, da gano model kafin ya fara
-Claude Code da ke cikin container. Ba ya taɓa gudanar da executable na Claude na na'urar mai masauki. Ana iya saita model aliases
-a cikin `.env.devin-bridge`; dole kowace ƙimar da aka saita ta riƙe
+`launch` yana sake duba keɓewa, tabbatar da ainihin Devin, da gano model kafin ya fara
+Claude Code da ke cikin container. Ba ya taɓa gudanar da executable na Claude na na'urar mai masaukin baki. Ana iya
+saita aliases na model a `.env.devin-bridge`; dole kowace ƙima da aka saita ta riƙe
 prefix na `devin-cli-agentic/`.
 
 ## Umarnin tabbatarwa
 
-Reproducible offline path ba ya buƙatar asusun Devin kuma ba shi da Internet yayin runtime:
+Hanyar offline mai maimaituwa ba ta buƙatar asusun Devin kuma ba ta da Internet yayin runtime:
 
 ```bash
 ./scripts/devin-bridge/test-unit
@@ -131,53 +132,56 @@ Reproducible offline path ba ya buƙatar asusun Devin kuma ba shi da Internet ya
 ./scripts/devin-bridge/verify-anthropic-isolation
 ```
 
-Authenticated opt-in live path shi ne:
+Hanyar live mai buƙatar tabbatar da ainihi da shiga bisa zaɓi ita ce:
 
 ```bash
 ENABLE_LIVE_DEVIN_TESTS=1 ./scripts/devin-bridge/test-live-devin
 ```
 
-Live runner yana jira tsakanin scenarios don kauce wa buɗe ACP sessions a lokaci guda kuma
-yana tabbatar da structured Claude stream events maimakon amincewa da textual claims. Scenarios guda uku nasa
-suna tabbatar da:
+Mai gudanar da live yana jira tsakanin scenarios don guje wa buɗe sessions na ACP a lokaci guda kuma
+yana tabbatar da tsararrun events na stream na Claude maimakon yarda da ikirarin rubutu. Scenarios guda
+uku suna tabbatar da:
 
-1. karanta project kai tsaye da nazarin defect;
-2. `Edit` na gaske, `Bash` `npm test` mallakin client, da sakamakon terminal;
-3. `/bridge-check` tare da gano `bridge-proof`, karanta project, wani nasararren
-   `npm test` mallakin client, da kammalawa ba tare da pending work ba.
+1. karanta project kai tsaye da nazarin matsala;
+2. `Edit` na ainihi, `Bash` `npm test` mallakar abokin ciniki, da sakamakon ƙarshe;
+3. `/bridge-check` tare da gano `bridge-proof`, karanta project, wani
+   `npm test` mallakar abokin ciniki da ya yi nasara, da kammalawa ba tare da aikin da ke jira ba.
 
-Final gate kuma yana duba Devin network audit kuma yana buƙatar Claude egress audit ya
-kasance babu komai.
+Matakin ƙarshe kuma yana duba binciken hanyar sadarwar Devin kuma yana buƙatar binciken egress na Claude ya
+ci gaba da kasancewa babu komai.
 
-## Sabunta kayan aikin da aka ƙayyade nau'ikansu
+## Sabunta kayan aikin da aka kafe
 
-Hoton ya ƙayyade nau'ikan Node, Claude Code, da Devin CLI a cikin
+Hoton yana kafe Node, Claude Code, da Devin CLI a cikin
 `docker/devin-bridge/Dockerfile`. Don sabuntawa:
 
-1. canza nau'ikan da aka bayyana kai tsaye;
-2. maye gurbin jimillar binciken Devin archive na kowace irin gine-gine da ƙimomin artifact na hukuma;
+1. sauya ƙayyadaddun nau'ikan;
+2. maye gurbin jimillar tantancewar taskar Devin guda biyu na kowace architecture da ƙimomin
+   artifact na hukuma;
 3. sake ginawa sannan a gudanar da kowane umarnin tabbatarwa na offline;
 4. tabbatar da nau'ikan da ke cikin hoton;
-5. sake gudanar da rukunin gwajin live mai yanayi uku wanda aka tabbatar da sahihancinsa.
+5. sake gudanar da tarin gwaje-gwajen kai-tsaye guda uku masu buƙatar tantancewa.
 
-Kada a girka ko ɗaya daga cikin CLI ɗin a matsayin na gama-gari a kan host, ko a maye gurbin tabbatar da checksum da saukarwa da ba a tabbatar da ita ba.
+Kada a girka ɗayan CLI ɗin a matsayin na gaba ɗaya a kan host ko a maye gurbin tabbatar da checksum da
+zazzagewar da ba a tantance ba.
 
-## Binciken matsala da tsaftacewa
+## Bincike da tsaftacewa
 
 - `docker compose -f docker/devin-bridge/compose.yml --profile offline logs omniroute`
   yana nuna routing na gida da kurakuran executor da aka tsabtace.
-- `.sandbox/evidence/mock-acp.jsonl` yana adana ayyukan mock ACP masu sakamako tabbatacce.
+- `.sandbox/evidence/mock-acp.jsonl` yana adana ayyukan kwaikwayon ACP masu sakamako tsayayye.
 - `.sandbox/evidence/claude-stream.jsonl` yana adana ainihin gudanarwar Claude Code ta offline.
-- `.sandbox/evidence/live-*.jsonl` yana adana rafukan live guda uku da aka tabbatar.
-- `.sandbox/evidence/egress.jsonl` da `.sandbox/evidence/claude-egress.jsonl` kwafe ne na binciken guard da aka tabbatar kuma babu token a cikinsu.
+- `.sandbox/evidence/live-*.jsonl` yana adana streams na kai-tsaye guda uku da aka tabbatar.
+- `.sandbox/evidence/egress.jsonl` da `.sandbox/evidence/claude-egress.jsonl` kwafe ne da aka tabbatar,
+  marasa token, na binciken kariya.
 
-Dakatar da containers da networks mallakar tsarin tare da adana login/config volumes:
+Dakatar da containers da networks mallakar tsarin tare da adana volumes na login/config:
 
 ```bash
 ./scripts/devin-bridge/clean
 ```
 
-Cire dukkan muhallin mallakar bridge, ciki har da named volumes:
+Cire dukkan muhallin mallakar bridge, har da volumes masu suna:
 
 ```bash
 ./scripts/devin-bridge/clean --all
@@ -185,13 +189,15 @@ Cire dukkan muhallin mallakar bridge, ciki har da named volumes:
 
 ## Iyakoki
 
-- Bridge ɗin yana dogaro da tsayayyen role na `summarizer` marar kayan aiki saboda Devin CLI `3000.2.17`
-  ba ya samar da ACP agent tsaka-tsaki marar kayan aiki. Adapter ɗin yana gyara martanin tsaka-tsaki
-  masu kama da taƙaitawa, amma gyara guda ɗaya mai iyaka har yanzu yana iya gaza a bayyane.
-- Kiran live ACP na iya dawo da martanin `502`/`504` na wucin gadi. Harness ɗin yana ba da tazara tsakanin yanayi;
-  gazawa mai ɗorewa tana ci gaba da kasancewa fail-closed kuma ba ta taɓa zaɓar wani provider ba.
-- Ana sake gina ACP context daga kowace buƙatar Anthropic; babu alaƙar dindindin da process/session.
-- Ana tallafa wa tool call guda ɗaya a kowace amsar model; ana ƙin kiraye-kiraye masu gudana a layi ɗaya.
-- Ba a tallafa wa hotuna a bayyane. Ba a tallata vision, thinking output, effort controls, da context window na 1M.
-- SSE yana amfani da ingantattun lifecycle events na Anthropic amma ana fitar da su bayan an tattara bounded ACP turn;
-  ba a tura ACP chunks gaba ɗaya a hankali ba.
+- Bridge ɗin yana dogara da ƙayyadadden matsayin `summarizer` marar kayan aiki saboda Devin CLI `3000.2.17`
+  ba ya samar da wakilin ACP tsaka-tsaki marar kayan aiki. Adapter ɗin yana daidaita martanoni na
+  tsaka-tsaki masu sigar taƙaitawa, amma yunƙurin gyara guda ɗaya mai iyaka har yanzu yana iya gaza a bayyane.
+- Kiran ACP na kai-tsaye na iya dawo da martanin wucin gadi na `502`/`504`. Harness ɗin yana ba wa yanayin gwaje-gwajen tazara;
+  gazawa mai ɗorewa tana ci gaba da rufewa idan an gaza kuma ba ta taɓa zaɓar wani provider ba.
+- Ana sake gina context na ACP daga kowace buƙatar Anthropic; babu alaƙar dindindin da
+  process/session.
+- Ana tallafa wa kiran kayan aiki guda ɗaya a kowace amsar model; ana ƙin kira masu gudana a layi ɗaya.
+- Ba a tallafa wa hotuna a bayyane. Ba a tallata vision, fitowar thinking, sarrafa effort, da
+  context window na 1M.
+- SSE yana amfani da ingantattun events na tsarin rayuwar Anthropic amma ana fitar da su bayan an
+  tattara ACP turn mai iyaka; ba a tura chunks na ACP ɗaya bayan ɗaya yayin isowarsu.

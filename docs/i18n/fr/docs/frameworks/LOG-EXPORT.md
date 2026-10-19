@@ -13,100 +13,119 @@ L’onglet du tableau de bord Logs conserve l’historique des requêtes dans SQ
 ## 1. Fonctionnement
 
 ```
-serveur (déchiffrement + validation de la configuration, réconciliation du curseur)
-  → démarrage de l’IPC → processus OS exportChild isolé
+serveur (déchiffrement + validation de la configuration, rapprochement du curseur)
+  → démarrage d’IPC → processus OS exportChild isolé
     → storage.sqlite en lecture seule → requête/mappage partagé des journaux d’appels
-      → chargement asynchrone des artefacts → prepare()/send() de la destination
-        → IPC du lot → le serveur enregistre le curseur → IPC d’acquittement
+      → hydratation asynchrone des artefacts → prepare()/send() de la destination
+        → IPC du lot → le serveur persiste le curseur → IPC d’acquittement
           → lot suivant ; IPC de fin → le serveur enregistre la réussite
 ```
 
-- **Planification** — une tâche cron `JobRegistry`, `log_export`, définie par défaut sur `0 * * * *` (toutes les heures,
-  en UTC). Enregistrée dans `src/lib/initCloudSync.ts` ; configurable avec `OMNIROUTE_LOG_EXPORT_CRON`.
-  À chaque déclenchement, toutes les destinations **activées** sont vidées séquentiellement.
-- **Curseur** — le `call_logs.rowid` implicite de SQLite, enregistré par destination dans
-  `log_export_destinations.cursor_row_id`. `timestamp` n’est délibérément pas utilisé comme curseur : les appelants
-  peuvent fournir leur propre valeur, si bien qu’une requête lente peut être écrite après une requête plus rapide ayant
-  démarré plus tard, et qu’un curseur fondé sur l’horodatage l’ignorerait.
-- **Traitement par lots** — `batch_size` lignes par requête (500 par défaut), `max_rows_per_run` lignes par exécution
-  (10000 par défaut), afin qu’un arriéré important soit traité sur plusieurs déclenchements au lieu d’en bloquer un seul.
-- **Livraison** — le curseur n’avance qu’après la résolution de `send()`. En cas d’échec d’un lot, le
-  curseur reste à sa position précédente, de sorte que les mêmes lignes sont réessayées lors de l’exécution suivante. La garantie est
-  une livraison au moins une fois avec déduplication côté destination, et non une véritable livraison exactement une fois : BigQuery identifie chaque
-  ligne par l’identifiant du journal d’appels, qu’il respecte au mieux dans les limites de sa propre fenêtre de déduplication.
-- **Protection contre les chevauchements** — le déclenchement cron et `POST .../run` peuvent survenir simultanément. Une destination
-  déjà en cours de traitement est ignorée plutôt que traitée deux fois (`skipped: true` dans le résultat de l’exécution),
-  de sorte qu’une exécution concurrente ne peut ni renvoyer un lot ni faire reculer le curseur.
-- **Récupération après purge** — si `cursor_row_id` devient supérieur à `MAX(rowid)` (la table entière a été
-  purgée et les rowids ont redémarré), l’exécuteur revient à 0 au lieu de rester définitivement aveugle.
+- **Planification** — une tâche cron `JobRegistry`, `log_export`, définie par défaut sur
+  `0 * * * *` (toutes les heures, UTC). Enregistrée dans `src/lib/initCloudSync.ts` ; peut être
+  remplacée par `OMNIROUTE_LOG_EXPORT_CRON`. À chaque déclenchement, toutes les destinations
+  **activées** sont traitées séquentiellement.
+- **Curseur** — le `call_logs.rowid` implicite de SQLite, persisté par destination dans
+  `log_export_destinations.cursor_row_id`. `timestamp` n’est délibérément pas utilisé comme
+  curseur : les appelants peuvent fournir leur propre valeur, de sorte qu’une requête lente peut
+  être écrite après une requête plus rapide ayant commencé plus tard, et qu’un curseur basé sur
+  l’horodatage l’ignorerait.
+- **Traitement par lots** — `batch_size` lignes par requête (500 par défaut),
+  `max_rows_per_run` lignes par exécution (10000 par défaut), afin qu’un arriéré important soit
+  résorbé sur plusieurs déclenchements plutôt que de bloquer une seule exécution.
+- **Livraison** — le curseur n’avance qu’après la résolution de `send()`. Un lot en échec laisse
+  le curseur à sa position actuelle, de sorte que les mêmes lignes sont réessayées lors de
+  l’exécution suivante. La garantie est une livraison au moins une fois avec déduplication côté
+  destination, et non une véritable livraison exactement une fois : BigQuery identifie chaque
+  ligne par l’identifiant du journal d’appels, qu’il respecte au mieux dans sa propre fenêtre de
+  déduplication.
+- **Protection contre les chevauchements** — le déclenchement cron et `POST .../run` peuvent se
+  produire simultanément. Une destination déjà en cours de traitement est ignorée plutôt que
+  traitée deux fois (`skipped: true` dans le résultat de l’exécution), de sorte qu’une exécution
+  concurrente ne peut ni renvoyer un lot ni faire reculer le curseur.
+- **Récupération après purge** — si `cursor_row_id` devient supérieur à `MAX(rowid)` (la table
+  entière a été purgée et les rowid ont redémarré), l’exécuteur revient à 0 plutôt que de rester
+  définitivement aveugle.
 
 ### Exécuteur isolé et limites
 
-Chaque exécution de destination sous Node démarre un processus enfant OS distinct et de courte durée (`child_process`
-avec IPC, et non `worker_threads`). La lecture des corps, l’analyse/la sérialisation JSON des charges utiles, la méthode
-`prepare()` de la destination et les E/S réseau de la destination s’y exécutent entièrement, et non dans la boucle d’événements du serveur.
-Seuls la configuration et de petits messages de progression transitent par IPC ; les enregistrements exportés ne reviennent jamais vers
-le serveur. La tâche cron et la route Exécuter maintenant conservent le même résultat public et la même protection contre les chevauchements.
+Chaque exécution de destination sur Node démarre un processus enfant OS distinct et de courte
+durée (`child_process` avec IPC, et non `worker_threads`). La lecture des corps, l’analyse/la
+sérialisation JSON des charges utiles, le `prepare()` de la destination et les E/S réseau de la
+destination s’y exécutent intégralement, et non dans la boucle d’événements du serveur.
+Seuls la configuration et de petits messages de progression transitent par IPC ; les
+enregistrements exportés ne reviennent jamais au serveur. La tâche cron et la route Exécuter
+maintenant conservent le même résultat public et la même protection contre les chevauchements.
 
-L’enfant ouvre le fichier `DATA_DIR/storage.sqlite` résolu du serveur en lecture seule à l’aide de `node:sqlite`,
-avec `busy_timeout=5000` et `query_only=ON`. Il n’importe aucun singleton de base de données et n’effectue aucune
-migration, sauvegarde ni mise à jour SQLite. La gestion des artefacts manquants/corrompus (y compris l’UPDATE
-des artefacts corrompus) reste limitée au chemin d’affichage détaillé du tableau de bord. Les deux chemins partagent un résolveur de
-détails pur ; l’exportation utilise des lectures asynchrones du système de fichiers et le même ordre de résolution :
-artefact → contenu en ligne hérité → disque hérité → aucun. Une exécution prend un instantané du rowid d’insertion maximal
-lorsque l’enfant ouvre son lecteur ; les insertions ultérieures attendent l’exécution suivante. Il s’agit d’une limite
-d’insertion, et non d’une transaction SQLite de longue durée : les écritures et les points de contrôle WAL restent libres pendant
-les attentes réseau. Les mises à jour/suppressions de lignes existantes ne sont pas figées par cette limite.
+L’enfant ouvre le fichier `DATA_DIR/storage.sqlite` résolu du serveur en lecture seule avec
+`node:sqlite`, avec `busy_timeout=5000` et `query_only=ON`. Il n’importe aucun singleton de base
+de données et n’effectue aucune migration, sauvegarde ou mise à jour SQLite. La gestion des
+artefacts manquants/corrompus (y compris l’UPDATE d’un artefact corrompu) reste limitée au
+parcours détaillé du tableau de bord. Les deux parcours partagent un résolveur de détails pur ;
+l’exportation utilise des lectures asynchrones du système de fichiers et le même ordre de
+résolution artefact → données inline héritées → disque hérité → aucune donnée. Une exécution
+capture le rowid d’insertion maximal lorsque l’enfant ouvre son lecteur ; les insertions
+ultérieures attendent l’exécution suivante. Il s’agit d’une limite d’insertion, et non d’une
+transaction SQLite de longue durée : les rédacteurs WAL et les points de contrôle restent libres
+pendant les attentes réseau. Les mises à jour/suppressions de lignes existantes ne sont pas
+figées par cette limite.
 
-Après chaque lot accepté, l’enfant attend un acquittement. Le serveur enregistre d’abord
-le curseur avec `advanceLogExportCursor`, puis envoie `ack` ; aucun nouveau lot ne démarre avant cela.
-Un échec d’envoi, un plantage ou un dépassement de délai enregistre un échec sans faire avancer le lot concerné. Les lots
-précédemment acquittés restent validés ; seul le lot non acquitté peut éventuellement être renvoyé.
-La réussite n’est enregistrée qu’après `done` et une fermeture propre du processus enfant. En cas d’échec, le processus enfant
-est arrêté avec SIGTERM, puis avec SIGKILL après 500 ms si nécessaire, et l’exécuteur attend la fermeture du processus.
+Après chaque lot accepté, l’enfant attend un acquittement. Le serveur persiste d’abord le curseur
+avec `advanceLogExportCursor`, puis envoie `ack` ; aucun nouveau lot ne démarre avant cela.
+Un échec d’envoi, un plantage ou un dépassement de délai enregistre un échec sans faire avancer
+ce lot. Les lots précédemment acquittés restent validés ; seul le lot non acquitté peut être
+renvoyé. La réussite n’est enregistrée qu’après `done` et une sortie propre de l’enfant. En cas
+d’échec, l’enfant est arrêté avec SIGTERM, puis avec SIGKILL après 500 ms si nécessaire, et
+l’exécuteur attend la fermeture du processus.
 
-| Variable d’environnement                      | Valeur par défaut | Fonction                            |
-| --------------------------------------------- | ----------------- | ----------------------------------- |
-| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000            | Limite de temps par destination     |
-| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024              | Limite de l’ancien espace V8, en Mo |
+| Variable d’environnement                      | Valeur par défaut | Objectif                                       |
+| --------------------------------------------- | ----------------- | ---------------------------------------------- |
+| `OMNIROUTE_LOG_EXPORT_RUN_TIMEOUT_MS`         | 900000            | Limite de temps écoulé par destination         |
+| `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` | 1024              | Limite de l’ancien espace V8 de l’enfant en MB |
 
-Les valeurs non valides, non positives ou non entières sont remplacées par les valeurs par défaut. Le paramètre de tas ne constitue pas une limite
-totale de RSS ; des lots très volumineux peuvent tout de même épuiser la mémoire de l’enfant et entraîner l’échec sécurisé de l’exécution.
-La valeur par défaut de 1024 Mo laisse une marge pour le lot par défaut de 500 lignes contenant des artefacts de 512 Kio avec
-les corps activés, y compris la sérialisation JSON par blocs d’octets de BigQuery. Elle ne rend pas sûr un
-lot de 10000 lignes avec corps. L’épuisement du tas V8 enregistre un échec exploitable : réduisez la taille des lots
-ou augmentez `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` ; le curseur reste positionné sur le dernier lot
-acquitté. Les corps historiques en ligne/sur disque ne sont pas couverts par la limite moderne des artefacts.
-Les opérateurs doivent prévoir la RSS séparément, en particulier dans les conteneurs soumis à des limites de mémoire.
+Les valeurs non valides, non positives ou non entières utilisent les valeurs par défaut. Le
+paramètre de tas ne constitue pas une limite totale de RSS ; des lots très volumineux peuvent
+tout de même épuiser la mémoire de l’enfant et faire échouer l’exécution sans compromettre les
+données. La valeur par défaut de 1024 MB laisse une marge suffisante pour le lot par défaut de
+500 lignes contenant des artefacts de 512 KiB avec les corps activés, y compris la sérialisation
+JSON de BigQuery découpée en segments d’octets. Elle ne rend pas sûr un lot de 10000 lignes avec
+les corps. L’épuisement du tas V8 enregistre un échec exploitable : réduisez la taille des lots
+ou augmentez `OMNIROUTE_LOG_EXPORT_CHILD_MAX_OLD_SPACE_MB` ; le curseur reste positionné sur le
+dernier lot acquitté. Les corps historiques inline/sur disque ne sont pas couverts par la limite
+moderne des artefacts. Les opérateurs doivent prévoir séparément la RSS, en particulier dans les
+conteneurs à mémoire limitée.
 
-L’enfant hérite uniquement de `DATA_DIR` résolu, de `NODE_ENV`, de la valeur explicite de `TZ` (résolution en heure locale
-des anciens noms de fichiers), de `ELECTRON_RUN_AS_NODE` lorsqu’elle est présente, ainsi que des entrées sortantes suivantes :
-`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY` (et leurs formes en minuscules),
-`OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`.
-Un répartiteur Undici global partage la résolution pure du proxy d’environnement et les règles de contournement des hôtes locaux
-du serveur, y compris `NO_PROXY` ; il n’importe ni `proxyFetch.ts` ni ses indicateurs de base de données/fonctionnalités.
-Les identifiants du proxy sont masqués dans les sorties transférées et les erreurs enregistrées. Les identifiants de la destination
-ne transitent que dans un unique message IPC de démarrage, jamais dans argv ni dans l’environnement ; le transfert des sorties/erreurs
-est préfixé et assaini. Seul `ExperimentalWarning` est désactivé dans les arguments d’exécution de l’enfant afin d’éviter
-de répéter l’avertissement SQLite de Node à chaque exécution cron ; les autres types d’avertissements restent visibles.
+L’enfant hérite uniquement de la valeur résolue de `DATA_DIR`, de `NODE_ENV`, du `TZ` explicite
+(résolution en heure locale des noms de fichiers hérités), de `ELECTRON_RUN_AS_NODE` lorsqu’il
+est présent, ainsi que des entrées sortantes suivantes : `HTTP_PROXY`, `HTTPS_PROXY`,
+`ALL_PROXY`, `NO_PROXY` (et leurs formes en minuscules), `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`,
+`NODE_EXTRA_CA_CERTS`, `SSL_CERT_FILE`, `SSL_CERT_DIR`. Un répartiteur Undici global partage la
+résolution pure du proxy d’environnement du serveur ainsi que les règles de contournement des
+hôtes locaux, y compris `NO_PROXY` ; il n’importe ni `proxyFetch.ts` ni ses indicateurs de
+base de données/fonctionnalités. Les identifiants du proxy sont masqués dans les sorties
+transmises et les erreurs enregistrées. Les identifiants de destination ne transitent que dans
+un unique message IPC de démarrage, jamais dans argv ni dans l’environnement ; la transmission
+des sorties/erreurs est préfixée et assainie. Seul `ExperimentalWarning` est désactivé dans les
+arguments d’exécution de l’enfant afin d’éviter de répéter l’avertissement SQLite de Node à
+chaque exécution cron ; les autres types d’avertissements restent visibles.
 
-Les modules de destination doivent pouvoir être importés sans dépendances à Next.js ni dépendances réservées au serveur. L’implémentation
+Les modules de destination doivent pouvoir être importés sans dépendances à Next.js ou réservées au serveur. L’implémentation
 BigQuery existante respecte déjà ce contrat. Les caches de jetons d’accès ne persistent que pendant l’exécution
-du processus enfant, et non entre les exécutions. Node est l’environnement d’exécution pris en charge (`package.json` engines), mais la section
-d’installation de Bun du README et `Dockerfile.bun` annoncent également un chemin de compatibilité en production utilisant
+enfant, et non entre les exécutions. Node est l’environnement d’exécution pris en charge (`package.json` engines), mais la section
+d’installation de Bun du README et `Dockerfile.bun` présentent également un chemin de compatibilité en production utilisant
 `bun:sqlite` (`src/lib/db/core.ts` / adaptateurs). Sous Bun, les exportations conservent donc le précédent
-chemin en processus et émettent un avertissement unique : l’isolation du tas et des délais d’expiration par processus enfant n’est pas disponible. Utilisez
-Node pour isoler la boucle d’événements et les erreurs de mémoire insuffisante ; Bun n’est pas considéré ici comme réservé au développement.
+chemin en cours de processus et émettent un avertissement unique : l’isolation du tas et des délais d’expiration du processus enfant n’est pas disponible. Utilisez
+Node pour isoler la boucle d’événements et les erreurs OOM ; Bun n’est pas considéré ici comme réservé au développement.
 
-Lorsque `includeBodies` est activé, privilégiez une cadence à la minute, telle que
-`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`, plutôt que d’accumuler une heure de charge utile en attente.
-Les limites de lots et de lignes continuent de borner chaque exécution. Le coût de démarrage du processus est payé par destination et par exécution ;
+Lorsque `includeBodies` est activé, privilégiez une fréquence de l’ordre de la minute, telle que
+`OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`, plutôt que d’accumuler un retard horaire de charges utiles.
+Les limites de lots et de lignes bornent toujours chaque exécution. Le coût de démarrage du processus est payé par destination et par exécution ;
 cela échange un faible coût de démarrage contre l’isolation de la boucle d’événements du serveur, et non contre une réduction de l’utilisation totale du processeur.
 
 ### Charges utiles (prompts et complétions)
 
 Par défaut, l’exportation ne contient que les champs récapitulatifs affichés par la **liste** des journaux. L’activation de
-**Exporter les prompts et les réponses** (`includeBodies`) envoie également ce que le volet de **détail**
+**Exporter les prompts et les réponses** (`includeBodies`) transmet également ce que le volet de **détail**
 des journaux affiche pour chaque appel :
 
 | Champ                            | Contenu                                                                          |
@@ -122,17 +141,17 @@ des journaux affiche pour chaque appel :
 | `bodies_truncated`               | Vrai lorsqu’un champ ci-dessus a atteint `maxBodyBytes`                          |
 
 Il s’agit du contenu des prompts ; cette option est donc **désactivée par défaut** et constitue délibérément un choix propre à chaque destination.
-Les données envoyées correspondent à ce que le tableau de bord affiche, car l’exportation et `getCallLogById` partagent la même résolution
+Le contenu transmis correspond à ce que le tableau de bord affiche, car l’exportation et `getCallLogById` partagent la même résolution
 des détails : les charges utiles sont
-déjà expurgées des informations personnelles identifiables et des secrets lors de leur écriture, et un appel effectué avec une clé API
+déjà nettoyées des informations personnelles et les secrets sont masqués lors de leur écriture. De plus, un appel effectué avec une clé API
 `noLog` ne stocke aucune charge utile ; il n’y a donc rien à exporter.
 
-Les charges utiles sont lues ligne par ligne depuis l’artefact du système de fichiers ; l’hydratation ne s’exécute donc que pour les destinations
-qui l’ont demandée. Lorsqu’un artefact est manquant ou corrompu, son récapitulatif est exporté avec des charges utiles nulles au lieu
-de faire échouer le lot et de bloquer le curseur.
+Les charges utiles sont lues ligne par ligne depuis l’artefact du système de fichiers ; l’hydratation n’est donc exécutée que pour les destinations
+qui l’ont demandée. Si un artefact est manquant ou corrompu, son récapitulatif est exporté avec des charges utiles nulles,
+au lieu de faire échouer le lot et de bloquer le curseur.
 
-`maxBodyBytes` (262144 par défaut) limite chaque champ. Les charges utiles plus longues sont **tronquées plutôt que
-supprimées** — un prompt raccourci permet toujours de savoir « ce qui a été demandé » — et la ligne est signalée par
+`maxBodyBytes` (262144 par défaut) limite la taille de chaque champ. Les charges utiles plus longues sont **tronquées plutôt que
+supprimées** — un prompt raccourci permet toujours de savoir « ce qui a été demandé » — et la ligne est signalée avec
 `bodies_truncated`. Les deltas diffusés fragment par fragment ne sont pas exportés ; la réponse assemblée se trouve
 déjà dans `pipeline_provider_response` et `pipeline_client_response`.
 
@@ -149,11 +168,11 @@ déjà dans `pipeline_provider_response` et `pipeline_client_response`.
 | Cycle de vie du processus  | `src/lib/logExport/childRunner.ts`           |
 | Point d’entrée enfant      | `src/lib/logExport/exportChild.ts`           |
 | Ouverture en lecture seule | `src/lib/db/logExportReadOnly.ts`            |
-| Requête/mappage partagé    | `src/lib/usage/callLogExportQueries.ts`      |
+| Requête/mappage partagés   | `src/lib/usage/callLogExportQueries.ts`      |
 | Résolveur de détails       | `src/lib/usage/callLogDetailResolver.ts`     |
 | Projection API             | `src/lib/logExport/presenter.ts`             |
 | Destination BigQuery       | `src/lib/logExport/destinations/bigquery.ts` |
-| Authentification SA Google | `src/lib/logExport/googleServiceAccount.ts`  |
+| Authentification Google SA | `src/lib/logExport/googleServiceAccount.ts`  |
 | Source du journal d’appels | `src/lib/usage/callLogExportSource.ts`       |
 | Persistance                | `src/lib/db/logExportDestinations.ts`        |
 | Tâche cron                 | `src/lib/jobs/logExportJob.ts`               |

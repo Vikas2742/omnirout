@@ -76,32 +76,32 @@ qalmır.
 
 ## Seçimlər
 
-| Açar                             | Standart dəyər                                     | Qeydlər                                                                                                                                            |
-| -------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `providerId`                     | `"omniroute"`                                      | Provayder ID-si, inteqrasiya ID-si və modellərin göstərildiyi prefiks                                                                              |
-| `baseURL`                        | tələb olunur                                       | Şlüzün kök ünvanı, yalnız `http(s)`; lazım olduqda `/v1` suffiksi əlavə edilir                                                                     |
-| `apiKey`                         | qoşulmuş giriş məlumatı, sonra `OMNIROUTE_API_KEY` | `/v1/*` üçün çat açarı                                                                                                                             |
-| `managementReadToken`            | olmadıqda `apiKey` istifadə edilir                 | `/api/*` üçün açar — adətən **eyni açar deyil**                                                                                                    |
-| `displayName`                    | `"OmniRoute"`                                      | Seçim siyahısında provayderin adı                                                                                                                  |
-| `timeoutMs`                      | `10000`                                            | Hər son nöqtə üçün sorğu vaxt aşımı (avtomatik kombinasiyalar 5 saniyə istifadə edir)                                                              |
-| `modelCacheTtlMs`                | `300000`                                           | Kataloq keşinin TTL-i; disk ani görüntüsü soyuq başlanğıcları sürətləndirir                                                                        |
-| `timeouts`                       | olmadıqda `timeoutMs` istifadə edilir              | Son nöqtələr üzrə millisaniyə ilə limitlər: `models`, `combos`, `autoCombos`, `enrichment`                                                         |
-| `enrichment`                     | `true`                                             | Adları, qiymətləri və pulsuz səviyyə limitlərini əldə et                                                                                           |
-| `providerTag`                    | `true`                                             | Göstərilən adın əvvəlinə sorğunun yönləndirildiyi yuxarı axın provayderini əlavə et                                                                |
-| `usableOnly`                     | `false`                                            | Yalnız şlüzün təmin edilmiş kimi bildirdiyi provayderləri saxla                                                                                    |
-| `combosSource`                   | `"api"`                                            | `"models"` `/api/combos` sorğusunu ötürür və `/v1/models` kombinasiya sətirlərini dərc edir; üzv səviyyəli filtrlər `"api"` dəyərini saxlayır      |
-| `showcasePerOwner`               | `10`                                               | Hər provayder üzrə standart görünüşdə saxlanılan qeydlər                                                                                           |
-| `freshPerOwner`                  | `10`                                               | Hər provayder üzrə standart görünüşdə saxlanılan yeni qeydlər                                                                                      |
-| `freshWindowDays`                | `90`                                               | Yeni qeydlər qolu üçün günlərlə yenilik pəncərəsi                                                                                                  |
-| `usageMemory`                    | `true`                                             | 30 günlük istifadə analitikasında adı çəkilən, statik olaraq çıxarılmış qeydləri bərpa et (idarəetmə tokeni tələb olunur)                          |
-| `visibleModels` / `hiddenModels` | `[]`                                               | Dəqiq uyğunluq və ya suffiks üzrə icazə siyahıları; qadağa üstünlük təşkil edir; `*` tam kataloqu dərc edir (digər filtrlər yenə də tətbiq olunur) |
-| `geminiSanitization`             | `true`                                             | Gemini-nin alət sxemlərindən qəbul etmədiyi JSON-Schema açar sözlərini çıxar (`$ref` alətləri dəyişdirilmədən ötürülür)                            |
-| `apiFormat.allowAnthropic`       | `false`                                            | İcazə siyahısındakı ID-ləri Anthropic API bloku vasitəsilə yönləndir                                                                               |
-| `apiFormat.anthropicModels`      | `[]`                                               | Anthropic-ə yönləndirilən tam model ID-ləri                                                                                                        |
-| `logLevel` / `startupDebug`      | `warn` / `false`                                   | Loqlama ətraflılığı                                                                                                                                |
+| Açar                             | Defolt                                             | Qeydlər                                                                                                                                        |
+| -------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `providerId`                     | `"omniroute"`                                      | Provayder ID-si, inteqrasiya ID-si və modellərin göstərildiyi prefiks                                                                          |
+| `baseURL`                        | tələb olunur                                       | Şlüzün kök ünvanı, yalnız `http(s)`; `/v1` suffiksi tələb olunan yerlərdə əlavə edilir                                                         |
+| `apiKey`                         | qoşulmuş giriş məlumatı, sonra `OMNIROUTE_API_KEY` | `/v1/*` üçün söhbət açarı                                                                                                                      |
+| `managementReadToken`            | `apiKey` dəyərinə geri qayıdır                     | `/api/*` üçün açar — adətən eyni açar **deyil**                                                                                                |
+| `displayName`                    | `"OmniRoute"`                                      | Seçicidəki provayder adı                                                                                                                       |
+| `timeoutMs`                      | `10000`                                            | Hər son nöqtə üçün sorğu vaxt limiti (avtomatik kombinasiyalar 5 saniyə istifadə edir)                                                         |
+| `modelCacheTtlMs`                | `300000`                                           | Kataloq keşinin TTL-i; disk ani görüntüsü soyuq başlanğıcları sürətləndirir                                                                    |
+| `timeouts`                       | `timeoutMs` dəyərinə geri qayıdır                  | Son nöqtələr üzrə millisaniyə ilə limitlər: `models`, `combos`, `autoCombos`, `enrichment`                                                     |
+| `enrichment`                     | `true`                                             | Adları, qiymətləri və pulsuz səviyyə limitlərini əldə et                                                                                       |
+| `providerTag`                    | `true`                                             | Göstərilən adın əvvəlinə sorğunun yönləndirildiyi yuxarı axın provayderini əlavə et                                                            |
+| `usableOnly`                     | `false`                                            | Yalnız şlüzün təmin edilmiş kimi bildirdiyi provayderləri saxla                                                                                |
+| `combosSource`                   | `"api"`                                            | `"models"` `/api/combos` sorğusunu ötürür və `/v1/models` kombinasiya sətirlərini yayımlayır; üzv səviyyəli filtrlər `"api"` dəyərini saxlayır |
+| `showcasePerOwner`               | `10`                                               | Defolt görünüşdə hər provayder üçün saxlanılan qeydlər                                                                                         |
+| `freshPerOwner`                  | `10`                                               | Defolt görünüşdə hər provayder üçün saxlanılan yeni qeydlər                                                                                    |
+| `freshWindowDays`                | `90`                                               | Yeni qeydlər qolu üçün günlərlə yenilik müddəti                                                                                                |
+| `usageMemory`                    | `true`                                             | 30 günlük istifadə analitikası tərəfindən adlandırılan statik şəkildə çıxarılmış qeydləri bərpa et (idarəetmə tokeni tələb olunur)             |
+| `visibleModels` / `hiddenModels` | `[]`                                               | Dəqiq və ya suffiks üzrə icazə siyahıları; qadağa üstün gəlir; `*` tam kataloqu yayımlayır (digər filtrlər yenə də tətbiq olunur)              |
+| `geminiSanitization`             | `true`                                             | Gemini-nin alət sxemlərindən qəbul etmədiyi JSON-Schema açar sözlərini sil (`$ref` alətləri dəyişdirilmədən ötürülür)                          |
+| `apiFormat.allowAnthropic`       | `false`                                            | İcazə siyahısındakı ID-ləri Anthropic API bloku vasitəsilə yönləndir                                                                           |
+| `apiFormat.anthropicModels`      | `[]`                                               | Anthropic-ə yönləndirilən tam model ID-ləri                                                                                                    |
+| `logLevel` / `startupDebug`      | `warn` / `false`                                   | Jurnal qeydiyyatının təfərrüat səviyyəsi                                                                                                       |
 
-İstifadə yaddaşı standart olaraq aktivdir. İdarəetmə tokeni olmadıqda o, qeyri-aktiv qalır
-(başlanğıc bildirişi loqa yazılır) və heç nə bərpa edilmir.
+İstifadə yaddaşı defolt olaraq aktivdir. İdarəetmə tokeni olmadan o, qeyri-aktiv qalır
+(başlanğıc bildirişi jurnala yazılır) və heç nə bərpa edilmir.
 
 ## Kataloq necə aktual saxlanılır
 
