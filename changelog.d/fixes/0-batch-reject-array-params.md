@@ -1,1 +1,0 @@
-- **fix(batch):** Reject array-valued Anthropic `params` during JSONL validation and exclude invalid lines from the preview.
