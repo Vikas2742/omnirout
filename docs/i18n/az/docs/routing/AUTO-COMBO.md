@@ -4,10 +4,6 @@
 
 ---
 
-🌐 **Languages:** 🇺🇸 [English](../../../../routing/AUTO-COMBO.md) · 🇪🇹 [am](../../../am/docs/routing/AUTO-COMBO.md) · 🇸🇦 [ar](../../../ar/docs/routing/AUTO-COMBO.md) · 🇧🇬 [bg](../../../bg/docs/routing/AUTO-COMBO.md) · 🇧🇩 [bn](../../../bn/docs/routing/AUTO-COMBO.md) · 🇧🇦 [bs](../../../bs/docs/routing/AUTO-COMBO.md) · 🇨🇿 [cs](../../../cs/docs/routing/AUTO-COMBO.md) · 🇩🇰 [da](../../../da/docs/routing/AUTO-COMBO.md) · 🇩🇪 [de](../../../de/docs/routing/AUTO-COMBO.md) · 🇬🇷 [el](../../../el/docs/routing/AUTO-COMBO.md) · 🇪🇸 [es](../../../es/docs/routing/AUTO-COMBO.md) · 🇪🇪 [et](../../../et/docs/routing/AUTO-COMBO.md) · 🇮🇷 [fa](../../../fa/docs/routing/AUTO-COMBO.md) · 🇫🇮 [fi](../../../fi/docs/routing/AUTO-COMBO.md) · 🇫🇷 [fr](../../../fr/docs/routing/AUTO-COMBO.md) · 🇮🇪 [ga](../../../ga/docs/routing/AUTO-COMBO.md) · 🇮🇳 [gu](../../../gu/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ha](../../../ha/docs/routing/AUTO-COMBO.md) · 🇮🇱 [he](../../../he/docs/routing/AUTO-COMBO.md) · 🇮🇳 [hi](../../../hi/docs/routing/AUTO-COMBO.md) · 🇭🇷 [hr](../../../hr/docs/routing/AUTO-COMBO.md) · 🇭🇺 [hu](../../../hu/docs/routing/AUTO-COMBO.md) · 🇦🇲 [hy](../../../hy/docs/routing/AUTO-COMBO.md) · 🇮🇩 [id](../../../id/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ig](../../../ig/docs/routing/AUTO-COMBO.md) · 🇮🇹 [it](../../../it/docs/routing/AUTO-COMBO.md) · 🇯🇵 [ja](../../../ja/docs/routing/AUTO-COMBO.md) · 🇬🇪 [ka](../../../ka/docs/routing/AUTO-COMBO.md) · 🇰🇭 [km](../../../km/docs/routing/AUTO-COMBO.md) · 🇮🇳 [kn](../../../kn/docs/routing/AUTO-COMBO.md) · 🇰🇷 [ko](../../../ko/docs/routing/AUTO-COMBO.md) · 🇱🇹 [lt](../../../lt/docs/routing/AUTO-COMBO.md) · 🇱🇻 [lv](../../../lv/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ml](../../../ml/docs/routing/AUTO-COMBO.md) · 🇮🇳 [mr](../../../mr/docs/routing/AUTO-COMBO.md) · 🇲🇾 [ms](../../../ms/docs/routing/AUTO-COMBO.md) · 🇲🇹 [mt](../../../mt/docs/routing/AUTO-COMBO.md) · 🇲🇲 [my](../../../my/docs/routing/AUTO-COMBO.md) · 🇳🇵 [ne](../../../ne/docs/routing/AUTO-COMBO.md) · 🇳🇱 [nl](../../../nl/docs/routing/AUTO-COMBO.md) · 🇳🇴 [no](../../../no/docs/routing/AUTO-COMBO.md) · 🇮🇳 [or](../../../or/docs/routing/AUTO-COMBO.md) · 🇮🇳 [pa](../../../pa/docs/routing/AUTO-COMBO.md) · 🇵🇭 [phi](../../../phi/docs/routing/AUTO-COMBO.md) · 🇵🇱 [pl](../../../pl/docs/routing/AUTO-COMBO.md) · 🇵🇹 [pt](../../../pt/docs/routing/AUTO-COMBO.md) · 🇧🇷 [pt-BR](../../../pt-BR/docs/routing/AUTO-COMBO.md) · 🇷🇴 [ro](../../../ro/docs/routing/AUTO-COMBO.md) · 🇷🇺 [ru](../../../ru/docs/routing/AUTO-COMBO.md) · 🇱🇰 [si](../../../si/docs/routing/AUTO-COMBO.md) · 🇸🇰 [sk](../../../sk/docs/routing/AUTO-COMBO.md) · 🇸🇮 [sl](../../../sl/docs/routing/AUTO-COMBO.md) · 🇷🇸 [sr](../../../sr/docs/routing/AUTO-COMBO.md) · 🇸🇪 [sv](../../../sv/docs/routing/AUTO-COMBO.md) · 🇰🇪 [sw](../../../sw/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ta](../../../ta/docs/routing/AUTO-COMBO.md) · 🇮🇳 [te](../../../te/docs/routing/AUTO-COMBO.md) · 🇹🇭 [th](../../../th/docs/routing/AUTO-COMBO.md) · 🇹🇷 [tr](../../../tr/docs/routing/AUTO-COMBO.md) · 🇺🇦 [uk-UA](../../../uk-UA/docs/routing/AUTO-COMBO.md) · 🇵🇰 [ur](../../../ur/docs/routing/AUTO-COMBO.md) · 🇺🇿 [uz](../../../uz/docs/routing/AUTO-COMBO.md) · 🇻🇳 [vi](../../../vi/docs/routing/AUTO-COMBO.md) · 🇳🇬 [yo](../../../yo/docs/routing/AUTO-COMBO.md) · 🇨🇳 [zh-CN](../../../zh-CN/docs/routing/AUTO-COMBO.md) · 🇹🇼 [zh-TW](../../../zh-TW/docs/routing/AUTO-COMBO.md)
-
----
-
 > **İstifadəçilər üçün**: Sürətli başlanğıc axtarırsınız? Sadə izahlar və nümunələr üçün [Auto-Combo İstifadəçi Təlimatına](../getting-started/AUTO-COMBO-GUIDE.md) baxın.
 
 > Adaptiv qiymətləndirmə + sıfır konfiqurasiyalı avtomatik marşrutlaşdırma ilə özünü idarə edən model zəncirləri
@@ -51,15 +47,15 @@ OpenRouter üslublu suffikslər **marşrutun hansı növdə olduğunu** (kateqor
 **İstifadə qaydası:**
 
 ```bash
-# Any IDE or CLI tool that supports OpenAI format
-Base URL: http://localhost:20128/v1
-API Key:  <your-endpoint-key>
+# OpenAI formatını dəstəkləyən istənilən IDE və ya CLI aləti
+Baza URL-i: http://localhost:20128/v1
+API açarı:  <your-endpoint-key>
 
-# In your code/config, set model to:
-model: "auto"                 # balanced default
-model: "auto/coding"          # best for coding tasks
-model: "auto/fast"            # fastest available
-model: "auto/cheap"           # cheapest per token
+# Kodunuzda/konfiqurasiyanızda modeli belə təyin edin:
+model: "auto"                 # balanslaşdırılmış standart
+model: "auto/coding"          # kodlaşdırma tapşırıqları üçün ən yaxşısı
+model: "auto/fast"            # mövcud olan ən sürətli
+model: "auto/cheap"           # hər token üzrə ən ucuz
 ```
 
 **Nə baş verir:**
@@ -110,15 +106,15 @@ vəziyyətlə bayt səviyyəsində tam eyni qalır.
 **Pərdə arxasında:**
 
 ```txt
-Request: { model: "auto/coding" }
+Sorğu: { model: "auto/coding" }
    ↓
-src/sse/handlers/chat.ts detects prefix
+src/sse/handlers/chat.ts prefiksi aşkarlayır
    ↓
-createVirtualAutoCombo('coding') → candidatePool from active connections
+createVirtualAutoCombo('coding') → aktiv bağlantılardan candidatePool
    ↓
-handleComboChat (same engine as persisted combos)
+handleComboChat (saxlanılan kombinasiyalarla eyni mühərrik)
    ↓
-Auto-scoring selects best provider/model per request
+Avtomatik qiymətləndirmə hər sorğu üçün ən yaxşı provayderi/modeli seçir
 ```
 
 **İcra faylları:**
@@ -154,7 +150,13 @@ toqquşduqda `POST /api/combos` və `PUT /api/combos/[id]` cavaba əməliyyatı
 bloklamayan `warning` sahəsi əlavə edir:
 
 ```json
-{ "warning": { "code": "COMBO_NAME_SHADOWS_MODEL", "modelId": "gpt-5.5", "providerId": "openai" } }
+{
+  "warning": {
+    "code": "COMBO_NAME_SHADOWS_MODEL",
+    "modelId": "gpt-5.5",
+    "providerId": "openai"
+  }
+}
 ```
 
 İşəsalma zamanı `scanComboModelNameCollisionsAtBoot()`
@@ -199,45 +201,36 @@ Burada sənədləşdirilən ilkin anlaşılmazlıq üçün
 [#7992](https://github.com/diegosouzapw/OmniRoute/issues/7992) və
 [#7111](https://github.com/diegosouzapw/OmniRoute/issues/7111)-ə baxın.
 
-## Necə İşləyir (Davamlı Auto-Kombolar)
+## Necə İşləyir (Davamlı Saxlanılan Avtomatik Kombinasiyalar)
 
-Auto-Combo Mühərriki **16 faktorlu qiymətləndirmə funksiyasından** (`open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS` daxilində müəyyən edilmişdir) istifadə edərək hər bir sorğu üçün ən yaxşı provayderi/modeli dinamik şəkildə seçir. Defolt çəkilərin cəmi `1.0`-a bərabərdir; xüsusi çəkilər `normalizeScoringWeights()` tərəfindən yenidən normallaşdırılır. On altı faktordan ikisi — `cacheAffinity` və `resetWindowAffinity` — defolt olaraq `0` çəkisinə malikdir; `reliability` faktoru `DEFAULT_WEIGHTS` daxilində `0`, lakin ümumi paketlərdə `0.03` və `reliability-first` daxilində `0.04` çəkisinə malikdir; `quality` isə paketlərdə `0.02` (`quality-first` daxilində `0.03`) daşıyır: onlar hələ də hər bir namizəd üçün hesablanır və `cacheAffinity` xaldan kənar prompt keşinin təkrarlanmasının qarşısını alır, beləliklə, sıfır defolt faktorlar sadəcə olaraq defolt rejimdə səs vermir, paketlərdə isə səs verir.
+Avtomatik Kombinasiya Mühərriki **16 amilli qiymətləndirmə funksiyasından** (`open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS` daxilində müəyyən edilib) istifadə edərək hər sorğu üçün ən yaxşı provayderi/modeli dinamik şəkildə seçir. Standart çəkilərin cəmi `1.0`-dır; fərdi çəkilər `normalizeScoringWeights()` vasitəsilə yenidən normallaşdırılır. On altı amildən ikisinin — `cacheAffinity` və `resetWindowAffinity` — standart çəkisi `0`-dır; `reliability` üçün `DEFAULT_WEIGHTS` daxilində çəki `0`, ümumi paketlərdə `0.03`, `reliability-first` paketində isə `0.04`-dür və `quality` üçün paketlərdə çəki `0.02` (`quality-first` paketində `0.03`) təşkil edir: buna baxmayaraq, onlar hər namizəd üçün hesablanır və `cacheAffinity` qiymətləndirmədən kənarda prompt keşinin dublikatdan təmizlənməsini idarə edir. Beləliklə, standart çəkisi sıfır olan amillər standart halda seçimə təsir göstərmir, paketlərdə isə göstərir.
 
-![Auto-Combo 16 faktorlu qiymətləndirmə](../diagrams/exported/auto-combo-scoring.svg)
+![Avtomatik Kombinasiyanın 16 amilli qiymətləndirilməsi](../diagrams/exported/auto-combo-scoring.svg)
 
-> Mənbə: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (`npm run docs:render-diagrams` vasitəsilə yenidən generasiya edin). Fayl adı tarixidir; mənbə və render edilmiş diaqram `DEFAULT_WEIGHTS` daxilində bəyan edilmiş bütün 16 faktoru göstərir.
+> Mənbə: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (`npm run docs:render-diagrams` vasitəsilə yenidən yaradın). Fayl adı tarixən belə qalıb; mənbə və yaradılmış diaqram `DEFAULT_WEIGHTS` daxilində elan edilmiş bütün 16 amili göstərir.
 
-| Faktor                | Defolt Çəki | Təsvir                                                                                                                                                                                                                           |
-| :-------------------- | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quota`               | 0.1429      | Qalan kvota / rate-limit ehtiyatı [0..1]                                                                                                                                                                                         |
-| `health`              | 0.1605      | Circuit breaker-dən gələn sağlamlıq xalı (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                                   |
-| `costInv`             | 0.1429      | Əks **qarışıq** xərc (60% giriş + 40% çıxış token qiyməti, normallaşdırılmış) — daha ucuz = daha yüksək xal                                                                                                                      |
-| `latencyInv`          | 0.1143      | Pul üzrə normallaşdırılmış əks p95 gecikməsi — daha sürətli = daha yüksək xal                                                                                                                                                    |
-| `taskFit`             | 0.0762      | Tapşırıq növünə uyğunluq (kodlaşdırma, nəzərdən keçirmə, planlaşdırma, analiz, sazlama, sənədləşdirmə)                                                                                                                           |
-| `stability`           | 0.0476      | Gecikmənin standart meylindən əldə edilən dispersiyaya əsaslanan sabitlik — cavab müddəti kəskin dəyişən namizəd daha aşağı xal alır                                                                                             |
-| `tierPriority`        | 0.0476      | Hesab dərəcəsi (tier) prioriteti — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                                  |
-| `tierAffinity`        | 0.0476      | Namizədin dərəcəsi (tier) ilə manifest tərəfindən tövsiyə olunan dərəcə arasındakı yaxınlıq                                                                                                                                      |
-| `specificityMatch`    | 0.0476      | Sorğunun spesifikliyi (manifest göstərişi) ilə model dərəcəsi arasındakı uyğunluq                                                                                                                                                |
-| `contextAffinity`     | 0.0476      | Sorğunun kontekst pəncərəsi ehtiyacı ilə modelin kontekst pəncərəsi arasındakı yaxınlıq                                                                                                                                          |
-| `sessionAvailability` | 0.0476      | Bu sessiya üçün namizəd bağlantısının OAuth sessiya əlçatanlığı (`getOAuthSessionAvailability()`; OAuth olmayan bağlantılar 1.0 xal alır)                                                                                        |
-| `connectionDensity`   | 0.0476      | Yükü eyni provayderin bağlantıları arasında bölüşdürür (konsentrasiyanın qarşısının alınması)                                                                                                                                    |
-| `cacheAffinity`       | 0.00        | Bu sorğunun prompt-cache prefiksini artıq saxlaması ən çox ehtimal olunan bağlantıya doğru Rendezvous-hash yaxınlığı (`open-sse/services/combo/promptCacheAffinity.ts`); defolt olaraq deaktiv edilib (#8008)                    |
-| `resetWindowAffinity` | 0.00        | Kvota sıfırlama pəncərəsi əlverişli olan bağlantılara meyil (defolt olaraq deaktiv edilib)                                                                                                                                       |
-| `quality`             | 0.03        | Routing-event keyfiyyət izləyicisindən gələn rəy əsaslı çıxış keyfiyyəti siqnalı; müşahidəsi olmayan namizədlər neytral 0.5 alır                                                                                                 |
-| `reliability`         | 0.00        | On nümunəlik həddən sonrakı 24 saatlıq istifadə tarixçəsindən müşahidə edilən uğur payı, `1 - failureRate` (əks halda real vaxt metrikləri); heç bir müşahidəsi olmayan namizədlər 1.0 kimi oxunur. Defolt olaraq deaktiv edilib |
+| Amil                  | Standart Çəki | Təsvir                                                                                                                                                                                                                                                                 |
+| :-------------------- | :------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quota`               | 0.1429        | Qalan kvota / sürət məhdudiyyəti ehtiyatı [0..1]                                                                                                                                                                                                                       |
+| `health`              | 0.1605        | Dövrə kəsicisindən alınan sağlamlıq balı (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                                                                         |
+| `costInv`             | 0.1429        | **Qarışıq** dəyərin tərsi (60% giriş + 40% çıxış tokeninin qiyməti, normallaşdırılıb) — daha ucuz = daha yüksək bal                                                                                                                                                    |
+| `latencyInv`          | 0.1143        | Hovuz üzrə normallaşdırılmış p95 gecikməsinin tərsi — daha sürətli = daha yüksək bal                                                                                                                                                                                   |
+| `taskFit`             | 0.0762        | Tapşırıq növünə uyğunluq (kodlaşdırma, nəzərdən keçirmə, planlaşdırma, təhlil, sazlama, sənədləşdirmə)                                                                                                                                                                 |
+| `stability`           | 0.0476        | Gecikmənin standart kənarlaşmasına əsaslanan dəyişkənlik yönümlü sabitlik — cavab müddəti dəyişkən olan namizəd daha aşağı bal alır                                                                                                                                    |
+| `tierPriority`        | 0.0476        | Hesab səviyyəsinin prioriteti — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                                                                           |
+| `tierAffinity`        | 0.0476        | Namizədin səviyyəsi ilə manifestin tövsiyə etdiyi səviyyə arasındakı uyğunluq                                                                                                                                                                                          |
+| `specificityMatch`    | 0.0476        | Sorğunun spesifikliyi (manifest ipucu) ilə model səviyyəsi arasındakı uyğunluq                                                                                                                                                                                         |
+| `contextAffinity`     | 0.0476        | Sorğunun kontekst pəncərəsi ehtiyacı ilə modelin kontekst pəncərəsi arasındakı uyğunluq                                                                                                                                                                                |
+| `sessionAvailability` | 0.0476        | Namizəd bağlantının bu sessiya üçün OAuth sessiyası əlçatanlığı (`getOAuthSessionAvailability()`; OAuth olmayan bağlantılar 1.0 bal alır)                                                                                                                              |
+| `connectionDensity`   | 0.0476        | Yükü eyni provayderin bağlantıları arasında paylayır (təmərküzləşmənin qarşısını alır)                                                                                                                                                                                 |
+| `cacheAffinity`       | 0.00          | Bu sorğunun prompt-keş prefiksini artıq saxlaması ən çox ehtimal olunan bağlantıya doğru rendezvous-heş uyğunluğu (`open-sse/services/combo/promptCacheAffinity.ts`); standart olaraq deaktivdir (#8008)                                                               |
+| `resetWindowAffinity` | 0.00          | Kvota sıfırlama pəncərəsi əlverişli olan bağlantılara üstünlük verir (standart olaraq deaktivdir)                                                                                                                                                                      |
+| `quality`             | 0.03          | Marşrutlaşdırma hadisələrinin keyfiyyət izləyicisindən alınan, rəyə əsaslanan çıxış keyfiyyəti siqnalı; müşahidəsi olmayan namizədlər neytral 0.5 alır                                                                                                                 |
+| `reliability`         | 0.00          | On nümunəlik minimum hədd nəzərə alınmaqla 24 saatlıq istifadə tarixçəsindən əldə edilən müşahidə olunmuş uğur payı, `1 - failureRate` (əks halda real vaxt metrikaları); müşahidəsi olmayan namizədlər üçün bu göstərici 1.0 hesab olunur. Standart olaraq deaktivdir |
 
-> **Oxunmayan kvota (#15347).** Bir provayderin kvota əldəedicisi (quota fetcher) olduqda, lakin oxunaqlı heç nə
-> qaytarmadıqda (uğursuz əldə etmə, çatışmayan etimadnamələr, yalnız mesajdan ibarət istifadə və ya
-> təhlil edilə bilən `windows` və heç bir sonlu `percentUsed` dəyəri olmayan, o cümlədən `percentUsed: null` olan
-> xarab snapşot), namizəd `quota` oxunda `0` xal alır və onun yekun xalı
-> `UNREADABLE_QUOTA_SOFT_DEPRIORITIZE_FACTOR` (0.5, `autoStrategy.ts`) ilə vurulur; bu, bağlantı statusu cəzası ilə
-> eyni yumşaq cəza modelidir. Uğursuz istifadə oxunuşu provayder haqqında deyil, telemetriya haqqında sübutdur,
-> buna görə də o, təsdiqlənmiş 100% istifadə edilmiş oxunuş da daxil olmaqla istənilən real oxunuşdan qəti şəkildə
-> aşağıda sıralanır, lakin heç vaxt sərt şəkildə bloklanmır və ya çıxarılmır. Limiti olmayan provayder `unlimited: true`
-> bildirir və tam kvota kimi xal qazanır; qeydiyyatdan keçmiş kvota əldəedicisi olmayan provayderin isə ümumiyyətlə
-> heç bir telemetriya mənbəyi yoxdur və defolt olaraq `100` dəyərini saxlayır.
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
 
-**Cəm:** `DEFAULT_WEIGHTS` daxilində bəyan edildiyi kimi `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`; istifadəçi tərəfindən konfiqurasiya edilmiş çəkilər xalların hesablanmasından əvvəl `normalizeScoringWeights()` vasitəsilə yenidən paylanmaya normallaşdırılır.
+**Cəm:** `DEFAULT_WEIGHTS` daxilində elan edildiyi kimi `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`; istifadəçi tərəfindən konfiqurasiya edilmiş çəkilər qiymətləndirmədən əvvəl `normalizeScoringWeights()` vasitəsilə paylanma şəklində yenidən normallaşdırılır.
 
 ## Rejim Paketləri
 
@@ -285,7 +278,7 @@ Qeydlər:
 | `X-OmniRoute-Effort`          | `auto` (digər dəyərlər rezerv edilib)                                                                                                                                                                    | Adaptiv düşünmə büdcəsi: sorğuda heç bir formada əsaslandırma sahəsi (`reasoning_effort`, `reasoning`, `thinking`) olmadıqda, şlüz deterministik sorğu strukturu siqnallarına (son istifadəçi mesajının uzunluğu, son istifadəçi mesajınadək kontekst ölçüsü, əvvəlki alət nəticələri, alət dövrəsinin dərinliyi) əsasən `auto` dəyərini `low`/`medium`/`high` kimi müəyyən edir. Siqnallar cari addımla məhdudlaşır — son istifadəçi mesajından sonrakı hər şey nəzərə alınmır — buna görə də alət dövrəsindəki hər sorğu eyni səviyyədə müəyyən edilir (hər addım üçün vəziyyətsiz sabitləmə, sessiya vəziyyəti yoxdur, yuxarı axındakı prompt keşinin prefikslərini poza biləcək dövrə ortası yüksəltmə yoxdur). Klient tərəfindən açıq şəkildə göstərilən əsaslandırma sahəsi həmişə üstünlük təşkil edir. Yuxarı axın yönləndirilməsi OpenAI Chat Completions strukturuna (`targetFormat === FORMATS.OPENAI`) uyğun olan sorğularla məhdudlaşır — `reasoning_effort` OpenAI strukturlu sahədir, buna görə də başlıq Claude və ya Gemini-yə yönəldilmiş sorğuda heç bir təsir göstərmir (baxın: `open-sse/handlers/chatCore/adaptiveEffortWiring.ts`). |
 
 ```bash
-# Force the fastest profile, cap this request at $0.05, and hard-block instead of overspending
+# Ən sürətli profili məcburi seçin, bu sorğunu $0.05 ilə məhdudlaşdırın və büdcəni aşmaq əvəzinə sərt şəkildə bloklayın
 curl -sS http://localhost:20128/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-OmniRoute-Mode: fast" \
@@ -301,44 +294,45 @@ müəyyən edilmiş dəyərlər mühərrikin mövcud `config.modePack` / `config
 
 ## Bütün Marşrutlaşdırma Strategiyaları
 
-OmniRoute-un combo mühərriki **20 marşrutlaşdırma strategiyasını** dəstəkləyir (`src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES` daxilində elan edilib). Auto Combo mühərrikinin özü `auto` strategiyası altında təqdim olunur; digərləri isə saxlanılan (persisted) kombolar üçün mövcuddur.
+OmniRoute-un kombinasiya mühərriki **20 marşrutlaşdırma strategiyasını** dəstəkləyir (`src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES` daxilində elan edilib). Auto Combo mühərrikinin özü `auto` strategiyası vasitəsilə təqdim olunur; digərləri yadda saxlanılan kombinasiyalar üçün əlçatandır.
 
-| Strategiya          | Təsvir                                                                                                                                                                                                              |
-| :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `priority`          | Birinci hədəf üzrə sıralanmış siyahı, dəqiq prioritetlə                                                                                                                                                             |
-| `weighted`          | Hər hədəf üçün çəkiyə görə ağırlıqlı təsadüfi seçim                                                                                                                                                                 |
-| `round-robin`       | Hədəflər arasında ardıcıl dövr (partiyalarla; aşağıya baxın)                                                                                                                                                        |
-| `context-relay`     | Konteksti hədəflər arasında ötürmək (uzun söhbətlər)                                                                                                                                                                |
-| `fill-first`        | Növbəti hədəfə keçməzdən əvvəl hər hədəfin kvotasını doldurmaq                                                                                                                                                      |
-| `p2c`               | 2-seçim gücü (Power-of-2-choices) ilə təsadüfi yük balansı                                                                                                                                                          |
-| `random`            | Bərabər ehtimallı təsadüfi seçim                                                                                                                                                                                    |
-| `least-used`        | Cari yükü ən az olan hədəfi seçmək                                                                                                                                                                                  |
-| `cost-optimized`    | Kataloq qiymətlərinə əsasən sorğu başına $ xərclərini minimuma endirmək                                                                                                                                             |
-| `reset-aware` ⭐    | Kvota sıfırlanma vaxtına görə prioritetləşdirmək — qısa sıfırlanma pəncərələri daha yüksək sıralanır                                                                                                                |
-| `reset-window`      | Kvota pəncərəsi ən tez sıfırlanan hədəflərə üstünlük vermək                                                                                                                                                         |
-| `headroom`          | Ən çox qalan kvota ehtiyatı olan hədəfi seçmək                                                                                                                                                                      |
-| `quota-weighted`    | Tükənmiş hesabları keçmək, sonra qalanlar arasında qalan kvotanın cari yükə nisbətinə görə seçim etmək; mövcud söhbətlər sabit qalır                                                                                |
-| `strict-random`     | Təkrarolunmaları silmədən təsadüfi seçim                                                                                                                                                                            |
-| `auto`              | Auto Combo ballarından istifadə etmək (16-faktorlu) — **tövsiyə olunur**                                                                                                                                            |
-| `lkgp`              | Son Məlum Yaxşı Yol (ən son uğurlu provayderə bağlayır, sonra qaydalara qayıdır)                                                                                                                                    |
-| `context-optimized` | Cari kontekst ölçüsünə ən uyğun hədəfi seçmək                                                                                                                                                                       |
-| `cache-optimized`   | Hədəfləri prompt-cache yaxınlığına görə yenidən sıralamaq — bu sorğunun keşlənmiş prefiksini saxlama ehtimalı ən yüksək olan əlaqə ilk növbədə yoxlanılır (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
-| `fusion` 🧬         | Paralel olaraq bir model panelinə yaymaq, sonra bir hakim vasitəsilə bir cavab sintez etmək (aşağıya baxın)                                                                                                         |
-| `pipeline`          | Hədəfləri ardıcıl işlətmək, hər addımın çıxışını növbəti addımın girişinə ötürmək; yalnız yekun cavab qaytarılır (#6396)                                                                                            |
+| Strategiya          | Təsvir                                                                                                                                                                                                                |
+| :------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `priority`          | Açıq şəkildə göstərilən prioritetə malik, ilk hədəfə üstünlük verən sıralanmış siyahı                                                                                                                                 |
+| `weighted`          | Hər hədəfin çəkisinə əsaslanan çəkili təsadüfi seçim                                                                                                                                                                  |
+| `round-robin`       | Hədəflər arasında ardıcıllıqla dövr et (paketlər şəklində; aşağıya baxın)                                                                                                                                             |
+| `context-relay`     | Konteksti hədəflər arasında ötür (uzun söhbətlər)                                                                                                                                                                     |
+| `fill-first`        | Növbəti hədəfə keçməzdən əvvəl hər hədəfin kvotasını doldur                                                                                                                                                           |
+| `p2c`               | 2-seçimin-gücü əsasında təsadüfi yük balanslaşdırması                                                                                                                                                                 |
+| `random`            | Bərabər ehtimallı təsadüfi seçim                                                                                                                                                                                      |
+| `least-used`        | Cari yükü ən aşağı olan hədəfi seç                                                                                                                                                                                    |
+| `cost-optimized`    | Kataloq qiymətlərinə əsasən hər sorğu üçün $ məbləğini minimuma endir                                                                                                                                                 |
+| `reset-aware` ⭐    | Kvotanın sıfırlanma vaxtına əsasən prioritetləşdir — qısa sıfırlanma pəncərələri daha yuxarı sıralanır                                                                                                                |
+| `reset-window`      | Kvota pəncərəsi ən tez sıfırlanacaq hədəflərə üstünlük ver                                                                                                                                                            |
+| `headroom`          | Ən çox qalan kvota ehtiyatına malik hədəfi seç                                                                                                                                                                        |
+| `quota-weighted`    | Kvotası tükənmiş hesabları ötür, sonra qalanlar arasından qalıq kvotanın icradakı yükə bölünməsi ilə mütənasib şəkildə seçim et; mövcud söhbətlər öz hədəfinə sabitlənmiş qalır                                       |
+| `strict-random`     | Təkrarların deduplikasiyası olmadan təsadüfi seçim                                                                                                                                                                    |
+| `auto`              | Auto Combo qiymətləndirməsindən istifadə et (16 amil) — **tövsiyə olunur**                                                                                                                                            |
+| `lkgp`              | Sonuncu-Məlum-Uğurlu Yol (sonuncu uğurlu provayderə sabitlənir, sonra qaydalara geri qayıdır)                                                                                                                         |
+| `context-optimized` | Cari kontekst ölçüsünə ən uyğun hədəfi seç                                                                                                                                                                            |
+| `cache-optimized`   | Hədəfləri prompt keşi ilə uyğunluğa əsasən yenidən sırala — bu sorğunun keşlənmiş prefiksini artıq saxlama ehtimalı ən yüksək olan bağlantı əvvəlcə sınanır (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
+| `fusion` 🧬         | Paralel şəkildə model panelinə sorğular göndər, sonra hakim vasitəsilə vahid cavab sintez et (aşağıya baxın)                                                                                                          |
+| `pipeline`          | Hədəfləri ardıcıllıqla işə salaraq hər addımın çıxışını növbəti addımın girişinə ötür; yalnız yekun cavab qaytarılır (#6396)                                                                                          |
 
-⭐ = v3.8.0-da yenidir · 🧬 = v3.8.36-da yenidir
+⭐ = v3.8.0 versiyasında yenidir · 🧬 = v3.8.36 versiyasında yenidir
 
 ### `weighted` semantikası
 
-`weighted` **sorğu başına mütənasib təsadüfi seçimdir**
-(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`), bərabərləşdirici deyil:
+`weighted`, bərabərləşdirici deyil, **hər sorğu üzrə mütənasib təsadüfi seçimdir**
+(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`):
 
-- Hər sorğu `weight / totalWeight` ehtimalı ilə **bir** addım seçir; qalan addımlar həmin sorğu üçün ehtiyat (fallback) zənciri kimi çəkiyə görə azalan ardıcıllıqla sıralanır.
-- Çəkisi `0` olan (və ya olmayan) bir addım, digər addımların çəkisi > 0 olduğu müddətcə **heç vaxt seçilmir** — o, yalnız seçilmiş addım uğursuz olduqdan sonra ehtiyat kimi xidmət edə bilər. Yalnız **bütün** çəkilər 0 olduqda seçim bərabər ehtimallı olur.
-- Hədəfləri əlçatmaz olan addımlar — provayderin dövrə kəsicisi (circuit breaker) `OPEN` vəziyyətində olduqda, əlaqə soyuma müddətində olduqda və ya model kilidləndikdə — seçim baş verməzdən əvvəl siyahıdan çıxarılır (`open-sse/services/combo/targetResolution.ts`), buna görə də tək bir sağlam addım müvəqqəti olaraq hər sorğunu qazana bilər.
-- `stickyWeightedLimit` (combo konfiqurasiyası, standart `1` = söndürülüb) seçilmiş addımı yenidən seçim etməzdən əvvəl həmin sayda ardıcıl uğurlu sorğu üçün sabitləyir.
+- Hər sorğu `weight / totalWeight` ehtimalı ilə **bir** addım seçir; qalan addımlar həmin sorğu üçün ehtiyat zənciri kimi çəkinin azalan sırası ilə düzülür.
+- Çəkisi `0` olan (və ya çəkisi göstərilməyən) addım, hər hansı digər addımın çəkisi > 0 olduğu müddətdə **heç vaxt seçilmir** — o, yalnız seçilmiş addım uğursuz olduqdan sonra ehtiyat variant kimi xidmət edə bilər. Seçim yalnız **bütün** çəkilər 0 olduqda bərabər ehtimallı olur.
+- Bütün hədəfləri əlçatan olmayan addımlar — provayderin avtomatik qoruyucu açarı `OPEN`, bağlantının gözləmə müddəti, modelin bloklanması — seçim baş verməzdən əvvəl seçim hovuzundan çıxarılır
+  (`open-sse/services/combo/targetResolution.ts`), buna görə də yalnız bir sağlam addım müvəqqəti olaraq hər sorğuda seçilə bilər.
+- `stickyWeightedLimit` (kombinasiya konfiqurasiyası, standart olaraq `1` = söndürülüb) yenidən seçim etməzdən əvvəl seçilmiş addımı həmin sayda ardıcıl uğur müddətində sabit saxlayır.
 
-Dəqiq rotasiya üçün `round-robin` istifadə edin; `weighted` üzərində bərabər çəkilər statistik — dəqiq olmayan — balans yaradır.
+Sərt rotasiya üçün `round-robin` istifadə edin; `weighted` strategiyasında bərabər çəkilər statistik — sərt deyil — balans təmin edir.
 
 ### Agentic pipeline rejimi
 
@@ -360,15 +354,29 @@ Alət nəticəsinin davamında, OmniRoute həmçinin iki ardıcıl tamamlanmış
 
 İcraçı bir cavabda bir neçə müstəqil çağırış edə bilər. Asılı çağırışlar sonrakı müştəri alət-nəticə növbələrində idarə olunur və planlayıcı hər bir nəticəni nəzərdən keçirir. `maxToolRounds` standart olaraq `8`-dir və `1`–`32` aralığını qəbul edir; bu həddə çatdıqda, planlayıcı mövcud olan ən yaxşı yekun cavabı verməlidir. Daxili planlayıcı qərarları buferlənir, seçilmiş müştəriyə yönəlmiş cavab isə orijinal axın seçimini qoruyub saxlayır.
 
-### `round-robin` sticky batch və hesab genişləndirilməsi
+### `round-robin` yapışqan paketi və hesab genişləndirilməsi
 
-Round-robin toplu şəkildədir (batched), hər addım üçün bir sorğu deyil:
+Round-robin hər addım üçün bir sorğu deyil, paketlər üzrə işləyir:
 
-- `stickyRoundRobinLimit` (kombinasiya konfiqurasiyası, sonra `comboStickyRoundRobinLimit`, sonra `settings.stickyRoundRobinLimit`, standart **3**) rotasiyadan əvvəl həmin sayda ardıcıl uğur üçün eyni hədəfi saxlayır. Bir sorğulu rotasiya üçün kombinasiya ləğvini (override) `1`-ə təyin edin. Kombinasiya redaktoru effektiv dəyəri və onun hansı qatdan gəldiyini göstərir.
-- `connectionAwareExpansion` (kombinasiya konfiqurasiyası, sonra parametrlər, standart **false**) rotasiyadan əvvəl hər provayder səviyyəli addımı hesab üzrə hədəflərə genişləndirir. Qrup-B strategiyaları (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp, fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion, pipeline) bu aktiv olana qədər provayder səviyyəli görünüşü saxlayır. Kombinasiya redaktoru inherit / on / off seçimlərini təqdim edir; inherit qlobal standartı (off) istifadə edir.
-- Prompt-cache lokallıq marşrutlaşdırması (`promptCacheAffinityEnabled`, standart **true**) bərkidilmiş bağlantıları yenidən sıralayır ki, uyğun keş açarları bir hesabda qalsın. Bu, bərkidilmiş hesab üzrə addımlar arasında round-robin və weighted rotasiyadan üstünlük təşkil edir. Dəqiq rotasiyaya ehtiyacınız varsa, Settings → Combo defaults altında bunu söndürün. Kombinasiya üzrə xüsusi ləğv (override) yoxdur.
+- `stickyRoundRobinLimit` (əvvəlcə kombinasiya konfiqurasiyası, sonra `comboStickyRoundRobinLimit`, daha sonra
+  `settings.stickyRoundRobinLimit`, standart olaraq **3**) rotasiyadan əvvəl eyni hədəfi göstərilən sayda
+  ardıcıl uğurlu sorğu üçün saxlayır. Hər sorğudan sonra rotasiya üçün kombinasiya üzrə dəyəri `1` olaraq
+  təyin edin. Kombinasiya redaktoru effektiv dəyəri və onun hansı səviyyədən götürüldüyünü göstərir.
+- `connectionAwareExpansion` (əvvəlcə kombinasiya konfiqurasiyası, sonra parametrlər, standart olaraq **false**) rotasiyadan
+  əvvəl provayder səviyyəsindəki hər addımı hesab üzrə hədəflərə genişləndirir. B qrupu strategiyaları
+  (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp,
+  fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion,
+  pipeline) bu funksiya aktiv edilənədək provayder səviyyəli görünüşü saxlayır. Kombinasiya redaktoru
+  varis alma / aktiv / deaktiv seçimlərini təqdim edir; varis alma qlobal standart dəyərdən (deaktiv) istifadə edir.
+- Sorğu keşinin lokallığı üzrə marşrutlaşdırma (`promptCacheAffinityEnabled`, standart olaraq **true**)
+  uyğun keş açarlarının bir hesabda qalması üçün bərkidilmiş bağlantıların sırasını dəyişir. Bu, hesab üzrə
+  bərkidilmiş addımlar arasında round-robin və weighted rotasiyasından üstündür. Sərt rotasiya lazımdırsa,
+  Settings → Combo defaults bölməsində bunu deaktiv edin. Kombinasiya üzrə ayrıca dəyər yoxdur.
 
-Bir modeldə çoxlu hesab rotasiyası üçün, üç bərkidilmiş `connectionId` əvəzinə, sticky limit `1` olan **bir dinamik-hesab addımına** (boş `connectionId`, bütün hovuz) üstünlük verin. Bərkidilmiş addımlar və yaxınlıq (affinity), RR sayğacı irəliləsə belə, eyni hesaba çökür.
+Bir modeldə çoxhesablı rotasiya üçün yapışqan həddi `1` olan **bir dinamik hesab addımına** (boş
+`connectionId`, bütün hovuz) üstünlük verin; üç bərkidilmiş `connectionId` istifadə etməyin.
+Bərkidilmiş addımlar və yaxınlıq mexanizmi, hətta RR sayğacı irəlilədikdə belə, eyni hesab üzərində
+cəmlənir.
 
 ## Fusion Strategiyası
 
@@ -470,46 +478,55 @@ Sorğuların 5%-i (konfiqurasiya edilə bilər) araşdırma məqsədilə təsad�
 
 ## API
 
-**Xüsusi bir `POST /api/combos/auto` son nöqtəsi (endpoint) yoxdur** — Auto-Combo iki yolla istifadə olunur:
+**Xüsusi `POST /api/combos/auto` son nöqtəsi yoxdur** — Auto-Combo iki üsulla istifadə olunur:
 
-1. **Zero-config (tövsiyə olunur):** `model: "auto"` və ya `model: "auto/<variant>"` ilə istənilən çat tamamlama sorğusu göndərin. Virtual fabrik hər sorğu üçün combo-nu qurur — heç bir davamlılıq (persistence) və ya API çağırışı tələb olunmur.
+1. **Sıfır konfiqurasiya (tövsiyə olunur):** `model: "auto"` və ya `model: "auto/<variant>"` ilə istənilən çat tamamlama sorğusu göndərin. Virtual fabrik hər sorğu üçün kombinasiyanı qurur — davamlı saxlama və API çağırışlarına ehtiyac yoxdur.
 
-2. **`strategy: "auto"` ilə davamlı (persisted) combo:** `POST /api/combos` vasitəsilə adi bir combo yaradın və `strategy: "auto"` ilə yanaşı `config.auto.weights` / `config.auto.candidatePool` parametrlərini təyin edin. Eyni qiymətləndirmə mühərriki istifadə olunur; combo `combos` daxilində saxlanılır və ID vasitəsilə yenidən istifadə edilə bilər.
+2. **`strategy: "auto"` ilə saxlanılan kombinasiya:** `POST /api/combos` vasitəsilə adi kombinasiya yaradın və `strategy: "auto"` ilə yanaşı `config.auto.weights` / `config.auto.candidatePool` dəyərlərini təyin edin. Eyni qiymətləndirmə mühərrikindən istifadə olunur; kombinasiya `combos` daxilində saxlanılır və ID vasitəsilə təkrar istifadə edilə bilər.
 
-Kəşfiyyat üçün, `GET /api/combos/auto` hər bir variantı, onun həll edilmiş namizəd hovuzu (candidate pool) və `context_length` / `max_output_tokens` — yəni namizəd hovuzunun pəncərələri üzrə MAKSİMUM dəyər ilə birlikdə siyahılayır. Müştərilər (məsələn, opencode plagin) `0` əvəzinə bu dəyərləri elan etməlidirlər: sıfır kontekst opencode-un avtomatik sıxılmasını (auto-compaction) tamamilə deaktiv edir və sessiyaların şlüzün tarixçə təmizlənməsi konteksti məhv edənə qədər böyüməsinə imkan verir. MAKSİMUM dəyəri elan etmək təhlükəsizdir, çünki auto-combo kontekst ön filtri həddindən artıq böyük sorğuları geniş pəncərəli namizədlərə yönləndirir.
+Aşkarlama üçün `GET /api/combos/auto` hər variantı onun müəyyən edilmiş namizəd hovuzu, həmçinin `context_length` / `max_output_tokens` ilə birlikdə siyahıya alır — bunlar namizəd hovuzunun kontekst pəncərələri üzrə MAKSİMUM dəyərlərdir. Müştərilər (məsələn, opencode plagini) `0` əvəzinə bu dəyərləri elan etməlidir: sıfır kontekst opencode-un avtomatik sıxlaşdırmasını tamamilə deaktiv edir və sessiyaların şlüzün tarixçə təmizləməsi konteksti məhv edənədək böyüməsinə imkan verir. MAKSİMUM dəyəri elan etmək təhlükəsizdir, çünki auto-combo-nun kontekst üzrə ilkin filtri həddindən böyük sorğuları geniş kontekst pəncərəli namizədlərə yönləndirir.
 
 ```bash
-# Zero-config usage (no combo creation)
+# Sıfır konfiqurasiya ilə istifadə (kombinasiya yaradılmır)
 curl -X POST http://localhost:20128/v1/chat/completions \
   -H "Authorization: Bearer <key>" \
   -H "Content-Type: application/json" \
   -d '{"model":"auto/coding","messages":[{"role":"user","content":"Hello"}]}'
 
-# Persisted auto combo via the regular combos endpoint
+# Adi kombinasiyalar son nöqtəsi vasitəsilə saxlanılan avtomatik kombinasiya
 curl -X POST http://localhost:20128/api/combos \
   -H "Content-Type: application/json" \
   -d '{"id":"my-auto","name":"Auto Coder","strategy":"auto","config":{"auto":{"candidatePool":["anthropic","google","openai"],"weights":{"quota":0.15,"health":0.3,"costInv":0.05,"latencyInv":0.35,"taskFit":0.1,"stability":0,"tierPriority":0.05}}}}'
 ```
 
-### Auto router strategiyaları
+### Avtomatik yönləndirici strategiyaları
 
-Davamlı `strategy: "auto"` combo-ları `config.routerStrategy` (və ya köhnə `config.auto.routerStrategy`) parametrini aşağıdakılardan birinə təyin edə bilər:
+Saxlanılan `strategy: "auto"` kombinasiyaları `config.routerStrategy` (və ya köhnə
+`config.auto.routerStrategy`) dəyərini aşağıdakılardan birinə təyin edə bilər:
 
 - `rules` — standart çəkili qiymətləndirmə
-- `score` — ən yüksək konfiqurasiya edilmiş çəkili balı seçir. Dəqiq bərabərlik hallarında konfiqurasiya edilmiş namizəd sırası qorunur; mövcud `explorationRate` tam sıralanmış hovuzdan nümunələr götürür.
+- `score` — konfiqurasiya edilmiş ən yüksək çəkili xalı seçir. Tam bərabərliklər konfiqurasiya edilmiş
+  namizəd sırasını qoruyur; mövcud `explorationRate` bütün sıralanmış hovuzdan nümunə seçir.
 - `cost` / `eco` — ən ucuz sağlam provayder
-- `latency` / `fast` — etibarlılıq cəzası ilə ən aşağı p95 gecikməsi
-- `sla-aware` / `sla` — p95 gecikməsi, xəta dərəcəsi və isteğe bağlı xərc SLO-larını ödəyən namizədlərə üstünlük verir
-- `lkgp` — sonuncu məlum yaxşı provayderə üstünlük verir
-- `nadir` — [Nadir](https://getnadir.com)-in qərar API-sindən sorğunun hovuzdakı hansı modelə ehtiyacı olduğunu soruşur; opt-in, `rules`-a fail-open (uğursuzluq halında keçid)
+- `latency` / `fast` — etibarlılıq cəriməsi ilə ən aşağı p95 gecikməsi
+- `sla-aware` / `sla` — p95 gecikməsi, xəta tezliyi və istəyə bağlı
+  xərc SLO-larını təmin edən namizədlərə üstünlük verir
+- `lkgp` — əvvəlcə son məlum yaxşı provayder
+- `nadir` — hovuzdakı hansı modelin sorğu üçün lazım olduğunu [Nadir](https://getnadir.com) qərar API-sindən
+  soruşur; seçim əsasında aktivləşdirilir, uğursuzluq halında `rules` strategiyasına açıq şəkildə keçir
 
-### Router strategiyaları ətraflı
+### Yönləndirici strategiyalarının təfərrüatları
 
-Auto-combo mühərriki, `config.routerStrategy` (və ya köhnə `config.auto.routerStrategy`) vasitəsilə dəyişdirə biləcəyiniz 7 qoşula bilən (pluggable) **RouterStrategy** tətbiqini təqdim edir. Hər bir strategiya, `RoutingContext` (tapşırıq növü, alət/görmə göstərişləri, token təxmini, isteğe bağlı SLA siyasəti, isteğe bağlı sonuncu məlum yaxşı provayder) verildikdə, namizəd hovuzundan bir provayder seçir.
+Auto-combo mühərriki `config.routerStrategy` (və ya köhnə `config.auto.routerStrategy`)
+vasitəsilə dəyişdirə biləcəyiniz 7 qoşula bilən **RouterStrategy** reallaşdırmasını təqdim edir.
+Hər strategiya `RoutingContext` (tapşırıq növü, alət/görüntü ipucları, token təxmini, istəyə bağlı SLA siyasəti,
+istəyə bağlı son məlum yaxşı provayder) əsasında namizəd hovuzundan bir provayder seçir.
 
-#### 1. `rules` (standart) — 16-faktorlu çəkili qiymətləndirmə
+#### 1. `rules` (standart) — 16 amilli çəkili qiymətləndirmə
 
-Mövcud qiymətləndirmə mühərrikini əhatə edir. `OPEN` dövrə kəsici (circuit-breaker) vəziyyətində olan namizədləri filtrləyir, sonra cari tapşırıq növü və `getTaskFitness()` ilə `scorePool()` funksiyasını işə salır və ən yüksək bal toplayan provayderi seçir.
+Mövcud qiymətləndirmə mühərrikini əhatə edir. `OPEN` dövrə açarı vəziyyətindəki
+namizədləri filtrləyir, sonra cari tapşırıq növü və `getTaskFitness()` ilə `scorePool()` funksiyasını
+işə salaraq ən yüksək xal toplayan provayderi seçir.
 
 ```ts
 class RulesStrategyImpl implements RouterStrategy {
@@ -529,7 +546,7 @@ class RulesStrategyImpl implements RouterStrategy {
 }
 ```
 
-**İstifadə qaydası**: Standart. Bütün siqnallar üzrə balanslaşdırılmış bir kompromis istədiyiniz zaman istifadə edin.
+**Nə zaman istifadə etməli**: Standart seçimdir. Bütün siqnallar arasında balanslaşdırılmış kompromis istədiyiniz zaman istifadə edin.
 
 **Alias**: `rules` (alias yoxdur)
 
@@ -537,7 +554,8 @@ class RulesStrategyImpl implements RouterStrategy {
 
 #### 2. `cost` / `eco` — ən ucuz sağlam provayder
 
-Namizəd hovuzunu `costPer1MTokens` (artan sıra ilə) üzrə çeşidləyir və ən ucuzunu seçir. Əvvəlcə `OPEN` vəziyyətində olan namizədləri filtrləyir.
+Namizəd hovuzunu `costPer1MTokens` üzrə (artan sıra ilə) sıralayır və ən ucuzunu seçir.
+Əvvəlcə `OPEN` vəziyyətindəki namizədləri filtrləyir.
 
 ```ts
 class CostStrategyImpl implements RouterStrategy {
@@ -552,15 +570,16 @@ class CostStrategyImpl implements RouterStrategy {
 }
 ```
 
-**İstifadə qaydası**: Xərcə həssas iş yükləri, toplu emal (batch processing) və ya fon tapşırıqları.
+**Nə zaman istifadə etməli**: Xərcə həssas iş yükləri, paket emalı və ya fon tapşırıqları üçün.
 
-**Alias-lar**: `cost`, `eco`
+**Aliaslar**: `cost`, `eco`
 
 ---
 
-#### 3. `latency` / `fast` — etibarlılıq cəzası ilə ən aşağı p95 gecikməsi
+#### 3. `latency` / `fast` — etibarlılıq cəriməsi ilə ən aşağı p95 gecikməsi
 
-`p95LatencyMs + (errorRate * 1000)` düsturu ilə çeşidləyir. Xəta dərəcəsi cəzası, etibarsız provayderlərin nominal gecikmələri aşağı olsa belə, daha aşağı sıralanmasını təmin edir.
+`p95LatencyMs + (errorRate * 1000)` üzrə sıralayır. Xəta tezliyi cəriməsi
+nominal gecikmələri aşağı olsa belə, etibarsız provayderlərin daha aşağı sıralanmasını təmin edir.
 
 ```ts
 class LatencyStrategyImpl implements RouterStrategy {
@@ -577,15 +596,16 @@ class LatencyStrategyImpl implements RouterStrategy {
 }
 ```
 
-**İstifadə qaydası**: Real vaxt rejimində çat, avtomatik tamamlama və ya interaktiv kodlaşdırma köməkçiləri kimi gecikməyə həssas iş yükləri.
+**Nə zaman istifadə etməli**: Real vaxt çatları, avtomatik tamamlama və ya
+interaktiv kodlaşdırma köməkçiləri kimi gecikməyə həssas iş yükləri üçün.
 
-**Alias-lar**: `latency`, `fast`
+**Aliaslar**: `latency`, `fast`
 
 ---
 
 #### 4. `sla-aware` / `sla` — gecikmə/xəta/xərc SLO uyğunluğu
 
-Hər bir namizədi konfiqurasiya edilmiş SLO siyasətini nə dərəcədə yerinə yetirdiyinə görə qiymətləndirir:
+Hər namizədi konfiqurasiya edilmiş SLO siyasətini nə dərəcədə yaxşı təmin etdiyinə görə qiymətləndirir:
 
 | Amil           | Çəki | Düstur                                                   |
 | -------------- | ---- | -------------------------------------------------------- |
@@ -593,9 +613,11 @@ Hər bir namizədi konfiqurasiya edilmiş SLO siyasətini nə dərəcədə yerin
 | Xəta balı      | 35%  | `threshold / max(value, ε)`                              |
 | Sağlamlıq balı | 15%  | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN)        |
 | Xərc balı      | 10%  | `threshold / max(value, ε)` və ya tərs normallaşdırılmış |
-| Sabitlik balı  | 5%   | tərs normallaşdırılmış gecikmə standart kənarlaşması     |
+| Stabillik balı | 5%   | tərs normallaşdırılmış gecikmə standart sapması          |
 
-`hardConstraints: true` olduqda, namizədlər ilk növbədə **pozuntu balına** (hər hansı bir SLO-nu nə dərəcədə aşdıqlarına) görə, sonra isə kompozit bala görə sıralanır. Əks halda, yalnız kompozit bal istifadə olunur.
+`hardConstraints: true` olduqda namizədlər əvvəlcə **pozuntu balına**
+(hər hansı SLO həddini nə qədər aşdıqlarına), sonra isə kompozit bala görə sıralanır. Əks halda yalnız
+kompozit bal nəzərə alınır.
 
 ```ts
 class SLAStrategyImpl implements RouterStrategy {
@@ -604,12 +626,12 @@ class SLAStrategyImpl implements RouterStrategy {
     "Selects the provider most likely to satisfy latency, error-rate, and cost SLOs";
 
   select(pool, context) {
-    // ... scores each candidate against policy: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
+    // ... hər bir namizədi siyasətə əsasən qiymətləndirir: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
   }
 }
 ```
 
-**SLA sahələri** (kombinasiya konfiqurasiyasında təyin olunur):
+**SLA sahələri** (kombinasiya konfiqurasiyasında təyin edilir):
 
 ```json
 {
@@ -624,15 +646,17 @@ class SLAStrategyImpl implements RouterStrategy {
 }
 ```
 
-**Nə vaxt istifadə olunmalı**: Sərt gecikmə, xəta dərəcəsi və ya xərc büdcələri olan istehsal iş yükləri üçün.
+**Nə zaman istifadə edilməlidir**: Ciddi gecikmə, xəta tezliyi və ya xərc büdcələri olan istehsal iş yükləri.
 
-**Aliaslar**: `sla-aware`, `sla`
+**Alternativ adlar**: `sla-aware`, `sla`
 
 ---
 
 #### 5. `lkgp` — əvvəlcə son məlum yaxşı provayder
 
-Əvvəlcə **son məlum yaxşı provayderi** (əgər təyin olunubsa) sınayır, sonra `rules` strategiyasına keçir. Sessiya davamlılığı üçün faydalıdır — eyni provayder söhbətdəki sonrakı sorğuları idarə edir.
+Əvvəlcə **son məlum yaxşı provayderi** (təyin edilibsə) sınayır, sonra isə
+`rules` strategiyasına keçir. Sessiya sabitliyi üçün faydalıdır — söhbətdəki
+sonrakı sorğuları eyni provayder emal edir.
 
 ```ts
 class LKGPStrategyImpl implements RouterStrategy {
@@ -653,21 +677,27 @@ class LKGPStrategyImpl implements RouterStrategy {
       }
     }
 
-    // Fallback to rules strategy
+    // Ehtiyat variant kimi rules strategiyasına keçir
     return getStrategy("rules").select(pool, context);
   }
 }
 ```
 
-**Nə vaxt istifadə olunmalı**: Eyni provayderin sonrakı sorğuları idarə etməsini istədiyiniz çoxdövrlü söhbətlər üçün (məsələn, keşləmə, kontekst davamlılığı və ya qiymət ardıcıllığı üçün).
+**Nə zaman istifadə edilməlidir**: Sonrakı sorğuların eyni provayder tərəfindən emal olunmasını
+istədiyiniz çoxmərhələli söhbətlərdə (məsələn, keşləmə, kontekst davamlılığı və ya qiymət sabitliyi üçün).
 
-**Alias**: `lkgp` (alias yoxdur)
+**Alternativ ad**: `lkgp` (alternativ adı yoxdur)
 
 ---
 
-#### 6. `nadir` — Nadir vasitəsilə sorğuya əsaslanan model seçimi
+#### 6. `nadir` — Nadir vasitəsilə promp­ta əsaslanan model seçimi
 
-Yuxarıdakı hər bir strategiya namizədləri öz telemetriyalarına görə sıralayır; heç biri sorğunu oxumur. `nadir` istifadəçinin son cavabını və pulun model ID-lərini [Nadir](https://getnadir.com)-in qərar API-sinə (`POST /v1/bucket`) göndərir və Nadir-in həmin menyudan seçdiyi modelə yönləndirir (`simple` → ən ucuz bacarıqlı model, `complex` → ən qabaqcıl model). Həmin modelə xidmət edən əlaqə hələ də `rules` tərəfindən seçilir, buna görə də kvota, sağlamlıq və xərc hansı hesabın istifadə olunacağına qərar verməyə davam edir.
+Yuxarıdakı hər bir strategiya namizədləri öz telemetriyasına görə sıralayır; onların heç biri
+sorğunu oxumur. `nadir` istifadəçinin son mesajını və hovuzdakı model identifikatorlarını
+[Nadir](https://getnadir.com) qərar API-sinə (`POST /v1/bucket`) göndərir və Nadir-in
+həmin menyudan seçdiyi modelə yönləndirir (`simple` → tələblərə cavab verən ən ucuz model, `complex` → ən
+qabaqcıl model). Həmin modeli təqdim edən bağlantı yenə də `rules` tərəfindən seçilir, buna görə kvota,
+sağlamlıq və xərc hansı hesabın seçiləcəyini müəyyən etməyə davam edir.
 
 ```json
 {
@@ -683,21 +713,31 @@ Yuxarıdakı hər bir strategiya namizədləri öz telemetriyalarına görə sı
 }
 ```
 
-`OMNIROUTE_NADIR_API_KEY` və `OMNIROUTE_NADIR_BASE_URL` bu iki sətir üçün ətraf mühit dəyişənləridir. `baseUrl` yalnız özünüz host etdiyiniz Nadir üçün lazımdır (sonundakı `/v1` qəbul edilir). Açarsız zənglər Nadir-in anonim səviyyəsinə düşür və bu, IP üzrə sürət məhdudiyyətinə malikdir.
+`OMNIROUTE_NADIR_API_KEY` və `OMNIROUTE_NADIR_BASE_URL` bu iki sətir üçün ehtiyat mühit
+dəyərləridir. `baseUrl` yalnız öz serverinizdə yerləşdirilmiş Nadir üçün lazımdır (sondakı `/v1` qəbul edilir).
+Açarsız çağırışlar Nadir-in IP başına sürət məhdudiyyəti tətbiq edilən anonim səviyyəsinə yönləndirilir.
 
-Qutudan çıxanlar: istifadəçinin son mesajının mətni (ilk 16k simvol), namizəd model ID-ləri və `source: "omniroute"` kanal teqi. Sistem sorğusu, tarixçə, alətlər və ya başlıqlar yoxdur.
+Sistemdən kənara çıxan məlumatlar: istifadəçinin son mesajının mətni (ilk 16 min simvol), namizəd
+model identifikatorları və `source: "omniroute"` kanal teqi. Sistem promptu, tarixçə, alətlər və ya
+başlıqlar göndərilmir.
 
-Uğursuzluq davranışı fail-open-dır: taymaut (standart 2000 ms), qeyri-2xx cavabı, əlçatmaz host, yanlış formatlanmış cavab və ya puldan kənar seçim `rules` qərarına gətirib çıxarır və səbəb `NadirStrategy: fallback (…)` prefiksi ilə qeyd olunur. Uğursuz zəngdən sonra strategiya 30 saniyə ərzində şəbəkəni atlayır, buna görə də kəsilmə hər sorğu üçün bir deyil, hər 30 saniyədə bir taymaut xərci yaradır. Marşrutlaşdırma hadisələri yalnız Nadir faktiki olaraq seçim etdikdə `strategy: "nadir"` hesabatını verir.
+Xəta zamanı sistem açıq rejimdə işləməyə davam edir: zaman aşımı (standart olaraq 2000 ms), 2xx olmayan cavab, əlçatmaz
+host, səhv formatlı cavab və ya hovuzdan kənar seçim `rules`
+qərarına keçir və səbəbin əvvəlinə `NadirStrategy: fallback (…)` əlavə edilir. Uğursuz çağırışdan sonra
+strategiya 30 saniyə ərzində şəbəkə sorğularını ötürür, beləliklə kəsinti hər sorğu üçün bir zaman aşımı əvəzinə
+hər 30 saniyədə bir zaman aşımına səbəb olur. Yönləndirmə hadisələri yalnız seçimi həqiqətən Nadir etdikdə
+`strategy: "nadir"` bildirir.
 
-**Nə vaxt istifadə olunmalı**: Model səviyyələrini (kiçik, orta və qabaqcıl model) əhatə edən pulda qarışıq çətinlikli trafik üçün, burada həmişə qabaqcıl modeli istifadə etmək azaltmaq istədiyiniz xərcdir.
+**Nə zaman istifadə edilməlidir**: Müxtəlif model səviyyələrini (kiçik, orta
+və qabaqcıl model) əhatə edən hovuzda qarışıq mürəkkəblikli trafik üçün, həmişə qabaqcıl modeldən istifadənin yaratdığı xərci azaltmaq istədikdə.
 
-**Alias**: `nadir` (alias yoxdur)
+**Alternativ ad**: `nadir` (alternativ adı yoxdur)
 
 ---
 
-### Xüsusi marşrutlaşdırıcı strategiyaları
+### Fərdi yönləndirici strategiyaları
 
-Siz öz `RouterStrategy` tətbiqinizi ictimai API vasitəsilə qeydiyyatdan keçirə bilərsiniz:
+İctimai API vasitəsilə öz `RouterStrategy` reallaşdırmanızı qeydiyyatdan keçirə bilərsiniz:
 
 ```ts
 import {
@@ -710,7 +750,7 @@ class MyCustomStrategy implements RouterStrategy {
   readonly description = "My custom routing strategy";
 
   select(pool, context) {
-    // Your routing logic here
+    // Yönləndirmə məntiqinizi buraya əlavə edin
     return {
       provider: pool[0].provider,
       model: pool[0].model,
@@ -738,18 +778,18 @@ Sonra onu istifadə edin:
 
 ---
 
-### Marşrutlaşdırıcı strategiyası seçimi bələdçisi
+### Yönləndirici strategiyasının seçilməsi üzrə bələdçi
 
 | İstifadə halı               | Strategiya  | Səbəb                                   |
 | --------------------------- | ----------- | --------------------------------------- |
 | Balanslaşdırılmış iş yükü   | `rules`     | Standart — bütün amilləri nəzərə alır   |
-| Xərci minimuma endirmək     | `cost`      | Həmişə ən ucuzunu seçir                 |
+| Xərci minimuma endirmək     | `cost`      | Həmişə ən ucuz variantı seçir           |
 | Gecikməni minimuma endirmək | `latency`   | Ən sürətli etibarlı provayderi seçir    |
-| Sərt SLO-lar                | `sla-aware` | p95/xəta/xərc hədlərinə görə filtrləyir |
-| Çoxdövrlü söhbət            | `lkgp`      | Sessiya davamlılığı                     |
-| Qarışıq çətinlik            | `nadir`     | Sorğuya görə model səviyyəsini seçir    |
+| Ciddi SLO-lar               | `sla-aware` | p95/xəta/xərc hədlərinə görə filtrləyir |
+| Çoxmərhələli söhbət         | `lkgp`      | Sessiya sabitliyi                       |
+| Qarışıq mürəkkəblik         | `nadir`     | Hər prompt üçün model səviyyəsini seçir |
 
-SLA-əsaslı sahələr:
+SLA-ya uyğun sahələr:
 
 ```json
 {
@@ -829,15 +869,15 @@ real giriş məlumatları və VPS-ə giriş tələb etdiyinə görə qəsdən CI
 
 ## Fayllar
 
-| Fayl                                                      | Məqsəd                                                                                                 |
-| :-------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| `open-sse/services/autoCombo/scoring.ts`                  | 16-faktorlu qiymətləndirmə funksiyası, `DEFAULT_WEIGHTS`, hovuz norması                                |
-| `open-sse/services/autoCombo/taskFitness.ts`              | Model × tapşırıq uyğunluğu axtarışı                                                                    |
-| `open-sse/services/autoCombo/engine.ts`                   | Seçim məntiqi, bandit, büdcə limiti                                                                    |
-| `open-sse/services/autoCombo/selfHealing.ts`              | İstisna, yoxlamalar, insident rejimi                                                                   |
-| `open-sse/services/autoCombo/modePacks.ts`                | 6 çəki profili (ship-fast, cost-saver, quality-first, offline-friendly, reliability-first, chaos-mode) |
-| `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/` prefiks parseri + 6 variant                                                                    |
-| `open-sse/services/autoCombo/virtualFactory.ts`           | Canlı bağlantılardan in-memory `AutoComboConfig` yaradır                                               |
-| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Provayder reyestrini saxtalaşdırmaq (mock) üçün test hook-u                                            |
-| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 strategiya)                                                              |
-| `src/sse/handlers/chat.ts`                                | İnteqrasiya: auto-prefiks qısa yolu                                                                    |
+| Fayl                                                      | Məqsəd                                                                                                                           |
+| :-------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| `open-sse/services/autoCombo/scoring.ts`                  | 16 amilli qiymətləndirmə funksiyası, `DEFAULT_WEIGHTS`, hovuz norması                                                            |
+| `open-sse/services/autoCombo/taskFitness.ts`              | Model × tapşırıq uyğunluğu üzrə axtarış                                                                                          |
+| `open-sse/services/autoCombo/engine.ts`                   | Seçim məntiqi, bandit, büdcə limiti                                                                                              |
+| `open-sse/services/autoCombo/selfHealing.ts`              | İstisna etmə, yoxlamalar, insident rejimi                                                                                        |
+| `open-sse/services/autoCombo/modePacks.ts`                | 6 çəki profili (sürətli buraxılış, xərcə qənaət, keyfiyyət prioritetli, oflayn üçün uyğun, etibarlılıq prioritetli, xaos rejimi) |
+| `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/` prefiks analizatoru + 6 variant                                                                                          |
+| `open-sse/services/autoCombo/virtualFactory.ts`           | Aktiv bağlantılardan yaddaşdaxili `AutoComboConfig` yaradır                                                                      |
+| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Provayder reyestrini imitasiya etmək üçün test qoşulma nöqtəsi                                                                   |
+| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 strategiya)                                                                                        |
+| `src/sse/handlers/chat.ts`                                | İnteqrasiya: auto-prefiks üçün qısa dövrə                                                                                        |

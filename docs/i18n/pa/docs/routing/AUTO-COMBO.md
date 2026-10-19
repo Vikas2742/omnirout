@@ -4,10 +4,6 @@
 
 ---
 
-🌐 **Languages:** 🇺🇸 [English](../../../../routing/AUTO-COMBO.md) · 🇪🇹 [am](../../../am/docs/routing/AUTO-COMBO.md) · 🇸🇦 [ar](../../../ar/docs/routing/AUTO-COMBO.md) · 🇦🇿 [az](../../../az/docs/routing/AUTO-COMBO.md) · 🇧🇬 [bg](../../../bg/docs/routing/AUTO-COMBO.md) · 🇧🇩 [bn](../../../bn/docs/routing/AUTO-COMBO.md) · 🇧🇦 [bs](../../../bs/docs/routing/AUTO-COMBO.md) · 🇨🇿 [cs](../../../cs/docs/routing/AUTO-COMBO.md) · 🇩🇰 [da](../../../da/docs/routing/AUTO-COMBO.md) · 🇩🇪 [de](../../../de/docs/routing/AUTO-COMBO.md) · 🇬🇷 [el](../../../el/docs/routing/AUTO-COMBO.md) · 🇪🇸 [es](../../../es/docs/routing/AUTO-COMBO.md) · 🇪🇪 [et](../../../et/docs/routing/AUTO-COMBO.md) · 🇮🇷 [fa](../../../fa/docs/routing/AUTO-COMBO.md) · 🇫🇮 [fi](../../../fi/docs/routing/AUTO-COMBO.md) · 🇫🇷 [fr](../../../fr/docs/routing/AUTO-COMBO.md) · 🇮🇪 [ga](../../../ga/docs/routing/AUTO-COMBO.md) · 🇮🇳 [gu](../../../gu/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ha](../../../ha/docs/routing/AUTO-COMBO.md) · 🇮🇱 [he](../../../he/docs/routing/AUTO-COMBO.md) · 🇮🇳 [hi](../../../hi/docs/routing/AUTO-COMBO.md) · 🇭🇷 [hr](../../../hr/docs/routing/AUTO-COMBO.md) · 🇭🇺 [hu](../../../hu/docs/routing/AUTO-COMBO.md) · 🇦🇲 [hy](../../../hy/docs/routing/AUTO-COMBO.md) · 🇮🇩 [id](../../../id/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ig](../../../ig/docs/routing/AUTO-COMBO.md) · 🇮🇹 [it](../../../it/docs/routing/AUTO-COMBO.md) · 🇯🇵 [ja](../../../ja/docs/routing/AUTO-COMBO.md) · 🇬🇪 [ka](../../../ka/docs/routing/AUTO-COMBO.md) · 🇰🇭 [km](../../../km/docs/routing/AUTO-COMBO.md) · 🇮🇳 [kn](../../../kn/docs/routing/AUTO-COMBO.md) · 🇰🇷 [ko](../../../ko/docs/routing/AUTO-COMBO.md) · 🇱🇹 [lt](../../../lt/docs/routing/AUTO-COMBO.md) · 🇱🇻 [lv](../../../lv/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ml](../../../ml/docs/routing/AUTO-COMBO.md) · 🇮🇳 [mr](../../../mr/docs/routing/AUTO-COMBO.md) · 🇲🇾 [ms](../../../ms/docs/routing/AUTO-COMBO.md) · 🇲🇹 [mt](../../../mt/docs/routing/AUTO-COMBO.md) · 🇲🇲 [my](../../../my/docs/routing/AUTO-COMBO.md) · 🇳🇵 [ne](../../../ne/docs/routing/AUTO-COMBO.md) · 🇳🇱 [nl](../../../nl/docs/routing/AUTO-COMBO.md) · 🇳🇴 [no](../../../no/docs/routing/AUTO-COMBO.md) · 🇮🇳 [or](../../../or/docs/routing/AUTO-COMBO.md) · 🇵🇭 [phi](../../../phi/docs/routing/AUTO-COMBO.md) · 🇵🇱 [pl](../../../pl/docs/routing/AUTO-COMBO.md) · 🇵🇹 [pt](../../../pt/docs/routing/AUTO-COMBO.md) · 🇧🇷 [pt-BR](../../../pt-BR/docs/routing/AUTO-COMBO.md) · 🇷🇴 [ro](../../../ro/docs/routing/AUTO-COMBO.md) · 🇷🇺 [ru](../../../ru/docs/routing/AUTO-COMBO.md) · 🇱🇰 [si](../../../si/docs/routing/AUTO-COMBO.md) · 🇸🇰 [sk](../../../sk/docs/routing/AUTO-COMBO.md) · 🇸🇮 [sl](../../../sl/docs/routing/AUTO-COMBO.md) · 🇷🇸 [sr](../../../sr/docs/routing/AUTO-COMBO.md) · 🇸🇪 [sv](../../../sv/docs/routing/AUTO-COMBO.md) · 🇰🇪 [sw](../../../sw/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ta](../../../ta/docs/routing/AUTO-COMBO.md) · 🇮🇳 [te](../../../te/docs/routing/AUTO-COMBO.md) · 🇹🇭 [th](../../../th/docs/routing/AUTO-COMBO.md) · 🇹🇷 [tr](../../../tr/docs/routing/AUTO-COMBO.md) · 🇺🇦 [uk-UA](../../../uk-UA/docs/routing/AUTO-COMBO.md) · 🇵🇰 [ur](../../../ur/docs/routing/AUTO-COMBO.md) · 🇺🇿 [uz](../../../uz/docs/routing/AUTO-COMBO.md) · 🇻🇳 [vi](../../../vi/docs/routing/AUTO-COMBO.md) · 🇳🇬 [yo](../../../yo/docs/routing/AUTO-COMBO.md) · 🇨🇳 [zh-CN](../../../zh-CN/docs/routing/AUTO-COMBO.md) · 🇹🇼 [zh-TW](../../../zh-TW/docs/routing/AUTO-COMBO.md)
-
----
-
 > **ਵਰਤੋਂਕਾਰਾਂ ਲਈ**: ਤੁਰੰਤ ਸ਼ੁਰੂਆਤ ਕਰਨੀ ਹੈ? ਸਰਲ ਵਿਆਖਿਆਵਾਂ ਅਤੇ ਉਦਾਹਰਨਾਂ ਲਈ [ਆਟੋ-ਕੌਂਬੋ ਵਰਤੋਂਕਾਰ ਗਾਈਡ](../getting-started/AUTO-COMBO-GUIDE.md) ਵੇਖੋ।
 
 > ਅਨੁਕੂਲ ਸਕੋਰਿੰਗ + ਬਿਨਾਂ ਸੰਰਚਨਾ ਵਾਲੀ ਸਵੈਚਾਲਿਤ ਰੂਟਿੰਗ ਨਾਲ ਖੁਦ-ਪ੍ਰਬੰਧਿਤ ਮਾਡਲ ਲੜੀਆਂ
@@ -51,15 +47,15 @@ OpenRouter-ਸ਼ੈਲੀ ਦੇ ਸਫ਼ਿਕਸ **ਕਿਸ ਕਿਸਮ �
 **ਵਰਤਣ ਦਾ ਤਰੀਕਾ:**
 
 ```bash
-# Any IDE or CLI tool that supports OpenAI format
-Base URL: http://localhost:20128/v1
-API Key:  <your-endpoint-key>
+# ਕੋਈ ਵੀ IDE ਜਾਂ CLI ਟੂਲ ਜੋ OpenAI ਫਾਰਮੈਟ ਦਾ ਸਮਰਥਨ ਕਰਦਾ ਹੈ
+ਬੇਸ URL: http://localhost:20128/v1
+API ਕੁੰਜੀ:  <your-endpoint-key>
 
-# In your code/config, set model to:
-model: "auto"                 # balanced default
-model: "auto/coding"          # best for coding tasks
-model: "auto/fast"            # fastest available
-model: "auto/cheap"           # cheapest per token
+# ਆਪਣੇ ਕੋਡ/ਕਾਨਫ਼ਿਗ ਵਿੱਚ, ਮਾਡਲ ਨੂੰ ਇਸ ਤਰ੍ਹਾਂ ਸੈੱਟ ਕਰੋ:
+model: "auto"                 # ਸੰਤੁਲਿਤ ਡਿਫਾਲਟ
+model: "auto/coding"          # ਕੋਡਿੰਗ ਕਾਰਜਾਂ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ
+model: "auto/fast"            # ਸਭ ਤੋਂ ਤੇਜ਼ ਉਪਲਬਧ
+model: "auto/cheap"           # ਪ੍ਰਤੀ ਟੋਕਨ ਸਭ ਤੋਂ ਸਸਤਾ
 ```
 
 **ਕੀ ਹੁੰਦਾ ਹੈ:**
@@ -109,15 +105,15 @@ model: "auto/cheap"           # cheapest per token
 **ਪਰਦੇ ਪਿੱਛੇ:**
 
 ```txt
-Request: { model: "auto/coding" }
+ਬੇਨਤੀ: { model: "auto/coding" }
    ↓
-src/sse/handlers/chat.ts detects prefix
+src/sse/handlers/chat.ts ਪ੍ਰੀਫਿਕਸ ਦੀ ਪਛਾਣ ਕਰਦਾ ਹੈ
    ↓
-createVirtualAutoCombo('coding') → candidatePool from active connections
+createVirtualAutoCombo('coding') → ਸਰਗਰਮ ਕਨੈਕਸ਼ਨਾਂ ਤੋਂ candidatePool
    ↓
-handleComboChat (same engine as persisted combos)
+handleComboChat (ਉਹੀ ਇੰਜਣ ਜੋ ਸਥਾਈ combos ਲਈ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ)
    ↓
-Auto-scoring selects best provider/model per request
+ਆਟੋ-ਸਕੋਰਿੰਗ ਹਰ ਬੇਨਤੀ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ ਪ੍ਰਦਾਤਾ/ਮਾਡਲ ਚੁਣਦੀ ਹੈ
 ```
 
 **ਲਾਗੂਕਰਨ ਫ਼ਾਈਲਾਂ:**
@@ -146,7 +142,13 @@ id `gpt-5.5` ਲਈ ਬੇਨਤੀ ਨੂੰ ਸਿੱਧਾ ਕਿਸੇ ਇ�
 `warning` ਫੀਲਡ ਜੋੜਦੇ ਹਨ, ਜਦੋਂ (ਨਵਾਂ) ਨਾਮ ਕਿਸੇ ਅਸਲ ਮਾਡਲ id ਨਾਲ ਟਕਰਾਉਂਦਾ ਹੈ:
 
 ```json
-{ "warning": { "code": "COMBO_NAME_SHADOWS_MODEL", "modelId": "gpt-5.5", "providerId": "openai" } }
+{
+  "warning": {
+    "code": "COMBO_NAME_SHADOWS_MODEL",
+    "modelId": "gpt-5.5",
+    "providerId": "openai"
+  }
+}
 ```
 
 ਬੂਟ ਸਮੇਂ, `scanComboModelNameCollisionsAtBoot()`
@@ -175,45 +177,36 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 
 ਇੱਥੇ ਦਸਤਾਵੇਜ਼ਬੱਧ ਮੂਲ ਉਲਝਣ ਲਈ [#7992](https://github.com/diegosouzapw/OmniRoute/issues/7992) ਅਤੇ [#7111](https://github.com/diegosouzapw/OmniRoute/issues/7111) ਵੇਖੋ।
 
-## ਇਹ ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ (Persisted Auto-Combos)
+## ਇਹ ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ (ਸਥਾਈ Auto-Combos)
 
-Auto-Combo Engine ਇੱਕ **16-factor scoring function** (`open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS` ਵਿੱਚ ਪਰਿਭਾਸ਼ਿਤ) ਦੀ ਵਰਤੋਂ ਕਰਕੇ ਹਰੇਕ ਬੇਨਤੀ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ provider/model ਨੂੰ ਡਾਇਨਾਮਿਕ ਤੌਰ 'ਤੇ ਚੁਣਦਾ ਹੈ। ਡਿਫੌਲਟ ਵਜ਼ਨਾਂ ਦਾ ਜੋੜ `1.0` ਹੁੰਦਾ ਹੈ; ਕਸਟਮ ਵਜ਼ਨਾਂ ਨੂੰ `normalizeScoringWeights()` ਦੁਆਰਾ ਮੁੜ-ਸਧਾਰਣ (renormalized) ਕੀਤਾ ਜਾਂਦਾ ਹੈ। ਸੋਲਾਂ ਵਿੱਚੋਂ ਦੋ — `cacheAffinity` ਅਤੇ `resetWindowAffinity` — ਦਾ ਡਿਫੌਲਟ ਵਜ਼ਨ `0` ਹੁੰਦਾ ਹੈ; `reliability` ਦਾ ਵਜ਼ਨ `DEFAULT_WEIGHTS` ਵਿੱਚ `0` ਹੁੰਦਾ ਹੈ ਪਰ ਜੈਨਰਿਕ ਪੈਕਾਂ ਵਿੱਚ `0.03` ਅਤੇ `reliability-first` ਵਿੱਚ `0.04` ਹੁੰਦਾ ਹੈ, ਅਤੇ `quality` ਦਾ ਪੈਕਾਂ ਵਿੱਚ `0.02` ਹੁੰਦਾ ਹੈ (`quality-first` ਵਿੱਚ `0.03`): ਇਹਨਾਂ ਦੀ ਗਣਨਾ ਅਜੇ ਵੀ ਹਰੇਕ ਉਮੀਦਵਾਰ (candidate) ਲਈ ਕੀਤੀ ਜਾਂਦੀ ਹੈ, ਅਤੇ `cacheAffinity` ਸਕੋਰ ਤੋਂ ਬਾਹਰ prompt-cache ਡਿਡੁਪਲੀਕੇਸ਼ਨ ਨੂੰ ਨਿਯੰਤਰਿਤ ਕਰਦਾ ਹੈ, ਇਸ ਲਈ ਜ਼ੀਰੋ-ਡਿਫੌਲਟ ਕਾਰਕ ਸਿਰਫ਼ ਡਿਫੌਲਟ ਤੌਰ 'ਤੇ ਵੋਟ ਨਹੀਂ ਕਰਦੇ ਜਦਕਿ ਪੈਕ ਕਰਦੇ ਹਨ।
+Auto-Combo Engine ਇੱਕ **16-ਕਾਰਕ ਸਕੋਰਿੰਗ ਫੰਕਸ਼ਨ** (`open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS` ਵਿੱਚ ਪਰਿਭਾਸ਼ਿਤ) ਦੀ ਵਰਤੋਂ ਕਰਕੇ ਹਰ ਬੇਨਤੀ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ provider/model ਨੂੰ ਗਤੀਸ਼ੀਲ ਢੰਗ ਨਾਲ ਚੁਣਦਾ ਹੈ। ਡਿਫਾਲਟ ਭਾਰਾਂ ਦਾ ਜੋੜ `1.0` ਹੈ; ਕਸਟਮ ਭਾਰਾਂ ਨੂੰ `normalizeScoringWeights()` ਦੁਆਰਾ ਮੁੜ ਨਾਰਮਲਾਈਜ਼ ਕੀਤਾ ਜਾਂਦਾ ਹੈ। ਸੋਲ੍ਹਾਂ ਵਿੱਚੋਂ ਦੋ — `cacheAffinity` ਅਤੇ `resetWindowAffinity` — ਦਾ ਡਿਫਾਲਟ ਭਾਰ `0` ਹੈ; `reliability` ਦਾ `DEFAULT_WEIGHTS` ਵਿੱਚ ਭਾਰ `0` ਹੈ, ਪਰ ਆਮ ਪੈਕਾਂ ਵਿੱਚ `0.03` ਅਤੇ `reliability-first` ਵਿੱਚ `0.04` ਹੈ, ਅਤੇ `quality` ਦਾ ਪੈਕਾਂ ਵਿੱਚ ਭਾਰ `0.02` (`quality-first` ਵਿੱਚ `0.03`) ਹੈ: ਫਿਰ ਵੀ ਹਰ ਉਮੀਦਵਾਰ ਲਈ ਇਨ੍ਹਾਂ ਦੀ ਗਣਨਾ ਕੀਤੀ ਜਾਂਦੀ ਹੈ, ਅਤੇ `cacheAffinity` ਸਕੋਰ ਤੋਂ ਬਾਹਰ prompt-cache ਡੀਡੁਪਲੀਕੇਸ਼ਨ ਨੂੰ ਨਿਯੰਤਰਿਤ ਕਰਦਾ ਹੈ, ਇਸ ਲਈ ਸਿਫ਼ਰ-ਡਿਫਾਲਟ ਵਾਲੇ ਕਾਰਕ ਡਿਫਾਲਟ ਤੌਰ 'ਤੇ ਵੋਟ ਨਹੀਂ ਦਿੰਦੇ, ਜਦਕਿ ਪੈਕ ਦਿੰਦੇ ਹਨ।
 
-![Auto-Combo 16-factor scoring](../diagrams/exported/auto-combo-scoring.svg)
+![Auto-Combo ਦੀ 16-ਕਾਰਕ ਸਕੋਰਿੰਗ](../diagrams/exported/auto-combo-scoring.svg)
 
-> ਸਰੋਤ: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (`npm run docs:render-diagrams` ਰਾਹੀਂ ਮੁੜ ਤਿਆਰ ਕਰੋ)। ਫਾਈਲ ਦਾ ਨਾਮ ਇਤਿਹਾਸਕ ਹੈ; ਸਰੋਤ ਅਤੇ ਰੈਂਡਰ ਕੀਤਾ ਡਾਇਗ੍ਰਾਮ `DEFAULT_WEIGHTS` ਵਿੱਚ ਘੋਸ਼ਿਤ ਸਾਰੇ 16 ਕਾਰਕਾਂ ਨੂੰ ਦਰਸਾਉਂਦਾ ਹੈ।
+> ਸਰੋਤ: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (`npm run docs:render-diagrams` ਰਾਹੀਂ ਮੁੜ ਤਿਆਰ ਕਰੋ)। ਫ਼ਾਈਲ ਦਾ ਨਾਮ ਇਤਿਹਾਸਕ ਹੈ; ਸਰੋਤ ਅਤੇ ਰੈਂਡਰ ਕੀਤਾ ਡਾਇਗ੍ਰਾਮ `DEFAULT_WEIGHTS` ਵਿੱਚ ਘੋਸ਼ਿਤ ਸਾਰੇ 16 ਕਾਰਕ ਦਿਖਾਉਂਦੇ ਹਨ।
 
-| Factor                | Default Weight | Description                                                                                                                                                                                             |
-| :-------------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `quota`               | 0.1429         | ਬਾਕੀ ਬਚਿਆ quota / rate-limit headroom [0..1]                                                                                                                                                            |
-| `health`              | 0.1605         | Circuit breaker ਤੋਂ Health ਸਕੋਰ (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                   |
-| `costInv`             | 0.1429         | ਉਲਟ (Inverse) **ਮਿਸ਼ਰਤ** ਲਾਗਤ (60% input + 40% output token ਕੀਮਤ, ਸਧਾਰਣ ਕੀਤੀ ਗਈ) — ਸਸਤਾ = ਵੱਧ ਸਕੋਰ                                                                                                      |
-| `latencyInv`          | 0.1143         | ਪੂਲ ਲਈ ਸਧਾਰਣ ਕੀਤੀ ਗਈ ਉਲਟ p95 latency — ਤੇਜ਼ = ਵੱਧ ਸਕੋਰ                                                                                                                                                  |
-| `taskFit`             | 0.0762         | ਕਾਰਜ-ਕਿਸਮ ਦੀ ਅਨੁਕੂਲਤਾ (coding, review, planning, analysis, debugging, docs)                                                                                                                             |
-| `stability`           | 0.0476         | Latency standard deviation ਤੋਂ ਪਰਿਵਰਤਨ-ਅਧਾਰਤ (variance-based) ਸਥਿਰਤਾ — ਇੱਕ ਉਮੀਦਵਾਰ ਜਿਸਦਾ ਜਵਾਬ ਸਮਾਂ ਬਦਲਦਾ ਰਹਿੰਦਾ ਹੈ, ਘੱਟ ਸਕੋਰ ਪ੍ਰਾਪਤ ਕਰਦਾ ਹੈ                                                             |
-| `tierPriority`        | 0.0476         | ਖਾਤਾ-ਟੀਅਰ ਤਰਜੀਹ — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                          |
-| `tierAffinity`        | 0.0476         | ਉਮੀਦਵਾਰ ਦੇ ਟੀਅਰ ਅਤੇ ਮੈਨੀਫੈਸਟ-ਸਿਫਾਰਸ਼ੀ ਟੀਅਰ ਵਿਚਕਾਰ ਸਾਂਝ (Affinity)                                                                                                                                       |
-| `specificityMatch`    | 0.0476         | ਬੇਨਤੀ ਦੀ ਵਿਸ਼ੇਸ਼ਤਾ (manifest hint) ਅਤੇ ਮਾਡਲ ਟੀਅਰ ਵਿਚਕਾਰ ਮੇਲ                                                                                                                                             |
-| `contextAffinity`     | 0.0476         | ਬੇਨਤੀ ਦੀ context-window ਲੋੜ ਅਤੇ ਮਾਡਲ ਦੀ context window ਵਿਚਕਾਰ ਸਾਂਝ                                                                                                                                      |
-| `sessionAvailability` | 0.0476         | ਇਸ ਸੈਸ਼ਨ ਲਈ ਉਮੀਦਵਾਰ ਕਨੈਕਸ਼ਨ ਦੀ OAuth ਸੈਸ਼ਨ ਉਪਲਬਧਤਾ (`getOAuthSessionAvailability()`; ਗੈਰ-OAuth ਕਨੈਕਸ਼ਨ 1.0 ਸਕੋਰ ਕਰਦੇ ਹਨ)                                                                                |
-| `connectionDensity`   | 0.0476         | ਇੱਕੋ ਪ੍ਰਦਾਤਾ ਦੇ ਕਨੈਕਸ਼ਨਾਂ ਵਿੱਚ ਲੋਡ ਨੂੰ ਵੰਡਦਾ ਹੈ (anti-concentration)                                                                                                                                    |
-| `cacheAffinity`       | 0.00           | ਉਸ ਕਨੈਕਸ਼ਨ ਵੱਲ Rendezvous-hash ਸਾਂਝ ਜਿਸ ਕੋਲ ਇਸ ਬੇਨਤੀ ਦਾ prompt-cache ਅਗੇਤਰ ਪਹਿਲਾਂ ਤੋਂ ਹੋਣ ਦੀ ਸਭ ਤੋਂ ਵੱਧ ਸੰਭਾਵਨਾ ਹੈ (`open-sse/services/combo/promptCacheAffinity.ts`); ਡਿਫੌਲਟ ਤੌਰ 'ਤੇ ਅਸਮਰੱਥ ਹੈ (#8008) |
-| `resetWindowAffinity` | 0.00           | ਉਹਨਾਂ ਕਨੈਕਸ਼ਨਾਂ ਵੱਲ ਝੁਕਾਅ ਜਿਨ੍ਹਾਂ ਦੀ ਕੋਟਾ ਰੀਸੈੱਟ ਵਿੰਡੋ ਅਨੁਕੂਲ ਹੈ (ਡਿਫੌਲਟ ਤੌਰ 'ਤੇ ਅਸਮਰੱਥ)                                                                                                                |
-| `quality`             | 0.03           | Routing-event ਕੁਆਲਿਟੀ ਟਰੈਕਰ ਤੋਂ ਫੀਡਬੈਕ-ਸੰਚਾਲਿਤ ਆਉਟਪੁੱਟ-ਕੁਆਲਿਟੀ ਸਿਗਨਲ; ਬਿਨਾਂ ਨਿਰੀਖਣ ਵਾਲੇ ਉਮੀਦਵਾਰ ਨਿਰਪੱਖ 0.5 ਪ੍ਰਾਪਤ ਕਰਦੇ ਹਨ                                                                               |
-| `reliability`         | 0.00           | ਦਸ-ਨਮੂਨੇ ਦੇ ਅਧਾਰ ਦੇ ਪਿੱਛੇ 24 ਘੰਟੇ ਦੇ ਵਰਤੋਂ ਇਤਿਹਾਸ ਤੋਂ ਦੇਖਿਆ ਗਿਆ ਸਫਲਤਾ ਹਿੱਸਾ, `1 - failureRate` (ਨਹੀਂ ਤਾਂ ਰੀਅਲ-ਟਾਈਮ ਮੈਟ੍ਰਿਕਸ); ਬਿਨਾਂ ਨਿਰੀਖਣ ਵਾਲੇ ਉਮੀਦਵਾਰ 1.0 ਵਜੋਂ ਪੜ੍ਹੇ ਜਾਂਦੇ ਹਨ। ਡਿਫੌਲਟ ਤੌਰ 'ਤੇ ਅਸਮਰੱਥ  |
+| ਕਾਰਕ                  | ਡਿਫਾਲਟ ਭਾਰ | ਵੇਰਵਾ                                                                                                                                                                                                             |
+| :-------------------- | :--------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quota`               | 0.1429     | ਬਾਕੀ quota / rate-limit ਸਮਰੱਥਾ [0..1]                                                                                                                                                                             |
+| `health`              | 0.1605     | circuit breaker ਤੋਂ ਸਿਹਤ ਸਕੋਰ (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                               |
+| `costInv`             | 0.1429     | ਉਲਟੀ **ਮਿਸ਼ਰਤ** ਲਾਗਤ (60% ਇਨਪੁੱਟ + 40% ਆਉਟਪੁੱਟ token ਕੀਮਤ, ਨਾਰਮਲਾਈਜ਼ ਕੀਤੀ) — ਘੱਟ ਲਾਗਤ = ਵੱਧ ਸਕੋਰ                                                                                                                  |
+| `latencyInv`          | 0.1143     | pool ਦੇ ਮੁਕਾਬਲੇ ਨਾਰਮਲਾਈਜ਼ ਕੀਤੀ ਉਲਟੀ p95 latency — ਵੱਧ ਤੇਜ਼ = ਵੱਧ ਸਕੋਰ                                                                                                                                             |
+| `taskFit`             | 0.0762     | ਕਾਰਜ-ਕਿਸਮ ਲਈ ਉਪਯੋਗਤਾ (ਕੋਡਿੰਗ, ਸਮੀਖਿਆ, ਯੋਜਨਾ, ਵਿਸ਼ਲੇਸ਼ਣ, ਡੀਬੱਗਿੰਗ, ਦਸਤਾਵੇਜ਼)                                                                                                                                       |
+| `stability`           | 0.0476     | latency ਦੇ ਮਿਆਰੀ ਵਿਸਥਾਪਨ ਤੋਂ variance-ਅਧਾਰਿਤ ਸਥਿਰਤਾ — ਜਿਸ ਉਮੀਦਵਾਰ ਦਾ ਜਵਾਬ ਸਮਾਂ ਵੱਧ ਉਤਰਾਅ-ਚੜ੍ਹਾਅ ਕਰਦਾ ਹੈ, ਉਸਨੂੰ ਘੱਟ ਸਕੋਰ ਮਿਲਦਾ ਹੈ                                                                                  |
+| `tierPriority`        | 0.0476     | ਖਾਤਾ-tier ਤਰਜੀਹ — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                                    |
+| `tierAffinity`        | 0.0476     | ਉਮੀਦਵਾਰ ਦੇ tier ਅਤੇ manifest ਦੁਆਰਾ ਸਿਫ਼ਾਰਸ਼ ਕੀਤੇ tier ਵਿਚਕਾਰ ਅਨੁਕੂਲਤਾ                                                                                                                                             |
+| `specificityMatch`    | 0.0476     | ਬੇਨਤੀ ਦੀ ਵਿਸ਼ੇਸ਼ਤਾ (manifest ਸੰਕੇਤ) ਅਤੇ model tier ਵਿਚਕਾਰ ਮੇਲ                                                                                                                                                     |
+| `contextAffinity`     | 0.0476     | ਬੇਨਤੀ ਦੀ context-window ਲੋੜ ਅਤੇ model ਦੀ context window ਵਿਚਕਾਰ ਅਨੁਕੂਲਤਾ                                                                                                                                           |
+| `sessionAvailability` | 0.0476     | ਇਸ session ਲਈ ਉਮੀਦਵਾਰ connection ਦੀ OAuth session ਉਪਲਬਧਤਾ (`getOAuthSessionAvailability()`; ਗੈਰ-OAuth connections ਨੂੰ 1.0 ਸਕੋਰ ਮਿਲਦਾ ਹੈ)                                                                          |
+| `connectionDensity`   | 0.0476     | ਇੱਕੋ provider ਦੇ connections ਵਿਚਕਾਰ ਲੋਡ ਵੰਡਦਾ ਹੈ (ਕੇਂਦਰੀਕਰਨ-ਵਿਰੋਧੀ)                                                                                                                                               |
+| `cacheAffinity`       | 0.00       | ਉਸ connection ਵੱਲ Rendezvous-hash ਅਨੁਕੂਲਤਾ, ਜਿਸ ਕੋਲ ਪਹਿਲਾਂ ਹੀ ਇਸ ਬੇਨਤੀ ਦਾ prompt-cache prefix ਹੋਣ ਦੀ ਸਭ ਤੋਂ ਵੱਧ ਸੰਭਾਵਨਾ ਹੈ (`open-sse/services/combo/promptCacheAffinity.ts`); ਡਿਫਾਲਟ ਤੌਰ 'ਤੇ ਅਸਮਰੱਥ (#8008)      |
+| `resetWindowAffinity` | 0.00       | ਉਨ੍ਹਾਂ connections ਵੱਲ ਝੁਕਾਅ, ਜਿਨ੍ਹਾਂ ਦੀ quota reset window ਅਨੁਕੂਲ ਹੈ (ਡਿਫਾਲਟ ਤੌਰ 'ਤੇ ਅਸਮਰੱਥ)                                                                                                                     |
+| `quality`             | 0.03       | routing-event ਗੁਣਵੱਤਾ tracker ਤੋਂ feedback-ਅਧਾਰਿਤ ਆਉਟਪੁੱਟ-ਗੁਣਵੱਤਾ ਸੰਕੇਤ; ਬਿਨਾਂ ਨਿਰੀਖਣਾਂ ਵਾਲੇ ਉਮੀਦਵਾਰਾਂ ਨੂੰ ਨਿਰਪੱਖ 0.5 ਮਿਲਦਾ ਹੈ                                                                                    |
+| `reliability`         | 0.00       | ਦਸ-sample ਦੀ ਘੱਟੋ-ਘੱਟ ਸੀਮਾ ਪਿੱਛੇ 24h ਦੇ ਵਰਤੋਂ ਇਤਿਹਾਸ ਤੋਂ ਦੇਖਿਆ ਗਿਆ ਸਫਲਤਾ ਅਨੁਪਾਤ, `1 - failureRate` (ਨਹੀਂ ਤਾਂ real-time metrics); ਬਿਨਾਂ ਨਿਰੀਖਣਾਂ ਵਾਲੇ ਉਮੀਦਵਾਰਾਂ ਲਈ ਇਸਨੂੰ 1.0 ਮੰਨਿਆ ਜਾਂਦਾ ਹੈ। ਡਿਫਾਲਟ ਤੌਰ 'ਤੇ ਅਸਮਰੱਥ |
 
-> **ਅਣਪੜ੍ਹਨਯੋਗ ਕੋਟਾ (Unreadable quota) (#15347)।** ਜਦੋਂ ਕਿਸੇ ਪ੍ਰੋਵਾਈਡਰ ਕੋਲ ਕੋਟਾ ਫੈਚਰ (quota fetcher) ਹੁੰਦਾ ਹੈ ਪਰ ਇਹ ਕੁਝ ਵੀ
-> ਪੜ੍ਹਨਯੋਗ ਵਾਪਸ ਨਹੀਂ ਕਰਦਾ (ਅਸਫ਼ਲ ਫੈਚ, ਗੁੰਮ ਕ੍ਰੈਡੈਂਸ਼ੀਅਲ, ਸਿਰਫ਼-ਸੰਦੇਸ਼ ਵਾਲੀ ਵਰਤੋਂ, ਜਾਂ ਬਿਨਾਂ ਕਿਸੇ ਪਾਰਸ ਹੋਣ ਯੋਗ
-> `windows` ਅਤੇ ਬਿਨਾਂ ਕਿਸੇ ਸੀਮਤ `percentUsed`, ਜਿਸ ਵਿੱਚ `percentUsed: null` ਸ਼ਾਮਲ ਹੈ, ਵਾਲਾ ਖ਼ਰਾਬ ਸਨੈਪਸ਼ਾਟ), ਤਾਂ ਉਮੀਦਵਾਰ
-> `quota` ਧੁਰੇ 'ਤੇ `0` ਸਕੋਰ ਕਰਦਾ ਹੈ ਅਤੇ ਇਸਦੇ ਅੰਤਿਮ ਸਕੋਰ ਨੂੰ
-> `UNREADABLE_QUOTA_SOFT_DEPRIORITIZE_FACTOR` (0.5, `autoStrategy.ts`) ਨਾਲ ਗੁਣਾ ਕੀਤਾ ਜਾਂਦਾ ਹੈ, ਜੋ ਕਿ ਕਨੈਕਸ਼ਨ-ਸਥਿਤੀ ਪੈਨਲਟੀ ਵਾਂਗ ਹੀ
-> ਸਾਫਟ-ਪੈਨਲਟੀ ਪੈਟਰਨ ਹੈ। ਇੱਕ ਅਸਫ਼ਲ ਵਰਤੋਂ ਰੀਡ ਟੈਲੀਮੈਟਰੀ ਬਾਰੇ ਸਬੂਤ ਹੈ,
-> ਨਾ ਕਿ ਪ੍ਰੋਵਾਈਡਰ ਬਾਰੇ, ਇਸ ਲਈ ਇਹ ਸਖ਼ਤੀ ਨਾਲ ਕਿਸੇ ਵੀ ਅਸਲ ਰੀਡਿੰਗ ਤੋਂ ਹੇਠਾਂ ਰੈਂਕ ਕਰਦਾ ਹੈ, ਜਿਸ ਵਿੱਚ ਇੱਕ ਪੁਸ਼ਟੀ ਕੀਤੀ 100%-ਵਰਤੀ ਹੋਈ ਰੀਡਿੰਗ
-> ਵੀ ਸ਼ਾਮਲ ਹੈ, ਪਰ ਇਸਨੂੰ ਕਦੇ ਵੀ ਹਾਰਡ-ਬਲਾਕ ਜਾਂ ਬੇਦਖ਼ਲ ਨਹੀਂ ਕੀਤਾ ਜਾਂਦਾ ਹੈ। ਬਿਨਾਂ ਕਿਸੇ ਕੈਪ ਵਾਲਾ ਪ੍ਰੋਵਾਈਡਰ `unlimited: true` ਰਿਪੋਰਟ ਕਰਦਾ ਹੈ ਅਤੇ
-> ਪੂਰੇ ਕੋਟੇ ਵਜੋਂ ਸਕੋਰ ਕਰਦਾ ਹੈ; ਬਿਨਾਂ ਕਿਸੇ ਰਜਿਸਟਰਡ ਕੋਟਾ ਫੈਚਰ ਵਾਲੇ ਪ੍ਰੋਵਾਈਡਰ ਕੋਲ ਕੋਈ ਟੈਲੀਮੈਟਰੀ ਸਰੋਤ ਨਹੀਂ ਹੁੰਦਾ ਹੈ
-> ਅਤੇ ਉਹ `100` ਦਾ ਡਿਫੌਲਟ ਰੱਖਦਾ ਹੈ।
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
 
-**ਜੋੜ:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` ਜਿਵੇਂ ਕਿ `DEFAULT_WEIGHTS` ਵਿੱਚ ਘੋਸ਼ਿਤ ਕੀਤਾ ਗਿਆ ਹੈ; ਉਪਭੋਗਤਾ ਦੁਆਰਾ ਕੌਂਫਿਗਰ ਕੀਤੇ ਵਜ਼ਨਾਂ ਨੂੰ ਸਕੋਰਿੰਗ ਤੋਂ ਪਹਿਲਾਂ `normalizeScoringWeights()` ਦੁਆਰਾ ਇੱਕ ਵੰਡ ਵਿੱਚ ਮੁੜ-ਸਧਾਰਣ (renormalized) ਕੀਤਾ ਜਾਂਦਾ ਹੈ।
+**ਜੋੜ:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, ਜਿਵੇਂ `DEFAULT_WEIGHTS` ਵਿੱਚ ਘੋਸ਼ਿਤ ਹੈ; ਸਕੋਰਿੰਗ ਤੋਂ ਪਹਿਲਾਂ ਵਰਤੋਂਕਾਰ ਦੁਆਰਾ ਸੰਰਚਿਤ ਭਾਰਾਂ ਨੂੰ `normalizeScoringWeights()` ਦੁਆਰਾ ਮੁੜ ਨਾਰਮਲਾਈਜ਼ ਕਰਕੇ ਇੱਕ ਵੰਡ ਵਿੱਚ ਬਦਲਿਆ ਜਾਂਦਾ ਹੈ।
 
 ## ਮੋਡ ਪੈਕ
 
@@ -261,7 +254,7 @@ Auto-Combo Engine ਇੱਕ **16-factor scoring function** (`open-sse/services/a
 | `X-OmniRoute-Effort`          | `auto` (ਹੋਰ ਮੁੱਲ ਰਾਖਵੇਂ ਹਨ)                                                                                                                                                                  | ਅਨੁਕੂਲ ਸੋਚ ਬਜਟ: ਜਦੋਂ ਬੇਨਤੀ ਵਿੱਚ ਕਿਸੇ ਵੀ ਰੂਪ ਦਾ **ਕੋਈ** ਤਰਕ-ਵਿਚਾਰ ਖੇਤਰ (`reasoning_effort`, `reasoning`, `thinking`) ਨਹੀਂ ਹੁੰਦਾ, ਤਾਂ ਗੇਟਵੇ ਨਿਰਧਾਰਤ ਬੇਨਤੀ-ਆਕਾਰ ਸੰਕੇਤਾਂ (ਆਖਰੀ-ਵਰਤੋਂਕਾਰ-ਸੁਨੇਹੇ ਦੀ ਲੰਬਾਈ, ਆਖਰੀ ਵਰਤੋਂਕਾਰ ਸੁਨੇਹੇ ਤੱਕ ਸੰਦਰਭ ਦਾ ਆਕਾਰ, ਪਿਛਲੇ ਟੂਲ ਨਤੀਜੇ, ਟੂਲ-ਲੂਪ ਦੀ ਡੂੰਘਾਈ) ਦੇ ਆਧਾਰ 'ਤੇ `auto` ਨੂੰ `low`/`medium`/`high` ਵਜੋਂ ਨਿਰਧਾਰਤ ਕਰਦਾ ਹੈ। ਸੰਕੇਤ ਮੌਜੂਦਾ ਟਰਨ ਤੱਕ ਸੀਮਿਤ ਹੁੰਦੇ ਹਨ — ਆਖਰੀ ਵਰਤੋਂਕਾਰ ਸੁਨੇਹੇ ਤੋਂ ਬਾਅਦ ਦੀ ਹਰ ਚੀਜ਼ ਅਣਡਿੱਠੀ ਕੀਤੀ ਜਾਂਦੀ ਹੈ — ਇਸ ਲਈ ਟੂਲ ਲੂਪ ਵਿੱਚ ਹਰ ਬੇਨਤੀ ਇੱਕੋ ਪੱਧਰ 'ਤੇ ਨਿਰਧਾਰਤ ਹੁੰਦੀ ਹੈ (ਸਟੇਟਲੈੱਸ ਪ੍ਰਤੀ-ਟਰਨ ਪਿਨ, ਕੋਈ ਸੈਸ਼ਨ ਸਥਿਤੀ ਨਹੀਂ, ਅਤੇ ਲੂਪ ਦੇ ਵਿਚਕਾਰ ਕੋਈ ਅਜਿਹਾ ਵਾਧਾ ਨਹੀਂ ਜੋ ਅੱਪਸਟ੍ਰੀਮ ਪ੍ਰੌਂਪਟ-ਕੈਸ਼ ਪ੍ਰੀਫਿਕਸਾਂ ਨੂੰ ਤੋੜੇ)। ਕਲਾਇੰਟ ਵੱਲੋਂ ਸਪਸ਼ਟ ਤੌਰ 'ਤੇ ਦਿੱਤਾ ਤਰਕ-ਵਿਚਾਰ ਖੇਤਰ ਹਮੇਸ਼ਾ ਪਹਿਲ ਲੈਂਦਾ ਹੈ। ਇਹ ਉਹਨਾਂ ਬੇਨਤੀਆਂ ਤੱਕ ਸੀਮਿਤ ਹੈ ਜਿਨ੍ਹਾਂ ਦੀ ਅੱਪਸਟ੍ਰੀਮ ਡਿਸਪੈਚ OpenAI Chat Completions ਆਕਾਰ (`targetFormat === FORMATS.OPENAI`) ਵਿੱਚ ਨਿਰਧਾਰਤ ਹੁੰਦੀ ਹੈ — `reasoning_effort` ਇੱਕ OpenAI-ਆਕਾਰ ਵਾਲਾ ਖੇਤਰ ਹੈ, ਇਸ ਲਈ Claude- ਜਾਂ Gemini-ਲਕਸ਼ਿਤ ਬੇਨਤੀ ਉੱਤੇ ਇਹ ਹੈਡਰ ਕੋਈ ਕਾਰਵਾਈ ਨਹੀਂ ਕਰਦਾ (`open-sse/handlers/chatCore/adaptiveEffortWiring.ts` ਵੇਖੋ)। |
 
 ```bash
-# Force the fastest profile, cap this request at $0.05, and hard-block instead of overspending
+# ਸਭ ਤੋਂ ਤੇਜ਼ ਪ੍ਰੋਫ਼ਾਈਲ ਨੂੰ ਲਾਜ਼ਮੀ ਕਰੋ, ਇਸ ਬੇਨਤੀ ਨੂੰ $0.05 ਤੱਕ ਸੀਮਿਤ ਕਰੋ, ਅਤੇ ਵੱਧ ਖਰਚ ਕਰਨ ਦੀ ਬਜਾਏ ਸਖ਼ਤੀ ਨਾਲ ਬਲੌਕ ਕਰੋ
 curl -sS http://localhost:20128/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-OmniRoute-Mode: fast" \
@@ -277,44 +270,52 @@ curl -sS http://localhost:20128/v1/chat/completions \
 
 ## ਸਾਰੀਆਂ ਰਾਊਟਿੰਗ ਰਣਨੀਤੀਆਂ
 
-OmniRoute ਦਾ ਕੰਬੋ ਇੰਜਣ **20 ਰਾਊਟਿੰਗ ਰਣਨੀਤੀਆਂ** ਦਾ ਸਮਰਥਨ ਕਰਦਾ ਹੈ (ਜੋ `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES` ਵਿੱਚ ਘੋਸ਼ਿਤ ਕੀਤੀਆਂ ਗਈਆਂ ਹਨ)। ਆਟੋ ਕੰਬੋ ਇੰਜਣ ਖੁਦ `auto` ਰਣਨੀਤੀ ਦੇ ਅਧੀਨ ਐਕਸਪੋਜ਼ ਕੀਤਾ ਗਿਆ ਹੈ; ਬਾਕੀ ਸਥਾਈ ਕੰਬੋਜ਼ ਲਈ ਉਪਲਬਧ ਹਨ।
+OmniRoute ਦਾ ਕੌਂਬੋ ਇੰਜਣ **20 ਰਾਊਟਿੰਗ ਰਣਨੀਤੀਆਂ** ਦਾ ਸਮਰਥਨ ਕਰਦਾ ਹੈ (`src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES` ਵਿੱਚ ਘੋਸ਼ਿਤ)। Auto Combo ਇੰਜਣ ਖੁਦ `auto` ਰਣਨੀਤੀ ਅਧੀਨ ਉਪਲਬਧ ਹੈ; ਬਾਕੀ ਰਣਨੀਤੀਆਂ ਸੁਰੱਖਿਅਤ ਕੀਤੇ ਕੌਂਬੋਜ਼ ਲਈ ਉਪਲਬਧ ਹਨ।
 
-| ਰਣਨੀਤੀ              | ਵਰਣਨ                                                                                                                                                                                                                         |
-| :------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `priority`          | ਪਹਿਲੇ-ਟਾਰਗੇਟ ਦੀ ਕ੍ਰਮਬੱਧ ਸੂਚੀ ਸਪੱਸ਼ਟ ਤਰਜੀਹ ਦੇ ਨਾਲ                                                                                                                                                                             |
-| `weighted`          | ਪ੍ਰਤੀ-ਟਾਰਗੇਟ ਵਜ਼ਨ ਦੁਆਰਾ ਵਜ਼ਨਬੱਧ ਰੈਂਡਮ                                                                                                                                                                                        |
-| `round-robin`       | ਕ੍ਰਮਵਾਰ ਟਾਰਗੇਟਾਂ ਰਾਹੀਂ ਚੱਕਰ (ਬੈਚ ਕੀਤਾ ਗਿਆ; ਹੇਠਾਂ ਦੇਖੋ)                                                                                                                                                                       |
-| `context-relay`     | ਟਾਰਗੇਟਾਂ ਵਿਚਕਾਰ ਸੰਦਰਭ ਸੌਂਪਣਾ (ਲੰਬੀ ਗੱਲਬਾਤ)                                                                                                                                                                                   |
-| `fill-first`        | ਅਗਲੇ 'ਤੇ ਜਾਣ ਤੋਂ ਪਹਿਲਾਂ ਹਰੇਕ ਟਾਰਗੇਟ ਦਾ ਕੋਟਾ ਭਰਨਾ                                                                                                                                                                             |
-| `p2c`               | ਪਾਵਰ-ਆਫ-2-ਚੋਇਸ ਰੈਂਡਮ ਲੋਡ ਬੈਲੇਂਸਿੰਗ                                                                                                                                                                                           |
-| `random`            | ਇਕਸਾਰ ਰੈਂਡਮ ਚੋਣ                                                                                                                                                                                                              |
-| `least-used`        | ਸਭ ਤੋਂ ਘੱਟ ਮੌਜੂਦਾ ਲੋਡ ਵਾਲਾ ਟਾਰਗੇਟ ਚੁਣੋ                                                                                                                                                                                       |
-| `cost-optimized`    | ਕੈਟਾਲਾਗ ਕੀਮਤਾਂ ਦੇ ਆਧਾਰ 'ਤੇ ਪ੍ਰਤੀ ਬੇਨਤੀ $ ਨੂੰ ਘੱਟ ਤੋਂ ਘੱਟ ਕਰਨਾ                                                                                                                                                                |
-| `reset-aware` ⭐    | ਕੋਟਾ ਰੀਸੈਟ ਸਮੇਂ ਦੁਆਰਾ ਤਰਜੀਹ ਦਿਓ — ਛੋਟੀਆਂ ਰੀਸੈਟ ਵਿੰਡੋਜ਼ ਨੂੰ ਉੱਚ ਦਰਜਾ ਦਿੱਤਾ ਗਿਆ ਹੈ                                                                                                                                             |
-| `reset-window`      | ਉਹਨਾਂ ਟਾਰਗੇਟਾਂ ਨੂੰ ਤਰਜੀਹ ਦਿਓ ਜਿਨ੍ਹਾਂ ਦੀ ਕੋਟਾ ਵਿੰਡੋ ਸਭ ਤੋਂ ਜਲਦੀ ਰੀਸੈਟ ਹੁੰਦੀ ਹੈ                                                                                                                                                |
-| `headroom`          | ਸਭ ਤੋਂ ਵੱਧ ਬਾਕੀ ਬਚੇ ਕੋਟਾ ਹੈੱਡਰੂਮ ਵਾਲਾ ਟਾਰਗੇਟ ਚੁਣੋ                                                                                                                                                                            |
-| `quota-weighted`    | ਖਤਮ ਹੋ ਚੁੱਕੇ ਖਾਤਿਆਂ ਨੂੰ ਛੱਡੋ, ਫਿਰ ਬਾਕੀ ਬਚੇ ਕੋਟੇ ਦੇ ਅਨੁਪਾਤ ਵਿੱਚ ਇਨ-ਫਲਾਈਟ ਲੋਡ ਦੁਆਰਾ ਵੰਡ ਕੇ ਚੁਣੋ; ਮੌਜੂਦਾ ਗੱਲਬਾਤ ਪਿੰਨ ਕੀਤੀ ਰਹਿੰਦੀ ਹੈ                                                                                             |
-| `strict-random`     | ਦੁਹਰਾਓ ਦੇ ਡੀਡੁਪਲੀਕੇਸ਼ਨ ਤੋਂ ਬਿਨਾਂ ਰੈਂਡਮ                                                                                                                                                                                       |
-| `auto`              | ਆਟੋ ਕੰਬੋ ਸਕੋਰਿੰਗ (16-ਫੈਕਟਰ) ਦੀ ਵਰਤੋਂ ਕਰੋ — **ਸਿਫਾਰਸ਼ੀ**                                                                                                                                                                      |
-| `lkgp`              | ਆਖਰੀ-ਜਾਣਿਆ-ਚੰਗਾ ਮਾਰਗ (ਆਖਰੀ ਸਫਲ ਪ੍ਰੋਵਾਈਡਰ ਨਾਲ ਪਿੰਨ ਕਰਦਾ ਹੈ, ਫਿਰ ਨਿਯਮਾਂ 'ਤੇ ਵਾਪਸ ਆਉਂਦਾ ਹੈ)                                                                                                                                     |
-| `context-optimized` | ਮੌਜੂਦਾ ਸੰਦਰਭ ਆਕਾਰ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ ਫਿੱਟ ਵਾਲਾ ਟਾਰਗੇਟ ਚੁਣੋ                                                                                                                                                                       |
-| `cache-optimized`   | ਪ੍ਰੋਂਪਟ-ਕੈਸ਼ ਐਫੀਨਿਟੀ ਦੁਆਰਾ ਟਾਰਗੇਟਾਂ ਨੂੰ ਮੁੜ ਕ੍ਰਮਬੱਧ ਕਰੋ — ਉਹ ਕਨੈਕਸ਼ਨ ਜਿਸ ਵਿੱਚ ਇਸ ਬੇਨਤੀ ਦਾ ਕੈਸ਼ ਕੀਤਾ ਪ੍ਰੀਫਿਕਸ ਹੋਣ ਦੀ ਸਭ ਤੋਂ ਵੱਧ ਸੰਭਾਵਨਾ ਹੈ, ਪਹਿਲਾਂ ਅਜ਼ਮਾਇਆ ਜਾਂਦਾ ਹੈ (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
-| `fusion` 🧬         | ਸਮਾਨਾਂਤਰ ਵਿੱਚ ਮਾਡਲਾਂ ਦੇ ਇੱਕ ਪੈਨਲ ਤੱਕ ਫੈਲਾਓ, ਫਿਰ ਇੱਕ ਜੱਜ ਰਾਹੀਂ ਇੱਕ ਜਵਾਬ ਤਿਆਰ ਕਰੋ (ਹੇਠਾਂ ਦੇਖੋ)                                                                                                                                 |
-| `pipeline`          | ਟਾਰਗੇਟਾਂ ਨੂੰ ਕ੍ਰਮਵਾਰ ਚਲਾਓ, ਹਰੇਕ ਪੜਾਅ ਦੇ ਆਉਟਪੁੱਟ ਨੂੰ ਅਗਲੇ ਪੜਾਅ ਦੇ ਇਨਪੁਟ ਵਿੱਚ ਥ੍ਰੈਡ ਕਰੋ; ਸਿਰਫ ਅੰਤਮ ਜਵਾਬ ਵਾਪਸ ਕੀਤਾ ਜਾਂਦਾ ਹੈ (#6396)                                                                                             |
+| ਰਣਨੀਤੀ              | ਵੇਰਵਾ                                                                                                                                                                                                                              |
+| :------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `priority`          | ਸਪਸ਼ਟ ਤਰਜੀਹ ਵਾਲੀ ਪਹਿਲੇ-ਟਾਰਗੇਟ ਦੀ ਕ੍ਰਮਬੱਧ ਸੂਚੀ                                                                                                                                                                                      |
+| `weighted`          | ਹਰ ਟਾਰਗੇਟ ਦੇ ਭਾਰ ਅਨੁਸਾਰ ਭਾਰਿਤ ਬੇਤਰਤੀਬ ਚੋਣ                                                                                                                                                                                          |
+| `round-robin`       | ਟਾਰਗੇਟਾਂ ਵਿੱਚ ਕ੍ਰਮਵਾਰ ਚੱਕਰ ਲਗਾਓ (ਬੈਚਾਂ ਵਿੱਚ; ਹੇਠਾਂ ਦੇਖੋ)                                                                                                                                                                           |
+| `context-relay`     | ਟਾਰਗੇਟਾਂ ਵਿਚਕਾਰ ਸੰਦਰਭ ਅੱਗੇ ਭੇਜੋ (ਲੰਬੀਆਂ ਗੱਲਬਾਤਾਂ)                                                                                                                                                                                  |
+| `fill-first`        | ਅਗਲੇ ਟਾਰਗੇਟ 'ਤੇ ਜਾਣ ਤੋਂ ਪਹਿਲਾਂ ਹਰ ਟਾਰਗੇਟ ਦਾ ਕੋਟਾ ਪੂਰਾ ਭਰੋ                                                                                                                                                                          |
+| `p2c`               | 2-ਚੋਣਾਂ ਦੀ ਸ਼ਕਤੀ ਵਾਲਾ ਬੇਤਰਤੀਬ ਲੋਡ ਸੰਤੁਲਨ                                                                                                                                                                                           |
+| `random`            | ਇਕਸਾਰ ਬੇਤਰਤੀਬ ਚੋਣ                                                                                                                                                                                                                  |
+| `least-used`        | ਸਭ ਤੋਂ ਘੱਟ ਮੌਜੂਦਾ ਲੋਡ ਵਾਲਾ ਟਾਰਗੇਟ ਚੁਣੋ                                                                                                                                                                                             |
+| `cost-optimized`    | ਕੈਟਾਲੌਗ ਕੀਮਤਾਂ ਦੇ ਆਧਾਰ 'ਤੇ ਪ੍ਰਤੀ ਬੇਨਤੀ $ ਨੂੰ ਘੱਟੋ-ਘੱਟ ਕਰੋ                                                                                                                                                                          |
+| `reset-aware` ⭐    | ਕੋਟਾ ਰੀਸੈੱਟ ਸਮੇਂ ਅਨੁਸਾਰ ਤਰਜੀਹ ਦਿਓ — ਛੋਟੀਆਂ ਰੀਸੈੱਟ ਵਿੰਡੋਜ਼ ਨੂੰ ਉੱਚਾ ਦਰਜਾ ਮਿਲਦਾ ਹੈ                                                                                                                                                   |
+| `reset-window`      | ਉਹਨਾਂ ਟਾਰਗੇਟਾਂ ਨੂੰ ਤਰਜੀਹ ਦਿਓ ਜਿਨ੍ਹਾਂ ਦੀ ਕੋਟਾ ਵਿੰਡੋ ਸਭ ਤੋਂ ਜਲਦੀ ਰੀਸੈੱਟ ਹੁੰਦੀ ਹੈ                                                                                                                                                     |
+| `headroom`          | ਸਭ ਤੋਂ ਵੱਧ ਬਚੀ ਹੋਈ ਕੋਟਾ ਗੁੰਜਾਇਸ਼ ਵਾਲਾ ਟਾਰਗੇਟ ਚੁਣੋ                                                                                                                                                                                  |
+| `quota-weighted`    | ਖਤਮ ਹੋ ਚੁੱਕੇ ਖਾਤਿਆਂ ਨੂੰ ਛੱਡੋ, ਫਿਰ ਬਾਕੀਆਂ ਵਿੱਚੋਂ ਬਚੇ ਹੋਏ ਕੋਟੇ ਨੂੰ ਚੱਲ ਰਹੇ ਲੋਡ ਨਾਲ ਭਾਗ ਦੇ ਅਨੁਪਾਤ ਵਿੱਚ ਚੁਣੋ; ਮੌਜੂਦਾ ਗੱਲਬਾਤਾਂ ਉਸੇ ਟਾਰਗੇਟ ਨਾਲ ਜੁੜੀਆਂ ਰਹਿੰਦੀਆਂ ਹਨ                                                                        |
+| `strict-random`     | ਦੁਹਰਾਵਾਂ ਨੂੰ ਡੀਡੁਪਲੀਕੇਟ ਕੀਤੇ ਬਿਨਾਂ ਬੇਤਰਤੀਬ ਚੋਣ                                                                                                                                                                                     |
+| `auto`              | Auto Combo ਸਕੋਰਿੰਗ (16-ਕਾਰਕ) ਵਰਤੋ — **ਸਿਫ਼ਾਰਸ਼ੀ**                                                                                                                                                                                  |
+| `lkgp`              | ਆਖਰੀ-ਜਾਣਿਆ-ਚੰਗਾ ਪਾਥ (ਆਖਰੀ ਸਫਲ ਪ੍ਰਦਾਤਾ ਨਾਲ ਜੁੜਿਆ ਰਹਿੰਦਾ ਹੈ, ਫਿਰ ਨਿਯਮਾਂ 'ਤੇ ਵਾਪਸ ਜਾਂਦਾ ਹੈ)                                                                                                                                           |
+| `context-optimized` | ਮੌਜੂਦਾ ਸੰਦਰਭ ਆਕਾਰ ਲਈ ਸਭ ਤੋਂ ਢੁਕਵਾਂ ਟਾਰਗੇਟ ਚੁਣੋ                                                                                                                                                                                     |
+| `cache-optimized`   | ਪ੍ਰੌਂਪਟ-ਕੈਸ਼ ਅਨੁਕੂਲਤਾ ਅਨੁਸਾਰ ਟਾਰਗੇਟਾਂ ਨੂੰ ਮੁੜ ਕ੍ਰਮਬੱਧ ਕਰੋ — ਇਸ ਬੇਨਤੀ ਦਾ ਕੈਸ਼ ਕੀਤਾ ਪ੍ਰੀਫਿਕਸ ਪਹਿਲਾਂ ਹੀ ਰੱਖਣ ਦੀ ਸਭ ਤੋਂ ਵੱਧ ਸੰਭਾਵਨਾ ਵਾਲੇ ਕਨੈਕਸ਼ਨ ਨੂੰ ਪਹਿਲਾਂ ਅਜ਼ਮਾਇਆ ਜਾਂਦਾ ਹੈ (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
+| `fusion` 🧬         | ਮਾਡਲਾਂ ਦੇ ਇੱਕ ਪੈਨਲ ਨੂੰ ਸਮਾਂਤਰ ਤੌਰ 'ਤੇ ਬੇਨਤੀ ਭੇਜੋ, ਫਿਰ ਇੱਕ ਨਿਰਣਾਇਕ ਰਾਹੀਂ ਇੱਕ ਜਵਾਬ ਸੰਸ਼ਲੇਸ਼ਿਤ ਕਰੋ (ਹੇਠਾਂ ਦੇਖੋ)                                                                                                                       |
+| `pipeline`          | ਟਾਰਗੇਟਾਂ ਨੂੰ ਕ੍ਰਮਵਾਰ ਚਲਾਓ, ਹਰ ਪੜਾਅ ਦੇ ਆਉਟਪੁੱਟ ਨੂੰ ਅਗਲੇ ਪੜਾਅ ਦੇ ਇਨਪੁੱਟ ਵਿੱਚ ਭੇਜਦੇ ਹੋਏ; ਸਿਰਫ਼ ਅੰਤਿਮ ਜਵਾਬ ਵਾਪਸ ਕੀਤਾ ਜਾਂਦਾ ਹੈ (#6396)                                                                                                  |
 
 ⭐ = v3.8.0 ਵਿੱਚ ਨਵਾਂ · 🧬 = v3.8.36 ਵਿੱਚ ਨਵਾਂ
 
-### `weighted` ਅਰਥ ਵਿਗਿਆਨ
+### `weighted` ਦੇ ਅਰਥ
 
-`weighted` ਪ੍ਰਤੀ ਬੇਨਤੀ ਇੱਕ **ਅਨੁਪਾਤਕ ਰੈਂਡਮ ਡਰਾਅ** ਹੈ
-(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`), ਬਰਾਬਰੀ ਕਰਨ ਵਾਲਾ ਨਹੀਂ:
+`weighted` **ਹਰ ਬੇਨਤੀ ਲਈ ਇੱਕ ਅਨੁਪਾਤਕ ਬੇਤਰਤੀਬ ਡਰਾਅ** ਹੈ
+(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`), ਕੋਈ ਸਮਾਨਤਾ ਲਿਆਉਣ ਵਾਲਾ ਤਰੀਕਾ ਨਹੀਂ:
 
-- ਹਰੇਕ ਬੇਨਤੀ `weight / totalWeight` ਸੰਭਾਵਨਾ ਦੇ ਨਾਲ **ਇੱਕ** ਪੜਾਅ ਖਿੱਚਦੀ ਹੈ; ਬਾਕੀ ਪੜਾਅ ਉਸ ਬੇਨਤੀ ਲਈ ਫਾਲਬੈਕ ਚੇਨ ਵਜੋਂ ਘਟਦੇ ਵਜ਼ਨ ਦੁਆਰਾ ਕ੍ਰਮਬੱਧ ਕੀਤੇ ਜਾਂਦੇ ਹਨ।
-- ਇੱਕ ਪੜਾਅ ਜਿਸਦਾ ਵਜ਼ਨ `0` (ਜਾਂ ਗੁੰਮ) ਹੈ, ਉਹ **ਕਦੇ ਨਹੀਂ ਖਿੱਚਿਆ ਜਾਂਦਾ** ਜਦੋਂ ਕਿ ਕਿਸੇ ਹੋਰ ਪੜਾਅ ਦਾ ਵਜ਼ਨ > 0 ਹੁੰਦਾ ਹੈ — ਇਹ ਸਿਰਫ ਖਿੱਚੇ ਗਏ ਪੜਾਅ ਦੇ ਅਸਫਲ ਹੋਣ ਤੋਂ ਬਾਅਦ ਹੀ ਫਾਲਬੈਕ ਵਜੋਂ ਕੰਮ ਕਰ ਸਕਦਾ ਹੈ। ਸਿਰਫ ਉਦੋਂ ਜਦੋਂ **ਸਾਰੇ** ਵਜ਼ਨ 0 ਹੁੰਦੇ ਹਨ ਤਾਂ ਚੋਣ ਇਕਸਾਰ ਹੋ ਜਾਂਦੀ ਹੈ।
-- ਉਹ ਪੜਾਅ ਜਿਨ੍ਹਾਂ ਦੇ ਟਾਰਗੇਟ ਸਾਰੇ ਅਣਉਪਲਬਧ ਹਨ — ਪ੍ਰੋਵਾਈਡਰ ਸਰਕਟ ਬ੍ਰੇਕਰ `OPEN`, ਕਨੈਕਸ਼ਨ ਕੂਲਡਾਊਨ, ਮਾਡਲ ਲਾਕਆਊਟ — ਨੂੰ ਡਰਾਅ ਹੋਣ ਤੋਂ ਪਹਿਲਾਂ ਹਟਾ ਦਿੱਤਾ ਜਾਂਦਾ ਹੈ (`open-sse/services/combo/targetResolution.ts`), ਇਸ ਲਈ ਇੱਕ ਸਿੰਗਲ ਸਿਹਤਮੰਦ ਪੜਾਅ ਅਸਥਾਈ ਤੌਰ 'ਤੇ ਹਰ ਬੇਨਤੀ ਨੂੰ ਜਿੱਤ ਸਕਦਾ ਹੈ।
-- `stickyWeightedLimit` (ਕੰਬੋ ਕੌਂਫਿਗ, ਡਿਫੌਲਟ `1` = ਬੰਦ) ਦੁਬਾਰਾ ਡਰਾਅ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਖਿੱਚੇ ਗਏ ਪੜਾਅ ਨੂੰ ਇੰਨੀਆਂ ਲਗਾਤਾਰ ਸਫਲਤਾਵਾਂ ਲਈ ਪਿੰਨ ਕਰਦਾ ਹੈ।
+- ਹਰ ਬੇਨਤੀ `weight / totalWeight` ਸੰਭਾਵਨਾ ਨਾਲ **ਇੱਕ** ਪੜਾਅ ਚੁਣਦੀ ਹੈ; ਬਾਕੀ ਪੜਾਅ
+  ਉਸ ਬੇਨਤੀ ਲਈ ਫਾਲਬੈਕ ਲੜੀ ਵਜੋਂ ਭਾਰ ਦੇ ਘਟਦੇ ਕ੍ਰਮ ਵਿੱਚ ਰੱਖੇ ਜਾਂਦੇ ਹਨ।
+- ਜਿਸ ਪੜਾਅ ਦਾ ਭਾਰ `0` ਹੈ (ਜਾਂ ਮੌਜੂਦ ਨਹੀਂ), ਉਸਨੂੰ ਉਦੋਂ ਤੱਕ **ਕਦੇ ਨਹੀਂ ਚੁਣਿਆ ਜਾਂਦਾ** ਜਦੋਂ ਕਿਸੇ ਹੋਰ ਪੜਾਅ ਦਾ
+  ਭਾਰ > 0 ਹੋਵੇ — ਉਹ ਸਿਰਫ਼ ਚੁਣਿਆ ਪੜਾਅ ਅਸਫਲ ਹੋਣ ਤੋਂ ਬਾਅਦ ਫਾਲਬੈਕ ਵਜੋਂ ਕੰਮ ਕਰ ਸਕਦਾ ਹੈ। ਚੋਣ ਸਿਰਫ਼ ਉਦੋਂ ਇਕਸਾਰ ਹੁੰਦੀ ਹੈ ਜਦੋਂ **ਸਾਰੇ**
+  ਭਾਰ 0 ਹੋਣ।
+- ਉਹ ਪੜਾਅ ਜਿਨ੍ਹਾਂ ਦੇ ਸਾਰੇ ਟਾਰਗੇਟ ਅਣਉਪਲਬਧ ਹਨ — ਪ੍ਰਦਾਤਾ ਸਰਕਿਟ ਬ੍ਰੇਕਰ `OPEN`, ਕਨੈਕਸ਼ਨ
+  ਕੂਲਡਾਊਨ, ਮਾਡਲ ਲੌਕਆਊਟ — ਡਰਾਅ ਹੋਣ ਤੋਂ ਪਹਿਲਾਂ ਹੀ ਉਸ ਵਿੱਚੋਂ ਹਟਾ ਦਿੱਤੇ ਜਾਂਦੇ ਹਨ
+  (`open-sse/services/combo/targetResolution.ts`), ਇਸ ਲਈ ਇੱਕੋ ਸਿਹਤਮੰਦ ਪੜਾਅ ਅਸਥਾਈ ਤੌਰ 'ਤੇ
+  ਹਰ ਬੇਨਤੀ ਜਿੱਤ ਸਕਦਾ ਹੈ।
+- `stickyWeightedLimit` (ਕੌਂਬੋ ਸੰਰਚਨਾ, ਮੂਲ `1` = ਬੰਦ) ਮੁੜ ਡਰਾਅ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਚੁਣੇ ਪੜਾਅ ਨੂੰ ਲਗਾਤਾਰ
+  ਸਫਲਤਾਵਾਂ ਦੀ ਨਿਰਧਾਰਤ ਗਿਣਤੀ ਤੱਕ ਸਥਿਰ ਰੱਖਦਾ ਹੈ।
 
-ਸਖ਼ਤ ਰੋਟੇਸ਼ਨ ਲਈ `round-robin` ਦੀ ਵਰਤੋਂ ਕਰੋ; `weighted` 'ਤੇ ਬਰਾਬਰ ਵਜ਼ਨ ਅੰਕੜਾਤਮਕ — ਸਖ਼ਤ ਨਹੀਂ — ਸੰਤੁਲਨ ਦਿੰਦੇ ਹਨ।
+ਸਖ਼ਤ ਰੋਟੇਸ਼ਨ ਲਈ `round-robin` ਵਰਤੋ; `weighted` ਵਿੱਚ ਬਰਾਬਰ ਵੇਟ ਅੰਕੜਾਤਮਕ — ਨਾ ਕਿ
+ਸਖ਼ਤ — ਸੰਤੁਲਨ ਦਿੰਦੇ ਹਨ।
 
 ### ਏਜੰਟਿਕ ਪਾਈਪਲਾਈਨ ਮੋਡ
 
@@ -336,15 +337,29 @@ OmniRoute ਦਾ ਕੰਬੋ ਇੰਜਣ **20 ਰਾਊਟਿੰਗ ਰਣਨ�
 
 ਐਗਜ਼ੀਕਿਊਟਰ ਇੱਕ ਜਵਾਬ ਵਿੱਚ ਕਈ ਸੁਤੰਤਰ ਕਾਲਾਂ ਨੂੰ ਐਮਿਟ (emit) ਕਰ ਸਕਦਾ ਹੈ। ਨਿਰਭਰ ਕਾਲਾਂ ਨੂੰ ਬਾਅਦ ਦੇ ਕਲਾਇੰਟ ਟੂਲ-ਨਤੀਜਾ ਟਰਨਾਂ ਵਿੱਚ ਸੰਭਾਲਿਆ ਜਾਂਦਾ ਹੈ, ਜਿਸ ਵਿੱਚ ਪਲਾਨਰ ਹਰ ਨਤੀਜੇ ਦੀ ਸਮੀਖਿਆ ਕਰਦਾ ਹੈ। `maxToolRounds` ਡਿਫੌਲਟ ਰੂਪ ਵਿੱਚ `8` ਹੁੰਦਾ ਹੈ ਅਤੇ `1`–`32` ਨੂੰ ਸਵੀਕਾਰ ਕਰਦਾ ਹੈ; ਇੱਕ ਵਾਰ ਪਹੁੰਚ ਜਾਣ 'ਤੇ, ਪਲਾਨਰ ਨੂੰ ਸਭ ਤੋਂ ਵਧੀਆ ਉਪਲਬਧ ਅੰਤਿਮ ਜਵਾਬ ਤਿਆਰ ਕਰਨਾ ਚਾਹੀਦਾ ਹੈ। ਅੰਦਰੂਨੀ ਪਲਾਨਰ ਫੈਸਲੇ ਬਫਰ ਕੀਤੇ ਜਾਂਦੇ ਹਨ, ਜਦੋਂ ਕਿ ਚੁਣਿਆ ਗਿਆ ਕਲਾਇੰਟ-ਸਾਹਮਣੇ ਵਾਲਾ ਜਵਾਬ ਅਸਲ ਸਟ੍ਰੀਮਿੰਗ ਤਰਜੀਹ ਨੂੰ ਬਰਕਰਾਰ ਰੱਖਦਾ ਹੈ।
 
-### `round-robin` ਸਟਿੱਕੀ ਬੈਚ ਅਤੇ ਅਕਾਉਂਟ ਐਕਸਪੈਂਸ਼ਨ
+### `round-robin` ਸਟਿੱਕੀ ਬੈਚ ਅਤੇ ਅਕਾਊਂਟ ਵਿਸਤਾਰ
 
-Round-robin ਬੈਚ ਕੀਤਾ ਗਿਆ ਹੈ, ਨਾ ਕਿ ਪ੍ਰਤੀ-ਸਟੈਪ ਇੱਕ-ਬੇਨਤੀ:
+ਰਾਊਂਡ-ਰੌਬਿਨ ਬੈਚਾਂ ਵਿੱਚ ਕੰਮ ਕਰਦਾ ਹੈ, ਹਰ ਪੜਾਅ ਲਈ ਇੱਕ ਬੇਨਤੀ ਦੇ ਰੂਪ ਵਿੱਚ ਨਹੀਂ:
 
-- `stickyRoundRobinLimit` (ਕੰਬੋ ਕੌਂਫਿਗ, ਫਿਰ `comboStickyRoundRobinLimit`, ਫਿਰ `settings.stickyRoundRobinLimit`, ਡਿਫੌਲਟ **3**) ਰੋਟੇਟ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਇੰਨੀਆਂ ਲਗਾਤਾਰ ਸਫਲਤਾਵਾਂ ਲਈ ਇੱਕੋ ਟਾਰਗੇਟ ਨੂੰ ਬਰਕਰਾਰ ਰੱਖਦਾ ਹੈ। ਇੱਕ-ਬੇਨਤੀ ਰੋਟੇਸ਼ਨ ਲਈ ਕੰਬੋ ਓਵਰਰਾਈਡ ਨੂੰ `1` 'ਤੇ ਸੈੱਟ ਕਰੋ। ਕੰਬੋ ਐਡੀਟਰ ਪ੍ਰਭਾਵੀ ਮੁੱਲ ਅਤੇ ਇਹ ਕਿਸ ਲੇਅਰ ਤੋਂ ਆਇਆ ਹੈ, ਦਿਖਾਉਂਦਾ ਹੈ।
-- `connectionAwareExpansion` (ਕੰਬੋ ਕੌਂਫਿਗ, ਫਿਰ ਸੈਟਿੰਗਾਂ, ਡਿਫੌਲਟ **false**) ਰੋਟੇਸ਼ਨ ਤੋਂ ਪਹਿਲਾਂ ਹਰੇਕ ਪ੍ਰੋਵਾਈਡਰ-ਪੱਧਰ ਦੇ ਸਟੈਪ ਨੂੰ ਪ੍ਰਤੀ-ਅਕਾਉਂਟ ਟਾਰਗੇਟਾਂ ਵਿੱਚ ਫੈਲਾਉਂਦਾ ਹੈ। ਗਰੁੱਪ-B ਰਣਨੀਤੀਆਂ (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp, fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion, pipeline) ਉਦੋਂ ਤੱਕ ਪ੍ਰੋਵਾਈਡਰ-ਪੱਧਰ ਦਾ ਦ੍ਰਿਸ਼ ਰੱਖਦੀਆਂ ਹਨ ਜਦੋਂ ਤੱਕ ਇਹ ਚਾਲੂ ਨਹੀਂ ਹੁੰਦਾ। ਕੰਬੋ ਐਡੀਟਰ inherit / on / off ਨੂੰ ਐਕਸਪੋਜ਼ ਕਰਦਾ ਹੈ; inherit ਗਲੋਬਲ ਡਿਫੌਲਟ (off) ਦੀ ਵਰਤੋਂ ਕਰਦਾ ਹੈ।
-- ਪ੍ਰੋਂਪਟ-ਕੈਸ਼ ਲੋਕੈਲਿਟੀ ਰੂਟਿੰਗ (`promptCacheAffinityEnabled`, ਡਿਫੌਲਟ **true**) ਪਿੰਨ ਕੀਤੇ ਕਨੈਕਸ਼ਨਾਂ ਨੂੰ ਮੁੜ ਕ੍ਰਮਬੱਧ ਕਰਦੀ ਹੈ ਤਾਂ ਜੋ ਮੇਲ ਖਾਂਦੀਆਂ ਕੈਸ਼ ਕੁੰਜੀਆਂ ਇੱਕ ਅਕਾਉਂਟ 'ਤੇ ਰਹਿਣ। ਇਹ ਪਿੰਨ ਕੀਤੇ ਪ੍ਰਤੀ-ਅਕਾਉਂਟ ਸਟੈਪਾਂ ਵਿੱਚ round-robin ਅਤੇ weighted ਰੋਟੇਸ਼ਨ ਨਾਲੋਂ ਤਰਜੀਹ ਲੈਂਦੀ ਹੈ। ਜੇਕਰ ਤੁਹਾਨੂੰ ਸਖ਼ਤ ਰੋਟੇਸ਼ਨ ਦੀ ਲੋੜ ਹੈ ਤਾਂ ਇਸਨੂੰ Settings → Combo defaults ਦੇ ਅਧੀਨ ਬੰਦ ਕਰੋ। ਕੋਈ ਪ੍ਰਤੀ-ਕੰਬੋ ਓਵਰਰਾਈਡ ਨਹੀਂ ਹੈ।
+- `stickyRoundRobinLimit` (ਪਹਿਲਾਂ ਕੰਬੋ ਸੰਰਚਨਾ, ਫਿਰ `comboStickyRoundRobinLimit`, ਫਿਰ
+  `settings.stickyRoundRobinLimit`, ਡਿਫੌਲਟ **3**) ਰੋਟੇਟ ਕਰਨ ਤੋਂ ਪਹਿਲਾਂ ਉਸੇ ਟਾਰਗੇਟ ਨੂੰ ਇੰਨੀਆਂ
+  ਲਗਾਤਾਰ ਸਫਲਤਾਵਾਂ ਲਈ ਬਰਕਰਾਰ ਰੱਖਦਾ ਹੈ। ਹਰ ਬੇਨਤੀ 'ਤੇ ਰੋਟੇਸ਼ਨ ਲਈ ਕੰਬੋ ਓਵਰਰਾਈਡ ਨੂੰ `1` 'ਤੇ
+  ਸੈੱਟ ਕਰੋ। ਕੰਬੋ ਐਡੀਟਰ ਪ੍ਰਭਾਵੀ ਮੁੱਲ ਅਤੇ ਇਹ ਕਿਸ ਲੇਅਰ ਤੋਂ ਆਇਆ ਹੈ, ਦਿਖਾਉਂਦਾ ਹੈ।
+- `connectionAwareExpansion` (ਪਹਿਲਾਂ ਕੰਬੋ ਸੰਰਚਨਾ, ਫਿਰ ਸੈਟਿੰਗਾਂ, ਡਿਫੌਲਟ **false**) ਰੋਟੇਸ਼ਨ ਤੋਂ
+  ਪਹਿਲਾਂ ਹਰ ਪ੍ਰਦਾਤਾ-ਪੱਧਰੀ ਪੜਾਅ ਨੂੰ ਪ੍ਰਤੀ-ਅਕਾਊਂਟ ਟਾਰਗੇਟਾਂ ਵਿੱਚ ਵਿਸਤਾਰਦਾ ਹੈ। Group-B ਰਣਨੀਤੀਆਂ
+  (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp,
+  fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion,
+  pipeline) ਇਸਨੂੰ ਚਾਲੂ ਕੀਤੇ ਜਾਣ ਤੱਕ ਪ੍ਰਦਾਤਾ-ਪੱਧਰੀ ਦ੍ਰਿਸ਼ ਬਰਕਰਾਰ ਰੱਖਦੀਆਂ ਹਨ। ਕੰਬੋ ਐਡੀਟਰ
+  inherit / on / off ਵਿਕਲਪ ਦਿੰਦਾ ਹੈ; inherit ਗਲੋਬਲ ਡਿਫੌਲਟ (off) ਦੀ ਵਰਤੋਂ ਕਰਦਾ ਹੈ।
+- ਪ੍ਰੌਂਪਟ-ਕੈਸ਼ ਲੋਕੈਲਿਟੀ ਰਾਊਟਿੰਗ (`promptCacheAffinityEnabled`, ਡਿਫੌਲਟ **true**) ਪਿੰਨ ਕੀਤੇ
+  ਕਨੈਕਸ਼ਨਾਂ ਨੂੰ ਮੁੜ ਕ੍ਰਮਬੱਧ ਕਰਦੀ ਹੈ, ਤਾਂ ਜੋ ਮੇਲ ਖਾਂਦੀਆਂ ਕੈਸ਼ ਕੁੰਜੀਆਂ ਇੱਕੋ ਅਕਾਊਂਟ 'ਤੇ ਰਹਿਣ। ਇਹ ਪਿੰਨ ਕੀਤੇ
+  ਪ੍ਰਤੀ-ਅਕਾਊਂਟ ਪੜਾਵਾਂ ਵਿੱਚ ਰਾਊਂਡ-ਰੌਬਿਨ ਅਤੇ ਵੇਟਡ ਰੋਟੇਸ਼ਨ ਨਾਲੋਂ ਪਹਿਲ ਲੈਂਦੀ ਹੈ। ਜੇ ਤੁਹਾਨੂੰ ਸਖ਼ਤ ਰੋਟੇਸ਼ਨ ਦੀ
+  ਲੋੜ ਹੈ, ਤਾਂ Settings → Combo defaults ਅਧੀਨ ਇਸਨੂੰ ਬੰਦ ਕਰੋ। ਕੋਈ ਪ੍ਰਤੀ-ਕੰਬੋ ਓਵਰਰਾਈਡ ਨਹੀਂ ਹੈ।
 
-ਇੱਕ ਮਾਡਲ 'ਤੇ ਮਲਟੀ-ਅਕਾਉਂਟ ਰੋਟੇਸ਼ਨ ਲਈ, ਤਿੰਨ ਪਿੰਨ ਕੀਤੇ `connectionId`s ਦੀ ਬਜਾਏ, ਸਟਿੱਕੀ ਲਿਮਿਟ `1` ਦੇ ਨਾਲ **ਇੱਕ ਡਾਇਨਾਮਿਕ-ਅਕਾਉਂਟ ਸਟੈਪ** (ਖਾਲੀ `connectionId`, ਪੂਰਾ ਪੂਲ) ਨੂੰ ਤਰਜੀਹ ਦਿਓ। ਪਿੰਨ ਕੀਤੇ ਸਟੈਪ ਅਤੇ ਐਫੀਨਿਟੀ ਇੱਕੋ ਅਕਾਉਂਟ 'ਤੇ ਕੋਲੈਪਸ ਹੋ ਜਾਂਦੇ ਹਨ ਭਾਵੇਂ RR ਕਾਊਂਟਰ ਅੱਗੇ ਵਧਦਾ ਰਹੇ।
+ਇੱਕ ਮਾਡਲ 'ਤੇ ਮਲਟੀ-ਅਕਾਊਂਟ ਰੋਟੇਸ਼ਨ ਲਈ, ਤਿੰਨ ਪਿੰਨ ਕੀਤੇ `connectionId`s ਦੀ ਬਜਾਏ ਸਟਿੱਕੀ ਸੀਮਾ `1` ਵਾਲੇ
+**ਇੱਕ ਡਾਇਨਾਮਿਕ-ਅਕਾਊਂਟ ਪੜਾਅ** (ਖਾਲੀ `connectionId`, ਪੂਰਾ ਪੂਲ) ਨੂੰ ਤਰਜੀਹ ਦਿਓ।
+ਪਿੰਨ ਕੀਤੇ ਪੜਾਅ ਅਤੇ ਅਫ਼ਿਨਿਟੀ ਇੱਕੋ ਅਕਾਊਂਟ 'ਤੇ ਇਕੱਠੇ ਹੋ ਜਾਂਦੇ ਹਨ, ਭਾਵੇਂ RR ਕਾਊਂਟਰ
+ਅੱਗੇ ਵਧਦਾ ਰਹੇ।
 
 ## ਫਿਊਜ਼ਨ ਰਣਨੀਤੀ
 
@@ -445,46 +460,56 @@ curl -X POST http://localhost:20128/api/combos \
 
 ## API
 
-ਇੱਥੇ **ਕੋਈ ਸਮਰਪਿਤ `POST /api/combos/auto` ਐਂਡਪੁਆਇੰਟ ਨਹੀਂ ਹੈ** — ਆਟੋ-ਕੰਬੋ (Auto-Combo) ਨੂੰ ਦੋ ਤਰੀਕਿਆਂ ਨਾਲ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ:
+ਕੋਈ **ਸਮਰਪਿਤ `POST /api/combos/auto` ਐਂਡਪੌਇੰਟ ਨਹੀਂ ਹੈ** — Auto-Combo ਨੂੰ ਦੋ ਤਰੀਕਿਆਂ ਨਾਲ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ:
 
-1. **ਜ਼ੀਰੋ-ਕੌਨਫਿਗ (ਸਿਫਾਰਸ਼ੀ):** `model: "auto"` ਜਾਂ `model: "auto/<variant>"` ਦੇ ਨਾਲ ਕੋਈ ਵੀ ਚੈਟ ਕੰਪਲੀਸ਼ਨ ਬੇਨਤੀ ਭੇਜੋ। ਵਰਚੁਅਲ ਫੈਕਟਰੀ ਹਰ ਬੇਨਤੀ ਲਈ ਕੰਬੋ ਬਣਾਉਂਦੀ ਹੈ — ਕੋਈ ਪਰਸਿਸਟੈਂਸ (ਸਥਾਈਕਰਨ) ਨਹੀਂ, ਕੋਈ API ਕਾਲਾਂ ਦੀ ਲੋੜ ਨਹੀਂ।
+1. **ਜ਼ੀਰੋ-ਕੰਫਿਗ (ਸਿਫ਼ਾਰਸ਼ੀ):** `model: "auto"` ਜਾਂ `model: "auto/<variant>"` ਨਾਲ ਕੋਈ ਵੀ ਚੈਟ ਕੰਪਲੀਸ਼ਨ ਬੇਨਤੀ ਭੇਜੋ। ਵਰਚੁਅਲ ਫੈਕਟਰੀ ਹਰ ਬੇਨਤੀ ਲਈ ਕੌਂਬੋ ਬਣਾਉਂਦੀ ਹੈ — ਕਿਸੇ ਪਰਸਿਸਟੈਂਸ ਜਾਂ API ਕਾਲ ਦੀ ਲੋੜ ਨਹੀਂ ਹੈ।
 
-2. **`strategy: "auto"` ਦੇ ਨਾਲ ਪਰਸਿਸਟਡ ਕੰਬੋ:** `POST /api/combos` ਰਾਹੀਂ ਇੱਕ ਨਿਯਮਤ ਕੰਬੋ ਬਣਾਓ ਅਤੇ `strategy: "auto"` ਦੇ ਨਾਲ `config.auto.weights` / `config.auto.candidatePool` ਸੈੱਟ ਕਰੋ। ਉਹੀ ਸਕੋਰਿੰਗ ਇੰਜਣ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ; ਕੰਬੋ `combos` ਵਿੱਚ ਸਟੋਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਅਤੇ ID ਦੁਆਰਾ ਮੁੜ ਵਰਤੋਂ ਯੋਗ ਹੁੰਦਾ ਹੈ।
+2. **`strategy: "auto"` ਵਾਲਾ ਸਥਾਈ ਕੌਂਬੋ:** `POST /api/combos` ਰਾਹੀਂ ਇੱਕ ਨਿਯਮਤ ਕੌਂਬੋ ਬਣਾਓ ਅਤੇ `strategy: "auto"` ਦੇ ਨਾਲ `config.auto.weights` / `config.auto.candidatePool` ਸੈੱਟ ਕਰੋ। ਉਹੀ ਸਕੋਰਿੰਗ ਇੰਜਣ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ; ਕੌਂਬੋ ਨੂੰ `combos` ਵਿੱਚ ਸਟੋਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਅਤੇ ID ਰਾਹੀਂ ਮੁੜ ਵਰਤਿਆ ਜਾ ਸਕਦਾ ਹੈ।
 
-ਖੋਜ ਲਈ, `GET /api/combos/auto` ਹਰ ਵੇਰੀਐਂਟ ਨੂੰ ਉਸਦੇ ਰਿਜ਼ੋਲਵਡ ਕੈਂਡੀਡੇਟ ਪੂਲ ਦੇ ਨਾਲ, ਅਤੇ `context_length` / `max_output_tokens` — ਜੋ ਕਿ ਕੈਂਡੀਡੇਟ ਪੂਲ ਦੀਆਂ ਵਿੰਡੋਜ਼ ਵਿੱਚ MAX ਹੈ — ਨੂੰ ਸੂਚੀਬੱਧ ਕਰਦਾ ਹੈ। ਕਲਾਇੰਟਸ (ਉਦਾਹਰਨ ਲਈ opencode ਪਲੱਗਇਨ) ਨੂੰ `0` ਦੀ ਬਜਾਏ ਇਹਨਾਂ ਮੁੱਲਾਂ ਦਾ ਇਸ਼ਤਿਹਾਰ ਦੇਣਾ ਚਾਹੀਦਾ ਹੈ: ਜ਼ੀਰੋ ਕੰਟੈਕਸਟ opencode ਦੇ ਆਟੋ-ਕੰਪੈਕਸ਼ਨ ਨੂੰ ਪੂਰੀ ਤਰ੍ਹਾਂ ਅਯੋਗ ਕਰ ਦਿੰਦਾ ਹੈ, ਜਿਸ ਨਾਲ ਸੈਸ਼ਨ ਉਦੋਂ ਤੱਕ ਵਧਦੇ ਰਹਿੰਦੇ ਹਨ ਜਦੋਂ ਤੱਕ ਗੇਟਵੇ ਦੀ ਹਿਸਟਰੀ ਪਰਜ (ਇਤਿਹਾਸ ਦੀ ਸਫਾਈ) ਕੰਟੈਕਸਟ ਨੂੰ ਨਸ਼ਟ ਨਹੀਂ ਕਰ ਦਿੰਦੀ। MAX ਦਾ ਇਸ਼ਤਿਹਾਰ ਦੇਣਾ ਸੁਰੱਖਿਅਤ ਹੈ ਕਿਉਂਕਿ ਆਟੋ-ਕੰਬੋ ਕੰਟੈਕਸਟ ਪ੍ਰੀ-ਫਿਲਟਰ ਬਹੁਤ ਵੱਡੀਆਂ ਬੇਨਤੀਆਂ ਨੂੰ ਵੱਡੀ-ਵਿੰਡੋ ਵਾਲੇ ਕੈਂਡੀਡੇਟਾਂ ਵੱਲ ਭੇਜਦਾ ਹੈ।
+ਖੋਜ ਲਈ, `GET /api/combos/auto` ਹਰ ਵੇਰੀਐਂਟ ਨੂੰ ਉਸਦੇ ਰਿਜ਼ੌਲਵ ਕੀਤੇ ਕੈਂਡੀਡੇਟ ਪੂਲ ਦੇ ਨਾਲ-ਨਾਲ `context_length` / `max_output_tokens` ਸਮੇਤ ਸੂਚੀਬੱਧ ਕਰਦਾ ਹੈ — ਇਹ ਕੈਂਡੀਡੇਟ ਪੂਲ ਦੀਆਂ ਵਿੰਡੋਜ਼ ਵਿੱਚੋਂ ਸਭ ਤੋਂ ਵੱਧ MAX ਮੁੱਲ ਹੁੰਦਾ ਹੈ। ਕਲਾਇੰਟਾਂ (ਉਦਾਹਰਨ ਵਜੋਂ opencode ਪਲੱਗਇਨ) ਨੂੰ `0` ਦੀ ਬਜਾਏ ਇਹ ਮੁੱਲ ਪ੍ਰਚਾਰਿਤ ਕਰਨੇ ਚਾਹੀਦੇ ਹਨ: ਜ਼ੀਰੋ ਕੌਂਟੈਕਸਟ opencode ਦੀ ਆਟੋ-ਕੰਪੈਕਸ਼ਨ ਨੂੰ ਪੂਰੀ ਤਰ੍ਹਾਂ ਅਯੋਗ ਕਰ ਦਿੰਦਾ ਹੈ, ਜਿਸ ਨਾਲ ਸੈਸ਼ਨ ਉਦੋਂ ਤੱਕ ਵਧਦੇ ਰਹਿੰਦੇ ਹਨ ਜਦੋਂ ਤੱਕ ਗੇਟਵੇ ਦੀ ਹਿਸਟਰੀ ਪਰਜ ਕੌਂਟੈਕਸਟ ਨੂੰ ਨਸ਼ਟ ਨਹੀਂ ਕਰ ਦਿੰਦੀ। MAX ਨੂੰ ਪ੍ਰਚਾਰਿਤ ਕਰਨਾ ਸੁਰੱਖਿਅਤ ਹੈ ਕਿਉਂਕਿ ਆਟੋ-ਕੌਂਬੋ ਕੌਂਟੈਕਸਟ ਪ੍ਰੀ-ਫਿਲਟਰ ਵੱਡੇ ਆਕਾਰ ਵਾਲੀਆਂ ਬੇਨਤੀਆਂ ਨੂੰ ਵੱਡੀ ਵਿੰਡੋ ਵਾਲੇ ਕੈਂਡੀਡੇਟਾਂ ਵੱਲ ਰੂਟ ਕਰਦਾ ਹੈ।
 
 ```bash
-# Zero-config usage (no combo creation)
+# ਜ਼ੀਰੋ-ਕੰਫਿਗ ਵਰਤੋਂ (ਕੌਂਬੋ ਬਣਾਉਣ ਦੀ ਲੋੜ ਨਹੀਂ)
 curl -X POST http://localhost:20128/v1/chat/completions \
   -H "Authorization: Bearer <key>" \
   -H "Content-Type: application/json" \
   -d '{"model":"auto/coding","messages":[{"role":"user","content":"Hello"}]}'
 
-# Persisted auto combo via the regular combos endpoint
+# ਨਿਯਮਤ ਕੌਂਬੋਜ਼ ਐਂਡਪੌਇੰਟ ਰਾਹੀਂ ਸਥਾਈ ਆਟੋ ਕੌਂਬੋ
 curl -X POST http://localhost:20128/api/combos \
   -H "Content-Type: application/json" \
   -d '{"id":"my-auto","name":"Auto Coder","strategy":"auto","config":{"auto":{"candidatePool":["anthropic","google","openai"],"weights":{"quota":0.15,"health":0.3,"costInv":0.05,"latencyInv":0.35,"taskFit":0.1,"stability":0,"tierPriority":0.05}}}}'
 ```
 
-### Auto router strategies
+### ਆਟੋ ਰਾਊਟਰ ਰਣਨੀਤੀਆਂ
 
-ਪਰਸਿਸਟਡ `strategy: "auto"` ਕੰਬੋ `config.routerStrategy` (ਜਾਂ ਪੁਰਾਣੇ `config.auto.routerStrategy`) ਨੂੰ ਇਹਨਾਂ ਵਿੱਚੋਂ ਇੱਕ 'ਤੇ ਸੈੱਟ ਕਰ ਸਕਦੇ ਹਨ:
+ਸਥਾਈ `strategy: "auto"` ਕੌਂਬੋ `config.routerStrategy` (ਜਾਂ ਪੁਰਾਣੇ
+`config.auto.routerStrategy`) ਨੂੰ ਹੇਠ ਲਿਖਿਆਂ ਵਿੱਚੋਂ ਕਿਸੇ ਇੱਕ ਮੁੱਲ 'ਤੇ ਸੈੱਟ ਕਰ ਸਕਦੇ ਹਨ:
 
-- `rules` — ਡਿਫੌਲਟ ਵੇਟਡ ਸਕੋਰਿੰਗ
-- `score` — ਸਭ ਤੋਂ ਵੱਧ ਕੌਨਫਿਗਰ ਕੀਤੇ ਵੇਟਡ ਸਕੋਰ ਨੂੰ ਚੁਣਦਾ ਹੈ। ਸਹੀ ਟਾਈ (ties) ਕੌਨਫਿਗਰ ਕੀਤੇ ਕੈਂਡੀਡੇਟ ਆਰਡਰ ਨੂੰ ਬਰਕਰਾਰ ਰੱਖਦੀਆਂ ਹਨ; ਮੌਜੂਦਾ `explorationRate` ਪੂਰੇ ਰੈਂਕ ਕੀਤੇ ਪੂਲ ਤੋਂ ਨਮੂਨੇ ਲੈਂਦਾ ਹੈ।
-- `cost` / `eco` — ਸਭ ਤੋਂ ਸਸਤਾ ਹੈਲਦੀ (ਸਿਹਤਮੰਦ) ਪ੍ਰੋਵਾਈਡਰ
-- `latency` / `fast` — ਰਿਲਾਇਬਿਲਟੀ ਪੈਨਲਟੀ ਦੇ ਨਾਲ ਸਭ ਤੋਂ ਘੱਟ p95 ਲੇਟੈਂਸੀ
-- `sla-aware` / `sla` — ਉਹਨਾਂ ਕੈਂਡੀਡੇਟਾਂ ਨੂੰ ਤਰਜੀਹ ਦਿੰਦਾ ਹੈ ਜੋ p95 ਲੇਟੈਂਸੀ, ਐਰਰ-ਰੇਟ, ਅਤੇ ਵਿਕਲਪਿਕ ਲਾਗਤ SLOs ਨੂੰ ਪੂਰਾ ਕਰਦੇ ਹਨ
+- `rules` — ਡਿਫੌਲਟ ਭਾਰਿਤ ਸਕੋਰਿੰਗ
+- `score` — ਸਭ ਤੋਂ ਵੱਧ ਕੰਫਿਗਰ ਕੀਤਾ ਭਾਰਿਤ ਸਕੋਰ ਚੁਣਦਾ ਹੈ। ਬਿਲਕੁਲ ਬਰਾਬਰ ਸਕੋਰ ਹੋਣ 'ਤੇ ਕੰਫਿਗਰ ਕੀਤਾ
+  ਕੈਂਡੀਡੇਟ ਕ੍ਰਮ ਬਰਕਰਾਰ ਰਹਿੰਦਾ ਹੈ; ਮੌਜੂਦਾ `explorationRate` ਪੂਰੇ ਰੈਂਕ ਕੀਤੇ ਪੂਲ ਵਿੱਚੋਂ ਨਮੂਨਾ ਚੁਣਦਾ ਹੈ।
+- `cost` / `eco` — ਸਭ ਤੋਂ ਸਸਤਾ ਸਿਹਤਮੰਦ ਪ੍ਰੋਵਾਈਡਰ
+- `latency` / `fast` — ਭਰੋਸੇਯੋਗਤਾ ਪੈਨਲਟੀ ਦੇ ਨਾਲ ਸਭ ਤੋਂ ਘੱਟ p95 ਲੇਟੈਂਸੀ
+- `sla-aware` / `sla` — ਉਹਨਾਂ ਕੈਂਡੀਡੇਟਾਂ ਨੂੰ ਤਰਜੀਹ ਦਿੰਦਾ ਹੈ ਜੋ p95 ਲੇਟੈਂਸੀ, ਗਲਤੀ ਦਰ ਅਤੇ ਵਿਕਲਪਿਕ
+  ਲਾਗਤ SLOs ਨੂੰ ਪੂਰਾ ਕਰਦੇ ਹਨ
 - `lkgp` — ਆਖਰੀ ਜਾਣਿਆ ਚੰਗਾ ਪ੍ਰੋਵਾਈਡਰ ਪਹਿਲਾਂ
-- `nadir` — [Nadir](https://getnadir.com) ਦੇ ਡਿਸੀਜ਼ਨ API ਨੂੰ ਪੁੱਛਦਾ ਹੈ ਕਿ ਪੂਲ ਵਿੱਚ ਕਿਹੜੇ ਮਾਡਲ ਦੀ ਪ੍ਰੋਂਪਟ ਨੂੰ ਲੋੜ ਹੈ; ਆਪਟ-ਇਨ, `rules` 'ਤੇ ਫੇਲ-ਓਪਨ
+- `nadir` — [Nadir](https://getnadir.com) ਦੇ ਫ਼ੈਸਲਾ API ਤੋਂ ਪੁੱਛਦਾ ਹੈ ਕਿ ਪੂਲ ਵਿੱਚੋਂ ਪ੍ਰੌਂਪਟ ਨੂੰ ਕਿਹੜੇ ਮਾਡਲ ਦੀ
+  ਲੋੜ ਹੈ; ਔਪਟ-ਇਨ, ਅਸਫਲ ਹੋਣ 'ਤੇ `rules` ਲਈ ਫੇਲ-ਓਪਨ
 
-### Router strategies in detail
+### ਰਾਊਟਰ ਰਣਨੀਤੀਆਂ ਦਾ ਵਿਸਥਾਰ
 
-ਆਟੋ-ਕੰਬੋ ਇੰਜਣ 7 ਪਲੱਗੇਬਲ **RouterStrategy** ਇੰਪਲੀਮੈਂਟੇਸ਼ਨਾਂ ਨੂੰ ਐਕਸਪੋਜ਼ ਕਰਦਾ ਹੈ ਜਿਨ੍ਹਾਂ ਨੂੰ ਤੁਸੀਂ `config.routerStrategy` (ਜਾਂ ਪੁਰਾਣੇ `config.auto.routerStrategy`) ਰਾਹੀਂ ਬਦਲ ਸਕਦੇ ਹੋ। ਹਰ ਰਣਨੀਤੀ ਕੈਂਡੀਡੇਟ ਪੂਲ ਵਿੱਚੋਂ ਇੱਕ ਪ੍ਰੋਵਾਈਡਰ ਚੁਣਦੀ ਹੈ, ਇੱਕ `RoutingContext` (ਟਾਸਕ ਟਾਈਪ, ਟੂਲ/ਵਿਜ਼ਨ ਹਿੰਟਸ, ਟੋਕਨ ਅਨੁਮਾਨ, ਵਿਕਲਪਿਕ SLA ਪਾਲਿਸੀ, ਵਿਕਲਪਿਕ ਆਖਰੀ-ਜਾਣਿਆ-ਚੰਗਾ ਪ੍ਰੋਵਾਈਡਰ) ਦਿੱਤੇ ਜਾਣ 'ਤੇ।
+ਆਟੋ-ਕੌਂਬੋ ਇੰਜਣ 7 ਪਲੱਗ ਕਰਨ ਯੋਗ **RouterStrategy** ਇੰਪਲੀਮੈਂਟੇਸ਼ਨ ਉਪਲਬਧ ਕਰਦਾ ਹੈ, ਜਿਨ੍ਹਾਂ ਨੂੰ
+ਤੁਸੀਂ `config.routerStrategy` (ਜਾਂ ਪੁਰਾਣੇ `config.auto.routerStrategy`) ਰਾਹੀਂ ਬਦਲ ਸਕਦੇ ਹੋ।
+ਹਰੇਕ ਰਣਨੀਤੀ ਇੱਕ `RoutingContext` ਦੇ ਆਧਾਰ 'ਤੇ ਕੈਂਡੀਡੇਟ ਪੂਲ ਵਿੱਚੋਂ ਇੱਕ ਪ੍ਰੋਵਾਈਡਰ ਚੁਣਦੀ ਹੈ
+(ਟਾਸਕ ਕਿਸਮ, ਟੂਲ/ਵਿਜ਼ਨ ਸੰਕੇਤ, ਟੋਕਨ ਅਨੁਮਾਨ, ਵਿਕਲਪਿਕ SLA ਨੀਤੀ, ਵਿਕਲਪਿਕ
+ਆਖਰੀ-ਜਾਣਿਆ-ਚੰਗਾ ਪ੍ਰੋਵਾਈਡਰ)।
 
-#### 1. `rules` (ਡਿਫੌਲਟ) — 16-ਫੈਕਟਰ ਵੇਟਡ ਸਕੋਰਿੰਗ
+#### 1. `rules` (ਡਿਫੌਲਟ) — 16-ਫੈਕਟਰ ਭਾਰਿਤ ਸਕੋਰਿੰਗ
 
-ਮੌਜੂਦਾ ਸਕੋਰਿੰਗ ਇੰਜਣ ਨੂੰ ਰੈਪ ਕਰਦਾ ਹੈ। `OPEN` ਸਰਕਟ-ਬ੍ਰੇਕਰ ਕੈਂਡੀਡੇਟਾਂ ਨੂੰ ਫਿਲਟਰ ਕਰਦਾ ਹੈ, ਫਿਰ ਮੌਜੂਦਾ ਟਾਸਕ ਟਾਈਪ ਅਤੇ `getTaskFitness()` ਦੇ ਨਾਲ `scorePool()` ਚਲਾਉਂਦਾ ਹੈ, ਅਤੇ ਸਭ ਤੋਂ ਵੱਧ ਸਕੋਰ ਵਾਲੇ ਪ੍ਰੋਵਾਈਡਰ ਨੂੰ ਚੁਣਦਾ ਹੈ।
+ਮੌਜੂਦਾ ਸਕੋਰਿੰਗ ਇੰਜਣ ਨੂੰ ਰੈਪ ਕਰਦਾ ਹੈ। `OPEN` ਸਰਕਿਟ-ਬ੍ਰੇਕਰ
+ਕੈਂਡੀਡੇਟਾਂ ਨੂੰ ਫਿਲਟਰ ਕਰਦਾ ਹੈ, ਫਿਰ ਮੌਜੂਦਾ ਟਾਸਕ ਕਿਸਮ ਅਤੇ `getTaskFitness()` ਨਾਲ `scorePool()`
+ਚਲਾਉਂਦਾ ਹੈ ਅਤੇ ਸਭ ਤੋਂ ਵੱਧ ਸਕੋਰ ਵਾਲੇ ਪ੍ਰੋਵਾਈਡਰ ਨੂੰ ਚੁਣਦਾ ਹੈ।
 
 ```ts
 class RulesStrategyImpl implements RouterStrategy {
@@ -504,15 +529,16 @@ class RulesStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਡਿਫੌਲਟ। ਉਦੋਂ ਵਰਤੋ ਜਦੋਂ ਤੁਸੀਂ ਸਾਰੇ ਸਿਗਨਲਾਂ ਵਿੱਚ ਇੱਕ ਸੰਤੁਲਿਤ ਵਪਾਰ-ਆਫ (trade-off) ਚਾਹੁੰਦੇ ਹੋ।
+**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਡਿਫੌਲਟ। ਉਦੋਂ ਵਰਤੋ ਜਦੋਂ ਤੁਸੀਂ ਸਾਰੇ ਸਿਗਨਲਾਂ ਵਿਚਕਾਰ ਸੰਤੁਲਿਤ ਸਮਝੌਤਾ ਚਾਹੁੰਦੇ ਹੋ।
 
-**ਉਪਨਾਮ (Alias)**: `rules` (ਕੋਈ ਉਪਨਾਮ ਨਹੀਂ)
+**ਉਪਨਾਮ**: `rules` (ਕੋਈ ਉਪਨਾਮ ਨਹੀਂ)
 
 ---
 
-#### 2. `cost` / `eco` — ਸਭ ਤੋਂ ਸਸਤਾ ਹੈਲਦੀ ਪ੍ਰੋਵਾਈਡਰ
+#### 2. `cost` / `eco` — ਸਭ ਤੋਂ ਸਸਤਾ ਸਿਹਤਮੰਦ ਪ੍ਰੋਵਾਈਡਰ
 
-ਕੈਂਡੀਡੇਟ ਪੂਲ ਨੂੰ `costPer1MTokens` (ਵਧਦੇ ਕ੍ਰਮ ਵਿੱਚ) ਦੁਆਰਾ ਕ੍ਰਮਬੱਧ ਕਰਦਾ ਹੈ ਅਤੇ ਸਭ ਤੋਂ ਸਸਤਾ ਚੁਣਦਾ ਹੈ। ਪਹਿਲਾਂ `OPEN` ਕੈਂਡੀਡੇਟਾਂ ਨੂੰ ਫਿਲਟਰ ਕਰਦਾ ਹੈ।
+ਕੈਂਡੀਡੇਟ ਪੂਲ ਨੂੰ `costPer1MTokens` (ਵਧਦੇ ਕ੍ਰਮ ਵਿੱਚ) ਅਨੁਸਾਰ ਕ੍ਰਮਬੱਧ ਕਰਦਾ ਹੈ ਅਤੇ ਸਭ ਤੋਂ ਸਸਤਾ ਚੁਣਦਾ ਹੈ।
+ਪਹਿਲਾਂ `OPEN` ਕੈਂਡੀਡੇਟਾਂ ਨੂੰ ਫਿਲਟਰ ਕਰਦਾ ਹੈ।
 
 ```ts
 class CostStrategyImpl implements RouterStrategy {
@@ -527,15 +553,16 @@ class CostStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਲਾਗਤ-ਸੰਵੇਦਨਸ਼ੀਲ ਵਰਕਲੋਡ, ਬੈਚ ਪ੍ਰੋਸੈਸਿੰਗ, ਜਾਂ ਬੈਕਗ੍ਰਾਉਂਡ ਜੌਬਸ।
+**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਲਾਗਤ-ਸੰਵੇਦਨਸ਼ੀਲ ਵਰਕਲੋਡਾਂ, ਬੈਚ ਪ੍ਰੋਸੈਸਿੰਗ ਜਾਂ ਬੈਕਗ੍ਰਾਊਂਡ ਜੌਬਾਂ ਲਈ।
 
-**ਉਪਨਾਮ (Aliases)**: `cost`, `eco`
+**ਉਪਨਾਮ**: `cost`, `eco`
 
 ---
 
-#### 3. `latency` / `fast` — ਰਿਲਾਇਬਿਲਟੀ ਪੈਨਲਟੀ ਦੇ ਨਾਲ ਸਭ ਤੋਂ ਘੱਟ p95 ਲੇਟੈਂਸੀ
+#### 3. `latency` / `fast` — ਭਰੋਸੇਯੋਗਤਾ ਪੈਨਲਟੀ ਦੇ ਨਾਲ ਸਭ ਤੋਂ ਘੱਟ p95 ਲੇਟੈਂਸੀ
 
-`p95LatencyMs + (errorRate * 1000)` ਦੁਆਰਾ ਕ੍ਰਮਬੱਧ ਕਰਦਾ ਹੈ। ਐਰਰ-ਰੇਟ ਪੈਨਲਟੀ ਇਹ ਯਕੀਨੀ ਬਣਾਉਂਦੀ ਹੈ ਕਿ ਅਵਿਸ਼ਵਾਸਯੋਗ ਪ੍ਰੋਵਾਈਡਰਾਂ ਨੂੰ ਘੱਟ ਰੈਂਕ ਦਿੱਤਾ ਜਾਵੇ ਭਾਵੇਂ ਉਹਨਾਂ ਦੀ ਨਾਮਾਤਰ ਲੇਟੈਂਸੀ ਘੱਟ ਹੋਵੇ।
+`p95LatencyMs + (errorRate * 1000)` ਅਨੁਸਾਰ ਕ੍ਰਮਬੱਧ ਕਰਦਾ ਹੈ। ਗਲਤੀ-ਦਰ ਪੈਨਲਟੀ ਇਹ ਯਕੀਨੀ ਬਣਾਉਂਦੀ ਹੈ
+ਕਿ ਗੈਰ-ਭਰੋਸੇਯੋਗ ਪ੍ਰੋਵਾਈਡਰਾਂ ਨੂੰ ਘੱਟ ਰੈਂਕ ਦਿੱਤਾ ਜਾਵੇ, ਭਾਵੇਂ ਉਨ੍ਹਾਂ ਦੀ ਨਾਮਾਤਰ ਲੇਟੈਂਸੀ ਘੱਟ ਹੋਵੇ।
 
 ```ts
 class LatencyStrategyImpl implements RouterStrategy {
@@ -552,25 +579,28 @@ class LatencyStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਲੇਟੈਂਸੀ-ਸੰਵੇਦਨਸ਼ੀਲ ਵਰਕਲੋਡ ਜਿਵੇਂ ਕਿ ਰੀਅਲ-ਟਾਈਮ ਚੈਟ, ਆਟੋਕੰਪਲੀਟ, ਜਾਂ ਇੰਟਰਐਕਟਿਵ ਕੋਡਿੰਗ ਅਸਿਸਟੈਂਟ।
+**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਰੀਅਲ-ਟਾਈਮ ਚੈਟ, ਆਟੋਕੰਪਲੀਟ ਜਾਂ
+ਇੰਟਰਐਕਟਿਵ ਕੋਡਿੰਗ ਸਹਾਇਕਾਂ ਵਰਗੇ ਲੇਟੈਂਸੀ-ਸੰਵੇਦਨਸ਼ੀਲ ਵਰਕਲੋਡਾਂ ਲਈ।
 
-**ਉਪਨਾਮ (Aliases)**: `latency`, `fast`
+**ਉਪਨਾਮ**: `latency`, `fast`
 
 ---
 
-#### 4. `sla-aware` / `sla` — ਲੇਟੈਂਸੀ/ਐਰਰ/ਲਾਗਤ SLO ਪਾਲਣਾ
+#### 4. `sla-aware` / `sla` — ਲੇਟੈਂਸੀ/ਗਲਤੀ/ਲਾਗਤ SLO ਅਨੁਪਾਲਨਾ
 
-ਹਰ ਕੈਂਡੀਡੇਟ ਨੂੰ ਇਸ ਗੱਲ ਦੁਆਰਾ ਸਕੋਰ ਕਰਦਾ ਹੈ ਕਿ ਉਹ ਕੌਨਫਿਗਰ ਕੀਤੀ SLO ਪਾਲਿਸੀ ਨੂੰ ਕਿੰਨੀ ਚੰਗੀ ਤਰ੍ਹਾਂ ਪੂਰਾ ਕਰਦਾ ਹੈ:
+ਹਰੇਕ ਕੈਂਡੀਡੇਟ ਨੂੰ ਇਸ ਆਧਾਰ 'ਤੇ ਸਕੋਰ ਕਰਦਾ ਹੈ ਕਿ ਉਹ ਕੰਫਿਗਰ ਕੀਤੀ SLO ਨੀਤੀ ਨੂੰ ਕਿੰਨੀ ਚੰਗੀ ਤਰ੍ਹਾਂ ਪੂਰਾ ਕਰਦਾ ਹੈ:
 
-| Factor       | Weight | Formula                                           |
-| ------------ | ------ | ------------------------------------------------- |
-| ਲੇਟੈਂਸੀ ਸਕੋਰ | 35%    | `threshold / max(value, ε)`                       |
-| ਗਲਤੀ ਸਕੋਰ    | 35%    | `threshold / max(value, ε)`                       |
-| ਸਿਹਤ ਸਕੋਰ    | 15%    | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
-| ਲਾਗਤ ਸਕੋਰ    | 10%    | `threshold / max(value, ε)` or inverse normalized |
-| ਸਥਿਰਤਾ ਸਕੋਰ  | 5%     | inverse normalized latency stddev                 |
+| ਕਾਰਕ         | ਭਾਰ | ਫ਼ਾਰਮੂਲਾ                                          |
+| ------------ | --- | ------------------------------------------------- |
+| ਲੇਟੈਂਸੀ ਸਕੋਰ | 35% | `threshold / max(value, ε)`                       |
+| ਗਲਤੀ ਸਕੋਰ    | 35% | `threshold / max(value, ε)`                       |
+| ਸਿਹਤ ਸਕੋਰ    | 15% | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
+| ਲਾਗਤ ਸਕੋਰ    | 10% | `threshold / max(value, ε)` ਜਾਂ ਉਲਟ ਨਾਰਮਲਾਈਜ਼ਡ    |
+| ਸਥਿਰਤਾ ਸਕੋਰ  | 5%  | ਉਲਟ ਨਾਰਮਲਾਈਜ਼ਡ ਲੇਟੈਂਸੀ stddev                     |
 
-ਜਦੋਂ `hardConstraints: true` ਹੁੰਦਾ ਹੈ, ਤਾਂ ਉਮੀਦਵਾਰਾਂ ਨੂੰ ਮੁੱਖ ਤੌਰ 'ਤੇ **ਉਲੰਘਣਾ ਸਕੋਰ** (ਉਹ ਕਿਸੇ ਵੀ SLO ਤੋਂ ਕਿੰਨਾ ਵੱਧ ਹਨ) ਦੁਆਰਾ ਕ੍ਰਮਬੱਧ ਕੀਤਾ ਜਾਂਦਾ ਹੈ, ਫਿਰ ਕੰਪੋਜ਼ਿਟ ਸਕੋਰ ਦੁਆਰਾ। ਨਹੀਂ ਤਾਂ ਇਹ ਸਿਰਫ਼ ਕੰਪੋਜ਼ਿਟ ਸਕੋਰ ਹੁੰਦਾ ਹੈ।
+ਜਦੋਂ `hardConstraints: true` ਹੁੰਦਾ ਹੈ, ਤਾਂ ਉਮੀਦਵਾਰਾਂ ਨੂੰ ਮੁੱਖ ਤੌਰ 'ਤੇ **ਉਲੰਘਣਾ ਸਕੋਰ**
+(ਉਹ ਕਿਸੇ SLO ਤੋਂ ਕਿੰਨਾ ਵੱਧ ਜਾਂਦੇ ਹਨ), ਅਤੇ ਫਿਰ ਸੰਯੁਕਤ ਸਕੋਰ ਅਨੁਸਾਰ ਕ੍ਰਮਬੱਧ ਕੀਤਾ ਜਾਂਦਾ ਹੈ। ਨਹੀਂ ਤਾਂ ਸਿਰਫ਼
+ਸੰਯੁਕਤ ਸਕੋਰ ਵਰਤਿਆ ਜਾਂਦਾ ਹੈ।
 
 ```ts
 class SLAStrategyImpl implements RouterStrategy {
@@ -579,12 +609,12 @@ class SLAStrategyImpl implements RouterStrategy {
     "Selects the provider most likely to satisfy latency, error-rate, and cost SLOs";
 
   select(pool, context) {
-    // ... scores each candidate against policy: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
+    // ... ਹਰ ਉਮੀਦਵਾਰ ਨੂੰ ਨੀਤੀ ਦੇ ਮੁਕਾਬਲੇ ਸਕੋਰ ਕਰਦਾ ਹੈ: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
   }
 }
 ```
 
-**SLA ਫੀਲਡ** (ਕੰਬੋ ਕੌਂਫਿਗ 'ਤੇ ਸੈੱਟ ਕੀਤੇ ਗਏ):
+**SLA ਫ਼ੀਲਡਾਂ** (ਕੌਂਬੋ ਸੰਰਚਨਾ ਵਿੱਚ ਸੈੱਟ ਕੀਤੀਆਂ ਜਾਂਦੀਆਂ ਹਨ):
 
 ```json
 {
@@ -599,15 +629,17 @@ class SLAStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਸਖ਼ਤ ਲੇਟੈਂਸੀ, ਗਲਤੀ-ਦਰ, ਜਾਂ ਲਾਗਤ ਬਜਟ ਵਾਲੇ ਪ੍ਰੋਡਕਸ਼ਨ ਵਰਕਲੋਡ।
+**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਸਖ਼ਤ ਲੇਟੈਂਸੀ, ਗਲਤੀ-ਦਰ ਜਾਂ ਲਾਗਤ ਬਜਟਾਂ ਵਾਲੇ ਪ੍ਰੋਡਕਸ਼ਨ ਵਰਕਲੋਡਾਂ ਲਈ।
 
 **ਉਪਨਾਮ**: `sla-aware`, `sla`
 
 ---
 
-#### 5. `lkgp` — ਆਖਰੀ ਜਾਣਿਆ ਗਿਆ ਵਧੀਆ ਪ੍ਰੋਵਾਈਡਰ ਪਹਿਲਾਂ
+#### 5. `lkgp` — ਆਖਰੀ ਜਾਣਿਆ-ਪਛਾਣਿਆ ਚੰਗਾ ਪ੍ਰਦਾਤਾ ਪਹਿਲਾਂ
 
-**ਆਖਰੀ ਜਾਣਿਆ ਗਿਆ ਵਧੀਆ ਪ੍ਰੋਵਾਈਡਰ** (ਜੇ ਸੈੱਟ ਕੀਤਾ ਗਿਆ ਹੋਵੇ) ਨੂੰ ਪਹਿਲਾਂ ਅਜ਼ਮਾਉਂਦਾ ਹੈ, ਫਿਰ `rules` ਰਣਨੀਤੀ 'ਤੇ ਵਾਪਸ ਆਉਂਦਾ ਹੈ। ਸੈਸ਼ਨ ਸਟਿਕੀਨੈੱਸ ਲਈ ਉਪਯੋਗੀ — ਉਹੀ ਪ੍ਰੋਵਾਈਡਰ ਗੱਲਬਾਤ ਵਿੱਚ ਫਾਲੋ-ਅੱਪ ਬੇਨਤੀਆਂ ਨੂੰ ਸੰਭਾਲਦਾ ਹੈ।
+ਪਹਿਲਾਂ **ਆਖਰੀ ਜਾਣਿਆ-ਪਛਾਣਿਆ ਚੰਗਾ ਪ੍ਰਦਾਤਾ** (ਜੇ ਸੈੱਟ ਕੀਤਾ ਹੋਵੇ) ਅਜ਼ਮਾਉਂਦਾ ਹੈ, ਫਿਰ
+`rules` ਰਣਨੀਤੀ 'ਤੇ ਵਾਪਸ ਜਾਂਦਾ ਹੈ। ਇਹ ਸੈਸ਼ਨ ਸਟਿੱਕੀਨੈੱਸ ਲਈ ਲਾਭਦਾਇਕ ਹੈ — ਇੱਕੋ ਪ੍ਰਦਾਤਾ
+ਗੱਲਬਾਤ ਵਿੱਚ ਅਗਲੀਆਂ ਬੇਨਤੀਆਂ ਨੂੰ ਸੰਭਾਲਦਾ ਹੈ।
 
 ```ts
 class LKGPStrategyImpl implements RouterStrategy {
@@ -628,21 +660,27 @@ class LKGPStrategyImpl implements RouterStrategy {
       }
     }
 
-    // Fallback to rules strategy
+    // ਵਾਪਸੀ ਲਈ rules ਰਣਨੀਤੀ ਵਰਤੋ
     return getStrategy("rules").select(pool, context);
   }
 }
 ```
 
-**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਮਲਟੀ-ਟਰਨ ਗੱਲਬਾਤ ਜਿੱਥੇ ਤੁਸੀਂ ਚਾਹੁੰਦੇ ਹੋ ਕਿ ਉਹੀ ਪ੍ਰੋਵਾਈਡਰ ਫਾਲੋ-ਅੱਪ ਬੇਨਤੀਆਂ ਨੂੰ ਸੰਭਾਲੇ (ਉਦਾਹਰਨ ਲਈ, ਕੈਸ਼ਿੰਗ, ਸੰਦਰਭ ਨਿਰੰਤਰਤਾ, ਜਾਂ ਕੀਮਤ ਦੀ ਇਕਸਾਰਤਾ ਲਈ)।
+**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਬਹੁ-ਵਾਰੀ ਗੱਲਬਾਤਾਂ ਵਿੱਚ, ਜਿੱਥੇ ਤੁਸੀਂ ਚਾਹੁੰਦੇ ਹੋ ਕਿ ਉਹੀ ਪ੍ਰਦਾਤਾ
+ਅਗਲੀਆਂ ਬੇਨਤੀਆਂ ਨੂੰ ਸੰਭਾਲੇ (ਉਦਾਹਰਨ ਲਈ, ਕੈਸ਼ਿੰਗ, ਸੰਦਰਭ ਨਿਰੰਤਰਤਾ ਜਾਂ ਕੀਮਤ ਇਕਸਾਰਤਾ ਵਾਸਤੇ)।
 
 **ਉਪਨਾਮ**: `lkgp` (ਕੋਈ ਉਪਨਾਮ ਨਹੀਂ)
 
 ---
 
-#### 6. `nadir` — Nadir ਰਾਹੀਂ ਪ੍ਰੋਂਪਟ-ਜਾਗਰੂਕ ਮਾਡਲ ਚੋਣ
+#### 6. `nadir` — Nadir ਰਾਹੀਂ ਪ੍ਰੌਂਪਟ-ਅਵੇਅਰ ਮਾਡਲ ਚੋਣ
 
-ਉੱਪਰ ਦਿੱਤੀ ਹਰ ਰਣਨੀਤੀ ਉਮੀਦਵਾਰਾਂ ਨੂੰ ਉਹਨਾਂ ਦੀ ਆਪਣੀ ਟੈਲੀਮੈਟਰੀ ਦੁਆਰਾ ਦਰਜਾ ਦਿੰਦੀ ਹੈ; ਉਹਨਾਂ ਵਿੱਚੋਂ ਕੋਈ ਵੀ ਬੇਨਤੀ ਨੂੰ ਨਹੀਂ ਪੜ੍ਹਦਾ। `nadir` ਆਖਰੀ ਉਪਭੋਗਤਾ ਟਰਨ ਅਤੇ ਪੂਲ ਦੀਆਂ ਮਾਡਲ ਆਈਡੀਆਂ ਨੂੰ [Nadir](https://getnadir.com) ਦੀ ਡਿਸੀਜ਼ਨ API (`POST /v1/bucket`) 'ਤੇ ਭੇਜਦਾ ਹੈ ਅਤੇ ਉਸ ਮੀਨੂ ਤੋਂ Nadir ਦੁਆਰਾ ਚੁਣੇ ਗਏ ਮਾਡਲ 'ਤੇ ਰੂਟ ਕਰਦਾ ਹੈ (`simple` → ਸਭ ਤੋਂ ਸਸਤਾ ਸਮਰੱਥ ਮਾਡਲ, `complex` → ਫਰੰਟੀਅਰ ਮਾਡਲ)। ਉਸ ਮਾਡਲ ਦੀ ਸੇਵਾ ਕਰਨ ਵਾਲਾ ਕਨੈਕਸ਼ਨ ਅਜੇ ਵੀ `rules` ਦੁਆਰਾ ਚੁਣਿਆ ਜਾਂਦਾ ਹੈ, ਇਸ ਲਈ ਕੋਟਾ, ਸਿਹਤ ਅਤੇ ਲਾਗਤ ਇਹ ਫੈਸਲਾ ਕਰਦੇ ਰਹਿੰਦੇ ਹਨ ਕਿ ਕਿਹੜਾ ਖਾਤਾ ਵਰਤਣਾ ਹੈ।
+ਉੱਪਰ ਦਿੱਤੀ ਹਰ ਰਣਨੀਤੀ ਉਮੀਦਵਾਰਾਂ ਨੂੰ ਆਪਣੀ ਟੈਲੀਮੈਟਰੀ ਅਨੁਸਾਰ ਦਰਜਾ ਦਿੰਦੀ ਹੈ; ਉਨ੍ਹਾਂ ਵਿੱਚੋਂ ਕੋਈ ਵੀ
+ਬੇਨਤੀ ਨੂੰ ਨਹੀਂ ਪੜ੍ਹਦੀ। `nadir` ਆਖਰੀ ਯੂਜ਼ਰ ਟਰਨ ਅਤੇ ਪੂਲ ਦੇ ਮਾਡਲ ids ਨੂੰ
+[Nadir](https://getnadir.com) ਦੇ ਫ਼ੈਸਲਾ API (`POST /v1/bucket`) ਨੂੰ ਭੇਜਦਾ ਹੈ ਅਤੇ Nadir ਵੱਲੋਂ
+ਉਸ ਮੀਨੂ ਵਿੱਚੋਂ ਚੁਣੇ ਮਾਡਲ ਵੱਲ ਰੂਟ ਕਰਦਾ ਹੈ (`simple` → ਸਭ ਤੋਂ ਸਸਤਾ ਸਮਰੱਥ ਮਾਡਲ, `complex` →
+ਫਰੰਟੀਅਰ ਮਾਡਲ)। ਉਸ ਮਾਡਲ ਨੂੰ ਸਰਵ ਕਰਨ ਵਾਲਾ ਕਨੈਕਸ਼ਨ ਫਿਰ ਵੀ `rules` ਵੱਲੋਂ ਚੁਣਿਆ ਜਾਂਦਾ ਹੈ, ਇਸ ਲਈ ਕੋਟਾ,
+ਸਿਹਤ ਅਤੇ ਲਾਗਤ ਇਹ ਨਿਰਧਾਰਤ ਕਰਦੇ ਰਹਿੰਦੇ ਹਨ ਕਿ ਕਿਹੜਾ ਖਾਤਾ ਵਰਤਿਆ ਜਾਵੇ।
 
 ```json
 {
@@ -658,13 +696,23 @@ class LKGPStrategyImpl implements RouterStrategy {
 }
 ```
 
-`OMNIROUTE_NADIR_API_KEY` ਅਤੇ `OMNIROUTE_NADIR_BASE_URL` ਦੋ ਸਤਰਾਂ ਲਈ env ਫਾਲਬੈਕ ਹਨ। `baseUrl` ਸਿਰਫ਼ ਸਵੈ-ਹੋਸਟ ਕੀਤੇ Nadir ਲਈ ਲੋੜੀਂਦਾ ਹੈ (ਅੰਤ ਵਿੱਚ `/v1` ਨੂੰ ਸਵੀਕਾਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ)। ਬਿਨਾਂ ਕੁੰਜੀ ਵਾਲੀਆਂ ਕਾਲਾਂ Nadir ਦੇ ਅਗਿਆਤ ਟੀਅਰ 'ਤੇ ਜਾਂਦੀਆਂ ਹਨ, ਜੋ ਪ੍ਰਤੀ IP ਰੇਟ-ਸੀਮਤ ਹੁੰਦੀਆਂ ਹਨ।
+`OMNIROUTE_NADIR_API_KEY` ਅਤੇ `OMNIROUTE_NADIR_BASE_URL` ਇਨ੍ਹਾਂ ਦੋ
+ਸਟਰਿੰਗਾਂ ਲਈ env ਫਾਲਬੈਕ ਹਨ। `baseUrl` ਦੀ ਲੋੜ ਸਿਰਫ਼ ਸਵੈ-ਹੋਸਟ ਕੀਤੇ Nadir ਲਈ ਹੁੰਦੀ ਹੈ (ਅੰਤ ਵਿੱਚ `/v1` ਸਵੀਕਾਰਯੋਗ ਹੈ)।
+ਬਿਨਾਂ ਕੁੰਜੀ ਵਾਲੀਆਂ ਕਾਲਾਂ Nadir ਦੇ ਅਗਿਆਤ ਟੀਅਰ 'ਤੇ ਜਾਂਦੀਆਂ ਹਨ, ਜਿਸ ਦੀ ਦਰ ਪ੍ਰਤੀ IP ਸੀਮਿਤ ਹੈ।
 
-ਬਾਕਸ ਤੋਂ ਕੀ ਬਾਹਰ ਜਾਂਦਾ ਹੈ: ਆਖਰੀ ਉਪਭੋਗਤਾ ਸੰਦੇਸ਼ ਦਾ ਟੈਕਸਟ (ਪਹਿਲੇ 16k ਅੱਖਰ), ਉਮੀਦਵਾਰ ਮਾਡਲ ਆਈਡੀਆਂ ਅਤੇ ਇੱਕ `source: "omniroute"` ਚੈਨਲ ਟੈਗ। ਕੋਈ ਸਿਸਟਮ ਪ੍ਰੋਂਪਟ, ਇਤਿਹਾਸ, ਟੂਲ ਜਾਂ ਹੈਡਰ ਨਹੀਂ।
+ਬਾਕਸ ਤੋਂ ਬਾਹਰ ਕੀ ਜਾਂਦਾ ਹੈ: ਆਖਰੀ ਯੂਜ਼ਰ ਸੁਨੇਹੇ ਦਾ ਟੈਕਸਟ (ਪਹਿਲੇ 16k ਅੱਖਰ), ਉਮੀਦਵਾਰ
+ਮਾਡਲ ids ਅਤੇ ਇੱਕ `source: "omniroute"` ਚੈਨਲ ਟੈਗ। ਕੋਈ ਸਿਸਟਮ ਪ੍ਰੌਂਪਟ, ਇਤਿਹਾਸ, ਟੂਲ ਜਾਂ
+ਹੈਡਰ ਨਹੀਂ।
 
-ਅਸਫਲਤਾ ਦਾ ਵਿਵਹਾਰ ਫੇਲ-ਓਪਨ ਹੈ: ਇੱਕ ਟਾਈਮਆਊਟ (ਡਿਫੌਲਟ 2000 ms), ਇੱਕ ਗੈਰ-2xx, ਇੱਕ ਪਹੁੰਚ ਤੋਂ ਬਾਹਰ ਹੋਸਟ, ਇੱਕ ਗਲਤ ਰਿਸਪੌਂਸ ਜਾਂ ਪੂਲ ਤੋਂ ਬਾਹਰ ਦੀ ਚੋਣ `rules` ਫੈਸਲੇ 'ਤੇ ਹੱਲ ਹੁੰਦੀ ਹੈ ਅਤੇ ਕਾਰਨ ਦਾ ਅਗੇਤਰ `NadirStrategy: fallback (…)` ਹੁੰਦਾ ਹੈ। ਇੱਕ ਅਸਫਲ ਕਾਲ ਤੋਂ ਬਾਅਦ ਰਣਨੀਤੀ 30 ਸਕਿੰਟਾਂ ਲਈ ਨੈੱਟਵਰਕ ਨੂੰ ਛੱਡ ਦਿੰਦੀ ਹੈ, ਇਸ ਲਈ ਇੱਕ ਆਊਟੇਜ ਪ੍ਰਤੀ ਬੇਨਤੀ ਇੱਕ ਦੀ ਬਜਾਏ ਪ੍ਰਤੀ 30 ਸਕਿੰਟ ਇੱਕ ਟਾਈਮਆਊਟ ਦਾ ਖਰਚਾ ਪਾਉਂਦੀ ਹੈ। ਰੂਟਿੰਗ ਇਵੈਂਟਸ `strategy: "nadir"` ਦੀ ਰਿਪੋਰਟ ਸਿਰਫ਼ ਉਦੋਂ ਕਰਦੇ ਹਨ ਜਦੋਂ Nadir ਨੇ ਅਸਲ ਵਿੱਚ ਚੋਣ ਕੀਤੀ ਹੋਵੇ।
+ਅਸਫਲਤਾ ਵਿਹਾਰ fail-open ਹੈ: ਇੱਕ ਟਾਈਮਆਉਟ (ਡਿਫੌਲਟ 2000 ms), ਇੱਕ non-2xx, ਪਹੁੰਚ ਤੋਂ ਬਾਹਰ
+ਹੋਸਟ, ਗਲਤ-ਰੂਪ ਵਾਲਾ ਜਵਾਬ ਜਾਂ ਪੂਲ ਤੋਂ ਬਾਹਰ ਦੀ ਚੋਣ `rules`
+ਫ਼ੈਸਲੇ 'ਤੇ ਵਾਪਸ ਜਾਂਦੀ ਹੈ ਅਤੇ ਕਾਰਨ ਦੇ ਅੱਗੇ `NadirStrategy: fallback (…)` ਜੋੜਿਆ ਜਾਂਦਾ ਹੈ। ਇੱਕ ਅਸਫਲ ਕਾਲ ਤੋਂ ਬਾਅਦ
+ਰਣਨੀਤੀ 30 s ਲਈ ਨੈੱਟਵਰਕ ਨੂੰ ਛੱਡ ਦਿੰਦੀ ਹੈ, ਇਸ ਲਈ ਆਊਟੇਜ ਦੌਰਾਨ ਹਰ ਬੇਨਤੀ ਦੀ ਬਜਾਏ
+ਹਰ 30 s ਵਿੱਚ ਇੱਕ ਟਾਈਮਆਉਟ ਦੀ ਲਾਗਤ ਪੈਂਦੀ ਹੈ। ਰੂਟਿੰਗ ਇਵੈਂਟ `strategy: "nadir"` ਦੀ ਰਿਪੋਰਟ ਸਿਰਫ਼ ਉਦੋਂ ਕਰਦੇ ਹਨ ਜਦੋਂ Nadir ਨੇ ਅਸਲ ਵਿੱਚ
+ਚੋਣ ਕੀਤੀ ਹੋਵੇ।
 
-**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਮਾਡਲ ਟੀਅਰਾਂ (ਇੱਕ ਛੋਟਾ, ਇੱਕ ਮੱਧ ਅਤੇ ਇੱਕ ਫਰੰਟੀਅਰ ਮਾਡਲ) ਵਿੱਚ ਫੈਲੇ ਪੂਲ 'ਤੇ ਮਿਸ਼ਰਤ-ਮੁਸ਼ਕਲ ਟ੍ਰੈਫਿਕ, ਜਿੱਥੇ ਹਮੇਸ਼ਾ-ਫਰੰਟੀਅਰ ਉਹ ਲਾਗਤ ਹੈ ਜਿਸ ਨੂੰ ਤੁਸੀਂ ਘਟਾਉਣਾ ਚਾਹੁੰਦੇ ਹੋ।
+**ਕਦੋਂ ਵਰਤਣਾ ਹੈ**: ਵੱਖ-ਵੱਖ ਮੁਸ਼ਕਲ ਪੱਧਰ ਵਾਲਾ ਟ੍ਰੈਫਿਕ, ਅਜਿਹੇ ਪੂਲ 'ਤੇ ਜੋ ਮਾਡਲ ਟੀਅਰਾਂ ਵਿੱਚ ਫੈਲਿਆ ਹੋਵੇ (ਇੱਕ ਛੋਟਾ, ਇੱਕ ਮੱਧਮ
+ਅਤੇ ਇੱਕ ਫਰੰਟੀਅਰ ਮਾਡਲ), ਜਿੱਥੇ ਹਮੇਸ਼ਾ-ਫਰੰਟੀਅਰ ਵਰਤਣ ਦੀ ਲਾਗਤ ਨੂੰ ਤੁਸੀਂ ਘਟਾਉਣਾ ਚਾਹੁੰਦੇ ਹੋ।
 
 **ਉਪਨਾਮ**: `nadir` (ਕੋਈ ਉਪਨਾਮ ਨਹੀਂ)
 
@@ -672,7 +720,7 @@ class LKGPStrategyImpl implements RouterStrategy {
 
 ### ਕਸਟਮ ਰਾਊਟਰ ਰਣਨੀਤੀਆਂ
 
-ਤੁਸੀਂ ਪਬਲਿਕ API ਰਾਹੀਂ ਆਪਣਾ ਖੁਦ ਦਾ `RouterStrategy` ਲਾਗੂਕਰਨ ਰਜਿਸਟਰ ਕਰ ਸਕਦੇ ਹੋ:
+ਤੁਸੀਂ ਪਬਲਿਕ API ਰਾਹੀਂ ਆਪਣਾ `RouterStrategy` ਇੰਪਲੀਮੈਂਟੇਸ਼ਨ ਰਜਿਸਟਰ ਕਰ ਸਕਦੇ ਹੋ:
 
 ```ts
 import {
@@ -685,7 +733,7 @@ class MyCustomStrategy implements RouterStrategy {
   readonly description = "My custom routing strategy";
 
   select(pool, context) {
-    // Your routing logic here
+    // ਆਪਣਾ ਰੂਟਿੰਗ ਤਰਕ ਇੱਥੇ ਲਿਖੋ
     return {
       provider: pool[0].provider,
       model: pool[0].model,
@@ -715,16 +763,16 @@ registerStrategy("my-custom", new MyCustomStrategy());
 
 ### ਰਾਊਟਰ ਰਣਨੀਤੀ ਚੋਣ ਗਾਈਡ
 
-| ਵਰਤੋਂ ਦਾ ਕੇਸ   | ਰਣਨੀਤੀ      | ਕਾਰਨ                                         |
-| -------------- | ----------- | -------------------------------------------- |
-| ਸੰਤੁਲਿਤ ਵਰਕਲੋਡ | `rules`     | ਡਿਫੌਲਟ — ਸਾਰੇ ਕਾਰਕਾਂ 'ਤੇ ਵਿਚਾਰ ਕਰਦਾ ਹੈ       |
-| ਲਾਗਤ ਘਟਾਓ      | `cost`      | ਹਮੇਸ਼ਾ ਸਭ ਤੋਂ ਸਸਤਾ ਚੁਣਦਾ ਹੈ                  |
-| ਲੇਟੈਂਸੀ ਘਟਾਓ   | `latency`   | ਸਭ ਤੋਂ ਤੇਜ਼ ਭਰੋਸੇਯੋਗ ਪ੍ਰੋਵਾਈਡਰ ਚੁਣਦਾ ਹੈ      |
-| ਸਖ਼ਤ SLOs      | `sla-aware` | p95/ਗਲਤੀ/ਲਾਗਤ ਥ੍ਰੈਸ਼ਹੋਲਡ ਦੁਆਰਾ ਫਿਲਟਰ ਕਰਦਾ ਹੈ |
-| ਮਲਟੀ-ਟਰਨ ਚੈਟ   | `lkgp`      | ਸੈਸ਼ਨ ਸਟਿਕੀਨੈੱਸ                              |
-| ਮਿਸ਼ਰਤ ਮੁਸ਼ਕਲ  | `nadir`     | ਪ੍ਰੋਂਪਟ ਪ੍ਰਤੀ ਮਾਡਲ ਟੀਅਰ ਚੁਣਦਾ ਹੈ             |
+| ਵਰਤੋਂ ਦਾ ਮਾਮਲਾ   | ਰਣਨੀਤੀ      | ਕਾਰਨ                                            |
+| ---------------- | ----------- | ----------------------------------------------- |
+| ਸੰਤੁਲਿਤ ਵਰਕਲੋਡ   | `rules`     | ਡਿਫੌਲਟ — ਸਾਰੇ ਕਾਰਕਾਂ 'ਤੇ ਵਿਚਾਰ ਕਰਦੀ ਹੈ          |
+| ਲਾਗਤ ਘੱਟ ਕਰਨੀ    | `cost`      | ਹਮੇਸ਼ਾ ਸਭ ਤੋਂ ਸਸਤਾ ਚੁਣਦੀ ਹੈ                     |
+| ਲੇਟੈਂਸੀ ਘੱਟ ਕਰਨੀ | `latency`   | ਸਭ ਤੋਂ ਤੇਜ਼ ਭਰੋਸੇਯੋਗ ਪ੍ਰਦਾਤਾ ਚੁਣਦੀ ਹੈ           |
+| ਸਖ਼ਤ SLOs        | `sla-aware` | p95/ਗਲਤੀ/ਲਾਗਤ ਥ੍ਰੈਸ਼ਹੋਲਡਾਂ ਅਨੁਸਾਰ ਫਿਲਟਰ ਕਰਦੀ ਹੈ |
+| ਬਹੁ-ਵਾਰੀ ਚੈਟ     | `lkgp`      | ਸੈਸ਼ਨ ਸਟਿੱਕੀਨੈੱਸ                                |
+| ਮਿਲੀ-ਜੁਲੀ ਮੁਸ਼ਕਲ | `nadir`     | ਹਰ ਪ੍ਰੌਂਪਟ ਲਈ ਮਾਡਲ ਟੀਅਰ ਚੁਣਦੀ ਹੈ                |
 
-SLA-ਜਾਗਰੂਕ ਫੀਲਡ:
+SLA-aware ਫ਼ੀਲਡਾਂ:
 
 ```json
 {
@@ -805,15 +853,15 @@ offline-friendly) "ਹਰ ਪੈਕ ਲਈ ਵਜ਼ਨ ਪ੍ਰੋਫਾਈਲ
 
 ## ਫਾਈਲਾਂ
 
-| ਫਾਈਲ                                                      | ਉਦੇਸ਼                                                                                                  |
-| :-------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| `open-sse/services/autoCombo/scoring.ts`                  | 16-ਫੈਕਟਰ ਸਕੋਰਿੰਗ ਫੰਕਸ਼ਨ, `DEFAULT_WEIGHTS`, ਪੂਲ ਨੌਰਮ                                                   |
-| `open-sse/services/autoCombo/taskFitness.ts`              | ਮਾਡਲ × ਟਾਸਕ ਫਿਟਨੈਸ ਲੁੱਕਅੱਪ                                                                             |
-| `open-sse/services/autoCombo/engine.ts`                   | ਚੋਣ ਤਰਕ, ਬੈਂਡਿਟ, ਬਜਟ ਕੈਪ                                                                               |
-| `open-sse/services/autoCombo/selfHealing.ts`              | ਬੇਦਖਲੀ, ਪ੍ਰੋਬਸ, ਇੰਸੀਡੈਂਟ ਮੋਡ                                                                           |
-| `open-sse/services/autoCombo/modePacks.ts`                | 6 ਵੇਟ ਪ੍ਰੋਫਾਈਲ (ship-fast, cost-saver, quality-first, offline-friendly, reliability-first, chaos-mode) |
-| `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/` ਪ੍ਰੀਫਿਕਸ ਪਾਰਸਰ + 6 ਵੇਰੀਐਂਟ                                                                     |
-| `open-sse/services/autoCombo/virtualFactory.ts`           | ਲਾਈਵ ਕਨੈਕਸ਼ਨਾਂ ਤੋਂ ਇਨ-ਮੈਮੋਰੀ `AutoComboConfig` ਬਣਾਉਂਦਾ ਹੈ                                              |
-| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | ਪ੍ਰੋਵਾਈਡਰ ਰਜਿਸਟਰੀ ਨੂੰ ਮੌਕ (mock) ਕਰਨ ਲਈ ਟੈਸਟ ਹੁੱਕ                                                      |
-| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 ਰਣਨੀਤੀਆਂ)                                                                |
-| `src/sse/handlers/chat.ts`                                | ਏਕੀਕਰਣ: ਆਟੋ-ਪ੍ਰੀਫਿਕਸ ਸ਼ਾਰਟ-ਸਰਕਟ                                                                        |
+| ਫਾਈਲ                                                      | ਉਦੇਸ਼                                                                                                 |
+| :-------------------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| `open-sse/services/autoCombo/scoring.ts`                  | 16-ਕਾਰਕ ਸਕੋਰਿੰਗ ਫੰਕਸ਼ਨ, `DEFAULT_WEIGHTS`, ਪੂਲ ਨਾਰਮ                                                   |
+| `open-sse/services/autoCombo/taskFitness.ts`              | ਮਾਡਲ × ਟਾਸਕ ਫਿਟਨੈੱਸ ਲੁੱਕਅੱਪ                                                                           |
+| `open-sse/services/autoCombo/engine.ts`                   | ਚੋਣ ਤਰਕ, ਬੈਂਡਿਟ, ਬਜਟ ਸੀਮਾ                                                                             |
+| `open-sse/services/autoCombo/selfHealing.ts`              | ਬਾਹਰ ਰੱਖਣਾ, ਪ੍ਰੋਬ, ਇੰਸੀਡੈਂਟ ਮੋਡ                                                                       |
+| `open-sse/services/autoCombo/modePacks.ts`                | 6 ਵੇਟ ਪ੍ਰੋਫਾਈਲਾਂ (ਤੇਜ਼-ਸ਼ਿਪਿੰਗ, ਲਾਗਤ-ਬਚਤ, ਗੁਣਵੱਤਾ-ਪਹਿਲਾਂ, ਆਫਲਾਈਨ-ਅਨੁਕੂਲ, ਭਰੋਸੇਯੋਗਤਾ-ਪਹਿਲਾਂ, ਕਾਓਸ-ਮੋਡ) |
+| `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/` ਪ੍ਰੀਫਿਕਸ ਪਾਰਸਰ + 6 ਵੇਰੀਐਂਟ                                                                    |
+| `open-sse/services/autoCombo/virtualFactory.ts`           | ਲਾਈਵ ਕਨੈਕਸ਼ਨਾਂ ਤੋਂ ਇਨ-ਮੈਮੋਰੀ `AutoComboConfig` ਬਣਾਉਂਦਾ ਹੈ                                             |
+| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | ਪ੍ਰੋਵਾਈਡਰ ਰਜਿਸਟਰੀ ਨੂੰ ਮੌਕ ਕਰਨ ਲਈ ਟੈਸਟ ਹੁੱਕ                                                            |
+| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 ਰਣਨੀਤੀਆਂ)                                                               |
+| `src/sse/handlers/chat.ts`                                | ਏਕੀਕਰਨ: ਆਟੋ-ਪ੍ਰੀਫਿਕਸ ਸ਼ਾਰਟ-ਸਰਕਿਟ                                                                      |

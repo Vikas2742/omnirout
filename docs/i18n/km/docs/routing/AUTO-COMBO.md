@@ -4,10 +4,6 @@
 
 ---
 
-🌐 **Languages:** 🇺🇸 [English](../../../../routing/AUTO-COMBO.md) · 🇪🇹 [am](../../../am/docs/routing/AUTO-COMBO.md) · 🇸🇦 [ar](../../../ar/docs/routing/AUTO-COMBO.md) · 🇦🇿 [az](../../../az/docs/routing/AUTO-COMBO.md) · 🇧🇬 [bg](../../../bg/docs/routing/AUTO-COMBO.md) · 🇧🇩 [bn](../../../bn/docs/routing/AUTO-COMBO.md) · 🇧🇦 [bs](../../../bs/docs/routing/AUTO-COMBO.md) · 🇨🇿 [cs](../../../cs/docs/routing/AUTO-COMBO.md) · 🇩🇰 [da](../../../da/docs/routing/AUTO-COMBO.md) · 🇩🇪 [de](../../../de/docs/routing/AUTO-COMBO.md) · 🇬🇷 [el](../../../el/docs/routing/AUTO-COMBO.md) · 🇪🇸 [es](../../../es/docs/routing/AUTO-COMBO.md) · 🇪🇪 [et](../../../et/docs/routing/AUTO-COMBO.md) · 🇮🇷 [fa](../../../fa/docs/routing/AUTO-COMBO.md) · 🇫🇮 [fi](../../../fi/docs/routing/AUTO-COMBO.md) · 🇫🇷 [fr](../../../fr/docs/routing/AUTO-COMBO.md) · 🇮🇪 [ga](../../../ga/docs/routing/AUTO-COMBO.md) · 🇮🇳 [gu](../../../gu/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ha](../../../ha/docs/routing/AUTO-COMBO.md) · 🇮🇱 [he](../../../he/docs/routing/AUTO-COMBO.md) · 🇮🇳 [hi](../../../hi/docs/routing/AUTO-COMBO.md) · 🇭🇷 [hr](../../../hr/docs/routing/AUTO-COMBO.md) · 🇭🇺 [hu](../../../hu/docs/routing/AUTO-COMBO.md) · 🇦🇲 [hy](../../../hy/docs/routing/AUTO-COMBO.md) · 🇮🇩 [id](../../../id/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ig](../../../ig/docs/routing/AUTO-COMBO.md) · 🇮🇹 [it](../../../it/docs/routing/AUTO-COMBO.md) · 🇯🇵 [ja](../../../ja/docs/routing/AUTO-COMBO.md) · 🇬🇪 [ka](../../../ka/docs/routing/AUTO-COMBO.md) · 🇮🇳 [kn](../../../kn/docs/routing/AUTO-COMBO.md) · 🇰🇷 [ko](../../../ko/docs/routing/AUTO-COMBO.md) · 🇱🇹 [lt](../../../lt/docs/routing/AUTO-COMBO.md) · 🇱🇻 [lv](../../../lv/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ml](../../../ml/docs/routing/AUTO-COMBO.md) · 🇮🇳 [mr](../../../mr/docs/routing/AUTO-COMBO.md) · 🇲🇾 [ms](../../../ms/docs/routing/AUTO-COMBO.md) · 🇲🇹 [mt](../../../mt/docs/routing/AUTO-COMBO.md) · 🇲🇲 [my](../../../my/docs/routing/AUTO-COMBO.md) · 🇳🇵 [ne](../../../ne/docs/routing/AUTO-COMBO.md) · 🇳🇱 [nl](../../../nl/docs/routing/AUTO-COMBO.md) · 🇳🇴 [no](../../../no/docs/routing/AUTO-COMBO.md) · 🇮🇳 [or](../../../or/docs/routing/AUTO-COMBO.md) · 🇮🇳 [pa](../../../pa/docs/routing/AUTO-COMBO.md) · 🇵🇭 [phi](../../../phi/docs/routing/AUTO-COMBO.md) · 🇵🇱 [pl](../../../pl/docs/routing/AUTO-COMBO.md) · 🇵🇹 [pt](../../../pt/docs/routing/AUTO-COMBO.md) · 🇧🇷 [pt-BR](../../../pt-BR/docs/routing/AUTO-COMBO.md) · 🇷🇴 [ro](../../../ro/docs/routing/AUTO-COMBO.md) · 🇷🇺 [ru](../../../ru/docs/routing/AUTO-COMBO.md) · 🇱🇰 [si](../../../si/docs/routing/AUTO-COMBO.md) · 🇸🇰 [sk](../../../sk/docs/routing/AUTO-COMBO.md) · 🇸🇮 [sl](../../../sl/docs/routing/AUTO-COMBO.md) · 🇷🇸 [sr](../../../sr/docs/routing/AUTO-COMBO.md) · 🇸🇪 [sv](../../../sv/docs/routing/AUTO-COMBO.md) · 🇰🇪 [sw](../../../sw/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ta](../../../ta/docs/routing/AUTO-COMBO.md) · 🇮🇳 [te](../../../te/docs/routing/AUTO-COMBO.md) · 🇹🇭 [th](../../../th/docs/routing/AUTO-COMBO.md) · 🇹🇷 [tr](../../../tr/docs/routing/AUTO-COMBO.md) · 🇺🇦 [uk-UA](../../../uk-UA/docs/routing/AUTO-COMBO.md) · 🇵🇰 [ur](../../../ur/docs/routing/AUTO-COMBO.md) · 🇺🇿 [uz](../../../uz/docs/routing/AUTO-COMBO.md) · 🇻🇳 [vi](../../../vi/docs/routing/AUTO-COMBO.md) · 🇳🇬 [yo](../../../yo/docs/routing/AUTO-COMBO.md) · 🇨🇳 [zh-CN](../../../zh-CN/docs/routing/AUTO-COMBO.md) · 🇹🇼 [zh-TW](../../../zh-TW/docs/routing/AUTO-COMBO.md)
-
----
-
 > **សម្រាប់អ្នកប្រើប្រាស់**៖ ចង់ចាប់ផ្តើមឱ្យបានរហ័សមែនទេ? សូមមើល [មគ្គុទ្ទេសក៍អ្នកប្រើប្រាស់ Auto-Combo](../getting-started/AUTO-COMBO-GUIDE.md) សម្រាប់ការពន្យល់ និងឧទាហរណ៍ងាយៗ។
 
 > ខ្សែសង្វាក់ម៉ូដែលដែលគ្រប់គ្រងដោយខ្លួនឯង ជាមួយការដាក់ពិន្ទុបែបសម្របខ្លួន + ការកំណត់ផ្លូវដោយស្វ័យប្រវត្តិដោយមិនចាំបាច់កំណត់រចនាសម្ព័ន្ធ
@@ -51,15 +47,15 @@ suffix បែប OpenRouter បំបែក **ប្រភេទផ្លូវ*
 **របៀបប្រើ៖**
 
 ```bash
-# Any IDE or CLI tool that supports OpenAI format
+# IDE ឬឧបករណ៍ CLI ណាមួយដែលគាំទ្រទម្រង់ OpenAI
 Base URL: http://localhost:20128/v1
 API Key:  <your-endpoint-key>
 
-# In your code/config, set model to:
-model: "auto"                 # balanced default
-model: "auto/coding"          # best for coding tasks
-model: "auto/fast"            # fastest available
-model: "auto/cheap"           # cheapest per token
+# ក្នុងកូដ/ការកំណត់រចនាសម្ព័ន្ធរបស់អ្នក កំណត់ model ទៅជា៖
+model: "auto"                 # លំនាំដើមមានតុល្យភាព
+model: "auto/coding"          # ល្អបំផុតសម្រាប់កិច្ចការសរសេរកូដ
+model: "auto/fast"            # ជម្រើសលឿនបំផុតដែលអាចប្រើបាន
+model: "auto/cheap"           # ថោកបំផុតក្នុងមួយ token
 ```
 
 **អ្វីដែលកើតឡើង៖**
@@ -110,15 +106,15 @@ single-tenant ដែលគ្មាន table `users` ដូច្នេះ `apiK
 **ដំណើរការនៅពីក្រោយ៖**
 
 ```txt
-Request: { model: "auto/coding" }
+សំណើ៖ { model: "auto/coding" }
    ↓
-src/sse/handlers/chat.ts detects prefix
+src/sse/handlers/chat.ts រកឃើញ prefix
    ↓
-createVirtualAutoCombo('coding') → candidatePool from active connections
+createVirtualAutoCombo('coding') → candidatePool ពី connections ដែលសកម្ម
    ↓
-handleComboChat (same engine as persisted combos)
+handleComboChat (engine ដូចគ្នានឹង combos ដែលបានរក្សាទុក)
    ↓
-Auto-scoring selects best provider/model per request
+ការដាក់ពិន្ទុដោយស្វ័យប្រវត្តិជ្រើសរើស provider/model ល្អបំផុតសម្រាប់សំណើនីមួយៗ
 ```
 
 **ឯកសារអនុវត្ត៖**
@@ -153,7 +149,13 @@ provider តែមួយ — វាប្រើឡើងវិញនូវអា
 model id ពិតប្រាកដ៖
 
 ```json
-{ "warning": { "code": "COMBO_NAME_SHADOWS_MODEL", "modelId": "gpt-5.5", "providerId": "openai" } }
+{
+  "warning": {
+    "code": "COMBO_NAME_SHADOWS_MODEL",
+    "modelId": "gpt-5.5",
+    "providerId": "openai"
+  }
+}
 ```
 
 នៅពេល boot, `scanComboModelNameCollisionsAtBoot()`
@@ -184,36 +186,36 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 
 សូមមើល [#7992](https://github.com/diegosouzapw/OmniRoute/issues/7992) និង [#7111](https://github.com/diegosouzapw/OmniRoute/issues/7111) សម្រាប់ភាពច្រឡំដំបូងដែលឯកសារនេះពន្យល់។
 
-## របៀបដែលវាដំណើរការ (Persisted Auto-Combos)
+## របៀបដែលវាដំណើរការ (Auto-Combos ដែលត្រូវបានរក្សាទុក)
 
-Auto-Combo Engine ជ្រើសរើស provider/model ដែលល្អបំផុតសម្រាប់សំណើនីមួយៗដោយស្វ័យប្រវត្តិ ដោយប្រើប្រាស់ **មុខងារគណនាពិន្ទុផ្អែកលើ 16 កត្តា (16-factor scoring function)** (ត្រូវបានកំណត់នៅក្នុង `open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS`)។ ទម្ងន់លំនាំដើមសរុបបញ្ចូលគ្នាស្មើនឹង `1.0`; ទម្ងន់ដែលបានកំណត់ផ្ទាល់ខ្លួនត្រូវបានធ្វើ renormalization ឡើងវិញដោយ `normalizeScoringWeights()`។ ពីរក្នុងចំណោមដប់ប្រាំមួយ — `cacheAffinity` និង `resetWindowAffinity` — មានទម្ងន់លំនាំដើមស្មើនឹង `0`; `reliability` មានតម្លៃ `0` នៅក្នុង `DEFAULT_WEIGHTS` ប៉ុន្តែមាន `0.03` នៅក្នុង generic packs និង `0.04` នៅក្នុង `reliability-first`, ហើយ `quality` មាន `0.02` នៅក្នុង packs (`0.03` នៅក្នុង `quality-first`): ពួកវានៅតែត្រូវបានគណនាសម្រាប់គ្រប់បេក្ខភាពទាំងអស់ ហើយ `cacheAffinity` គ្រប់គ្រង prompt-cache deduplication នៅក្រៅពិន្ទុ ដូច្នេះកត្តាដែលមានតម្លៃលំនាំដើមសូន្យគឺគ្រាន់តែមិនបោះឆ្នោតតាមលំនាំដើមប៉ុណ្ណោះ ខណៈពេលដែល packs ដំណើរការបោះឆ្នោត។
+Auto-Combo Engine ជ្រើសរើស provider/model ដែលល្អបំផុតដោយថាមវន្តសម្រាប់សំណើនីមួយៗ ដោយប្រើ **អនុគមន៍ដាក់ពិន្ទុដែលមាន 16 កត្តា** (កំណត់នៅក្នុង `open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS`)។ ទម្ងន់លំនាំដើមមានផលបូកស្មើនឹង `1.0`; ទម្ងន់ផ្ទាល់ខ្លួនត្រូវបានធ្វើឱ្យមានលក្ខណៈស្តង់ដារឡើងវិញដោយ `normalizeScoringWeights()`។ កត្តាពីរក្នុងចំណោមកត្តាទាំងដប់ប្រាំមួយ — `cacheAffinity` និង `resetWindowAffinity` — មានទម្ងន់លំនាំដើម `0`; `reliability` មានទម្ងន់ `0` នៅក្នុង `DEFAULT_WEIGHTS` ប៉ុន្តែមាន `0.03` នៅក្នុងកញ្ចប់ទូទៅ និង `0.04` នៅក្នុង `reliability-first` ហើយ `quality` មានទម្ងន់ `0.02` នៅក្នុងកញ្ចប់ (`0.03` នៅក្នុង `quality-first`)៖ កត្តាទាំងនេះនៅតែត្រូវបានគណនាសម្រាប់បេក្ខជននីមួយៗ ហើយ `cacheAffinity` គ្រប់គ្រងការលុបទិន្នន័យស្ទួននៃឃ្លាំងសម្ងាត់ prompt នៅក្រៅពិន្ទុ ដូច្នេះកត្តាដែលមានទម្ងន់លំនាំដើមសូន្យគ្រាន់តែមិនចូលរួមបោះឆ្នោតតាមលំនាំដើម ខណៈដែលកញ្ចប់នានាចូលរួម។
 
-![Auto-Combo 16-factor scoring](../diagrams/exported/auto-combo-scoring.svg)
+![ការដាក់ពិន្ទុ 16 កត្តារបស់ Auto-Combo](../diagrams/exported/auto-combo-scoring.svg)
 
-> ប្រភព៖ [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (បង្កើតឡើងវិញតាមរយៈ `npm run docs:render-diagrams`)។ ឈ្មោះឯកសារគឺជាឈ្មោះប្រវត្តិដើម; ប្រភព និងដ្យាក្រាមដែលបាន render បង្ហាញកត្តាទាំង 16 ទាំងអស់ដែលបានប្រកាសនៅក្នុង `DEFAULT_WEIGHTS`។
+> ប្រភព៖ [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (បង្កើតឡើងវិញតាមរយៈ `npm run docs:render-diagrams`)។ ឈ្មោះឯកសារនេះមានប្រភពមកពីប្រវត្តិសាស្ត្រ; ប្រភព និងដ្យាក្រាមដែលបានបង្ហាញ បង្ហាញកត្តាទាំង 16 ដែលបានប្រកាសនៅក្នុង `DEFAULT_WEIGHTS`។
 
-| Factor                | Default Weight | Description                                                                                                                                                                                                              |
-| :-------------------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quota`               | 0.1429         | កូតាដែលនៅសល់ / rate-limit headroom [0..1]                                                                                                                                                                                |
-| `health`              | 0.1605         | ពិន្ទុសុខភាពពី circuit breaker (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                                     |
-| `costInv`             | 0.1429         | តម្លៃច្រាសនៃតម្លៃ **ចម្រុះ (blended)** (តម្លៃ 60% input + 40% output token, normalized) — កាន់តែថោក = ពិន្ទុកាន់តែខ្ពស់                                                                                                  |
-| `latencyInv`          | 0.1143         | តម្លៃច្រាសនៃ p95 latency ដែលត្រូវបានធ្វើ normalized ទៅកាន់ pool — កាន់តែលឿន = ពិន្ទុកាន់តែខ្ពស់                                                                                                                          |
-| `taskFit`             | 0.0762         | ភាពស័ក្តិសមនៃប្រភេទកិច្ចការ (coding, review, planning, analysis, debugging, docs)                                                                                                                                        |
-| `stability`           | 0.0476         | ស្ថេរភាពផ្អែកលើ variance ពីគម្លាតស្តង់ដារនៃ latency — បេក្ខភាពណាដែលពេលវេលាឆ្លើយតបឡើងចុះខ្លាំង នឹងទទួលបានពិន្ទទាប                                                                                                         |
-| `tierPriority`        | 0.0476         | អាទិភាពកម្រិតគណនី (Account-tier) — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                          |
-| `tierAffinity`        | 0.0476         | ភាពត្រូវគ្នារវាង tier របស់បេក្ខភាព និង tier ដែលបានណែនាំដោយ manifest                                                                                                                                                      |
-| `specificityMatch`    | 0.0476         | ភាពត្រូវគ្នារវាងកម្រិតជាក់លាក់នៃសំណើ (ការណែនាំពី manifest) និង model tier                                                                                                                                                |
-| `contextAffinity`     | 0.0476         | ភាពត្រូវគ្នារវាងតម្រូវការ context-window របស់សំណើ និង context window របស់ model                                                                                                                                          |
-| `sessionAvailability` | 0.0476         | ភាពអាចរកបាននៃ OAuth session នៃការតភ្ជាប់បេក្ខភាពសម្រាប់ session នេះ (`getOAuthSessionAvailability()`; ការតភ្ជាប់ដែលមិនមែនជា OAuth ទទួលបានពិន្ទុ 1.0)                                                                     |
-| `connectionDensity`   | 0.0476         | បែងចែកបន្ទុកការងារពាសពេញការតភ្ជាប់នានារបស់ provider តែមួយ (ប្រឆាំងការប្រមូលផ្តុំបន្ទុក)                                                                                                                                  |
-| `cacheAffinity`       | 0.00           | Rendezvous-hash affinity ឆ្ពោះទៅកាន់ការតភ្ជាប់ដែលទំនងជាកំពុងកាន់កាប់ prompt-cache prefix នៃសំណើនេះរួចហើយ (`open-sse/services/combo/promptCacheAffinity.ts`); ត្រូវបានបិទតាមលំនាំដើម (#8008)                              |
-| `resetWindowAffinity` | 0.00           | ភាពលម្អៀងឆ្ពោះទៅកាន់ការតភ្ជាប់ណាដែល quota reset window អំណោយផលជាង (ត្រូវបានបិទតាមលំនាំដើម)                                                                                                                               |
-| `quality`             | 0.03           | សញ្ញាគុណភាពលទ្ធផលដែលជំរុញដោយមតិកែលម្អពី routing-event quality tracker; បេក្ខភាពដែលគ្មានការសង្កេតនឹងទទួលបានតម្លៃអព្យាក្រឹត 0.5                                                                                            |
-| `reliability`         | 0.00           | ចំណែកជោគជ័យដែលត្រូវបានសង្កេត, `1 - failureRate`, ពីប្រវត្តិប្រើប្រាស់រយៈពេល 24 ម៉ោង ផ្អែកលើកម្រិតទាបបំផុតដប់សំណាក (ក្រៅពីនោះជា metrics ជាក់ស្តែងភ្លាមៗ); បេក្ខភាពដែលគ្មានការសង្កេតនឹងទទួលបាន 1.0។ ត្រូវបានបិទតាមលំនាំដើម |
+| កត្តា                 | ទម្ងន់លំនាំដើម | សេចក្ដីពិពណ៌នា                                                                                                                                                                                                     |
+| :-------------------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quota`               | 0.1429         | កូតាដែលនៅសល់ / ទំហំទំនេរមុនឈានដល់ដែនកំណត់អត្រា [0..1]                                                                                                                                                              |
+| `health`              | 0.1605         | ពិន្ទុស្ថានភាពប្រព័ន្ធពី circuit breaker (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                     |
+| `costInv`             | 0.1429         | ច្រាសនៃថ្លៃចំណាយ **ចម្រុះ** (60% តម្លៃ token បញ្ចូល + 40% តម្លៃ token បញ្ចេញ ដែលបានធ្វើឱ្យមានលក្ខណៈស្តង់ដារ) — កាន់តែថោក = ពិន្ទុកាន់តែខ្ពស់                                                                       |
+| `latencyInv`          | 0.1143         | ច្រាសនៃ latency p95 ដែលបានធ្វើឱ្យមានលក្ខណៈស្តង់ដារធៀបនឹង pool — កាន់តែលឿន = ពិន្ទុកាន់តែខ្ពស់                                                                                                                      |
+| `taskFit`             | 0.0762         | ភាពសមស្របសម្រាប់ប្រភេទកិច្ចការ (ការសរសេរកូដ ការពិនិត្យឡើងវិញ ការធ្វើផែនការ ការវិភាគ ការបំបាត់កំហុស ឯកសារ)                                                                                                          |
+| `stability`           | 0.0476         | ស្ថិរភាពផ្អែកលើ variance ពីគម្លាតស្តង់ដារនៃ latency — បេក្ខជនដែលពេលវេលាឆ្លើយតបប្រែប្រួលខ្លាំង នឹងទទួលបានពិន្ទុទាបជាង                                                                                               |
+| `tierPriority`        | 0.0476         | អាទិភាពតាមកម្រិតគណនី — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                                |
+| `tierAffinity`        | 0.0476         | ភាពស៊ីគ្នារវាងកម្រិតរបស់បេក្ខជន និងកម្រិតដែល manifest ណែនាំ                                                                                                                                                        |
+| `specificityMatch`    | 0.0476         | ភាពត្រូវគ្នារវាងកម្រិតជាក់លាក់របស់សំណើ (តម្រុយ manifest) និងកម្រិត model                                                                                                                                           |
+| `contextAffinity`     | 0.0476         | ភាពស៊ីគ្នារវាងតម្រូវការ context-window របស់សំណើ និង context window របស់ model                                                                                                                                      |
+| `sessionAvailability` | 0.0476         | ភាពអាចប្រើបាននៃ session OAuth របស់ការតភ្ជាប់បេក្ខជនសម្រាប់ session នេះ (`getOAuthSessionAvailability()`; ការតភ្ជាប់ដែលមិនមែនជា OAuth ទទួលបានពិន្ទុ 1.0)                                                            |
+| `connectionDensity`   | 0.0476         | ចែកចាយបន្ទុកទៅលើការតភ្ជាប់នានារបស់ provider ដូចគ្នា (ប្រឆាំងនឹងការប្រមូលផ្តុំ)                                                                                                                                     |
+| `cacheAffinity`       | 0.00           | ភាពស៊ីគ្នាតាម rendezvous-hash ទៅកាន់ការតភ្ជាប់ដែលទំនងជាមានបុព្វបទឃ្លាំងសម្ងាត់ prompt របស់សំណើនេះរួចហើយ (`open-sse/services/combo/promptCacheAffinity.ts`); បានបិទតាមលំនាំដើម (#8008)                              |
+| `resetWindowAffinity` | 0.00           | ផ្តល់អាទិភាពទៅកាន់ការតភ្ជាប់ដែលមានចន្លោះពេលកំណត់កូតាឡើងវិញអំណោយផល (បានបិទតាមលំនាំដើម)                                                                                                                              |
+| `quality`             | 0.03           | សញ្ញាគុណភាពលទ្ធផលដែលជំរុញដោយមតិត្រឡប់ពីកម្មវិធីតាមដានគុណភាព routing-event; បេក្ខជនដែលគ្មានទិន្នន័យសង្កេត ទទួលបានពិន្ទុអព្យាក្រឹត 0.5                                                                               |
+| `reliability`         | 0.00           | ចំណែកជោគជ័យដែលបានសង្កេត `1 - failureRate` ពីប្រវត្តិប្រើប្រាស់ 24h ក្រោមលក្ខខណ្ឌអប្បបរមាដប់សំណាក (បើមិនដូច្នោះទេ ប្រើម៉ែត្រពេលជាក់ស្តែង); បេក្ខជនដែលគ្មានទិន្នន័យសង្កេត ត្រូវបានចាត់ទុកថាជា 1.0។ បានបិទតាមលំនាំដើម |
 
-> **កូតាដែលមិនអាចអានបាន (#15347)។** នៅពេលដែល provider មួយមានកម្មវិធីទាញយកកូតា (quota fetcher) ប៉ុន្តែវាពុំបានផ្តល់មកវិញនូវអ្វីដែលអាចអានបាន (ការទាញយកបានបរាជ័យ, បាត់បង់ credentials, ការប្រើប្រាស់ដែលមានតែសារ, ឬ snapshot ដែលខូចទ្រង់ទ្រាយដោយគ្មាន `windows` ដែលអាច parse បាន និងគ្មាន `percentUsed` កំណត់ច្បាស់លាស់ រួមទាំង `percentUsed: null`) បេក្ខភាពនោះទទួលបានពិន្ទុ `0` លើអ័ក្ស `quota` ហើយពិន្ទុចុងក្រោយរបស់វាត្រូវបានគុណនឹង `UNREADABLE_QUOTA_SOFT_DEPRIORITIZE_FACTOR` (0.5, `autoStrategy.ts`) ដែលជាទម្រង់ពិន័យស្រាល (soft-penalty) ដូចគ្នានឹងការពិន័យលើស្ថានភាពការតភ្ជាប់ដែរ។ ការអានទិន្នន័យប្រើប្រាស់ដែលបរាជ័យ គឺជាភស្តុតាងអំពី telemetry មិនមែនអំពី provider នោះទេ ដូច្នេះវាត្រូវបានចាត់ថ្នាក់ទាបជាងការអានទិន្នន័យជាក់ស្តែងណាមួយយ៉ាងតឹងរ៉ឹង រួមទាំងការអានដែលត្រូវបានបញ្ជាក់ថាបានប្រើប្រាស់អស់ 100% ផងដែរ ប៉ុន្តែមិនដែលត្រូវបាន hard-blocked ឬ evicted ឡើយ។ Provider ដែលគ្មានដែនកំណត់រាយការណ៍ថា `unlimited: true` ហើយទទួលបានពិន្ទុជាកូតាពេញលេញ។ Provider ដែលគ្មាន quota fetcher ដែលបានចុះឈ្មោះ គឺគ្មានប្រភព telemetry ទាល់តែសោះ ហើយរក្សាតម្លៃលំនាំដើមត្រឹម `100`។
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
 
-**ផលបូក៖** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` ដូចដែលបានប្រកាសនៅក្នុង `DEFAULT_WEIGHTS`។ ទម្ងន់ដែលបានកំណត់រចនាសម្ព័ន្ធដោយអ្នកប្រើប្រាស់ត្រូវបាន renormalized ទៅជាការបែងចែកមួយដោយ `normalizeScoringWeights()` មុនពេលធ្វើការគណនាពិន្ទុ។
+**ផលបូក៖** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` ដូចដែលបានប្រកាសនៅក្នុង `DEFAULT_WEIGHTS`; ទម្ងន់ដែលអ្នកប្រើប្រាស់កំណត់ ត្រូវបានធ្វើឱ្យមានលក្ខណៈស្តង់ដារឡើងវិញទៅជាបំណែងចែកដោយ `normalizeScoringWeights()` មុនពេលដាក់ពិន្ទុ។
 
 ## កញ្ចប់របៀប
 
@@ -264,7 +266,7 @@ Auto-Combo Engine ជ្រើសរើស provider/model ដែលល្អប�
 | `X-OmniRoute-Effort`          | `auto` (តម្លៃផ្សេងទៀតត្រូវបានបម្រុងទុក)                                                                                                                                                       | កញ្ចប់ថវិកាសម្រាប់ការគិតដែលសម្របខ្លួន៖ នៅពេលសំណើមិនមានវាលហេតុផលក្នុងទម្រង់ណាមួយឡើយ (`reasoning_effort`, `reasoning`, `thinking`) gateway នឹងកំណត់ `auto` ទៅជា `low`/`medium`/`high` ដោយផ្អែកលើសញ្ញាកំណត់ជាក់លាក់ពីទម្រង់សំណើ (ប្រវែងសារចុងក្រោយរបស់អ្នកប្រើ ទំហំបរិបទរហូតដល់សារចុងក្រោយរបស់អ្នកប្រើ លទ្ធផលពី tool មុនៗ និងជម្រៅនៃ tool-loop)។ សញ្ញាទាំងនេះត្រូវបានកំណត់វិសាលភាពត្រឹម turn បច្ចុប្បន្នប៉ុណ្ណោះ — អ្វីៗទាំងអស់បន្ទាប់ពីសារចុងក្រោយរបស់អ្នកប្រើត្រូវបានមិនអើពើ — ដូច្នេះ រាល់សំណើនៅក្នុង tool loop នឹងត្រូវបានកំណត់ទៅកម្រិតដូចគ្នា (ការចងកម្រិតតាម turn ដោយគ្មាន state មិនមាន session state និងមិនមានការបង្កើនកម្រិតនៅពាក់កណ្តាល loop ដែលអាចបំបែក prefix របស់ upstream prompt-cache)។ វាលហេតុផលដែល client បញ្ជាក់យ៉ាងច្បាស់ តែងតែមានអាទិភាព។ វាត្រូវបានកំណត់វិសាលភាពចំពោះសំណើដែល upstream dispatch របស់វាត្រូវបានកំណត់ទៅទម្រង់ OpenAI Chat Completions (`targetFormat === FORMATS.OPENAI`) — `reasoning_effort` គឺជាវាលទម្រង់ OpenAI ដូច្នេះ header នេះមិនមានឥទ្ធិពលលើសំណើដែលកំណត់គោលដៅទៅ Claude ឬ Gemini ទេ (សូមមើល `open-sse/handlers/chatCore/adaptiveEffortWiring.ts`)។ |
 
 ```bash
-# Force the fastest profile, cap this request at $0.05, and hard-block instead of overspending
+# បង្ខំឱ្យប្រើប្រូហ្វាល់លឿនបំផុត កំណត់សំណើនេះឱ្យចំណាយមិនលើស $0.05 និងទប់ស្កាត់ទាំងស្រុងជំនួសឱ្យការចំណាយលើស
 curl -sS http://localhost:20128/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-OmniRoute-Mode: fast" \
@@ -279,45 +281,51 @@ curl -sS http://localhost:20128/v1/chat/completions \
 
 ## យុទ្ធសាស្ត្រកំណត់ផ្លូវទាំងអស់
 
-ម៉ាស៊ីន combo របស់ OmniRoute គាំទ្រ **យុទ្ធសាស្ត្រកំណត់ផ្លូវចំនួន 20** (ដែលបានប្រកាសនៅក្នុង `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES`)។ ម៉ាស៊ីន Auto Combo ខ្លួនវាត្រូវបានបង្ហាញនៅក្រោមយុទ្ធសាស្ត្រ `auto`។ យុទ្ធសាស្ត្រផ្សេងទៀតមានសម្រាប់ combo ដែលត្រូវបានរក្សាទុក (persisted combos)។
+ម៉ាស៊ីនបន្សំរបស់ OmniRoute គាំទ្រ **យុទ្ធសាស្ត្រកំណត់ផ្លូវចំនួន 20** (បានប្រកាសនៅក្នុង `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES`)។ ម៉ាស៊ីន Auto Combo ផ្ទាល់ត្រូវបានបង្ហាញឱ្យប្រើក្រោមយុទ្ធសាស្ត្រ `auto` ចំណែកឯយុទ្ធសាស្ត្រផ្សេងទៀតអាចប្រើបានសម្រាប់បន្សំដែលបានរក្សាទុក។
 
-| យុទ្ធសាស្ត្រ        | ការពិពណ៌នា                                                                                                                                                                                                                           |
-| :------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `priority`          | បញ្ជីដែលបានរៀបតាមគោលដៅដំបូងជាមួយនឹងអាទិភាពច្បាស់លាស់                                                                                                                                                                                 |
-| `weighted`          | ការជ្រើសរើសដោយចៃដន្យតាមទម្ងន់សម្រាប់គោលដៅនីមួយៗ                                                                                                                                                                                      |
-| `round-robin`       | វិលជុំតាមគោលដៅតាមលំដាប់លំដោយ (ជាបាច់; សូមមើលខាងក្រោម)                                                                                                                                                                                |
-| `context-relay`     | បញ្ជូនបរិបទបន្តរវាងគោលដៅ (ការសន្ទនាវែងៗ)                                                                                                                                                                                             |
-| `fill-first`        | បំពេញកូតារបស់គោលដៅនីមួយៗមុននឹងបន្តទៅគោលដៅបន្ទាប់                                                                                                                                                                                     |
-| `p2c`               | ការថ្លឹងថ្លែងបន្ទុកដោយចៃដន្យតាមវិធី Power-of-2-choices                                                                                                                                                                               |
-| `random`            | ការជ្រើសរើសដោយចៃដន្យស្មើៗគ្នា                                                                                                                                                                                                        |
-| `least-used`        | ជ្រើសរើសគោលដៅដែលមានបន្ទុកប្រើប្រាស់តិចបំផុតបច្ចុប្បន្ន                                                                                                                                                                               |
-| `cost-optimized`    | កាត់បន្ថយតម្លៃ $ ក្នុងមួយសំណើដោយផ្អែកលើតម្លៃក្នុងកាតាឡុក                                                                                                                                                                             |
-| `reset-aware` ⭐    | ផ្តល់អាទិភាពតាមពេលវេលាកំណត់កូតាឡើងវិញ — រយៈពេលកំណត់ឡើងវិញខ្លីត្រូវបានដាក់ចំណាត់ថ្នាក់ខ្ពស់ជាង                                                                                                                                        |
-| `reset-window`      | ជ្រើសរើសគោលដៅដែលមានរយៈពេលកំណត់កូតាឡើងវិញឆាប់បំផុត                                                                                                                                                                                    |
-| `headroom`          | ជ្រើសរើសគោលដៅដែលមានកូតាសល់ច្រើនជាងគេ                                                                                                                                                                                                 |
-| `quota-weighted`    | រំលងគណនីដែលអស់កូតា បន្ទាប់មកជ្រើសរើសក្នុងចំណោមគណនីដែលនៅសល់តាមសមាមាត្រនៃកូតាដែលនៅសល់ចែកនឹងបន្ទុកដែលកំពុងដំណើរការ; ការសន្ទនាដែលមានស្រាប់នៅតែត្រូវបានរក្សាទុក                                                                           |
-| `strict-random`     | ការជ្រើសរើសដោយចៃដន្យដោយមិនដកការជាន់គ្នា                                                                                                                                                                                              |
-| `auto`              | ប្រើការដាក់ពិន្ទុ Auto Combo (16-factor) — **ត្រូវបានណែនាំ**                                                                                                                                                                         |
-| `lkgp`              | ផ្លូវល្អចុងក្រោយដែលបានស្គាល់ (កំណត់ទៅអ្នកផ្តល់សេវាដែលជោគជ័យចុងក្រោយ បន្ទាប់មកត្រឡប់ទៅប្រើច្បាប់វិញ)                                                                                                                                  |
-| `context-optimized` | ជ្រើសរើសគោលដៅដែលសមស្របបំផុតសម្រាប់ទំហំបរិបទបច្ចុប្បន្ន                                                                                                                                                                               |
-| `cache-optimized`   | រៀបចំគោលដៅឡើងវិញតាមភាពស្និទ្ធស្នាលនៃ prompt-cache — ការតភ្ជាប់ដែលមានលទ្ធភាពខ្ពស់បំផុតក្នុងការរក្សាទុក prefix ដែលបានឃ្លាំងសម្ងាត់ (cached) នៃសំណើនេះនឹងត្រូវបានសាកល្បងមុនគេ (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
-| `fusion` 🧬         | បំបែកទៅក្រុមម៉ូដែលជាច្រើនស្របគ្នា បន្ទាប់មកសំយោគចម្លើយមួយតាមរយៈអ្នកវិនិច្ឆ័យ (សូមមើលខាងក្រោម)                                                                                                                                        |
-| `pipeline`          | ដំណើរការគោលដៅជាបន្តបន្ទាប់ ដោយបញ្ជូនលទ្ធផលនៃជំហាននីមួយៗទៅជាធាតុចូលនៃជំហានបន្ទាប់; មានតែចម្លើយចុងក្រោយប៉ុណ្ណោះដែលត្រូវបានត្រឡប់ (#6396)                                                                                               |
+| យុទ្ធសាស្ត្រ        | ការពិពណ៌នា                                                                                                                                                                                                               |
+| :------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `priority`          | បញ្ជីគោលដៅដែលបានតម្រៀបដោយផ្តល់អាទិភាពជាក់លាក់ដល់គោលដៅដំបូង                                                                                                                                                               |
+| `weighted`          | ការជ្រើសរើសចៃដន្យដោយមានទម្ងន់តាមទម្ងន់របស់គោលដៅនីមួយៗ                                                                                                                                                                    |
+| `round-robin`       | ប្តូរវេនឆ្លងកាត់គោលដៅតាមលំដាប់ (ជាបាច់; សូមមើលខាងក្រោម)                                                                                                                                                                  |
+| `context-relay`     | ផ្ទេរបរិបទបន្តឆ្លងកាត់គោលដៅនានា (សម្រាប់ការសន្ទនាវែងៗ)                                                                                                                                                                   |
+| `fill-first`        | ប្រើកូតារបស់គោលដៅនីមួយៗឱ្យពេញ មុនពេលបន្តទៅគោលដៅបន្ទាប់                                                                                                                                                                   |
+| `p2c`               | ការធ្វើតុល្យកម្មបន្ទុកដោយជ្រើសរើសចៃដន្យតាមវិធីជម្រើស 2                                                                                                                                                                   |
+| `random`            | ការជ្រើសរើសចៃដន្យដោយមានប្រូបាប៊ីលីតេស្មើគ្នា                                                                                                                                                                             |
+| `least-used`        | ជ្រើសរើសគោលដៅដែលមានបន្ទុកបច្ចុប្បន្នទាបបំផុត                                                                                                                                                                             |
+| `cost-optimized`    | កាត់បន្ថយចំណាយ $ ក្នុងមួយសំណើ ដោយផ្អែកលើតម្លៃក្នុងកាតាឡុក                                                                                                                                                                |
+| `reset-aware` ⭐    | ផ្តល់អាទិភាពតាមពេលវេលាកំណត់កូតាឡើងវិញ — ចន្លោះពេលកំណត់ឡើងវិញខ្លីត្រូវបានដាក់ចំណាត់ថ្នាក់ខ្ពស់ជាង                                                                                                                         |
+| `reset-window`      | ផ្តល់អាទិភាពដល់គោលដៅដែលចន្លោះកូតារបស់វានឹងត្រូវកំណត់ឡើងវិញឆាប់បំផុត                                                                                                                                                      |
+| `headroom`          | ជ្រើសរើសគោលដៅដែលមានកូតានៅសល់ច្រើនបំផុត                                                                                                                                                                                   |
+| `quota-weighted`    | រំលងគណនីដែលអស់កូតា បន្ទាប់មកជ្រើសរើសក្នុងចំណោមគណនីដែលនៅសល់ តាមសមាមាត្រកូតាដែលនៅសល់ចែកនឹងបន្ទុកដែលកំពុងដំណើរការ; ការសន្ទនាដែលមានស្រាប់នៅតែត្រូវបានភ្ជាប់ជាប់នឹងគោលដៅដដែល                                                  |
+| `strict-random`     | ជ្រើសរើសចៃដន្យដោយមិនលុបជម្រើសដដែលៗចេញ                                                                                                                                                                                    |
+| `auto`              | ប្រើការដាក់ពិន្ទុរបស់ Auto Combo (16 កត្តា) — **បានណែនាំ**                                                                                                                                                               |
+| `lkgp`              | ផ្លូវដែលដំណើរការល្អចុងក្រោយ (ភ្ជាប់ជាប់ទៅអ្នកផ្តល់សេវាដែលជោគជ័យចុងក្រោយ បន្ទាប់មកត្រឡប់ទៅប្រើច្បាប់ជំនួសវិញ)                                                                                                             |
+| `context-optimized` | ជ្រើសរើសគោលដៅដែលសមស្របបំផុតសម្រាប់ទំហំបរិបទបច្ចុប្បន្ន                                                                                                                                                                   |
+| `cache-optimized`   | តម្រៀបគោលដៅឡើងវិញតាមភាពស្របគ្នានៃឃ្លាំងសម្ងាត់ប្រូម — ការតភ្ជាប់ដែលទំនងបំផុតថាមានបុព្វបទដែលបានរក្សាទុកក្នុងឃ្លាំងសម្ងាត់របស់សំណើនេះរួចហើយ នឹងត្រូវសាកល្បងមុនគេ (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
+| `fusion` 🧬         | បញ្ជូនសំណើទៅកាន់ក្រុមម៉ូដែលជាច្រើនស្របពេលគ្នា បន្ទាប់មកសំយោគចម្លើយតែមួយតាមរយៈម៉ូដែលវិនិច្ឆ័យ (សូមមើលខាងក្រោម)                                                                                                            |
+| `pipeline`          | ដំណើរការគោលដៅតាមលំដាប់ ដោយបញ្ជូនលទ្ធផលរបស់ជំហាននីមួយៗទៅជាធាតុបញ្ចូលរបស់ជំហានបន្ទាប់; មានតែចម្លើយចុងក្រោយប៉ុណ្ណោះដែលត្រូវបានត្រឡប់ (#6396)                                                                                |
 
 ⭐ = ថ្មីនៅក្នុង v3.8.0 · 🧬 = ថ្មីនៅក្នុង v3.8.36
 
-### `weighted` ន័យនៃ
+### អត្ថន័យរបស់ `weighted`
 
-`weighted` គឺជា **ការចាប់ឆ្នោតដោយចៃដន្យតាមសមាមាត្រក្នុងមួយសំណើ**
-(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`) មិនមែនជាឧបករណ៍ធ្វើឱ្យស្មើគ្នានោះទេ៖
+`weighted` គឺជា **ការចាប់ឆ្នោតចៃដន្យតាមសមាមាត្រសម្រាប់សំណើនីមួយៗ**
+(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`) មិនមែនជាឧបករណ៍ធ្វើឱ្យស្មើគ្នាទេ៖
 
-- សំណើនីមួយៗចាប់យកជំហាន **មួយ** ដោយមានប្រូបាប៊ីលីតេ `weight / totalWeight`; ជំហានដែលនៅសល់ត្រូវបានរៀបតាមលំដាប់ទម្ងន់ចុះក្រោមជាខ្សែសង្វាក់ជំនួសសម្រាប់សំណើនោះ។
-- ជំហានដែលមានទម្ងន់ `0` (ឬបាត់) គឺ **មិនដែលត្រូវបានចាប់យក** ទេ ខណៈពេលដែលជំហានផ្សេងទៀតមានទម្ងន់ > 0 — វាអាចបម្រើជាការជំនួសបានតែបន្ទាប់ពីជំហានដែលបានចាប់យកបរាជ័យប៉ុណ្ណោះ។ មានតែនៅពេលដែលទម្ងន់ **ទាំងអស់** គឺ 0 ទើបការជ្រើសរើសក្លាយជាឯកសណ្ឋាន។
-- ជំហានដែលគោលដៅទាំងអស់មិនអាចប្រើបាន — provider circuit breaker `OPEN`, connection cooldown, model lockout — ត្រូវបានដកចេញពីការចាប់ឆ្នោតមុនពេលវាចាប់ផ្តើម
-  (`open-sse/services/combo/targetResolution.ts`) ដូច្នេះជំហានដែលមានសុខភាពល្អតែមួយអាចឈ្នះរាល់សំណើជាបណ្តោះអាសន្ន។
-- `stickyWeightedLimit` (ការកំណត់ combo, លំនាំដើម `1` = បិទ) ខ្ទាស់ជំហានដែលបានចាប់យកសម្រាប់ចំនួនជោគជ័យជាប់ៗគ្នានោះ មុនពេលចាប់ឆ្នោតម្តងទៀត។
+- សំណើនីមួយៗចាប់យកជំហាន **មួយ** ដោយមានប្រូបាប៊ីលីតេ `weight / totalWeight`; ជំហានដែលនៅសល់
+  ត្រូវបានតម្រៀបតាមទម្ងន់ពីខ្ពស់ទៅទាប ជាខ្សែជម្រើសបម្រុងសម្រាប់សំណើនោះ។
+- ជំហានដែលមានទម្ងន់ `0` (ឬមិនបានកំណត់) **នឹងមិនត្រូវបានចាប់យកឡើយ** នៅពេលដែលមានជំហានផ្សេងទៀត
+  មានទម្ងន់ > 0 — វាអាចបម្រើបានត្រឹមជាជម្រើសបម្រុងបន្ទាប់ពីជំហានដែលបានចាប់យកបរាជ័យប៉ុណ្ណោះ។ ការជ្រើសរើសនឹងក្លាយជាចៃដន្យស្មើគ្នា លុះត្រាតែទម្ងន់ **ទាំងអស់**
+  ស្មើនឹង 0។
+- ជំហានដែលគោលដៅទាំងអស់មិនអាចប្រើបាន — ឧបករណ៍ផ្តាច់សៀគ្វីរបស់អ្នកផ្តល់សេវាមានស្ថានភាព `OPEN`, ការតភ្ជាប់
+  កំពុងស្ថិតក្នុងរយៈពេលរង់ចាំ, ឬម៉ូដែលត្រូវបានចាក់សោ — នឹងត្រូវបានដកចេញពីការចាប់ឆ្នោត មុនពេលវាកើតឡើង
+  (`open-sse/services/combo/targetResolution.ts`) ដូច្នេះ ជំហានតែមួយដែលដំណើរការល្អអាចឈ្នះគ្រប់សំណើជាបណ្តោះអាសន្ន។
+- `stickyWeightedLimit` (ការកំណត់រចនាសម្ព័ន្ធបន្សំ, លំនាំដើម `1` = បិទ) ភ្ជាប់ជំហានដែលបានចាប់យកសម្រាប់
+  ចំនួនជោគជ័យជាប់ៗគ្នាតាមការកំណត់ មុនពេលចាប់ឆ្នោតឡើងវិញ។
 
-សម្រាប់ការបង្វិល (rotation) យ៉ាងតឹងរ៉ឹង សូមប្រើ `round-robin`។ ទម្ងន់ស្មើគ្នានៅលើ `weighted` ផ្តល់នូវតុល្យភាពស្ថិតិ មិនមែនតុល្យភាពតឹងរ៉ឹងនោះទេ។
+សម្រាប់ការបង្វិលយ៉ាងតឹងរ៉ឹង សូមប្រើ `round-robin`; ទម្ងន់ស្មើគ្នាលើ `weighted` ផ្តល់តុល្យភាពតាមស្ថិតិ — មិនមែន
+តុល្យភាពតឹងរ៉ឹងទេ។
 
 ### របៀប pipeline ភ្នាក់ងារ (Agentic pipeline mode)
 
@@ -339,15 +347,29 @@ curl -sS http://localhost:20128/v1/chat/completions \
 
 អ្នកប្រតិបត្តិអាចបញ្ចេញការហៅឯករាជ្យជាច្រើនក្នុងការឆ្លើយតបតែមួយ។ ការហៅដែលពឹងផ្អែកលើគ្នា (Dependent calls) ត្រូវបានដោះស្រាយនៅក្នុងវេនលទ្ធផលឧបករណ៍របស់អតិថិជននៅពេលក្រោយ ដោយអ្នករៀបចំផែនការពិនិត្យមើលរាល់លទ្ធផលទាំងអស់។ `maxToolRounds` មានតម្លៃលំនាំដើម `8` និងទទួលយកតម្លៃពី `1`–`32`។ នៅពេលឈានដល់ដែនកំណត់នេះ អ្នករៀបចំផែនការត្រូវតែបង្កើតចម្លើយចុងក្រោយដ៏ល្អបំផុតដែលមាន។ ការសម្រេចចិត្តរបស់អ្នករៀបចំផែនការផ្ទៃក្នុងត្រូវបានរក្សាទុកក្នុង buffer ខណៈពេលដែលការឆ្លើយតបដែលបានជ្រើសរើសសម្រាប់អតិថិជនរក្សាការកំណត់ចំណូលចិត្តការស្ទ្រីមដើម។
 
-### ការបាច់ (batch) ស្អិត `round-robin` និងការពង្រីកគណនី
+### បាច់ sticky របស់ `round-robin` និងការពង្រីកគណនី
 
-Round-robin ត្រូវបានធ្វើជាបាច់ មិនមែនមួយសំណើក្នុងមួយជំហាននោះទេ៖
+Round-robin ដំណើរការជាបាច់ មិនមែនមួយសំណើក្នុងមួយជំហានទេ៖
 
-- `stickyRoundRobinLimit` (ការកំណត់ combo បន្ទាប់មក `comboStickyRoundRobinLimit` បន្ទាប់មក `settings.stickyRoundRobinLimit` លំនាំដើម **3**) រក្សាគោលដៅដដែលសម្រាប់ចំនួនជោគជ័យជាប់គ្នានោះ មុនពេលបង្វិល។ កំណត់ការជំនួស (override) combo ទៅ `1` សម្រាប់ការបង្វិលមួយសំណើ។ កម្មវិធីកែសម្រួល combo បង្ហាញតម្លៃដែលមានប្រសិទ្ធភាព និងស្រទាប់ដែលវាបានមកពី។
-- `connectionAwareExpansion` (ការកំណត់ combo បន្ទាប់មកការកំណត់ settings លំនាំដើម **false**) ពង្រីកជំហានកម្រិតអ្នកផ្តល់សេវា (provider-level) នីមួយៗទៅជាគោលដៅក្នុងមួយគណនី មុនពេលបង្វិល។ យុទ្ធសាស្ត្រ Group-B (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp, fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion, pipeline) រក្សាមុំមើលកម្រិតអ្នកផ្តល់សេវារហូតដល់មុខងារនេះត្រូវបានបើក។ កម្មវិធីកែសម្រួល combo បង្ហាញជម្រើស inherit / on / off; inherit ប្រើលំនាំដើមសកល (off)។
-- ការកំណត់ផ្លូវតាមទីតាំង cache នៃ prompt (`promptCacheAffinityEnabled` លំនាំដើម **true**) រៀបចំការតភ្ជាប់ដែលបានខ្ទាស់ (pinned) ឡើងវិញ ដើម្បីឱ្យ cache keys ដែលផ្គូផ្គងស្ថិតនៅលើគណនីតែមួយ។ វាមានអាទិភាពជាងការបង្វិល round-robin និង weighted នៅលើជំហានដែលបានខ្ទាស់ក្នុងមួយគណនី។ បិទវាក្រោម Settings → Combo defaults ប្រសិនបើអ្នកត្រូវការការបង្វិលយ៉ាងតឹងរ៉ឹង។ មិនមានការជំនួស (override) ក្នុងមួយ combo ទេ។
+- `stickyRoundRobinLimit` (config របស់ combo បន្ទាប់មក `comboStickyRoundRobinLimit` បន្ទាប់មក
+  `settings.stickyRoundRobinLimit` ដែលមានតម្លៃលំនាំដើម **3**) រក្សាគោលដៅដដែលសម្រាប់ចំនួន
+  ជោគជ័យជាប់ៗគ្នាប៉ុណ្ណោះ មុនពេលបង្វិល។ កំណត់ការបដិសេធតម្លៃរបស់ combo ទៅជា `1` សម្រាប់ការបង្វិលមួយសំណើម្តង។
+  កម្មវិធីកែសម្រួល combo បង្ហាញតម្លៃមានប្រសិទ្ធភាព និងស្រទាប់ដែលវាបានមកពី។
+- `connectionAwareExpansion` (config របស់ combo បន្ទាប់មក settings ដែលមានតម្លៃលំនាំដើម **false**) ពង្រីក
+  ជំហានកម្រិត provider នីមួយៗទៅជាគោលដៅតាមគណនី មុនពេលបង្វិល។ យុទ្ធសាស្ត្រ Group-B
+  (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp,
+  fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion,
+  pipeline) រក្សាទិដ្ឋភាពកម្រិត provider រហូតដល់វាត្រូវបានបើក។ កម្មវិធីកែសម្រួល combo ផ្តល់ជម្រើស
+  inherit / on / off; inherit ប្រើតម្លៃលំនាំដើមសកល (off)។
+- ការបញ្ជូនទិសដៅតាមភាពជិតស្និទ្ធនៃ prompt-cache (`promptCacheAffinityEnabled` ដែលមានតម្លៃលំនាំដើម **true**) រៀបលំដាប់
+  ការតភ្ជាប់ដែលបាន pin ឡើងវិញ ដើម្បីឱ្យ cache key ដែលត្រូវគ្នានៅលើគណនីតែមួយ។ វាមានអាទិភាពលើ
+  ការបង្វិល round-robin និង weighted ឆ្លងកាត់ជំហានតាមគណនីដែលបាន pin។ បិទវានៅក្រោម
+  Settings → Combo defaults ប្រសិនបើអ្នកត្រូវការការបង្វិលយ៉ាងតឹងរ៉ឹង។ មិនមានការបដិសេធតម្លៃតាម combo ទេ។
 
-សម្រាប់ការបង្វិលគណនីច្រើននៅលើម៉ូដែលតែមួយ សូមជ្រើសរើស **ជំហានគណនីថាមវន្តមួយ** (`connectionId` ទទេ, អាងទាំងមូល) ជាមួយនឹងដែនកំណត់ស្អិត `1` មិនមែន `connectionId` ដែលបានខ្ទាស់ចំនួនបីនោះទេ។ ជំហានដែលបានខ្ទាស់បូករួមនឹង affinity នឹងរួមបញ្ចូលគ្នាទៅលើគណនីតែមួយ ទោះបីជាកុងទ័រ RR កំពុងដំណើរការក៏ដោយ។
+សម្រាប់ការបង្វិលពហុគណនីលើម៉ូដែលតែមួយ គួរប្រើ **ជំហាន dynamic-account មួយ** (`connectionId` ទទេ,
+pool ទាំងមូល) ជាមួយ sticky limit `1` ជំនួសឱ្យ `connectionId` ដែលបាន pin ចំនួនបី។
+ជំហានដែលបាន pin រួមជាមួយ affinity នឹងបង្រួមទៅគណនីដដែល សូម្បីតែពេលឧបករណ៍រាប់ RR
+បន្តកើនឡើងក៏ដោយ។
 
 ## យុទ្ធសាស្ត្រ Fusion
 
@@ -447,46 +469,56 @@ curl -X POST http://localhost:20128/api/combos \
 
 ## API
 
-មិនមាន **endpoint `POST /api/combos/auto` ជាក់លាក់** នោះទេ — Auto-Combo ត្រូវបានប្រើប្រាស់តាមពីរវិធី៖
+**មិនមាន endpoint `POST /api/combos/auto` ដាច់ដោយឡែកទេ** — Auto-Combo ត្រូវបានប្រើប្រាស់តាមពីរវិធី៖
 
-1. **Zero-config (ត្រូវបានណែនាំ):** ផ្ញើសំណើ chat completion ណាមួយជាមួយ `model: "auto"` ឬ `model: "auto/<variant>"`។ virtual factory បង្កើត combo ក្នុងមួយសំណើ — មិនត្រូវការការរក្សាទុក (persistence) ឬការហៅ API នោះទេ។
+1. **គ្មានការកំណត់រចនាសម្ព័ន្ធ (ត្រូវបានណែនាំ):** ផ្ញើសំណើ chat completion ណាមួយដោយប្រើ `model: "auto"` ឬ `model: "auto/<variant>"`។ virtual factory បង្កើត combo សម្រាប់សំណើនីមួយៗ — មិនត្រូវការការរក្សាទុកជាអចិន្ត្រៃយ៍ ហើយក៏មិនត្រូវការការហៅ API ដែរ។
 
-2. **Persisted combo ជាមួយ `strategy: "auto"`:** បង្កើត combo ធម្មតាដោយប្រើ `POST /api/combos` ហើយកំណត់ `strategy: "auto"` បូករួមទាំង `config.auto.weights` / `config.auto.candidatePool`។ scoring engine ដដែលត្រូវបានប្រើប្រាស់; combo ត្រូវបានរក្សាទុកក្នុង `combos` ហើយអាចប្រើឡើងវិញបានតាមរយៈ ID។
+2. **Combo ដែលបានរក្សាទុកជាមួយ `strategy: "auto"`:** បង្កើត combo ធម្មតាតាមរយៈ `POST /api/combos` ហើយកំណត់ `strategy: "auto"` រួមជាមួយ `config.auto.weights` / `config.auto.candidatePool`។ វាប្រើ scoring engine ដូចគ្នា; combo ត្រូវបានរក្សាទុកក្នុង `combos` ហើយអាចប្រើឡើងវិញតាម ID។
 
-សម្រាប់ការស្វែងរក (discovery), `GET /api/combos/auto` បង្ហាញរាល់ variant ជាមួយនឹង candidate pool ដែលបានដោះស្រាយ (resolved) បូករួមទាំង `context_length` / `max_output_tokens` — ដែលជាតម្លៃ MAX ក្នុងចំណោម windows របស់ candidate pool។ Clients (ឧទាហរណ៍ opencode plugin) ត្រូវតែផ្សព្វផ្សាយតម្លៃទាំងនេះជំនួសឱ្យ `0`: context សូន្យនឹងបិទមុខងារ auto-compaction របស់ opencode ទាំងស្រុង ដែលអនុញ្ញាតឱ្យ sessions កើនឡើងរហូតដល់ការសម្អាតប្រវត្តិ (history purge) របស់ gateway បំផ្លាញ context ចោល។ ការផ្សព្វផ្សាយតម្លៃ MAX គឺមានសុវត្ថិភាព ពីព្រោះ auto-combo context pre-filter បញ្ជូនសំណើដែលមានទំហំធំទៅកាន់ candidates ដែលមាន window ធំ។
+សម្រាប់ការស្វែងរក `GET /api/combos/auto` បង្ហាញ variant ទាំងអស់ជាមួយ candidate pool ដែលបានដោះស្រាយ ព្រមទាំង `context_length` / `max_output_tokens` — តម្លៃ MAX ក្នុងចំណោម window របស់ candidate pool។ Client (ឧ. opencode plugin) ត្រូវតែប្រកាសតម្លៃទាំងនេះជំនួសឱ្យ `0`៖ context សូន្យនឹងបិទ auto-compaction របស់ opencode ទាំងស្រុង ដែលអនុញ្ញាតឱ្យ session កើនឡើងរហូតដល់ការសម្អាត history របស់ gateway បំផ្លាញ context។ ការប្រកាស MAX មានសុវត្ថិភាព ព្រោះ context pre-filter របស់ auto-combo នឹងបញ្ជូនសំណើដែលមានទំហំធំពេកទៅកាន់ candidate ដែលមាន window ធំ។
 
 ```bash
-# Zero-config usage (no combo creation)
+# ការប្រើប្រាស់ដោយគ្មានការកំណត់រចនាសម្ព័ន្ធ (មិនបង្កើត combo)
 curl -X POST http://localhost:20128/v1/chat/completions \
   -H "Authorization: Bearer <key>" \
   -H "Content-Type: application/json" \
   -d '{"model":"auto/coding","messages":[{"role":"user","content":"Hello"}]}'
 
-# Persisted auto combo via the regular combos endpoint
+# Auto combo ដែលបានរក្សាទុកតាមរយៈ endpoint combos ធម្មតា
 curl -X POST http://localhost:20128/api/combos \
   -H "Content-Type: application/json" \
   -d '{"id":"my-auto","name":"Auto Coder","strategy":"auto","config":{"auto":{"candidatePool":["anthropic","google","openai"],"weights":{"quota":0.15,"health":0.3,"costInv":0.05,"latencyInv":0.35,"taskFit":0.1,"stability":0,"tierPriority":0.05}}}}'
 ```
 
-### Auto router strategies
+### យុទ្ធសាស្ត្រ auto router
 
-Combos ដែលមាន `strategy: "auto"` ដែលបានរក្សាទុក អាចកំណត់ `config.routerStrategy` (ឬ `config.auto.routerStrategy` ដែលជា legacy) ទៅជាជម្រើសមួយក្នុងចំណោមជម្រើសទាំងនេះ៖
+Combo `strategy: "auto"` ដែលបានរក្សាទុកអាចកំណត់ `config.routerStrategy` (ឬ
+`config.auto.routerStrategy` ចាស់) ទៅជាមួយក្នុងចំណោម៖
 
-- `rules` — ការដាក់ពិន្ទុតាមទម្ងន់លំនាំដើម
-- `score` — ជ្រើសរើសពិន្ទុតាមទម្ងន់ដែលបានកំណត់ខ្ពស់បំផុត។ ក្នុងករណីស្មើគ្នា វានឹងរក្សាលំដាប់ candidate ដែលបានកំណត់; `explorationRate` ដែលមានស្រាប់នឹងធ្វើការសាកល្បង (sample) ពី pool ដែលបានរៀបលំដាប់ពេញលេញ។
-- `cost` / `eco` — provider ដែលមានសុខភាពល្អ (healthy) និងមានតម្លៃថោកបំផុត
-- `latency` / `fast` — p95 latency ទាបបំផុត ជាមួយនឹងការពិន័យលើភាពជឿជាក់ (reliability penalty)
-- `sla-aware` / `sla` — ពេញចិត្តចំពោះ candidates ដែលបំពេញតាម p95 latency, error-rate និង cost SLOs ដែលជាជម្រើសបន្ថែម
-- `lkgp` — ជ្រើសរើស last known good provider មុនគេ
-- `nadir` — សួរ API ការសម្រេចចិត្តរបស់ [Nadir](https://getnadir.com) ថា តើ model មួយណាដែល prompt ត្រូវការ; ជាជម្រើស opt-in, បើបរាជ័យនឹងត្រឡប់ទៅប្រើ `rules` វិញ
+- `rules` — weighted scoring លំនាំដើម
+- `score` — ជ្រើសរើស weighted score ដែលបានកំណត់រចនាសម្ព័ន្ធខ្ពស់បំផុត។ នៅពេលពិន្ទុស្មើគ្នាទាំងស្រុង វារក្សាលំដាប់
+  candidate ដែលបានកំណត់រចនាសម្ព័ន្ធ; `explorationRate` ដែលមានស្រាប់យក sample ពី ranked pool ទាំងមូល។
+- `cost` / `eco` — provider ដែលមានស្ថានភាពល្អ និងថោកបំផុត
+- `latency` / `fast` — p95 latency ទាបបំផុត ដោយមានពិន័យលើភាពអាចទុកចិត្តបាន
+- `sla-aware` / `sla` — ផ្តល់អាទិភាពដល់ candidate ដែលបំពេញតាម p95 latency, error-rate និង
+  cost SLO ជាជម្រើស
+- `lkgp` — provider ដែលបានដឹងថាល្អចុងក្រោយជាមុន
+- `nadir` — ស្នើឱ្យ decision API របស់ [Nadir](https://getnadir.com) កំណត់ថាតើ prompt ត្រូវការ model មួយណាក្នុង pool;
+  ត្រូវជ្រើសរើសបើកប្រើ និង fail-open ទៅ `rules`
 
-### Router strategies in detail
+### ព័ត៌មានលម្អិតអំពីយុទ្ធសាស្ត្រ router
 
-Auto-combo engine បង្ហាញពីការអនុវត្ត (implementations) នៃ **RouterStrategy** ចំនួន 7 ដែលអាចដោតភ្ជាប់បាន (pluggable) ដែលអ្នកអាចផ្លាស់ប្តូរបានតាមរយៈ `config.routerStrategy` (ឬ `config.auto.routerStrategy` ដែលជា legacy)។ យុទ្ធសាស្ត្រនីមួយៗជ្រើសរើស provider មួយពី candidate pool ដោយផ្អែកលើ `RoutingContext` (ប្រភេទកិច្ចការ, ការណែនាំអំពីឧបករណ៍/ចក្ខុវិស័យ, ការប៉ាន់ប្រមាណ token, គោលនយោបាយ SLA ស្រេចចិត្ត, last-known-good provider ស្រេចចិត្ត)។
+Auto-combo engine ផ្តល់ implementation **RouterStrategy** ដែលអាចដោតប្ដូរបានចំនួន 7 ដែល
+អ្នកអាចប្ដូរតាមរយៈ `config.routerStrategy` (ឬ `config.auto.routerStrategy` ចាស់)។
+យុទ្ធសាស្ត្រនីមួយៗជ្រើសរើស provider មួយពី candidate pool ដោយផ្អែកលើ `RoutingContext`
+(ប្រភេទ task, សញ្ញាបង្ហាញ tool/vision, ការប៉ាន់ស្មាន token, គោលការណ៍ SLA ជាជម្រើស និង
+provider ដែលបានដឹងថាល្អចុងក្រោយជាជម្រើស)។
 
-#### 1. `rules` (default) — 16-factor weighted scoring
+#### 1. `rules` (លំនាំដើម) — weighted scoring ដែលមាន 16 កត្តា
 
-រុំព័ទ្ធ (wraps) scoring engine ដែលមានស្រាប់។ ត្រងយក candidates ដែលមាន circuit-breaker ជា `OPEN` ចេញ បន្ទាប់មកដំណើរការ `scorePool()` ជាមួយនឹងប្រភេទកិច្ចការបច្ចុប្បន្ន និង `getTaskFitness()` ដោយជ្រើសរើស provider ដែលមានពិន្ទុខ្ពស់បំផុត។
+រុំ scoring engine ដែលមានស្រាប់។ ច្រោះ candidate ដែលមាន circuit-breaker
+`OPEN` ចេញ បន្ទាប់មកដំណើរការ `scorePool()` ជាមួយប្រភេទ task បច្ចុប្បន្ន និង `getTaskFitness()`
+ហើយជ្រើសរើស provider ដែលមានពិន្ទុខ្ពស់បំផុត។
 
 ```ts
 class RulesStrategyImpl implements RouterStrategy {
@@ -506,15 +538,16 @@ class RulesStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ពេលណាត្រូវប្រើ**: លំនាំដើម។ ប្រើនៅពេលអ្នកចង់បានតុល្យភាពរវាងសញ្ញាទាំងអស់។
+**ពេលគួរប្រើ**: លំនាំដើម។ ប្រើនៅពេលអ្នកចង់បានតុល្យភាពរវាងសញ្ញាទាំងអស់។
 
-**Alias**: `rules` (គ្មាន alias)
+**ឈ្មោះជំនួស**: `rules` (គ្មានឈ្មោះជំនួស)
 
 ---
 
-#### 2. `cost` / `eco` — cheapest healthy provider
+#### 2. `cost` / `eco` — provider ដែលមានស្ថានភាពល្អ និងថោកបំផុត
 
-តម្រៀប candidate pool តាម `costPer1MTokens` (តាមលំដាប់កើនឡើង) ហើយជ្រើសរើសមួយដែលមានតម្លៃថោកបំផុត។ ត្រងយក candidates ដែលមាន `OPEN` ចេញជាមុនសិន។
+តម្រៀប candidate pool តាម `costPer1MTokens` (ពីតូចទៅធំ) ហើយជ្រើសរើសតម្លៃថោកបំផុត។
+ច្រោះ candidate ដែលមាន `OPEN` ចេញជាមុន។
 
 ```ts
 class CostStrategyImpl implements RouterStrategy {
@@ -529,15 +562,16 @@ class CostStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ពេលណាត្រូវប្រើ**: ការងារដែលគិតគូរពីតម្លៃ, ការដំណើរការជាបាច់ (batch processing), ឬការងារនៅផ្ទៃខាងក្រោយ (background jobs)។
+**ពេលគួរប្រើ**: Workload ដែលផ្តោតលើការសន្សំចំណាយ, batch processing ឬ background job។
 
-**Aliases**: `cost`, `eco`
+**ឈ្មោះជំនួស**: `cost`, `eco`
 
 ---
 
-#### 3. `latency` / `fast` — lowest p95 latency with reliability penalty
+#### 3. `latency` / `fast` — p95 latency ទាបបំផុត ដោយមានពិន័យលើភាពអាចទុកចិត្តបាន
 
-តម្រៀបតាម `p95LatencyMs + (errorRate * 1000)`។ ការពិន័យលើ error-rate ធានាថា providers ដែលមិនគួរឱ្យទុកចិត្តនឹងត្រូវបានដាក់ចំណាត់ថ្នាក់ទាបជាង ទោះបីជា latency ធម្មតារបស់ពួកគេទាបក៏ដោយ។
+តម្រៀបតាម `p95LatencyMs + (errorRate * 1000)`។ ការពិន័យលើ error-rate ធានាថា
+provider ដែលមិនអាចទុកចិត្តបាននឹងមានចំណាត់ថ្នាក់ទាបជាង ទោះបី latency ដែលបានប្រកាសរបស់ពួកវាទាបក៏ដោយ។
 
 ```ts
 class LatencyStrategyImpl implements RouterStrategy {
@@ -554,27 +588,28 @@ class LatencyStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ពេលណាត្រូវប្រើ**: ការងារដែលគិតគូរពី latency ដូចជាការជជែកផ្ទាល់ (real-time chat), ការបំពេញស្វ័យប្រវត្តិ (autocomplete), ឬជំនួយការសរសេរកូដអន្តរកម្ម។
+**ពេលគួរប្រើ**: Workload ដែលផ្តោតលើ latency ដូចជា chat ពេលវេលាជាក់ស្តែង, autocomplete ឬ
+ជំនួយការសរសេរកូដអន្តរកម្ម។
 
-**Aliases**: `latency`, `fast`
+**ឈ្មោះជំនួស**: `latency`, `fast`
 
 ---
 
-#### 4. `sla-aware` / `sla` — latency/error/cost SLO compliance
+#### 4. `sla-aware` / `sla` — ការអនុលោមតាម latency/error/cost SLO
 
-ដាក់ពិន្ទុ candidate នីមួយៗដោយផ្អែកលើកម្រិតនៃការបំពេញតាមគោលនយោបាយ SLO ដែលបានកំណត់៖
+ផ្តល់ពិន្ទុឱ្យ candidate នីមួយៗដោយផ្អែកលើកម្រិតដែលវាបំពេញតាមគោលការណ៍ SLO ដែលបានកំណត់រចនាសម្ព័ន្ធ៖
 
-| កត្តា                      | ទម្ងន់ | រូបមន្ត                                           |
-| -------------------------- | ------ | ------------------------------------------------- |
-| ពិន្ទុភាពយឺត (Latency)     | 35%    | `threshold / max(value, ε)`                       |
-| ពិន្ទុភាពខុស (Error)       | 35%    | `threshold / max(value, ε)`                       |
-| ពិន្ទុសុខភាព (Health)      | 15%    | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
-| ពិន្ទុថ្លៃដើម (Cost)       | 10%    | `threshold / max(value, ε)` ឬ inverse normalized  |
-| ពិន្ទុស្ថិរភាព (Stability) | 5%     | inverse normalized latency stddev                 |
+| កត្តា          | ទម្ងន់ | រូបមន្ត                                           |
+| -------------- | ------ | ------------------------------------------------- |
+| ពិន្ទុ latency | 35%    | `threshold / max(value, ε)`                       |
+| ពិន្ទុកំហុស    | 35%    | `threshold / max(value, ε)`                       |
+| ពិន្ទុសុខភាព   | 15%    | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
+| ពិន្ទុតម្លៃ    | 10%    | `threshold / max(value, ε)` ឬ inverse normalized  |
+| ពិន្ទុស្ថិរភាព | 5%     | inverse normalized latency stddev                 |
 
-នៅពេល `hardConstraints: true` បេក្ខភាពត្រូវបានតម្រៀបជាចម្បងតាម **ពិន្ទុរំលោភបំពាន**
-(កម្រិតដែលពួកគេលើសពី SLO ណាមួយ) បន្ទាប់មកតាមពិន្ទុចម្រុះ។ បើមិនដូច្នោះទេ វាគ្រាន់តែជា
-ពិន្ទុចម្រុះប៉ុណ្ណោះ។
+នៅពេល `hardConstraints: true` បេក្ខជនត្រូវបានតម្រៀបជាចម្បងតាម **ពិន្ទុបំពាន**
+(កម្រិតដែលពួកគេលើសពី SLO ណាមួយ) បន្ទាប់មកតាមពិន្ទុសមាស។ បើមិនដូច្នោះទេ វាគ្រាន់តែ
+តម្រៀបតាមពិន្ទុសមាសប៉ុណ្ណោះ។
 
 ```ts
 class SLAStrategyImpl implements RouterStrategy {
@@ -583,12 +618,12 @@ class SLAStrategyImpl implements RouterStrategy {
     "Selects the provider most likely to satisfy latency, error-rate, and cost SLOs";
 
   select(pool, context) {
-    // ... scores each candidate against policy: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
+    // ... ដាក់ពិន្ទុឱ្យបេក្ខជននីមួយៗធៀបនឹងគោលការណ៍៖ { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
   }
 }
 ```
 
-**វាល SLA** (កំណត់នៅលើការកំណត់រចនាសម្ព័ន្ធ combo):
+**វាល SLA** (កំណត់នៅក្នុង combo config)៖
 
 ```json
 {
@@ -603,16 +638,17 @@ class SLAStrategyImpl implements RouterStrategy {
 }
 ```
 
-**ពេលណាត្រូវប្រើ**: បន្ទុកការងារផលិតកម្មដែលមានថវិកាភាពយឺត អត្រាកំហុស ឬថ្លៃដើមយ៉ាងតឹងរ៉ឹង។
+**ពេលណាត្រូវប្រើ**៖ បន្ទុកការងារ production ដែលមានកម្រិតកំណត់តឹងរ៉ឹងលើ latency, អត្រាកំហុស ឬថវិកាចំណាយ។
 
-**ឈ្មោះក្លែងក្លាយ (Aliases)**: `sla-aware`, `sla`
+**ឈ្មោះហៅក្រៅ**៖ `sla-aware`, `sla`
 
 ---
 
-#### 5. `lkgp` — អ្នកផ្តល់សេវាល្អចុងក្រោយដែលបានស្គាល់មុនគេ
+#### 5. `lkgp` — សាកល្បង provider ល្អដែលស្គាល់ចុងក្រោយជាមុន
 
-សាកល្បង **អ្នកផ្តល់សេវាល្អចុងក្រោយដែលបានស្គាល់** (ប្រសិនបើបានកំណត់) ជាមុនសិន បន្ទាប់មកត្រឡប់ទៅប្រើយុទ្ធសាស្ត្រ
-`rules` វិញ។ មានប្រយោជន៍សម្រាប់ភាពជាប់លាប់នៃសម័យ (session stickiness) — អ្នកផ្តល់សេវាតែមួយដោះស្រាយសំណើបន្តបន្ទាប់នៅក្នុងការសន្ទនា។
+សាកល្បង **provider ល្អដែលស្គាល់ចុងក្រោយ** (ប្រសិនបើបានកំណត់) ជាមុន បន្ទាប់មកប្ដូរទៅប្រើ
+យុទ្ធសាស្ត្រ `rules`។ មានប្រយោជន៍សម្រាប់ការរក្សាភាពជាប់លាប់នៃ session — provider ដដែលគ្រប់គ្រង
+សំណើបន្តនៅក្នុងកិច្ចសន្ទនា។
 
 ```ts
 class LKGPStrategyImpl implements RouterStrategy {
@@ -633,21 +669,27 @@ class LKGPStrategyImpl implements RouterStrategy {
       }
     }
 
-    // Fallback to rules strategy
+    // ប្ដូរទៅប្រើយុទ្ធសាស្ត្រ rules
     return getStrategy("rules").select(pool, context);
   }
 }
 ```
 
-**ពេលណាត្រូវប្រើ**: ការសន្ទនាច្រើនជុំ (Multi-turn) ដែលអ្នកចង់ឱ្យអ្នកផ្តល់សេវាតែមួយដោះស្រាយសំណើបន្តបន្ទាប់ (ឧទាហរណ៍៖ សម្រាប់ការរក្សាទុកក្នុងឃ្លាំងសម្ងាត់ (caching) ភាពជាប់លាប់នៃបរិបទ ឬភាពជាប់លាប់នៃតម្លៃ)។
+**ពេលណាត្រូវប្រើ**៖ កិច្ចសន្ទនាច្រើនវេន ដែលអ្នកចង់ឱ្យ provider ដដែលគ្រប់គ្រង
+សំណើបន្ត (ឧ. សម្រាប់ caching, ភាពបន្តនៃ context ឬភាពស្របគ្នានៃតម្លៃ)។
 
-**ឈ្មោះក្លែងក្លាយ (Alias)**: `lkgp` (គ្មានឈ្មោះក្លែងក្លាយ)
+**ឈ្មោះហៅក្រៅ**៖ `lkgp` (គ្មានឈ្មោះហៅក្រៅ)
 
 ---
 
-#### 6. `nadir` — ការជ្រើសរើសម៉ូដែលដែលដឹងពីប្រអប់បញ្ចូល (prompt-aware) តាមរយៈ Nadir
+#### 6. `nadir` — ជ្រើសរើស model ដោយយល់ដឹងពី prompt តាមរយៈ Nadir
 
-យុទ្ធសាស្ត្រនីមួយៗខាងលើដាក់ចំណាត់ថ្នាក់បេក្ខភាពដោយផ្អែកលើទិន្នន័យតេឡេម៉េទ្រីផ្ទាល់ខ្លួនរបស់ពួកគេ។ គ្មានយុទ្ធសាស្ត្រណាមួយអានសំណើនោះទេ។ `nadir` ផ្ញើវេនអ្នកប្រើប្រាស់ចុងក្រោយបូករួមទាំងលេខសម្គាល់ម៉ូដែលនៃក្រុម (pool) ទៅកាន់ API សម្រេចចិត្តរបស់ [Nadir](https://getnadir.com) (`POST /v1/bucket`) ហើយបញ្ជូនទៅកាន់ម៉ូដែលដែល Nadir ជ្រើសរើសពីម៉ឺនុយនោះ (`simple` → ម៉ូដែលដែលមានសមត្ថភាពថោកបំផុត, `complex` → ម៉ូដែលទំនើបបំផុត)។ ការតភ្ជាប់ដែលបម្រើម៉ូដែលនោះនៅតែត្រូវបានជ្រើសរើសដោយ `rules` ដូច្នេះកូតា សុខភាព និងថ្លៃដើមនៅតែជាអ្នកសម្រេចចិត្តថាតើគណនីមួយណាដែលត្រូវប្រើ។
+យុទ្ធសាស្ត្រទាំងអស់ខាងលើដាក់ចំណាត់ថ្នាក់បេក្ខជនតាម telemetry ផ្ទាល់ខ្លួនរបស់ពួកគេ ហើយគ្មានយុទ្ធសាស្ត្រណាមួយអាន
+សំណើនោះទេ។ `nadir` ផ្ញើវេនចុងក្រោយរបស់អ្នកប្រើ ព្រមទាំង model ids របស់ pool ទៅកាន់
+API សម្រេចចិត្តរបស់ [Nadir](https://getnadir.com) (`POST /v1/bucket`) ហើយបញ្ជូនទៅកាន់ model
+ដែល Nadir ជ្រើសរើសពីបញ្ជីនោះ (`simple` → model ដែលមានសមត្ថភាពគ្រប់គ្រាន់ និងថោកបំផុត, `complex` →
+model កម្រិត frontier)។ connection ដែលបម្រើ model នោះនៅតែត្រូវបានជ្រើសរើសដោយ `rules` ដូច្នេះ quota,
+សុខភាព និងតម្លៃនៅតែជាកត្តាកំណត់ថាត្រូវប្រើ account មួយណា។
 
 ```json
 {
@@ -663,21 +705,31 @@ class LKGPStrategyImpl implements RouterStrategy {
 }
 ```
 
-`OMNIROUTE_NADIR_API_KEY` និង `OMNIROUTE_NADIR_BASE_URL` គឺជាការកំណត់បរិស្ថានជំនួស (env fallbacks) សម្រាប់ខ្សែអក្សរទាំងពីរ។ `baseUrl` ត្រូវការតែសម្រាប់ Nadir ដែលបង្ហោះដោយខ្លួនឯងប៉ុណ្ណោះ (ការបន្ថែម `/v1` នៅខាងចុងត្រូវបានអនុញ្ញាត)។ ការហៅទូរសព្ទដោយគ្មានសោ (Keyless calls) នឹងចូលទៅក្នុងកម្រិតអនាមិករបស់ Nadir ដែលត្រូវបានកំណត់អត្រា (rate-limited) តាម IP។
+`OMNIROUTE_NADIR_API_KEY` និង `OMNIROUTE_NADIR_BASE_URL` ជា env fallback សម្រាប់ string ទាំងពីរ។
+`baseUrl` ត្រូវការតែសម្រាប់ Nadir ដែល self-hosted ប៉ុណ្ណោះ (អាចមាន `/v1` នៅខាងចុងបាន)។
+ការហៅដោយគ្មាន key នឹងចូលទៅកាន់កម្រិត anonymous របស់ Nadir ដែលត្រូវបានកំណត់អត្រាតាម IP។
 
-អ្វីដែលចេញពីប្រអប់៖ អត្ថបទនៃសារអ្នកប្រើប្រាស់ចុងក្រោយ (តួអក្សរ 16k ដំបូង) លេខសម្គាល់ម៉ូដែលបេក្ខភាព និងស្លាកឆានែល `source: "omniroute"`។ គ្មានប្រអប់បញ្ចូលប្រព័ន្ធ (system prompt) ប្រវត្តិ ឧបករណ៍ ឬបឋមកថា (headers) ទេ។
+អ្វីដែលចាកចេញពីប្រព័ន្ធ៖ អត្ថបទសារចុងក្រោយរបស់អ្នកប្រើ (16k តួអក្សរដំបូង), model ids
+របស់បេក្ខជន និងស្លាក channel `source: "omniroute"`។ គ្មាន system prompt, history, tools ឬ
+headers ទេ។
 
-ឥរិយាបថនៅពេលបរាជ័យគឺ fail-open៖ ការអស់ពេល (លំនាំដើម 2000 ms) ការឆ្លើយតបមិនមែន 2xx ម៉ាស៊ីនដែលមិនអាចចូលដំណើរការបាន ការឆ្លើយតបដែលខូចទ្រង់ទ្រាយ ឬការជ្រើសរើសនៅខាងក្រៅក្រុម (pool) នឹងដោះស្រាយទៅជាការសម្រេចចិត្តរបស់ `rules` ហើយហេតុផលត្រូវបានដាក់បុព្វបទ `NadirStrategy: fallback (…)`។ បន្ទាប់ពីការហៅទូរសព្ទដែលបរាជ័យ យុទ្ធសាស្ត្រនឹងរំលងបណ្តាញរយៈពេល 30 វិនាទី ដូច្នេះការដាច់សេវាចំណាយពេលអស់ពេលមួយដងក្នុងរយៈពេល 30 វិនាទី ជំនួសឱ្យមួយដងក្នុងមួយសំណើ។ ព្រឹត្តិការណ៍បញ្ជូនបន្តរាយការណ៍ `strategy: "nadir"` លុះត្រាតែ Nadir បានធ្វើការជ្រើសរើសពិតប្រាកដប៉ុណ្ណោះ។
+ឥរិយាបថពេលបរាជ័យគឺ fail-open៖ timeout (លំនាំដើម 2000 ms), non-2xx, host ដែលមិនអាចតភ្ជាប់បាន,
+response ដែលមានទម្រង់មិនត្រឹមត្រូវ ឬជម្រើសដែលនៅក្រៅ pool នឹងប្ដូរទៅការសម្រេចចិត្តរបស់ `rules`
+ហើយ reason នឹងមានបុព្វបទ `NadirStrategy: fallback (…)`។ បន្ទាប់ពីការហៅបរាជ័យ យុទ្ធសាស្ត្រនេះ
+រំលង network រយៈពេល 30 s ដូច្នេះការដាច់ដំណើរការមួយចំណាយត្រឹមមួយ timeout ក្នុងរៀងរាល់ 30 s ជាជាង
+មួយក្នុងមួយសំណើ។ routing events រាយការណ៍ `strategy: "nadir"` តែនៅពេល Nadir ពិតជាបាន
+ធ្វើការជ្រើសរើសប៉ុណ្ណោះ។
 
-**ពេលណាត្រូវប្រើ**: ចរាចរណ៍ដែលមានកម្រិតពិបាកចម្រុះនៅលើក្រុម (pool) ដែលមានម៉ូដែលច្រើនកម្រិត (ម៉ូដែលតូច មធ្យម និងទំនើប) ដែលកន្លែងដែលអ្នកចង់កាត់បន្ថយថ្លៃដើម។
+**ពេលណាត្រូវប្រើ**៖ traffic ដែលមានកម្រិតលំបាកចម្រុះនៅលើ pool ដែលមាន model ជាច្រើនកម្រិត (model តូច មធ្យម
+និង frontier) ដែលអ្នកចង់កាត់បន្ថយការចំណាយពីការប្រើ frontier ជានិច្ច។
 
-**ឈ្មោះក្លែងក្លាយ (Alias)**: `nadir` (គ្មានឈ្មោះក្លែងក្លាយ)
+**ឈ្មោះហៅក្រៅ**៖ `nadir` (គ្មានឈ្មោះហៅក្រៅ)
 
 ---
 
-### យុទ្ធសាស្ត្របញ្ជូនបន្តផ្ទាល់ខ្លួន (Custom router strategies)
+### យុទ្ធសាស្ត្រ router ផ្ទាល់ខ្លួន
 
-អ្នកអាចចុះឈ្មោះការអនុវត្ត `RouterStrategy` ផ្ទាល់ខ្លួនរបស់អ្នកតាមរយៈ API សាធារណៈ៖
+អ្នកអាចចុះឈ្មោះ implementation `RouterStrategy` ផ្ទាល់ខ្លួនតាមរយៈ API សាធារណៈ៖
 
 ```ts
 import {
@@ -690,7 +742,7 @@ class MyCustomStrategy implements RouterStrategy {
   readonly description = "My custom routing strategy";
 
   select(pool, context) {
-    // Your routing logic here
+    // ឡូជីខល routing របស់អ្នកនៅទីនេះ
     return {
       provider: pool[0].provider,
       model: pool[0].model,
@@ -718,18 +770,18 @@ registerStrategy("my-custom", new MyCustomStrategy());
 
 ---
 
-### មគ្គុទ្ទេសក៍ជ្រើសរើសយុទ្ធសាស្ត្របញ្ជូនបន្ត (Router strategy selection guide)
+### មគ្គុទ្ទេសក៍ជ្រើសរើសយុទ្ធសាស្ត្រ router
 
-| ករណីប្រើប្រាស់               | យុទ្ធសាស្ត្រ | មូលហេតុ                                        |
-| ---------------------------- | ------------ | ---------------------------------------------- |
-| បន្ទុកការងារមានតុល្យភាព      | `rules`      | លំនាំដើម — ពិចារណាកត្តាទាំងអស់                 |
-| កាត់បន្ថយថ្លៃដើម             | `cost`       | ជ្រើសរើសយកថោកបំផុតជានិច្ច                      |
-| កាត់បន្ថយភាពយឺត              | `latency`    | ជ្រើសរើសអ្នកផ្តល់សេវាដែលអាចទុកចិត្តបានលឿនបំផុត |
-| SLOs តឹងរ៉ឹង                 | `sla-aware`  | ត្រងតាមកម្រិតកំណត់ p95/កំហុស/ថ្លៃដើម           |
-| ការជជែកច្រើនជុំ (Multi-turn) | `lkgp`       | ភាពជាប់លាប់នៃសម័យ (Session stickiness)         |
-| កម្រិតពិបាកចម្រុះ            | `nadir`      | ជ្រើសរើសកម្រិតម៉ូដែលតាមប្រអប់បញ្ចូល (prompt)   |
+| ករណីប្រើប្រាស់          | យុទ្ធសាស្ត្រ | មូលហេតុ                                    |
+| ----------------------- | ------------ | ------------------------------------------ |
+| បន្ទុកការងារមានតុល្យភាព | `rules`      | លំនាំដើម — ពិចារណាកត្តាទាំងអស់             |
+| កាត់បន្ថយតម្លៃ          | `cost`       | តែងតែជ្រើសរើសជម្រើសថោកបំផុត                |
+| កាត់បន្ថយ latency       | `latency`    | ជ្រើសរើស provider ដែលលឿន និងអាចទុកចិត្តបាន |
+| SLO តឹងរ៉ឹង             | `sla-aware`  | ត្រងតាមកម្រិតកំណត់ p95/កំហុស/តម្លៃ         |
+| ការជជែកច្រើនវេន         | `lkgp`       | ភាពជាប់លាប់នៃ session                      |
+| កម្រិតលំបាកចម្រុះ       | `nadir`      | ជ្រើសរើសកម្រិត model សម្រាប់ prompt នីមួយៗ |
 
-វាល SLA-aware:
+វាល SLA៖
 
 ```json
 {
@@ -806,15 +858,15 @@ Smoke test ទាំងនេះសាកល្បងផ្លូវទំនា
 
 ## ឯកសារ
 
-| ឯកសារ                                                     | គោលបំណង                                                                                                     |
-| :-------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
-| `open-sse/services/autoCombo/scoring.ts`                  | មុខងារដាក់ពិន្ទុ 16 កត្តា, `DEFAULT_WEIGHTS`, pool norm                                                     |
-| `open-sse/services/autoCombo/taskFitness.ts`              | ការស្វែងរកភាពសមស្រប (fitness) នៃ Model × task                                                               |
-| `open-sse/services/autoCombo/engine.ts`                   | តក្កវិជ្ជាជ្រើសរើស, bandit, កម្រិតថវិកា (budget cap)                                                        |
-| `open-sse/services/autoCombo/selfHealing.ts`              | ការដកចេញ (Exclusion), probes, របៀបដោះស្រាយឧប្បត្តិហេតុ (incident mode)                                      |
-| `open-sse/services/autoCombo/modePacks.ts`                | ទម្រង់ទម្ងន់ចំនួន 6 (ship-fast, cost-saver, quality-first, offline-friendly, reliability-first, chaos-mode) |
-| `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/` prefix parser + 6 ប្រភេទ                                                                            |
-| `open-sse/services/autoCombo/virtualFactory.ts`           | បង្កើត `AutoComboConfig` ក្នុងអង្គចងចាំ (in-memory) ពីការតភ្ជាប់ផ្ទាល់                                      |
-| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Test hook សម្រាប់ធ្វើការ mock provider registry                                                             |
-| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 យុទ្ធសាស្ត្រ)                                                                 |
-| `src/sse/handlers/chat.ts`                                | ការរួមបញ្ចូល (Integration): auto-prefix short-circuit                                                       |
+| ឯកសារ                                                     | គោលបំណង                                                                                                                          |
+| :-------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| `open-sse/services/autoCombo/scoring.ts`                  | អនុគមន៍ដាក់ពិន្ទុតាមកត្តា 16, `DEFAULT_WEIGHTS`, ន័រមនៃ pool                                                                     |
+| `open-sse/services/autoCombo/taskFitness.ts`              | តារាងស្វែងរកភាពសមស្របរវាងម៉ូដែល × កិច្ចការ                                                                                       |
+| `open-sse/services/autoCombo/engine.ts`                   | តក្កវិជ្ជាជ្រើសរើស, bandit, កម្រិតថវិកាអតិបរមា                                                                                   |
+| `open-sse/services/autoCombo/selfHealing.ts`              | ការដកចេញ, ការស្ទង់ពិនិត្យ, របៀបឧបទ្ទវហេតុ                                                                                        |
+| `open-sse/services/autoCombo/modePacks.ts`                | ទម្រង់ទម្ងន់ 6 (ដាក់ឱ្យប្រើលឿន, សន្សំថ្លៃ, គុណភាពជាចម្បង, សមស្របសម្រាប់អ៊ីនធឺណិតក្រៅបណ្ដាញ, ភាពអាចទុកចិត្តបានជាចម្បង, របៀបចលាចល) |
+| `open-sse/services/autoCombo/autoPrefix.ts`               | កម្មវិធីញែកបុព្វបទ `auto/` + វ៉ារ្យ៉ង់ 6                                                                                         |
+| `open-sse/services/autoCombo/virtualFactory.ts`           | បង្កើត `AutoComboConfig` ក្នុងអង្គចងចាំពីការតភ្ជាប់ផ្ទាល់                                                                        |
+| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | ចំណុចភ្ជាប់សម្រាប់ការធ្វើតេស្ត ដើម្បីក្លែង provider registry                                                                     |
+| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (យុទ្ធសាស្ត្រ 20)                                                                                      |
+| `src/sse/handlers/chat.ts`                                | ការរួមបញ្ចូល៖ ការឆ្លងកាត់ខ្លីសម្រាប់បុព្វបទស្វ័យប្រវត្តិ                                                                         |

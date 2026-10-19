@@ -4,10 +4,6 @@
 
 ---
 
-🌐 **Languages:** 🇺🇸 [English](../../../../routing/AUTO-COMBO.md) · 🇪🇹 [am](../../../am/docs/routing/AUTO-COMBO.md) · 🇸🇦 [ar](../../../ar/docs/routing/AUTO-COMBO.md) · 🇦🇿 [az](../../../az/docs/routing/AUTO-COMBO.md) · 🇧🇬 [bg](../../../bg/docs/routing/AUTO-COMBO.md) · 🇧🇩 [bn](../../../bn/docs/routing/AUTO-COMBO.md) · 🇧🇦 [bs](../../../bs/docs/routing/AUTO-COMBO.md) · 🇨🇿 [cs](../../../cs/docs/routing/AUTO-COMBO.md) · 🇩🇰 [da](../../../da/docs/routing/AUTO-COMBO.md) · 🇩🇪 [de](../../../de/docs/routing/AUTO-COMBO.md) · 🇬🇷 [el](../../../el/docs/routing/AUTO-COMBO.md) · 🇪🇸 [es](../../../es/docs/routing/AUTO-COMBO.md) · 🇪🇪 [et](../../../et/docs/routing/AUTO-COMBO.md) · 🇮🇷 [fa](../../../fa/docs/routing/AUTO-COMBO.md) · 🇫🇮 [fi](../../../fi/docs/routing/AUTO-COMBO.md) · 🇫🇷 [fr](../../../fr/docs/routing/AUTO-COMBO.md) · 🇮🇪 [ga](../../../ga/docs/routing/AUTO-COMBO.md) · 🇮🇳 [gu](../../../gu/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ha](../../../ha/docs/routing/AUTO-COMBO.md) · 🇮🇱 [he](../../../he/docs/routing/AUTO-COMBO.md) · 🇮🇳 [hi](../../../hi/docs/routing/AUTO-COMBO.md) · 🇭🇷 [hr](../../../hr/docs/routing/AUTO-COMBO.md) · 🇭🇺 [hu](../../../hu/docs/routing/AUTO-COMBO.md) · 🇦🇲 [hy](../../../hy/docs/routing/AUTO-COMBO.md) · 🇮🇩 [id](../../../id/docs/routing/AUTO-COMBO.md) · 🇳🇬 [ig](../../../ig/docs/routing/AUTO-COMBO.md) · 🇮🇹 [it](../../../it/docs/routing/AUTO-COMBO.md) · 🇯🇵 [ja](../../../ja/docs/routing/AUTO-COMBO.md) · 🇬🇪 [ka](../../../ka/docs/routing/AUTO-COMBO.md) · 🇰🇭 [km](../../../km/docs/routing/AUTO-COMBO.md) · 🇮🇳 [kn](../../../kn/docs/routing/AUTO-COMBO.md) · 🇰🇷 [ko](../../../ko/docs/routing/AUTO-COMBO.md) · 🇱🇹 [lt](../../../lt/docs/routing/AUTO-COMBO.md) · 🇱🇻 [lv](../../../lv/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ml](../../../ml/docs/routing/AUTO-COMBO.md) · 🇮🇳 [mr](../../../mr/docs/routing/AUTO-COMBO.md) · 🇲🇾 [ms](../../../ms/docs/routing/AUTO-COMBO.md) · 🇲🇹 [mt](../../../mt/docs/routing/AUTO-COMBO.md) · 🇲🇲 [my](../../../my/docs/routing/AUTO-COMBO.md) · 🇳🇵 [ne](../../../ne/docs/routing/AUTO-COMBO.md) · 🇳🇱 [nl](../../../nl/docs/routing/AUTO-COMBO.md) · 🇳🇴 [no](../../../no/docs/routing/AUTO-COMBO.md) · 🇮🇳 [or](../../../or/docs/routing/AUTO-COMBO.md) · 🇮🇳 [pa](../../../pa/docs/routing/AUTO-COMBO.md) · 🇵🇱 [pl](../../../pl/docs/routing/AUTO-COMBO.md) · 🇵🇹 [pt](../../../pt/docs/routing/AUTO-COMBO.md) · 🇧🇷 [pt-BR](../../../pt-BR/docs/routing/AUTO-COMBO.md) · 🇷🇴 [ro](../../../ro/docs/routing/AUTO-COMBO.md) · 🇷🇺 [ru](../../../ru/docs/routing/AUTO-COMBO.md) · 🇱🇰 [si](../../../si/docs/routing/AUTO-COMBO.md) · 🇸🇰 [sk](../../../sk/docs/routing/AUTO-COMBO.md) · 🇸🇮 [sl](../../../sl/docs/routing/AUTO-COMBO.md) · 🇷🇸 [sr](../../../sr/docs/routing/AUTO-COMBO.md) · 🇸🇪 [sv](../../../sv/docs/routing/AUTO-COMBO.md) · 🇰🇪 [sw](../../../sw/docs/routing/AUTO-COMBO.md) · 🇮🇳 [ta](../../../ta/docs/routing/AUTO-COMBO.md) · 🇮🇳 [te](../../../te/docs/routing/AUTO-COMBO.md) · 🇹🇭 [th](../../../th/docs/routing/AUTO-COMBO.md) · 🇹🇷 [tr](../../../tr/docs/routing/AUTO-COMBO.md) · 🇺🇦 [uk-UA](../../../uk-UA/docs/routing/AUTO-COMBO.md) · 🇵🇰 [ur](../../../ur/docs/routing/AUTO-COMBO.md) · 🇺🇿 [uz](../../../uz/docs/routing/AUTO-COMBO.md) · 🇻🇳 [vi](../../../vi/docs/routing/AUTO-COMBO.md) · 🇳🇬 [yo](../../../yo/docs/routing/AUTO-COMBO.md) · 🇨🇳 [zh-CN](../../../zh-CN/docs/routing/AUTO-COMBO.md) · 🇹🇼 [zh-TW](../../../zh-TW/docs/routing/AUTO-COMBO.md)
-
----
-
 > **Para sa mga User**: Naghahanap ba ng mabilisang pagsisimula? Tingnan ang [Gabay ng User para sa Auto-Combo](../getting-started/AUTO-COMBO-GUIDE.md) para sa mga simpleng paliwanag at halimbawa.
 
 > Mga chain ng model na kusang namamahala gamit ang adaptive scoring + zero-config na auto-routing
@@ -51,15 +47,15 @@ Ang anumang valid na `auto/<category>[:<tier>]` ay nireresolba kapag kailangan; 
 **Paano gamitin:**
 
 ```bash
-# Any IDE or CLI tool that supports OpenAI format
+# Anumang IDE o CLI tool na sumusuporta sa OpenAI format
 Base URL: http://localhost:20128/v1
 API Key:  <your-endpoint-key>
 
-# In your code/config, set model to:
-model: "auto"                 # balanced default
-model: "auto/coding"          # best for coding tasks
-model: "auto/fast"            # fastest available
-model: "auto/cheap"           # cheapest per token
+# Sa iyong code/config, itakda ang model sa:
+model: "auto"                 # balanseng default
+model: "auto/coding"          # pinakamainam para sa mga coding task
+model: "auto/fast"            # pinakamabilis na available
+model: "auto/cheap"           # pinakamura bawat token
 ```
 
 **Ano ang nangyayari:**
@@ -110,15 +106,15 @@ single-tenant na modelo.
 **Sa likod ng mga eksena:**
 
 ```txt
-Request: { model: "auto/coding" }
+Kahilingan: { model: "auto/coding" }
    ↓
-src/sse/handlers/chat.ts detects prefix
+Tinutukoy ng src/sse/handlers/chat.ts ang prefix
    ↓
-createVirtualAutoCombo('coding') → candidatePool from active connections
+createVirtualAutoCombo('coding') → candidatePool mula sa mga aktibong koneksyon
    ↓
-handleComboChat (same engine as persisted combos)
+handleComboChat (parehong engine gaya ng mga naka-save na combo)
    ↓
-Auto-scoring selects best provider/model per request
+Pinipili ng auto-scoring ang pinakamahusay na provider/model kada kahilingan
 ```
 
 **Mga file ng implementasyon:**
@@ -153,7 +149,13 @@ Ang paggawa o pagpapalit ng pangalan ng combo sa pangalang nagtatakip sa isang t
 model id:
 
 ```json
-{ "warning": { "code": "COMBO_NAME_SHADOWS_MODEL", "modelId": "gpt-5.5", "providerId": "openai" } }
+{
+  "warning": {
+    "code": "COMBO_NAME_SHADOWS_MODEL",
+    "modelId": "gpt-5.5",
+    "providerId": "openai"
+  }
+}
 ```
 
 Sa pag-boot, nagla-log din ang `scanComboModelNameCollisionsAtBoot()`
@@ -184,45 +186,36 @@ Dalawang karaniwang problema:
 
 Tingnan ang [#7992](https://github.com/diegosouzapw/OmniRoute/issues/7992) at [#7111](https://github.com/diegosouzapw/OmniRoute/issues/7111) para sa orihinal na kalituhang nililinaw ng dokumentasyong ito.
 
-## Paano Ito Gumagana (Mga Naka-persist na Auto-Combo)
+## Paano Ito Gumagana (Naka-persist na Mga Auto-Combo)
 
-Dinamikong pinipili ng Auto-Combo Engine ang pinakamahusay na provider/model para sa bawat kahilingan gamit ang isang **16-factor scoring function** (tinukoy sa `open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS`). Ang kabuuan ng mga default na timbang ay `1.0`; ang mga custom na timbang ay muling nina-normalize ng `normalizeScoringWeights()`. Dalawa sa labing-anim — ang `cacheAffinity` at `resetWindowAffinity` — ay may default na timbang na `0`; ang `reliability` ay may `0` sa `DEFAULT_WEIGHTS` ngunit `0.03` sa mga generic na pack at `0.04` sa `reliability-first`, at ang `quality` ay may `0.02` sa mga pack (`0.03` sa `quality-first`): kinakalkula pa rin ang mga ito para sa bawat kandidato, at kinokontrol ng `cacheAffinity` ang deduplication ng prompt-cache sa labas ng score, kaya ang mga zero-default factor ay sadyang hindi bumoboto bilang default habang ang mga pack naman ay bumoboto.
+Dinamikong pinipili ng Auto-Combo Engine ang pinakamahusay na provider/model para sa bawat request gamit ang isang **16-factor scoring function** (tinukoy sa `open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS`). Ang kabuuan ng mga default na weight ay `1.0`; muling ninonormalisa ang mga custom na weight ng `normalizeScoringWeights()`. Dalawa sa labing-anim — `cacheAffinity` at `resetWindowAffinity` — ang may default na weight na `0`; ang `reliability` ay may `0` sa `DEFAULT_WEIGHTS` ngunit `0.03` sa mga generic na pack at `0.04` sa `reliability-first`, at ang `quality` ay may `0.02` sa mga pack (`0.03` sa `quality-first`): kinukuwenta pa rin ang mga ito para sa bawat candidate, at kinokontrol ng `cacheAffinity` ang prompt-cache deduplication sa labas ng score, kaya sadyang hindi bumoboto bilang default ang mga factor na may zero-default habang bumoboto naman ang mga pack.
 
-![Auto-Combo 16-factor scoring](../diagrams/exported/auto-combo-scoring.svg)
+![16-factor scoring ng Auto-Combo](../diagrams/exported/auto-combo-scoring.svg)
 
-> Pinagmulan: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (muling buuin sa pamamagitan ng `npm run docs:render-diagrams`). Ang pangalan ng file ay pangkasaysayan; ang source at ang na-render na diagram ay nagpapakita ng lahat ng 16 na salik na idineklara sa `DEFAULT_WEIGHTS`.
+> Pinagmulan: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (muling buuin sa pamamagitan ng `npm run docs:render-diagrams`). Makasaysayan ang filename; ipinapakita ng source at na-render na diagram ang lahat ng 16 na factor na idineklara sa `DEFAULT_WEIGHTS`.
 
-| Salik                 | Default na Timbang | Deskripsyon                                                                                                                                                                                                                                               |
-| :-------------------- | :----------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quota`               | 0.1429             | Natitirang quota / rate-limit headroom [0..1]                                                                                                                                                                                                             |
-| `health`              | 0.1605             | Health score mula sa circuit breaker (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                                                                |
-| `costInv`             | 0.1429             | Inverse na **blended** cost (60% presyo ng input + 40% presyo ng output token, normalized) — mas mura = mas mataas na score                                                                                                                               |
-| `latencyInv`          | 0.1143             | Inverse na p95 latency na na-normalize sa pool — mas mabilis = mas mataas na score                                                                                                                                                                        |
-| `taskFit`             | 0.0762             | Pagka-angkop sa uri ng gawain (coding, review, planning, analysis, debugging, docs)                                                                                                                                                                       |
-| `stability`           | 0.0476             | Katatagang nakabatay sa variance mula sa standard deviation ng latency — ang kandidatong paiba-iba ang oras ng pagtugon ay makakakuha ng mas mababang score                                                                                               |
-| `tierPriority`        | 0.0476             | Priyoridad ng account-tier — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                                                                 |
-| `tierAffinity`        | 0.0476             | Pagkakatugma sa pagitan ng tier ng kandidato at ng tier na inirerekomenda ng manifest                                                                                                                                                                     |
-| `specificityMatch`    | 0.0476             | Tugma sa pagitan ng pagka-espesipiko ng kahilingan (hint sa manifest) at ng tier ng modelo                                                                                                                                                                |
-| `contextAffinity`     | 0.0476             | Pagkakatugma sa pagitan ng pangangailangan sa context-window ng kahilingan at ng context window ng modelo                                                                                                                                                 |
-| `sessionAvailability` | 0.0476             | Availability ng OAuth session ng koneksyon ng kandidato para sa session na ito (`getOAuthSessionAvailability()`; ang mga hindi OAuth na koneksyon ay may score na 1.0)                                                                                    |
-| `connectionDensity`   | 0.0476             | Ikinakalat ang load sa mga koneksyon ng parehong provider (anti-concentration)                                                                                                                                                                            |
-| `cacheAffinity`       | 0.00               | Pagkakatugma ng Rendezvous-hash sa koneksyon na may pinakamataas na posibilidad na naglalaman na ng prompt-cache prefix ng kahilingang ito (`open-sse/services/combo/promptCacheAffinity.ts`); naka-disable bilang default (#8008)                        |
-| `resetWindowAffinity` | 0.00               | Bias sa mga koneksyon na paborable ang quota reset window (naka-disable bilang default)                                                                                                                                                                   |
-| `quality`             | 0.03               | Output-quality signal na hinimok ng feedback mula sa routing-event quality tracker; ang mga kandidatong walang obserbasyon ay makakatanggap ng neutral na 0.5                                                                                             |
-| `reliability`         | 0.00               | Naobserbahang bahagi ng tagumpay, `1 - failureRate`, mula sa 24h na kasaysayan ng paggamit matapos ang sampung-sample na floor (real-time metrics kung hindi); ang mga kandidatong walang obserbasyon ay binabasa bilang 1.0. Naka-disable bilang default |
+| Factor                | Default na Weight | Paglalarawan                                                                                                                                                                                                                                          |
+| :-------------------- | :---------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quota`               | 0.1429            | Natitirang quota / espasyo bago maabot ang rate limit [0..1]                                                                                                                                                                                          |
+| `health`              | 0.1605            | Health score mula sa circuit breaker (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                                                            |
+| `costInv`             | 0.1429            | Kabaligtaran ng **pinagsamang** gastos (60% presyo ng input token + 40% presyo ng output token, na-normalize) — mas mura = mas mataas na score                                                                                                        |
+| `latencyInv`          | 0.1143            | Kabaligtaran ng p95 latency na na-normalize sa pool — mas mabilis = mas mataas na score                                                                                                                                                               |
+| `taskFit`             | 0.0762            | Pagiging angkop sa uri ng gawain (coding, review, planning, analysis, debugging, docs)                                                                                                                                                                |
+| `stability`           | 0.0476            | Stability na batay sa variance mula sa standard deviation ng latency — mas mababa ang score ng candidate na pabagu-bago ang response time                                                                                                             |
+| `tierPriority`        | 0.0476            | Priyoridad ng account tier — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                                                             |
+| `tierAffinity`        | 0.0476            | Affinity sa pagitan ng tier ng candidate at ng tier na inirerekomenda ng manifest                                                                                                                                                                     |
+| `specificityMatch`    | 0.0476            | Pagtutugma sa pagitan ng specificity ng request (hint ng manifest) at tier ng model                                                                                                                                                                   |
+| `contextAffinity`     | 0.0476            | Affinity sa pagitan ng pangangailangan ng request sa context window at ng context window ng model                                                                                                                                                     |
+| `sessionAvailability` | 0.0476            | Availability ng OAuth session ng candidate connection para sa session na ito (`getOAuthSessionAvailability()`; may score na 1.0 ang mga non-OAuth na connection)                                                                                      |
+| `connectionDensity`   | 0.0476            | Ipinamamahagi ang load sa mga connection ng parehong provider (laban sa konsentrasyon)                                                                                                                                                                |
+| `cacheAffinity`       | 0.00              | Rendezvous-hash affinity patungo sa connection na pinakamalamang na mayroon na ng prompt-cache prefix ng request na ito (`open-sse/services/combo/promptCacheAffinity.ts`); naka-disable bilang default (#8008)                                       |
+| `resetWindowAffinity` | 0.00              | Pagkiling sa mga connection na may mas kanais-nais na window ng pag-reset ng quota (naka-disable bilang default)                                                                                                                                      |
+| `quality`             | 0.03              | Signal ng kalidad ng output na hinihimok ng feedback mula sa quality tracker ng routing event; nakatatanggap ng neutral na 0.5 ang mga candidate na walang observation                                                                                |
+| `reliability`         | 0.00              | Naobserbahang bahagi ng tagumpay, `1 - failureRate`, mula sa 24h ng history ng paggamit sa likod ng minimum na sampung sample (real-time metrics kung hindi); itinuturing na 1.0 ang mga candidate na walang observation. Naka-disable bilang default |
 
-> **Hindi mabásang quota (#15347).** Kapag ang isang provider ay may quota fetcher ngunit wala itong ibinabalik
-> na mababása (nabigong pag-fetch, nawawalang credentials, message-only na paggamit, o isang malformed snapshot na walang
-> ma-parse na `windows` at walang finite na `percentUsed`, kabilang ang `percentUsed: null`), ang kandidato
-> ay makakakuha ng `0` sa `quota` axis at ang huling marka nito ay pararamihin ng
-> `UNREADABLE_QUOTA_SOFT_DEPRIORITIZE_FACTOR` (0.5, `autoStrategy.ts`), ang kaparehong soft-penalty
-> pattern tulad ng parusa sa connection-status. Ang isang nabigong pagbasa ng paggamit ay ebidensya tungkol sa telemetry,
-> hindi sa provider, kaya mahigpit itong niraranggo sa ibaba ng anumang totoong pagbasa, kabilang ang isang kumpirmadong 100%-used,
-> ngunit hindi kailanman hard-blocked o tinatanggal. Ang isang provider na walang cap ay nag-uulat ng `unlimited: true` at
-> namarkahan bilang buong quota; ang isang provider na walang nakarehistrong quota fetcher ay walang pinagmumulan ng telemetry
-> at pinapanatili ang default na `100`.
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
 
-**Kabuuan:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` tulad ng idineklara sa `DEFAULT_WEIGHTS`; ang mga timbang na na-configure ng user ay muling isinasaayos sa isang distribusyon gamit ang `normalizeScoringWeights()` bago magmarka.
+**Kabuuan:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` gaya ng idineklara sa `DEFAULT_WEIGHTS`; muling ninonormalisa ang mga weight na kino-configure ng user upang maging isang distribution ng `normalizeScoringWeights()` bago ang scoring.
 
 ## Mga Mode Pack
 
@@ -273,7 +266,7 @@ kapag wala ang header.
 | `X-OmniRoute-Effort`          | `auto` (nakalaan ang iba pang mga value)                                                                                                                                                                    | Agpang na badyet sa pag-iisip: kapag **walang** anumang reasoning field ang request (`reasoning_effort`, `reasoning`, `thinking`), nire-resolve ng gateway ang `auto` bilang `low`/`medium`/`high` mula sa mga deterministikong signal ng hugis ng request (haba ng huling mensahe ng user, laki ng konteksto hanggang sa huling mensahe ng user, mga naunang resulta ng tool, lalim ng tool loop). Nakatuon ang mga signal sa kasalukuyang turn — binabalewala ang lahat ng nasa kasunod ng huling mensahe ng user — kaya ang bawat request sa isang tool loop ay nire-resolve sa parehong antas (stateless na per-turn pin, walang session state, walang mid-loop escalation na sisira sa mga prefix ng upstream prompt cache). Palaging nangingibabaw ang tahasang reasoning field ng client. Nakatuon ito sa mga request na ang upstream dispatch ay nire-resolve sa hugis ng OpenAI Chat Completions (`targetFormat === FORMATS.OPENAI`) — ang `reasoning_effort` ay isang field na may hugis ng OpenAI, kaya walang epekto ang header sa isang request na naka-target sa Claude o Gemini (tingnan ang `open-sse/handlers/chatCore/adaptiveEffortWiring.ts`). |
 
 ```bash
-# Force the fastest profile, cap this request at $0.05, and hard-block instead of overspending
+# Pilitin ang pinakamabilis na profile, limitahan ang request na ito sa $0.05, at ganap itong i-block sa halip na lumampas sa badyet
 curl -sS http://localhost:20128/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-OmniRoute-Mode: fast" \
@@ -287,47 +280,53 @@ na-resolve na value ay ipinapasa sa mga umiiral na input na `config.modePack` / 
 `config.budgetFallback` ng engine. Itinatakda ng nakaimbak na `config.budgetFallback` ("strict" |
 "cheapest") ng isang combo ang persistent na patakaran; ino-override ito ng header para sa isang request.
 
-## Lahat ng Routing Strategies
+## Lahat ng Istratehiya sa Pagruruta
 
-Ang combo engine ng OmniRoute ay sumusuporta sa **20 routing strategies** (na idineklara sa `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES`). Ang Auto Combo engine mismo ay naka-expose sa ilalim ng `auto` strategy; ang iba naman ay available para sa mga persisted combo.
+Sinusuportahan ng combo engine ng OmniRoute ang **20 istratehiya sa pagruruta** (idineklara sa `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES`). Ang Auto Combo engine mismo ay inilalantad sa ilalim ng istratehiyang `auto`; magagamit naman ang iba para sa mga naka-persist na combo.
 
-| Strategy            | Deskripsyon                                                                                                                                                                                                               |
-| :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `priority`          | Listahan na naka-order ayon sa first-target na may tahasang priority                                                                                                                                                      |
-| `weighted`          | Weighted random ayon sa weight ng bawat target                                                                                                                                                                            |
-| `round-robin`       | I-cycle ang mga target nang sunod-sunod (batched; tingnan sa ibaba)                                                                                                                                                       |
-| `context-relay`     | I-hand off ang context sa mga target (mahahabang usapan)                                                                                                                                                                  |
-| `fill-first`        | Punuin ang quota ng bawat target bago lumipat sa susunod                                                                                                                                                                  |
-| `p2c`               | Power-of-2-choices na random load balancing                                                                                                                                                                               |
-| `random`            | Uniform random selection                                                                                                                                                                                                  |
-| `least-used`        | Piliin ang target na may pinakamababang kasalukuyang load                                                                                                                                                                 |
-| `cost-optimized`    | I-minimize ang $ bawat request batay sa catalog pricing                                                                                                                                                                   |
-| `reset-aware` ⭐    | I-prioritize ayon sa oras ng quota reset — mas mataas ang rank ng mga short reset window                                                                                                                                  |
-| `reset-window`      | Mas piliin ang mga target na ang quota window ay pinakamalapit nang mag-reset                                                                                                                                             |
-| `headroom`          | Piliin ang target na may pinakamaraming natitirang quota headroom                                                                                                                                                         |
-| `quota-weighted`    | Laktawan ang mga naubos na account, pagkatapos ay pumili sa mga natitira nang proporsyonal sa natitirang quota na hinati sa in-flight load; ang mga kasalukuyang usapan ay nananatiling naka-pin                          |
-| `strict-random`     | Random nang walang deduplication ng mga inuulit                                                                                                                                                                           |
-| `auto`              | Gamitin ang Auto Combo scoring (16-factor) — **inirerekomenda**                                                                                                                                                           |
-| `lkgp`              | Last-Known-Good Path (naka-pin sa huling matagumpay na provider, pagkatapos ay babalik sa mga rules)                                                                                                                      |
-| `context-optimized` | Piliin ang target na pinaka-angkop para sa kasalukuyang laki ng context                                                                                                                                                   |
-| `cache-optimized`   | I-reorder ang mga target ayon sa prompt-cache affinity — ang koneksyon na pinakamalamang na may hawak na ng cached prefix ng request na ito ang unang susubukan (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
-| `fusion` 🧬         | I-fan out sa isang panel ng mga model nang parallel, pagkatapos ay i-synthesize ang isang sagot sa pamamagitan ng isang judge (tingnan sa ibaba)                                                                          |
-| `pipeline`          | Patakbuhin ang mga target nang sunod-sunod, i-thread ang output ng bawat step sa input ng susunod na step; tanging ang huling sagot lang ang ibinabalik (#6396)                                                           |
+| Istratehiya         | Paglalarawan                                                                                                                                                                                                                     |
+| :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `priority`          | Nakaayos na listahan na inuuna ang unang target, na may tahasang prayoridad                                                                                                                                                      |
+| `weighted`          | Tinimbang na random na pagpili batay sa timbang ng bawat target                                                                                                                                                                  |
+| `round-robin`       | Paikot na dumaan sa mga target ayon sa pagkakasunod-sunod (naka-batch; tingnan sa ibaba)                                                                                                                                         |
+| `context-relay`     | Ipasa ang konteksto sa iba't ibang target (mahahabang pag-uusap)                                                                                                                                                                 |
+| `fill-first`        | Punuin ang quota ng bawat target bago lumipat sa susunod                                                                                                                                                                         |
+| `p2c`               | Random na pagbabalanse ng load gamit ang power-of-2-choices                                                                                                                                                                      |
+| `random`            | Pantay-pantay na random na pagpili                                                                                                                                                                                               |
+| `least-used`        | Piliin ang target na may pinakamababang kasalukuyang load                                                                                                                                                                        |
+| `cost-optimized`    | Paliitin ang $ kada request batay sa pagpepresyo sa catalog                                                                                                                                                                      |
+| `reset-aware` ⭐    | Magtakda ng prayoridad ayon sa oras ng pag-reset ng quota — mas mataas ang ranggo ng maiikling reset window                                                                                                                      |
+| `reset-window`      | Piliin ang mga target na pinakamalapit nang mag-reset ang quota window                                                                                                                                                           |
+| `headroom`          | Piliin ang target na may pinakamaraming natitirang espasyo sa quota                                                                                                                                                              |
+| `quota-weighted`    | Laktawan ang mga account na ubos na ang quota, pagkatapos ay pumili mula sa natitira nang proporsyonal sa natitirang quota na hinati sa in-flight load; mananatiling naka-pin ang mga umiiral na pag-uusap                       |
+| `strict-random`     | Random na pagpili nang walang pag-aalis ng mga pag-uulit                                                                                                                                                                         |
+| `auto`              | Gamitin ang pagmamarka ng Auto Combo (16 na salik) — **inirerekomenda**                                                                                                                                                          |
+| `lkgp`              | Last-Known-Good Path (ini-pin sa huling matagumpay na provider, pagkatapos ay bumabalik sa mga panuntunan)                                                                                                                       |
+| `context-optimized` | Piliin ang target na pinakaangkop sa kasalukuyang laki ng konteksto                                                                                                                                                              |
+| `cache-optimized`   | Muling ayusin ang mga target ayon sa affinity ng prompt cache — unang susubukan ang koneksiyong pinakamalamang na mayroon na ng naka-cache na prefix ng request na ito (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
+| `fusion` 🧬         | Magpadala sa isang panel ng mga modelo nang sabay-sabay, pagkatapos ay bumuo ng isang sagot sa pamamagitan ng isang judge (tingnan sa ibaba)                                                                                     |
+| `pipeline`          | Patakbuhin ang mga target nang sunod-sunod, na ipinapasa ang output ng bawat hakbang sa input ng susunod na hakbang; ang panghuling sagot lamang ang ibinabalik (#6396)                                                          |
 
 ⭐ = Bago sa v3.8.0 · 🧬 = Bago sa v3.8.36
 
-### `weighted` semantics
+### Semantika ng `weighted`
 
-Ang `weighted` ay isang **proportional random draw bawat request**
+Ang `weighted` ay isang **proporsyonal na random na pagpili sa bawat request**
 (`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`), hindi isang equalizer:
 
-- Ang bawat request ay kumukuha ng **isang** step na may probability na `weight / totalWeight`; ang mga natitirang step ay naka-order ayon sa pababang weight bilang fallback chain para sa request na iyon.
-- Ang isang step na ang weight ay `0` (o nawawala) ay **hindi kailanman kinukuha** habang ang ibang step ay may weight na > 0 — maaari lang itong magsilbing fallback pagkatapos mabigo ang kinuha na step. Kapag **lahat** ng weight ay 0, doon lang nagiging uniform ang pagpili.
-- Ang mga step na ang mga target ay hindi available — provider circuit breaker `OPEN`, connection cooldown, model lockout — ay inaalis sa draw bago pa ito mangyari
-  (`open-sse/services/combo/targetResolution.ts`), kaya ang isang healthy na step ay maaaring pansamantalang manalo sa bawat request.
-- Ang `stickyWeightedLimit` (combo config, default `1` = off) ay nag-pi-pin sa kinuha na step para sa dami ng magkakasunod na tagumpay bago mag-draw muli.
+- Sa bawat request, **isang** hakbang ang pinipili na may probability na `weight / totalWeight`; ang natitirang mga hakbang
+  ay inaayos ayon sa pababang timbang bilang fallback chain para sa request na iyon.
+- Ang hakbang na may timbang na `0` (o walang nakasaad na timbang) ay **hindi kailanman pinipili** habang may ibang hakbang na
+  may timbang na > 0 — maaari lamang itong magsilbing fallback kapag nabigo ang napiling hakbang. Kapag **lahat** lamang ng
+  timbang ay 0 nagiging pantay-pantay ang pagpili.
+- Ang mga hakbang na hindi available ang lahat ng target — provider circuit breaker na `OPEN`, cooldown ng koneksiyon,
+  model lockout — ay inaalis sa pagpipilian bago isagawa ang pagpili
+  (`open-sse/services/combo/targetResolution.ts`), kaya maaaring pansamantalang mapili sa bawat request ang iisang maayos na hakbang.
+- Ini-pin ng `stickyWeightedLimit` (combo config, default na `1` = naka-off) ang napiling hakbang para sa ganoong karaming
+  magkakasunod na tagumpay bago muling pumili.
 
-Para sa mahigpit na rotation, gamitin ang `round-robin`; ang pantay na weights sa `weighted` ay nagbibigay ng statistical — hindi mahigpit — na balanse.
+Para sa mahigpit na pag-ikot, gamitin ang `round-robin`; ang magkakapantay na timbang sa `weighted` ay nagbibigay ng estadistikal — hindi
+mahigpit — na pagbabalanse.
 
 ### Agentic pipeline mode
 
@@ -349,15 +348,29 @@ Ang mga karagdagang modelo pagkatapos ng pangalawang target ay mga naka-order na
 
 Maaaring maglabas ang executor ng maraming independent call sa isang response. Ang mga dependent call ay hinahawakan sa mga susunod na client tool-result turn, kung saan sinusuri ng planner ang bawat resulta. Ang `maxToolRounds` ay default sa `8` at tumatanggap ng `1`–`32`; kapag naabot na ito, dapat ibigay ng planner ang pinakamahusay na available na huling sagot. Ang mga internal na desisyon ng planner ay naka-buffer, habang ang napiling client-facing response ay pinapanatili ang orihinal na streaming preference.
 
-### `round-robin` sticky batch at account expansion
+### `round-robin` sticky batch at pagpapalawak ng account
 
-Ang round-robin ay naka-batch, hindi one-request-per-step:
+Naka-batch ang round-robin, hindi isang kahilingan bawat hakbang:
 
-- Ang `stickyRoundRobinLimit` (combo config, pagkatapos ay `comboStickyRoundRobinLimit`, pagkatapos ay `settings.stickyRoundRobinLimit`, default **3**) ay pinapanatili ang parehong target para sa ganoong dami ng magkakasunod na tagumpay bago mag-rotate. I-set ang combo override sa `1` para sa one-request rotation. Ipinapakita ng combo editor ang effective value at kung saang layer ito nagmula.
-- Ang `connectionAwareExpansion` (combo config, pagkatapos ay settings, default **false**) ay nagpapalawak ng bawat provider-level step tungo sa mga per-account target bago ang rotation. Ang mga Group-B strategy (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp, fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion, pipeline) ay nagpapanatili ng provider-level view hangga't hindi ito naka-on. Inilalantad ng combo editor ang inherit / on / off; ang inherit ay gumagamit ng global default (off).
-- Ang prompt-cache locality routing (`promptCacheAffinityEnabled`, default **true**) ay muling nag-aayos ng mga pinned connection upang ang mga tumutugmang cache key ay manatili sa isang account. Mas nauuna ito kaysa sa round-robin at weighted rotation sa mga pinned per-account step. I-off ito sa ilalim ng Settings → Combo defaults kung kailangan mo ng mahigpit na rotation. Walang per-combo override.
+- Pinananatili ng `stickyRoundRobinLimit` (combo config, pagkatapos ay `comboStickyRoundRobinLimit`, pagkatapos ay
+  `settings.stickyRoundRobinLimit`, default na **3**) ang parehong target para sa ganoong karaming
+  magkakasunod na tagumpay bago umikot. Itakda ang combo override sa `1` para sa pag-ikot sa bawat kahilingan.
+  Ipinapakita ng combo editor ang aktuwal na value at kung saang layer ito nagmula.
+- Pinapalawak ng `connectionAwareExpansion` (combo config, pagkatapos ay settings, default na **false**) ang
+  bawat provider-level na hakbang bilang mga per-account na target bago umikot. Pinananatili ng mga Group-B strategy
+  (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp,
+  fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion,
+  pipeline) ang provider-level na view hanggang sa ma-enable ito. Inilalantad ng combo editor ang
+  inherit / on / off; ginagamit ng inherit ang global default (off).
+- Ang prompt-cache locality routing (`promptCacheAffinityEnabled`, default na **true**) ay muling nagsasaayos
+  ng mga naka-pin na koneksyon upang manatili sa iisang account ang magkakatugmang cache key. Mas inuuna ito kaysa sa
+  round-robin at weighted rotation sa mga naka-pin na per-account na hakbang. I-off ito sa ilalim ng
+  Settings → Combo defaults kung kailangan mo ng mahigpit na pag-ikot. Walang per-combo override.
 
-Para sa multi-account rotation sa isang modelo, mas mainam ang **isang dynamic-account step** (walang laman na `connectionId`, buong pool) na may sticky limit na `1`, sa halip na tatlong pinned `connectionId`. Ang mga pinned step kasama ang affinity ay nagko-collapse sa parehong account kahit habang tumatakbo ang RR counter.
+Para sa multi-account na pag-ikot sa isang modelo, mas mainam ang **isang dynamic-account step** (walang laman na
+`connectionId`, buong pool) na may sticky limit na `1`, sa halip na tatlong naka-pin na `connectionId`.
+Ang mga naka-pin na hakbang kasama ng affinity ay nagsasama-sama sa iisang account kahit patuloy na
+umuusad ang RR counter.
 
 ## Estratehiya ng Fusion
 
@@ -457,46 +470,56 @@ Nangangahulugan ito na **ang pagdaragdag ng bagong provider na naka-enable ang `
 
 ## API
 
-Walang **nakalaang `POST /api/combos/auto` endpoint** — ang Auto-Combo ay ginagamit sa dalawang paraan:
+**Walang nakalaang `POST /api/combos/auto` endpoint** — ginagamit ang Auto-Combo sa dalawang paraan:
 
-1. **Zero-config (inirerekomenda):** Magpadala ng anumang chat completion request gamit ang `model: "auto"` o `model: "auto/<variant>"`. Ang virtual factory ang bumubuo ng combo bawat request — walang persistence, walang kinakailangang API calls.
+1. **Zero-config (inirerekomenda):** Magpadala ng anumang chat completion request na may `model: "auto"` o `model: "auto/<variant>"`. Binubuo ng virtual factory ang combo sa bawat request — hindi kailangan ng persistence o mga API call.
 
-2. **Persisted combo na may `strategy: "auto"`:** Gumawa ng regular na combo sa pamamagitan ng `POST /api/combos` at i-set ang `strategy: "auto"` kasama ang `config.auto.weights` / `config.auto.candidatePool`. Ang parehong scoring engine ang ginagamit; ang combo ay naka-store sa `combos` at maaaring gamitin muli sa pamamagitan ng ID.
+2. **Naka-persist na combo na may `strategy: "auto"`:** Gumawa ng regular na combo sa pamamagitan ng `POST /api/combos` at itakda ang `strategy: "auto"` kasama ang `config.auto.weights` / `config.auto.candidatePool`. Ginagamit ang parehong scoring engine; iniimbak ang combo sa `combos` at maaari itong muling gamitin sa pamamagitan ng ID.
 
-Para sa discovery, inililista ng `GET /api/combos/auto` ang bawat variant kasama ang resolved candidate pool nito at `context_length` / `max_output_tokens` — ang MAX sa buong windows ng candidate pool. Dapat i-advertise ng mga client (hal. ang opencode plugin) ang mga value na ito sa halip na `0`: ang zero context ay nagdi-disable sa auto-compaction ng opencode nang buo, na hinahayaang lumaki ang mga session hanggang sa sirain ng history purge ng gateway ang context. Ligtas i-advertise ang MAX dahil ang auto-combo context pre-filter ay nagruruta ng mga oversized request sa mga candidate na may malalaking window.
+Para sa discovery, inililista ng `GET /api/combos/auto` ang bawat variant kasama ang na-resolve nitong candidate pool at `context_length` / `max_output_tokens` — ang MAX sa lahat ng window ng candidate pool. Dapat i-advertise ng mga client (hal. ang opencode plugin) ang mga value na ito sa halip na `0`: ganap na dini-disable ng zero context ang auto-compaction ng opencode, kaya patuloy na lumalaki ang mga session hanggang sa sirain ng history purge ng gateway ang context. Ligtas i-advertise ang MAX dahil niruruta ng context pre-filter ng auto-combo ang mga sobrang laking request sa mga candidate na may malalaking window.
 
 ```bash
-# Zero-config usage (no combo creation)
+# Paggamit ng zero-config (walang paggawa ng combo)
 curl -X POST http://localhost:20128/v1/chat/completions \
   -H "Authorization: Bearer <key>" \
   -H "Content-Type: application/json" \
   -d '{"model":"auto/coding","messages":[{"role":"user","content":"Hello"}]}'
 
-# Persisted auto combo via the regular combos endpoint
+# Naka-persist na auto combo sa pamamagitan ng regular na combos endpoint
 curl -X POST http://localhost:20128/api/combos \
   -H "Content-Type: application/json" \
   -d '{"id":"my-auto","name":"Auto Coder","strategy":"auto","config":{"auto":{"candidatePool":["anthropic","google","openai"],"weights":{"quota":0.15,"health":0.3,"costInv":0.05,"latencyInv":0.35,"taskFit":0.1,"stability":0,"tierPriority":0.05}}}}'
 ```
 
-### Auto router strategies
+### Mga strategy ng auto router
 
-Ang mga persisted `strategy: "auto"` combo ay maaaring mag-set ng `config.routerStrategy` (o legacy `config.auto.routerStrategy`) sa isa sa mga ito:
+Maaaring itakda ng mga naka-persist na `strategy: "auto"` combo ang `config.routerStrategy` (o ang legacy na
+`config.auto.routerStrategy`) sa isa sa mga sumusunod:
 
-- `rules` — default weighted scoring
-- `score` — pinipili ang pinakamataas na configured weighted score. Ang mga eksaktong tie ay nagpapanatili sa configured candidate order; ang umiiral na `explorationRate` ay nag-sa-sample mula sa buong ranked pool.
-- `cost` / `eco` — pinakamurang healthy provider
+- `rules` — default na weighted scoring
+- `score` — pinipili ang pinakamataas na naka-configure na weighted score. Sa eksaktong tie, pinapanatili ang naka-configure na
+  pagkakasunod-sunod ng mga candidate; nagsa-sample ang kasalukuyang `explorationRate` mula sa buong naka-rank na pool.
+- `cost` / `eco` — pinakamurang malusog na provider
 - `latency` / `fast` — pinakamababang p95 latency na may reliability penalty
-- `sla-aware` / `sla` — mas pinipili ang mga candidate na tumutugon sa p95 latency, error-rate, at opsyonal na cost SLOs
-- `lkgp` — unahin ang last known good provider
-- `nadir` — itanong sa decision API ng [Nadir](https://getnadir.com) kung aling model sa pool ang kailangan ng prompt; opt-in, fail-open sa `rules`
+- `sla-aware` / `sla` — inuuna ang mga candidate na nakakatugon sa p95 latency, error-rate, at mga opsyonal na
+  cost SLO
+- `lkgp` — inuuna ang huling provider na nalamang maayos
+- `nadir` — tinatanong ang decision API ng [Nadir](https://getnadir.com) kung aling model sa pool ang
+  kailangan ng prompt; opt-in, at fail-open sa `rules`
 
-### Router strategies in detail
+### Mga router strategy nang detalyado
 
-Ang auto-combo engine ay naglalantad ng 7 pluggable na **RouterStrategy** implementation na maaari mong ipalit sa pamamagitan ng `config.routerStrategy` (o ang legacy `config.auto.routerStrategy`). Ang bawat strategy ay pumipili ng isang provider mula sa candidate pool, base sa isang `RoutingContext` (task type, tool/vision hints, token estimate, opsyonal na SLA policy, opsyonal na last-known-good provider).
+Nagbibigay ang auto-combo engine ng 7 napapalitang **RouterStrategy** implementation na
+maaari mong palitan sa pamamagitan ng `config.routerStrategy` (o ng legacy na `config.auto.routerStrategy`).
+Pumipili ang bawat strategy ng isang provider mula sa candidate pool, batay sa isang `RoutingContext`
+(uri ng task, mga hint para sa tool/vision, pagtataya ng token, opsyonal na SLA policy, opsyonal na
+huling provider na nalamang maayos).
 
 #### 1. `rules` (default) — 16-factor weighted scoring
 
-Binabalot ang umiiral na scoring engine. Sini-filter ang mga `OPEN` circuit-breaker candidate, pagkatapos ay pinapatakbo ang `scorePool()` gamit ang kasalukuyang task type at `getTaskFitness()`, at pinipili ang top-scoring provider.
+Binalot nito ang kasalukuyang scoring engine. Sinasala nito ang mga candidate ng circuit breaker na
+`OPEN`, pagkatapos ay pinapatakbo ang `scorePool()` gamit ang kasalukuyang uri ng task at `getTaskFitness()`,
+at pinipili ang provider na may pinakamataas na score.
 
 ```ts
 class RulesStrategyImpl implements RouterStrategy {
@@ -522,9 +545,10 @@ class RulesStrategyImpl implements RouterStrategy {
 
 ---
 
-#### 2. `cost` / `eco` — pinakamurang healthy provider
+#### 2. `cost` / `eco` — pinakamurang malusog na provider
 
-Sina-sort ang candidate pool ayon sa `costPer1MTokens` (pataas) at pinipili ang pinakamura. Sini-filter muna ang mga `OPEN` candidate.
+Inaayos ang candidate pool ayon sa `costPer1MTokens` (pataas) at pinipili ang pinakamura.
+Sinasala muna ang mga `OPEN` na candidate.
 
 ```ts
 class CostStrategyImpl implements RouterStrategy {
@@ -541,13 +565,14 @@ class CostStrategyImpl implements RouterStrategy {
 
 **Kailan gagamitin**: Mga workload na sensitibo sa gastos, batch processing, o mga background job.
 
-**Mga Alias**: `cost`, `eco`
+**Mga alias**: `cost`, `eco`
 
 ---
 
 #### 3. `latency` / `fast` — pinakamababang p95 latency na may reliability penalty
 
-Sina-sort ayon sa `p95LatencyMs + (errorRate * 1000)`. Tinitiyak ng error-rate penalty na ang mga hindi maaasahang provider ay mas mababa ang rank kahit na mababa ang kanilang nominal latency.
+Inaayos ayon sa `p95LatencyMs + (errorRate * 1000)`. Tinitiyak ng error-rate penalty na
+mas mababa ang rank ng mga hindi maaasahang provider kahit mababa ang nominal latency ng mga ito.
 
 ```ts
 class LatencyStrategyImpl implements RouterStrategy {
@@ -564,27 +589,28 @@ class LatencyStrategyImpl implements RouterStrategy {
 }
 ```
 
-**Kailan gagamitin**: Mga workload na sensitibo sa latency gaya ng real-time chat, autocomplete, o interactive coding assistants.
+**Kailan gagamitin**: Mga workload na sensitibo sa latency gaya ng real-time chat, autocomplete, o
+mga interactive coding assistant.
 
-**Mga Alias**: `latency`, `fast`
+**Mga alias**: `latency`, `fast`
 
 ---
 
-#### 4. `sla-aware` / `sla` — latency/error/cost SLO compliance
+#### 4. `sla-aware` / `sla` — pagsunod sa latency/error/cost SLO
 
-Sini-score ang bawat candidate base sa kung gaano nito natutugunan ang configured na SLO policy:
+Binibigyan ng score ang bawat candidate batay sa kung gaano kahusay nitong natutugunan ang naka-configure na SLO policy:
 
-| Salik              | Timbang | Formula                                           |
+| Salik              | Timbang | Pormula                                           |
 | ------------------ | ------- | ------------------------------------------------- |
-| Marka ng latency   | 35%     | `threshold / max(value, ε)`                       |
-| Marka ng error     | 35%     | `threshold / max(value, ε)`                       |
-| Marka ng kalusugan | 15%     | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
-| Marka ng gastos    | 10%     | `threshold / max(value, ε)` o inverse normalized  |
-| Marka ng katatagan | 5%      | inverse normalized latency stddev                 |
+| Iskor ng latency   | 35%     | `threshold / max(value, ε)`                       |
+| Iskor ng error     | 35%     | `threshold / max(value, ε)`                       |
+| Iskor ng kalusugan | 15%     | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
+| Iskor ng gastos    | 10%     | `threshold / max(value, ε)` or inverse normalized |
+| Iskor ng katatagan | 5%      | kabaligtarang na-normalize na stddev ng latency   |
 
-Kapag `hardConstraints: true`, ang mga kandidato ay pinagsusunod-sunod pangunahin ayon sa **violation score**
-(kung gaano kalayo ang paglampas nila sa anumang SLO), at pagkatapos ay ayon sa composite score. Kung hindi, ito ay base lamang sa
-composite score.
+Kapag `hardConstraints: true`, pangunahing isinasaayos ang mga kandidato ayon sa **iskor ng paglabag**
+(kung gaano nila nilalampasan ang anumang SLO), at pagkatapos ay ayon sa pinagsamang iskor. Kung hindi,
+pinagsamang iskor lamang ang ginagamit.
 
 ```ts
 class SLAStrategyImpl implements RouterStrategy {
@@ -593,7 +619,7 @@ class SLAStrategyImpl implements RouterStrategy {
     "Selects the provider most likely to satisfy latency, error-rate, and cost SLOs";
 
   select(pool, context) {
-    // ... scores each candidate against policy: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
+    // ... binibigyan ng iskor ang bawat kandidato batay sa patakaran: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
   }
 }
 ```
@@ -613,17 +639,17 @@ class SLAStrategyImpl implements RouterStrategy {
 }
 ```
 
-**Kailan gagamitin**: Mga production workload na may mahigpit na budget para sa latency, error-rate, o gastos.
+**Kailan gagamitin**: Mga production workload na may mahihigpit na badyet para sa latency, error rate, o gastos.
 
 **Mga alias**: `sla-aware`, `sla`
 
 ---
 
-#### 5. `lkgp` — last known good provider muna
+#### 5. `lkgp` — unahin ang huling kilalang mahusay na provider
 
-Sinusubukan muna ang **last known good provider** (kung nakatakda), at pagkatapos ay bumabalik sa
-`rules` strategy. Kapaki-pakinabang para sa session stickiness — ang parehong provider ang humahawak sa mga
-follow-up na request sa isang usapan.
+Sinusubukan muna ang **huling kilalang mahusay na provider** (kung nakatakda), at pagkatapos ay bumabalik sa
+strategy na `rules`. Kapaki-pakinabang para sa session stickiness — iisang provider ang humahawak
+sa mga kasunod na request sa isang pag-uusap.
 
 ```ts
 class LKGPStrategyImpl implements RouterStrategy {
@@ -644,26 +670,27 @@ class LKGPStrategyImpl implements RouterStrategy {
       }
     }
 
-    // Fallback to rules strategy
+    // Bumalik sa strategy na rules
     return getStrategy("rules").select(pool, context);
   }
 }
 ```
 
-**Kailan gagamitin**: Mga multi-turn na usapan kung saan gusto mong ang parehong provider ang humawak sa mga
-follow-up na request (halimbawa, para sa caching, continuity ng context, o consistency ng presyo).
+**Kailan gagamitin**: Mga multi-turn na pag-uusap kung saan nais mong iisang provider ang humawak
+sa mga kasunod na request (hal., para sa caching, pagpapatuloy ng konteksto, o pagkakapare-pareho ng presyo).
 
 **Alias**: `lkgp` (walang alias)
 
 ---
 
-#### 6. `nadir` — pagpili ng model na prompt-aware sa pamamagitan ng Nadir
+#### 6. `nadir` — pagpili ng model na isinasaalang-alang ang prompt sa pamamagitan ng Nadir
 
-Ang bawat strategy sa itaas ay nagraranggo sa mga kandidato base sa sarili nilang telemetry; wala sa kanila ang nagbabasa ng request.
-Ang `nadir` ay nagpapadala ng huling turn ng user kasama ang mga model id ng pool sa decision API ng
-[Nadir](https://getnadir.com) (`POST /v1/bucket`) at nagruruta sa model na pinili ng Nadir mula sa menu na iyon
-(`simple` → ang pinakamurang model na may kakayahan, `complex` → ang frontier model). Ang koneksyon na nagsisilbi sa model na iyon
-ay pinipili pa rin ng `rules`, kaya ang quota, health, at gastos ang patuloy na nagdedesisyon kung aling account.
+Niraranggo ng bawat strategy sa itaas ang mga kandidato ayon sa sarili nitong telemetry; wala sa mga ito ang nagbabasa
+ng request. Ipinapadala ng `nadir` ang huling turn ng user kasama ang mga model id ng pool sa
+decision API ng [Nadir](https://getnadir.com) (`POST /v1/bucket`) at nagra-route sa model
+na pinili ng Nadir mula sa menu na iyon (`simple` → ang pinakamurang model na may sapat na kakayahan, `complex` → ang
+frontier model). Pinipili pa rin ng `rules` ang connection na nagseserbisyo sa model na iyon, kaya patuloy na
+tinutukoy ng quota, kalusugan, at gastos kung aling account ang gagamitin.
 
 ```json
 {
@@ -680,22 +707,31 @@ ay pinipili pa rin ng `rules`, kaya ang quota, health, at gastos ang patuloy na 
 ```
 
 Ang `OMNIROUTE_NADIR_API_KEY` at `OMNIROUTE_NADIR_BASE_URL` ay mga env fallback para sa dalawang
-string. Ang `baseUrl` ay kailangan lamang para sa self-hosted na Nadir (ang trailing na `/v1` ay tinatanggap).
-Ang mga keyless call ay napupunta sa anonymous tier ng Nadir, na may rate-limit bawat IP.
+string. Kailangan lamang ang `baseUrl` para sa self-hosted na Nadir (tinatanggap ang hulihang `/v1`).
+Ang mga call na walang key ay napupunta sa anonymous tier ng Nadir, na may rate limit bawat IP.
 
-Ano ang lumalabas sa box: ang text ng huling mensahe ng user (unang 16k na character), ang mga candidate model id, at isang `source: "omniroute"` na channel tag. Walang system prompt, history, tools, o header.
+Ang lumalabas sa system: ang text ng huling mensahe ng user (unang 16k character), ang mga model id
+ng kandidato, at isang `source: "omniroute"` na channel tag. Walang system prompt, history, tool, o
+header.
 
-Ang behavior sa pagkabigo ay fail-open: ang timeout (default 2000 ms), non-2xx, unreachable na host, malformed na response, o pagpili sa labas ng pool ay nagreresulta sa desisyon ng `rules` at ang dahilan ay may prefix na `NadirStrategy: fallback (…)`. Pagkatapos ng isang nabigong tawag, nilalaktawan ng strategy ang network sa loob ng 30 s, kaya ang outage ay nagkakahalaga ng isang timeout bawat 30 s sa halip na isa bawat request. Ang mga routing event ay nag-uulat ng `strategy: "nadir"` lamang kapag si Nadir ang aktwal na gumawa ng pagpili.
+Fail-open ang gawi kapag may pagkabigo: ang timeout (default na 2000 ms), non-2xx, hindi maabot na
+host, malformed na response, o pagpiling wala sa pool ay humahantong sa desisyon ng `rules`,
+at nilalagyan ng prefix na `NadirStrategy: fallback (…)` ang dahilan. Pagkatapos ng isang nabigong call,
+nilalaktawan ng strategy ang network sa loob ng 30 s, kaya ang isang outage ay nagdudulot ng isang timeout
+bawat 30 s sa halip na isa sa bawat request. Iniuulat lamang ng mga routing event ang `strategy: "nadir"`
+kapag ang Nadir talaga ang gumawa ng pagpili.
 
-**Kailan gagamitin**: mixed-difficulty na traffic sa isang pool na sumasaklaw sa mga model tier (isang maliit, isang mid, at isang frontier model), kung saan ang laging-frontier ang gastos na gusto mong bawasan.
+**Kailan gagamitin**: Traffic na may magkakahalong antas ng kahirapan sa isang pool na sumasaklaw sa
+iba't ibang model tier (isang small, isang mid, at isang frontier model), kung saan nais mong bawasan ang
+gastos ng palaging paggamit ng frontier model.
 
 **Alias**: `nadir` (walang alias)
 
 ---
 
-### Mga custom na router strategy
+### Mga custom router strategy
 
-Maaari mong irehistro ang sarili mong implementasyon ng `RouterStrategy` sa pamamagitan ng public API:
+Maaari mong i-register ang sarili mong implementation ng `RouterStrategy` sa pamamagitan ng public API:
 
 ```ts
 import {
@@ -708,7 +744,7 @@ class MyCustomStrategy implements RouterStrategy {
   readonly description = "My custom routing strategy";
 
   select(pool, context) {
-    // Your routing logic here
+    // Ang iyong routing logic dito
     return {
       provider: pool[0].provider,
       model: pool[0].model,
@@ -738,16 +774,16 @@ Pagkatapos, gamitin ito:
 
 ### Gabay sa pagpili ng router strategy
 
-| Use case               | Strategy    | Dahilan                                            |
-| ---------------------- | ----------- | -------------------------------------------------- |
-| Balanced na workload   | `rules`     | Default — isinasaalang-alang ang lahat ng salik    |
-| I-minimize ang gastos  | `cost`      | Laging pinipili ang pinakamura                     |
-| I-minimize ang latency | `latency`   | Pinipili ang pinakamabilis na maaasahang provider  |
-| Mahigpit na SLO        | `sla-aware` | Sinasala ayon sa mga threshold ng p95/error/gastos |
-| Multi-turn na chat     | `lkgp`      | Session stickiness                                 |
-| Mixed na difficulty    | `nadir`     | Pinipili ang model tier bawat prompt               |
+| Gamit                 | Strategy    | Dahilan                                            |
+| --------------------- | ----------- | -------------------------------------------------- |
+| Balanseng workload    | `rules`     | Default — isinasaalang-alang ang lahat ng salik    |
+| Bawasan ang gastos    | `cost`      | Palaging pinipili ang pinakamura                   |
+| Bawasan ang latency   | `latency`   | Pinipili ang pinakamabilis na maaasahang provider  |
+| Mahihigpit na SLO     | `sla-aware` | Sinasala ayon sa mga threshold ng p95/error/gastos |
+| Multi-turn na chat    | `lkgp`      | Session stickiness                                 |
+| Magkahalong kahirapan | `nadir`     | Pinipili ang model tier para sa bawat prompt       |
 
-Mga field ng SLA-aware:
+Mga field na isinasaalang-alang ang SLA:
 
 ```json
 {
@@ -824,15 +860,15 @@ Sinusubukan ng mga smoke test na ito ang tunay na wire path (combo → provider 
 
 ## Mga File
 
-| File                                                      | Layunin                                                                                                     |
-| :-------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------- |
-| `open-sse/services/autoCombo/scoring.ts`                  | 16-factor scoring function, `DEFAULT_WEIGHTS`, pool norm                                                    |
-| `open-sse/services/autoCombo/taskFitness.ts`              | Lookup ng fitness ng model × task                                                                           |
-| `open-sse/services/autoCombo/engine.ts`                   | Lohika ng pagpili, bandit, budget cap                                                                       |
-| `open-sse/services/autoCombo/selfHealing.ts`              | Exclusion, probes, incident mode                                                                            |
-| `open-sse/services/autoCombo/modePacks.ts`                | 6 na weight profile (ship-fast, cost-saver, quality-first, offline-friendly, reliability-first, chaos-mode) |
-| `open-sse/services/autoCombo/autoPrefix.ts`               | Parser ng `auto/` prefix + 6 na variant                                                                     |
-| `open-sse/services/autoCombo/virtualFactory.ts`           | Bumubuo ng in-memory `AutoComboConfig` mula sa mga live connection                                          |
-| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Test hook para sa pag-mock ng provider registry                                                             |
-| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 na strategy)                                                                  |
-| `src/sse/handlers/chat.ts`                                | Integration: auto-prefix short-circuit                                                                      |
+| File                                                      | Layunin                                                                                                         |
+| :-------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------- |
+| `open-sse/services/autoCombo/scoring.ts`                  | 16-factor na scoring function, `DEFAULT_WEIGHTS`, pool norm                                                     |
+| `open-sse/services/autoCombo/taskFitness.ts`              | Lookup ng fitness ng model × gawain                                                                             |
+| `open-sse/services/autoCombo/engine.ts`                   | Lohika ng pagpili, bandit, limitasyon sa badyet                                                                 |
+| `open-sse/services/autoCombo/selfHealing.ts`              | Pagbubukod, mga probe, incident mode                                                                            |
+| `open-sse/services/autoCombo/modePacks.ts`                | 6 na profile ng timbang (ship-fast, cost-saver, quality-first, offline-friendly, reliability-first, chaos-mode) |
+| `open-sse/services/autoCombo/autoPrefix.ts`               | Parser ng prefix na `auto/` + 6 na variant                                                                      |
+| `open-sse/services/autoCombo/virtualFactory.ts`           | Bumubuo ng in-memory na `AutoComboConfig` mula sa mga aktibong koneksyon                                        |
+| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Test hook para sa pag-mock ng provider registry                                                                 |
+| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (20 diskarte)                                                                         |
+| `src/sse/handlers/chat.ts`                                | Integrasyon: short-circuit ng auto-prefix                                                                       |
