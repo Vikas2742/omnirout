@@ -404,6 +404,7 @@ export function emitCursorSseError(ctx: StreamCtx, classified: ClassifiedCursorE
     error: {
       message: sanitizeErrorMessage(classified.message),
       type: classified.type,
+      status: classified.status,
     },
   };
   ctx.emit(`data: ${JSON.stringify(payload)}\n\n`);
@@ -1540,6 +1541,43 @@ export class CursorExecutor extends BaseExecutor {
       }
     };
 
+    // A complete error already buffered before any output is an HTTP failure,
+    // not a successful streaming request. Keep its SSE body for stream clients,
+    // and its status for the existing route's account/model failure handling.
+    // Inspect only an uncompressed first frame; never wait for more bytes or
+    // pre-read a healthy stream (including partial frames / late trailers).
+    if (h2.initialBytes.length >= 5 && (h2.initialBytes[0] & 0x01) === 0) {
+      const length = h2.initialBytes.readUInt32BE(1);
+      if (length <= h2.initialBytes.length - 5) {
+        const projected = projectCursorError(h2.initialBytes.subarray(5, 5 + length));
+        if (projected) {
+          const classified = classifyCursorError(projected);
+          const ctx = newStreamCtx(model, () => {});
+          finishLifecycle(ctx, true);
+          if (stream === false) {
+            return {
+              response: buildErrorResponse(classified.status, classified.message, classified.type),
+              url,
+              headers,
+              transformedBody: body,
+            };
+          }
+          const chunks: string[] = [];
+          ctx.emit = (chunk) => chunks.push(chunk);
+          emitCursorSseError(ctx, classified);
+          return {
+            response: new Response(chunks.join(""), {
+              status: classified.status,
+              headers: { "Content-Type": "text/event-stream" },
+            }),
+            url,
+            headers,
+            transformedBody: body,
+          };
+        }
+      }
+    }
+
     // Stream mode: ReadableStream that emits SSE chunks as they're decoded.
     if (stream !== false) {
       const enc = new TextEncoder();
@@ -1567,6 +1605,21 @@ export class CursorExecutor extends BaseExecutor {
                 return;
               }
               finishLifecycle(ctx, true);
+              // Before any partial output, use the same classification as the
+              // non-streaming catch. An errored body bypasses readiness's SSE
+              // error consumer and loses actionable Connect trailer failures.
+              if (
+                ctx.totalText.length === 0 &&
+                ctx.thinkingText.length === 0 &&
+                ctx.toolCalls.length === 0 &&
+                ctx.pendingToolCalls.size === 0 &&
+                ctx.pendingBuiltinExecs.size === 0
+              ) {
+                const message = err instanceof Error ? err.message : String(err);
+                emitCursorSseError(ctx, classifyCursorError(message));
+                controller.close();
+                return;
+              }
               controller.error(err);
             }
           },
