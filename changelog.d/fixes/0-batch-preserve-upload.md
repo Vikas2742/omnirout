@@ -1,1 +1,0 @@
-- **fix(batch):** Upload complete JSONL files instead of preview samples and read every CSV row before batch conversion ([#0](https://github.com/diegosouzapw/OmniRoute/pull/0)) — thanks @pacocartones
