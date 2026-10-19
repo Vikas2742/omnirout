@@ -622,6 +622,10 @@ function getContentBlocksFromMessage(
       // `is_error` on every Anthropic tool_result block. OpenAI tool messages
       // carry no such flag, so default to false unless the caller set it explicitly.
       is_error: msg.is_error ?? false,
+      // A `cache_control` marker hoisted off the tool message's content blocks
+      // (see filterToOpenAIFormat) belongs on the tool_result block itself —
+      // Anthropic rejects it inside `tool_result.content`.
+      ...(msg.cache_control !== undefined && { cache_control: msg.cache_control }),
     });
   } else if (msg.role === "user") {
     if (typeof msg.content === "string") {
