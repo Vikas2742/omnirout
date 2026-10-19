@@ -14,10 +14,15 @@ export interface SyncedAvailableModel {
    * the syncedAvailableModels snapshot.
    */
   catalogOrigin?: "registry";
+  /** Upstream picker visibility; does not restrict explicit inference requests. */
+  visibility?: "hide" | "list";
+  supportedInApi?: boolean;
+  minimalClientVersion?: string;
   apiFormat?: string;
   targetFormat?: string;
   upstreamProtocol?: string;
   supportedEndpoints?: string[];
+  endpointCapabilitySource?: "declared" | "inferred" | "defaulted" | "operator";
   supportedThinkingEfforts?: string[];
   defaultThinkingEffort?: string;
   inputTokenLimit?: number;
@@ -68,6 +73,15 @@ function normalizeSyncedAvailableModel(model: unknown): SyncedAvailableModel | n
     id,
     name,
     source: "imported",
+    ...(record.visibility === "hide" || record.visibility === "list"
+      ? { visibility: record.visibility }
+      : {}),
+    ...(typeof record.supportedInApi === "boolean"
+      ? { supportedInApi: record.supportedInApi }
+      : {}),
+    ...(toNonEmptyString(record.minimalClientVersion)
+      ? { minimalClientVersion: toNonEmptyString(record.minimalClientVersion)! }
+      : {}),
     ...(toNonEmptyString(record.apiFormat)
       ? { apiFormat: toNonEmptyString(record.apiFormat)! }
       : {}),
@@ -81,6 +95,14 @@ function normalizeSyncedAvailableModel(model: unknown): SyncedAvailableModel | n
       ? { upstreamProtocol: toNonEmptyString(record.upstreamProtocol)! }
       : {}),
     ...(supportedEndpoints && supportedEndpoints.length > 0 ? { supportedEndpoints } : {}),
+    ...(["declared", "inferred", "defaulted", "operator"].includes(
+      String(record.endpointCapabilitySource)
+    )
+      ? {
+          endpointCapabilitySource:
+            record.endpointCapabilitySource as SyncedAvailableModel["endpointCapabilitySource"],
+        }
+      : {}),
     ...(Array.isArray(record.supportedThinkingEfforts)
       ? {
           supportedThinkingEfforts: record.supportedThinkingEfforts.filter(
