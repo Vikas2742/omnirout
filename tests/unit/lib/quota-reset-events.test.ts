@@ -253,3 +253,45 @@ test("#17043: a reset timestamp change without measured quota recovery is insuff
     "a reset date moving without known previous capacity is not positive evidence"
   );
 });
+
+test("#17043: a model-scoped weekly refill cannot unlock the account-wide 429", () => {
+  const now = Date.now();
+  const before429 = new Date(now - 30_000).toISOString();
+  const observedAt = new Date(now - 10_000).toISOString();
+  const resetAt = new Date(now + 86_400_000).toISOString();
+  const id = "conn-17043-model-only-reset";
+
+  // These rows pass the legacy broad weekly-window matcher, so they exercise
+  // the SQL selector rather than assuming the ingestion path filters them out.
+  for (const windowKey of ["weekly opus (7d)", "weekly haiku (7d)"]) {
+    recordProviderQuotaResetEventIfChanged({
+      provider: "claude",
+      connectionId: id,
+      windowKey,
+      currentResetAt: resetAt,
+      currentRemainingPercentage: 100,
+      previousObservation: { resetAt, remainingPercentage: 0 },
+      observedAt,
+    });
+  }
+  assert.equal(
+    hasObservedClaudeQuotaResetAfter(id, before429, now),
+    false,
+    "a scoped model refill cannot establish global weekly capacity"
+  );
+
+  recordProviderQuotaResetEventIfChanged({
+    provider: "claude",
+    connectionId: id,
+    windowKey: "weekly (7d)",
+    currentResetAt: resetAt,
+    currentRemainingPercentage: 100,
+    previousObservation: { resetAt, remainingPercentage: 0 },
+    observedAt,
+  });
+  assert.equal(
+    hasObservedClaudeQuotaResetAfter(id, before429, now),
+    true,
+    "a measured global weekly refill is still sufficient"
+  );
+});
