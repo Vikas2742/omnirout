@@ -322,6 +322,12 @@ export class XaiExecutor extends BaseExecutor {
         if (tools.length > 0) out.tools = tools;
         else delete out.tools;
       }
+      // Codex side requests (titles, compaction) send `tool_choice` with no tools; xAI
+      // rejects that with 400 "A tool_choice was set on the request but no tools were specified".
+      if (!Array.isArray(out.tools) || out.tools.length === 0) {
+        delete out.tool_choice;
+        delete out.parallel_tool_calls;
+      }
       if (Array.isArray(out.input)) out.input = normalizeXaiResponsesInput(out.input);
       // Keep model id from the routed request when the translator left it empty.
       if (out.model == null && model) out.model = model;

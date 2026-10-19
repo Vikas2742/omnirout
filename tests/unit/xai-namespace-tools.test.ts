@@ -110,3 +110,47 @@ test("isRequestShapeError: 400 unsupported argument / 422 schema → no cooldown
   assert.equal(isRequestShapeError(400, "invalid api key"), false);
   assert.equal(isRequestShapeRejection({ status: 400, error: "Argument not supported: x" }), true);
 });
+
+test("XaiExecutor drops tool_choice when the Responses body ends up with no tools", () => {
+  const executor = new XaiExecutor("xai-oauth");
+  const out = executor.transformRequest(
+    "grok-4.6",
+    {
+      model: "grok-4.6",
+      input: "title please",
+      tool_choice: "auto",
+      parallel_tool_calls: true,
+      _nativeXaiResponsesPassthrough: true,
+    },
+    true,
+    {} as never
+  ) as Record<string, unknown>;
+  assert.equal(out.tool_choice, undefined);
+  assert.equal(out.parallel_tool_calls, undefined);
+  const kept = executor.transformRequest(
+    "grok-4.6",
+    {
+      model: "grok-4.6",
+      input: "x",
+      tools: [{ type: "function", name: "f" }],
+      tool_choice: "auto",
+      _nativeXaiResponsesPassthrough: true,
+    },
+    true,
+    {} as never
+  ) as Record<string, unknown>;
+  assert.equal(kept.tool_choice, "auto");
+});
+
+test("xAI 400/422 never cool down the account; other providers need a shape message", async () => {
+  const { isRequestShapeError } = await import("../../src/sse/services/auth.ts");
+  assert.equal(
+    isRequestShapeError(400, "Invalid request content: A tool_choice was set", "xai-oauth"),
+    true
+  );
+  assert.equal(isRequestShapeError(400, "anything", "xai"), true);
+  assert.equal(isRequestShapeError(429, "anything", "xai-oauth"), false);
+  assert.equal(isRequestShapeError(400, "API key not valid", "gemini"), false);
+  assert.equal(isRequestShapeRejection({ status: 400, error: "whatever" }, "xai-oauth"), true);
+  assert.equal(isRequestShapeRejection({ status: 400, error: "whatever" }, "gemini"), false);
+});

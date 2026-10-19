@@ -2140,7 +2140,7 @@ async function handleSingleModelChat(
       // A 422 body-deserialization rejection describes THIS request's shape, not the
       // account. Cooling the connection down would make every other client routed to
       // the same (often single) account fail with the stale error for ~1 minute.
-      if (isRequestShapeRejection(result)) {
+      if (isRequestShapeRejection(result, provider)) {
         return withSelectedConnectionHeader(result.response, credentials.connectionId);
       }
 
