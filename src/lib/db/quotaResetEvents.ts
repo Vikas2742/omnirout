@@ -212,8 +212,9 @@ export function hasObservedClaudeQuotaResetAfter(
     const rows = db.prepare<{ observedAt: string }>(
       `SELECT observed_at AS observedAt FROM provider_quota_reset_events
        WHERE connection_id = ? AND LOWER(provider) = 'claude'
-         AND (LOWER(window_key) LIKE '%weekly%' OR LOWER(window_key) LIKE '%7d%')
-         AND LOWER(window_key) NOT LIKE '%sonnet%'
+         -- Only the global weekly window can prove that the account-wide 429
+         -- recovered. A model-specific Opus/Haiku weekly refill is insufficient.
+         AND LOWER(TRIM(window_key)) IN ('weekly', 'weekly (7d)', '7d')
          AND previous_remaining_percentage IS NOT NULL
          AND new_remaining_percentage > previous_remaining_percentage
          AND new_remaining_percentage > 0
