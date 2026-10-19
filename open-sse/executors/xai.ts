@@ -4,6 +4,7 @@ import { getModelTargetFormat } from "../config/providerModels.ts";
 import { isResponsesEndpointPath } from "../utils/responsesEndpoint.ts";
 import { chatRequestToXaiResponses } from "@/lib/providers/xai/translators/openai-chat.ts";
 import { capXaiRequestHistory } from "../services/xaiMessageCap.ts";
+import { flattenNamespaceToolName } from "../translator/request/openai-responses/namespaceFlatten.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -33,6 +34,108 @@ const EFFORT_SUFFIXES = ["low", "medium", "high", "xhigh"] as const;
 
 function asRecord(value: unknown): JsonRecord | null {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as JsonRecord) : null;
+}
+
+/**
+ * Tool `type` values xAI's native `/v1/responses` deserializer accepts. Anything
+ * else makes xAI reject the WHOLE request with
+ * `422 tools[N].type: unknown variant ...` (e.g. Codex CLI's MCP `namespace` groups).
+ */
+const XAI_RESPONSES_TOOL_TYPES: ReadonlySet<string> = new Set([
+  "function",
+  "web_search",
+  "x_search",
+  "image_generation",
+  "collections_search",
+  "file_search",
+  "code_execution",
+  "code_interpreter",
+  "mcp",
+  "shell",
+  "tool_search",
+]);
+
+/** One Responses function tool `{type:"function", name, description?, parameters?, strict?}`. */
+function toXaiFunctionTool(value: unknown, nameOverride?: string): JsonRecord | null {
+  const tool = asRecord(value);
+  if (!tool) return null;
+  // Accept both the flat Responses shape and the nested Chat `{function:{...}}` shape.
+  const fn = asRecord(tool.function) ?? tool;
+  const rawName = typeof fn.name === "string" ? fn.name.trim() : "";
+  const name = nameOverride ?? rawName;
+  if (!name) return null;
+  const out: JsonRecord = { type: "function", name };
+  if (typeof fn.description === "string") out.description = fn.description;
+  if (fn.parameters !== undefined) out.parameters = fn.parameters;
+  if (typeof fn.strict === "boolean") out.strict = fn.strict;
+  return out;
+}
+
+/**
+ * Make a Responses `tools[]` array acceptable to xAI:
+ *   - `namespace` groups (Codex MCP servers) are flattened into plain function tools
+ *     with the `mcp__<server>__<tool>` qualified name (same scheme as the Chat path,
+ *     which Codex still resolves for MCP calls);
+ *   - nested Chat-shaped function tools are flattened;
+ *   - `custom` (freeform) tools become a single-string-arg function tool;
+ *   - any other type xAI does not know is dropped instead of failing the request.
+ */
+export function normalizeXaiResponsesTools(tools: unknown): unknown[] | undefined {
+  if (!Array.isArray(tools)) return undefined;
+  const out: unknown[] = [];
+  const seen = new Set<string>();
+  const pushFn = (tool: JsonRecord | null) => {
+    if (!tool) return;
+    const name = String(tool.name);
+    if (seen.has(name)) return;
+    seen.add(name);
+    out.push(tool);
+  };
+
+  for (const value of tools) {
+    const tool = asRecord(value);
+    if (!tool) continue;
+    const type = typeof tool.type === "string" ? tool.type : "function";
+
+    if (type === "namespace") {
+      const nsName = typeof tool.name === "string" ? tool.name : "";
+      for (const child of Array.isArray(tool.tools) ? tool.tools : []) {
+        const childRecord = asRecord(child);
+        if (!childRecord) continue;
+        const childFn = asRecord(childRecord.function) ?? childRecord;
+        const leaf = typeof childFn.name === "string" ? childFn.name.trim() : "";
+        if (!leaf) continue;
+        pushFn(toXaiFunctionTool(childRecord, flattenNamespaceToolName(nsName, leaf)));
+      }
+      continue;
+    }
+
+    if (type === "function") {
+      pushFn(toXaiFunctionTool(tool));
+      continue;
+    }
+
+    if (type === "custom") {
+      const name = typeof tool.name === "string" ? tool.name.trim() : "";
+      if (!name) continue;
+      pushFn({
+        type: "function",
+        name,
+        ...(typeof tool.description === "string" ? { description: tool.description } : {}),
+        parameters: {
+          type: "object",
+          properties: { input: { type: "string" } },
+          required: ["input"],
+        },
+      });
+      continue;
+    }
+
+    if (XAI_RESPONSES_TOOL_TYPES.has(type)) out.push(tool);
+    // else: unsupported hosted tool type for xAI — drop it rather than 422 the request.
+  }
+
+  return out;
 }
 
 /**
@@ -155,6 +258,13 @@ export class XaiExecutor extends BaseExecutor {
           out.text = { format: out.response_format };
           delete out.response_format;
         }
+      }
+      // xAI rejects the whole request on any tool type it does not know (e.g. Codex's
+      // MCP `namespace` groups → 422 `tools[N].type: unknown variant namespace`).
+      if (Array.isArray(out.tools)) {
+        const tools = normalizeXaiResponsesTools(out.tools) ?? [];
+        if (tools.length > 0) out.tools = tools;
+        else delete out.tools;
       }
       // Keep model id from the routed request when the translator left it empty.
       if (out.model == null && model) out.model = model;

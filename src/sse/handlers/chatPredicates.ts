@@ -81,6 +81,17 @@ export function classifyProviderBreakerResult(
     : "ignore";
 }
 
+/**
+ * Upstream 422 meaning "your JSON body does not match my schema" (e.g. xAI's
+ * `Failed to deserialize the JSON body into the target type: tools[7].type: ...`).
+ * That is a request-shape problem; it must not cool down the account.
+ */
+export function isRequestShapeRejection(result: { status?: number; error?: unknown }): boolean {
+  if (Number(result.status) !== 422) return false;
+  const message = typeof result.error === "string" ? result.error : "";
+  return /failed to deserialize the json body|unknown variant `|missing field `/i.test(message);
+}
+
 export function isAntigravityMissingProjectError(
   provider: string,
   result: { status?: number; errorCode?: string; errorType?: string }
