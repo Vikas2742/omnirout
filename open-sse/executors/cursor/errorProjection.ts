@@ -104,20 +104,17 @@ function typedText(detail: unknown): string {
   }
 }
 
+function isJsonWhitespace(byte: number): boolean {
+  return byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d;
+}
+
 /** Shared projection for JSON envelopes and Connect end-stream trailers. */
 export function projectCursorError(payload: Buffer): string | null {
   if (payload.length < 2) return null;
   // JSON permits only these four ASCII whitespace bytes. Bound the prefix scan
   // as well as parsing; do not decode/copy an arbitrarily large input first.
   let start = 0;
-  while (
-    start < payload.length &&
-    start < MAX_ENVELOPE_BYTES &&
-    (payload[start] === 0x20 ||
-      payload[start] === 0x09 ||
-      payload[start] === 0x0a ||
-      payload[start] === 0x0d)
-  ) {
+  while (start < payload.length && start < MAX_ENVELOPE_BYTES && isJsonWhitespace(payload[start])) {
     start++;
   }
   if (start === MAX_ENVELOPE_BYTES) return "unknown: Cursor error envelope too large";
