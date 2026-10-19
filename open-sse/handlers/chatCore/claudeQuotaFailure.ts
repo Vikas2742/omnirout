@@ -35,12 +35,20 @@ export async function handleClaudeQuotaFailure(input: ClaudeQuotaFailure): Promi
   if (input.hasCallerOwner) return true;
   const connection = await getProviderConnectionById(input.connectionId);
   if (!connection) return true;
-  if (["banned", "expired", "deactivated", "credits_exhausted"].includes(connection.testStatus)) {
+  const status = typeof connection.testStatus === "string" ? connection.testStatus : "";
+  if (["banned", "expired", "deactivated", "credits_exhausted"].includes(status)) {
     return true;
   }
-  // Match the outer fallback's duplicate-mark guard: a second failure must not
-  // shorten or extend a cooldown already established by another request.
-  const existingUntil = cooldownUntilMs(connection.rateLimitedUntil);
+  // DB reads expose nullable fields as unknown. Narrow them before passing
+  // them into typed helpers; do not stringify an invalid cooldown as evidence.
+  // Match the outer fallback's duplicate-mark guard: another request must not
+  // shorten or extend a cooldown that is still active.
+  const storedCooldown = connection.rateLimitedUntil;
+  const existingUntil = cooldownUntilMs(
+    typeof storedCooldown === "string" || typeof storedCooldown === "number"
+      ? storedCooldown
+      : null
+  );
   if (Number.isFinite(existingUntil) && existingUntil > Date.now()) return true;
   const scope = getCachedClaudeQuotaScopeDecision(input);
   const cooldownMs = scope.cooldownMs ?? (input.retryAfterMs || SUBSCRIPTION_QUOTA_COOLDOWN_MS);
