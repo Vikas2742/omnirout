@@ -148,6 +148,42 @@ async function ensureSecrets(): Promise<void> {
       );
     }
   }
+
+  if (!process.env.STORAGE_ENCRYPTION_KEY || process.env.STORAGE_ENCRYPTION_KEY.trim() === "") {
+    // Without this key every fresh install stores provider credentials in
+    // plaintext (encryption.ts passthrough mode). Opt-out kept for operators
+    // who deliberately run plaintext setups.
+    const autogen = (process.env.OMNIROUTE_STORAGE_KEY_AUTOGEN ?? "").trim().toLowerCase();
+    if (autogen !== "false" && autogen !== "0") {
+      const persisted = getPersistedSecret("storageEncryptionKey");
+      if (persisted) {
+        process.env.STORAGE_ENCRYPTION_KEY = persisted;
+        console.log("[STARTUP] STORAGE_ENCRYPTION_KEY restored from persistent store");
+      } else {
+        const generated = toHex(getRandomBytes(32));
+        process.env.STORAGE_ENCRYPTION_KEY = generated;
+        persistSecret("storageEncryptionKey", generated);
+        // Read back: persistSecret never throws, so a silent write failure
+        // would leave this session encrypting with an ephemeral key that the
+        // next boot cannot restore — turning working plaintext credentials
+        // into undecryptable rows. Fall back to plaintext (status quo) for
+        // this run instead, loudly.
+        if (getPersistedSecret("storageEncryptionKey") === generated) {
+          console.log(
+            "[STARTUP] STORAGE_ENCRYPTION_KEY auto-generated and persisted — provider credentials " +
+              "are now encrypted at rest. Back it up (or set STORAGE_ENCRYPTION_KEY yourself): " +
+              "losing it makes stored credentials undecryptable."
+          );
+        } else {
+          delete process.env.STORAGE_ENCRYPTION_KEY;
+          console.error(
+            "[STARTUP] STORAGE_ENCRYPTION_KEY could not be persisted — running plaintext this " +
+              "session (provider credentials NOT encrypted). Check DB write access."
+          );
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -392,6 +428,22 @@ export async function registerNodejs(): Promise<void> {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn("[STARTUP] Could not clear stale crash cooldowns (non-fatal):", msg);
+  }
+
+  // Encrypt any credentials still resting in plaintext from the passthrough
+  // era. Runs after ensureSecrets() so the auto-generated key already
+  // exists; no-op when encryption is disabled or everything is encrypted.
+  try {
+    const { encryptPlaintextConnectionCredentials } = await import("@/lib/db/providers");
+    const encrypted = encryptPlaintextConnectionCredentials();
+    if (encrypted > 0) {
+      console.log(
+        `[STARTUP] Encrypted ${encrypted} connection(s) that were stored as plaintext credentials`
+      );
+    }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[STARTUP] Plaintext credential encryption sweep failed (non-fatal):", msg);
   }
 
   await scanComboModelNameCollisionsAtBoot();

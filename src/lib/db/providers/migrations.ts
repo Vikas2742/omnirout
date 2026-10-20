@@ -6,7 +6,12 @@
 
 import { getDbInstance, rowToCamel } from "../core";
 import { backupDbFile } from "../backup";
-import { migrateLegacyEncryptedString } from "../encryption";
+import {
+  migrateLegacyEncryptedString,
+  encrypt,
+  isEncryptionEnabled,
+  looksEncrypted,
+} from "../encryption";
 import { invalidateDbCache } from "../readCache";
 
 interface StatementLike<TRow = unknown> {
@@ -79,6 +84,68 @@ export function autoMigrateLegacyEncryptedConnections(): number {
   }
 
   return migratedCount;
+}
+
+/**
+ * Encrypts credential fields still stored in PLAINTEXT — installs that ran
+ * without STORAGE_ENCRYPTION_KEY before boot-time key auto-generation
+ * existed. Runs once at boot after ensureSecrets() (instrumentation-node.ts);
+ * no-op while encryption is unconfigured, so intentional passthrough setups
+ * keep working. Idempotent: rows already carrying the `enc:v1:` prefix are
+ * left byte-identical. The direct UPDATE mirrors
+ * autoMigrateLegacyEncryptedConnections above — the values are already
+ * encrypted by encrypt() here, so they must not pass through a write path
+ * that treats them as plaintext again.
+ */
+export function encryptPlaintextConnectionCredentials(): number {
+  if (!isEncryptionEnabled()) return 0;
+
+  const db = getDbInstance() as unknown as DbLike;
+  const rows = db.prepare("SELECT * FROM provider_connections").all();
+  const updateStmt = db.prepare(
+    "UPDATE provider_connections SET api_key = @apiKey, id_token = @idToken, access_token = @accessToken, refresh_token = @refreshToken, updated_at = @updatedAt WHERE id = @id"
+  );
+  const credentialFields = ["apiKey", "idToken", "accessToken", "refreshToken"] as const;
+  let encryptedCount = 0;
+  let backupCreated = false;
+
+  for (const row of rows) {
+    const camelRow = rowToCamel(row);
+    if (!camelRow) continue;
+
+    let updatedRow = false;
+    for (const field of credentialFields) {
+      const value = camelRow[field];
+      if (typeof value !== "string" || value.length === 0 || looksEncrypted(value)) continue;
+      camelRow[field] = encrypt(value);
+      updatedRow = true;
+    }
+
+    if (!updatedRow) continue;
+    if (!backupCreated) {
+      backupDbFile("pre-write");
+      backupCreated = true;
+    }
+
+    updateStmt.run({
+      id: camelRow.id,
+      apiKey: camelRow.apiKey ?? null,
+      idToken: camelRow.idToken ?? null,
+      accessToken: camelRow.accessToken ?? null,
+      refreshToken: camelRow.refreshToken ?? null,
+      updatedAt: new Date().toISOString(),
+    });
+    encryptedCount++;
+  }
+
+  if (encryptedCount > 0) {
+    invalidateDbCache("connections");
+    console.log(
+      `[DB] Encrypted ${encryptedCount} connection(s) that were stored as plaintext credentials.`
+    );
+  }
+
+  return encryptedCount;
 }
 
 // ──────────────── GHE Copilot ────────────────
