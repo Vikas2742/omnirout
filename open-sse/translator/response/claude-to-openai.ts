@@ -1,5 +1,5 @@
 import { register } from "../registry.ts";
-import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields, mergeCacheCreationFields } from "@/shared/utils/cacheWriteUsage";
 import { FORMATS } from "../formats.ts";
 import { initThinkState, applyThinkTag, flushThinkBuffer } from "../../utils/thinkTagParser.ts";
 import { storeClaudeThinkingBlocks } from "../../services/claudeThinkingStore.ts";
@@ -291,8 +291,7 @@ export function claudeToOpenAIResponse(chunk, state) {
             ? inputTokens + cacheReadTokens
             : previousInputTokens;
         state.usage = {
-          ...cacheCreationFields(previousUsage),
-          ...cacheCreationFields(chunk.usage),
+          ...mergeCacheCreationFields(previousUsage, chunk.usage),
           prompt_tokens: billableInputTokens,
           completion_tokens: outputTokens,
           input_tokens: billableInputTokens,
@@ -313,7 +312,10 @@ export function claudeToOpenAIResponse(chunk, state) {
         if (effectiveCacheReadTokens > 0) {
           state.usage.cache_read_input_tokens = effectiveCacheReadTokens;
         }
-        if (effectiveCacheCreationTokens > 0) {
+        if (
+          effectiveCacheCreationTokens > 0 &&
+          state.usage.cache_creation_input_tokens === undefined
+        ) {
           state.usage.cache_creation_input_tokens = effectiveCacheCreationTokens;
         }
       }

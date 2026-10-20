@@ -77,7 +77,9 @@ export function cacheCreationFields(value: unknown): JsonRecord {
   const { rawTiers } = sources(value);
   const diagnostic = readCacheWriteUsage(value);
   if (rawTiers == null)
-    return diagnostic.status === "invalid" ? { cache_creation_tier_status: "invalid" } : {};
+    return ["invalid", "inconsistent"].includes(diagnostic.status)
+      ? { cache_creation_tier_status: diagnostic.status }
+      : {};
   const tiers = { ...record(rawTiers) };
   for (const key of ["ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens"]) {
     if (counter(tiers[key]) === null) delete tiers[key];
@@ -89,6 +91,30 @@ export function cacheCreationFields(value: unknown): JsonRecord {
       ? { cache_creation_tier_status: diagnostic.status }
       : {}),
   };
+}
+
+/**
+ * Merge request-local cumulative receipts, never token deltas. Missing/invalid
+ * buckets cannot erase valid evidence; explicit zero is a valid replacement.
+ * Keep error evidence for the receipt even when a later fragment looks healthy.
+ * Only feature metadata is returned, leaving ordinary token/cost merge policies
+ * to the caller. Standalone projections must continue using cacheCreationFields.
+ */
+export function mergeCacheCreationFields(previous: unknown, incoming: unknown): JsonRecord {
+  const before = cacheCreationFields(previous);
+  const next = cacheCreationFields(incoming);
+  const merged: JsonRecord = { ...before, ...next };
+  if (before.cache_creation !== undefined || next.cache_creation !== undefined) {
+    merged.cache_creation = { ...record(before.cache_creation), ...record(next.cache_creation) };
+    // A partial snapshot's omitted total is not zero, nor a delta to add. Read
+    // explicit totals before deriving a sum from the merged pair of buckets.
+    const total = counter(sources(incoming).rawTotal) ?? counter(sources(previous).rawTotal);
+    if (total !== null) merged.cache_creation_input_tokens = total;
+  }
+  const statuses = [readCacheWriteUsage(previous).status, readCacheWriteUsage(incoming).status];
+  if (statuses.includes("invalid")) merged.cache_creation_tier_status = "invalid";
+  else if (statuses.includes("inconsistent")) merged.cache_creation_tier_status = "inconsistent";
+  return cacheCreationFields(merged);
 }
 
 export function storedCacheWriteUsage(
