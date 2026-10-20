@@ -74,7 +74,7 @@ export async function executeSmartRouting(task: A2ATask): Promise<SmartRoutingRe
     metadata: {
       routing_explanation:
         `Selected ${responseModel} via provider "${provider}" ` +
-        `(latency: ${latencyMs}ms, cost: ${actualCost.toFixed(4)})`,
+        `(latency: ${latencyMs}ms, cost: $${actualCost.toFixed(4)})`,
       requested_combo: route.requestedCombo,
       confirmed_combo: confirmedCombo,
       dispatched_model: route.model,
