@@ -1,1 +1,0 @@
-- **test(cache):** Wait for loaded provider data before asserting cache statistics, avoiding a race against the static tab label ([#0](https://github.com/diegosouzapw/OmniRoute/pull/0)) — thanks @pacocartones
