@@ -1,0 +1,1 @@
+- **feat(audio):** Add ElevenLabs sound effects, music composition, streaming, detailed responses and composition plans with key-scoped credentials, plus unified music generation and model discovery — thanks @felipemarques
