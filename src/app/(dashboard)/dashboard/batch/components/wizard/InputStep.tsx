@@ -25,6 +25,10 @@ async function readFileContent(file: File): Promise<string> {
   return headText + "\n[...sample only...]\n" + tailText;
 }
 
+function getSourceContent(input: WizardInput): string | null | undefined {
+  return input.kind === "csv" ? input.csvContent : input.rawContent;
+}
+
 interface InputStepProps {
   input: WizardInput;
   onChange: (input: WizardInput) => void;
@@ -113,7 +117,7 @@ export default function InputStep({ input, onChange, destination }: InputStepPro
     onChange({ ...input, rawContent: jsonl, csvMapping: input.csvMapping });
   }
 
-  const sourceContent = isCsv ? input.csvContent : input.rawContent;
+  const sourceContent = getSourceContent(input);
   const isLargeFile = sourceContent != null && sourceContent.includes("[...sample only...]");
   const hasFile = input.fileName != null && sourceContent != null;
   const csvMappingReady = isCsv && input.rawContent != null;
