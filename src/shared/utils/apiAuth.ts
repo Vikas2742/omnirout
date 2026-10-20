@@ -9,7 +9,7 @@
 
 import { cookies } from "next/headers";
 import { getOrCreateBootstrapToken, peekBootstrapToken } from "@/lib/auth/bootstrapToken";
-import { getSettings } from "@/lib/db/settings";
+import { getCachedSettings } from "@/lib/db/readCache";
 import {
   AUTHZ_HEADER_PEER_LOCALITY,
   BOOTSTRAP_TOKEN_HEADER,
@@ -468,7 +468,9 @@ export async function isAuthRequired(
   options?: AuthRequiredOptions
 ): Promise<boolean> {
   try {
-    const settings = await getSettings();
+    // Cached read (5s TTL): updateSettings() busts it synchronously, so
+    // requireLogin flips take effect on the very next request.
+    const settings = await getCachedSettings();
     if (settings.requireLogin === false) return false;
 
     if (
