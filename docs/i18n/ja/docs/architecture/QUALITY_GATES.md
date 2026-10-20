@@ -19,215 +19,212 @@
 
 ### 候補の受け入れ
 
-CI ワークフローと Quality Gates ワークフローは、それぞれ安定した判定結果 `Gate / CI` と
+CI および Quality Gates ワークフローは、それぞれ安定した判定結果である `Gate / CI` と
 `Gate / Quality` を出力します。バージョン管理された受け入れポリシーでは、すべての上流ジョブを
-必須またはアドバイザリとして列挙します。適用対象となる必須ジョブは成功しなければなりません。
-結果が欠落、キャンセル済み、スキップ済み、保留中、不明の場合、PASS を確定できません。有効な
-docs-only または catalog-only の分類により、コードレーンが適用対象外になる場合がありますが、
-ドラフト PR は受け入れ対象の候補ではありません。`hotfix` ラベルによってエビデンス要件が
-免除されることはありません。
+必須またはアドバイザリとして列挙しています。該当する必須ジョブは成功しなければなりません。結果が
+欠落、キャンセル済み、スキップ済み、保留中、または不明の場合、PASS を確定できません。有効な
+docs-only または catalog-only の分類によって、コードレーンを適用対象外にできますが、
+ドラフト PR は受け入れ可能な候補ではありません。`hotfix` ラベルがあってもエビデンスは免除されません。
 
-両方のワークフローは、PR、main/release ブランチへのプッシュ、手動ディスパッチ、および
-マージグループイベントを対象とします。プッシュ、ディスパッチ、マージグループでは、
-すべての選択対象が実行されます。フォークとマージグループでは、通常はセルフホストランナーを
-選択するジョブにホストランナーを使用します。ロールアウト前に、十分なホスト容量があることを
-確認する必要があります。
+両方のワークフローは、PR、main/release ブランチへの push、手動 dispatch、および
+merge-group イベントを対象とします。push、dispatch、merge-group では、すべての選択対象を実行します。fork
+および merge group では、通常は self-hosted runner を選択するジョブにも hosted runner を使用します。
+ロールアウト前に、十分な hosted capacity があることを検証する必要があります。
 
-各 JSON レシートは、チェックアウトされた SHA、ワークフロー実行、および試行を識別します。
-CLI は、チェックアウト SHA とイベント SHA の不一致を拒否します。ワークフローテストでは、
-ポリシーのメンバーシップを判定ジョブの `needs` リストに結び付けるため、新規または削除された
-レーンが暗黙のうちに消えることはありません。レシートが対象とするのは、それ自身の
-ワークフローであり、公開、デプロイ、または既存のアドバイザリスキャナーの内部処理ではありません。
-ブランチルールで両方のチェック名を有効化することは、別途必要な管理上の変更です。これらの
-ジョブを追加するだけでは、ブランチは保護されません。
+各 JSON レシートは、checkout された SHA、workflow run、および attempt を識別します。
+CLI は、checkout SHA と event SHA の不一致を拒否します。ワークフローテストでは、ポリシーのメンバーシップを
+判定ジョブの `needs` リストに紐付けるため、新規レーンや削除されたレーンが暗黙のうちに消失することはありません。
+レシートが対象とするのは自身のワークフローであり、公開、デプロイ、または既存のアドバイザリスキャナーの内部処理は
+対象外です。ブランチルールで両方のチェック名を有効化することは、別個の管理上の変更です。これらのジョブを追加する
+だけでは、ブランチは保護されません。
 
 ### 静的スキャン一覧
 
-バージョン管理された npm エイリアス一覧と静的スキャンのメンバーシップは、
+バージョン管理された npm alias 一覧と静的スキャンのメンバーシップは、
 `config/quality/gate-manifest.json` にあります。`npm run check:gate-manifest` を実行して、
-スクリプト名と正確なコマンドを `package.json` と照合して検証してください。追加、削除、
-コマンドのずれがあると、ローカルフックと CI の変更分類ジョブの両方が失敗します。
-エイリアスは、ワークフロージョブ、マトリックスインスタンス、テストケースのいずれでもありません。
-これらの数を同等のものとして示してはなりません。
+スクリプト名と正確なコマンドを `package.json` と照合してください。追加、削除、または
+コマンドの相違があると、ローカルフックと CI の変更分類ジョブの両方が失敗します。
+alias は workflow job、matrix instance、test case のいずれでもありません。これらの数を
+相互に置き換え可能なものとして提示してはなりません。
 
-選択されたエイリアスを実行せずに確認するには、`npm run quality:scan -- --list` または
-`npm run quality:scan:fast -- --list` を使用してください。ランナーは npm エントリポイントを
-呼び出すため、設定されている場合の Bun を含め、そのランタイムが維持されます。マニフェストでは、
-これらのプロファイルに含まれないエイリアスを個別に呼び出されるものとして記録し、読み取り専用の
-スキャンプロファイルではメンテナンスコマンドを禁止しています。
+選択された alias を実行せずに確認するには、`npm run quality:scan -- --list` または
+`npm run quality:scan:fast -- --list` を使用します。runner は npm entrypoint を呼び出すため、
+設定されている場合の Bun を含め、その runtime が維持されます。
+manifest では、これらのプロファイル外の alias を個別に呼び出されるものとして記録しており、
+read-only scan profile では maintenance command が禁止されています。
 
-これらのプロファイルが対象とするのは静的スキャンのみです。製品テスト、カバレッジ、
-パッケージング、外部チェック、または候補に対するリリース受け入れ全体を保証するものではありません。
-ワークフローの受け入れでは、リンクされた `config/quality/admission-policy.json` と
-`scripts/quality/admission-verdict.mjs` を使用します。リリースオブザーバープロファイルは
-引き続き別個に扱われます。適用対象のチェックとレシートは、それぞれ独立して確認してください。
-以下の説明文による一覧は参考情報であり、ゲートが実際に実行されたことの証明ではありません。
+これらのプロファイルが対象とするのは静的スキャンのみです。product test、coverage、packaging、
+external check、または候補の完全な release acceptance を保証するものではありません。
+workflow admission では、リンクされた `config/quality/admission-policy.json` と
+`scripts/quality/admission-verdict.mjs` を使用します。release-observer profile は引き続き別扱いです。
+適用される check と receipt を個別に確認してください。以下の文章による一覧は参考情報であり、
+ゲートが実際に実行されたことの証明ではありません。
 
-スクリプトは `scripts/check/`（ポリシーゲート）と `scripts/quality/`（ラチェットエンジン）に
-配置されています。CI の信頼できる唯一の情報源は `.github/workflows/ci.yml` です。
+スクリプトは `scripts/check/`（policy gate）および `scripts/quality/`（ratchet engine）にあります。
+CI の信頼できる唯一の情報源は `.github/workflows/ci.yml` です。
 
-### リリース PR の高速パス（`quality.yml`）
+### Release PR fast-path（`quality.yml`）
 
-`.github/workflows/quality.yml` は、main/release の PR、保護対象ブランチへのプッシュ、
-ディスパッチ、およびマージグループにおいて CI を補完します。PR では、パスでフィルタリングされた
-高速チェックを使用します。恒久的に無効化されていた重複ビルドは削除されました。実際の
-ビルド、パッケージ、起動チェックは引き続き CI に残っています。
+`.github/workflows/quality.yml` は、main/release PR、protected branch への
+push、dispatch、merge group において CI を補完します。PR では、path-filtered fast check を使用します。恒久的に
+無効化されていた重複 build は削除されました。実際の build/package/boot check は引き続き CI に残っています。
 
-| ジョブ                                           | スコープ                                                                                                                                                                              | ブロッキング           |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| `Docs Gates (fast-path)`                         | ドキュメント／コードの PR、API ドキュメント参照および docs-all                                                                                                                        | はい                   |
-| `Fast Quality Gates`                             | コード PR、静的チェック、型チェック、ダッシュボードの型チェック、影響を受ける単体テスト                                                                                               | はい                   |
-| `Forgotten sibling tests`                        | コード PR、変更されたモジュールから静的コンシューマーと兄弟テスト候補を追跡。バレルおよび動的インポートのパスは、参照された許可リストの例外とともにアドバイザリ診断として報告されます | **アドバイザリ**       |
-| `Vitest (fast-path)`                             | コード PR、高速 vitest スイート                                                                                                                                                       | はい                   |
-| `Unit Tests fast-path`                           | コード PR、4 シャードの単体テストスイート                                                                                                                                             | はい                   |
-| `No new ESLint warnings`                         | コード PR、抑制設定を考慮した lint ガード                                                                                                                                             | はい（フォークを含む） |
-| `Merge integrity (changelog + generated skills)` | ドラフトではない PR、変更履歴と生成されたスキルの同期                                                                                                                                 | はい（フォークを含む） |
+| ジョブ                                           | スコープ                                                                                                                                                                                    | ブロッキング        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `Docs Gates (fast-path)`                         | Docs/code PR。API docs refs および docs-all                                                                                                                                                 | はい                |
+| `Fast Quality Gates`                             | Code PR。static check、typecheck、dashboard typecheck、影響を受ける unit test                                                                                                               | はい                |
+| `Forgotten sibling tests`                        | Code PR。変更された module から static consumer と候補 sibling test を追跡。barrel および dynamic-import path は、参照された allowlist exception とともにアドバイザリ診断として報告されます | **アドバイザリ**    |
+| `Vitest (fast-path)`                             | Code PR。fast vitest suite                                                                                                                                                                  | はい                |
+| `Unit Tests fast-path`                           | Code PR。4-shard unit suite                                                                                                                                                                 | はい                |
+| `No new ESLint warnings`                         | Code PR。suppression-aware lint guard                                                                                                                                                       | はい（fork を含む） |
+| `Merge integrity (changelog + generated skills)` | ドラフトではない PR。changelog と generated skill の同期                                                                                                                                    | はい（fork を含む） |
 
-#### 失念された兄弟テストのレポート
+#### Forgotten sibling tests レポート
 
-`npm run check:forgotten-sibling-tests` は、テスト影響マップで使用されるインポートリゾルバーを
-再利用します。変更された各本番モジュールについて、候補テストがプルリクエストの差分に含まれていない
-場合に、決定論的な `changed module/symbol -> static consumer -> candidate sibling test` チェーンを
-報告します。Markdown のサマリーと JSON の結果は、ブロッキング方式でのロールアウトに先立つ
-調整のため、`forgotten-sibling-tests` ワークフローアーティファクトとして保持されます。
+`npm run check:forgotten-sibling-tests` は、test-impact map の基盤となる import resolver を再利用します。
+変更された各 production module について、候補 test が pull-request diff に含まれていない場合、
+決定論的な `changed module/symbol -> static consumer -> candidate sibling test` チェーンを報告します。
+ブロッキングとしてロールアウトする前の調整用に、Markdown summary と JSON result が
+`forgotten-sibling-tests` workflow artifact として保持されます。
 
-バレル再エクスポートと動的インポートは解決診断専用であり、ブロッキング検出を生成することはありません。レビュー済みの例外は
-`config/quality/forgotten-sibling-allowlist.json` にあります。各エントリにはコンシューマーと候補
-テストを指定し、具体的な理由を記載して、GitHub issue または pull request へのリンクを含める必要があります。不正な形式のエントリは
-安全側に倒して失敗します。例外によって、削除された候補テストや `.skip`/`.todo` を追加する差分を抑制することはできません。
-アサーションの弱体化やその他のマスキングについては、独立してブロッキングする
-`check:test-masking` ゲートが引き続き管理します。
+Barrel 再エクスポートと動的インポートは、解決に関する診断情報としてのみ扱われ、ブロッキング対象の検出結果になることはありません。レビュー済みの例外は
+`config/quality/forgotten-sibling-allowlist.json` に記載されています。各エントリには、コンシューマーと候補
+テストを明記し、具体的な理由を示し、GitHub issue または pull request へのリンクを含める必要があります。不正な形式のエントリは
+安全側に倒して失敗として扱われます。例外を使用して、削除された候補テストや、`.skip`/`.todo` を追加する差分を抑制することはできません。
+アサーションの弱体化やその他のマスキングについては、独立してブロッキングを行う
+`check:test-masking` ゲートが引き続き担当します。
 
 ### ジョブ: `lint`
 
-`main` へのすべての PR で実行されます。失敗した場合はマージをブロックします。
+`main` に対するすべての PR で実行されます。失敗した場合はマージをブロックします。
 
-| スクリプト (`npm run ...`)        | 検証内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | ブロッキング                          |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| `check:node-runtime`              | Node.js のバージョンがサポート対象範囲内であること                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | はい                                  |
-| `check:cycles`                    | `src/` + `open-sse/`; AST (`import` / `export`, tsconfig `paths`). `check:cycles`: `cycles > 0 → exit 1`; `SCC → stderr` (#15281). `check:cycles:ratchet`（CI で実行されるもの）は、件数が `quality-baseline.json` の `metrics.cycles` 上限を超えるとブロックします。現在は 14、`direction: down` であるため、値は減少のみ可能です（#15159 G-01/G-02）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | はい（ラチェット）                    |
-| `check:boundary`                  | `open-sse → src` の結合: エンジンからアプリへの一意なファイル間インポート（`scripts/quality/measure-boundary.mjs`。エッジ一覧は v4 のコア／モジュール分割修正バックログです）。Bare 実行はアドバイザリーレポート（`quality:boundary` と同じ）です。`check:boundary:ratchet`（CI で実行され、`quality.yml` の高速ゲートのラチェットループにも含まれるもの）は、カウントが `quality-baseline.json` の `metrics.boundaryOpenSseToSrc` 上限を超えるとブロックします。上限は測定値 771 で初期化され、`direction: down` です。`--update` では値を下げることしかできません。PR ではベース相対です（`--base-ref`、以下を参照）                                                                                                                                                                                                                                                                                                                                                                                                                    | はい（ラチェット）                    |
-| `check:route-validation:t06`      | すべてのルートに Zod スキーマが存在すること（Tier 6 ポリシー）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | はい                                  |
-| `check:any-budget:t11`            | `@ts-expect-error // any` の数が予算を超えていないこと（Tier 11 catraca）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | はい                                  |
-| `check:provider-consistency`      | `providers.ts` 内のすべてのプロバイダーに、`providerRegistry.ts` 内の対応するエントリが存在すること（また、その逆も allowlist の範囲内で成立すること）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | はい                                  |
-| `check:model-lifecycle`           | 手動で管理されている3つのルーティングテーブルが、チェックイン済みのライフサイクルスナップショット（#11503）との整合性を維持していること：`FITNESS_TABLE`（`taskFitness.ts`）は、`REGISTRY` がルーティング可能な廃止済み id をスコアリングしないこと、すべての `BUILT_IN_ALIASES` のターゲットが `REGISTRY` に存在し、廃止済み id のスナップショットには存在しないこと、`REGISTRY` に残っているすべての廃止済み id が転送されるか `allowedRetiredInCatalog` に記載されていること、そして `DEFAULT_DEGRADATION_MAP` のソースまたはターゲットがそのスナップショットで廃止済みとして記載されていないこと。これは、モデルが現在稼働中のアップストリームによって提供されていることを証明するものではありません。オフライン — `config/quality/model-lifecycle.json` と比較します。このファイルは `npm run quality:refresh-model-lifecycle`（ネットワークを使用、CI には組み込まれていない）により手動で更新されます。`allowedRetiredInCatalog` は段階的削減のためのラチェットです。エントリを追加する場合は、必ず追跡用 issue を添えてください。 | はい                                  |
-| `check:fetch-targets`             | クライアント側の `src/` にあるすべての `fetch("/api/...")` が、実在する `route.ts` に解決されること                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | はい                                  |
-| `check:deps`                      | リポジトリ内のすべての `package.json` に含まれる、`npm install` でインストール可能なすべての依存関係が `dependency-allowlist.json` に含まれていること。新しいバージョン未固定パッケージまたは slopsquatting が疑われるパッケージはフラグ付けされます                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | はい                                  |
-| `audit:deps`                      | `npm audit`（ルート + electron）— high/critical のアドバイザリがないこと（OSV の `check:vuln-ratchet` と重複。Rationalization Backlog を参照）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | はい                                  |
-| `check:lockfile`                  | `package-lock.json` の整合性 — https レジストリ、整合性ハッシュ、ホストの上書きなし                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | はい                                  |
-| `check:licenses`                  | 本番環境用依存関係に対する SPDX ライセンス許可リスト                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | はい                                  |
-| `check:tracked-artifacts`         | ビルド成果物およびコミットされた `node_modules` シンボリックリンクがないこと（husky の pre-commit でも実行。pre-push は意図的に軽量 — #6716）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | はい                                  |
-| `check:ai-attribution`            | PR のコミット、タイトル、本文に AI/bot の `Co-Authored-By` トレーラーや AI 生成フッターがないこと — ハードルール #16（PR→`release/**` に対する `quality.yml` の fast-gates ループ内 — イベントペイロードを読み取り、PR 以外では何もしない — および PR→`main` に対する `ci.yml` の lint にある PR 専用ステップ。husky の `commit-msg` フックでも実行。人間の共同作成者は許可。#14436）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `check:vitest-exclusions`         | すべての Vitest 除外で追跡用 Issue を指定し、`config/quality/vitest-exclusions.json` に記載すること（#13204）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | はい                                  |
-| `check:file-size`                 | ソースファイル（`src/`、`open-sse/`、`electron/`、`bin/` 内の `.ts`/`.tsx`）は `cap` 以内、テストファイル（`*.test.ts(x)`）は `testCap` 以内に維持すること。`file-size-baseline.json` で固定されたファイル（`frozen` / `testFrozen`）は記録済みサイズを超えて増大してはならない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | はい                                  |
-| `check:error-helper`              | executor/handler 内のエラーレスポンスが `buildErrorBody()` / `sanitizeErrorMessage()` を使用していること（厳格ルール #12）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | はい                                  |
-| `check:migration-numbering`       | マイグレーション SQL ファイルに欠番や重複がなく、連番になっていること                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | はい                                  |
-| `check:public-creds`              | `publicCreds.ts` 以外に OAuth の `client_id`/`client_secret` または Firebase Web キーのリテラルが存在しないこと（厳格ルール #11）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | はい                                  |
-| `check:db-rules`                  | `src/lib/db/` モジュール以外に生の SQL が存在せず、`localDb.ts` からのバレルインポートがないこと（厳格ルール #2/#5）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | はい                                  |
-| `check:known-symbols`             | ディスパッチテーブルに登録されているプロバイダー executor、ルーティング戦略、およびトランスレーターがディスク上のファイルと一致し、孤立したシンボルや未宣言のシンボルがないこと                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | はい                                  |
-| `check:route-guard-membership`    | 子プロセスを生成するすべてのルートが `isLocalOnlyPath()` によって分類されていること（厳格ルール #15/#17）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | はい                                  |
-| `check:test-discovery`            | リポジトリ内のすべての `*.test.ts` / `*.spec.ts` ファイルが、少なくとも1つのテストランナーによって収集される（ラチェット方式: `test-discovery-baseline.json` 内の孤立ファイル一覧は縮小のみ可能）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | はい                                  |
-| `check:agent-skills-sync`         | 生成された agent-skills アーティファクトが、そのソースカタログと一致している（差異なし）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `check:provider-asset-provenance` | プロバイダーのロゴ／アセットに、記録済みの出所情報エントリが付与されている                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `lint:json`                       | JSON 設定ファイルが正常に解析され、リポジトリの lint ルールを満たしている                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `typecheck:core`                  | エラーなしで TypeScript をコンパイルできる（勧告的な警告のみ）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | はい                                  |
-| `typecheck:noimplicit:core`       | 厳格な `noImplicitAny` — 将来を見据えたチェック。既存の多くの呼び出し箇所には、依然として型注釈が必要                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | **勧告**（`continue-on-error: true`） |
-| `check:dashboard-typecheck`       | `src/app/(dashboard)/**` に限定した `tsc`（#7033）— `typecheck:core` の厳選された27ファイルの許可リストにはダッシュボードの TSX が1つも含まれておらず、`next build` も型チェックを一切行わない（`next.config.mjs` で `ignoreBuildErrors: true` が設定されている）ため、そこで発生した孤立識別子のリグレッション（#6625/#6909）は CI で検出できなかった。ファイルごと／TS コードごとの件数を固定したベースライン（`config/quality/dashboard-typecheck-baseline.json`、`check:known-symbols` と同じ古いベースラインの強制パターン）と差分比較する。ベースライン化された件数を超える新規エラーのみがゲートを失敗させる。既存のエラーを修正した際は、`--update` でラチェットを縮小する。                                                                                                                                                                                                                                                                                                                                                      | はい                                  |
+| スクリプト (`npm run ...`)        | 検証内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ブロッキング                              |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `check:node-runtime`              | Node.js のバージョンがサポート対象の範囲内であること                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | はい                                      |
+| `check:cycles`                    | `src/` + `open-sse/` 全体の循環インポート（AST ベース、tsconfig の `paths` を解決）。Bare 版は循環が1つでも存在すると必ず終了コード1で終了し（#15281 以降は安全側に倒して失敗）、SCC を一覧表示します。`check:cycles:ratchet`（CI で実行されるもの）は、件数が `quality-baseline.json` の `metrics.cycles` 上限を超えるとブロックします。現在の上限は14で、`direction: down` のため減少のみ可能です（#15159 G-01/G-02）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | はい（ラチェット）                        |
+| `check:boundary`                  | `open-sse → src` の結合関係: エンジンからアプリへの一意なファイル間インポート（`scripts/quality/measure-boundary.mjs`。エッジ一覧は v4 のコア／モジュール分割に関する改善バックログです）。Bare 版は勧告レポートです（`quality:boundary` と同じ）。`check:boundary:ratchet`（CI で実行され、`quality.yml` の高速ゲート用ラチェットループにも含まれます）は、件数が `quality-baseline.json` の `metrics.boundaryOpenSseToSrc` 上限を超えるとブロックします。上限の初期値は実測値の771で、`direction: down` です。`--update` では上限を引き下げることしかできません。PR ではベース相対です（`--base-ref`、以下を参照）                                                                                                                                                                                                                                                                                                                                                                                                | はい（ラチェット）                        |
+| `check:route-validation:t06`      | すべてのルートに Zod スキーマが存在すること（Tier 6 ポリシー）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | はい                                      |
+| `check:any-budget:t11`            | `@ts-expect-error // any` の数が予算を超えていないこと（Tier 11 catraca）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | はい                                      |
+| `check:provider-consistency`      | `providers.ts` 内のすべてのプロバイダーに、`providerRegistry.ts` 内の対応するエントリが存在すること（およびその逆。許可リストの範囲内）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | はい                                      |
+| `check:model-lifecycle`           | 手動で保守される3つのルーティングテーブルが、チェックイン済みのライフサイクルスナップショット（#11503）との整合性を維持していること：`FITNESS_TABLE`（`taskFitness.ts`）は、`REGISTRY` がルーティング可能な廃止済み id を評価しないこと、すべての `BUILT_IN_ALIASES` のターゲットが `REGISTRY` に存在し、廃止済み id のスナップショットには存在しないこと、`REGISTRY` に残っているすべての廃止済み id が転送されるか `allowedRetiredInCatalog` に記載されていること、また `DEFAULT_DEGRADATION_MAP` のソースまたはターゲットがそのスナップショットで廃止済みになっていないこと。これは、モデルが現在稼働中のアップストリームから提供されていることを証明するものではありません。オフライン — `config/quality/model-lifecycle.json` と比較します。このファイルは `npm run quality:refresh-model-lifecycle`（ネットワークを使用。CI には組み込まれていません）で手動更新されます。`allowedRetiredInCatalog` は段階的削減のためのラチェットです。エントリを追加する場合は、必ずトラッキング issue を伴わせてください。 | はい                                      |
+| `check:fetch-targets`             | クライアント側の `src/` にあるすべての `fetch("/api/...")` が、実在する `route.ts` に解決されること                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | はい                                      |
+| `check:deps`                      | リポジトリ内のすべての `package.json` に含まれる、`npm install` でインストール可能なすべての依存関係が `dependency-allowlist.json` に含まれていること。新しいバージョン未固定パッケージまたはスロップスクワッティングされたパッケージは警告されます                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | はい                                      |
+| `audit:deps`                      | `npm audit`（ルート + electron）— high/critical のアドバイザリがないこと（osv の `check:vuln-ratchet` と重複。Rationalization Backlog を参照）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | はい                                      |
+| `check:lockfile`                  | `package-lock.json` の整合性 — https レジストリ、整合性ハッシュ、ホストのオーバーライドなし                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | はい                                      |
+| `check:licenses`                  | 本番環境の依存関係に対する SPDX ライセンス許可リスト                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | はい                                      |
+| `check:tracked-artifacts`         | ビルド成果物およびコミット済みの `node_modules` シンボリックリンクがないこと（husky の pre-commit でも実行。pre-push は意図的に軽量化 — #6716）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | はい                                      |
+| `check:ai-attribution`            | PR のコミット、タイトル、本文に AI／bot の `Co-Authored-By` トレーラーや AI 生成フッターがないこと — 厳格なルール #16（PR→`release/**` では `quality.yml` の高速ゲートループ内で実行 — イベントペイロードを読み取り、PR 以外では何もしない — また、PR→`main` では `ci.yml` の lint にある PR 専用ステップで実行。husky の `commit-msg` フックでも実行。人間の共同作成者は許可。#14436）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `check:vitest-exclusions`         | すべての Vitest 除外項目に追跡用 Issue が明記され、`config/quality/vitest-exclusions.json` に記載されていること（#13204）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | はい                                      |
+| `check:file-size`                 | ソースファイル（`src/`、`open-sse/`、`electron/`、`bin/` 内の `.ts`／`.tsx`）が `cap` 以内、テストファイル（`*.test.ts(x)`）が `testCap` 以内であること。`file-size-baseline.json` で凍結されたファイル（`frozen`／`testFrozen`）は、記録されたサイズを超えて増大してはならない                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | はい                                      |
+| `check:error-helper`              | executor/handler のエラーレスポンスで `buildErrorBody()` / `sanitizeErrorMessage()` を使用すること（厳格ルール #12）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | はい                                      |
+| `check:migration-numbering`       | マイグレーション SQL ファイルの番号が連番であり、欠番や重複がないこと                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | はい                                      |
+| `check:public-creds`              | `publicCreds.ts` 以外に OAuth の `client_id`/`client_secret` または Firebase Web キーのリテラルが存在しないこと（厳格ルール #11）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | はい                                      |
+| `check:db-rules`                  | `src/lib/db/` モジュール以外に生の SQL が存在せず、`localDb.ts` からのバレルインポートがないこと（厳格ルール #2/#5）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | はい                                      |
+| `check:known-symbols`             | ディスパッチテーブルに登録されたプロバイダー executor、ルーティング戦略、translator がディスク上のファイルと一致し、孤立または未宣言のシンボルがないこと                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | はい                                      |
+| `check:route-guard-membership`    | 子プロセスを生成するすべてのルートが `isLocalOnlyPath()` によって分類されていること（厳格ルール #15/#17）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | はい                                      |
+| `check:test-discovery`            | リポジトリ内のすべての `*.test.ts` / `*.spec.ts` ファイルが、少なくとも1つのテストランナーによって収集される（ラチェット方式：`test-discovery-baseline.json` 内の孤立ファイルリストは減少のみ可能）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | はい                                      |
+| `check:agent-skills-sync`         | 生成された agent-skills アーティファクトがソースカタログと一致している（ドリフトなし）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `check:provider-asset-provenance` | プロバイダーのロゴ／アセットに、記録済みの出自エントリが付与されている                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `lint:json`                       | JSON 設定ファイルが解析可能で、リポジトリの lint ルールを満たしている                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `typecheck:core`                  | エラーなしで TypeScript をコンパイルできる（警告は参考情報のみ）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | はい                                      |
+| `typecheck:noimplicit:core`       | 厳格な `noImplicitAny` — 将来を見据えたチェック。既存の多くの呼び出し箇所には、依然としてアノテーションが必要                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | **参考情報**（`continue-on-error: true`） |
+| `check:dashboard-typecheck`       | `src/app/(dashboard)/**` に限定した `tsc`（#7033）— `typecheck:core` の厳選された27ファイルの許可リストには dashboard の TSX が1つも含まれず、`next build` でも型チェックされない（`next.config.mjs` で `ignoreBuildErrors: true` が設定されている）ため、そこで発生した孤立識別子のリグレッション（#6625/#6909）は CI で検出できなかった。ファイルごと／TS コードごとの件数を固定したベースライン（`config/quality/dashboard-typecheck-baseline.json`、`check:known-symbols` と同じ古いエントリの強制除去パターン）との差分を取る。ベースライン化された件数を超える新しいエラーのみがゲートを失敗させる。既存エラーが修正された場合は、`--update` でラチェットを引き下げる。                                                                                                                                                                                                                                                                                                                                       | はい                                      |
 
-### ジョブ: `quality-gate`
+### ジョブ：`quality-gate`
 
-`test-coverage` の後に実行されます。失敗した場合、マージをブロックします。
+`test-coverage` の後に実行されます。失敗した場合はマージをブロックします。
 
 | スクリプト                   | 検証内容                                                                                                                                                                                    | ブロッキング             |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | `quality:collect`            | `quality-metrics.json`（ESLint の警告数、マージ済みシャードレポートから取得したカバレッジ）を出力します                                                                                     | はい（ラチェットの前段） |
-| `quality:ratchet`            | `quality-baseline.json` 内の各メトリクスが悪化していないこと（ESLint の警告数 ≤ ベースライン、カバレッジ ≥ ベースライン）                                                                   | はい                     |
+| `quality:ratchet`            | `quality-baseline.json` の各メトリクスが悪化していないこと（ESLint の警告数 ≤ ベースライン、カバレッジ ≥ ベースライン）                                                                     | はい                     |
 | `check:duplication`          | コード重複（jscpd@4）が `quality-baseline.json` のベースラインを超えていないこと                                                                                                            | はい                     |
-| `check:complexity`           | ファイルレベルの循環的複雑度が上限を超えていないこと（コア ESLint の `complexity` + `max-lines-per-function`）                                                                              | はい                     |
-| `check:cognitive-complexity` | 認知的複雑度ラチェット（`eslint-plugin-sonarjs`）— 個別の ESLint パス。CI では両方を単一の `check:complexity-ratchets` ステップとしてまとめて実行します                                     | はい                     |
-| `check:dead-code`            | 未使用のエクスポート／ファイルのラチェット（knip）がベースラインより悪化していないこと                                                                                                      | はい                     |
-| `check:compression-budget`   | 圧縮ベンチマークの予算 — エンジンごとのトークン削減率の下限が悪化してはならないこと                                                                                                         | はい                     |
+| `check:complexity`           | ファイル単位の循環的複雑度が上限を超えていないこと（コア ESLint の `complexity` + `max-lines-per-function`）                                                                                | はい                     |
+| `check:cognitive-complexity` | 認知的複雑度のラチェット（`eslint-plugin-sonarjs`）— 個別の ESLint パス。CI では両方を単一の `check:complexity-ratchets` ステップとして統合実行します                                       | はい                     |
+| `check:dead-code`            | 未使用のエクスポート／ファイルのラチェット（knip）がベースラインから悪化していないこと                                                                                                      | はい                     |
+| `check:compression-budget`   | 圧縮ベンチマークの予算 — エンジンごとのトークン節約率の下限が悪化していないこと                                                                                                             | はい                     |
 | `check:type-coverage`        | 型付け率のラチェット（`type-coverage`）が悪化していないこと。`typecheck:noimplicit:core` の大部分を包含します                                                                               | はい                     |
-| `check:codeql-ratchet`       | 未解決の CodeQL アラート数が増加していないこと（`gh api` 経由で読み取り。トークンがない場合は正常にスキップ）— 更新頻度と手動トリガーについては、以下の「CodeQL ratchet」を参照してください | はい                     |
+| `check:codeql-ratchet`       | 未解決の CodeQL アラート数が悪化していないこと（`gh api` 経由で読み取り。トークンがない場合は正常にスキップ）— 更新頻度と手動トリガーについては、以下の「CodeQL ratchet」を参照してください | はい                     |
 
 ### ジョブ: `quality-extended`
 
-ジョブ全体はアドバイザリです（`continue-on-error: true`）。npm ベースのラチェットは
+ジョブ全体がアドバイザリです（`continue-on-error: true`）。npm ベースのラチェットは
 実際に実行されます。外部スキャナーは `gh release download` 経由でインストールされ、バイナリが
-依然として存在しない場合は自己スキップ（終了コード 0）します。
+まだ存在しない場合は自動的にスキップ（終了コード 0）します。
 
 | スクリプト               | 検証内容                                                                                                                                                                                                                                 | ブロッキング                                      |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | `check:circular-deps`    | 循環依存がないこと（dpdm）                                                                                                                                                                                                               | **アドバイザリ**                                  |
 | `check:bundle-size`      | バンドルサイズが上限を超えていないこと                                                                                                                                                                                                   | **アドバイザリ**                                  |
-| `check:secrets`          | シークレットスキャン（gitleaks）— バイナリが存在しない場合はスキップ                                                                                                                                                                     | **アドバイザリ**                                  |
-| `check:vuln-ratchet`     | 依存関係の脆弱性（osv-scanner）が悪化していないこと — バイナリが存在しない場合はスキップ                                                                                                                                                 | **アドバイザリ**                                  |
+| `check:secrets`          | シークレットスキャン（gitleaks）— バイナリがない場合はスキップします                                                                                                                                                                     | **アドバイザリ**                                  |
+| `check:vuln-ratchet`     | 依存関係の脆弱性（osv-scanner）が悪化していないこと — バイナリがない場合はスキップします                                                                                                                                                 | **アドバイザリ**                                  |
 | `check:workflows`        | ワークフローの lint（actionlint + zizmor）。スキャナーの欠落／破損、無効なレポート、またはラチェットのベースライン欠落は INCOMPLETE として失敗します。有効な検出結果には、選択された厳格／アドバイザリ／ラチェットポリシーが適用されます | 実行必須。CI では zizmor ラチェットがブロッキング |
-| `check:openapi-breaking` | ベースブランチと比較した公開 API コントラクト（`openapi.yaml`）の破壊的変更（oasdiff）— `openapiBreaking=N` を出力します。oasdiff が存在しない場合、またはベース仕様を解決できない場合はスキップします                                   | **アドバイザリ**                                  |
+| `check:openapi-breaking` | ベースブランチと比較した公開 API 契約（`openapi.yaml`）の破壊的変更（oasdiff）— `openapiBreaking=N` を出力します。oasdiff がない場合、またはベース仕様を解決できない場合はスキップします                                                 | **アドバイザリ**                                  |
 
 ### ジョブ: `docs-sync-strict`
 
-`main` へのすべての PR で実行されます。失敗した場合、マージをブロックします。
+`main` に対するすべての PR で実行されます。失敗した場合はマージをブロックします。
 
-| スクリプト                     | 検証内容                                                                                                                                                                  | ブロッキング                      |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `check:docs-all`               | 以下の6つのサブゲートを順番に実行するメタゲート                                                                                                                           | はい                              |
-| ↳ `check:docs-sync`            | CHANGELOG / OpenAPI / llm.txt のバージョン整合性                                                                                                                          | はい                              |
-| ↳ `check:docs-counts`          | 本文中の件数（プロバイダー数、マイグレーション数など）が、実際の件数に対するラチェット範囲内にあること                                                                    | はい                              |
-| ↳ `check:env-doc-sync`         | `.env.example` 内のすべての環境変数がドキュメントの表に記載されており、その逆も成立すること                                                                               | はい                              |
-| ↳ `check:deprecated-versions`  | ドキュメント内に非推奨のバージョン文字列がないこと                                                                                                                        | はい                              |
-| ↳ `check:doc-links`            | ドキュメント内の Markdown 内部リンクが実在するファイルを参照していること（`[text]`/`(path)` 形式）                                                                        | はい                              |
-| ↳ `check:fabricated-docs`      | ドキュメントに記載されたルート、環境変数、CLI コマンド、フック名、ファイルパスがコードベース内に存在すること。`--strict` ではハードゲート、フラグなしではソフトフェイル。 | はい（CI では `--strict` を使用） |
-| `check:cli-i18n`               | CLI コマンド文字列がすべての i18n ロケールファイルに存在すること                                                                                                          | はい                              |
-| `check:openapi-coverage`       | OpenAPI 仕様が、実在するルート数についてラチェットされた最低基準以上をカバーしていること                                                                                  | はい                              |
-| `check:openapi-security-tiers` | `openapi.yaml` のセキュリティ階層アノテーションが `routeGuard.ts` の分類と一致していること                                                                                | **勧告のみ**                      |
-| `check:openapi-routes`         | `openapi.yaml` 内のすべてのパスが実在する `route.ts` に解決されること（ハルシネーション防止）                                                                             | はい                              |
-| `check:docs-symbols`           | `docs/**/*.md` 内のすべての `/api/...` 参照が実在する `route.ts` に解決されること（ハルシネーション防止）                                                                 | はい                              |
-| `i18n translation drift`       | i18n ロケールファイル内の未翻訳キー — 警告のみ                                                                                                                            | **勧告のみ**                      |
+| スクリプト                     | 検証内容                                                                                                                                                                 | ブロッキング                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| `check:docs-all`               | 以下の6つのサブゲートを順番に実行するメタゲート                                                                                                                          | はい                             |
+| ↳ `check:docs-sync`            | CHANGELOG / OpenAPI / llm.txt のバージョン整合性                                                                                                                         | はい                             |
+| ↳ `check:docs-counts`          | 本文中の数値（プロバイダー数、マイグレーション数など）が、実際の数値に対するラチェット範囲内にあること                                                                   | はい                             |
+| ↳ `check:env-doc-sync`         | `.env.example` のすべての環境変数がドキュメントの表に記載されており、その逆も成り立つこと                                                                                | はい                             |
+| ↳ `check:deprecated-versions`  | ドキュメントに非推奨のバージョン文字列がないこと                                                                                                                         | はい                             |
+| ↳ `check:doc-links`            | ドキュメント内の内部Markdownリンクが実在するファイルを参照していること（`[text]`/`(path)` 形式）                                                                         | はい                             |
+| ↳ `check:fabricated-docs`      | ドキュメントに記載されたルート、環境変数、CLIコマンド、フック名、ファイルパスがコードベース内に存在すること。`--strict` ではハードゲート、フラグなしではソフトフェイル。 | はい（CIでは `--strict` を使用） |
+| `check:cli-i18n`               | CLIコマンド文字列がすべてのi18nロケールファイルに存在すること                                                                                                            | はい                             |
+| `check:openapi-coverage`       | OpenAPI仕様が、実在するルート数についてラチェットされた下限以上をカバーしていること                                                                                      | はい                             |
+| `check:openapi-security-tiers` | `openapi.yaml` のセキュリティ階層アノテーションが `routeGuard.ts` の分類と整合していること                                                                               | **勧告のみ**                     |
+| `check:openapi-routes`         | `openapi.yaml` のすべてのパスが実在する `route.ts` に解決されること（ハルシネーション防止）                                                                              | はい                             |
+| `check:docs-symbols`           | `docs/**/*.md` 内のすべての `/api/...` 参照が実在する `route.ts` に解決されること（ハルシネーション防止）                                                                | はい                             |
+| `i18n translation drift`       | i18nロケールファイル内の未翻訳キー — 警告のみ                                                                                                                            | **勧告のみ**                     |
 
-### ジョブ: `i18n-ui-coverage`
+### ジョブ：`i18n-ui-coverage`
 
-| スクリプト                        | 検証内容                                                                                                                                                    | ブロッキング |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `check-ui-keys-coverage` (inline) | UI i18n キーのカバレッジが 65% 以上であること                                                                                                               | はい         |
-| `check-ui-value-drift` (inline)   | 書き換えられた英語の**値**に対して、古い翻訳が残っていないこと                                                                                              | はい         |
-| `check-new-key-coverage` (inline) | **新しい**英語キーがすべてのロケールで翻訳されていること — `__MISSING__:` マーカーは拒否される                                                              | はい         |
-| `check-translation-ratio`         | ロケールごとの実翻訳率（英語と同一／プレースホルダー／許可リスト外の欠落項目）が `config/quality/i18n-translation-baseline.json` + 許容幅を超えてはならない | **勧告のみ** |
+| スクリプト                             | 検証内容                                                                                                                                                          | ブロッキング |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `check-ui-keys-coverage`（インライン） | UIのi18nキーのカバレッジが65%以上であること                                                                                                                       | はい         |
+| `check-ui-value-drift`（インライン）   | 書き換えられた英語の**値**に対して、古い翻訳が残っていないこと                                                                                                    | はい         |
+| `check-new-key-coverage`（インライン） | **新しい**英語キーがすべてのロケールで翻訳されていること — `__MISSING__:` マーカーは拒否される                                                                    | はい         |
+| `check-translation-ratio`              | ロケールごとの実翻訳率（許可リスト外で英語と同一／プレースホルダー／欠落しているリーフ）が `config/quality/i18n-translation-baseline.json` + 余裕値を超えないこと | **勧告のみ** |
 
-`fetch-depth: 0` が必要です — 値ドリフトゲートはマージベースとの差分で `en.json` を比較します。
+`fetch-depth: 0` が必要です — 値ドリフトゲートは、マージベースと比較して `en.json` の差分を取得します。
 
-#### `check-ui-value-drift` — 古い翻訳の残存を防ぐゲート
+#### `check-ui-value-drift` — 古い翻訳の検出ゲート
 
-他のゲートでは構造的に検出できない、ある種の i18n リグレッションを検出します。英語の値が
-書き換えられたにもかかわらず、_以前の_英語から作成された翻訳が残り、
-英語以外のユーザーが、断定的に書かれてはいるものの現在では誤っている文言を読み続ける問題です。
+他のゲートでは構造上検出できない、ある種のi18nリグレッションを検出します。英語の値が
+書き換えられたにもかかわらず、_以前の_英語から作成された翻訳が残り続けることで、
+英語以外のユーザーが、自信に満ちた表現の、もはや誤った文面を読み続けてしまう問題です。
 
-これは実際にリリースされました。Antigravity ログインヘルパーが導入された際（#5203）、
+これは実際にリリースされました。Antigravityのログインヘルパーが導入された際（#5203）、
 `oauthModal.googleOAuthWarning` が書き換えられましたが、**43ロケール中39ロケール**には、
-運用担当者に「完全な URL をコピーして下に貼り付ける」よう指示する文言が残っていました。
-このプロバイダーでは完了できないフローです。#8463 まで見過ごされた理由は次のとおりです。
+オペレーターに「完全なURLをコピーして下に貼り付ける」よう案内する文面が残っていました。
+そのプロバイダーでは完了できないフローです。次の理由により、#8463まで見過ごされていました。
 
-- `sync-ui-keys` は**存在しない**キーのみを補完し、**古くなった**キーは更新しないため。
-- `check-ui-keys-coverage` はキーの_存在_を数えるため、古い翻訳もカバー済みとして計上されるため。
-- `check-translation-drift` は `docs/i18n/<locale>/**.md` のドキュメントミラーを追跡し、
-  `src/i18n/messages/*.json` は読み取らないため。2026-09 の再同期以降、ジョブ `docs-sync-strict` でブロッキング:
-  コアドキュメントを編集したら → `npm run i18n:run -- --files=<doc>`（セクション単位で低コスト）。
+- `sync-ui-keys` は**存在しない**キーのみを補完し、**古い**キーは更新しない。
+- `check-ui-keys-coverage` はキーの_存在_を数えるため、古い翻訳もカバー済みとして評価される。
+- `check-translation-drift` が追跡するのは `docs/i18n/<locale>/**.md` のドキュメントミラーであり、
+  `src/i18n/messages/*.json` は読み込まない。2026-09の再同期以降、ジョブ `docs-sync-strict` でブロッキング：
+  コアドキュメントを編集 → `npm run i18n:run -- --files=<doc>`（セクション単位で低コスト）。
 
-**差分を認識し、ベースラインには依存しません。** マージベースの `en.json` と
-作業ツリーを比較します。英語の値が変更された各キーについて、変更されていない
-翻訳が残っているロケールは古いものと判定されます。これは意図的に**既存の負債を凍結**します。差分からは、
-長期間存在する翻訳がどの古い英語に由来するかを判別できないため、ゲートは
-現在の変更が触れる箇所のみを判定します。代替案（キーごとのハッシュベースライン）では、
-約600 KBの生成ファイルが必要となり、既存の最大ベースラインの3倍のサイズで、i18n PRのたびに変更が発生します。
+**差分ベースであり、ベースライン依存ではありません。** マージベースの `en.json` と
+作業ツリーを比較します。英語の値が変更されたすべてのキーについて、変更前の翻訳が
+そのまま残っているロケールは古いと見なされます。これは意図的に**既存の負債を固定**します。
+差分からは、長期間存在する翻訳がどの古い英語に由来するかを判別できないため、ゲートは
+現在の変更が触れる箇所のみを判定します。代替案であるキーごとのハッシュベースラインでは、
+生成ファイルが約600 KBとなり、既存の最大ベースラインの3倍に達するうえ、i18n PRのたびに
+大量の差分が生じます。
 
 これを満たす方法は2つあります。
 
 1. 影響を受ける翻訳を更新する、または
-2. `__MISSING__:<new english>` に設定する — これにより、ランタイムは修正済みの英語を返し
-   （`src/i18n/request.ts::deepMergeFallback`、#7258）、そのキーは翻訳待ちキューに入ります。
+2. `__MISSING__:<new english>` に設定する — その場合、ランタイムは修正済みの英語を返し
+   （`src/i18n/request.ts::deepMergeFallback`、#7258）、そのキーは翻訳待ちキューに追加されます。
 
-文字列の**意味**が変わった場合は、**キー名の変更**を推奨します。新しいキーが
-古い翻訳を継承することはありません。#8463 ではこのパターンが使用されています。
+文字列の**意味**が変わった場合は、**キー名の変更**を推奨します。新しいキーが古い翻訳を
+引き継ぐことはありません。#8463 ではこのパターンが使用されています。
 
 ```bash
 npm run i18n:check-value-drift          # 厳格モード（CIで実行されるもの）
@@ -235,137 +232,112 @@ npm run i18n:check-value-drift:warn     # レポートのみ
 BASE_REF=origin/release/vX.Y.Z npm run i18n:check-value-drift
 ```
 
-ベースカタログを読み取れない場合（ベースrefのないシャロークローン）は、
+ベースカタログを読み取れない場合（ベース参照を含まない浅いクローンなど）は、
 `check-openapi-breaking` と同様に、`SKIP reason=base-unresolved` を出力して終了コード0で終了します。
 
-### ジョブ：`i18n`
+### ジョブ: `i18n`
 
-完全なi18n検証マトリクス（ロケールごとに1ジョブ）。ジョブ全体が参考情報扱いです。
+i18nの完全な検証マトリックス（ロケールごとに1ジョブ）。ジョブ全体が勧告扱いです。
 
-| スクリプト                      | 検証内容                   | ブロッキング                                           |
-| ------------------------------- | -------------------------- | ------------------------------------------------------ |
-| `validate_translation.py quick` | ロケールごとの翻訳の完全性 | **参考情報**（ジョブ全体に `continue-on-error: true`） |
+| スクリプト                      | 検証内容                   | ブロッキング                                      |
+| ------------------------------- | -------------------------- | ------------------------------------------------- |
+| `validate_translation.py quick` | ロケールごとの翻訳の完全性 | **勧告**（ジョブ全体で`continue-on-error: true`） |
 
-### ジョブ：`pr-test-policy`
+### ジョブ: `pr-test-policy`
 
 プルリクエストでのみ実行されます。
 
-| スクリプト             | 検証内容                                                                                                                                | ブロッキング |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `check:pr-test-policy` | `src/`、`open-sse/`、`electron/`、または `bin/` の本番コードを変更するPRには、テストの追加または更新が必要（厳格ルール #8）             | はい         |
-| `check:test-masking`   | 変更されたテストファイルがアサーションの正味数を減らしておらず、`assert.ok(true)` のような恒真式を追加していないこと                    | はい         |
-| `check:pr-evidence`    | PR本文に変更に対するテスト/VPSの証拠が記載されていること（PR本文のgrepにより厳格ルール #18を機械化 — 壊れやすいため、バックログを参照） | はい         |
+| スクリプト             | 検証内容                                                                                                                 | ブロッキング |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| `check:pr-test-policy` | `src/`、`open-sse/`、`electron/`、または`bin/`の本番コードを変更するPRでは、テストの追加または更新が必須（厳格ルール#8） | はい         |
+| `check:test-masking`   | 変更されたテストファイルでアサーションの純数が減少しておらず、`assert.ok(true)`の恒真式が追加されていないこと            | はい         |
+| `check:pr-evidence`    | PR本文に変更に関するテスト/VPSの証跡が記載されていること（PR本文をgrepして厳格ルール#18を自動化 — 脆弱。Backlogを参照）  | はい         |
 
-### ジョブ：`test-vitest`
+### ジョブ: `test-vitest`
 
-`build` の後に実行されます。失敗するとマージをブロックします。
+`build`の後に実行されます。失敗するとマージをブロックします。
 
-| スイート         | 検証内容                                                         | ブロッキング                                                                                                      |
-| ---------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `test:vitest`    | MCPサーバー（110ツール）、autoCombo、キャッシュ — vitestランナー | はい                                                                                                              |
-| `test:vitest:ui` | UIコンポーネントテスト — vitestランナー                          | **ブロッキング** — 既存の失敗は `vitest.config.ts` で明示的に除外されており、新たな失敗があるとジョブは失敗します |
+| スイート         | 検証内容                                                         | ブロッキング                                                                                          |
+| ---------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `test:vitest`    | MCPサーバー（110ツール）、autoCombo、キャッシュ — vitestランナー | はい                                                                                                  |
+| `test:vitest:ui` | UIコンポーネントテスト — vitestランナー                          | **ブロッキング** — 既存の失敗は`vitest.config.ts`で明示的に除外され、新たな失敗はジョブを失敗させます |
 
-### 夜間ワークフロー（スケジュール実行、参考情報）
+### ナイトリーワークフロー（スケジュール実行、勧告扱い）
 
-これらはcronスケジュール（および `workflow_dispatch`）で実行され、PRでは実行されません。すべて参考情報扱いです。
+これらはcronスケジュール（および`workflow_dispatch`）で実行され、PRでは実行されません。すべて勧告扱いです。
 
-| ワークフロー           | 検証内容                                                                                                                                                                  | ブロッキング |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| `nightly-property`     | ランダムシードと多い実行回数を使用したfast-checkプロパティテスト                                                                                                          | **参考情報** |
-| `nightly-resilience`   | ヒープ増加ゲート、カオス障害注入、k6負荷/ソークテスト                                                                                                                     | **参考情報** |
-| `nightly-llm-security` | promptfooインジェクションガード（ブロックモード）+ garakプローブ（プロバイダーシークレットがない場合はスキップ）                                                          | **参考情報** |
-| `nightly-schemathesis` | `docs/openapi.yaml` を使用し、稼働中のOmniRouteに対してOpenAPIコントラクトファジング（schemathesis）を実施 — 仕様違反や未処理の500エラーを明らかにします（フェーズ8 B.4） | **参考情報** |
-| `nightly-mutation`     | 高速ユニットレーンに対するStrykerミューテーションテストスコア — 生き残ったミュータントによって弱いアサーションを明らかにします                                            | **参考情報** |
-| `nightly-compat`       | サポート対象の `engines.node` 範囲全体にわたるNodeエンジン互換性マトリクス                                                                                                | **参考情報** |
+| ワークフロー           | 検証内容                                                                                                                                                  | ブロッキング |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `nightly-property`     | ランダムシードと多い実行回数を使用したfast-checkプロパティテスト                                                                                          | **勧告**     |
+| `nightly-resilience`   | ヒープ増加ゲート、カオス障害注入、k6負荷/ソークテスト                                                                                                     | **勧告**     |
+| `nightly-llm-security` | promptfooインジェクションガード（ブロックモード）+ garakプローブ（プロバイダーシークレットがない場合はスキップ）                                          | **勧告**     |
+| `nightly-schemathesis` | `docs/openapi.yaml`を使用した稼働中のOmniRouteに対するOpenAPIコントラクトファジング（schemathesis）— 仕様違反や未処理の500エラーを検出（第8フェーズ B.4） | **勧告**     |
+| `nightly-mutation`     | 高速ユニットレーンに対するStrykerミューテーションテストのスコア — 生き残ったミュータントによって弱いアサーションを可視化                                  | **勧告**     |
+| `nightly-compat`       | サポート対象の`engines.node`範囲全体にわたるNodeエンジン互換性マトリックス                                                                                | **勧告**     |
 
-パフォーマンスベースライン（ヒープ、TTFB、ビルド時間）は記録されますが、ゲートには使用されません。詳細は [`PERF_BASELINE.md`](../ops/PERF_BASELINE.md)（`npm run perf:lts-baseline`）を参照してください。
+パフォーマンスベースライン（ヒープ、TTFB、ビルド時間）は記録されますが、ゲート判定には使用されません。[`PERF_BASELINE.md`](../ops/PERF_BASELINE.md)（`npm run perf:lts-baseline`）を参照してください。
 
 ---
 
 ## ベロシティフェーズ（2026-08-30 → v4.0 LTS）：すべてのベースラインを20%緩和
 
-オーナー判断（2026-08-30）：v4.0でのモジュール化までは、技術的負債の増加を抑えることよりも
-リリース速度を優先します。すべての**数値**ラチェットベースラインを、監査可能な1回の処理で20%緩和し、
-そのフェーズを`config/quality/quality-baseline.json`で宣言しています。
+オーナー決定（2026-08-30）：v4.0でのモジュール化までは、技術的負債の水準を維持することよりもリリース速度を優先します。すべての**数値**ラチェットベースラインを、監査可能な1回の処理で20%緩和しました。また、このフェーズは`config/quality/quality-baseline.json`で次のように宣言されています：
 
 ```json
 "_policy": { "phase": "velocity", "since": "2026-08-30", "until": "4.0.0",
              "relaxPct": 20, "requireTighten": false }
 ```
 
-| 変更内容                                                                                                                                                                             | 場所                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| `metrics.*.value` — 小さいほど良いカウントは×1.2、大きいほど良いパーセンテージは÷1.2（カバレッジの下限60は維持、`eslintErrors`は0のまま、`eslintWarnings`は0 → 固定済み抑制数の20%） | `quality-baseline.json`（`_relax_velocity_2026_08_30`の注記に、変更前 → 変更後をすべて記載）           |
-| `count` ×1.2 / `percentage` ×1.2                                                                                                                                                     | `complexity-baseline.json`、`duplication-baseline.json`                                                |
-| `cap`、`testCap`、すべての`frozen[*]` / `testFrozen[*]`行数上限を×1.2                                                                                                                | `file-size-baseline.json`                                                                              |
-| ファイルごと／TSコードごとのカウントを×1.2                                                                                                                                           | `api-typecheck-baseline.json`、`dashboard-typecheck-baseline.json`、`open-sse-typecheck-baseline.json` |
-| `THRESHOLD` 36 → 30                                                                                                                                                                  | `scripts/check/check-openapi-coverage.mjs`                                                             |
-| `_policy.requireTighten === false`の間、`--require-tighten`を勧告扱いに変更                                                                                                          | `scripts/quality/check-quality-ratchet.mjs`                                                            |
-| nightlyの`bank-ratchet-shrinks`を一時停止（測定された縮小分が確定され、余裕が取り消されてしまうため）                                                                                | `.github/workflows/nightly-release-green.yml`                                                          |
+| 変更内容                                                                                                                                                                                      | 変更箇所                                                                                               |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `metrics.*.value` — 小さいほど良いカウントは×1.2、大きいほど良いパーセンテージは÷1.2（カバレッジの下限60は維持、`eslintErrors`は0のまま、`eslintWarnings`は0から固定された抑制数の20%へ変更） | `quality-baseline.json`（`_relax_velocity_2026_08_30`の注記に、変更前 → 変更後をすべて記載）           |
+| `count` ×1.2 / `percentage` ×1.2                                                                                                                                                              | `complexity-baseline.json`、`duplication-baseline.json`                                                |
+| `cap`、`testCap`、すべての`frozen[*]` / `testFrozen[*]`行数上限を×1.2                                                                                                                         | `file-size-baseline.json`                                                                              |
+| ファイル単位 / TSコード単位のカウントを×1.2                                                                                                                                                   | `api-typecheck-baseline.json`、`dashboard-typecheck-baseline.json`、`open-sse-typecheck-baseline.json` |
+| `THRESHOLD` 36 → 30                                                                                                                                                                           | `scripts/check/check-openapi-coverage.mjs`                                                             |
+| `_policy.requireTighten === false`の間、`--require-tighten`を勧告扱いに変更                                                                                                                   | `scripts/quality/check-quality-ratchet.mjs`                                                            |
+| nightlyの`bank-ratchet-shrinks`を一時停止（測定された縮小分を確定して余裕を取り消してしまうため）                                                                                             | `.github/workflows/nightly-release-green.yml`                                                          |
 
-許可リスト（`eslint-suppressions.json`、`test-masking-allowlist.json`、`test-discovery-baseline.json`、
-…）は予算ではないため、変更していません。合否判定を行うポリシーゲート（シークレット、SQLルール、
-ドキュメント／環境契約、i18nの同等性、ユニットテスト）にも変更はありません — 赤いテストは引き続き赤いテストです。
+許可リスト（`eslint-suppressions.json`、`test-masking-allowlist.json`、`test-discovery-baseline.json`など）は**予算ではない**ため、変更していません。合否判定を行うポリシーゲート（シークレット、SQLルール、docs/env契約、i18nパリティ、ユニットテスト）にも変更はありません。テストの失敗は、引き続き失敗として扱われます。
 
 **ツール**
 
-- `npm run quality:relax-baselines -- --pct 20 --note velocity_YYYY_MM_DD [--dry-run]` —
-  1回限りの緩和（`scripts/quality/relax-baselines.mjs`）。同じ注記で2回実行することは拒否されます。
-- `npm run quality:headroom [-- --only deadExports,fileSize] [--json out.json --md out.md]` —
-  CIと同じ方法ですべての数値ゲートを測定し、ゲートごとの残りの余裕を出力します
-  （`scripts/quality/baseline-headroom.mjs`）。nightlyの`baseline-headroom`ジョブは、
-  ワークフロー実行サマリーに表を公開し、JSON／Markdownレポートを
-  `baseline-headroom-<run_id>`としてアップロードし、90日間保持します。警告および重大の行は、
-  上限まで10%以内のゲート、またはすでに上限を超えているゲートを示します。予算消費の早期警告として
-  これらのレポートを確認し、該当するゲートの`_rebaseline_*`注記を調査してください。このジョブは、
-  恒久的なissueを作成または更新しなくなりました。以前のレポート履歴は#12149に保持されています。
+- `npm run quality:relax-baselines -- --pct 20 --note velocity_YYYY_MM_DD [--dry-run]` — 1回限りの緩和処理（`scripts/quality/relax-baselines.mjs`）。同じ注記を指定して2回実行することはできません。
+- `npm run quality:headroom [-- --only deadExports,fileSize] [--json out.json --md out.md]` — CIと同じ方法ですべての数値ゲートを測定し、ゲートごとの残りの余裕を出力します（`scripts/quality/baseline-headroom.mjs`）。nightlyの`baseline-headroom`ジョブは、ワークフロー実行サマリーに表を掲載し、JSON/Markdownレポートを`baseline-headroom-<run_id>`としてアップロードして90日間保持します。警告行と重大行は、上限まで10%以内に迫っているゲート、またはすでに上限を超えているゲートを示します。予算消費の早期警告としてこれらのレポートを確認し、該当するゲートの`_rebaseline_*`注記を調査してください。このジョブは、永続的なIssueの作成や更新を行わなくなりました。以前のレポート履歴は#12149に保存されています。
 
 **新規コードモード（Clean-as-You-Code）— 2026-08-30以降、PRの高速パスのみ**
 
-`pull_request`イベントでは、`quality.yml`が`--base-ref <PR base SHA>`を`check:file-size`、
-`check:complexity-ratchets`、`check:dead-code`に渡します。`check:complexity-ratchets`と
-`check:dead-code`では、ゲートはHEADとマージベースを、**PRが変更したファイルに限定して**
-比較します（`scripts/check/newCodeMode.mjs`：マージベースを使い捨ての
-`git worktree`に展開し、そこで、およびHEAD上でESLint/knipを実行して、ファイルごとのカウントの差分を取ります）。
+`pull_request`イベントでは、`quality.yml`が`check:file-size`、`check:complexity-ratchets`、`check:dead-code`に`--base-ref <PR base SHA>`を渡します。`check:complexity-ratchets`と`check:dead-code`では、ゲートはPRが変更したファイル**のみ**に限定して、HEADとマージベースを比較します（`scripts/check/newCodeMode.mjs`：マージベースを一時的な`git worktree`に展開し、そこで、およびHEAD上でESLint/knipを実行して、ファイルごとのカウントの差分を取ります）：
 
-- **ブロッキング** — PRが変更したファイルに、循環的／認知的複雑度の違反または未使用のexportを追加した場合
-  （ログ内の`complexityNewCode=`、`cognitiveComplexityNewCode=`、`deadExportsNewCode=`）。
-- **勧告** — 固定済みベースラインに対する全体の合計。継承されたドリフトによって、無関係なPRが
-  赤になることはありません。ドリフトはリリース時の調整で再固定され、headroomジョブによって監視されます。
+- **ブロッキング** — PRが、変更したファイルに循環的複雑度違反、認知的複雑度違反、またはデッドエクスポートを追加した場合（ログ内の`complexityNewCode=`、`cognitiveComplexityNewCode=`、`deadExportsNewCode=`）。
+- **勧告** — グローバル合計と固定ベースラインの比較。継承されたドリフトが無関係なPRを失敗させることはありません。ドリフトはリリース時の調整で再固定され、headroomジョブによって監視されます。
 
-`check:file-size`は独自のルールでベースrefを使用します（`scripts/check/check-file-size.mjs`、#8522）。
-ツリー内のすべてのソースファイルとテストファイルを確認し、`git show`を使ってPRベース時点での各ファイルの
-行数を読み取り、ベースライン上限（ベースライン内のファイルの場合は`frozen` / `testFrozen`、
-ベースライン外のファイルの場合は`cap` / `testCap`）とベース時点のサイズのうち、大きい方を超えて
-増加したファイルだけを失敗とします。したがって、ベース上ですでにドリフトしていたファイルによって、
-無関係なPRが赤になることはありません。
+`check:file-size`は独自の条件でベース参照を使用します（`scripts/check/check-file-size.mjs`、#8522）。ツリー内のすべてのソースファイルとテストファイルを確認し、`git show`を使用してPRベース時点の各ファイルの行数を読み取ります。そして、ベースライン上限（`frozen` / `testFrozen`、またはベースライン外のファイルの場合は`cap` / `testCap`）とベース時点のサイズのうち、大きい方を超えて増加したファイルのみを失敗とします。したがって、ベース時点ですでにドリフトしていたファイルが、無関係なPRを失敗させることはありません。
 
 `check:boundary:ratchet` は、その単一の数値にも同じルールを適用します
 （`scripts/quality/measure-boundary.mjs --ratchet --base-ref <sha>`）。PR イベントでは、
 `quality.yml` の高速ゲートと `ci.yml` の lint ジョブの両方が PR のベース SHA を渡し、
-ベースコミットは `git archive` によるエクスポートから測定されます。また、PR の
-`open-sse → src` エッジ数が、`metrics.boundaryOpenSseToSrc` とベース上のエッジ数の
-うち大きい方を超えた場合にのみ、PR は失敗します。上限を超えるベースのドリフトは
-報告されますが（`base drift herdado`）、無関係な PR を失敗させることはありません。
-push → main では絶対上限が維持され、ベース SHA を解決できない場合は、警告を出して
-その絶対上限へフォールバックします。
+ベースコミットは `git archive` のエクスポートから測定されます。また、PR が失敗するのは、
+その `open-sse → src` エッジ数が `metrics.boundaryOpenSseToSrc` とベース上のカウントの
+大きい方を超えた場合のみです。上限を超えるベースのドリフトは報告されます
+（`base drift herdado`）が、無関係な PR を失敗させることはありません。push → main では
+絶対上限が維持され、ベース SHA を解決できない場合は、警告付きでその上限にフォールバックします。
 
-`workflow_dispatch` の実行、リリース時の全体的なグリーン確認、および nightly の
-ヘッドルームジョブには PR ベースがないため、絶対値による（グローバルな）比較を
-維持します。カバレッジ、重複、型カバレッジについても、現時点ではグローバルなままです
-（それらのツールではファイル単位の差分を低コストで生成できないためです）。これらは
-同じ処理を適用する候補です。
+`workflow_dispatch` の実行、リリース成功確認の一括チェック、および nightly headroom ジョブには
+PR ベースがないため、絶対値（グローバル）比較が維持されます。カバレッジ、重複、および
+型カバレッジは、当面グローバルのままです（それらのツールではファイル単位の差分を低コストで
+生成できません）。これらは、同じ対応を適用する候補です。
 
-**v4.0 でのフェーズ終了（LTS = 以前より厳格であり、「通常に戻す」ことではない）**
+**v4.0 でフェーズを完了する（LTS = 以前より厳格であり、「通常に戻す」わけではない）**
 
-1. 純粋な `release/v4.0.0` の先端で、記録用に `npm run quality:headroom --json` を実行し、その後
+1. 純粋な `release/v4.0.0` の先端で、記録のために `npm run quality:headroom --json` を実行し、その後
    `npm run quality:ratchet -- --update`、`check:file-size --update`、
-   `check:complexity-ratchets --update`、`check:dead-code --update`、各 typecheck ゲートの
+   `check:complexity-ratchets --update`、`check:dead-code --update`、および各 typecheck ゲートの
    `--update` を実行します。すべてのベースラインが測定値まで引き下げられます。
 2. `quality-baseline.json` から `_policy` を削除し（`--require-tighten` と nightly の
-   バンキングを再度有効化）、`check-openapi-coverage.mjs` の `THRESHOLD = 36`（またはそれ以上）を復元します。
-3. モジュール化の効果が得られた箇所では、測定値よりもさらに厳格化します。file-size の `cap` を 1000
-   （または 800）に戻し、カバレッジの下限を +5 し、モジュール化されたパッケージの未使用エクスポートを 0 にします。
+   バンキングを再有効化）、`check-openapi-coverage.mjs` の `THRESHOLD = 36`（またはそれ以上）を復元します。
+3. モジュール化の効果が得られた箇所では、測定値を超えてさらに厳格化します。file-size の `cap` を
+   1000（または 800）に戻し、カバレッジの下限を +5 とし、モジュール化されたパッケージの dead exports を 0 にします。
 
 ## ラチェットベースライン (`quality-baseline.json`)
 
