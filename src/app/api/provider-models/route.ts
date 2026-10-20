@@ -13,6 +13,7 @@ import {
   updateCustomModel,
   getModelCompatOverrides,
   mergeModelCompatOverride,
+  resetModelEndpointOverride,
   getHiddenModelsByProvider,
   type ModelCompatPatch,
 } from "@/lib/db/models";
@@ -33,6 +34,7 @@ import {
   isAnthropicCompatibleProvider,
 } from "@/shared/constants/providers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
+import { getRegisteredEndpointAdapterStatuses } from "@/lib/providerModels/endpointAdapterAvailability";
 import { isHiddenForModality } from "@/shared/utils/modelVisibility";
 export const dynamic = "force-dynamic";
 import { providerModelMutationSchema } from "@/shared/validation/schemas";
@@ -127,6 +129,7 @@ export async function GET(request) {
       })),
       modelContextOverrides,
       modelOutputOverrides,
+      endpointAdapters: provider ? getRegisteredEndpointAdapterStatuses(provider) : {},
       hiddenModelsByProvider,
     });
   } catch {
@@ -167,6 +170,7 @@ export async function POST(request) {
       source,
       apiFormat,
       supportedEndpoints,
+      endpointCapabilitySource,
       targetFormat,
       // #1294: persist the per-model token limits set in the add-model form.
       max_input_tokens: maxInputTokens,
@@ -212,6 +216,7 @@ export async function POST(request) {
         ...(typeof dimensions === "number" && dimensions > 0 ? { dimensions } : {}),
         ...(Array.isArray(supportedInputTypes) ? { supportedInputTypes } : {}),
         ...(typeof modelType === "string" ? { modelType } : {}),
+        ...(endpointCapabilitySource ? { endpointCapabilitySource } : {}),
       }
     );
     return Response.json({ model });
@@ -526,6 +531,7 @@ export async function DELETE(request) {
     const provider = searchParams.get("provider");
     const modelId = searchParams.get("model");
     const resetOverride = searchParams.get("resetOverride") === "true";
+    const resetEndpoints = searchParams.get("resetEndpoints") === "true";
 
     if (!provider) {
       return Response.json(
@@ -563,6 +569,16 @@ export async function DELETE(request) {
         },
         { status: 400 }
       );
+    }
+
+    if (resetEndpoints) {
+      const restored = await resetModelEndpointOverride(provider, modelId);
+      if (!restored)
+        return Response.json(
+          { error: { message: "No endpoint override to reset", type: "not_found" } },
+          { status: 404 }
+        );
+      return Response.json({ restored: true, resetEndpoints: true });
     }
 
     // Resetting a user-owned overlay must never delete the same-id synced base.
