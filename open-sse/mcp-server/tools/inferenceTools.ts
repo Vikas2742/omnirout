@@ -21,7 +21,7 @@ import { toArray, toFiniteNumber, toRecord, toString, type JsonRecord } from "..
 import { toSafeMcpErrorMessage } from "../errorMessage.ts";
 import { mcpFetchTimeoutSignal } from "../fetchTimeout.ts";
 import { omniRouteFetch } from "../internalFetch.ts";
-import { resolveRequestedComboModel } from "../../../src/shared/utils/resolveRequestedComboModel.ts";
+import { resolveRequestedComboModel } from "../../utils/resolveRequestedComboModel.ts";
 
 export async function handleRouteRequest(args: {
   model: string;

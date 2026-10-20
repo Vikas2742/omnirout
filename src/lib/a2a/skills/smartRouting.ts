@@ -7,7 +7,7 @@
 
 import type { A2ATask, TaskArtifact } from "../taskManager";
 import { resolveOmniRouteBaseUrl } from "@/shared/utils/resolveOmniRouteBaseUrl";
-import { resolveRequestedComboModel } from "@/shared/utils/resolveRequestedComboModel";
+import { resolveRequestedComboModel } from "@omniroute/open-sse/utils/resolveRequestedComboModel";
 
 const OMNIROUTE_BASE_URL = resolveOmniRouteBaseUrl();
 const OMNIROUTE_API_KEY = process.env.OMNIROUTE_API_KEY || "";
