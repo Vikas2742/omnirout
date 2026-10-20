@@ -1,4 +1,4 @@
-import { getPendingById } from "@/lib/usage/usageHistory";
+import { getPendingById, updatePendingRequestStreamChunksById } from "@/lib/usage/usageHistory";
 import { getChatLogMaxDepth, getChatLogArrayTailItems } from "@/lib/logEnv";
 import { sanitizeErrorMessage } from "./error.ts";
 import { redactUrlQuerySecrets } from "./errorSanitization.ts";
@@ -352,27 +352,22 @@ function makeStreamChunkMethods(options: RequestLoggerOptions, captureChunks: bo
     Number.isInteger(options.maxStreamChunkItems) && Number(options.maxStreamChunkItems) > 0
       ? Number(options.maxStreamChunkItems)
       : DEFAULT_MAX_STREAM_CHUNK_ITEMS;
-  let pendingPushed = false;
-
   const push = () => {
-    if (pendingPushed) return;
     if (!options.requestId && (!options.connectionId || !options.model)) return;
-    pendingPushed = true;
     try {
-      const pending = getPendingById();
-      const exactEntry = options.requestId ? pending.get(options.requestId) : null;
-      if (exactEntry) {
-        exactEntry.streamChunks = { ...streamChunks };
+      // A finished exact request must never fall back to another concurrent attempt.
+      if (options.requestId) {
+        updatePendingRequestStreamChunksById(options.requestId, streamChunks);
         return;
       }
-
+      const pending = getPendingById();
       for (const entry of pending.values()) {
         if (
           entry?.connectionId === options.connectionId &&
           entry?.model === options.model &&
           entry?.provider === (options.provider || "")
         ) {
-          entry.streamChunks = { ...streamChunks };
+          updatePendingRequestStreamChunksById(entry.id, streamChunks);
           return;
         }
       }
@@ -386,9 +381,9 @@ function makeStreamChunkMethods(options: RequestLoggerOptions, captureChunks: bo
 
   const append = (arr: string[], bytes: { value: number; truncated: boolean }, chunk: string) => {
     if (!captureChunks) return;
-    push();
     const ts = new Date().toISOString().slice(11, 23);
     appendBoundedChunk(arr, bytes, `[${ts}] ${chunk}`, maxBytes, maxItems);
+    push();
   };
 
   return {

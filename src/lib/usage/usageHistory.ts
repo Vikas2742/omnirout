@@ -707,6 +707,24 @@ export function finalizeMostRecentPendingRequest(
 
 export { getCompletedDetails } from "./completedRequestDetails";
 
+/** Store an owned snapshot so caller array mutations cannot bypass byte accounting. */
+export function updatePendingRequestStreamChunksById(
+  id: string,
+  streamChunks: PendingRequestDetail["streamChunks"]
+): boolean {
+  const entry = pendingById.get(id);
+  if (!entry) return false;
+  const before = pendingDetailBytes(entry);
+  entry.streamChunks = streamChunks
+    ? Object.fromEntries(
+        Object.entries(streamChunks).map(([key, chunks]) => [key, chunks?.slice()])
+      )
+    : streamChunks;
+  totalPendingDetailBytes += pendingDetailBytes(entry) - before;
+  enforcePendingByteCeiling();
+  return true;
+}
+
 export function updatePendingRequestStreamChunks(
   model: string,
   provider: string,
@@ -722,16 +740,7 @@ export function updatePendingRequestStreamChunks(
   if (!isSafeKey(modelKey)) return;
   const details = pendingRequests.details[connectionId]?.[modelKey];
   if (!details?.length) return;
-  const entry = details[0];
-  // streamChunks accumulates per-chunk strings for the whole stream, so it is
-  // the one field that can keep growing after the initial insert. Re-measure
-  // and re-enforce the ceiling, mirroring updatePendingRequest()/
-  // updatePendingRequestById() — otherwise the byte ceiling silently stops
-  // binding for streaming requests.
-  const before = pendingDetailBytes(entry);
-  entry.streamChunks = streamChunks;
-  totalPendingDetailBytes += pendingDetailBytes(entry) - before;
-  enforcePendingByteCeiling();
+  updatePendingRequestStreamChunksById(details[0].id, streamChunks);
 }
 
 /**
