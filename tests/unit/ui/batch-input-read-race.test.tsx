@@ -69,10 +69,21 @@ it.each([
         target: { files: [nextFile] },
       });
     });
-    expect(JSON.parse(screen.getByTestId("input-state").textContent!)).toMatchObject({
+    const recovered = JSON.parse(screen.getByTestId("input-state").textContent!);
+    expect(recovered).toMatchObject({
       kind: finalKind,
       fileName: `new.${finalKind}`,
-      rawContent: nextContent,
     });
+    if (finalKind === "csv") {
+      // The race contract concerns the selected source, whether CSV is stored
+      // separately from converted JSONL or still shares rawContent.
+      expect(recovered.csvContent ?? recovered.rawContent).toBe(nextContent);
+      if (recovered.csvContent !== undefined) expect(recovered.rawContent).toBeNull();
+      expect(screen.getByText("id")).toBeTruthy();
+      expect(screen.getByText("prompt")).toBeTruthy();
+    } else {
+      expect(recovered.rawContent).toBe(nextContent);
+      expect(recovered.csvContent).toBeUndefined();
+    }
   }
 );
