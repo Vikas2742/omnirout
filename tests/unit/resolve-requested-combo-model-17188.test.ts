@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { resolveRequestedComboModel } from "../../src/shared/utils/resolveRequestedComboModel.ts";
+import { resolveA2AComboAttribution } from "../../src/lib/a2a/routingLogger.ts";
 
 test("no combo preserves the caller's model without changing its spelling", () => {
   const model = "gemini/gemini-2.5-pro";
@@ -42,4 +43,23 @@ test("malformed combo requests are rejected instead of silently falling back", (
       /combo must be a non-empty string/
     );
   }
+});
+
+test("A2A telemetry separates requested combos from confirmed execution", () => {
+  assert.deepEqual(
+    resolveA2AComboAttribution({ requested_combo: " Team A ", confirmed_combo: null }),
+    { comboId: "default", requestedCombo: "Team A" }
+  );
+  assert.deepEqual(
+    resolveA2AComboAttribution({ requested_combo: "Team A", confirmed_combo: "Team B" }),
+    { comboId: "Team B", requestedCombo: "Team A" }
+  );
+  assert.deepEqual(resolveA2AComboAttribution({}), {
+    comboId: "default",
+    requestedCombo: null,
+  });
+  assert.deepEqual(resolveA2AComboAttribution({ requested_combo: 5, confirmed_combo: {} }), {
+    comboId: "default",
+    requestedCombo: null,
+  });
 });
