@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { resolveRequestedComboModel } from "../../src/shared/utils/resolveRequestedComboModel.ts";
-import { resolveA2AComboAttribution } from "../../src/lib/a2a/routingLogger.ts";
+import { resolveA2AComboAttribution } from "../../src/lib/a2a/resolveComboAttribution.ts";
 
 test("no combo preserves the caller's model without changing its spelling", () => {
   const model = "gemini/gemini-2.5-pro";
