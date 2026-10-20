@@ -1,1 +1,0 @@
-- **fix(batch):** Preserve original CSV columns while remapping, invalidate outdated conversions, and retain mapping readiness when returning to the input step ([#0](https://github.com/diegosouzapw/OmniRoute/pull/0)) — thanks @pacocartones
