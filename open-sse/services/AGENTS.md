@@ -1,15 +1,15 @@
 # open-sse/services/ — Routing Engine & Cross-Cutting Services
 
-**Purpose**: 134 service modules (top-level) powering request routing, rate limiting, quota management, token refresh, fallback strategies, and runtime state. The combo routing engine (`combo.ts`) is the core; supporting services handle resilience, accounting, and decision-making.
+**Purpose**: 255 service modules (top-level) powering request routing, rate limiting, quota management, token refresh, fallback strategies, and runtime state. The combo routing engine (`combo.ts`) is the core; supporting services handle resilience, accounting, and decision-making.
 
-Live count: `ls open-sse/services/*.ts | wc -l` (currently 134). More including sub-dirs like `autoCombo/` and `compression/`.
+Live count: `ls open-sse/services/*.ts | wc -l` (currently 255). More including sub-dirs like `autoCombo/` and `compression/`.
 
 ---
 
 ## Combo Routing Engine
 
 - **`combo.ts`** — Entry point for multi-model routing. **`handleComboChat()`** iterates through targets in order until success or all fail. **`resolveComboTargets()`** expands combo config into ordered `ResolvedComboTarget[]` (provider + model + account + credentials).
-- **Strategies** (17): `priority`, `weighted`, `fill-first`, `round-robin`, `P2C`, `random`, `least-used`, `reset-aware`, `reset-window`, `cost-optimized`, `strict-random`, `auto`, `lkgp`, `context-optimized`, `context-relay`, `headroom`, `fusion`. Source: `ROUTING_STRATEGY_VALUES` in `src/shared/constants/routingStrategies.ts`.
+- **Strategies** (20): `priority`, `weighted`, `round-robin`, `context-relay`, `fill-first`, `p2c`, `random`, `least-used`, `cost-optimized`, `reset-aware`, `reset-window`, `headroom`, `quota-weighted`, `strict-random`, `auto`, `lkgp`, `context-optimized`, `cache-optimized`, `fusion`, `pipeline`. Source: `ROUTING_STRATEGY_VALUES` in `src/shared/constants/routingStrategies.ts`.
 - Each target calls **`handleSingleModel()`** which wraps `handleChatCore()` with per-target error handling and circuit breaker checks.
 
 ## Key Services
