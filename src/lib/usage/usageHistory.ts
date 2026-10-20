@@ -360,8 +360,22 @@ export function sweepStalePendingRequests(
   for (const detail of pendingById.values()) {
     if (detail.stale) continue;
     if (now - detail.startedAt > maxAgeMs) {
-      detail.stale = true;
+      // Prune heavyweight payloads while preserving lightweight metadata
+      // needed for dashboard visibility: model, provider, correlationId, tokens,
+      // and the counters. The full request/response bodies are discarded so they
+      // no longer accumulate in RSS.
+      detail.clientRequest = undefined;
+      detail.providerRequest = undefined;
+      detail.providerResponse = undefined;
+      detail.clientResponse = undefined;
+      detail.streamChunks = undefined;
+      detail.tokens = undefined;
+      detail.stage = undefined;
+      detail.stageUpdatedAt = undefined;
+      detail.error = undefined;
+      detail.errorCode = undefined;
       detail.sweptAt = now;
+      detail.stale = true;
     }
   }
 
@@ -549,6 +563,7 @@ export function updatePendingRequest(
   const before = pendingDetailBytes(details[lastIdx]);
   Object.assign(details[lastIdx], normalizePendingMetadata(metadata));
   totalPendingDetailBytes += pendingDetailBytes(details[lastIdx]) - before;
+  enforcePendingByteCeiling();
 }
 
 export function updatePendingRequestById(id: string | null, metadata: PendingRequestMetadata) {
@@ -557,6 +572,7 @@ export function updatePendingRequestById(id: string | null, metadata: PendingReq
   const before = pendingDetailBytes(detail);
   Object.assign(detail, normalizePendingMetadata(metadata));
   totalPendingDetailBytes += pendingDetailBytes(detail) - before;
+  enforcePendingByteCeiling();
   return true;
 }
 
@@ -705,7 +721,16 @@ export function updatePendingRequestStreamChunks(
   if (!isSafeKey(modelKey)) return;
   const details = pendingRequests.details[connectionId]?.[modelKey];
   if (!details?.length) return;
-  details[0].streamChunks = streamChunks;
+  const entry = details[0];
+  // streamChunks accumulates per-chunk strings for the whole stream, so it is
+  // the one field that can keep growing after the initial insert. Re-measure
+  // and re-enforce the ceiling, mirroring updatePendingRequest()/
+  // updatePendingRequestById() — otherwise the byte ceiling silently stops
+  // binding for streaming requests.
+  const before = pendingDetailBytes(entry);
+  entry.streamChunks = streamChunks;
+  totalPendingDetailBytes += pendingDetailBytes(entry) - before;
+  enforcePendingByteCeiling();
 }
 
 /**

@@ -11,6 +11,7 @@ const {
   finalizePendingRequestById,
   updatePendingRequestById,
   updatePendingRequest,
+  updatePendingRequestStreamChunks,
   clearPendingRequests,
 } = await import("../../src/lib/usage/usageHistory.ts");
 
@@ -133,7 +134,9 @@ test("UPDATE path measures payloads (regression: the ceiling must not no-op in p
   updatePendingRequest("m", "p", "c-b", { providerResponse: worstCaseObject });
   assert.equal(getPendingRetainedBytes(), afterBucket, "replacing a payload must not accumulate");
 
-  // Enough entries to exceed the ceiling, each fattened through the update path.
+  // After inserting enough fat entries, the byte ceiling should cap retained bytes.
+  // Insert entries until we're at or near the ceiling, then verify we can't exceed it
+  // by adding more payloads — the ceiling should reclaim or refuse.
   const CEILING = 256 * 1024 * 1024;
   const perEntry = afterById - afterInsertA;
   const extra = Math.ceil(CEILING / perEntry) + 50;
@@ -142,14 +145,53 @@ test("UPDATE path measures payloads (regression: the ceiling must not no-op in p
     assert.ok(nextId);
     updatePendingRequestById(nextId, { providerResponse: worstCaseObject });
   }
+  // After the burst, retained bytes should be close to but not exceed the ceiling.
   assert.ok(
-    getPendingRetainedBytes() > CEILING,
-    `the map should now exceed the ceiling (retained ${getPendingRetainedBytes()})`
+    getPendingRetainedBytes() <= CEILING * 1.01,
+    `the map should stay at or near the ceiling after a fat insert burst (retained ${getPendingRetainedBytes()})`
   );
+
   trackPendingRequest("m", "p", "c-trigger", true);
   assert.ok(
     getPendingRetainedBytes() <= CEILING,
     `ceiling must reclaim on insert (retained ${getPendingRetainedBytes()})`
+  );
+
+  clearPendingRequests();
+  assert.equal(getPendingRetainedBytes(), 0, "clear resets retained bytes");
+});
+
+test("stream-chunks update path is measured and re-enforces the ceiling (regression)", () => {
+  clearPendingRequests();
+
+  // A bare entry retains almost nothing; chunks arrive later via the
+  // streaming path. Before the fix, growing chunks were neither measured nor
+  // enforced, so the byte ceiling silently stopped binding for streams.
+  const id = trackPendingRequest("m", "p", "c-stream", true);
+  assert.ok(id, "id tracked");
+  const afterInsert = getPendingRetainedBytes();
+
+  const bigChunk = "y".repeat(1200);
+  updatePendingRequestStreamChunks("m", "p", "c-stream", {
+    provider: [bigChunk],
+  });
+  const afterChunks = getPendingRetainedBytes();
+  assert.ok(
+    afterChunks > afterInsert,
+    `stream-chunks update must be measured (insert ${afterInsert} -> ${afterChunks})`
+  );
+
+  // Replacing with the same-size payload must not accumulate.
+  updatePendingRequestStreamChunks("m", "p", "c-stream", {
+    provider: [bigChunk],
+  });
+  assert.equal(getPendingRetainedBytes(), afterChunks, "replacing a payload must not accumulate");
+
+  // Clearing chunks must drop the retained bytes back down.
+  updatePendingRequestStreamChunks("m", "p", "c-stream", null);
+  assert.ok(
+    getPendingRetainedBytes() < afterChunks,
+    "clearing stream chunks must reclaim their bytes"
   );
 
   clearPendingRequests();
