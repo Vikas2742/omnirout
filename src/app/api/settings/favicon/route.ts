@@ -34,7 +34,7 @@ function validateImageData(base64Data: string, contentType: string): boolean {
   return true;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const settings = await getSettings();
 
@@ -83,12 +83,12 @@ export async function GET() {
     }
 
     if (!faviconData) {
-      return NextResponse.redirect("/favicon.svg");
+      return NextResponse.redirect(new URL("/favicon.svg", request.url));
     }
 
     const match = faviconData.match(/^data:([^;]+);base64,(.+)$/);
     if (!match) {
-      return NextResponse.redirect("/favicon.svg");
+      return NextResponse.redirect(new URL("/favicon.svg", request.url));
     }
 
     const contentType = match[1];
