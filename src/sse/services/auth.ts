@@ -2723,6 +2723,28 @@ export async function markAccountUnavailable(
       return { shouldFallback: true, cooldownMs: 0 };
     }
 
+    // DuckDuckGo selects a synthetic noauth identity, not its dashboard DB row.
+    // Persisting a connection cooldown for "noauth" cannot suppress the next
+    // selection. Reuse the existing exact-model lock and resolved retry duration;
+    // do not infer a daily reset or disable unrelated DuckDuckGo models.
+    if (
+      provider === "duckduckgo-web" &&
+      connectionId === SYNTHETIC_NOAUTH_CONNECTION_ID &&
+      status === 429 &&
+      model?.trim() &&
+      fallbackResult.shouldFallback &&
+      fallbackResult.cooldownMs > 0
+    ) {
+      lockExactModel(
+        provider,
+        connectionId,
+        model,
+        fallbackResult.reason || "rate_limit",
+        fallbackResult.cooldownMs
+      );
+      return { shouldFallback: true, cooldownMs: fallbackResult.cooldownMs };
+    }
+
     // #16824: a verified ModelScope model-access refusal does not invalidate
     // the credential. Probe isolation above takes precedence; real requests
     // lock only the rejected model and leave sibling models routable.

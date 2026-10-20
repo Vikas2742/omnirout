@@ -886,7 +886,12 @@ export class DuckDuckGoWebExecutor extends BaseExecutor {
         }),
         {
           status: response.status,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(response.headers.get("Retry-After")
+              ? { "Retry-After": response.headers.get("Retry-After")! }
+              : {}),
+          },
         }
       );
     }
