@@ -37,6 +37,8 @@ import { isHiddenForModality } from "@/shared/utils/modelVisibility";
 export const dynamic = "force-dynamic";
 import { providerModelMutationSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
+import { getCachedProviderNodes } from "@/lib/db/readCache";
+import { collapseProviderPrefix, resolveProviderNodePrefix } from "@/shared/utils/modelIdPrefix";
 
 function normalizeRequestedModelIds(
   searchParams: URLSearchParams,
@@ -179,9 +181,21 @@ export async function POST(request) {
       modelType,
     } = validation.data;
 
+    // Store the bare upstream id: a pasted/imported id can arrive already
+    // carrying the node prefix (copied from a prefixed listing), and storing
+    // it verbatim would stack another prefix at catalog emission
+    // (`<prefix>/<prefix>/<model>`). Slashed upstream ids that do not start
+    // with the node's own prefix pass through untouched.
+    const nodes = await getCachedProviderNodes();
+    const node = nodes.find((n) => n && n.id === provider);
+    const nodePrefix = resolveProviderNodePrefix(
+      node as { prefix?: unknown; name?: unknown } | null
+    );
+    const storedModelId = collapseProviderPrefix(modelId, [nodePrefix, provider]);
+
     const model = await addCustomModel(
       provider,
-      modelId,
+      storedModelId,
       modelName,
       source || "manual",
       apiFormat,
