@@ -244,6 +244,9 @@ test("extractor: an incomplete web_search_call is not evidence", () => {
     item: { type: "web_search_call", id: "ws_1", status: "in_progress" },
   });
   assert.equal(evidence.call, undefined);
+  // The `output_item.added` event already recorded the call, so the failed `done`
+  // has to revoke it — otherwise the pair is emitted for a search that never ran.
+  assert.equal(evidence.revokeCallId, "ws_1");
 });
 
 test("extractor: annotation.added yields url_citation hits and ignores other annotations", () => {
@@ -607,5 +610,34 @@ test("regression: an OpenAI Chat client stream WITH web_search_call is unchanged
   assert.equal(
     deltas.some((delta) => "annotations" in delta),
     false
+  );
+});
+
+// ── 8. A failed web search must not produce a search block pair ───────────
+
+test("a web_search_call that failed (done status != completed) emits no search block pair", () => {
+  const events = feed(
+    responsesStream({
+      // `output_item.added` announces ws_1, then the `done` reports it failed:
+      // no action, no sources — the search produced no evidence.
+      call: { type: "web_search_call", id: "ws_1", status: "failed" },
+    })
+  );
+
+  const { starts } = blockIndexes(events);
+  assert.equal(
+    [...starts.values()].includes("server_tool_use"),
+    false,
+    "a failed search must not report a server_tool_use block"
+  );
+  assert.equal(
+    [...starts.values()].includes("web_search_tool_result"),
+    false,
+    "a failed search must not report an (empty) web_search_tool_result block"
+  );
+  assert.equal(
+    JSON.stringify(events).includes("srvtoolu_"),
+    false,
+    "no web-search tool_use id may leak for a failed search"
   );
 });

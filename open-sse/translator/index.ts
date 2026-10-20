@@ -931,14 +931,19 @@ export function translateRequest(
 // merges instead of duplicating the call.
 function accumulateResponsesWebSearchEvidence(state, chunk) {
   if (!state || typeof state !== "object") return;
-  const { call, citations } = extractResponsesWebSearchEvidence(chunk);
-  if (!call && citations.length === 0) return;
+  const { call, citations, revokeCallId } = extractResponsesWebSearchEvidence(chunk);
+  if (!call && citations.length === 0 && !revokeCallId) return;
   const existing = state._responsesWebSearchEvidence;
   const evidence =
     existing && typeof existing === "object" && Array.isArray(existing.calls)
       ? existing
       : { calls: [], citations: [] };
   state._responsesWebSearchEvidence = evidence;
+  // A call whose `done` reported a non-completed status never ran: drop the entry
+  // the `added` event recorded, so no (empty) search pair is emitted for it.
+  if (revokeCallId) {
+    evidence.calls = evidence.calls.filter((entry) => entry.id !== revokeCallId);
+  }
   if (call) {
     const previous = evidence.calls.find((entry) => entry.id === call.id);
     if (previous) {

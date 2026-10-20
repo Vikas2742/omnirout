@@ -215,6 +215,12 @@ export interface ResponsesWebSearchCall {
 export interface ResponsesWebSearchChunkEvidence {
   call?: ResponsesWebSearchCall;
   citations: ResponsesWebSearchHit[];
+  /**
+   * Id of a call that must be DROPPED: `output_item.added` announced it, but the
+   * matching `output_item.done` reported a non-completed status, so the search
+   * produced no evidence.
+   */
+  revokeCallId?: string;
 }
 
 function toRecord(value: unknown): Record<string, unknown> {
@@ -271,8 +277,14 @@ export function extractResponsesWebSearchEvidence(chunk: unknown): ResponsesWebS
     return call ? { call, citations: [] } : empty;
   }
   if (eventType === "response.output_item.done" && item.type === "web_search_call") {
-    // Only a finished call is evidence of a search that actually ran.
-    if (item.status !== undefined && item.status !== "completed") return empty;
+    // Only a finished call is evidence of a search that actually ran. A call that
+    // failed/incomplete is not evidence — and it must REVOKE the call the
+    // `output_item.added` event already recorded, so no empty result pair is
+    // emitted for a search that never produced anything.
+    if (item.status !== undefined && item.status !== "completed") {
+      const id = typeof item.id === "string" ? item.id : "";
+      return id ? { citations: [], revokeCallId: id } : empty;
+    }
     const call = toCall(item);
     return call ? { call, citations: [] } : empty;
   }
@@ -288,6 +300,9 @@ export function extractResponsesWebSearchEvidence(chunk: unknown): ResponsesWebS
     for (const value of output) {
       const outputItem = toRecord(value);
       if (outputItem.type === "web_search_call") {
+        // Same rule as the incremental events: a call that never completed is
+        // not evidence of a search that ran.
+        if (outputItem.status !== undefined && outputItem.status !== "completed") continue;
         call = toCall(outputItem) ?? call;
       } else if (outputItem.type === "message" && Array.isArray(outputItem.content)) {
         for (const part of outputItem.content) {
