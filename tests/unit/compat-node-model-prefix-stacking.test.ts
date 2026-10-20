@@ -205,3 +205,159 @@ test("POST /api/provider-models stores the bare upstream id, stripping a stacked
     );
   }
 });
+
+test("POST /api/provider-models leaves non-node provider ids untouched", async () => {
+  await resetStorage();
+  process.env.OMNIROUTE_API_KEY = "sk-prefix-stack-mgmt";
+
+  // A canonical-style provider id with no provider node row: slashed ids
+  // that begin with the provider's own name are legitimate upstream
+  // namespaces and must be stored verbatim.
+  const response = await providerModelsRoute.POST(
+    new Request("http://localhost/api/provider-models", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer sk-prefix-stack-mgmt",
+      },
+      body: JSON.stringify({ provider: "testplain", modelId: "testplain/model-x" }),
+    })
+  );
+  assert.equal(response.status, 200);
+  const stored = (await modelsDb.getCustomModels("testplain")) as Array<{ id: string }>;
+  assert.ok(
+    stored.some((m) => m.id === "testplain/model-x"),
+    `expected verbatim storage, got ${JSON.stringify(stored.map((m) => m.id))}`
+  );
+});
+
+test("PUT /api/provider-models with createIfMissing stores the bare upstream id", async () => {
+  await resetStorage();
+  await seedCompatibleNode();
+  process.env.OMNIROUTE_API_KEY = "sk-prefix-stack-mgmt";
+
+  const response = await providerModelsRoute.PUT(
+    new Request("http://localhost/api/provider-models", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer sk-prefix-stack-mgmt",
+      },
+      body: JSON.stringify({
+        provider: NODE_ID,
+        modelId: STACKED_IQ1M,
+        modelName: "Qwen IQ1_M",
+        supportsVision: true,
+      }),
+    })
+  );
+  assert.equal(response.status, 200);
+  const stored = (await modelsDb.getCustomModels(NODE_ID)) as Array<{ id: string }>;
+  assert.ok(
+    stored.some((m) => m.id === MODEL_IQ1M),
+    `expected bare "${MODEL_IQ1M}" stored via PUT, got ${JSON.stringify(stored.map((m) => m.id))}`
+  );
+  assert.equal(
+    stored.some((m) => m.id.startsWith(`${NODE_PREFIX}/`)),
+    false,
+    "PUT must not create a stacked-prefix row"
+  );
+});
+
+test("DELETE resolves the model as submitted and by its normalized form", async () => {
+  await resetStorage();
+  await seedCompatibleNode();
+  process.env.OMNIROUTE_API_KEY = "sk-prefix-stack-mgmt";
+
+  // Legacy stacked row stored verbatim by an older build: deleting by the
+  // same stacked id must still find it (raw-first match).
+  await modelsDb.addCustomModel(NODE_ID, STACKED_IQ1M, "Qwen", "manual");
+  const rawDelete = await providerModelsRoute.DELETE(
+    new Request(
+      `http://localhost/api/provider-models?provider=${encodeURIComponent(NODE_ID)}&model=${encodeURIComponent(STACKED_IQ1M)}`,
+      { method: "DELETE", headers: { Authorization: "Bearer sk-prefix-stack-mgmt" } }
+    )
+  );
+  assert.equal(rawDelete.status, 200);
+  assert.equal(((await rawDelete.json()) as { removed: boolean }).removed, true);
+
+  // Row stored bare (current write path): deleting by the prefixed paste
+  // must resolve to the bare row.
+  await modelsDb.addCustomModel(NODE_ID, MODEL_IQ1M, "Qwen", "manual");
+  const normalizedDelete = await providerModelsRoute.DELETE(
+    new Request(
+      `http://localhost/api/provider-models?provider=${encodeURIComponent(NODE_ID)}&model=${encodeURIComponent(STACKED_IQ1M)}`,
+      { method: "DELETE", headers: { Authorization: "Bearer sk-prefix-stack-mgmt" } }
+    )
+  );
+  assert.equal(normalizedDelete.status, 200);
+  assert.equal(((await normalizedDelete.json()) as { removed: boolean }).removed, true);
+  const stored = (await modelsDb.getCustomModels(NODE_ID)) as Array<{ id: string }>;
+  assert.equal(
+    stored.length,
+    0,
+    `expected no rows left, got ${JSON.stringify(stored.map((m) => m.id))}`
+  );
+});
+
+test("a hide rule keyed on the bare id suppresses a stacked stored row", async () => {
+  await resetStorage();
+  await seedCompatibleNode();
+  await modelsDb.addCustomModel(NODE_ID, STACKED_IQ1M, "Qwen", "manual");
+  // Same write the PATCH fallback performs when no custom row matches: the
+  // hide lands under the bare upstream id.
+  await modelsDb.mergeModelCompatOverride(NODE_ID, MODEL_IQ1M, {
+    isHidden: true,
+    modality: "chat",
+  });
+
+  const response = await v1ModelsCatalog.getUnifiedModelsResponse(
+    new Request("http://localhost/api/v1/models")
+  );
+  const body = (await response.json()) as { data: Array<Record<string, unknown>> };
+  const ids = body.data.map((m) => String(m.id));
+  assert.equal(
+    ids.includes(`${NODE_PREFIX}/${MODEL_IQ1M}`),
+    false,
+    `bare-id hide must suppress the stacked row, got ${JSON.stringify(ids.filter((id) => id.includes(MODEL_IQ1M)))}`
+  );
+});
+
+test("catalog collapses a stored single-prefix id and leaves canonical provider ids untouched", async () => {
+  await resetStorage();
+  await seedCompatibleNode();
+  // Stored single-prefix (legacy paste stored verbatim): the emitted id must
+  // still be the single-prefixed form, not a double.
+  await modelsDb.addCustomModel(NODE_ID, `${NODE_PREFIX}/${MODEL_NVFP4}`, "Qwen NVFP4", "manual");
+
+  // Canonical-style provider with no node row: a slashed id that begins with
+  // the provider's own name must keep the pre-fix emission shape.
+  await providersDb.createProviderConnection({
+    provider: "testplain",
+    authType: "apikey",
+    name: "testplain-conn",
+    apiKey: "sk-test",
+    isActive: true,
+    testStatus: "active",
+  });
+  await modelsDb.addCustomModel("testplain", "testplain/model-x", "Model X", "manual");
+
+  const response = await v1ModelsCatalog.getUnifiedModelsResponse(
+    new Request("http://localhost/api/v1/models")
+  );
+  const body = (await response.json()) as { data: Array<Record<string, unknown>> };
+  const ids = body.data.map((m) => String(m.id));
+  assert.ok(
+    ids.includes(`${NODE_PREFIX}/${MODEL_NVFP4}`),
+    `expected single-prefix emission, got ${JSON.stringify(ids.filter((id) => id.includes(MODEL_NVFP4)))}`
+  );
+  assert.equal(
+    ids.includes(`${NODE_PREFIX}/${NODE_PREFIX}/${MODEL_NVFP4}`),
+    false,
+    "no stacked emission for the stored single-prefix id"
+  );
+  assert.ok(
+    ids.includes("testplain/testplain/model-x"),
+    `canonical provider emission must be untouched, got ${JSON.stringify(ids.filter((id) => id.includes("model-x")))}`
+  );
+});

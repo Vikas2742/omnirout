@@ -39,8 +39,7 @@ import { isHiddenForModality } from "@/shared/utils/modelVisibility";
 export const dynamic = "force-dynamic";
 import { providerModelMutationSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
-import { getCachedProviderNodes } from "@/lib/db/readCache";
-import { collapseProviderPrefix, resolveProviderNodePrefix } from "@/shared/utils/modelIdPrefix";
+import { normalizeNodeModelId } from "@/lib/providerModels/modelIdNormalization";
 
 function normalizeRequestedModelIds(
   searchParams: URLSearchParams,
@@ -188,14 +187,10 @@ export async function POST(request) {
     // Store the bare upstream id: a pasted/imported id can arrive already
     // carrying the node prefix (copied from a prefixed listing), and storing
     // it verbatim would stack another prefix at catalog emission
-    // (`<prefix>/<prefix>/<model>`). Slashed upstream ids that do not start
-    // with the node's own prefix pass through untouched.
-    const nodes = await getCachedProviderNodes();
-    const node = nodes.find((n) => n && n.id === provider);
-    const nodePrefix = resolveProviderNodePrefix(
-      node as { prefix?: unknown; name?: unknown } | null
-    );
-    const storedModelId = collapseProviderPrefix(modelId, [nodePrefix, provider]);
+    // (`<prefix>/<prefix>/<model>`). Scoped to compatible nodes — canonical
+    // providers' ids that begin with their own name are legitimate and pass
+    // through untouched.
+    const storedModelId = await normalizeNodeModelId(provider, modelId);
 
     const model = await addCustomModel(
       provider,
@@ -271,6 +266,11 @@ export async function PUT(request) {
       isFree,
     } = validation.data;
 
+    // Same write-path contract as POST: address (and, with createIfMissing,
+    // create) the row under the bare upstream id so a prefixed paste cannot
+    // re-introduce a stacked custom row through the update verb.
+    const storedModelId = await normalizeNodeModelId(provider, modelId);
+
     const raw = rawBody as Record<string, unknown>;
     const updates: Record<string, unknown> = {};
     if ("modelName" in raw) updates.modelName = modelName;
@@ -298,15 +298,15 @@ export async function PUT(request) {
     let contextWindowOverrideResult: number | null | undefined;
     if ("contextWindowOverride" in raw) {
       if (contextWindowOverride == null) {
-        removeModelContextOverride(provider, modelId);
+        removeModelContextOverride(provider, storedModelId);
         contextWindowOverrideResult = null;
       } else {
-        setModelContextOverride(provider, modelId, contextWindowOverride, "manual");
+        setModelContextOverride(provider, storedModelId, contextWindowOverride, "manual");
         contextWindowOverrideResult = contextWindowOverride;
       }
     }
 
-    const model = await updateCustomModel(provider, modelId, updates, {
+    const model = await updateCustomModel(provider, storedModelId, updates, {
       createIfMissing: maxOutputTokenOverride === undefined || Object.keys(updates).length > 0,
     });
 
@@ -389,11 +389,11 @@ export async function PUT(request) {
               : undefined;
         }
         if (Object.keys(patch).length > 0) {
-          mergeModelCompatOverride(provider, modelId, patch);
+          mergeModelCompatOverride(provider, storedModelId, patch);
         }
         return Response.json({
           ok: true,
-          ...persistOutputTokenOverride(provider, modelId, maxOutputTokenOverride),
+          ...persistOutputTokenOverride(provider, storedModelId, maxOutputTokenOverride),
           modelCompatOverrides: getModelCompatOverrides(provider),
           ...(contextWindowOverrideResult !== undefined
             ? { contextWindowOverride: contextWindowOverrideResult }
@@ -408,7 +408,7 @@ export async function PUT(request) {
 
     return Response.json({
       model,
-      ...persistOutputTokenOverride(provider, modelId, maxOutputTokenOverride),
+      ...persistOutputTokenOverride(provider, storedModelId, maxOutputTokenOverride),
       ...(contextWindowOverrideResult !== undefined
         ? { contextWindowOverride: contextWindowOverrideResult }
         : {}),
@@ -486,7 +486,10 @@ export async function PATCH(request) {
       );
     }
 
-    for (const modelId of modelIds) {
+    for (const requestedId of modelIds) {
+      // Hide/unhide keyed by the stored (bare) id so a prefixed paste hits
+      // the same row the catalog emits.
+      const modelId = await normalizeNodeModelId(provider, requestedId);
       const updatedModel = await updateCustomModel(provider, modelId, { isHidden: body.isHidden });
       if (!updatedModel) {
         mergeModelCompatOverride(provider, modelId, { isHidden: body.isHidden, modality });
@@ -584,10 +587,20 @@ export async function DELETE(request) {
     // Resetting a user-owned overlay must never delete the same-id synced base.
     // The normal delete action retains its existing behavior for a standalone
     // synced row, while the detail-page reset control uses resetOverride=true.
+    // Match the row the operator can see: the id as submitted, then its
+    // node-normalized form, so both legacy stacked rows and pasted prefixed
+    // ids resolve to the same delete.
+    const normalizedModelId = await normalizeNodeModelId(provider, modelId);
     const removedCustom = await removeCustomModel(provider, modelId);
+    const removedCustomNormalized =
+      removedCustom || normalizedModelId === modelId
+        ? false
+        : await removeCustomModel(provider, normalizedModelId);
     const removedSynced =
-      removedCustom || resetOverride ? false : await removeSyncedAvailableModel(provider, modelId);
-    const removed = removedCustom || removedSynced;
+      removedCustom || removedCustomNormalized || resetOverride
+        ? false
+        : await removeSyncedAvailableModel(provider, modelId);
+    const removed = removedCustom || removedCustomNormalized || removedSynced;
     if (resetOverride && removedCustom) {
       removeModelContextOverride(provider, modelId);
       const aliasChanges = await syncManagedAvailableModelAliases(provider, [modelId], {
