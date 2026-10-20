@@ -1,9 +1,10 @@
 // Agent sessions: saveRequestUsage aggregates each attributed request into its session row
-// (208_agent_sessions) and links the usage row to it (209_usage_history_agent_session_id).
+// (214_agent_sessions) and links the usage row to it (215_usage_history_agent_session_id).
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import Database from "better-sqlite3";
 
 const scratchDir = process.env.DATA_DIR || path.resolve("_artifacts/tests");
 fs.mkdirSync(scratchDir, { recursive: true });
@@ -206,4 +207,36 @@ test("a failing agent-session write never drops the usage_history row", async ()
   }
   assert.deepEqual(usageSessionIds("key-isolation"), [null]);
   assert.deepEqual(sessionsFor("key-isolation"), []);
+});
+
+test("a write deferred by a database lock records the row and its session once, together", async () => {
+  const warnings: unknown[] = [];
+  const warn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    warnings.push(args);
+  };
+  // A rival connection holds the write lock, so the first attempt fails and is retried later.
+  const locker = new Database(path.join(TEST_DATA_DIR, "storage.sqlite"));
+  locker.exec("BEGIN IMMEDIATE");
+  try {
+    await recordUsage({
+      apiKeyId: "key-locked",
+      timestamp: "2026-10-20T10:00:00.000Z",
+      agentContext: agentContext({ clientSessionId: "locked-session" }),
+    });
+    assert.deepEqual(usageSessionIds("key-locked"), []);
+  } finally {
+    locker.exec("ROLLBACK");
+    locker.close();
+  }
+  const deadline = Date.now() + 5000;
+  while (usageSessionIds("key-locked").length === 0 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  console.warn = warn;
+  const [session] = sessionsFor("key-locked");
+  assert.equal(session?.request_count, 1);
+  assert.deepEqual(usageSessionIds("key-locked"), [session.id]);
+  // The lock is not reported as a failed session write that dropped the attribution.
+  assert.deepEqual(warnings, []);
 });
