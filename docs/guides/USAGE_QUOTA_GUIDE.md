@@ -110,6 +110,8 @@ quota. Existing quota, budget and provider-exact cost calculations are unchanged
 
 These diagnostics use the existing bounded cache-health summary and call-log
 retention. They do not change request TTL defaults, routing or account selection.
+Capturing client-requested versus effective outgoing TTL at the provider send
+boundary is deferred; this panel reports receipt tiers, not effective outgoing TTL.
 
 Implementation: `src/lib/usage/cacheWriteEstimate.ts`,
 `src/lib/usage/cacheHealth.ts`, and `src/shared/utils/cacheWriteUsage.ts`.
