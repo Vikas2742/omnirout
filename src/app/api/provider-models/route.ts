@@ -590,7 +590,15 @@ export async function DELETE(request) {
     }
 
     if (resetEndpoints) {
-      const restored = await resetModelEndpointOverride(provider, modelId);
+      // Endpoint overrides follow the same write contract as the rows they
+      // annotate (bare upstream id); resolve the id as submitted, then its
+      // normalized form.
+      const normalizedResetId = await normalizeNodeModelId(provider, modelId);
+      const restored =
+        (await resetModelEndpointOverride(provider, modelId)) ||
+        (normalizedResetId !== modelId
+          ? await resetModelEndpointOverride(provider, normalizedResetId)
+          : false);
       if (!restored)
         return Response.json(
           { error: { message: "No endpoint override to reset", type: "not_found" } },
@@ -614,7 +622,10 @@ export async function DELETE(request) {
     const removedSynced =
       removedCustom || removedCustomNormalized || resetOverride
         ? false
-        : await removeSyncedAvailableModel(provider, modelId);
+        : (await removeSyncedAvailableModel(provider, modelId)) ||
+          (normalizedModelId !== modelId
+            ? await removeSyncedAvailableModel(provider, normalizedModelId)
+            : false);
     const removed = removedCustom || removedCustomNormalized || removedSynced;
     if (resetOverride && (removedCustom || removedCustomNormalized)) {
       removeModelContextOverride(provider, modelId);

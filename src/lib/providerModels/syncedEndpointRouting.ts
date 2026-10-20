@@ -81,11 +81,13 @@ export async function resolveLocalSyncedEndpointRoute(
             entry.id === `${providerPrefix}/${model}` ||
             // Rows are stored under the bare upstream id (see
             // normalizeNodeModelId); the override row for "this model does
-            // support <endpoint>" carries that bare id. Accepted for plain
-            // node ids and for absolute-path ids ("/models/…gguf") only: a
+            // support <endpoint>" carries that bare id. Images always
+            // accepted the raw bare form; embeddings accepts it for plain
+            // node ids and absolute-path ids ("/models/…gguf") only — a
             // relative multi-segment suffix ("org/model") is another row's
             // full namespace and must not broaden routing onto this request.
-            ((model.startsWith("/") || !model.includes("/")) && entry.id === model) ||
+            ((endpoint === "images" || model.startsWith("/") || !model.includes("/")) &&
+              entry.id === model) ||
             (endpoint === "images" &&
               configuredNodePrefix !== null &&
               entry.id === `${configuredNodePrefix}/${model}`)

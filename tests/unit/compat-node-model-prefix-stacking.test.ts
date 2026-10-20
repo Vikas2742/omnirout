@@ -361,3 +361,82 @@ test("catalog collapses a stored single-prefix id and leaves canonical provider 
     `canonical provider emission must be untouched, got ${JSON.stringify(ids.filter((id) => id.includes("model-x")))}`
   );
 });
+
+test("PATCH /api/provider-models normalizes a prefixed id and reports both alias targets", async () => {
+  await resetStorage();
+  await seedCompatibleNode();
+  process.env.OMNIROUTE_API_KEY = "sk-prefix-stack-mgmt";
+  // A managed alias pointing at the bare stored id (the shape the alias
+  // layer persists) plus the row itself.
+  await modelsDb.addCustomModel(NODE_ID, MODEL_IQ1M, "Qwen", "manual");
+  await aliasesDb.setModelAlias("iq1m", `${NODE_ID}/${MODEL_IQ1M}`);
+
+  const response = await providerModelsRoute.PATCH(
+    new Request(
+      `http://localhost/api/provider-models?provider=${encodeURIComponent(NODE_ID)}&modelId=${encodeURIComponent(STACKED_IQ1M)}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer sk-prefix-stack-mgmt",
+        },
+        body: JSON.stringify({ isHidden: true }),
+      }
+    )
+  );
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as {
+    ok: boolean;
+    aliasChanges: { removed: string[] };
+    modelCompatOverrides: Array<Record<string, unknown>>;
+  };
+  assert.equal(body.ok, true);
+  // The managed alias pointing at the bare stored id must be pruned: the
+  // alias layer received both the submitted and normalized id forms.
+  assert.ok(
+    body.aliasChanges.removed.includes("iq1m"),
+    `alias pointing at the bare id must be removed, got ${JSON.stringify(body.aliasChanges.removed)}`
+  );
+});
+
+test("validate-and-add handler stores the bare upstream id for a prefixed node", async () => {
+  await resetStorage();
+  await seedCompatibleNode();
+  process.env.OMNIROUTE_API_KEY = "sk-prefix-stack-mgmt";
+
+  // createValidateAndAddHandler requires a live validation probe; call the
+  // handler with inference consent and a connection that cannot validate to
+  // prove the request survives parsing with the normalized id (the 4xx/5xx
+  // error must reference the bare id path, not fail on the stacked form).
+  const { createValidateAndAddHandler } = await import("../../src/lib/modelValidation/http.ts");
+  const handler = createValidateAndAddHandler({
+    authorize: async () => null,
+    validateAndAdd: async (input: { modelId: string }) => {
+      // Capture what the service layer would have received.
+      capturedModelId = input.modelId;
+      throw new Error("probe-stop");
+    },
+  });
+  let capturedModelId = "";
+  const response = await handler(
+    new Request("http://localhost/api/provider-models/validate-and-add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer sk-prefix-stack-mgmt",
+      },
+      body: JSON.stringify({
+        provider: NODE_ID,
+        modelId: STACKED_IQ1M,
+        connectionId: "conn-1",
+        allowInference: true,
+      }),
+    })
+  );
+  assert.equal(response.status, 500, "the probe error surfaces as a 500");
+  assert.equal(
+    capturedModelId,
+    MODEL_IQ1M,
+    `service layer must receive the bare id, got "${capturedModelId}"`
+  );
+});
