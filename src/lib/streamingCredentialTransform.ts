@@ -350,12 +350,10 @@ function drainToolCalls(
   choiceBuf: Record<FieldCategory, string>,
   toolEntries: Array<[string, Record<FieldCategory, string>]>
 ): void {
-  if (!choiceBuf.toolArgs && toolEntries.length === 0) {
-    delete delta.tool_calls;
-    return;
-  }
-  if (!delta.tool_calls) delta.tool_calls = [];
-  const toolCalls = delta.tool_calls as Array<Record<string, unknown>>;
+  // `delta` comes from a clone of the last forwarded chunk, so any tool_calls it still
+  // carries (id, name, argument prefix) already reached the client. Rebuild the field from
+  // the held-back remainder alone; appending to it would send that prefix a second time.
+  const toolCalls: Array<Record<string, unknown>> = [];
   if (choiceBuf.toolArgs) {
     toolCalls.push({ index: 0, function: { arguments: choiceBuf.toolArgs } });
     choiceBuf.toolArgs = "";
@@ -366,6 +364,8 @@ function drainToolCalls(
     toolCalls.push({ index: toolIdx, function: { arguments: buf.toolArgs } });
     buf.toolArgs = "";
   }
+  if (toolCalls.length > 0) delta.tool_calls = toolCalls;
+  else delete delta.tool_calls;
 }
 
 function drainOneChoice(store: ChoiceBufferStore, choice: OpenAiChoice): void {

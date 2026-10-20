@@ -262,3 +262,64 @@ test("gate resolution honors the flag, the env fallback, and the opt-out", async
     else process.env.CREDENTIAL_REDACTION_ENABLED = original;
   }
 });
+
+// The hold-back window keeps the tail of every streamed tool call. The end-of-stream
+// flush clones the last forwarded chunk and used to push the held-back remainder onto
+// that clone's own `tool_calls`, so the prefix already sent in the clone went out a
+// second time: clients saw `prefix + prefix + remainder`, i.e. invalid JSON.
+function collectToolArguments(output: string): Map<number, string> {
+  const byIndex = new Map<number, string>();
+  for (const line of output.split("\n")) {
+    if (!line.startsWith("data:") || line.includes("[DONE]")) continue;
+    const json = JSON.parse(line.slice(5));
+    for (const choice of json.choices ?? []) {
+      for (const call of choice.delta?.tool_calls ?? []) {
+        const args = call.function?.arguments;
+        if (typeof args === "string") {
+          byIndex.set(call.index, (byIndex.get(call.index) ?? "") + args);
+        }
+      }
+    }
+  }
+  return byIndex;
+}
+
+function sseToolCalls(toolCalls: unknown[]): string {
+  return `data: ${JSON.stringify({ choices: [{ index: 0, delta: { tool_calls: toolCalls } }] })}\n\n`;
+}
+
+const SSE_FINISH_TOOL_CALLS = `data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}\n\n`;
+
+test("a long tool call streamed in one chunk reaches the client exactly once", async () => {
+  const args = JSON.stringify({ command: "echo hello && ".repeat(120) });
+  assert.ok(args.length > 1024, "arguments must outlast the 512-char hold-back window");
+  const output = await runTransform(createCredentialSseTransform(), [
+    sseToolCalls([
+      { index: 0, id: "call_1", type: "function", function: { name: "terminal", arguments: args } },
+    ]),
+    SSE_FINISH_TOOL_CALLS,
+  ]);
+  const received = collectToolArguments(output).get(0);
+  assert.equal(received, args);
+  assert.deepEqual(JSON.parse(received as string), JSON.parse(args));
+});
+
+test("parallel tool calls streamed as fragments are each reassembled exactly once", async () => {
+  const argsA = JSON.stringify({ command: "a".repeat(900) });
+  const argsB = JSON.stringify({ path: "/tmp/" + "b".repeat(700) });
+  const fragments = (args: string) => [args.slice(0, 300), args.slice(300, 650), args.slice(650)];
+  const chunks = [
+    sseToolCalls([
+      { index: 0, id: "call_a", type: "function", function: { name: "terminal", arguments: "" } },
+    ]),
+    sseToolCalls([
+      { index: 1, id: "call_b", type: "function", function: { name: "read_file", arguments: "" } },
+    ]),
+    ...fragments(argsA).map((part) => sseToolCalls([{ index: 0, function: { arguments: part } }])),
+    ...fragments(argsB).map((part) => sseToolCalls([{ index: 1, function: { arguments: part } }])),
+    SSE_FINISH_TOOL_CALLS,
+  ];
+  const received = collectToolArguments(await runTransform(createCredentialSseTransform(), chunks));
+  assert.equal(received.get(0), argsA);
+  assert.equal(received.get(1), argsB);
+});
