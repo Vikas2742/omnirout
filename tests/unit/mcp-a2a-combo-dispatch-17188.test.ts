@@ -6,12 +6,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+// Keep MCP audit attempts away from a real user database in standalone runs.
+import "../_setup/isolateDataDir.ts";
 import type { A2ATask } from "../../src/lib/a2a/taskManager.ts";
 
+const { closeAuditDb } = await import("../../open-sse/mcp-server/audit.ts");
 const { handleRouteRequest } =
   await import("../../open-sse/mcp-server/tools/inferenceTools.ts");
 const { executeSmartRouting } =
   await import("../../src/lib/a2a/skills/smartRouting.ts");
+
+test.after(() => closeAuditDb());
 
 const messages = [{ role: "user", content: "hello" }];
 const completion = {
