@@ -37,27 +37,6 @@ export interface RoutingDecision {
   timestamp: string;
 }
 
-/**
- * A combo requested by an A2A caller is not proof that it was executed.
- * Forced-model and server-side routing rules can still choose another target.
- * Attribute execution only to a combo explicitly reported by the gateway, and
- * preserve caller intent in a separate field for debugging (#17188).
- */
-export function resolveA2AComboAttribution(metadata: {
-  requested_combo?: unknown;
-  confirmed_combo?: unknown;
-}): { comboId: string; requestedCombo: string | null } {
-  const requestedCombo =
-    typeof metadata.requested_combo === "string" && metadata.requested_combo.trim()
-      ? metadata.requested_combo.trim()
-      : null;
-  const confirmedCombo =
-    typeof metadata.confirmed_combo === "string" && metadata.confirmed_combo.trim()
-      ? metadata.confirmed_combo.trim()
-      : null;
-  return { comboId: confirmedCombo || "default", requestedCombo };
-}
-
 // In-memory log (production would use SQLite via routing_decisions table)
 const decisions: RoutingDecision[] = [];
 const MAX_DECISIONS = 1000;
