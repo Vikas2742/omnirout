@@ -1,4 +1,5 @@
 import { register } from "../registry.ts";
+import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
 import { FORMATS } from "../formats.ts";
 import { CLAUDE_OAUTH_TOOL_PREFIX } from "../request/openai-to-claude.ts";
 import { hasToolCallShim, applyToolCallShimToBuffer } from "../helpers/toolCallShim.ts";
@@ -459,6 +460,7 @@ function trackUsageFromChunk(chunk, state) {
   );
 
   state.usage = {
+    ...cacheCreationFields(chunk.usage),
     input_tokens: inputTokens,
     output_tokens: outputTokens,
   };

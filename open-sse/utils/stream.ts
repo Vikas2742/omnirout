@@ -1,6 +1,7 @@
 import { translateResponse, initState } from "../translator/index.ts";
 import { FORMATS } from "../translator/formats.ts";
 import { appendRequestLog } from "@/lib/usageDb";
+import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
 import { clearPendingRequestOnce } from "./pendingRequestCleanup.ts";
 import { resolveTrailingUsageSummary } from "./passthroughTrailingUsage.ts";
 import { createByteLengthQueueStrategies } from "./byteQueueStrategy.ts";
@@ -1926,6 +1927,7 @@ export function createSSEStream(options: StreamOptions = {}) {
                     if (!usage) usage = {};
                     const u = usage;
                     const eu = extracted as UsageTokenRecord;
+                    Object.assign(u, cacheCreationFields(extracted));
                     if (eu.prompt_tokens > 0) u.prompt_tokens = eu.prompt_tokens;
                     if (eu.completion_tokens > 0) u.completion_tokens = eu.completion_tokens;
                     if (eu.total_tokens > 0) u.total_tokens = eu.total_tokens;
@@ -2526,6 +2528,7 @@ export function createSSEStream(options: StreamOptions = {}) {
             } else {
               const su = state.usage as Record<string, number>;
               const eu = extracted as Record<string, number>;
+              Object.assign(su, cacheCreationFields(extracted));
               if (eu.prompt_tokens > 0) su.prompt_tokens = eu.prompt_tokens;
               if (eu.completion_tokens > 0) su.completion_tokens = eu.completion_tokens;
               if (eu.total_tokens > 0) su.total_tokens = eu.total_tokens;
@@ -3052,6 +3055,7 @@ export function createSSEStream(options: StreamOptions = {}) {
                 } else {
                   const su = state.usage as Record<string, number>;
                   const eu = extracted as Record<string, number>;
+                  Object.assign(su, cacheCreationFields(extracted));
                   if (eu.prompt_tokens > 0) su.prompt_tokens = eu.prompt_tokens;
                   if (eu.completion_tokens > 0) su.completion_tokens = eu.completion_tokens;
                   if (eu.total_tokens > 0) su.total_tokens = eu.total_tokens;

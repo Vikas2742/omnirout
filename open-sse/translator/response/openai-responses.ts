@@ -3,6 +3,7 @@
  * Converts streaming chunks from Chat Completions to Responses API events
  */
 import { register } from "../registry.ts";
+import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
 import { FORMATS } from "../formats.ts";
 import { appendToolCallArgumentDelta } from "../../utils/toolCallArguments.ts";
 import { translatorToolCallLifecycle } from "./openai-responses/toolCallLifecycle.ts";
@@ -1452,6 +1453,7 @@ function openaiResponsesToOpenAIResponseStream(chunk, state) {
           : 0);
 
       state.usage = {
+        ...cacheCreationFields(responseUsage),
         ...(responseUsage.provider_credits !== undefined && {
           provider_credits: responseUsage.provider_credits,
         }),
@@ -1465,7 +1467,7 @@ function openaiResponsesToOpenAIResponseStream(chunk, state) {
 
       // Add prompt_tokens_details if cache tokens exist
       if (cacheReadTokens > 0 || cacheCreationTokens > 0) {
-        state.usage.prompt_tokens_details = {};
+        state.usage.prompt_tokens_details = { ...cacheCreationFields(responseUsage) };
         if (cacheReadTokens > 0) {
           state.usage.prompt_tokens_details.cached_tokens = cacheReadTokens;
         }
