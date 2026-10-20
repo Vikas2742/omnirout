@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync, existsSync } from "fs";
+import { readFile, access } from "fs/promises";
 import { getAppLogFilePath } from "@/lib/logEnv";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { matchesSearch } from "@/shared/utils/turkishText";
@@ -76,11 +76,13 @@ export async function GET(req: NextRequest) {
 
     const logPath = getLogFilePath();
 
-    if (!existsSync(logPath)) {
+    try {
+      await access(logPath);
+    } catch {
       return NextResponse.json([], { status: 200 });
     }
 
-    const raw = readFileSync(logPath, "utf-8");
+    const raw = await readFile(logPath, "utf-8");
     const lines = raw.trim().split("\n").filter(Boolean);
 
     const oneHourAgo = Date.now() - 60 * 60 * 1000;

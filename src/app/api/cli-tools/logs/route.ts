@@ -22,7 +22,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { readFileSync, existsSync } from "fs";
+import { readFile, access } from "fs/promises";
 import { getAppLogFilePath } from "@/lib/logEnv";
 import { requireCliToolsAuth } from "@/lib/api/requireCliToolsAuth";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
@@ -85,11 +85,13 @@ export async function GET(request: NextRequest) {
 
     const logPath = getAppLogFilePath();
 
-    if (!existsSync(logPath)) {
+    try {
+      await access(logPath);
+    } catch {
       return NextResponse.json([], { status: 200 });
     }
 
-    const raw = readFileSync(logPath, "utf-8");
+    const raw = await readFile(logPath, "utf-8");
     const lines = raw.trim().split("\n").filter(Boolean);
 
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
