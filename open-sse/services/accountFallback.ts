@@ -20,6 +20,7 @@ import {
   getProviderErrorRuleMatch,
   resolveRuleMatchBody,
   honorsRuleLockScope,
+  setProviderErrorRuleFlagReader,
 } from "../config/providerErrorRules.ts";
 import * as rot from "./rotationConfig.ts";
 import { isContentPolicyRefusal } from "../utils/contentPolicyError.ts";
@@ -117,8 +118,16 @@ import { isCreditsExhaustedWithSharedWallet } from "./accountFallback/sharedWall
 import { CREDITS_EXHAUSTED_SIGNALS } from "./accountFallback/creditExhaustionSignals.ts";
 export { CREDITS_EXHAUSTED_SIGNALS } from "./accountFallback/creditExhaustionSignals.ts";
 import { isMistralAmbiguous401 } from "./accountFallback/mistralAmbiguousAuth.ts";
-import { isMistralAmbiguous401SoftLockoutEnabled } from "@/shared/utils/featureFlags";
+import {
+  isFeatureFlagEnabled,
+  isMistralAmbiguous401SoftLockoutEnabled,
+} from "@/shared/utils/featureFlags";
 import { boundedMap } from "@/lib/quota/boundedMap";
+// #16797: providerErrorRules.ts stays free of src/ imports; its opt-in flags
+// (OpenCode Zen egress-IP lock, full-text rule bodies) read the flag store through
+// this injected reader. Not registered = flags off (release default).
+setProviderErrorRuleFlagReader(isFeatureFlagEnabled);
+
 export type ProviderProfile = {
   baseCooldownMs: number;
   useUpstreamRetryHints: boolean;
