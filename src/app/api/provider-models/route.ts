@@ -299,9 +299,13 @@ export async function PUT(request) {
     if ("contextWindowOverride" in raw) {
       if (contextWindowOverride == null) {
         removeModelContextOverride(provider, storedModelId);
+        // Legacy overrides may be keyed by the id as it was submitted before
+        // normalization; clear that key too so a stale override cannot linger.
+        if (storedModelId !== modelId) removeModelContextOverride(provider, modelId);
         contextWindowOverrideResult = null;
       } else {
         setModelContextOverride(provider, storedModelId, contextWindowOverride, "manual");
+        if (storedModelId !== modelId) removeModelContextOverride(provider, modelId);
         contextWindowOverrideResult = contextWindowOverride;
       }
     }
@@ -486,23 +490,34 @@ export async function PATCH(request) {
       );
     }
 
+    const normalizedIds: string[] = [];
     for (const requestedId of modelIds) {
       // Hide/unhide keyed by the stored (bare) id so a prefixed paste hits
       // the same row the catalog emits.
       const modelId = await normalizeNodeModelId(provider, requestedId);
+      normalizedIds.push(modelId);
       const updatedModel = await updateCustomModel(provider, modelId, { isHidden: body.isHidden });
       if (!updatedModel) {
         mergeModelCompatOverride(provider, modelId, { isHidden: body.isHidden, modality });
       }
     }
 
+    // Managed aliases are keyed `<storagePrefix>/<storedId>`; hand the alias
+    // layer both forms so a prefixed paste cannot leave the bare row's alias
+    // (or vice versa) pointing at a still-visible model.
+    const aliasTargetIds = Array.from(new Set([...modelIds, ...normalizedIds]));
     const aliasChanges =
       body.isHidden === true
-        ? { removed: await deleteManagedAvailableModelAliases(provider, modelIds), assigned: [] }
+        ? {
+            removed: await deleteManagedAvailableModelAliases(provider, aliasTargetIds),
+            assigned: [],
+          }
         : {
             removed: [],
             assigned: (
-              await syncManagedAvailableModelAliases(provider, modelIds, { pruneMissing: false })
+              await syncManagedAvailableModelAliases(provider, aliasTargetIds, {
+                pruneMissing: false,
+              })
             ).assignedAliases,
           };
 
@@ -601,11 +616,16 @@ export async function DELETE(request) {
         ? false
         : await removeSyncedAvailableModel(provider, modelId);
     const removed = removedCustom || removedCustomNormalized || removedSynced;
-    if (resetOverride && removedCustom) {
+    if (resetOverride && (removedCustom || removedCustomNormalized)) {
       removeModelContextOverride(provider, modelId);
-      const aliasChanges = await syncManagedAvailableModelAliases(provider, [modelId], {
-        pruneMissing: false,
-      });
+      if (normalizedModelId !== modelId) removeModelContextOverride(provider, normalizedModelId);
+      const aliasChanges = await syncManagedAvailableModelAliases(
+        provider,
+        Array.from(new Set([modelId, normalizedModelId])),
+        {
+          pruneMissing: false,
+        }
+      );
       return Response.json({
         removed,
         resetOverride: true,
@@ -613,7 +633,10 @@ export async function DELETE(request) {
       });
     }
 
-    const removedAliases = await deleteManagedAvailableModelAliases(provider, [modelId]);
+    const removedAliases = await deleteManagedAvailableModelAliases(
+      provider,
+      Array.from(new Set([modelId, normalizedModelId]))
+    );
     return Response.json({ removed, aliasChanges: { removed: removedAliases, assigned: [] } });
   } catch (error) {
     console.error("Error removing provider model:", error);
