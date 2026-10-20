@@ -12,7 +12,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getTaskManager } from "@/lib/a2a/taskManager";
-import { logRoutingDecision, resolveA2AComboAttribution } from "@/lib/a2a/routingLogger";
+import { logRoutingDecision } from "@/lib/a2a/routingLogger";
+import { resolveA2AComboAttribution } from "@/lib/a2a/resolveComboAttribution";
 import { createA2AStream, SSE_HEADERS } from "@/lib/a2a/streaming";
 import { A2A_SKILL_HANDLERS, executeA2ATaskWithState } from "@/lib/a2a/taskExecution";
 import { getSettings } from "@/lib/db/settings";
