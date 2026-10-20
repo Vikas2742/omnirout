@@ -1,0 +1,1 @@
+- **fix(guardrails):** the streaming credential-redaction transform no longer resends the already-delivered part of a long tool call's arguments at the end of the stream, which gave clients invalid JSON for any call longer than the hold-back window ([#17308](https://github.com/diegosouzapw/OmniRoute/pull/17308)) — thanks @aScarecrow000
