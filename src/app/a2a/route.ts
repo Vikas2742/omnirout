@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getTaskManager } from "@/lib/a2a/taskManager";
-import { logRoutingDecision } from "@/lib/a2a/routingLogger";
+import { logRoutingDecision, resolveA2AComboAttribution } from "@/lib/a2a/routingLogger";
 import { createA2AStream, SSE_HEADERS } from "@/lib/a2a/streaming";
 import { A2A_SKILL_HANDLERS, executeA2ATaskWithState } from "@/lib/a2a/taskExecution";
 import { getSettings } from "@/lib/db/settings";
@@ -227,12 +227,11 @@ export async function POST(req: NextRequest) {
             response_model?: string;
             cost_envelope?: { actual?: number };
           };
+          const attribution = resolveA2AComboAttribution(smartMetadata);
           logRoutingDecision({
             taskType: (params?.metadata?.role as string) || "general",
-            // A requested combo is not proof of execution: policy and routing
-            // can override it. Only confirm when the gateway reports the combo.
-            comboId: smartMetadata.confirmed_combo || "default",
-            requestedCombo: smartMetadata.requested_combo ?? null,
+            comboId: attribution.comboId,
+            requestedCombo: attribution.requestedCombo,
             providerSelected:
               smartMetadata.routing_explanation?.match(/"([^"]+)"/)?.[1] || "unknown",
             modelUsed:
