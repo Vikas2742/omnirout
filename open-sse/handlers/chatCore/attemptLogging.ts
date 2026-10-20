@@ -471,7 +471,7 @@ export function persistAttemptLogs(args: PersistAttemptLogsArgs, ctx: PersistAtt
       : redactedRequest;
   const retainedResponse = videoContentRemoved
     ? { _omniroute_omitted: "video-transcript" }
-    : responseBody;
+    : (responseBody ?? (status >= 400 ? providerResponse : undefined));
   const retainedError = videoContentRemoved && error ? "[omitted: video transcript]" : error;
 
   const providerWarnings = extractProviderWarnings(providerResponse, clientResponse, responseBody);

@@ -28,6 +28,10 @@ import {
 } from "./cleanup/usagePurge";
 import { ensureCompressionRunTelemetryTable } from "./compressionRunTelemetry";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
+import {
+  pruneDbBackupsOutsideMigrationWindow,
+  resolveReusedPreMigrationSha,
+} from "./cleanup/backupPrune";
 
 interface CleanupResult {
   deleted: number;
@@ -1073,6 +1077,9 @@ export {
   type ReclaimFreedPagesResult,
   type ReclaimStopReason,
 };
+// Backup-directory pruning for the scheduled pass lives in ./cleanup/backupPrune
+// (same file-size reason) — re-exported so tests drive the pass's own symbols.
+export { pruneDbBackupsOutsideMigrationWindow, resolveReusedPreMigrationSha };
 
 // ──────────────── Background Cleanup Scheduler ────────────────
 
@@ -1090,6 +1097,8 @@ export async function runScheduledCleanupPass(phase: "startup" | "periodic"): Pr
   if (result.totalDeleted > 0) {
     console.log(`[Cleanup] ${label} cleanup freed ${result.totalDeleted} rows.`);
   }
+
+  pruneDbBackupsOutsideMigrationWindow();
 
   // Always run: it also drains pages left over from a previous capped pass or
   // from deletes made outside this scheduler. Costs a few PRAGMA reads when idle.

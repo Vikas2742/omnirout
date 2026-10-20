@@ -36,15 +36,21 @@ export type AgentSessionUsageInput = {
   success?: boolean | null;
 };
 
-/** Upsert the request's agent session inside the caller's transaction; null when it has none. */
+/**
+ * Upsert the request's agent session inside the caller's transaction; null when it has none.
+ * Errors the caller retries as a whole (`isRetryable`, e.g. a database lock) are rethrown so
+ * the row and its session are written together on the retry.
+ */
 export function recordAgentSession(
   db: Parameters<typeof recordAgentSessionUsage>[0],
-  usage: AgentSessionUsage | null
+  usage: AgentSessionUsage | null,
+  isRetryable: (error: unknown) => boolean = () => false
 ): string | null {
   if (!usage) return null;
   try {
     return recordAgentSessionUsage(db, usage);
   } catch (error) {
+    if (isRetryable(error)) throw error;
     console.warn("Failed to record agent session; saving the usage row without it:", error);
     return null;
   }
