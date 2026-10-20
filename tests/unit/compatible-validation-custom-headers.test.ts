@@ -1,15 +1,12 @@
 /**
- * Compatible-node connection tests (OpenAI and Anthropic format) must send the connection's customHeaders, as the
- * chat path and the Anthropic-compatible probe (#8369) already do. A gateway behind an
- * access proxy (e.g. Cloudflare Access) otherwise answers 403 and the credential health
- * check flags a working key as "Invalid API key".
+ * Compatible-node connection tests send the connection's customHeaders, as the chat path does.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
 
 const { validateOpenAICompatibleProvider } =
   await import("../../src/lib/providers/validation/openaiFormat.ts");
-const { validateAnthropicCompatibleProvider } =
+const { validateAnthropicCompatibleProvider, validateClaudeCodeCompatibleProvider } =
   await import("../../src/lib/providers/validation/anthropicFormat.ts");
 
 const originalFetch = globalThis.fetch;
@@ -18,86 +15,83 @@ test.afterEach(() => {
 });
 
 const GATE = { "CF-Access-Client-Id": "id.access", "CF-Access-Client-Secret": "secret" };
+const BASE = "https://gw.example.com/v1";
 
-function gatedUpstream(seen: Array<{ url: string; headers: Headers }>) {
+type Call = { url: string; headers: Headers };
+
+/** Records every request; 403s anything without the gate headers, otherwise defers to `reply`. */
+function recordingFetch(reply: (url: string) => Response): Call[] {
+  const calls: Call[] = [];
   globalThis.fetch = (async (url: string, init: RequestInit = {}) => {
     const headers = new Headers(init.headers);
-    seen.push({ url: String(url), headers });
-    const allowed =
+    calls.push({ url: String(url), headers });
+    const gated =
       headers.get("CF-Access-Client-Id") === GATE["CF-Access-Client-Id"] &&
       headers.get("CF-Access-Client-Secret") === GATE["CF-Access-Client-Secret"];
-    if (!allowed) return new Response("Forbidden", { status: 403 });
-    if (String(url).endsWith("/models")) {
-      return Response.json({ data: [{ id: "m" }] });
-    }
-    return Response.json({ choices: [{ message: { content: "ok" } }] });
+    return gated ? reply(String(url)) : new Response("Forbidden", { status: 403 });
   }) as typeof fetch;
+  return calls;
 }
 
-test("models probe sends the connection's customHeaders", async () => {
-  const seen: Array<{ url: string; headers: Headers }> = [];
-  gatedUpstream(seen);
+const ok = () => Response.json({ data: [{ id: "m" }] });
+
+test("openai-compatible models probe sends the connection's customHeaders", async () => {
+  const calls = recordingFetch(ok);
   const result = await validateOpenAICompatibleProvider({
     apiKey: "sk-test",
-    providerSpecificData: { baseUrl: "https://gw.example.com/v1", customHeaders: GATE },
+    providerSpecificData: { baseUrl: BASE, customHeaders: GATE },
   });
   assert.equal(result.valid, true, String(result.error));
-  assert.equal(seen[0].headers.get("Authorization"), "Bearer sk-test");
+  assert.equal(calls[0].headers.get("Authorization"), "Bearer sk-test");
 });
 
-test("chat fallback probe sends the connection's customHeaders", async () => {
-  const seen: Array<{ url: string; headers: Headers }> = [];
-  globalThis.fetch = (async (url: string, init: RequestInit = {}) => {
-    const headers = new Headers(init.headers);
-    seen.push({ url: String(url), headers });
-    if (String(url).endsWith("/models")) throw new Error("connection reset");
-    const allowed = headers.get("CF-Access-Client-Id") === GATE["CF-Access-Client-Id"];
-    return allowed
-      ? Response.json({ choices: [{ message: { content: "ok" } }] })
-      : new Response("Forbidden", { status: 403 });
-  }) as typeof fetch;
+test("openai-compatible chat fallback probe sends the connection's customHeaders", async () => {
+  const calls = recordingFetch((url) => {
+    if (url.endsWith("/models")) throw new Error("connection reset");
+    return Response.json({ choices: [{ message: { content: "ok" } }] });
+  });
   const result = await validateOpenAICompatibleProvider({
     apiKey: "sk-test",
-    providerSpecificData: {
-      baseUrl: "https://gw.example.com/v1",
-      customHeaders: GATE,
-      validationModelId: "m",
-    },
+    providerSpecificData: { baseUrl: BASE, customHeaders: GATE, validationModelId: "m" },
   });
   assert.equal(result.valid, true, String(result.error));
-  assert.ok(seen.some((c) => c.url.endsWith("/chat/completions")));
+  assert.ok(calls.some((c) => c.url.endsWith("/chat/completions")));
 });
 
 test("anthropic-compatible messages probe sends the connection's customHeaders", async () => {
-  const seen: Array<{ url: string; headers: Headers }> = [];
-  globalThis.fetch = (async (url: string, init: RequestInit = {}) => {
-    const headers = new Headers(init.headers);
-    seen.push({ url: String(url), headers });
-    if (headers.get("CF-Access-Client-Id") !== GATE["CF-Access-Client-Id"]) {
-      return new Response("Forbidden", { status: 403 });
-    }
-    if (String(url).endsWith("/models")) return new Response("not found", { status: 404 });
-    return Response.json({ type: "message", content: [{ type: "text", text: "ok" }] });
-  }) as typeof fetch;
+  const calls = recordingFetch((url) =>
+    url.endsWith("/models")
+      ? new Response("not found", { status: 404 })
+      : Response.json({ type: "message", content: [{ type: "text", text: "ok" }] })
+  );
   const result = await validateAnthropicCompatibleProvider({
     apiKey: "sk-test",
-    providerSpecificData: { baseUrl: "https://gw.example.com/v1", customHeaders: GATE },
+    providerSpecificData: { baseUrl: BASE, customHeaders: GATE },
   });
   assert.equal(result.valid, true, String(result.error));
-  const post = seen.find((c) => c.url.endsWith("/messages"));
-  assert.ok(post, "messages probe ran");
-  assert.equal(post.headers.get("x-api-key"), "sk-test");
+  const post = calls.find((c) => c.url.endsWith("/messages"));
+  assert.equal(post?.headers.get("x-api-key"), "sk-test");
+});
+
+test("claude-code-compatible probes send the connection's customHeaders", async () => {
+  const calls = recordingFetch((url) =>
+    url.includes("/models")
+      ? new Response("not found", { status: 404 })
+      : Response.json({ type: "message", content: [{ type: "text", text: "ok" }] })
+  );
+  const result = await validateClaudeCodeCompatibleProvider({
+    apiKey: "sk-test",
+    providerSpecificData: { baseUrl: BASE, customHeaders: GATE },
+  });
+  assert.equal(result.valid, true, String(result.error));
+  assert.ok(calls.length >= 2, "models and messages probes ran");
 });
 
 test("customHeaders never replace the probe's Authorization header", async () => {
-  const seen: Array<{ url: string; headers: Headers }> = [];
-  gatedUpstream(seen);
+  const calls = recordingFetch(ok);
   await validateOpenAICompatibleProvider({
     apiKey: "sk-test",
-    providerSpecificData: {
-      baseUrl: "https://gw.example.com/v1",
-      customHeaders: { ...GATE, Authorization: "Bearer other" },
-    },
+    providerSpecificData: { baseUrl: BASE, customHeaders: { ...GATE, Authorization: "Bearer x" } },
   });
-  assert.equal(seen[0].headers.get("Authorization"), "Bearer sk-test");
+  assert.equal(calls[0].headers.get("Authorization"), "Bearer sk-test");
 });

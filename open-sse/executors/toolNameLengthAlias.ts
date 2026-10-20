@@ -58,24 +58,28 @@ export function applyToolNameLengthAliases(
   return aliases;
 }
 
-/**
- * Applies the provider's registry-declared `toolNameMaxLength`, falling back to the
- * connection's `providerSpecificData.toolNameMaxLength` so custom `*-compatible-*`
- * nodes (which never have a registry entry) can opt in for a stricter upstream.
- */
+/** Applies the provider's registry-declared `toolNameMaxLength`, if any. */
 export function applyRegistryToolNameLengthAliases(
   provider: string,
   body: unknown,
-  normalize?: ToolNameNormalizer,
-  providerSpecificData?: unknown
+  normalize?: ToolNameNormalizer
 ): Map<string, string> {
+  return applyToolNameLengthAliases(body, getRegistryEntry(provider)?.toolNameMaxLength, normalize);
+}
+
+/**
+ * The registry `toolNameMaxLength`, else the connection's
+ * `providerSpecificData.toolNameMaxLength`: custom OpenAI chat-format compatible nodes never
+ * have a registry entry, so this is how they opt in for a stricter upstream.
+ */
+export function resolveToolNameMaxLength(
+  provider: string,
+  providerSpecificData: unknown
+): number | undefined {
   const connectionLimit = isRecord(providerSpecificData)
     ? providerSpecificData.toolNameMaxLength
     : undefined;
-  const maxLength =
-    getRegistryEntry(provider)?.toolNameMaxLength ??
-    (typeof connectionLimit === "number" ? connectionLimit : undefined);
-  return applyToolNameLengthAliases(body, maxLength, normalize);
+  return getRegistryEntry(provider)?.toolNameMaxLength ?? (connectionLimit as number | undefined);
 }
 
 /**

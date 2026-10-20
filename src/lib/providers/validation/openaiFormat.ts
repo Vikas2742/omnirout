@@ -475,12 +475,12 @@ async function readModelsPayloadForReasoningControl(
   }
 }
 
-// The chat path sends the connection's custom headers (#8369); the probe must too, or a
-// gateway behind an access proxy answers 403 and a working key is reported invalid.
+// Probes send the connection's custom headers like the chat path (#8369).
 function buildProbeHeaders(apiKey: string, providerSpecificData: unknown) {
-  const headers = buildBearerHeaders(apiKey, providerSpecificData);
-  mergeConnectionCustomHeaders(headers, providerSpecificData);
-  return headers;
+  return mergeConnectionCustomHeaders(
+    buildBearerHeaders(apiKey, providerSpecificData),
+    providerSpecificData
+  );
 }
 
 export async function validateOpenAICompatibleProvider({

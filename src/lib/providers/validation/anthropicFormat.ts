@@ -243,7 +243,6 @@ export async function validateAnthropicCompatibleProvider({
     },
     providerSpecificData
   );
-  // Same as the chat path (#8369): a gateway behind an access proxy needs these on the probe too.
   mergeConnectionCustomHeaders(headers, providerSpecificData);
 
   // Step 1: Best-effort GET /models probe. /models is NOT part of the Anthropic API spec
@@ -317,6 +316,7 @@ export async function validateClaudeCodeCompatibleProvider({
     buildClaudeCodeCompatibleHeaders(apiKey, false),
     providerSpecificData
   );
+  mergeConnectionCustomHeaders(defaultHeaders, providerSpecificData);
 
   try {
     const modelsRes = await validationRead(joinClaudeCodeCompatibleUrl(baseUrl, modelsPath), {
@@ -343,8 +343,11 @@ export async function validateClaudeCodeCompatibleProvider({
   try {
     const messagesRes = await validationWrite(joinClaudeCodeCompatibleUrl(baseUrl, chatPath), {
       method: "POST",
-      headers: applyCustomUserAgent(
-        buildClaudeCodeCompatibleHeaders(apiKey, true, sessionId),
+      headers: mergeConnectionCustomHeaders(
+        applyCustomUserAgent(
+          buildClaudeCodeCompatibleHeaders(apiKey, true, sessionId),
+          providerSpecificData
+        ),
         providerSpecificData
       ),
       body: JSON.stringify(payload),

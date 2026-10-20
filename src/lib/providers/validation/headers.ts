@@ -142,12 +142,14 @@ export function buildTokenHeaders(apiKey: string, providerSpecificData: any = {}
 export function mergeConnectionCustomHeaders(
   headers: Record<string, string>,
   providerSpecificData: unknown
-): void {
+): Record<string, string> {
   const customHeaders =
     providerSpecificData && typeof providerSpecificData === "object"
       ? (providerSpecificData as { customHeaders?: unknown }).customHeaders
       : undefined;
-  if (!customHeaders || typeof customHeaders !== "object" || Array.isArray(customHeaders)) return;
+  if (!customHeaders || typeof customHeaders !== "object" || Array.isArray(customHeaders)) {
+    return headers;
+  }
   for (const [name, value] of Object.entries(customHeaders as Record<string, unknown>)) {
     const trimmed = name.trim();
     if (!trimmed || typeof value !== "string") continue;
@@ -157,4 +159,5 @@ export function mergeConnectionCustomHeaders(
     if (Object.keys(headers).some((existing) => existing.toLowerCase() === lower)) continue;
     headers[trimmed] = value;
   }
+  return headers;
 }
