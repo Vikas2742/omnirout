@@ -114,16 +114,16 @@ OmniRoute/
 
 ```
 src/
-├── app/                 # App Router (stránky + API trasy + stavové stránky + vstupná stránka)
+├── app/                 # App Router (stránky + API trasy + stavové stránky + úvodná stránka)
 ├── lib/                 # Základné knižnice / doménové moduly (80 podadresárov + ~70 súborov najvyššej úrovne)
-├── domain/              # Čistá doménová logika (nástroj pravidiel, záložné riešenie, náklady, uzamknutie, comboResolver, vyhodnotenie)
-├── server/              # Moduly iba pre server (reťazec authz, cors, middleware autentifikácie) — nemožno importovať z klienta
+├── domain/              # Čistá doménová logika (policy engine, fallback, náklady, lockout, comboResolver, assessment)
+├── server/              # Moduly určené iba pre server (autorizačný pipeline, cors, autentifikačný middleware) — nemožno ich importovať z klienta
 ├── shared/              # Bezpečne zdieľané medzi serverom a klientom (konštanty, typy, validácia, kontrakty, pomocné nástroje)
-├── i18n/                # konfigurácia next-intl + JSON so správami pre jednotlivé lokality (42 lokalít)
-├── middleware/          # Middleware Next.js (obohatenie požiadaviek, detekcia lokality)
-├── mitm/                # Jadro MITM proxy: generovanie/inštalácia certifikátov, obslužné rutiny, ciele, inšpektor, masky, priame preposielanie
+├── i18n/                # Konfigurácia next-intl + JSON so správami pre jednotlivé lokalizácie (67 lokalizácií)
+├── middleware/          # Middleware Next.js (obohatenie požiadaviek, detekcia lokalizácie)
+├── mitm/                # Jadro MITM proxy: generovanie/inštalácia certifikátov, obslužné rutiny, ciele, inšpektor, masky, priame odovzdávanie
 │   ├── handlers/        # 9 tried obslužných rutín agentov IDE rozširujúcich MitmHandlerBase (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
-│   └── inspector/       # Vrstva zachytávania prevádzky: vyrovnávacia pamäť (kruhová v pamäti), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
+│   └── inspector/       # Vrstva zachytávania prevádzky: buffer (kruhový buffer v pamäti), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
 ├── models/              # Prepojovacia vrstva adaptérov modelov (staršia kompatibilná vrstva)
 ├── scripts/             # Interné skripty údržby (napr. backfillAggregation)
 ├── sse/                 # Staršie obslužné rutiny/služby SSE (chat.ts, chatHelpers.ts, services/auth.ts)
@@ -140,21 +140,21 @@ src/
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app/api/v1/`                                                                | Verejné API kompatibilné s OpenAI (~25 podradených trás: chat, completions, embeddings, files, batches, audio, images, videos, music, rerank, moderations, search, ws, agents, accounts, providers atď.)                                                                                                                      |
 | `app/api/v1beta/`                                                            | Koncové body API v štýle Gemini                                                                                                                                                                                                                                                                                               |
-| `app/api/playground/`                                                        | Trasy Playground Studio: `improve-prompt/` (POST — prepisovač promptov využívajúci LLM), `presets/` (GET zoznam / POST vytvorenie), `presets/[id]/` (GET / PUT / DELETE) — pozri `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                                       |
-| `app/api/` (mimo v1)                                                         | Trasy správy/administrácie (~60 adresárov: providers, combos, settings, mcp, a2a, evals, memory, skills, webhooks, compliance, resilience, monitoring, tunnels, cli-tools atď.)                                                                                                                                               |
-| `app/api/tools/agent-bridge/`                                                | REST API AgentBridge — 12 trás (ovládanie servera, stav/DNS/mapovania agenta, obchádzanie, certifikát, nadradená CA). LOCAL_ONLY + SPAWN_CAPABLE. Pozri `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                                                  |
-| `app/api/tools/traffic-inspector/`                                           | REST + WS API nástroja Traffic Inspector — viac ako 16 trás (požiadavky, relácie, hostitelia, režimy zachytávania, export, ws). LOCAL_ONLY + SPAWN_CAPABLE. Pozri `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                                  |
+| `app/api/playground/`                                                        | Trasy Playground Studio: `improve-prompt/` (POST — prepisovač promptov využívajúci LLM), `presets/` (GET zoznam / POST vytvorenie), `presets/[id]/` (GET / PUT / DELETE) — pozrite si `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                                  |
+| `app/api/` (mimo v1)                                                         | Trasy na správu a administráciu (~60 adresárov: providers, combos, settings, mcp, a2a, evals, memory, skills, webhooks, compliance, resilience, monitoring, tunnels, cli-tools atď.)                                                                                                                                          |
+| `app/api/tools/agent-bridge/`                                                | REST API AgentBridge — 12 trás (ovládanie servera, stav agenta/DNS/mapovania, obídenie, certifikát, nadradená CA). LOCAL_ONLY + SPAWN_CAPABLE. Pozrite si `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                                                |
+| `app/api/tools/traffic-inspector/`                                           | REST + WS API Traffic Inspector — viac než 16 trás (požiadavky, relácie, hostitelia, režimy zachytávania, export, ws). LOCAL_ONLY + SPAWN_CAPABLE. Pozrite si `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                                      |
 | `app/a2a/`                                                                   | Vstupný bod A2A JSON-RPC 2.0 (`POST /a2a`)                                                                                                                                                                                                                                                                                    |
-| `app/.well-known/agent.json/`                                                | Karta agenta A2A (vyhľadávanie)                                                                                                                                                                                                                                                                                               |
-| `app/(dashboard)/dashboard/`                                                 | Stránky používateľského rozhrania ovládacieho panela (viac ako 50 sekcií, ~118 súborov page.tsx: providers, combos, settings, memory, skills, webhooks, evals, audit, batch, cache, costs, health, system, activity atď.)                                                                                                     |
-| `app/(dashboard)/dashboard/search-tools/`                                    | Používateľské rozhranie Search Tools Studio (3 karty: Vyhľadávanie/Získavanie/Porovnanie + SearchConceptCard + ProviderCatalog) — pozri `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                              |
+| `app/.well-known/agent.json/`                                                | Karta agenta A2A (zisťovanie)                                                                                                                                                                                                                                                                                                 |
+| `app/(dashboard)/dashboard/`                                                 | Stránky používateľského rozhrania ovládacieho panela (viac než 50 sekcií, ~118 súborov page.tsx: providers, combos, settings, memory, skills, webhooks, evals, audit, batch, cache, costs, health, system, activity atď.)                                                                                                     |
+| `app/(dashboard)/dashboard/search-tools/`                                    | Používateľské rozhranie Search Tools Studio (3 karty: Search/Scrape/Compare + SearchConceptCard + ProviderCatalog) — pozrite si `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                      |
 | `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (plán 21): `page.tsx` (prostredie s 3 kartami), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Stránka ovládacieho panela AgentBridge — karta servera, 9 kariet agentov, sprievodca nastavením, mapovanie modelov, zoznam obchádzania. i18n PT-BR + EN. Pozri `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                              |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Stránka ovládacieho panela Traffic Inspector — rozdelené zobrazenie DevTools, 7 kariet podrobností, 4 prepínače režimov zachytávania, záznamník relácií, kontextové farebné zvýraznenie. i18n PT-BR + EN. Pozri `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                                       |
-| `app/(dashboard)/dashboard/activity/`                                        | Stránka informačného kanála aktivít (skupina B): `page.tsx` (server) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — pozrite si `docs/architecture/MONITORING_SECTIONS.md`                                                                                              |
+| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Stránka ovládacieho panela AgentBridge — karta servera, 9 kariet agentov, sprievodca nastavením, mapovanie modelov, zoznam obídení. i18n PT-BR + EN. Pozrite si `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                             |
+| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Stránka ovládacieho panela Traffic Inspector — rozdelené zobrazenie DevTools, 7 kariet podrobností, 4 prepínače režimov zachytávania, záznamník relácií, farebné rozlíšenie kontextu. i18n PT-BR + EN. Pozrite si `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                                     |
+| `app/(dashboard)/dashboard/activity/`                                        | Stránka informačného kanála aktivity (skupina B): `page.tsx` (server) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — pozrite si `docs/architecture/MONITORING_SECTIONS.md`                                                                                             |
 | `app/(dashboard)/dashboard/costs/quota-share/`                               | Stránka zdieľania kvót (skupina B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                               |
 | `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Stránka konfigurácie plánu poskytovateľa (skupina B): `page.tsx` + `ProviderPlanConfigClient.tsx` — prepísanie dimenzií kvóty pre jednotlivé pripojenia                                                                                                                                                                       |
-| `app/docs/`                                                                  | Vstavaný prehliadač dokumentácie (vykresľuje `docs/*.md`)                                                                                                                                                                                                                                                                     |
+| `app/docs/`                                                                  | Integrovaný prehliadač dokumentácie (vykresľuje `docs/*.md`)                                                                                                                                                                                                                                                                  |
 | `app/landing/`                                                               | Marketingová vstupná stránka                                                                                                                                                                                                                                                                                                  |
 | `app/login/`, `forgot-password/`, `forbidden/`                               | Stránky súvisiace s autentifikáciou                                                                                                                                                                                                                                                                                           |
 | `app/{400,401,403,408,429,500,502,503}/`                                     | Stránky chýb HTTP                                                                                                                                                                                                                                                                                                             |
@@ -164,94 +164,94 @@ src/
 
 ### `src/lib/` — Základné knižnice (~50 modulov)
 
-| Modul                                    | Účel                                                                                                                                                                                                                                                                                                                           |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `a2a/`                                   | Správca úloh protokolu A2A, zručnosti (5), streamovanie                                                                                                                                                                                                                                                                        |
-| `acp/`                                   | Register agentov CLI (lokálne zisťovanie CLI — pozri `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                               |
-| `api/`                                   | Zdieľané pomocné nástroje API (`requireManagementAuth`, validácia)                                                                                                                                                                                                                                                             |
-| `auth/`                                  | Relácia, hašovanie hesiel, validácia tokenov                                                                                                                                                                                                                                                                                   |
-| `batches/`                               | Obslužné rutiny rozhrania OpenAI Batches API                                                                                                                                                                                                                                                                                   |
-| `catalog/`                               | Validácia katalógu poskytovateľov pomocou Zod + určovanie možností                                                                                                                                                                                                                                                             |
-| `cloudAgent/`                            | Cloudoví agenti (Codex Cloud, Devin, Jules) — pozri `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                           |
-| `combos/`                                | Určovanie kombinácií + pomocné nástroje na zmenu poradia                                                                                                                                                                                                                                                                       |
-| `audit/`                                 | Pomocné nástroje informačného kanála aktivít: `highLevelActions.ts` (zoznam povolených položiek + `isHighLevelAction()`), `activityIcons.ts` (mapovanie akcie → ikona/sloveso), `timeline.ts` (groupByDay/relativeTime) — pozri `docs/architecture/MONITORING_SECTIONS.md`                                                     |
-| `compliance/`                            | Protokol auditu + audit poskytovateľov — pozri `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                   |
-| `compression/`                           | Prepojovacia vrstva kompresného mechanizmu (mechanizmy sa nachádzajú v `open-sse/services/compression/`)                                                                                                                                                                                                                       |
-| `config/`                                | Pomocné nástroje konfigurácie za behu                                                                                                                                                                                                                                                                                          |
-| `db/`                                    | Viac ako 120 doménových modulov DB + 168 migrácií (pre SQLite vždy pristupujte cez túto vrstvu)                                                                                                                                                                                                                                |
-| `quota/`                                 | Mechanizmus zdieľania kvót: `dimensions.ts` (typy/Zod), `types.ts` (rozhranie QuotaStore), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — pozri `docs/routing/QUOTA_SHARE.md` |
-| `radar/`                                 | Klient katalógu bezplatných modelov Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — pozri `docs/frameworks/RADAR.md`                                                                                                                                       |
-| `display/`                               | Pomocné nástroje na formátovanie používateľského rozhrania (náklady, latencia atď.)                                                                                                                                                                                                                                            |
-| `embeddings/`                            | Pomocné nástroje služby vektorových reprezentácií                                                                                                                                                                                                                                                                              |
-| `env/`                                   | Spracovanie a validácia premenných prostredia                                                                                                                                                                                                                                                                                  |
-| `evals/`                                 | Framework na vyhodnocovanie (súpravy, spúšťač, runtime) — pozri `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                     |
-| `guardrails/`                            | Maskovanie osobných údajov, ochrana pred vkladaním inštrukcií do promptov, most pre vizuálne vstupy — pozri `docs/security/GUARDRAILS.md`                                                                                                                                                                                      |
-| `jobs/`                                  | Úlohy na pozadí (podobné cronu)                                                                                                                                                                                                                                                                                                |
-| `memory/`                                | Konverzačná pamäť (hybridné RRF so SQLite FTS5 + sqlite-vec a Qdrant ako druhá vrstva) — pozri `docs/frameworks/MEMORY.md`                                                                                                                                                                                                     |
-| `memory/embedding/`                      | Vrstva vektorových reprezentácií z viacerých zdrojov: `index.ts` (resolver), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (plán 21)                                                                                                                                                          |
-| `memory/vectorStore.ts`                  | Obal pre sqlite-vec v0.1.9 — KNN hrubou silou + hybridné RRF (FTS5 + vektory, k=60). Inicializuje sa len pri potrebe a pri nedostupnosti sqlite-vec elegantne prejde do obmedzeného režimu. (plán 21)                                                                                                                          |
-| `memory/reindex.ts`                      | `runReindexBatch()` — spracúva na pozadí záznamy pamäte s `needs_reindex=1`; volá sa prostredníctvom `POST /api/memory/reindex` a pri odloženom spätnom doplnení. (plán 21)                                                                                                                                                    |
-| `monitoring/`                            | Kontroly stavu, emitovanie metrík                                                                                                                                                                                                                                                                                              |
-| `oauth/`                                 | Toky OAuth/importu pre 22 modulov poskytovateľov (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                   |
-| `plugins/`                               | Register pluginov                                                                                                                                                                                                                                                                                                              |
-| `promptCache/`                           | Body prerušenia vyrovnávacej pamäte promptov v štýle Anthropic                                                                                                                                                                                                                                                                 |
-| `skills/`                                | Framework zručností (vstavané + marketplace + SkillsSH) — pozri `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                                    |
-| `playground/`                            | Zdieľané pomocné nástroje Playground Studio: `codeExport.ts` (generátor curl/Python/TS), `promptImprover.ts` (tvorca metapromptov), `streamMetrics.ts` (čisté TTFT/TPS), `types.ts` (tabuľka cien) — pozrite si `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                         |
-| `webhookDispatcher.ts`                   | Doručovanie webhookov pomocou HMAC — pozrite si `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                  |
-| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Správcovia tunelov — pozrite si `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                    |
-| `cloudSync.ts`, `initCloudSync.ts`       | Voliteľná cloudová synchronizácia stavu                                                                                                                                                                                                                                                                                        |
-| `localDb.ts`                             | Súhrnný modul na opätovný export databázových modulov (bez logiky — iba opätovné exporty)                                                                                                                                                                                                                                      |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | Ukladanie požiadaviek do vyrovnávacej pamäte + idempotencia                                                                                                                                                                                                                                                                    |
-| (~30 ďalších súborov najvyššej úrovne)   | Špecializované pomocné nástroje (logEnv, modelsDevSync, piiSanitizer atď.)                                                                                                                                                                                                                                                     |
+| Modul                                    | Účel                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `a2a/`                                   | Správca úloh protokolu A2A, zručnosti (5), streamovanie                                                                                                                                                                                                                                                                       |
+| `acp/`                                   | Register agentov CLI (lokálne zisťovanie CLI — pozrite si `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                         |
+| `api/`                                   | Zdieľané pomocné nástroje API (`requireManagementAuth`, validácia)                                                                                                                                                                                                                                                            |
+| `auth/`                                  | Relácia, hashovanie hesiel, validácia tokenov                                                                                                                                                                                                                                                                                 |
+| `batches/`                               | Obslužné rutiny rozhrania OpenAI Batches API                                                                                                                                                                                                                                                                                  |
+| `catalog/`                               | Validácia katalógu poskytovateľov pomocou Zod + určovanie možností                                                                                                                                                                                                                                                            |
+| `cloudAgent/`                            | Cloudoví agenti (Codex Cloud, Devin, Jules) — pozrite si `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                     |
+| `combos/`                                | Určovanie kombinácií + pomocné nástroje na zmenu poradia                                                                                                                                                                                                                                                                      |
+| `audit/`                                 | Pomocné nástroje informačného kanála aktivít: `highLevelActions.ts` (zoznam povolených položiek + `isHighLevelAction()`), `activityIcons.ts` (mapovanie akcie → ikona/sloveso), `timeline.ts` (groupByDay/relativeTime) — pozrite si `docs/architecture/MONITORING_SECTIONS.md`                                               |
+| `compliance/`                            | Denník auditu + audit poskytovateľov — pozrite si `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                               |
+| `compression/`                           | Prepojovacia vrstva kompresného jadra (jadrá sa nachádzajú v `open-sse/services/compression/`)                                                                                                                                                                                                                                |
+| `config/`                                | Pomocné nástroje konfigurácie za behu                                                                                                                                                                                                                                                                                         |
+| `db/`                                    | Viac ako 120 doménových databázových modulov + 168 migrácií (pre SQLite vždy pristupujte cez ne)                                                                                                                                                                                                                              |
+| `quota/`                                 | Jadro zdieľania kvót: `dimensions.ts` (typy/Zod), `types.ts` (rozhranie QuotaStore), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — pozrite si `docs/routing/QUOTA_SHARE.md` |
+| `radar/`                                 | Klient katalógu bezplatných modelov Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — pozri `docs/frameworks/RADAR.md`                                                                                                                                      |
+| `display/`                               | Pomocné funkcie na formátovanie používateľského rozhrania (náklady, latencia atď.)                                                                                                                                                                                                                                            |
+| `embeddings/`                            | Pomocné funkcie služby embeddings                                                                                                                                                                                                                                                                                             |
+| `env/`                                   | Spracovanie a validácia premenných prostredia                                                                                                                                                                                                                                                                                 |
+| `evals/`                                 | Framework na vyhodnocovanie (sady, spúšťač, runtime) — pozri `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                       |
+| `guardrails/`                            | Maskovanie osobných údajov, ochrana pred prompt injection, premostenie pre vizuálne vstupy — pozri `docs/security/GUARDRAILS.md`                                                                                                                                                                                              |
+| `jobs/`                                  | Úlohy na pozadí (podobné cronu)                                                                                                                                                                                                                                                                                               |
+| `memory/`                                | Konverzačná pamäť (SQLite FTS5 + hybridné RRF so sqlite-vec + Qdrant úrovne 2) — pozri `docs/frameworks/MEMORY.md`                                                                                                                                                                                                            |
+| `memory/embedding/`                      | Vrstva embeddings s viacerými zdrojmi: `index.ts` (resolver), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (plán 21)                                                                                                                                                                        |
+| `memory/vectorStore.ts`                  | Wrapper pre sqlite-vec v0.1.9 — KNN hrubou silou + hybridné RRF (FTS5 + vektor, k=60). Inicializuje sa podľa potreby a pri nedostupnosti sqlite-vec plynulo prejde do obmedzeného režimu. (plán 21)                                                                                                                           |
+| `memory/reindex.ts`                      | `runReindexBatch()` — spracúva na pozadí záznamy pamäte s `needs_reindex=1`; volá sa cez `POST /api/memory/reindex` a pri dopĺňaní údajov podľa potreby. (plán 21)                                                                                                                                                            |
+| `monitoring/`                            | Kontroly stavu, emitovanie metrík                                                                                                                                                                                                                                                                                             |
+| `oauth/`                                 | Toky OAuth/importu pre 22 modulov poskytovateľov (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                  |
+| `plugins/`                               | Register pluginov                                                                                                                                                                                                                                                                                                             |
+| `promptCache/`                           | Body prerušenia vyrovnávacej pamäte promptov v štýle Anthropic                                                                                                                                                                                                                                                                |
+| `skills/`                                | Framework zručností (vstavané + marketplace + SkillsSH) — pozri `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                                   |
+| `playground/`                            | Zdieľané pomocné nástroje Playground Studio: `codeExport.ts` (generátor curl/Python/TS), `promptImprover.ts` (tvorca metapromptov), `streamMetrics.ts` (čisté TTFT/TPS), `types.ts` (cenová tabuľka) — pozrite si `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                      |
+| `webhookDispatcher.ts`                   | Doručovanie webhookov s HMAC — pozrite si `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                       |
+| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Správcovia tunelov — pozrite si `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                   |
+| `cloudSync.ts`, `initCloudSync.ts`       | Voliteľná cloudová synchronizácia stavu                                                                                                                                                                                                                                                                                       |
+| `localDb.ts`                             | Súbor opätovných exportov pre databázové moduly (bez logiky — iba opätovné exporty)                                                                                                                                                                                                                                           |
+| `cacheLayer.ts`, `idempotencyLayer.ts`   | Ukladanie požiadaviek do vyrovnávacej pamäte + idempotencia                                                                                                                                                                                                                                                                   |
+| (~30 ďalších súborov najvyššej úrovne)   | Špecializované pomocné nástroje (logEnv, modelsDevSync, piiSanitizer atď.)                                                                                                                                                                                                                                                    |
 
-### `src/lib/db/` — Databáza (137 modulov + 193 migrácií)
+### `src/lib/db/` — Databáza (147 modulov + 208 migrácií)
 
-| Podadresár                | Účel                                                                                                                                                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db/core.ts`              | Singleton `getDbInstance()` so žurnálovaním WAL                                                                                                                                                         |
-| `db/migrations/`          | Verziované súbory SQL (idempotentné, transakčné). `073_memory_vec.sql` pridáva tabuľku `memory_vec_meta` + stĺpec `needs_reindex` (plán 21).                                                            |
-| `db/playgroundPresets.ts` | Modul CRUD pre predvoľby Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)                               |
-| `db/memoryVec.ts`         | Operácie CRUD pre `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue` atď. (plán 21)                                     |
-| `db/<domain>.ts`          | Jeden modul pre každú doménu: poskytovatelia, kombinácie, kľúče API, používatelia, relácie, využitie, audit*log, webhooky, zručnosti, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache atď. |
+| Podadresár                | Účel                                                                                                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `db/core.ts`              | Jediná inštancia `getDbInstance()` s protokolovaním WAL                                                                                                                                          |
+| `db/migrations/`          | Verziované súbory SQL (idempotentné, transakčné). `073_memory_vec.sql` pridáva tabuľku `memory_vec_meta` + stĺpec `needs_reindex` (plán 21).                                                     |
+| `db/playgroundPresets.ts` | Modul CRUD pre predvoľby Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)                        |
+| `db/memoryVec.ts`         | CRUD pre `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue` atď. (plán 21)                                       |
+| `db/<domain>.ts`          | Jeden modul na doménu: poskytovatelia, kombinácie, kľúče API, používatelia, relácie, využitie, audit*log, webhooky, zručnosti, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache atď. |
 
 ### `src/domain/`
 
 | Modul                  | Účel                                                   |
 | ---------------------- | ------------------------------------------------------ |
-| `policy.ts`            | Nástroj na správu politík                              |
-| `fallbackPolicy.ts`    | Rozhodovací strom náhradného riešenia                  |
+| `policy.ts`            | Mechanizmus pravidiel                                  |
+| `fallbackPolicy.ts`    | Rozhodovací strom záložných možností                   |
 | `costRules.ts`         | Pravidlá výpočtu nákladov                              |
-| `lockoutPolicy.ts`     | Politika uzamknutia modelu/pripojenia                  |
+| `lockoutPolicy.ts`     | Pravidlá blokovania modelu/pripojenia                  |
 | `tagRouter.ts`         | Smerovanie založené na značkách                        |
-| `comboResolver.ts`     | Rozlíšenie kombinácií (používané nástrojom kombinácií) |
+| `comboResolver.ts`     | Riešenie kombinácií (používané mechanizmom kombinácií) |
 | `modelAvailability.ts` | Kontrola dostupnosti jednotlivých modelov              |
 | `assessment/`          | Hodnotenie modelov (1. fáza RFC-AUTO-ASSESSMENT)       |
 
 ### `src/server/`
 
-| Modul    | Účel                                                                                                     |
-| -------- | -------------------------------------------------------------------------------------------------------- |
-| `authz/` | Autorizačný reťazec: `classify` → `policies` → `enforce` — pozrite si `docs/architecture/AUTHZ_GUIDE.md` |
-| `cors/`  | Konfigurácia CORS                                                                                        |
-| `auth/`  | Middleware relácie                                                                                       |
+| Modul    | Účel                                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------------------- |
+| `authz/` | Autorizačný proces: `classify` → `policies` → `enforce` — pozrite si `docs/architecture/AUTHZ_GUIDE.md` |
+| `cors/`  | Konfigurácia CORS                                                                                       |
+| `auth/`  | Middleware relácie                                                                                      |
 
 ### `src/shared/`
 
-| Modul                            | Účel                                                                              |
-| -------------------------------- | --------------------------------------------------------------------------------- |
-| `constants/providers.ts`         | **374 poskytovateľov** s validáciou Zod (zdroj pravdy)                            |
-| `constants/cliTools.ts`          | Register externých nástrojov CLI                                                  |
-| `constants/routingStrategies.ts` | **19 stratégií smerovania** s prioritami                                          |
-| `constants/publicApiRoutes.ts`   | Trasy, ktoré vyžadujú autentifikáciu Bearer (namiesto správcovskej)               |
-| `constants/upstreamHeaders.ts`   | Zoznam zakázaných hlavičiek pre požiadavky upstream                               |
-| `validation/schemas.ts`          | ~80 schém Zod (jediný zdroj pravdy pre kontrakty API)                             |
-| `validation/helpers.ts`          | Pomocné funkcie validácie Zod (`validateBody` atď.)                               |
-| `types/`                         | Zdieľané typy TS                                                                  |
-| `contracts/`                     | Verejné kontrakty API (používané cez `files:` v `package.json`)                   |
-| `utils/circuitBreaker.ts`        | Istič poskytovateľa (pozri `docs/architecture/RESILIENCE_GUIDE.md`)               |
-| `utils/apiAuth.ts`               | Overenie kľúča API, kontrola rozsahu oprávnení                                    |
-| `utils/fetchTimeout.ts`          | Obalové funkcie časového limitu/prerušenia pre upstream fetch                     |
-| `utils/releaseNotes.ts`          | Parser uzavretých oznámení v2/starších verzií, lokalizácia a odmietnutie podľa ID |
+| Modul                            | Účel                                                                                |
+| -------------------------------- | ----------------------------------------------------------------------------------- |
+| `constants/providers.ts`         | **375 poskytovateľov** s validáciou Zod (zdroj pravdy)                              |
+| `constants/cliTools.ts`          | Register externých nástrojov CLI                                                    |
+| `constants/routingStrategies.ts` | **20 stratégií smerovania** s prioritami                                            |
+| `constants/publicApiRoutes.ts`   | Trasy, ktoré vyžadujú autentifikáciu Bearer (namiesto správcovskej)                 |
+| `constants/upstreamHeaders.ts`   | Zoznam zakázaných hlavičiek pre nadradené požiadavky                                |
+| `validation/schemas.ts`          | ~80 schém Zod (jediný zdroj pravdy pre kontrakty API)                               |
+| `validation/helpers.ts`          | Pomocné nástroje validácie Zod (`validateBody` atď.)                                |
+| `types/`                         | Zdieľané typy TS                                                                    |
+| `contracts/`                     | Verejné kontrakty API (používané cez `files:` v `package.json`)                     |
+| `utils/circuitBreaker.ts`        | Istič poskytovateľa (pozri `docs/architecture/RESILIENCE_GUIDE.md`)                 |
+| `utils/apiAuth.ts`               | Validácia kľúčov API, kontrola rozsahov                                             |
+| `utils/fetchTimeout.ts`          | Obalové funkcie časového limitu/prerušenia pre nadradený fetch                      |
+| `utils/releaseNotes.ts`          | Parser oznámení uzavretej verzie v2/staršej verzie, lokalizácia a zrušenie podľa ID |
 
 ---
 
@@ -379,76 +379,76 @@ open-sse/
 
 ### Hlavné príručky
 
-| Dokument                    | Účel                                                                                                  |
-| --------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `ARCHITECTURE.md`           | Architektúra na vysokej úrovni, mapa subsystémov, rozhranie ovládacieho panela                        |
-| `CODEBASE_DOCUMENTATION.md` | Technická referencia: adresáre, moduly, konvencie                                                     |
-| `FEATURES.md`               | Matica funkcií s najdôležitejšími novinkami vo v3.8                                                   |
-| `USER_GUIDE.md`             | Používateľská príručka (nastavenie, modely, kombinácie, CLI, zvuk atď.)                               |
-| `API_REFERENCE.md`          | Referencia koncových bodov API s modelom autentifikácie                                               |
-| `openapi.yaml`              | Špecifikácia OpenAPI 3.0 (121 ciest)                                                                  |
-| `SETUP_GUIDE.md`            | Spôsoby inštalácie (npm, npx, Docker, Electron, Termux, zo zdrojového kódu)                           |
-| `ENVIRONMENT.md`            | Všetky premenné prostredia (~800 zdokumentovaných, ~3 050 riadkov v `.env.example`)                   |
-| `TROUBLESHOOTING.md`        | Bežné chyby + známe problémy vo v3.8.0                                                                |
-| `RELEASE_CHECKLIST.md`      | Kompletný proces vydania (zručnosti, husky, konvenčné commity, nasadenie)                             |
-| `COVERAGE_PLAN.md`          | Ciele pokrytia a aktuálny stav                                                                        |
-| `FREE_TIERS.md`             | Spravovaný zoznam poskytovateľov bezplatných úrovní (48+ bezplatných + 11 OAuth)                      |
-| `CLI-TOOLS.md`              | Integrácie externých CLI + interné OmniRoute CLI                                                      |
-| `I18N.md`                   | Architektúra i18n, pridanie jazyka, 42 lokalizácií                                                    |
-| `UNINSTALL.md`              | Kroky na čistú odinštaláciu                                                                           |
-| `PROVIDER_REFERENCE.md`     | **Automaticky generovaný** katalóg 374 poskytovateľov (regenerácia: `npm run gen:provider-reference`) |
+| Dokument                    | Účel                                                                                                |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `ARCHITECTURE.md`           | Architektúra na vysokej úrovni, mapa subsystémov, rozhranie ovládacieho panela                      |
+| `CODEBASE_DOCUMENTATION.md` | Technická referencia: adresáre, moduly, konvencie                                                   |
+| `FEATURES.md`               | Matica funkcií s hlavnými novinkami vo verzii v3.8                                                  |
+| `USER_GUIDE.md`             | Používateľská príručka (nastavenie, modely, kombinácie, CLI, zvuk atď.)                             |
+| `API_REFERENCE.md`          | Referencia koncových bodov API s modelom autentifikácie                                             |
+| `openapi.yaml`              | Špecifikácia OpenAPI 3.0 (121 ciest)                                                                |
+| `SETUP_GUIDE.md`            | Spôsoby inštalácie (npm, npx, Docker, Electron, Termux, zdrojový kód)                               |
+| `ENVIRONMENT.md`            | Všetky premenné prostredia (~800 zdokumentovaných, ~3 050 riadkov v `.env.example`)                 |
+| `TROUBLESHOOTING.md`        | Bežné chyby + známe problémy vo verzii v3.8.0                                                       |
+| `RELEASE_CHECKLIST.md`      | Kompletný proces vydania (zručnosti, husky, konvenčné commity, nasadenie)                           |
+| `COVERAGE_PLAN.md`          | Ciele pokrytia a aktuálny stav                                                                      |
+| `FREE_TIERS.md`             | Kurátorovaný zoznam poskytovateľov bezplatných úrovní (48+ bezplatných + 11 OAuth)                  |
+| `CLI-TOOLS.md`              | Integrácie externých CLI + interné CLI OmniRoute                                                    |
+| `I18N.md`                   | Architektúra i18n, pridanie jazyka, 67 lokalizácií                                                  |
+| `UNINSTALL.md`              | Kroky na čistú odinštaláciu                                                                         |
+| `PROVIDER_REFERENCE.md`     | **Automaticky generovaný** katalóg 375 poskytovateľov (obnovenie: `npm run gen:provider-reference`) |
 
-### Podrobné opisy subsystémov
+### Podrobné prehľady subsystémov
 
-| Dokument                                   | Účel                                                                               |
-| ------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `MCP-SERVER.md`                            | Server MCP: 110 nástrojov, 3 prenosy, 33 rozsahov, koncové body REST               |
-| `A2A-SERVER.md`                            | A2A v0.3: JSON-RPC, 6 zručností, pomocné funkcie REST, karta agenta                |
-| `AGENT_PROTOCOLS_GUIDE.md`                 | Zjednotená príručka: A2A verzus ACP verzus cloudoví agenti                         |
-| `CLOUD_AGENT.md`                           | Orchestrácia Codex Cloud / Devin / Jules                                           |
-| `SKILLS.md`                                | Rámec zručností (vstavané + trhovisko + SkillsSH + sandbox)                        |
-| `RADAR.md`                                 | Prekrytie katalógu bezplatných modelov Radar (`RADAR_ENABLED`, predvolene vypnuté) |
-| `MEMORY.md`                                | Pamäťový systém (SQLite FTS5 + Qdrant)                                             |
-| `EVALS.md`                                 | Rámec hodnotenia (sady, spustenia, hodnotiace kritériá)                            |
-| `GUARDRAILS.md`                            | Maskovanie PII, vkladanie promptov, most pre videnie                               |
-| `COMPLIANCE.md`                            | Protokol auditu, uchovávanie, možnosť odhlásenia `noLog`                           |
-| `WEBHOOKS.md`                              | Doručovanie webhookov podpísaných pomocou HMAC                                     |
-| `REASONING_REPLAY.md`                      | Hybridná vyrovnávacia pamäť/SQLite pre `reasoning_content`                         |
-| `AUTHZ_GUIDE.md`                           | Autorizačný kanál (`classify` → `policies` → `enforce`)                            |
-| `RESILIENCE_GUIDE.md`                      | Istič + čas na zotavenie + blokovanie modelu                                       |
-| `docs/security/STEALTH_GUIDE.md` (iba git) | Odtlačky TLS (JA3/JA4), Claude Code CCH, certifikát MITM                           |
-| `AUTO-COMBO.md`                            | Nástroj Auto Combo (16-faktorové bodovanie, 6 balíkov režimov, virtuálna továreň)  |
+| Dokument                                   | Účel                                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `MCP-SERVER.md`                            | Server MCP: 110 nástrojov, 3 transporty, 33 rozsahov, koncové body REST                 |
+| `A2A-SERVER.md`                            | A2A v0.3: JSON-RPC, 6 zručností, pomocné funkcie REST, karta agenta                     |
+| `AGENT_PROTOCOLS_GUIDE.md`                 | Zjednotená príručka: A2A vs. ACP vs. cloudoví agenti                                    |
+| `CLOUD_AGENT.md`                           | Orchestrácia Codex Cloud / Devin / Jules                                                |
+| `SKILLS.md`                                | Framework zručností (vstavané + trhovisko + SkillsSH + sandbox)                         |
+| `RADAR.md`                                 | Prekrytie katalógu bezplatných modelov Radar (`RADAR_ENABLED`, predvolene vypnuté)      |
+| `MEMORY.md`                                | Pamäťový systém (SQLite FTS5 + Qdrant)                                                  |
+| `EVALS.md`                                 | Framework hodnotenia (súpravy, spustenia, rubriky)                                      |
+| `GUARDRAILS.md`                            | Maskovanie PII, prompt injection, most pre obrazové vstupy                              |
+| `COMPLIANCE.md`                            | Denník auditu, uchovávanie, odhlásenie pomocou noLog                                    |
+| `WEBHOOKS.md`                              | Doručovanie webhookov podpísaných pomocou HMAC                                          |
+| `REASONING_REPLAY.md`                      | Hybridná pamäť/vyrovnávacia pamäť SQLite pre `reasoning_content`                        |
+| `AUTHZ_GUIDE.md`                           | Autorizačný proces (`classify` → `policies` → `enforce`)                                |
+| `RESILIENCE_GUIDE.md`                      | Istič + čas na zotavenie + uzamknutie modelu                                            |
+| `docs/security/STEALTH_GUIDE.md` (iba git) | Odtlačky TLS (JA3/JA4), Claude Code CCH, certifikát MITM                                |
+| `AUTO-COMBO.md`                            | Jadrosystému Auto Combo (16-faktorové hodnotenie, 6 balíkov režimov, virtuálna továreň) |
 
 ### Kompresia
 
-| Dokument                        | Účel                                     |
-| ------------------------------- | ---------------------------------------- |
-| `COMPRESSION_GUIDE.md`          | Prehľad režimov kompresie + plán vývoja  |
-| `COMPRESSION_ENGINES.md`        | Nástroje Caveman + RTK, zmluva registra  |
-| `COMPRESSION_RULES_FORMAT.md`   | Schéma JSON balíka pravidiel Caveman     |
-| `COMPRESSION_LANGUAGE_PACKS.md` | Inventár balíkov pravidiel podľa jazykov |
-| `RTK_COMPRESSION.md`            | Deklaratívny kanál RTK (49 filtrov)      |
+| Dokument                        | Účel                                             |
+| ------------------------------- | ------------------------------------------------ |
+| `COMPRESSION_GUIDE.md`          | Prehľad režimov kompresie + plán vývoja          |
+| `COMPRESSION_ENGINES.md`        | Enginy Caveman + RTK, kontrakt registra          |
+| `COMPRESSION_RULES_FORMAT.md`   | Schéma JSON balíka pravidiel Caveman             |
+| `COMPRESSION_LANGUAGE_PACKS.md` | Inventár balíkov pravidiel pre jednotlivé jazyky |
+| `RTK_COMPRESSION.md`            | Deklaratívny proces RTK (49 filtrov)             |
 
 ### Nasadenie
 
-| Dokument                     | Účel                                                                                      |
-| ---------------------------- | ----------------------------------------------------------------------------------------- |
-| `DOCKER_GUIDE.md`            | Zostavenie Docker obrazu, profily (base/cli/host/cliproxyapi), sprievodný kontajner Redis |
-| `VM_DEPLOYMENT_GUIDE.md`     | Všeobecné nasadenie na VM/VPS (Ubuntu/Debian + nginx + systemd)                           |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Nasadenie na Fly.io (momentálne iba v čínštine)                                           |
-| `TERMUX_GUIDE.md`            | Bezobslužná prevádzka v systéme Android prostredníctvom Termux                            |
-| `PWA_GUIDE.md`               | Inštalácia progresívnej webovej aplikácie + service worker                                |
-| `ELECTRON_GUIDE.md`          | Zostavenie + podpísanie + distribúcia desktopovej aplikácie                               |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                                                    |
-| `PROXY_GUIDE.md`             | 4-úrovňový odchádzajúci proxy server + trhovisko 1proxy                                   |
+| Dokument                     | Účel                                                                                |
+| ---------------------------- | ----------------------------------------------------------------------------------- |
+| `DOCKER_GUIDE.md`            | Zostavenie Dockera, profily (base/cli/host/cliproxyapi), sprievodný kontajner Redis |
+| `VM_DEPLOYMENT_GUIDE.md`     | Všeobecné nasadenie na VM/VPS (Ubuntu/Debian + nginx + systemd)                     |
+| `FLY_IO_DEPLOYMENT_GUIDE.md` | Nasadenie na Fly.io (momentálne iba v čínštine)                                     |
+| `TERMUX_GUIDE.md`            | Bezobslužná prevádzka na Androide prostredníctvom Termuxu                           |
+| `PWA_GUIDE.md`               | Inštalácia progresívnej webovej aplikácie + service worker                          |
+| `ELECTRON_GUIDE.md`          | Zostavenie desktopovej aplikácie + podpisovanie + distribúcia                       |
+| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                                              |
+| `PROXY_GUIDE.md`             | 4-úrovňový odchádzajúci proxy server + trhovisko 1proxy                             |
 
 ### Podadresáre
 
-| Podadresár            | Účel                                                                                                                                                                                                                         |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | Lokalizované preklady dokumentácie (41 lokalizácií)                                                                                                                                                                          |
-| `docs/screenshots/`   | Obrázkové podklady pre príručky                                                                                                                                                                                              |
-| `_tasks/superpowers/` | Plány/špecifikácie zo superpowers (`writing-plans`/`brainstorming`) + výskum — izolovaný, samostatne verzovaný repozitár, ignorovaný systémom git v hlavnom strome. Pozrite si CLAUDE.md → „Artefakty plánovania a výskumu“. |
+| Podadresár            | Účel                                                                                                                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/i18n/`          | Lokalizované preklady dokumentácie (41 jazykových verzií)                                                                                                                                                                   |
+| `docs/screenshots/`   | Obrázkové materiály pre príručky                                                                                                                                                                                            |
+| `_tasks/superpowers/` | Plány/špecifikácie zo superpowers (`writing-plans`/`brainstorming`) + výskum — izolovaný repozitár so samostatným verzovaním, ignorovaný cez git v hlavnom strome. Pozrite si CLAUDE.md → „Artefakty plánovania a výskumu“. |
 
 ---
 

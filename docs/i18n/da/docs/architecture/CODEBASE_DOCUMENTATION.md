@@ -434,67 +434,67 @@ Opdelt i fokuserede undermapper:
 
 ---
 
-## 4. `open-sse/` — Arbejdsområde til streamingmotoren
+## 4. `open-sse/` — Arbejdsområde til streamingmotor
 
-Separat npm-arbejdsområde udgivet som `@omniroute/open-sse`. Håndterer
-anmodningsbehandling, eksekutorer, oversættere, tjenester, transformeren og MCP-serveren.
+Separat npm-arbejdsområde udgivet som `@omniroute/open-sse`. Står for behandling af
+anmodninger, eksekutorer, oversættere, tjenester, transformer og MCP-serveren.
 
 ```
 open-sse/
 ├── index.ts                Offentlige eksporter
-├── package.json            Arbejdsområdets manifest
+├── package.json            Arbejdsområdemanifest
 ├── tsconfig.json
 ├── types.d.ts
 ├── config/                 Udbyderregistre, headerprofiler, identitet, …
-├── handlers/               Anmodningshåndteringsfunktioner (chat, embeddings, lyd, billede, …)
-├── executors/              150 eksekutormoduler til udbydere (eksekutorklasser + udbyderspecifikke hjælpefunktioner)
+├── handlers/               Anmodningshåndteringer (chat, embeddings, lyd, billede, …)
+├── executors/              150 udbydereksekutormoduler (eksekutorklasser + hjælpere pr. udbyder)
 ├── translator/             Formatkonvertering (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
 ├── transformer/            Responses API ↔ Chat Completions-streamtransformer
-├── services/               Mere end 80 tjenestemoduler (kombinationer, fallback, kvoter, identitet, …)
+├── services/               80+ tjenestemoduler (kombinationer, fallback, kvoter, identitet, …)
 ├── utils/                  Streaminghjælpere, TLS-klient, AWS SigV4, proxy-fetch, …
 └── mcp-server/             MCP-server (3 transporttyper, 33 scopes, 110 værktøjer)
 ```
 
 ### 4.1 `open-sse/handlers/`
 
-| Håndteringsfunktion     | Formål                                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------------------- |
-| `chatCore.ts`           | Primær chatpipeline (cache, hastighedsbegrænsning, kombinationsrouting, afsendelse til eksekutor) |
-| `responsesHandler.ts`   | Indgangspunkt for OpenAI Responses API                                                            |
-| `embeddings.ts`         | Embeddings                                                                                        |
-| `imageGeneration.ts`    | Billedgenerering                                                                                  |
-| `audioSpeech.ts`        | Tekst-til-tale                                                                                    |
-| `audioTranscription.ts` | Tale-til-tekst                                                                                    |
-| `videoGeneration.ts`    | Videogenerering                                                                                   |
-| `musicGeneration.ts`    | Musikgenerering                                                                                   |
-| `rerank.ts`             | Genrangering                                                                                      |
-| `moderations.ts`        | Moderation                                                                                        |
-| `search.ts`             | Websøgning                                                                                        |
-| `sseParser.ts`          | Parser til SSE-hændelser                                                                          |
-| `usageExtractor.ts`     | Udtrækker tokenantal fra upstream-streams                                                         |
-| `responseSanitizer.ts`  | Fjerner udbyderspecifik støj                                                                      |
-| `responseTranslator.ts` | Forbindelsesled mellem udbydersvar og oversættelseslaget                                          |
+| Håndtering              | Formål                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `chatCore.ts`           | Primær chatpipeline (cache, hastighedsbegrænsning, kombinationsrouting, eksekutor-dispatch) |
+| `responsesHandler.ts`   | Indgangspunkt for OpenAI Responses API                                                      |
+| `embeddings.ts`         | Embeddings                                                                                  |
+| `imageGeneration.ts`    | Billedgenerering                                                                            |
+| `audioSpeech.ts`        | Tekst-til-tale                                                                              |
+| `audioTranscription.ts` | Tale-til-tekst                                                                              |
+| `videoGeneration.ts`    | Videogenerering                                                                             |
+| `musicGeneration.ts`    | Musikgenerering                                                                             |
+| `rerank.ts`             | Genrangering                                                                                |
+| `moderations.ts`        | Moderation                                                                                  |
+| `search.ts`             | Websøgning                                                                                  |
+| `sseParser.ts`          | SSE-hændelsesparser                                                                         |
+| `usageExtractor.ts`     | Udtrækker tokenantal fra upstream-streams                                                   |
+| `responseSanitizer.ts`  | Fjerner udbyderspecifik støj                                                                |
+| `responseTranslator.ts` | Forbindelsesled mellem udbydersvar og oversætterlaget                                       |
 
 ### 4.2 `open-sse/executors/`
 
 150 eksekutormoduler på topniveau (`*.ts` minus `base.ts`, `index.ts` og tests — antallet
 måles af `npm run check:docs-counts`). Hver eksekutorklasse udvider `BaseExecutor` (`base.ts`),
-direkte eller via `DefaultExecutor` eller en anden eksekutor; de resterende moduler er udbyderspecifikke
-hjælpere (værktøjsskemaer, fetch/TTS-adaptere, håndtering af særheder). Eksekutorerne omfatter:
+direkte eller via `DefaultExecutor` eller en anden eksekutor; de resterende moduler er hjælpere
+for individuelle udbydere (værktøjsskemaer, fetch/TTS-adaptere, håndteringer af særheder). Eksekutorerne omfatter:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
 `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,
 `muse-spark-web`, `nlpcloud`, `opencode`, `perplexity-web`, `petals`,
-`pollinations`, `qoder`, `vertex`, `devin-desktop` samt `claudeIdentity.ts`
+`pollinations`, `qoder`, `vertex`, `devin-desktop`, samt `claudeIdentity.ts`
 (delt identitetshjælper) og `index.ts` (register).
 
-> Bemærk: Udbydere, der ikke er angivet her, betjenes af `default.ts` ved hjælp af den generiske
-> OpenAI-kompatible eksekutor. Det komplette udbyderkatalog (374 udbydere) findes i
+> Bemærk: Udbydere, der ikke er angivet her, betjenes af `default.ts` via den generiske
+> OpenAI-kompatible eksekutor. Det fulde udbyderkatalog (375 udbydere) findes i
 > `src/shared/constants/providers.ts`.
 
 ### 4.3 `open-sse/translator/`
 
-Hub-and-spoke-oversættelse (OpenAI er hubben).
+Hub-and-spoke-oversættelse (OpenAI er knudepunktet).
 
 - **9 anmodningsoversættere** (`translator/request/`):
   `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`,
@@ -506,15 +506,15 @@ Hub-and-spoke-oversættelse (OpenAI er hubben).
   `openai-to-claude`.
 - **9 hjælpere** (`translator/helpers/`):
   `claudeHelper`, `geminiHelper`, `geminiToolsSanitizer`, `maxTokensHelper`,
-  `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper` samt
-  hjælpertests.
+  `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, samt
+  hjælpetests.
 - **Billedhjælpere** (`translator/image/sizeMapper.ts`).
-- Topniveau: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
+- På topniveau: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
 
 ### 4.4 `open-sse/transformer/`
 
-- `responsesTransformer.ts` — `TransformStream`-baseret konverter til Responses API ↔ Chat
-  Completions (bruges af catch-all-ruten `responses/`).
+- `responsesTransformer.ts` — `TransformStream`-baseret Responses API ↔ Chat
+  Completions-konverter (bruges af catch-all-ruten `responses/`).
 
 ### 4.5 `open-sse/services/`
 
@@ -522,11 +522,11 @@ Højdepunkter (den fulde liste findes under `open-sse/services/`):
 
 | Område             | Filer                                                                                                                                                                                                                                                    |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Combo-routing      | `combo.ts` (19 strategier), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                    |
+| Combo-routing      | `combo.ts` (20 strategier), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                    |
 | Auto Combo-motor   | `autoCombo/` — `engine.ts`, `scoring.ts`, `taskFitness.ts`, `virtualFactory.ts`, `modePacks.ts`, `autoPrefix.ts`, `persistence.ts`, `providerDiversity.ts`, `providerRegistryAccessor.ts`, `routerStrategy.ts`, `selfHealing.ts`, `index.ts`             |
-| Modstandsdygtighed | `accountFallback.ts` (nedkøling + spærring), `errorClassifier.ts`, `requestRejectedStreak.ts`, `emergencyFallback.ts`, `rateLimitManager.ts`, `rateLimitSemaphore.ts`, `accountSemaphore.ts`, `accountSelector.ts`                                       |
+| Robusthed          | `accountFallback.ts` (nedkøling + spærring), `errorClassifier.ts`, `requestRejectedStreak.ts`, `emergencyFallback.ts`, `rateLimitManager.ts`, `rateLimitSemaphore.ts`, `accountSemaphore.ts`, `accountSelector.ts`                                       |
 | Kvoter             | `quotaMonitor.ts`, `quotaPreflight.ts`, `bailianQuotaFetcher.ts`, `codexQuotaFetcher.ts`, `deepseekQuotaFetcher.ts`, `openrouterQuotaFetcher.ts`, `openrouterFreeWindow.ts`, `llmgatewayQuotaFetcher.ts`, `crofUsageFetcher.ts`, `antigravityCredits.ts` |
-| Cachelagring       | `reasoningCache.ts`, `searchCache.ts`, `signatureCache.ts`, `requestDedup.ts`                                                                                                                                                                            |
+| Caching            | `reasoningCache.ts`, `searchCache.ts`, `signatureCache.ts`, `requestDedup.ts`                                                                                                                                                                            |
 | Routingintelligens | `intentClassifier.ts`, `taskAwareRouter.ts`, `backgroundTaskDetector.ts`, `volumeDetector.ts`, `wildcardRouter.ts`, `workflowFSM.ts`, `specificityDetector.ts`, `specificityRules.ts`, `specificityTypes.ts`                                             |
 | Modelhåndtering    | `modelCapabilities.ts`, `modelDeprecation.ts`, `modelFamilyFallback.ts`, `modelStrip.ts`, `model.ts`, `provider.ts`, `providerRequestDefaults.ts`, `providerCostData.ts`, `payloadRules.ts`                                                              |
 | Komprimering       | `compression/` — komplet integration af komprimeringsmotoren                                                                                                                                                                                             |
@@ -534,15 +534,15 @@ Højdepunkter (den fulde liste findes under `open-sse/services/`):
 | Niveau / manifest  | `tierResolver.ts`, `tierConfig.ts`, `tierDefaults.json`, `tierTypes.ts`, `manifestAdapter.ts`                                                                                                                                                            |
 | IP / netværk       | `ipFilter.ts`, `webSearchFallback.ts`                                                                                                                                                                                                                    |
 | Batchbehandlinger  | `batchProcessor.ts`                                                                                                                                                                                                                                      |
-| Brug               | `usage.ts`                                                                                                                                                                                                                                               |
+| Forbrug            | `usage.ts`                                                                                                                                                                                                                                               |
 
 ### 4.6 `open-sse/mcp-server/`
 
 - **110 unikke værktøjer** integreret i `server.ts` (45 kanoniske i `schemas/tools.ts` +
   hukommelses-, færdigheds-, GitHub-færdigheds-, pulje-, gamification-, plugin-, Notion-, Obsidian-,
-  lokalkorpus- og komprimeringsmoduler — unionen optælles af `countUniqueMcpTools`).
+  lokalt korpus- og komprimeringsmoduler — unionen optælles af `countUniqueMcpTools`).
 - **3 transporter**: stdio, HTTP Streamable, SSE.
-- **33 scopes** håndhæves under kørsel — basislisten findes i `src/shared/constants/mcpScopes.ts`, og det fulde sæt er unionen af de scopes, som hvert værktøjsmodul deklarerer.
+- **33 scopes** håndhæves ved kørsel — basislisten findes i `src/shared/constants/mcpScopes.ts`, og det fulde sæt er unionen af de scopes, som hvert værktøjsmodul deklarerer.
 - Revisionstabel: `mcp_tool_audit` (udfyldes af `audit.ts`).
 - Filer: `server.ts`, `index.ts`, `httpTransport.ts`, `audit.ts`, `scopeEnforcement.ts`,
   `runtimeHeartbeat.ts`, `descriptionCompressor.ts`, `schemas/{tools, a2a, audit, index}.ts`,
@@ -553,7 +553,7 @@ Højdepunkter (den fulde liste findes under `open-sse/services/`):
 ### 4.7 `open-sse/config/`
 
 Udbyderregistre (`providerRegistry.ts`, `providerModels.ts`,
-`providerHeaderProfiles.ts`), modelspecifikke registre for hvert format (`audioRegistry.ts`,
+`providerHeaderProfiles.ts`), modelspecifikke registre pr. format (`audioRegistry.ts`,
 `embeddingRegistry.ts`, `imageRegistry.ts`, `moderationRegistry.ts`,
 `musicRegistry.ts`, `rerankRegistry.ts`, `searchRegistry.ts`, `videoRegistry.ts`),
 identitetshjælpere (`codexIdentity.ts`, `codexInstructions.ts`,
@@ -566,7 +566,7 @@ adaptere (`azureAi.ts`, `bedrock.ts`, `datarobot.ts`, `glmProvider.ts`,
 
 ### 4.8 `open-sse/utils/`
 
-Streaming-primitiver og udbyderhjælpefunktioner: `stream.ts`, `streamHandler.ts`,
+Streaming-primitiver og provider-hjælpefunktioner: `stream.ts`, `streamHandler.ts`,
 `streamHelpers.ts`, `streamPayloadCollector.ts`, `streamReadiness.ts`,
 `sseHeartbeat.ts`, `proxyFetch.ts`, `proxyDispatcher.ts`, `tlsClient.ts`,
 `networkProxy.ts`, `awsSigV4.ts`, `cacheControlPolicy.ts`,
@@ -671,12 +671,11 @@ Organiseret i 6 undermapper efter formål.
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`, plus skrivebeskyttede hjælpeværktøjer til overvågning af PR'er:
-  `ci-discriminate.sh` (sorterer signaturerne for en PR's mislykkede kontroller i egne /
-  nedarvede / ukendte ved at sammenligne med en reference-PR eller problemet med røde
-  kontroller på basisgrenen) og `audit-worktree.sh`
-  (ændrede filer, beskyttede områder, fjernede asserts, antal undertrykkelser, tilbageværende
-  midlertidige tsconfigs, PR-head kontra lokal HEAD — før en workers PR accepteres).
+  `system-info.mjs` samt skrivebeskyttede hjælpeværktøjer til overvågning af PR'er:
+  `ci-discriminate.sh` (sorterer signaturerne for mislykkede kontroller i en PR som egne / nedarvede /
+  ukendte i forhold til en reference-PR eller problemet med røde kontroller i basisgrenen) og `audit-worktree.sh`
+  (ændrede filer, beskyttede områder, fjernede assertions, antal undertrykkelser, tilbageværende
+  midlertidige tsconfigs, PR-hoved mod lokal HEAD — før en workers PR accepteres).
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,
