@@ -172,6 +172,22 @@ export function isDisableThinkingLevelVariantsEnabled(): boolean {
 }
 
 /**
+ * Catalog mirror refinements (claude/ discovery + functional-gateway mirrors).
+ * Opt-in; an unreadable flag store keeps the historical mirror behavior (fail-safe off).
+ */
+export function isCatalogMirrorRefinementsEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("CATALOG_MIRROR_REFINEMENTS_ENABLED");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve CATALOG_MIRROR_REFINEMENTS_ENABLED, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
+
+/**
  * models.dev effort-tier fallback (#15944). Fail closed: an unreadable flag store keeps the
  * previous catalog/resolver behavior (no synced fallback, empty list = unknown).
  */
@@ -468,6 +484,23 @@ export function isOpencodePoolReselectEnabled(): boolean {
   } catch (error) {
     console.error(
       "[featureFlags] Failed to resolve OPENCODE_POOL_RESELECT, defaulting to disabled:",
+      error instanceof Error ? error.message : error
+    );
+    return false;
+  }
+}
+
+/**
+ * #16798 — OpenCode Zen/Go models without an explicit registry endpoint take their
+ * request surface from the published models.opencode.ai catalog. Off by default; any
+ * resolution error keeps the registry behavior.
+ */
+export function isOpencodePublishedCatalogRoutingEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED");
+  } catch (error) {
+    console.error(
+      "[featureFlags] Failed to resolve OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED, defaulting to disabled:",
       error instanceof Error ? error.message : error
     );
     return false;
