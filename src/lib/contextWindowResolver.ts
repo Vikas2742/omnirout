@@ -5,6 +5,7 @@ import {
   setModelContextOverride,
   removeModelContextOverride,
 } from "./db/modelContextOverrides";
+import { invalidateDbCache } from "./db/readCache";
 
 /**
  * Feature 5004 — self-correcting context-window reconciler.
@@ -28,6 +29,8 @@ export interface DiscoveredWindow {
 export interface ReconcileDeps {
   getCatalogWindow: (provider: string, modelId: string) => number | null;
   getExistingSource: (provider: string, modelId: string) => string | null;
+  /** Stored window of the existing override; lets the pass skip rewriting an unchanged pin. */
+  getExistingWindow?: (provider: string, modelId: string) => number | null;
   writeAuto: (provider: string, modelId: string, window: number) => void;
   removeOverride: (provider: string, modelId: string) => void;
 }
@@ -70,6 +73,12 @@ export function reconcileContextWindows(
 
     const catalog = deps.getCatalogWindow(provider, modelId);
     if (window !== catalog) {
+      if (
+        existingSource === "auto:discovery" &&
+        deps.getExistingWindow?.(provider, modelId) === window
+      ) {
+        continue;
+      }
       deps.writeAuto(provider, modelId, window);
       result.written++;
     } else if (existingSource) {
@@ -105,22 +114,39 @@ function toDiscoveredWindows(
 export async function runContextWindowReconcile(): Promise<ReconcileResult> {
   const byProvider = await getAllSyncedAvailableModels();
   const discovered = toDiscoveredWindows(byProvider);
-  return reconcileContextWindows(discovered, {
-    // Compare against the override-free catalog view. A persisted override must
-    // never feed back into the comparison that (re)writes it, or the reconciler
-    // oscillates (write → equal → remove → differ → write ...).
-    getCatalogWindow: (provider, modelId) =>
-      getResolvedModelCapabilities({ provider, model: modelId }, { persistedOverrides: false })
-        .contextWindow,
-    getExistingSource: (provider, modelId) =>
-      getModelContextOverrideRecord(provider, modelId)?.source ?? null,
-    writeAuto: (provider, modelId, window) => {
-      setModelContextOverride(provider, modelId, window, "auto:discovery");
-    },
-    removeOverride: (provider, modelId) => {
-      removeModelContextOverride(provider, modelId);
-    },
-  });
+  // Each catalog-version bump drops catalog-version memos (the synced vision
+  // verdict map, which `getCatalogWindow` reads), so writes inside the pass do
+  // not invalidate: one bump at the end. The comparisons below read the
+  // override-free catalog and the override table directly, so they stay exact.
+  let changed = false;
+  try {
+    return reconcileContextWindows(discovered, {
+      // Compare against the override-free catalog view. A persisted override must
+      // never feed back into the comparison that (re)writes it, or the reconciler
+      // oscillates (write → equal → remove → differ → write ...).
+      getCatalogWindow: (provider, modelId) =>
+        getResolvedModelCapabilities({ provider, model: modelId }, { persistedOverrides: false })
+          .contextWindow,
+      getExistingSource: (provider, modelId) =>
+        getModelContextOverrideRecord(provider, modelId)?.source ?? null,
+      getExistingWindow: (provider, modelId) =>
+        getModelContextOverrideRecord(provider, modelId)?.realContext ?? null,
+      writeAuto: (provider, modelId, window) => {
+        if (
+          setModelContextOverride(provider, modelId, window, "auto:discovery", {
+            invalidate: false,
+          })
+        ) {
+          changed = true;
+        }
+      },
+      removeOverride: (provider, modelId) => {
+        if (removeModelContextOverride(provider, modelId, { invalidate: false })) changed = true;
+      },
+    });
+  } finally {
+    if (changed) invalidateDbCache("model-capabilities");
+  }
 }
 
 // --- Periodic job (mirrors modelsDevSync.startPeriodicSync) ---
