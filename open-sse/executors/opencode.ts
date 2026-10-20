@@ -294,12 +294,14 @@ export class OpencodeExecutor extends BaseExecutor {
   // Member health shared across requests on this alias, keyed by member id.
   // Each request still walks its own list (see `opencodeAccountScope.ts`).
   accountHealth = new Map<string, ScopedAccountHealth>();
-  // Cache invalidation version: incremented on any accountHealth mutation.
+  // Explicit invalidation for view setters and request writeback.
   #accountsVersion = 0;
   // Cached live view of accounts getter. Invalidate when version changes.
   #accountsCache: ScopedAccount[] | null = null;
   // Cached version when #accountsCache was built.
   #accountsCacheVersion = 0;
+  #accountsCacheStore: Map<string, ScopedAccountHealth> | null = null;
+  #accountsCacheSize = 0;
   // Invalidate the accounts cache (call after any accountHealth mutation).
   #invalidateAccountsCache(): void {
     this.#accountsVersion++;
@@ -307,10 +309,27 @@ export class OpencodeExecutor extends BaseExecutor {
     this.#accountsCacheVersion = 0;
   }
   get accounts(): ScopedAccount[] {
-    if (this.#accountsCache && this.#accountsCacheVersion === this.#accountsVersion) {
-      return this.#accountsCache;
-    }
     const store = this.accountHealth;
+    if (
+      this.#accountsCache &&
+      this.#accountsCacheVersion === this.#accountsVersion &&
+      this.#accountsCacheStore === store &&
+      this.#accountsCacheSize === store.size
+    ) {
+      // The public Map can be changed through retained references or replaced.
+      // Compare ordered membership in O(n), without rebuilding the live objects.
+      let index = 0;
+      let sameMembers = true;
+      for (const fingerprint of store.keys()) {
+        if (this.#accountsCache[index++]?.fingerprint !== fingerprint) {
+          sameMembers = false;
+          break;
+        }
+      }
+      if (sameMembers) return this.#accountsCache;
+    }
+    this.#accountsCacheStore = store;
+    this.#accountsCacheSize = store.size;
     // Cold parity with the historical default direct member (read-only).
     if (store.size === 0) {
       const empty = [{ fingerprint: "", cooldownUntil: 0, consecutiveFails: 0, proxy: null }];
