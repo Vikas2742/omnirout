@@ -1167,7 +1167,11 @@ export async function getDistinctGroups(): Promise<string[]> {
   return rows.map((r) => String(r.group ?? "")).filter(Boolean);
 }
 
-export { autoMigrateLegacyEncryptedConnections, getGheCopilotHosts } from "./providers/migrations";
+export {
+  autoMigrateLegacyEncryptedConnections,
+  encryptPlaintextConnectionCredentials,
+  getGheCopilotHosts,
+} from "./providers/migrations";
 export {
   deleteProviderConnection,
   deleteProviderConnections,
