@@ -44,7 +44,10 @@ function newSessionId(): string {
   return `as_${randomUUID().replace(/-/g, "").slice(0, 32)}`;
 }
 
-/** Scoped to the API key, so one key can never write into another key's session. */
+/**
+ * Scoped to the API key, so one key can never write into another key's session. The list filter
+ * by client session id looks rows up by this id, so changing it hides existing sessions there.
+ */
 function clientSessionRowId(apiKeyId: string | null, clientSessionId: string): string {
   const digest = createHash("sha256")
     .update(`${apiKeyId ?? ""}\x1f${clientSessionId}`)
@@ -185,6 +188,8 @@ export interface ListAgentSessionsFilter {
   apiKeyId?: string | null;
   projectName?: string | null;
   client?: string | null;
+  /** The client's own session id (agent_sessions.client_session_id). */
+  clientSessionId?: string | null;
   from?: string | null;
   to?: string | null;
   sort?: "lastSeen" | "firstSeen" | "requests" | "tokens" | "cost";
@@ -289,6 +294,14 @@ function buildSessionFilterSql(filter: ListAgentSessionsFilter): {
   else if (filter.apiKeyId !== undefined) add("api_key_id = ?", filter.apiKeyId);
   if (filter.projectName) add("project_name = ?", filter.projectName);
   if (filter.client) add("client = ?", filter.client);
+  if (filter.clientSessionId) {
+    add("client_session_id = ?", filter.clientSessionId);
+    // A key's session for a client session id is stored under clientSessionRowId, so the
+    // primary key finds it without scanning the key's other sessions.
+    if (filter.apiKeyId !== undefined) {
+      add("id = ?", clientSessionRowId(filter.apiKeyId, filter.clientSessionId));
+    }
+  }
   if (filter.from) add("last_seen_at >= ?", filter.from);
   if (filter.to) add("last_seen_at <= ?", filter.to);
 
