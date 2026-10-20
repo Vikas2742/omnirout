@@ -71,7 +71,7 @@ test("#17188 MCP route_request dispatches requested combo as model", async () =>
   const { value, calls } = await withCapturedFetch(() =>
     handleRouteRequest({ model: "openai/gpt-6", messages, combo: "Coding Team [1m]" })
   );
-  assert.notEqual(value.isError, true, JSON.stringify(value));
+  assert.notEqual("isError" in value && value.isError, true, JSON.stringify(value));
   assert.equal(calls.length, 1);
   assert.match(calls[0].url, /\/v1\/chat\/completions$/);
   assert.equal(calls[0].body.model, "Coding Team [1m]");
@@ -83,7 +83,7 @@ test("#17188 MCP without combo preserves the selected model", async () => {
   const { value, calls } = await withCapturedFetch(() =>
     handleRouteRequest({ model: "openai/gpt-6", messages })
   );
-  assert.notEqual(value.isError, true, JSON.stringify(value));
+  assert.notEqual("isError" in value && value.isError, true, JSON.stringify(value));
   assert.equal(calls.length, 1);
   assert.equal(calls[0].body.model, "openai/gpt-6");
   assert.equal(calls[0].body["x-combo"], undefined);
@@ -93,7 +93,7 @@ test("#17188 MCP rejects invalid combo without contacting the gateway", async ()
   const { value, calls } = await withCapturedFetch(() =>
     handleRouteRequest({ model: "openai/gpt-6", messages, combo: "   " })
   );
-  assert.equal(value.isError, true);
+  assert.equal("isError" in value && value.isError, true);
   assert.equal(calls.length, 0);
 });
 
