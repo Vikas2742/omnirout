@@ -112,7 +112,7 @@ A kliens által kért és a ténylegesen kiküldött TTL rögzítése a szolgál
 határán későbbre marad; ez a panel a visszaigazolt szinteket jelenti, nem a ténylegesen kiküldött TTL-t.
 
 Megvalósítás: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` és `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` és `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

@@ -112,7 +112,7 @@ TTL గుర్తులు బిల్ చేయబడిన శ్రేణ�
 నమోదు చేయడం వాయిదా వేయబడింది; ఈ ప్యానెల్ రసీదులోని శ్రేణులను నివేదిస్తుంది, వాస్తవ అవుట్‌గోయింగ్ TTLను కాదు.
 
 అమలు: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, మరియు `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, మరియు `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

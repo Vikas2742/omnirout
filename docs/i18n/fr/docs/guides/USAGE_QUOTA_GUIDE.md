@@ -112,7 +112,7 @@ La capture du TTL demandé par le client et du TTL sortant effectif au point d�
 au fournisseur est reportée ; ce panneau présente les paliers indiqués dans les justificatifs, et non le TTL sortant effectif.
 
 Implémentation : `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` et `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` et `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

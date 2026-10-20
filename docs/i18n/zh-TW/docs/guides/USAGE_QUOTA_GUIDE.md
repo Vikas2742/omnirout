@@ -112,7 +112,7 @@ API 等值估算，但不會因此產生相同金額的現金支出或消耗相�
 的功能暫緩實作；此面板回報的是回執中的層級，而非實際送出的 TTL。
 
 實作：`src/lib/usage/cacheWriteEstimate.ts`、
-`src/lib/usage/cacheHealth.ts` 及 `src/shared/utils/cacheWriteUsage.ts`。
+`src/lib/usage/cacheHealth.ts` 及 `open-sse/utils/cacheWriteUsage.ts`。
 
 ---
 

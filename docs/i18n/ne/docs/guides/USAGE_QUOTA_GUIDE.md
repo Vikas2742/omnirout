@@ -112,7 +112,7 @@ TTL चिह्नहरू बिल लगाइएको तहको प्
 पछि सारिएको छ; यो प्यानलले प्राप्ति विवरणका तहहरू रिपोर्ट गर्छ, प्रभावकारी बहिर्गमन TTL होइन।
 
 कार्यान्वयन: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, र `src/shared/utils/cacheWriteUsage.ts`।
+`src/lib/usage/cacheHealth.ts`, र `open-sse/utils/cacheWriteUsage.ts`।
 
 ---
 

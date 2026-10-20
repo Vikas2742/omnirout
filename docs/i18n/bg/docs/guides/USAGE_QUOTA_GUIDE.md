@@ -110,7 +110,7 @@ OmniRoute проследява `cached_tokens` отделно от `prompt_token
 към доставчика е отложено; този панел отчита тарифните нива според отчетеното от доставчика потребление, а не действителния изходящ TTL.
 
 Реализация: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` и `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` и `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

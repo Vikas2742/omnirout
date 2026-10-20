@@ -112,7 +112,7 @@ API 換算の見積もりが表示されても、その金額が実際の支出�
 記録する対応は見送られています。このパネルは、実際の送信 TTL ではなく、受領した使用量情報の階層を報告します。
 
 実装: `src/lib/usage/cacheWriteEstimate.ts`、
-`src/lib/usage/cacheHealth.ts`、および `src/shared/utils/cacheWriteUsage.ts`。
+`src/lib/usage/cacheHealth.ts`、および `open-sse/utils/cacheWriteUsage.ts`。
 
 ---
 

@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  cacheCreationFields,
-  readCacheWriteUsage,
-} from "../../src/shared/utils/cacheWriteUsage.ts";
+import { cacheCreationFields, readCacheWriteUsage } from "../../open-sse/utils/cacheWriteUsage.ts";
 import { estimateApiEquivalentCacheWrite } from "../../src/lib/usage/cacheWriteEstimate.ts";
 import { computeCostFromPricing } from "../../src/lib/usage/costCalculator.ts";
 import { normalizeUsage } from "../../open-sse/utils/usageTracking.ts";

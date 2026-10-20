@@ -112,7 +112,7 @@ TTL בצד הבקשה אינם ראיה לדרגת חיוב.
 לספק נדחה לשלב מאוחר יותר; לוח זה מדווח על דרגות כפי שהן מופיעות באסמכתאות החיוב, ולא על ה-TTL האפקטיבי היוצא.
 
 מימוש: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` ו-`src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` ו-`open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

@@ -110,7 +110,7 @@ API-համարժեք գնահատական՝ առանց այդ գումարի չ�
 սահմանային կետում հետաձգված է. այս բաժինը ներկայացնում է ստացականներում նշված մակարդակները, ոչ թե փաստացի ելքային TTL-ը։
 
 Իրականացում՝ `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` և `src/shared/utils/cacheWriteUsage.ts`։
+`src/lib/usage/cacheHealth.ts` և `open-sse/utils/cacheWriteUsage.ts`։
 
 ---
 

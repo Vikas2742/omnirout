@@ -1,5 +1,5 @@
 import { register } from "../registry.ts";
-import { mergeCacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { mergeCacheCreationFields } from "../../utils/cacheWriteUsage.ts";
 import { FORMATS } from "../formats.ts";
 import { CLAUDE_OAUTH_TOOL_PREFIX } from "../request/openai-to-claude.ts";
 import { hasToolCallShim, applyToolCallShimToBuffer } from "../helpers/toolCallShim.ts";

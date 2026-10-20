@@ -112,7 +112,7 @@ A captura do TTL solicitado pelo cliente em comparação com o TTL efetivo de sa
 envio ao provedor fica para uma implementação futura; este painel informa as faixas dos comprovantes de uso, não o TTL efetivo de saída.
 
 Implementação: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` e `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` e `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

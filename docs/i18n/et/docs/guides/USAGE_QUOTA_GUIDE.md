@@ -112,7 +112,7 @@ Kliendi taotletud TTL-i ja tegeliku väljamineva TTL-i talletamine teenusepakkuj
 piiril on edasi lükatud; see paneel näitab teenusepakkuja kinnitatud tasemeid, mitte tegelikku väljaminevat TTL-i.
 
 Teostus: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` ja `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` ja `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

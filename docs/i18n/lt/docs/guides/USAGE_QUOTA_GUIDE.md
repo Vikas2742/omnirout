@@ -112,7 +112,7 @@ Kliento prašomo TTL ir faktiškai siunčiamo TTL fiksavimas siuntimo teikėjui
 taške atidėtas; šis skydelis rodo apskaitos pakopas, o ne faktiškai siunčiamą TTL.
 
 Įgyvendinimas: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` ir `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` ir `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

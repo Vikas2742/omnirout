@@ -112,7 +112,7 @@ Sağlayıcıya gönderim sınırında, istemcinin talep ettiği TTL ile fiilen g
 kaydedilmesi ertelenmiştir; bu panel fiilen gönderilen TTL'yi değil, alındılarda belirtilen katmanları raporlar.
 
 Uygulama: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` ve `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` ve `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

@@ -112,7 +112,7 @@ Provayderə göndərilmə nöqtəsində müştərinin tələb etdiyi TTL ilə fa
 qeydə alınması sonraya saxlanılıb; bu panel faktiki çıxış TTL-sini deyil, qəbzlərdəki səviyyələri göstərir.
 
 Reallaşdırma: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` və `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` və `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

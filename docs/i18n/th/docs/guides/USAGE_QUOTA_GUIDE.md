@@ -112,7 +112,7 @@ TTL ฝั่งคำขอไม่ใช่หลักฐานยืนย�
 ไปยังผู้ให้บริการจะดำเนินการในภายหลัง แผงนี้รายงานระดับตามข้อมูลการเรียกเก็บเงิน ไม่ใช่ TTL ขาออกที่มีผลจริง
 
 การนำไปใช้: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` และ `src/shared/utils/cacheWriteUsage.ts`
+`src/lib/usage/cacheHealth.ts` และ `open-sse/utils/cacheWriteUsage.ts`
 
 ---
 

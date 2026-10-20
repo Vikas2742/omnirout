@@ -1,5 +1,5 @@
 import { FORMATS } from "../translator/formats.ts";
-import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields } from "../utils/cacheWriteUsage.ts";
 import {
   buildGeminiThoughtSignatureKey,
   storeGeminiThoughtSignature,

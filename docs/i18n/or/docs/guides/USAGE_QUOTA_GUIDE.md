@@ -112,7 +112,7 @@ API-ସମତୁଲ୍ୟ ଆକଳନ ଥାଇପାରେ, କିନ୍ତୁ
 ସ୍ଥଗିତ ରହିଛି; ଏହି ପ୍ୟାନେଲ୍ ପ୍ରାପ୍ତି ରସିଦରେ ଥିବା ସ୍ତରଗୁଡ଼ିକୁ ରିପୋର୍ଟ କରେ, ପ୍ରକୃତ ବହିର୍ଗାମୀ TTL କୁ ନୁହେଁ।
 
 କାର୍ଯ୍ୟାନ୍ୱୟନ: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, ଏବଂ `src/shared/utils/cacheWriteUsage.ts`।
+`src/lib/usage/cacheHealth.ts`, ଏବଂ `open-sse/utils/cacheWriteUsage.ts`।
 
 ---
 

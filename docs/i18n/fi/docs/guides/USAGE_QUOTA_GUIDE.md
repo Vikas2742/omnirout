@@ -112,7 +112,7 @@ Asiakkaan pyytämän ja tosiasiallisen lähtevän TTL-arvon tallentaminen palvel
 yhteydessä on siirretty myöhemmäksi; tämä paneeli raportoi kuittien tasot, ei tosiasiallista lähtevää TTL-arvoa.
 
 Toteutus: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` ja `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` ja `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

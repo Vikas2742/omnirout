@@ -113,7 +113,7 @@ Klienta pieprasītā TTL un faktiskā izejošā TTL fiksēšana brīdī, kad pie
 pakalpojuma sniedzējam, ir atlikta; šis panelis ziņo par saņemtajos datos norādītajiem līmeņiem, nevis faktisko izejošo TTL.
 
 Realizācija: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` un `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` un `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

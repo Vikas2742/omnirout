@@ -112,7 +112,7 @@ La captura del TTL solicitado por el cliente frente al TTL de salida efectivo en
 al proveedor queda pendiente; este panel informa de los niveles reflejados en los comprobantes, no del TTL de salida efectivo.
 
 Implementación: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` y `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` y `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

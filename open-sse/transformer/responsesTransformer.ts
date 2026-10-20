@@ -1,5 +1,5 @@
 import { appendToolCallArgumentDelta } from "../utils/toolCallArguments.ts";
-import { mergeCacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { mergeCacheCreationFields } from "../utils/cacheWriteUsage.ts";
 import { ToolCallLifecycle } from "../translator/response/openai-responses/toolCallLifecycle.ts";
 import { shouldParseTextualReasoningTags } from "../handlers/responseSanitizer.ts";
 import { getReadableReasoningValue } from "../utils/reasoningFields.ts";

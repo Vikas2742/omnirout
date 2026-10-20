@@ -112,7 +112,7 @@ API-ਸਮਤੁੱਲ ਅਨੁਮਾਨ ਹੋ ਸਕਦਾ ਹੈ, ਬਿਨ�
 ਮੁਲਤਵੀ ਕੀਤਾ ਗਿਆ ਹੈ; ਇਹ ਪੈਨਲ ਰਸੀਦ ਦੇ ਟੀਅਰ ਰਿਪੋਰਟ ਕਰਦਾ ਹੈ, ਪ੍ਰਭਾਵੀ ਆਊਟਗੋਇੰਗ TTL ਨਹੀਂ।
 
 ਲਾਗੂਕਰਨ: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, ਅਤੇ `src/shared/utils/cacheWriteUsage.ts`।
+`src/lib/usage/cacheHealth.ts`, ਅਤੇ `open-sse/utils/cacheWriteUsage.ts`।
 
 ---
 

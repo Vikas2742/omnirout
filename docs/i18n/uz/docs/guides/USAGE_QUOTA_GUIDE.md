@@ -113,7 +113,7 @@ Provayderga yuborish chegarasida mijoz soʻragan TTL bilan amalda yuboriladigan 
 keyinga qoldirilgan; bu panel amalda yuboriladigan TTLni emas, kvitansiyadagi darajalarni koʻrsatadi.
 
 Amalga oshirish: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` va `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` va `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

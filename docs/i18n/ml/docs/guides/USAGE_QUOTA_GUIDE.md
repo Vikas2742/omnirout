@@ -112,7 +112,7 @@ TTL മാർക്കറുകൾ ബിൽ ചെയ്ത ടിയറിന�
 രേഖപ്പെടുത്തുന്നത് പിന്നത്തേക്ക് മാറ്റിവെച്ചിരിക്കുന്നു; ഈ പാനൽ റിപ്പോർട്ട് ചെയ്യുന്നത് രസീതിലെ ടിയറുകളാണ്, യഥാർത്ഥത്തിൽ പുറത്തേക്ക് അയയ്ക്കുന്ന TTL അല്ല.
 
 നടപ്പാക്കൽ: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, കൂടാതെ `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, കൂടാതെ `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

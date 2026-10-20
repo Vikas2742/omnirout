@@ -112,7 +112,7 @@ Capturarea TTL-ului solicitat de client în raport cu TTL-ul efectiv trimis, la 
 trimitere către furnizor, este amânată; acest panou raportează nivelurile din datele de facturare primite, nu TTL-ul efectiv trimis.
 
 Implementare: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` și `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` și `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

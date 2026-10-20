@@ -112,7 +112,7 @@ Pencatatan TTL yang diminta klien dibandingkan dengan TTL keluar efektif pada ba
 ke penyedia ditunda; panel ini melaporkan tingkat pada bukti tagihan, bukan TTL keluar efektif.
 
 Implementasi: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, dan `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, dan `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

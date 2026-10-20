@@ -112,7 +112,7 @@ OmniRoute прати `cached_tokens` одвојено од `prompt_tokens` за�
 провајдеру одложено је за касније; овај панел приказује нивое са потврда провајдера, а не стварну излазну TTL вредност.
 
 Имплементација: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` и `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` и `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

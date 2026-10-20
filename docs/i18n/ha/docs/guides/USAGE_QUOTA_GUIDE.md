@@ -112,7 +112,7 @@ An ɗage ɗaukar TTL da abokin ciniki ya nema tare da ainihin TTL mai fita a iya
 ga mai samarwa; wannan sashe yana bayar da rahoton matakan da ke kan rasit, ba ainihin TTL mai fita ba.
 
 Aiwatarwa: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, da `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, da `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

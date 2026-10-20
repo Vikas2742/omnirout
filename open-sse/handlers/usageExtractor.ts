@@ -3,7 +3,7 @@
  * Handles different provider response formats
  */
 import { carryEstimatedUsageMarker, pickReportedCostUsd } from "../utils/usageTracking.ts";
-import { cacheCreationFields, readCacheWriteUsage } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields, readCacheWriteUsage } from "../utils/cacheWriteUsage.ts";
 
 /**
  * True for an Anthropic Messages response body (`type: "message"`), whatever provider

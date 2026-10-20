@@ -11,7 +11,7 @@
  * normalizer clears `buffer` when it produces the tail).
  */
 import { parseSSELine } from "./streamHelpers.ts";
-import { mergeCacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { mergeCacheCreationFields } from "./cacheWriteUsage.ts";
 import { extractUsage, sanitizeUsagePayloadForRequest } from "./usageTracking.ts";
 import { normalizeArrayContentChunk } from "./arrayContentDelta.ts";
 import { markToolFinish } from "../services/sessionManager.ts";

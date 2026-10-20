@@ -2,7 +2,7 @@ import {
   pickCacheCreationTokens,
   resolveCacheCreationInPrompt,
 } from "./pickCacheCreationTokens.ts";
-import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields } from "./cacheWriteUsage.ts";
 
 type CacheUsageSource = {
   cache_creation_input_tokens?: number;

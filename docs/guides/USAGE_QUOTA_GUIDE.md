@@ -114,7 +114,7 @@ Capturing client-requested versus effective outgoing TTL at the provider send
 boundary is deferred; this panel reports receipt tiers, not effective outgoing TTL.
 
 Implementation: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, and `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, and `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

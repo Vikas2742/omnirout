@@ -112,7 +112,7 @@ TTL ಗುರುತುಗಳು ಬಿಲ್ ಮಾಡಲಾದ ಶ್ರೇಣ�
 ಸೆರೆಹಿಡಿಯುವುದನ್ನು ಮುಂದೂಡಲಾಗಿದೆ; ಈ ಫಲಕವು ಸ್ವೀಕೃತಿ ಶ್ರೇಣಿಗಳನ್ನು ವರದಿ ಮಾಡುತ್ತದೆ, ಪರಿಣಾಮಕಾರಿಯಾಗಿ ಹೊರಹೋಗುವ TTL ಅನ್ನಲ್ಲ.
 
 ಅನುಷ್ಠಾನ: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, ಮತ್ತು `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, ಮತ್ತು `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

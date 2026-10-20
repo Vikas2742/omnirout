@@ -6,7 +6,7 @@ import { translateNonStreamingResponse } from "../../open-sse/handlers/responseT
 import { claudeToOpenAIResponse } from "../../open-sse/translator/response/claude-to-openai.ts";
 import { FORMATS } from "../../open-sse/translator/formats.ts";
 import { createSSEStream } from "../../open-sse/utils/stream.ts";
-import { readCacheWriteUsage } from "../../src/shared/utils/cacheWriteUsage.ts";
+import { readCacheWriteUsage } from "../../open-sse/utils/cacheWriteUsage.ts";
 import { resetDbInstance } from "../../src/lib/db/core.ts";
 
 test.after(() => resetDbInstance());

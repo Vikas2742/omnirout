@@ -112,7 +112,7 @@ Zachycování TTL požadovaného klientem oproti skutečnému odchozímu TTL v o
 odeslání poskytovateli je odloženo; tento panel uvádí úrovně podle údajů z vyúčtování, nikoli skutečné odchozí TTL.
 
 Implementace: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` a `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` a `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

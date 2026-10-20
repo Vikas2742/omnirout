@@ -113,7 +113,7 @@ Bilježenje TTL-a koji je klijent zatražio u odnosu na stvarni odlazni TTL na g
 pružatelju odgođeno je; ova ploča prikazuje razine iz potvrda, a ne stvarni odlazni TTL.
 
 Implementacija: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` i `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` i `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

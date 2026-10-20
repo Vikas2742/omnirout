@@ -112,7 +112,7 @@ TTL на боці запиту не є свідченням тарифікова
 провайдеру відкладено; ця панель показує рівні за даними квитанцій, а не фактичний вихідний TTL.
 
 Реалізація: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` і `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` і `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

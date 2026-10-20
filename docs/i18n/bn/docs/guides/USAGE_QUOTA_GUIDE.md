@@ -112,7 +112,7 @@ TTL চিহ্নগুলো কোনো বিলকৃত স্তরে�
 সংগ্রহের কাজ স্থগিত রাখা হয়েছে; এই প্যানেল প্রাপ্তির রসিদে উল্লিখিত স্তর রিপোর্ট করে, কার্যকর বহির্গামী TTL নয়।
 
 বাস্তবায়ন: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, এবং `src/shared/utils/cacheWriteUsage.ts`।
+`src/lib/usage/cacheHealth.ts`, এবং `open-sse/utils/cacheWriteUsage.ts`।
 
 ---
 

@@ -112,7 +112,7 @@ Unasaji wa TTL iliyoombwa na mteja dhidi ya TTL halisi inayotumwa katika mpaka w
 kwa mtoa huduma umeahirishwa; paneli hii huripoti madaraja ya risiti, si TTL halisi inayotumwa.
 
 Utekelezaji: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, na `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, na `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

@@ -1,7 +1,7 @@
 import { translateResponse, initState } from "../translator/index.ts";
 import { FORMATS } from "../translator/formats.ts";
 import { appendRequestLog } from "@/lib/usageDb";
-import { mergeCacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { mergeCacheCreationFields } from "./cacheWriteUsage.ts";
 import { clearPendingRequestOnce } from "./pendingRequestCleanup.ts";
 import { resolveTrailingUsageSummary } from "./passthroughTrailingUsage.ts";
 import { createByteLengthQueueStrategies } from "./byteQueueStrategy.ts";

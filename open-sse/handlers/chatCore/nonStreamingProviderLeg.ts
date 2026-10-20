@@ -22,7 +22,7 @@ import { translateNonStreamingClientResponse } from "./nonStreamingClientTransla
 import { parseNonStreamingResponseBody, isJsonRecord } from "./nonStreamingResponseParse.ts";
 import { restoreNonStreamingToolNames } from "./passthroughToolNames.ts";
 import { extractUsageFromResponse } from "../usageExtractor.ts";
-import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields } from "../../utils/cacheWriteUsage.ts";
 import { sanitizeUsagePayloadForRequest } from "../../utils/usageTracking.ts";
 import { createErrorResult, formatProviderError } from "../../utils/error.ts";
 import { isLocalStreamLifecycleError } from "@/shared/utils/circuitBreaker";

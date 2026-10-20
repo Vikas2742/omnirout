@@ -112,7 +112,7 @@ E yigharịrị idekọ TTL onye ahịa rịọrọ ma e jiri ya tụnyere TTL �
 na-ezigara onye na-eweta ọrụ; ogwe a na-akọ ọkwa nnata, ọ bụghị TTL ọpụpụ na-arụ ọrụ.
 
 Mmejuputa: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, na `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, na `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

@@ -119,7 +119,7 @@ Rejestrowanie wartości TTL żądanej przez klienta oraz faktycznej wartości TT
 w punkcie wysyłania odłożono na później; ten panel przedstawia poziomy z potwierdzeń rozliczeniowych, a nie faktyczną wychodzącą wartość TTL.
 
 Implementacja: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` oraz `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` oraz `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

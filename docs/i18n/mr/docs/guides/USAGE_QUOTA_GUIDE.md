@@ -112,7 +112,7 @@ API-समतुल्य अंदाज उपलब्ध असू शकत
 नोंद करणे पुढे ढकलले आहे; हे पॅनेल पावतीवरील स्तर दाखवते, प्रत्यक्ष बाहेर पाठवला जाणारा TTL नाही.
 
 अंमलबजावणी: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, आणि `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, आणि `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

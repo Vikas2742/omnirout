@@ -3,7 +3,7 @@
  */
 
 import { appendRequestLog } from "@/lib/usageDb";
-import { cacheCreationFields, readCacheWriteUsage } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields, readCacheWriteUsage } from "./cacheWriteUsage.ts";
 import {
   getLoggedInputTokens,
   getLoggedOutputTokens,

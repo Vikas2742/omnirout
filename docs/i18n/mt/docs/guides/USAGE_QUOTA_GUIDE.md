@@ -112,7 +112,7 @@ Il-qbid tat-TTL mitlub mill-klijent meta mqabbel mat-TTL effettiv li joħroġ fi
 fejn tintbagħat it-talba lill-fornitur huwa pospost; dan il-pannell jirrapporta l-livelli skont l-irċevuti, mhux it-TTL effettiv li joħroġ.
 
 Implimentazzjoni: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, u `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, u `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

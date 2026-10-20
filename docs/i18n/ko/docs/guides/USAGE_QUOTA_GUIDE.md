@@ -112,7 +112,7 @@ TTL 표시는 청구 등급의 근거가 아닙니다.
 구분하여 기록하는 기능은 추후로 미뤄졌습니다. 이 패널은 실제 전송 TTL이 아니라 청구 내역에 나타난 등급을 보고합니다.
 
 구현: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

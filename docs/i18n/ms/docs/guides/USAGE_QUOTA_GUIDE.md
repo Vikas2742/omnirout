@@ -112,7 +112,7 @@ Perekodan TTL yang diminta oleh klien berbanding TTL keluar sebenar pada titik p
 kepada penyedia ditangguhkan; panel ini melaporkan peringkat pada resit, bukan TTL keluar sebenar.
 
 Pelaksanaan: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, dan `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, dan `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

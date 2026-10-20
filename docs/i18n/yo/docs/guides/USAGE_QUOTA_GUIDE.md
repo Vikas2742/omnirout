@@ -112,7 +112,7 @@ A ti sún gbígba TTL tí oníbàárà béèrè ní ìfiwéra pẹ̀lú TTL tó 
 fífiranṣẹ́ sí olùpèsè síwájú; pánẹ́ẹ̀lì yìí ń ròyìn àwọn ìpele ìwé ẹ̀rí, kì í ṣe TTL tó ń jáde ní tòótọ́.
 
 Ìmúṣẹ: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, àti `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, àti `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

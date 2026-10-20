@@ -112,7 +112,7 @@ OmniRoute `cached_tokens`ን ከ`prompt_tokens` ለይቶ ይከታተላል፤ 
 መመዝገብ ለበኋላ ተላልፏል፤ ይህ ፓነል የሚያሳየው በደረሰኝ የተገለጹ ደረጃዎችን እንጂ ተግባራዊውን ወጪ TTL አይደለም።
 
 አተገባበር፦ `src/lib/usage/cacheWriteEstimate.ts`፣
-`src/lib/usage/cacheHealth.ts` እና `src/shared/utils/cacheWriteUsage.ts`።
+`src/lib/usage/cacheHealth.ts` እና `open-sse/utils/cacheWriteUsage.ts`።
 
 ---
 

@@ -112,7 +112,7 @@ TTL سمت درخواست، مدرکی برای ردهٔ صورتحساب‌شد
 به آینده موکول شده است؛ این پنل رده‌های رسید را گزارش می‌کند، نه TTL مؤثر خروجی را.
 
 پیاده‌سازی: `src/lib/usage/cacheWriteEstimate.ts`،
-`src/lib/usage/cacheHealth.ts` و `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` و `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

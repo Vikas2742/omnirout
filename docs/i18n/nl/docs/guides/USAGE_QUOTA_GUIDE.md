@@ -112,7 +112,7 @@ Het vastleggen van de door de client aangevraagde TTL versus de effectieve uitga
 naar de provider is uitgesteld; dit paneel rapporteert gefactureerde categorieën, niet de effectieve uitgaande TTL.
 
 Implementatie: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` en `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` en `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

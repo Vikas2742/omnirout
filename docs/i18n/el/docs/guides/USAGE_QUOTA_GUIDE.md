@@ -112,7 +112,7 @@ TTL στην πλευρά του αιτήματος δεν αποτελούν τ
 προς τον πάροχο αναβάλλεται· αυτός ο πίνακας αναφέρει τις βαθμίδες των παραστατικών, όχι το πραγματικό εξερχόμενο TTL.
 
 Υλοποίηση: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` και `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` και `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

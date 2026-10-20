@@ -112,7 +112,7 @@ Die Erfassung der vom Client angeforderten TTL im Vergleich zur effektiv ausgehe
 an den Anbieter wird auf später verschoben; dieses Panel zeigt die Stufen laut Abrechnungsbeleg, nicht die effektiv ausgehende TTL.
 
 Implementierung: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` und `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` und `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

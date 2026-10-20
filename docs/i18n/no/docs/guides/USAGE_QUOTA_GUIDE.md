@@ -112,7 +112,7 @@ Registrering av klientforespurt TTL kontra faktisk utgående TTL ved sending
 til leverandøren er utsatt; dette panelet rapporterer nivåene fra kvitteringen, ikke faktisk utgående TTL.
 
 Implementasjon: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` og `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` og `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

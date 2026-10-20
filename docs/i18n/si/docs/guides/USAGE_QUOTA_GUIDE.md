@@ -112,7 +112,7 @@ TTL සලකුණු, බිල් කළ ස්තරයක් සඳහා �
 සටහන් කිරීම පසුවට කල් දමා ඇත; මෙම පැනලය වාර්තා කරන්නේ රිසිට්පත් ස්තර මිස සැබවින්ම පිටතට යැවෙන TTL නොවේ.
 
 ක්‍රියාත්මක කිරීම: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, සහ `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, සහ `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

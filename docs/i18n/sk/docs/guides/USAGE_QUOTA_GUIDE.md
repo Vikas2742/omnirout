@@ -112,7 +112,7 @@ Zachytávanie TTL požadovaného klientom oproti skutočnému odchádzajúcemu T
 poskytovateľovi je odložené; tento panel uvádza úrovne podľa údajov o účtovaní, nie skutočné odchádzajúce TTL.
 
 Implementácia: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` a `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` a `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

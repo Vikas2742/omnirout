@@ -1,4 +1,7 @@
-import { storedCacheWriteUsage } from "@/shared/utils/cacheWriteUsage";
+import {
+  storedCacheWriteUsage,
+  type CacheWriteUsage,
+} from "@omniroute/open-sse/utils/cacheWriteUsage.ts";
 
 export interface CacheWriteSummaryRow {
   cacheCreation: number | null;
@@ -43,13 +46,22 @@ export function summarizeCacheWrites(rows: CacheWriteSummaryRow[]): CacheWriteSu
     } else result.cacheWriteInvalidCalls++;
     result.cacheWriteUnknownTotal += usage.unknown ?? 0;
     if (usage.total === null) result.cacheWriteUnreportedCalls++;
-    const cost = row.cacheWriteCostUsd;
-    const priced = valid && typeof cost === "number" && Number.isFinite(cost) && cost >= 0;
-    const pricedTokens = priced
-      ? Math.max(0, Math.min(usage.total ?? 0, row.cacheWritePricedTokens ?? 0))
-      : 0;
-    result.cacheWriteUnpricedTotal += Math.max(0, (usage.total ?? 0) - pricedTokens);
-    if (priced) result.cacheWriteKnownTierCostUsd = (result.cacheWriteKnownTierCostUsd ?? 0) + cost;
+    addCacheWriteCost(result, row, usage, valid);
   }
   return result;
+}
+
+function addCacheWriteCost(
+  result: CacheWriteSummary,
+  row: CacheWriteSummaryRow,
+  usage: CacheWriteUsage,
+  valid: boolean
+) {
+  const cost = row.cacheWriteCostUsd;
+  const priced = valid && typeof cost === "number" && Number.isFinite(cost) && cost >= 0;
+  const pricedTokens = priced
+    ? Math.max(0, Math.min(usage.total ?? 0, row.cacheWritePricedTokens ?? 0))
+    : 0;
+  result.cacheWriteUnpricedTotal += Math.max(0, (usage.total ?? 0) - pricedTokens);
+  if (priced) result.cacheWriteKnownTierCostUsd = (result.cacheWriteKnownTierCostUsd ?? 0) + cost;
 }

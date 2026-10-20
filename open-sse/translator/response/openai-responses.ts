@@ -3,7 +3,7 @@
  * Converts streaming chunks from Chat Completions to Responses API events
  */
 import { register } from "../registry.ts";
-import { cacheCreationFields, mergeCacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields, mergeCacheCreationFields } from "../../utils/cacheWriteUsage.ts";
 import { FORMATS } from "../formats.ts";
 import { appendToolCallArgumentDelta } from "../../utils/toolCallArguments.ts";
 import { translatorToolCallLifecycle } from "./openai-responses/toolCallLifecycle.ts";

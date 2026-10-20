@@ -112,7 +112,7 @@ TTL នៅខាងសំណើ មិនមែនជាភស្តុតាង
 ត្រូវបានពន្យារពេលសិន; ផ្ទាំងនេះរាយការណ៍កម្រិតតាមបង្កាន់ដៃ មិនមែន TTL ចេញដែលមានប្រសិទ្ធភាពទេ។
 
 ការអនុវត្ត៖ `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` និង `src/shared/utils/cacheWriteUsage.ts`។
+`src/lib/usage/cacheHealth.ts` និង `open-sse/utils/cacheWriteUsage.ts`។
 
 ---
 

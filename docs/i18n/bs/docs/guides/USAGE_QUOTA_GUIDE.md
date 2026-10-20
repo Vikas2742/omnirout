@@ -113,7 +113,7 @@ Bilježenje TTL-a koji je klijent zatražio naspram efektivnog izlaznog TTL-a na
 pružaocu odgođeno je; ovaj panel prikazuje kategorije iz potvrda, a ne efektivni izlazni TTL.
 
 Implementacija: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` i `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` i `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

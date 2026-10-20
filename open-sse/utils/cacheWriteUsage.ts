@@ -32,29 +32,45 @@ function sources(value: unknown) {
   };
 }
 
-export function readCacheWriteUsage(value: unknown): CacheWriteUsage {
-  const { usage, rawTotal, rawTiers } = sources(value);
-  const tiers = record(rawTiers);
-  const fiveMinute = counter(tiers.ephemeral_5m_input_tokens);
-  const oneHour = counter(tiers.ephemeral_1h_input_tokens);
-  const sum = (fiveMinute ?? 0) + (oneHour ?? 0);
-  const total =
+function cacheWriteTotal(
+  rawTotal: unknown,
+  fiveMinute: number | null,
+  oneHour: number | null,
+  sum: number
+): number | null {
+  return (
     counter(rawTotal) ??
     (rawTotal == null && fiveMinute !== null && oneHour !== null && Number.isFinite(sum)
       ? sum
-      : null);
-  const invalid =
+      : null)
+  );
+}
+
+function invalidCacheWriteCounters(
+  rawTotal: unknown,
+  rawTiers: unknown,
+  tiers: JsonRecord,
+  usage: JsonRecord,
+  sum: number
+): boolean {
+  return (
     (rawTotal != null && counter(rawTotal) === null) ||
     (rawTiers != null && (typeof rawTiers !== "object" || Array.isArray(rawTiers))) ||
     ["ephemeral_5m_input_tokens", "ephemeral_1h_input_tokens"].some(
       (key) => tiers[key] != null && counter(tiers[key]) === null
     ) ||
     usage.cache_creation_tier_status === "invalid" ||
-    !Number.isFinite(sum);
-  const inconsistent =
-    usage.cache_creation_tier_status === "inconsistent" ||
-    (total !== null && (sum > total || (fiveMinute !== null && oneHour !== null && sum !== total)));
-  const status: CacheWriteStatus = invalid
+    !Number.isFinite(sum)
+  );
+}
+
+function cacheWriteStatus(
+  invalid: boolean,
+  inconsistent: boolean,
+  fiveMinute: number | null,
+  oneHour: number | null
+): CacheWriteStatus {
+  return invalid
     ? "invalid"
     : inconsistent
       ? "inconsistent"
@@ -63,6 +79,20 @@ export function readCacheWriteUsage(value: unknown): CacheWriteUsage {
         : fiveMinute !== null || oneHour !== null
           ? "partial"
           : "unknown";
+}
+
+export function readCacheWriteUsage(value: unknown): CacheWriteUsage {
+  const { usage, rawTotal, rawTiers } = sources(value);
+  const tiers = record(rawTiers);
+  const fiveMinute = counter(tiers.ephemeral_5m_input_tokens);
+  const oneHour = counter(tiers.ephemeral_1h_input_tokens);
+  const sum = (fiveMinute ?? 0) + (oneHour ?? 0);
+  const total = cacheWriteTotal(rawTotal, fiveMinute, oneHour, sum);
+  const invalid = invalidCacheWriteCounters(rawTotal, rawTiers, tiers, usage, sum);
+  const inconsistent =
+    usage.cache_creation_tier_status === "inconsistent" ||
+    (total !== null && (sum > total || (fiveMinute !== null && oneHour !== null && sum !== total)));
+  const status = cacheWriteStatus(invalid, inconsistent, fiveMinute, oneHour);
   return {
     total,
     fiveMinute,

@@ -112,7 +112,7 @@ API 等价费用估算，但并不会产生相应金额的现金支出或消耗�
 暂缓实施；此面板报告的是回执中的层级，而非实际出站 TTL。
 
 实现：`src/lib/usage/cacheWriteEstimate.ts`、
-`src/lib/usage/cacheHealth.ts` 和 `src/shared/utils/cacheWriteUsage.ts`。
+`src/lib/usage/cacheHealth.ts` 和 `open-sse/utils/cacheWriteUsage.ts`。
 
 ---
 

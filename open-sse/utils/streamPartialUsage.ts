@@ -17,7 +17,7 @@ import {
   hasValidUsage,
   normalizeUsage,
 } from "./usageTracking.ts";
-import { cacheCreationFields } from "@/shared/utils/cacheWriteUsage";
+import { cacheCreationFields } from "./cacheWriteUsage.ts";
 
 export type PartialStreamUsage = {
   prompt_tokens: number;

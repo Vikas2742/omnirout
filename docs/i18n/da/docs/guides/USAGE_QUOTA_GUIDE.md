@@ -112,7 +112,7 @@ Registrering af klientanmodet TTL sammenholdt med den effektive udgående TTL p�
 udbyderen, er udskudt; dette panel rapporterer niveauer fra kvitteringer, ikke den effektive udgående TTL.
 
 Implementering: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` og `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` og `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

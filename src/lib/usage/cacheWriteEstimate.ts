@@ -1,10 +1,34 @@
-import type { CacheWriteUsage } from "@/shared/utils/cacheWriteUsage";
+import type { CacheWriteUsage } from "@omniroute/open-sse/utils/cacheWriteUsage.ts";
 
 export interface CacheWriteEstimate {
   /** Only the priced, reported tier portion; never total request cost or cash spend. */
   knownTierCostUsd: number | null;
   pricedTokens: number;
   source: "api-equivalent-estimate";
+}
+
+function cacheWriteRates(pricing: Record<string, unknown>, inputTokens: number | undefined) {
+  const tier = pricing.long_context as Record<string, unknown> | undefined;
+  const threshold = typeof tier?.threshold === "number" ? tier.threshold : Infinity;
+  const crossed =
+    tier?.inclusive === true ? (inputTokens ?? 0) >= threshold : (inputTokens ?? 0) > threshold;
+  return crossed ? { ...pricing, ...tier } : pricing;
+}
+
+const valid = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+function cacheWriteTierRate(
+  explicitRate: unknown,
+  input: number | null,
+  anthropic: boolean,
+  multiplier: number
+) {
+  return valid(explicitRate)
+    ? explicitRate
+    : anthropic && input !== null
+      ? input * multiplier
+      : null;
 }
 
 /**
@@ -24,28 +48,12 @@ export function estimateApiEquivalentCacheWrite(
     source: "api-equivalent-estimate",
   };
   if (!pricing || usage.status === "invalid" || usage.status === "inconsistent") return empty;
-  const tier = pricing.long_context as Record<string, unknown> | undefined;
-  const threshold = typeof tier?.threshold === "number" ? tier.threshold : Infinity;
-  const crossed =
-    tier?.inclusive === true
-      ? (options.inputTokens ?? 0) >= threshold
-      : (options.inputTokens ?? 0) > threshold;
-  const rates = crossed ? { ...pricing, ...tier } : pricing;
-  const valid = (value: unknown): value is number =>
-    typeof value === "number" && Number.isFinite(value) && value >= 0;
+  const rates = cacheWriteRates(pricing, options.inputTokens);
   const anthropic =
     ["anthropic", "claude", "cc"].includes(options.provider) && options.model.startsWith("claude-");
   const input = valid(rates.input) ? rates.input : null;
-  const fiveMinuteRate = valid(rates.cache_creation_5m)
-    ? rates.cache_creation_5m
-    : anthropic && input !== null
-      ? input * 1.25
-      : null;
-  const oneHourRate = valid(rates.cache_creation_1h)
-    ? rates.cache_creation_1h
-    : anthropic && input !== null
-      ? input * 2
-      : null;
+  const fiveMinuteRate = cacheWriteTierRate(rates.cache_creation_5m, input, anthropic, 1.25);
+  const oneHourRate = cacheWriteTierRate(rates.cache_creation_1h, input, anthropic, 2);
   let cost = 0;
   let pricedTokens = 0;
   let measured = false;

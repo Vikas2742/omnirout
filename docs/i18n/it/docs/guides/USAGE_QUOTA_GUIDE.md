@@ -110,7 +110,7 @@ L'acquisizione del TTL richiesto dal client rispetto al TTL effettivo in uscita 
 al provider è rimandata; questo pannello riporta i livelli indicati nei dati di riscontro, non il TTL effettivo in uscita.
 
 Implementazione: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` e `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` e `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

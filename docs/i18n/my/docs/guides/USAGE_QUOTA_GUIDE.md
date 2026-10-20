@@ -112,7 +112,7 @@ TTL အမှတ်အသားများသည် ငွေကောက်ခ
 နှိုင်းယှဉ်မှတ်တမ်းတင်ခြင်းကို နောက်ပိုင်းသို့ ရွှေ့ဆိုင်းထားသည်။ ဤပြကွက်သည် လက်ခံဖြတ်ပိုင်းပါ အဆင့်များကိုသာ အစီရင်ခံပြီး အမှန်တကယ် အထွက် TTL ကို မဖော်ပြပါ။
 
 အကောင်အထည်ဖော်ထားသည့်နေရာ: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` နှင့် `src/shared/utils/cacheWriteUsage.ts`။
+`src/lib/usage/cacheHealth.ts` နှင့် `open-sse/utils/cacheWriteUsage.ts`။
 
 ---
 

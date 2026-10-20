@@ -79,6 +79,55 @@ function Metric({ label, value, hint }: { label: string; value: string; hint?: s
   );
 }
 
+function CacheWriteTiers({ data, t }: { data: CacheHealthResponse; t: Translator }) {
+  return (
+    <Card>
+      <h3 className="mb-3 text-sm font-semibold text-text-main">
+        {text(t, "cacheHealthWriteTiers", "Reported cache-write tiers")}
+      </h3>
+      <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+        <Metric
+          label={text(t, "cacheHealthWrite5m", "5m cache-write tokens")}
+          value={data.cacheWrite5mTotal == null ? "—" : compact(data.cacheWrite5mTotal)}
+        />
+        <Metric
+          label={text(t, "cacheHealthWrite1h", "1h cache-write tokens")}
+          value={data.cacheWrite1hTotal == null ? "—" : compact(data.cacheWrite1hTotal)}
+        />
+        <Metric
+          label={text(t, "cacheHealthWriteUnknown", "Unknown-tier tokens")}
+          value={data.cacheWriteUnknownTotal == null ? "—" : compact(data.cacheWriteUnknownTotal)}
+        />
+        <Metric
+          label={text(t, "cacheHealthWriteEstimate", "API-equivalent write estimate (known tiers)")}
+          value={
+            data.cacheWriteKnownTierCostUsd == null
+              ? text(t, "cacheHealthPriceUnknown", "Not available")
+              : `$${data.cacheWriteKnownTierCostUsd.toFixed(6)}`
+          }
+        />
+      </div>
+      <p className="mt-3 text-xs text-text-muted">
+        {text(
+          t,
+          "cacheHealthWriteEstimateHint",
+          "Price estimate for reported, priced tiers only; not cash spend or subscription quota. Unknown tiers are never inferred from request TTL. Prices are captured when the call is logged."
+        )}
+      </p>
+      <p className="mt-2 text-xs text-text-muted">
+        {text(t, "cacheHealthWriteUnpriced", "Unpriced write tokens")}:{" "}
+        {data.cacheWriteUnpricedTotal == null ? "—" : compact(data.cacheWriteUnpricedTotal)}
+        {" · "}
+        {text(t, "cacheHealthWriteUnreported", "Calls without a write total")}:{" "}
+        {data.cacheWriteUnreportedCalls == null ? "—" : compact(data.cacheWriteUnreportedCalls)}
+        {" · "}
+        {text(t, "cacheHealthWriteInvalid", "Invalid or conflicting tier calls")}:{" "}
+        {data.cacheWriteInvalidCalls == null ? "—" : compact(data.cacheWriteInvalidCalls)}
+      </p>
+    </Card>
+  );
+}
+
 export default function CacheHealthTab() {
   const t = useTranslations("analytics") as Translator;
   const [range, setRange] = useState<UtilizationTimeRange>("24h");
@@ -180,58 +229,7 @@ export default function CacheHealthTab() {
             </div>
           </Card>
 
-          <Card>
-            <h3 className="mb-3 text-sm font-semibold text-text-main">
-              {text(t, "cacheHealthWriteTiers", "Reported cache-write tiers")}
-            </h3>
-            <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-              <Metric
-                label={text(t, "cacheHealthWrite5m", "5m cache-write tokens")}
-                value={data.cacheWrite5mTotal == null ? "—" : compact(data.cacheWrite5mTotal)}
-              />
-              <Metric
-                label={text(t, "cacheHealthWrite1h", "1h cache-write tokens")}
-                value={data.cacheWrite1hTotal == null ? "—" : compact(data.cacheWrite1hTotal)}
-              />
-              <Metric
-                label={text(t, "cacheHealthWriteUnknown", "Unknown-tier tokens")}
-                value={
-                  data.cacheWriteUnknownTotal == null ? "—" : compact(data.cacheWriteUnknownTotal)
-                }
-              />
-              <Metric
-                label={text(
-                  t,
-                  "cacheHealthWriteEstimate",
-                  "API-equivalent write estimate (known tiers)"
-                )}
-                value={
-                  data.cacheWriteKnownTierCostUsd == null
-                    ? text(t, "cacheHealthPriceUnknown", "Not available")
-                    : `$${data.cacheWriteKnownTierCostUsd.toFixed(6)}`
-                }
-              />
-            </div>
-            <p className="mt-3 text-xs text-text-muted">
-              {text(
-                t,
-                "cacheHealthWriteEstimateHint",
-                "Price estimate for reported, priced tiers only; not cash spend or subscription quota. Unknown tiers are never inferred from request TTL. Prices are captured when the call is logged."
-              )}
-            </p>
-            <p className="mt-2 text-xs text-text-muted">
-              {text(t, "cacheHealthWriteUnpriced", "Unpriced write tokens")}:{" "}
-              {data.cacheWriteUnpricedTotal == null ? "—" : compact(data.cacheWriteUnpricedTotal)}
-              {" · "}
-              {text(t, "cacheHealthWriteUnreported", "Calls without a write total")}:{" "}
-              {data.cacheWriteUnreportedCalls == null
-                ? "—"
-                : compact(data.cacheWriteUnreportedCalls)}
-              {" · "}
-              {text(t, "cacheHealthWriteInvalid", "Invalid or conflicting tier calls")}:{" "}
-              {data.cacheWriteInvalidCalls == null ? "—" : compact(data.cacheWriteInvalidCalls)}
-            </p>
-          </Card>
+          <CacheWriteTiers data={data} t={t} />
 
           {/* Concentration highlights the tail hidden by the average. */}
           <Card>

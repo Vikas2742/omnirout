@@ -112,7 +112,7 @@ A captura do TTL solicitado pelo cliente e do TTL de saída efetivo no ponto de 
 fornecedor fica adiada; este painel apresenta os escalões dos comprovativos de utilização, não o TTL de saída efetivo.
 
 Implementação: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` e `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` e `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

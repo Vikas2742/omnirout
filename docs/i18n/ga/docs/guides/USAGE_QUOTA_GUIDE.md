@@ -112,7 +112,7 @@ Tá gabháil an TTL a iarrann an cliant i gcomparáid leis an TTL éifeachtach a
 an tsoláthraí curtha siar; tuairiscíonn an painéal seo sraitheanna admhála, ní an TTL éifeachtach amach.
 
 Cur chun feidhme: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, agus `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, agus `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

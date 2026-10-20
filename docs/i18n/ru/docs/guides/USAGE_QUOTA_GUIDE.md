@@ -112,7 +112,7 @@ TTL в запросе не подтверждают оплачиваемую т�
 провайдеру отложена; эта панель показывает тарифные категории по данным о начислениях, а не фактический исходящий TTL.
 
 Реализация: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` и `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` и `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

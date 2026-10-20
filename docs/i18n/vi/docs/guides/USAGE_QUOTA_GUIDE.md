@@ -112,7 +112,7 @@ Việc ghi nhận TTL do máy khách yêu cầu so với TTL gửi đi thực t�
 nhà cung cấp được hoãn lại; bảng này báo cáo các cấp trên biên nhận, không phải TTL gửi đi thực tế.
 
 Triển khai: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` và `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` và `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

@@ -112,7 +112,7 @@ API-ეკვივალენტური შეფასება ისე, 
 საზღვარზე გადადებულია; ეს პანელი აჩვენებს ქვითარში დაფიქსირებულ დონეებს და არა რეალურ გამავალ TTL-ს.
 
 იმპლემენტაცია: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` და `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` და `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

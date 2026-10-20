@@ -112,7 +112,7 @@ Zajem vrednosti TTL, ki jo zahteva odjemalec, in dejanske izhodne vrednosti TTL 
 ponudniku je odložen; to podokno poroča o ravneh na obračunskih potrdilih, ne o dejanski izhodni vrednosti TTL.
 
 Implementacija: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts` in `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts` in `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

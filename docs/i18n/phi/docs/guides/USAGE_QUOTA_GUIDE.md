@@ -112,7 +112,7 @@ Ipinagpaliban ang pagtatala ng TTL na hiniling ng kliyente kumpara sa aktuwal na
 ng pagpapadala sa provider; iniuulat ng panel na ito ang mga antas sa resibo, hindi ang aktuwal na papalabas na TTL.
 
 Implementasyon: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, at `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, at `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

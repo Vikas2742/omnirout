@@ -112,7 +112,7 @@ API-க்கு இணையான மதிப்பீடு இருக்�
 ஒத்திவைக்கப்பட்டுள்ளது; இந்தப் பலகம் ரசீது அடுக்குகளைத் தெரிவிக்கிறது, நடைமுறையில் வெளியே அனுப்பப்படும் TTL-ஐ அல்ல.
 
 செயலாக்கம்: `src/lib/usage/cacheWriteEstimate.ts`,
-`src/lib/usage/cacheHealth.ts`, மற்றும் `src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`, மற்றும் `open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 

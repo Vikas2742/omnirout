@@ -10,7 +10,7 @@ import { createResponsesApiTransformStream } from "../../open-sse/transformer/re
 import { resolveTrailingUsageSummary } from "../../open-sse/utils/passthroughTrailingUsage.ts";
 import { createSSEStream } from "../../open-sse/utils/stream.ts";
 import { FORMATS } from "../../open-sse/translator/formats.ts";
-import { readCacheWriteUsage } from "../../src/shared/utils/cacheWriteUsage.ts";
+import { readCacheWriteUsage } from "../../open-sse/utils/cacheWriteUsage.ts";
 import { resetDbInstance } from "../../src/lib/db/core.ts";
 import { estimateApiEquivalentCacheWrite } from "../../src/lib/usage/cacheWriteEstimate.ts";
 

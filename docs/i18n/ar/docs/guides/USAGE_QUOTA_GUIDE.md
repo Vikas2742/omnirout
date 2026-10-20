@@ -110,7 +110,7 @@ TTL في جانب الطلب دليلًا على فئة خاضعة للفوتر�
 إلى المزوّد؛ فهذه اللوحة تعرض الفئات الواردة في إيصالات الاستخدام، وليس مدة TTL الفعلية الصادرة.
 
 التنفيذ: `src/lib/usage/cacheWriteEstimate.ts`،
-`src/lib/usage/cacheHealth.ts`، و`src/shared/utils/cacheWriteUsage.ts`.
+`src/lib/usage/cacheHealth.ts`، و`open-sse/utils/cacheWriteUsage.ts`.
 
 ---
 
