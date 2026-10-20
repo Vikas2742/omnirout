@@ -548,6 +548,94 @@ test("web_search_call without sources falls back to the citations, deduplicated"
   ]);
 });
 
+// Event sequence captured from a real Codex (gpt-6-luna) web_search stream, ids
+// replaced: the done call carries `action: { type: "search", query, queries }`
+// with NO `sources`, so the hits arrive only as url_citation annotations.
+test("captured Codex stream: citation-only web_search_call becomes the Claude block pair", () => {
+  const url = "https://nodejs.org/en/blog/release?utm_source=openai";
+  const query = "site:nodejs.org/en/blog/release latest Node.js release stable current LTS";
+  const citation = { type: "url_citation", start_index: 46, end_index: 114, title: "Node.js", url };
+  const text = `The latest stable Node.js release is v26.12.0. ([nodejs.org](${url}))`;
+  const message = { id: "msg_codex", type: "message", role: "assistant", phase: "final_answer" };
+  const events = feed([
+    { type: "response.created", response: { id: "resp_codex", model: "gpt-6-luna", output: [] } },
+    {
+      type: "response.output_item.added",
+      output_index: 0,
+      item: { id: "ws_codex", type: "web_search_call", status: "in_progress" },
+    },
+    { type: "response.web_search_call.in_progress", item_id: "ws_codex", output_index: 0 },
+    { type: "response.web_search_call.searching", item_id: "ws_codex", output_index: 0 },
+    { type: "response.web_search_call.completed", item_id: "ws_codex", output_index: 0 },
+    {
+      type: "response.output_item.done",
+      output_index: 0,
+      item: {
+        id: "ws_codex",
+        type: "web_search_call",
+        status: "completed",
+        action: { type: "search", queries: [query, "site:nodejs.org previous releases"], query },
+      },
+    },
+    {
+      type: "response.output_item.added",
+      output_index: 1,
+      item: { ...message, status: "in_progress", content: [] },
+    },
+    {
+      type: "response.content_part.added",
+      item_id: "msg_codex",
+      output_index: 1,
+      content_index: 0,
+      part: { type: "output_text", annotations: [], text: "" },
+    },
+    { type: "response.output_text.delta", item_id: "msg_codex", output_index: 1, delta: text },
+    {
+      type: "response.output_text.annotation.added",
+      item_id: "msg_codex",
+      output_index: 1,
+      content_index: 0,
+      annotation_index: 0,
+      annotation: citation,
+    },
+    { type: "response.output_text.done", item_id: "msg_codex", output_index: 1, text },
+    {
+      type: "response.output_item.done",
+      output_index: 1,
+      item: {
+        ...message,
+        status: "completed",
+        content: [{ type: "output_text", annotations: [citation], text }],
+      },
+    },
+    {
+      type: "response.completed",
+      response: { id: "resp_codex", model: "gpt-6-luna", status: "completed" },
+    },
+  ]);
+
+  const toolStart = events.find(
+    (event) =>
+      event.type === "content_block_start" &&
+      (event.content_block as Record<string, unknown>).type === "server_tool_use"
+  ) as { index: number; content_block: Record<string, unknown> };
+  assert.ok(toolStart, "server_tool_use block emitted");
+  const queryDelta = events.find(
+    (event) => event.type === "content_block_delta" && event.index === toolStart.index
+  ) as { delta: Record<string, unknown> };
+  assert.deepEqual(JSON.parse(String(queryDelta.delta.partial_json)), { query });
+
+  const resultStart = events.find(
+    (event) =>
+      event.type === "content_block_start" &&
+      (event.content_block as Record<string, unknown>).type === "web_search_tool_result"
+  ) as { content_block: Record<string, unknown> };
+  assert.equal(resultStart.content_block.tool_use_id, toolStart.content_block.id);
+  assert.deepEqual(resultStart.content_block.content, [
+    { type: "web_search_result", url, title: "Node.js", encrypted_content: "", page_age: null },
+  ]);
+});
+
 test("web_search_call with no hits at all still emits the pair with an empty content list", () => {
   const events = feed(responsesStream({ call: webSearchCall("q") }));
   const resultStart = events.find(
