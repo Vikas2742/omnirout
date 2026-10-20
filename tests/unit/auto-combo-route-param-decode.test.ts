@@ -35,3 +35,13 @@ test("decodeRouteParam makes the auto/* prefix check work on encoded ids", () =>
   const persisted = decodeRouteParam("fecdd784-7b6b-4e59-9812-d74650d263ff");
   assert.equal(persisted === "auto" || persisted.startsWith("auto/"), false);
 });
+
+test("repeated decodeRouteParam clears the double-encoded usePathname segment", () => {
+  // Breadcrumbs splits usePathname(), which re-encodes the raw URL segment
+  // (auto%2Ffast → auto%252Ffast). Two passes land on the display value.
+  assert.equal(decodeRouteParam(decodeRouteParam("auto%252Fchaos")), "auto/chaos");
+  assert.equal(decodeRouteParam(decodeRouteParam("auto%252Fcoding%253Afast")), "auto/coding:fast");
+  // Single-encoded and plain segments reach the same display value.
+  assert.equal(decodeRouteParam(decodeRouteParam("auto%2Fchaos")), "auto/chaos");
+  assert.equal(decodeRouteParam(decodeRouteParam("combos")), "combos");
+});

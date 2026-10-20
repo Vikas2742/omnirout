@@ -116,7 +116,15 @@ const PATH_LABELS = {
  */
 function getLabel(segment, t) {
   const key = PATH_LABELS[segment];
-  const decoded = decodeRouteParam(segment);
+  let decoded = decodeRouteParam(segment);
+  // usePathname() can hand back the segment one encoding layer deeper than the
+  // route param (auto%252Ffast) — keep decoding until no %-escape remains so
+  // the crumb reads "Auto/fast", not "Auto%2Ffast".
+  for (let i = 0; i < 2 && decoded.includes("%"); i++) {
+    const next = decodeRouteParam(decoded);
+    if (next === decoded) break;
+    decoded = next;
+  }
   const fallback = decoded.charAt(0).toUpperCase() + decoded.slice(1);
   return key && typeof t.has === "function" && t.has(key) ? t(key) : fallback;
 }
