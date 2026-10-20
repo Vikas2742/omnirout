@@ -248,6 +248,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Heap for the webpack build inside BuildKit: 12288 MB on every build-args block below.
+      # Validated on the hosted runners (16 GB) by the publishes of 2026-10-16/17 — runs
+      # 38904652365, 38907575198 and 39010473398, amd64 and arm64 green (27-55 min). It stays
+      # at or above build.yml's native webpack floor (10240 MB), never below it
+      # (tests/unit/docker-publish-build-heap-14325.test.ts).
       - name: Build and push platform image by digest
         id: build
         uses: docker/build-push-action@v7
@@ -488,7 +493,15 @@ jobs:
         run: |
           set -euo pipefail
           # One digest per arch (amd64 + arm64) at most; more means stale digests leaked in (#15184).
+          # An optional image (bun-web is best-effort) may have produced no digest at all: its
+          # download step then creates no directory, and `find <missing>` under pipefail used to
+          # abort this step with exit 1 and no message, taking every mandatory manifest down with
+          # it (v3.8.52 release run 39316002758). The manifest step already skips such images.
           for dir in base web bun-base bun-web; do
+            if [ ! -d "/tmp/digests/$dir" ]; then
+              echo "digests in $dir: none (optional image produced no digest — skipped)"
+              continue
+            fi
             count=$(find "/tmp/digests/$dir" -type f 2>/dev/null | wc -l)
             if [ "$count" -gt 2 ]; then
               echo "digests in $dir: found $count, expected at most 2 (stale digests leaked in)" >&2
