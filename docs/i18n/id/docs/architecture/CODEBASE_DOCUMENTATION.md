@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 modul executor tingkat atas (`*.ts` tanpa `base.ts`, `index.ts`, dan pengujian — jumlah ini
+156 modul executor tingkat atas (`*.ts` tanpa `base.ts`, `index.ts`, dan pengujian — jumlah ini
 diukur oleh `npm run check:docs-counts`). Setiap kelas executor memperluas `BaseExecutor` (`base.ts`),
 baik secara langsung maupun melalui `DefaultExecutor` atau executor lain; modul sisanya adalah
 helper per penyedia (skema alat, adaptor fetch/TTS, handler keunikan). Executor mencakup:

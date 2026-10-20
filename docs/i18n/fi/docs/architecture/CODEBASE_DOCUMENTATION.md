@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 ylätason suoritinmoduulia (`*.ts`, pois lukien `base.ts`, `index.ts` ja testit — lukumäärän
+156 ylätason suoritinmoduulia (`*.ts`, pois lukien `base.ts`, `index.ts` ja testit — lukumäärän
 mittaa `npm run check:docs-counts`). Jokainen suoritinluokka laajentaa `BaseExecutor`-luokkaa (`base.ts`)
 joko suoraan tai `DefaultExecutor`-luokan tai muun suorittimen kautta; loput moduulit ovat palveluntarjoajakohtaisia
 apureita (työkaluskeemat, haku-/TTS-sovittimet ja erityispiirteiden käsittelijät). Suorittimiin kuuluvat:

@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 modul pelaksana peringkat atas (`*.ts` tidak termasuk `base.ts`, `index.ts` dan ujian — bilangan ini
+156 modul pelaksana peringkat atas (`*.ts` tidak termasuk `base.ts`, `index.ts` dan ujian — bilangan ini
 diukur oleh `npm run check:docs-counts`). Setiap kelas pelaksana melanjutkan `BaseExecutor` (`base.ts`),
 secara langsung atau melalui `DefaultExecutor` atau pelaksana lain; modul selebihnya ialah pembantu
 setiap penyedia (skema alat, penyesuai pengambilan/TTS, pengendali kekhususan). Pelaksana termasuk:

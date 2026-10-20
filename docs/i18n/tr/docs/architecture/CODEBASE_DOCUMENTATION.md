@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 üst düzey yürütücü modülü (`*.ts` eksi `base.ts`, `index.ts` ve testler — bu sayı
+156 üst düzey yürütücü modülü (`*.ts` eksi `base.ts`, `index.ts` ve testler — bu sayı
 `npm run check:docs-counts` tarafından ölçülür). Her yürütücü sınıfı, doğrudan veya
 `DefaultExecutor` ya da başka bir yürütücü aracılığıyla `BaseExecutor` (`base.ts`) sınıfını genişletir;
 kalan modüller sağlayıcı başına yardımcılardır (araç şemaları, fetch/TTS adaptörleri, özel durum işleyicileri).

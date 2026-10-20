@@ -474,7 +474,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 top-level na module ng executor (`*.ts` maliban sa `base.ts`, `index.ts`, at mga test — ang bilang na sinusukat ng
+156 top-level na module ng executor (`*.ts` maliban sa `base.ts`, `index.ts`, at mga test — ang bilang na sinusukat ng
 `npm run check:docs-counts`). Ang bawat executor class ay nag-e-extend sa `BaseExecutor` (`base.ts`),
 nang direkta o sa pamamagitan ng `DefaultExecutor` o ibang executor; ang mga natitirang module ay mga helper para sa bawat provider
 (mga schema ng tool, fetch/TTS adapter, handler ng kakaibang gawi). Kabilang sa mga executor ang:

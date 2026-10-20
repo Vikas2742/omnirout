@@ -484,7 +484,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 modułów wykonawczych najwyższego poziomu (`*.ts` z wyłączeniem `base.ts`, `index.ts` i testów — tę liczbę
+156 modułów wykonawczych najwyższego poziomu (`*.ts` z wyłączeniem `base.ts`, `index.ts` i testów — tę liczbę
 mierzy `npm run check:docs-counts`). Każda klasa wykonawcza rozszerza `BaseExecutor` (`base.ts`),
 bezpośrednio albo za pośrednictwem `DefaultExecutor` lub innego modułu wykonawczego; pozostałe moduły to
 narzędzia pomocnicze dla poszczególnych dostawców (schematy narzędzi, adaptery pobierania/TTS, procedury obsługi niestandardowych zachowań). Moduły wykonawcze obejmują:

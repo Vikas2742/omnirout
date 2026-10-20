@@ -478,7 +478,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 個頂層執行器模組（`*.ts`，不含 `base.ts`、`index.ts` 與測試——此數量由
+156 個頂層執行器模組（`*.ts`，不含 `base.ts`、`index.ts` 與測試——此數量由
 `npm run check:docs-counts` 測量）。每個執行器類別都直接或透過 `DefaultExecutor`
 或其他執行器擴充 `BaseExecutor`（`base.ts`）；其餘模組則是各提供者專用的
 輔助工具（工具結構描述、擷取/TTS 配接器、特殊行為處理器）。執行器包括：

@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 aukščiausio lygio vykdyklių modulių (`*.ts`, išskyrus `base.ts`, `index.ts` ir testus — šį skaičių
+156 aukščiausio lygio vykdyklių modulių (`*.ts`, išskyrus `base.ts`, `index.ts` ir testus — šį skaičių
 nustato `npm run check:docs-counts`). Kiekviena vykdyklės klasė tiesiogiai arba per
 `DefaultExecutor` ar kitą vykdyklę išplečia `BaseExecutor` (`base.ts`); likę moduliai yra konkretiems
 teikėjams skirti pagalbiniai moduliai (įrankių schemos, užklausų / TTS adapteriai, ypatumų apdorojimo moduliai). Vykdyklės apima:

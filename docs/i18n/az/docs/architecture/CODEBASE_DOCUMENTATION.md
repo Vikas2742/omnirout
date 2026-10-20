@@ -475,7 +475,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 üst səviyyəli icraçı modulu (`*.ts`, `base.ts`, `index.ts` və testlər istisna olmaqla — sayı
+156 üst səviyyəli icraçı modulu (`*.ts`, `base.ts`, `index.ts` və testlər istisna olmaqla — sayı
 `npm run check:docs-counts` ölçür). Hər icraçı sinfi birbaşa və ya `DefaultExecutor`, yaxud başqa
 bir icraçı vasitəsilə `BaseExecutor` (`base.ts`) sinfini genişləndirir; qalan modullar hər provayder
 üçün köməkçilərdir (alət sxemləri, fetch/TTS adapterləri, özəllik emalçıları). İcraçılara daxildir:

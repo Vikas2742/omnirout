@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 augstākā līmeņa izpildītāju moduļi (`*.ts`, neietverot `base.ts`, `index.ts` un testus — šo skaitu
+156 augstākā līmeņa izpildītāju moduļi (`*.ts`, neietverot `base.ts`, `index.ts` un testus — šo skaitu
 nosaka `npm run check:docs-counts`). Katra izpildītāja klase paplašina `BaseExecutor` (`base.ts`)
 tieši vai ar `DefaultExecutor` vai cita izpildītāja starpniecību; pārējie moduļi ir katram pakalpojumu sniedzējam
 paredzēti palīgmoduļi (rīku shēmas, fetch/TTS adapteri, īpatnību apstrādātāji). Izpildītāji ietver:

@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 mô-đun executor cấp cao nhất (`*.ts` ngoại trừ `base.ts`, `index.ts` và các bài kiểm thử — số lượng
+156 mô-đun executor cấp cao nhất (`*.ts` ngoại trừ `base.ts`, `index.ts` và các bài kiểm thử — số lượng
 được đo bởi `npm run check:docs-counts`). Mọi lớp executor đều mở rộng `BaseExecutor` (`base.ts`),
 trực tiếp hoặc thông qua `DefaultExecutor` hay một executor khác; các mô-đun còn lại là những helper
 cho từng nhà cung cấp (schema công cụ, adapter fetch/TTS, trình xử lý các đặc thù). Các executor bao gồm:

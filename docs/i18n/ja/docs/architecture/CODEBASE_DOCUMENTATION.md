@@ -475,7 +475,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-トップレベルのエグゼキューターモジュールは 150 個です（`*.ts` から `base.ts`、`index.ts`、およびテストを除外した数であり、`npm run check:docs-counts` で計測されます）。各エグゼキュータークラスは、直接、または `DefaultExecutor` や別のエグゼキューターを介して `BaseExecutor`（`base.ts`）を継承します。残りのモジュールは、プロバイダーごとのヘルパー（ツールスキーマ、フェッチ/TTS アダプター、特殊挙動のハンドラー）です。エグゼキューターには以下が含まれます。
+トップレベルのエグゼキューターモジュールは 156 個です（`*.ts` から `base.ts`、`index.ts`、およびテストを除外した数であり、`npm run check:docs-counts` で計測されます）。各エグゼキュータークラスは、直接、または `DefaultExecutor` や別のエグゼキューターを介して `BaseExecutor`（`base.ts`）を継承します。残りのモジュールは、プロバイダーごとのヘルパー（ツールスキーマ、フェッチ/TTS アダプター、特殊挙動のハンドラー）です。エグゼキューターには以下が含まれます。
 
 `antigravity`、`azure-openai`、`blackbox-web`、`cliproxyapi`、
 `chatgpt-web-codex`、`cloudflare-ai`、`codex`、`commandCode`、`cursor`、`default`、`devin-cli`、

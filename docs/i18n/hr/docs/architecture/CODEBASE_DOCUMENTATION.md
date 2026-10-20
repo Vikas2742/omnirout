@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 modula izvršitelja najviše razine (`*.ts` bez `base.ts`, `index.ts` i testova — taj broj
+156 modula izvršitelja najviše razine (`*.ts` bez `base.ts`, `index.ts` i testova — taj broj
 mjeri `npm run check:docs-counts`). Svaka klasa izvršitelja proširuje `BaseExecutor` (`base.ts`),
 izravno ili putem `DefaultExecutor` ili drugog izvršitelja; preostali moduli pomoćni su moduli
 po pružatelju (sheme alata, prilagodnici za dohvaćanje/TTS, obrađivači posebnosti). Izvršitelji uključuju:

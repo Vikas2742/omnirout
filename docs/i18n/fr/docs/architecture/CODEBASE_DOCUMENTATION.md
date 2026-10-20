@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 modules d’exécution de premier niveau (`*.ts` moins `base.ts`, `index.ts` et les tests — nombre
+156 modules d’exécution de premier niveau (`*.ts` moins `base.ts`, `index.ts` et les tests — nombre
 mesuré par `npm run check:docs-counts`). Chaque classe d’exécution étend `BaseExecutor` (`base.ts`),
 directement ou par l’intermédiaire de `DefaultExecutor` ou d’un autre exécuteur ; les modules restants sont des
 utilitaires propres aux fournisseurs (schémas d’outils, adaptateurs de récupération/TTS, gestionnaires de particularités). Les exécuteurs comprennent :

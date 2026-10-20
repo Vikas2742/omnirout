@@ -114,20 +114,60 @@ export function rewriteVersionClaims(content, from, to) {
 
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 
+const isTokenChar = (ch) => ch !== undefined && /[0-9A-Za-z_]/.test(ch);
+
 /**
- * Pure. Mechanical regex replacement for a mirror-propagated edit that is not a version claim
- * (a count, a path, a product name): `pattern` is compiled with the `g` flag, `replacement`
- * follows String.prototype.replace ($<name>, $1). Returns the same shape as rewriteVersionClaims
- * so the CLI can drive either mode through one loop; `remaining` is always empty here.
+ * Pure. Mechanical, mirror-propagated edit that is not a version claim — a measured count the
+ * Docs sync gate reads from code, a renamed path. Every occurrence of the LITERAL `anchor` is
+ * found, and the first whole-token occurrence of `oldTok` within `window` characters after it is
+ * replaced by `newTok` (`"375 providers, 154 executor modules"` → anchor "375", old "154"). Mirrors
+ * translate the prose but keep the digits next to the anchor, so one literal pair reaches every
+ * locale; nothing here builds a RegExp from operator input (CodeQL js/regex-injection). Returns the
+ * same shape as rewriteVersionClaims so the CLI drives either mode through one loop.
  */
-export function regexReplace(content, pattern, replacement) {
-  const re = new RegExp(pattern, "g");
-  const replaced = [...content.matchAll(re)].length;
-  return {
-    content: replaced ? content.replace(re, replacement) : content,
-    replaced,
-    remaining: [],
-  };
+export function nearReplace(content, anchor, oldTok, newTok, window = 80) {
+  if (!anchor || !oldTok) return { content, replaced: 0, remaining: [] };
+  let out = "";
+  let cursor = 0;
+  let replaced = 0;
+  for (;;) {
+    const at = content.indexOf(anchor, cursor);
+    if (at === -1) break;
+    const from = at + anchor.length;
+    const limit = Math.min(content.length, from + window);
+    // The FIRST whole token after the anchor (skipping punctuation, spaces and words that are
+    // not numbers when oldTok is a number) decides: equal to oldTok → replace, anything else →
+    // this anchor occurrence is not the one. Searching the whole window for oldTok instead
+    // re-matched an unrelated "150" after the count had already become 156.
+    const numeric = /^\d+$/.test(oldTok);
+    let i = from;
+    let hit = -1;
+    while (i < limit) {
+      if (!isTokenChar(content[i])) {
+        i++;
+        continue;
+      }
+      let j = i;
+      while (j < content.length && isTokenChar(content[j])) j++;
+      const token = content.slice(i, j);
+      if (numeric && !/^\d+$/.test(token)) {
+        i = j;
+        continue;
+      }
+      if (token === oldTok) hit = i;
+      break;
+    }
+    if (hit === -1) {
+      out += content.slice(cursor, from);
+      cursor = from;
+      continue;
+    }
+    out += content.slice(cursor, hit) + newTok;
+    cursor = hit + oldTok.length;
+    replaced++;
+  }
+  out += content.slice(cursor);
+  return { content: out, replaced, remaining: [] };
 }
 
 function parseArgs(argv) {
@@ -137,15 +177,17 @@ function parseArgs(argv) {
     state: true,
     from: null,
     to: null,
-    regex: null,
-    with: null,
+    near: null,
+    old: null,
+    new: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--check") opts.check = true;
     else if (a === "--no-state") opts.state = false;
-    else if (a === "--regex") opts.regex = argv[++i];
-    else if (a === "--with") opts.with = argv[++i];
+    else if (a === "--near") opts.near = argv[++i];
+    else if (a === "--old") opts.old = argv[++i];
+    else if (a === "--new") opts.new = argv[++i];
     else if (a === "--from") opts.from = argv[++i];
     else if (a === "--to") opts.to = argv[++i];
     else if (a === "--files")
@@ -181,13 +223,13 @@ function main() {
   const pkgVersion = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version;
   const to = opts.to ?? pkgVersion;
   const semver = new RegExp(`^${SEMVER}$`);
-  const regexMode = opts.regex !== null;
-  if (regexMode) {
-    // --regex <pattern> --with <replacement> --files <list>: mechanical mirror-propagated edit
+  const nearMode = opts.near !== null;
+  if (nearMode) {
+    // --near <anchor> --old <token> --new <token> --files <list>: mechanical mirror-propagated edit
     // (e.g. a count the Docs sync gate measures from code). Same state policy as the claim bump.
-    if (opts.with === null || opts.check) {
+    if (!opts.old || opts.new === null || opts.check) {
       console.error(
-        "usage: node scripts/release/bump-version-claims.mjs --regex <pattern> --with <replacement> --files a,b [--no-state]"
+        "usage: node scripts/release/bump-version-claims.mjs --near <anchor> --old <token> --new <token> --files a,b [--no-state]"
       );
       process.exit(2);
     }
@@ -202,11 +244,11 @@ function main() {
     );
     process.exit(2);
   }
-  const rewrite = regexMode
-    ? (text) => regexReplace(text, opts.regex, opts.with)
+  const rewrite = nearMode
+    ? (text) => nearReplace(text, opts.near, opts.old, opts.new)
     : (text) => rewriteVersionClaims(text, opts.from, to);
-  const what = regexMode
-    ? `/${opts.regex}/ → ${JSON.stringify(opts.with)}`
+  const what = nearMode
+    ? `${JSON.stringify(opts.old)} → ${JSON.stringify(opts.new)} near ${JSON.stringify(opts.near)}`
     : `${opts.from} → ${to}`;
 
   let stale = 0;
@@ -254,7 +296,7 @@ function main() {
       }
       if (f.locale === null) {
         console.log(
-          `[bump-version-claims] ${rel}: ${replaced} ${regexMode ? "match(es)" : "claim(s)"} ${what}` +
+          `[bump-version-claims] ${rel}: ${replaced} ${nearMode ? "match(es)" : "claim(s)"} ${what}` +
             (remaining.length
               ? ` — still not ${to}: ${remaining.map((c) => `"${c.text}"`).join(", ")}`
               : "")

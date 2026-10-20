@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 moduli executor di primo livello (`*.ts` esclusi `base.ts`, `index.ts` e i test — conteggio
+156 moduli executor di primo livello (`*.ts` esclusi `base.ts`, `index.ts` e i test — conteggio
 effettuato da `npm run check:docs-counts`). Ogni classe executor estende `BaseExecutor` (`base.ts`),
 direttamente oppure tramite `DefaultExecutor` o un altro executor; i moduli rimanenti sono helper
 specifici per provider (schemi degli strumenti, adattatori fetch/TTS, gestori delle particolarità). Gli executor includono:

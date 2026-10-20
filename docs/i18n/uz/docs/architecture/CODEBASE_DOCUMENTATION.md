@@ -475,7 +475,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 ta yuqori darajadagi ijrochi moduli (`*.ts`, `base.ts`, `index.ts` va testlardan tashqari — bu sonni
+156 ta yuqori darajadagi ijrochi moduli (`*.ts`, `base.ts`, `index.ts` va testlardan tashqari — bu sonni
 `npm run check:docs-counts` oʻlchaydi). Har bir ijrochi sinfi `BaseExecutor` (`base.ts`) sinfini
 bevosita yoki `DefaultExecutor` yoxud boshqa ijrochi orqali kengaytiradi; qolgan modullar har bir provayder
 uchun yordamchilardir (vosita sxemalari, fetch/TTS adapterlari, oʻziga xoslik ishlovchilari). Ijrochilar quyidagilarni oʻz ichiga oladi:

@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 Executor-Module auf oberster Ebene (`*.ts` abzüglich `base.ts`, `index.ts` und Tests — die Anzahl wird von `npm run check:docs-counts` ermittelt). Jede Executor-Klasse erweitert `BaseExecutor` (`base.ts`), direkt oder über `DefaultExecutor` beziehungsweise einen anderen Executor; die übrigen Module sind providerspezifische Hilfsfunktionen (Tool-Schemas, Fetch-/TTS-Adapter, Handler für Besonderheiten). Zu den Executors gehören:
+156 Executor-Module auf oberster Ebene (`*.ts` abzüglich `base.ts`, `index.ts` und Tests — die Anzahl wird von `npm run check:docs-counts` ermittelt). Jede Executor-Klasse erweitert `BaseExecutor` (`base.ts`), direkt oder über `DefaultExecutor` beziehungsweise einen anderen Executor; die übrigen Module sind providerspezifische Hilfsfunktionen (Tool-Schemas, Fetch-/TTS-Adapter, Handler für Besonderheiten). Zu den Executors gehören:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
 `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,

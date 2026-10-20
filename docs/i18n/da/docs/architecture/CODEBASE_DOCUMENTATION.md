@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 eksekutormoduler på topniveau (`*.ts` minus `base.ts`, `index.ts` og tests — antallet
+156 eksekutormoduler på topniveau (`*.ts` minus `base.ts`, `index.ts` og tests — antallet
 måles af `npm run check:docs-counts`). Hver eksekutorklasse udvider `BaseExecutor` (`base.ts`),
 direkte eller via `DefaultExecutor` eller en anden eksekutor; de resterende moduler er hjælpere
 for individuelle udbydere (værktøjsskemaer, fetch/TTS-adaptere, håndteringer af særheder). Eksekutorerne omfatter:

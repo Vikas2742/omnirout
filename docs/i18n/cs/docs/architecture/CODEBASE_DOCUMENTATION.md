@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 modulů exekutorů nejvyšší úrovně (`*.ts` bez `base.ts`, `index.ts` a testů — tento počet
+156 modulů exekutorů nejvyšší úrovně (`*.ts` bez `base.ts`, `index.ts` a testů — tento počet
 měří `npm run check:docs-counts`). Každá třída exekutoru rozšiřuje `BaseExecutor` (`base.ts`),
 buď přímo, nebo prostřednictvím `DefaultExecutor` či jiného exekutoru; zbývající moduly jsou
 pomocné moduly pro jednotlivé poskytovatele (schémata nástrojů, adaptéry fetch/TTS, obsluha specifických odlišností). Mezi exekutory patří:

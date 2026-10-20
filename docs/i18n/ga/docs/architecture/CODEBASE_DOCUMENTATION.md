@@ -475,7 +475,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 modúl seiceadóra barrleibhéil (`*.ts` lúide `base.ts`, `index.ts` agus tástálacha — tomhaiseann
+156 modúl seiceadóra barrleibhéil (`*.ts` lúide `base.ts`, `index.ts` agus tástálacha — tomhaiseann
 `npm run check:docs-counts` an líon). Leathnaíonn gach aicme seiceadóra `BaseExecutor` (`base.ts`),
 go díreach nó trí `DefaultExecutor` nó seiceadóir eile; is cúntóirí in aghaidh an tsoláthraí iad
 na modúil eile (scéimeanna uirlisí, cuibheoirí aisghabhála/TTS, láimhseálaithe corr-iompair). Áirítear leis na seiceadóirí:

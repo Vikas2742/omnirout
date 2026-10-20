@@ -477,7 +477,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-150 módulos executores de nível superior (`*.ts` menos `base.ts`, `index.ts` e testes — a contagem
+156 módulos executores de nível superior (`*.ts` menos `base.ts`, `index.ts` e testes — a contagem
 é medida por `npm run check:docs-counts`). Cada classe de executor estende `BaseExecutor` (`base.ts`),
 diretamente ou através de `DefaultExecutor` ou de outro executor; os restantes módulos são auxiliares
 por fornecedor (esquemas de ferramentas, adaptadores de obtenção/TTS, processadores de particularidades). Os executores incluem:

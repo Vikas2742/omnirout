@@ -463,7 +463,7 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-包含 150 个顶层执行器模块（`*.ts`，不包括 `base.ts`、`index.ts` 和测试——此数量由
+包含 156 个顶层执行器模块（`*.ts`，不包括 `base.ts`、`index.ts` 和测试——此数量由
 `npm run check:docs-counts` 测量）。每个执行器类都直接继承 `BaseExecutor`（`base.ts`），
 或通过 `DefaultExecutor` 或其他执行器间接继承；其余模块是各提供者的辅助模块
 （工具模式、fetch/TTS 适配器、特殊行为处理器）。执行器包括：
