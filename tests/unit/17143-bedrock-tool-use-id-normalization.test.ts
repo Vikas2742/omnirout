@@ -16,7 +16,7 @@
  * Contract:
  *   - every outgoing toolUse.toolUseId / toolResult.toolUseId matches the
  *     Bedrock pattern;
- *   - the mapping is a pure function of the ORIGINAL id, so a tool_use and its
+ *   - the request mapping reuses the ORIGINAL id, so a tool_use and its
  *     tool_result normalize to the SAME string (pairing preserved);
  *   - distinct originals stay distinct after the lossy character replacement;
  *   - already-valid ids pass through EXACTLY unchanged (no behavior change).
@@ -93,7 +93,7 @@ test("#17143: invalid tool_use.id is normalized to Bedrock's pattern, pairing pr
   assert.equal(
     toolUseIds[0],
     toolResultIds[0],
-    "tool_use and tool_result must normalize to the same id (pure mapping of the original)"
+    "tool_use and tool_result must normalize to the same id within the request"
   );
 });
 
