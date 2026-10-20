@@ -221,14 +221,25 @@ export async function POST(req: NextRequest) {
         if (skill === "smart-routing" && result.metadata) {
           const smartMetadata = result.metadata as {
             routing_explanation?: string;
+            requested_combo?: string | null;
+            confirmed_combo?: string | null;
+            dispatched_model?: string;
+            response_model?: string;
             cost_envelope?: { actual?: number };
           };
           logRoutingDecision({
             taskType: (params?.metadata?.role as string) || "general",
-            comboId: (params?.metadata?.combo as string) || "default",
+            // A requested combo is not proof of execution: policy and routing
+            // can override it. Only confirm when the gateway reports the combo.
+            comboId: smartMetadata.confirmed_combo || "default",
+            requestedCombo: smartMetadata.requested_combo ?? null,
             providerSelected:
               smartMetadata.routing_explanation?.match(/"([^"]+)"/)?.[1] || "unknown",
-            modelUsed: (params?.metadata?.model as string) || "auto",
+            modelUsed:
+              smartMetadata.response_model ||
+              smartMetadata.dispatched_model ||
+              (params?.metadata?.model as string) ||
+              "auto",
             score: 1,
             factors: [],
             fallbacksTriggered: [],
