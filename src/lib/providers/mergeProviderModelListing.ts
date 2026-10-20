@@ -8,6 +8,7 @@ import { appendSyncedEffortVariants } from "@omniroute/open-sse/utils/syncedEffo
 import { ensureCursorAutoCatalogEntry } from "@/lib/providerModels/cursorAutoCatalog";
 import { mergeModelsWithCustomPrecedence } from "@/lib/providers/modelMetadataPrecedence";
 import {
+  providerIsCursor,
   providerUsesCuratedModelsOnly,
   providerUsesExclusiveSyncedListing,
 } from "@/lib/providers/modelListingCapability";
@@ -69,7 +70,7 @@ export function mergeProviderModelListing(
       (providerUsesExclusiveSyncedListing(input.providerId) && synced.length > 0));
 
   if (exclusive) {
-    const cursor = ["cursor", "cu"].includes(input.providerId.trim().toLowerCase());
+    const cursor = providerIsCursor(input.providerId);
     const registryById = new Map(input.registryModels.map((model) => [model.id, model]));
     const liveModels = synced.map((model) => ({
       ...(registryById.get(model.id) || {}),

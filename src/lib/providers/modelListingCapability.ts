@@ -37,12 +37,21 @@ export function providerUsesCuratedModelsOnly(providerId: string): boolean {
  * static registry for dashboard / `/v1/models` / Test All listing. Static rows
  * remain offline fallback only when synced is empty.
  *
- * Cursor and Codex inventories are account-specific. Partial-discovery providers
- * retain coverage-style preservation (e.g. command-code uncovered static ids).
+ * Cursor and ChatGPT — other authoritative live-catalog providers keep
+ * coverage-style static preservation (e.g. command-code uncovered static ids).
  */
 export function providerUsesExclusiveSyncedListing(providerId: string): boolean {
   const id = providerId.trim().toLowerCase();
-  return id === "cursor" || id === "cu" || id === "codex" || id === "cx";
+  return providerIsCursor(id) || id === "codex" || id === "cx" || id === "chatgpt";
+}
+
+/**
+ * Cursor-specific listing behavior (`owned_by: "cursor"` + synthetic `auto*`
+ * router rows). Exclusive-listing providers other than Cursor must not inherit it.
+ */
+export function providerIsCursor(providerId: string): boolean {
+  const id = providerId.trim().toLowerCase();
+  return id === "cursor" || id === "cu";
 }
 
 /**

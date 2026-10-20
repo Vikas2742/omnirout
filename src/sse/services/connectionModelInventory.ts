@@ -40,12 +40,16 @@ export async function loadAdvertisedModelsForConnections(
 ): Promise<Map<string, Set<string>>> {
   const advertised = new Map<string, Set<string>>();
   if (!requestedModel) return advertised;
+  for (const connection of connections) {
+    if (connection.provider === "chatgpt") advertised.set(connection.id, new Set());
+  }
 
   const inventoryProviders = new Set(
     connections
       .map((c) => c.provider)
       .filter(
-        (p): p is string => typeof p === "string" && (isSelfHostedChatProvider(p) || p === "codex")
+        (p): p is string =>
+          typeof p === "string" && (isSelfHostedChatProvider(p) || p === "codex" || p === "chatgpt")
       )
   );
   if (inventoryProviders.size === 0) return advertised;
