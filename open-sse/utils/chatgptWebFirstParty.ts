@@ -25,7 +25,8 @@ export interface ChatGptWebFirstPartyRequest {
 export type ChatGptWebUiSelection =
   | {
       kind: "picker";
-      modelLabel: "GPT-5.6 Sol" | "GPT-5.5";
+      /** Model family radio in the first-party picker, not the upstream slug. */
+      modelLabel: "GPT-6 Sol" | "GPT-5.6 Sol" | "GPT-5.5";
       effortIndex: 0 | 1 | 2 | 3 | 4;
     }
   | {
@@ -667,11 +668,49 @@ async function ensureFirstPartyBridge(page: Page): Promise<void> {
   }
 }
 
-function directModel(selection: ChatGptWebUiSelection): { model: string; reason: boolean } {
+/**
+ * Picker family → upstream `/f/conversation` slug. ChatGPT names the family in
+ * the UI (Sol / Astra) but the conversation slug is version-only, and the Pro
+ * lane is a distinct `-pro` model rather than a higher effort on the base one.
+ */
+const PICKER_FAMILY_SLUGS = {
+  "GPT-6 Sol": "gpt-6",
+  "GPT-5.6 Sol": "gpt-5-6",
+  "GPT-5.5": "gpt-5-5",
+} as const satisfies Record<
+  Extract<ChatGptWebUiSelection, { kind: "picker" }>["modelLabel"],
+  string
+>;
+
+/** Ability-slider positions 1-3: Medium, High and Extra High. */
+const PICKER_THINKING_EFFORT = { 1: "standard", 2: "extended", 3: "max" } as const;
+
+type ChatGptWebThinkingEffort = "standard" | "extended" | "max";
+
+interface ChatGptWebConversationMode {
+  model: string;
+  /** Free accounts only: the Think toggle travels as a system hint, not an effort. */
+  reason: boolean;
+  thinkingEffort?: ChatGptWebThinkingEffort;
+}
+
+function directModel(selection: ChatGptWebUiSelection): ChatGptWebConversationMode {
   if (selection.kind === "free") return { model: "auto", reason: selection.thinkEnabled };
-  const base = selection.modelLabel === "GPT-5.6 Sol" ? "gpt-5-6" : "gpt-5-5";
-  if (selection.effortIndex === 4) return { model: `${base}-pro`, reason: false };
-  return { model: base, reason: selection.effortIndex > 0 };
+  const family = PICKER_FAMILY_SLUGS[selection.modelLabel];
+  if (selection.effortIndex === 4) {
+    // The Pro lane is its own model; captured GPT-5.5 Pro keeps the extended depth.
+    return {
+      model: `${family}-pro`,
+      reason: false,
+      thinkingEffort: family === "gpt-5-5" ? "extended" : "standard",
+    };
+  }
+  if (selection.effortIndex === 0) return { model: family, reason: false };
+  return {
+    model: `${family}-thinking`,
+    reason: false,
+    thinkingEffort: PICKER_THINKING_EFFORT[selection.effortIndex],
+  };
 }
 
 async function registerAttachments(
@@ -906,6 +945,9 @@ async function storeConversationDraft(
           ],
           parent_message_id: "client-created-root",
           model: mode.model,
+          // The ability slider travels as its own field; `system_hints` carries
+          // only Free's Think toggle. Positions 1-3 are held in PICKER_THINKING_EFFORT.
+          ...(mode.thinkingEffort ? { thinking_effort: mode.thinkingEffort } : {}),
           timezone_offset_min: new Date().getTimezoneOffset(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           history_and_training_disabled: true,

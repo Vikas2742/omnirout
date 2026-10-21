@@ -8,6 +8,7 @@ import {
   extractChatGptWebFirstPartyAssetReferences,
   parseChatGptWebFirstPartyModuleContract,
   type ChatGptWebFirstPartyModuleContract,
+  type ChatGptWebFirstPartyRequest,
 } from "../../open-sse/utils/chatgptWebFirstParty.ts";
 import type { ChatGptWebResolvedAttachment } from "../../open-sse/utils/chatgptWebAttachments.ts";
 
@@ -120,6 +121,75 @@ describe("ChatGPT Web first-party module contract discovery", () => {
 });
 
 describe("ChatGPT Web first-party request execution", () => {
+  async function captureConversationBody(
+    selection: ChatGptWebFirstPartyRequest["selection"]
+  ): Promise<Record<string, unknown>> {
+    let conversationOptions: Record<string, unknown> | null = null;
+    const restoreBridge = installFirstPartyBridge(async (path, options) => {
+      if (path !== "/f/conversation") throw new Error(`Unexpected first-party path: ${path}`);
+      conversationOptions = options;
+      return new Response("data: [DONE]\n\n", { status: 200 });
+    });
+    try {
+      await executeChatGptWebFirstPartyTurn(createDirectPage(), {
+        prompt: "hello",
+        attachments: [],
+        selection,
+      });
+    } finally {
+      restoreBridge();
+    }
+    return conversationOptions!.requestBody as Record<string, unknown>;
+  }
+
+  test("sends the picker lane as a thinking slug plus its own effort field", async () => {
+    // The ability slider used to be flattened into `system_hints`, so every
+    // position produced an identical request. The effort now travels as
+    // `thinking_effort`, and only the Free Think toggle keeps the hint.
+    const thinking = await captureConversationBody({
+      kind: "picker",
+      modelLabel: "GPT-6 Sol",
+      effortIndex: 3,
+    });
+    assert.equal(thinking.model, "gpt-6-thinking");
+    assert.equal(thinking.thinking_effort, "max");
+    assert.deepEqual(thinking.system_hints, []);
+
+    const medium = await captureConversationBody({
+      kind: "picker",
+      modelLabel: "GPT-5.6 Sol",
+      effortIndex: 1,
+    });
+    assert.equal(medium.model, "gpt-5-6-thinking");
+    assert.equal(medium.thinking_effort, "standard");
+
+    const instant = await captureConversationBody({
+      kind: "picker",
+      modelLabel: "GPT-6 Sol",
+      effortIndex: 0,
+    });
+    assert.equal(instant.model, "gpt-6");
+    assert.equal("thinking_effort" in instant, false);
+  });
+
+  test("keeps the Pro lane a distinct slug with the captured effort depth", async () => {
+    const gpt6Pro = await captureConversationBody({
+      kind: "picker",
+      modelLabel: "GPT-6 Sol",
+      effortIndex: 4,
+    });
+    assert.equal(gpt6Pro.model, "gpt-6-pro");
+    assert.equal(gpt6Pro.thinking_effort, "standard");
+
+    const gpt55Pro = await captureConversationBody({
+      kind: "picker",
+      modelLabel: "GPT-5.5",
+      effortIndex: 4,
+    });
+    assert.equal(gpt55Pro.model, "gpt-5-5-pro");
+    assert.equal(gpt55Pro.thinking_effort, "extended");
+  });
+
   test("uploads image and file inputs before submitting the observed conversation body", async () => {
     const originalFetch = globalThis.fetch;
     const uploadedTypes: string[] = [];
