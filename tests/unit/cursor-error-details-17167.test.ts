@@ -194,6 +194,93 @@ for (const entry of ["json", "trailer"] as const) {
   });
 }
 
+for (const source of ["typed", "debug"] as const) {
+  for (const entry of ["json", "trailer"] as const) {
+    for (const message of [
+      "ActionRequiredError: increase limits",
+      "ActionRequiredError: increase limits https://private.invalid/pay /srv/private/file authorization=synthetic-secret",
+    ]) {
+      test(`${entry} ${source} details preserve generic ActionRequired quota cues and safe guidance (${message.includes("authorization=") ? "redacted message" : "plain message"})`, async () => {
+        const title = "Usage limit reached";
+        const guidance = "Upgrade your plan to continue.";
+        const debug = {
+          details: {
+            title,
+            detail: guidance,
+            additional_info: "INFO_POISON",
+            buttons: "BUTTON_POISON",
+          },
+          metadata: "METADATA_POISON",
+        };
+        const details = source === "typed" ? typed(title, guidance, debug) : { type: TYPE, debug };
+        const payload = envelope([details], "unknown", message);
+        const ctx = newStreamCtx("fable-5", () => {});
+        if (entry === "json") processFrame(payload, ctx, new Set());
+        else ctx.midStreamError = classifiedPayload(payload);
+        const response = finalizers.buildResponseFromCtx(ctx, {});
+        const body = await response.text();
+        assert.equal(response.status, 429, body);
+        assert.match(body, /rate_limit_error/);
+        for (const text of [body, connectEndStreamError(payload) || ""]) {
+          assert.ok(text.includes("ActionRequiredError: increase limits"), text);
+          assert.ok(text.includes(title), text);
+          assert.ok(text.includes(guidance), text);
+          assert.doesNotMatch(
+            text,
+            /POISON|PRIVATE_ADDITIONAL_INFO|synthetic-secret|private\.invalid|\/srv\/private/
+          );
+        }
+        assert.equal(classifiedPayload(payload).status, 429);
+        assert.equal(classifiedPayload(payload).type, "rate_limit_error");
+      });
+    }
+  }
+}
+
+test("detail projection omits placeholders and duplicates while weekly entitlement stays first", () => {
+  const expected = `cursor-agent stream ended with error unknown: ${TITLE} ${DETAIL}`;
+  for (const message of ["Error", "", " error ", TITLE, `${TITLE} ${DETAIL}`]) {
+    assert.equal(connectEndStreamError(envelope([typed()], "unknown", message)), expected);
+  }
+  const weekly = classifiedPayload(
+    envelope([typed()], "unknown", "ActionRequiredError: increase limits")
+  );
+  assert.equal(weekly.status, 404);
+  assert.equal(weekly.type, "invalid_request_error");
+  assert.equal(
+    connectEndStreamError(envelope([])),
+    "cursor-agent stream ended with error unknown: Error"
+  );
+  assert.equal(
+    connectEndStreamError(envelope([], "unknown", "")),
+    "cursor-agent stream ended with error unknown"
+  );
+});
+
+test("detail budget keeps typed/debug details intact and appends only a complete message", () => {
+  const message = "ActionRequiredError: increase limits";
+  const prefix = "cursor-agent stream ended with error unknown: ";
+  const cap = 2048 * 2 + 1;
+  for (const source of ["typed", "debug"] as const) {
+    for (const remaining of [0, message.length, message.length + 1]) {
+      const title = "x".repeat(2048);
+      const detail = "y".repeat(2048 - remaining);
+      const details =
+        source === "typed"
+          ? typed(title, detail)
+          : { type: TYPE, debug: { details: { title, detail } } };
+      const withoutMessage = connectEndStreamError(envelope([details], "unknown", ""));
+      assert.equal(withoutMessage, `${prefix}${title} ${detail}`);
+      const output = connectEndStreamError(envelope([details], "unknown", message));
+      assert.equal(
+        output,
+        remaining === message.length + 1 ? `${withoutMessage} ${message}` : withoutMessage
+      );
+      assert.ok(output && output.length <= prefix.length + cap);
+    }
+  }
+});
+
 test("wrong/unknown type never trusts debug or typed bytes; code/message fallback survives", () => {
   for (const type of [
     "other.ErrorDetails",

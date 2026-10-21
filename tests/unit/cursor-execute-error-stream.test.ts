@@ -391,6 +391,69 @@ test("real streaming pipeline locks only current connection/model; sibling and s
     pipeline = false;
   }
 });
+for (const stream of [false, true]) {
+  test(`generic ActionRequired typed details retain quota policy in real pipeline stream=${stream}`, async () => {
+    const quotaTitle = "Usage limit reached";
+    const guidance = "Upgrade your plan to continue.";
+    bytes = frame(
+      errorPayload("unknown", "ActionRequiredError: increase limits", [
+        {
+          type: "aiserver.v1.ErrorDetails",
+          value: encodeBytes(
+            2,
+            Buffer.concat([
+              encodeString(1, quotaTitle),
+              encodeString(2, guidance),
+              encodeString(6, "INFO_POISON"),
+            ])
+          ).toString("base64"),
+          debug: { details: { title: "DEBUG_POISON" }, metadata: "METADATA_POISON" },
+        },
+      ])
+    );
+    fallback.clearAllModelLockouts();
+    fallback.clearProviderFailure("cursor");
+    const id = String(
+      (
+        await providers.createProviderConnection({
+          provider: "cursor",
+          authType: "oauth",
+          name: "synthetic quota control",
+          accessToken: "synthetic-cursor-one",
+          isActive: true,
+          testStatus: "active",
+        })
+      ).id
+    );
+    pipeline = true;
+    try {
+      const response = await harness.handleChat(
+        harness.buildRequest({
+          headers: { "x-omniroute-connection": id },
+          body: {
+            model: "cursor/fable-5",
+            stream,
+            messages: [{ role: "user", content: "synthetic" }],
+          },
+        })
+      );
+      const wire = await response.text();
+      assert.equal(response.status, 429, wire);
+      assert.match(wire, /rate_limit_error/);
+      assert.ok(wire.includes(quotaTitle), wire);
+      assert.ok(wire.includes(guidance), wire);
+      assert.doesNotMatch(wire, /POISON|weekly usage|Cursor model not found/);
+      // Generic quota must not acquire the weekly entitlement's single-model lock.
+      assert.equal(fallback.isModelLocked("cursor", id, "fable-5"), false);
+      assert.equal(fallback.isModelLocked("cursor", id, "composer-2.5"), false);
+    } finally {
+      pipeline = false;
+      fallback.clearAllModelLockouts();
+      fallback.clearProviderFailure("cursor");
+      await providers.deleteProviderConnection(id);
+    }
+  });
+}
 for (const [code, message, status] of [
   ["resource_exhausted", "too many requests per minute", 429],
   ["resource_exhausted", "quota exhausted", 429],

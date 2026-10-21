@@ -112,6 +112,16 @@ function typedText(value: unknown): string {
   }
 }
 
+/** Inputs have already passed the same bounded public-text sanitizer. */
+function withMessage(details: string, message: string): string {
+  if (!details) return message;
+  if (!message || /^error[.!:]?$/i.test(message) || details.includes(message)) return details;
+  // Keep details intact; append only a complete message within the former cap.
+  // Details stay first so downstream credential redaction cannot eat them.
+  if (details.length + 1 + message.length > MAX_TEXT_BYTES * 2 + 1) return details;
+  return `${details} ${message}`;
+}
+
 function isJsonWhitespace(byte: number): boolean {
   return byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d;
 }
@@ -139,6 +149,6 @@ export function projectCursorError(payload: Buffer): string | null {
   const code = safeText(error.code) || "unknown";
   const fallback = safeText(error.message);
   const details = Array.isArray(error.details) ? error.details.slice(0, MAX_DETAILS) : [];
-  const text = details.map(detailText).find(Boolean) || fallback;
+  const text = withMessage(details.map(detailText).find(Boolean) || "", fallback);
   return `${code}${text ? `: ${text}` : ""}`;
 }
