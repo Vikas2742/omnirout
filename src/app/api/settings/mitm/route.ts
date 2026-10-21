@@ -8,6 +8,12 @@ import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { toPublicSafeTunnelError } from "@/lib/api/publicSafeTunnelError";
 import { resolveApiKey } from "@/shared/services/apiKeyResolver";
 import { resolveMitmDataDir } from "@/mitm/dataDir";
+import {
+  activeCertDownloadName,
+  activeCertMissingMessage,
+  resolveActiveMitmCert,
+} from "@/mitm/cert/activeCert";
+import { isMitmSudoPasswordRequired, resolveMitmSudoPassword } from "@/mitm/sudoGate";
 import { KIRO_MITM_PROFILE } from "@/mitm/targets/kiro";
 import { ANTIGRAVITY_MITM_PROFILE } from "@/mitm/targets/antigravity";
 
@@ -49,6 +55,9 @@ const updateMitmSchema = z.object({
 
 const regenerateSchema = z.object({
   action: z.literal("regenerate-cert").optional(),
+  // Only needed to untrust a trusted root CA before rotating it when no
+  // password is cached (see cert/regenerate.ts).
+  sudoPassword: z.string().optional(),
 });
 
 function getMitmDir() {
@@ -61,14 +70,6 @@ function getConfigPath() {
 
 function getStatsPath() {
   return path.join(getMitmDir(), "stats.json");
-}
-
-function getCertPath() {
-  return path.join(getMitmDir(), "server.crt");
-}
-
-function getKeyPath() {
-  return path.join(getMitmDir(), "server.key");
 }
 
 async function fileExists(filePath: string): Promise<boolean> {
@@ -161,7 +162,9 @@ async function buildMitmResponse() {
     running: status.running,
     pid: status.pid || null,
     dnsConfigured: status.dnsConfigured || false,
-    certExists: status.certExists || (await fileExists(getCertPath())),
+    // The cert of the ACTIVE model (ca.crt under the root-CA model,
+    // server.crt on a legacy-leaf install) — never a stale legacy leaf.
+    certExists: status.certExists || (await fileExists(resolveActiveMitmCert().certPath)),
     hasCachedPassword: !!getCachedPassword(),
     port: config.port,
     targets: config.targets,
@@ -176,14 +179,14 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     if (searchParams.get("download") === "cert") {
-      const certPath = getCertPath();
+      const { certPath, mode } = resolveActiveMitmCert();
       if (!(await fileExists(certPath))) {
-        return NextResponse.json({ error: "MITM certificate not found" }, { status: 404 });
+        return NextResponse.json({ error: activeCertMissingMessage(mode) }, { status: 404 });
       }
       return new NextResponse(await fs.readFile(certPath), {
         headers: {
           "Content-Type": "application/x-pem-file",
-          "Content-Disposition": 'attachment; filename="omniroute-mitm-ca.crt"',
+          "Content-Disposition": `attachment; filename="${activeCertDownloadName(mode)}"`,
         },
       });
     }
@@ -266,7 +269,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { getMitmStatus } = await import("@/mitm/manager.runtime");
+    const { getMitmStatus, getCachedPassword } = await import("@/mitm/manager.runtime");
     const status = await getMitmStatus();
     if (status.running) {
       return NextResponse.json(
@@ -275,19 +278,25 @@ export async function POST(request: Request) {
       );
     }
 
-    for (const filePath of [getCertPath(), getKeyPath()]) {
-      try {
-        // unlink of a missing file throws ENOENT — ignored, same as the old exists check.
-        await fs.unlink(filePath);
-      } catch {
-        /* ignore */
-      }
+    // Regenerate the ACTIVE cert without changing the cert model: a fresh
+    // legacy leaf on a legacy install, a rotated root CA otherwise. (This used
+    // to delete + re-mint server.crt/server.key unconditionally, which never
+    // rotated ca.crt and flipped fresh installs into the legacy model.)
+    const { isRegenerateFailure, regenerateActiveMitmCert } =
+      await import("@/mitm/cert/regenerate");
+    const { checkCertInstalled, uninstallCert } = await import("@/mitm/cert/install");
+    const result = await regenerateActiveMitmCert(
+      {
+        sudoPassword: resolveMitmSudoPassword(parsed.data.sudoPassword, getCachedPassword()),
+        running: false,
+      },
+      { checkCertInstalled, uninstallCert, isSudoPasswordRequired: isMitmSudoPasswordRequired }
+    );
+    if (isRegenerateFailure(result)) {
+      return NextResponse.json({ error: result.message }, { status: result.status });
     }
 
-    const { generateCert } = await import("@/mitm/cert/generate");
-    await generateCert();
-
-    return NextResponse.json(await buildMitmResponse());
+    return NextResponse.json({ ...(await buildMitmResponse()), certRegeneration: result });
   } catch (error) {
     return NextResponse.json(
       toPublicSafeTunnelError(

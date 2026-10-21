@@ -6,9 +6,10 @@ import path from "node:path";
 // Sync fs in a route handler blocks the Node event loop for every queued
 // request. These GET routes read files on the hot dashboard/health paths, so
 // they must use node:fs/promises instead.
+//
+// logs/console and cli-tools/logs are intentionally not listed: they serve a
+// bounded tail read (#16301) whose fd-based reader is covered by its own tests.
 const ROUTE_FILES = [
-  "src/app/api/logs/console/route.ts",
-  "src/app/api/cli-tools/logs/route.ts",
   "src/app/api/openapi/spec/route.ts",
   "src/app/api/settings/mitm/route.ts",
   "src/app/api/storage/health/route.ts",
