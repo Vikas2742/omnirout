@@ -1007,7 +1007,7 @@ export function getResolvedModelCapabilities(
   const effectiveSupportsVision =
     supportsVision === null &&
     resolved.provider === "workbuddy" &&
-    /^(?:global:|cn:)?deepseek-v4\\.1-flash$/i.test(resolved.model ?? "")
+    /^(?:global:|cn:)?deepseek-v4\.1-flash$/i.test(resolved.model ?? "")
       ? true
       : supportsVision;
   const supportsAudio = resolveAudioCapability(spec, registryModel, modalitiesInput);
