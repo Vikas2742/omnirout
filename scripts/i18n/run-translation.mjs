@@ -32,6 +32,9 @@
  *   OMNIROUTE_TRANSLATION_API_URL     e.g. https://cloud.omniroute.dev/v1
  *   OMNIROUTE_TRANSLATION_API_KEY     bearer token (kept out of logs)
  *   OMNIROUTE_TRANSLATION_MODEL       e.g. cx/gpt-5.6-sol
+ *   OMNIROUTE_TRANSLATION_FALLBACK_MODELS  optional, comma-separated chain tried in order when
+ *                                     the model above fails (quota/auth/5xx/timeout), e.g.
+ *                                     cmd/deepseek/deepseek-v4.1-flash
  *   OMNIROUTE_TRANSLATION_TIMEOUT_MS  optional, default 60000
  *   OMNIROUTE_TRANSLATION_CONCURRENCY optional, default 4
  */
@@ -44,6 +47,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { normalizeLocaleText } from "./glossary-normalize.mjs";
 import { buildMirrorBar } from "./lib/language-bar.mjs";
+import { isFallbackWorthy, resolveModelChain } from "./lib/translate-backend.mjs";
 import { adoptState, mergeAdoptedState, refreshTargetHashes } from "./lib/translation-state.mjs";
 
 // ----- .env loader --------------------------------------------------------
@@ -80,7 +84,9 @@ import { adoptState, mergeAdoptedState, refreshTargetHashes } from "./lib/transl
 // warning) in environments where node_modules has not been installed. The
 // formatter is applied to every translated file before its hash is recorded,
 // so a subsequent lint-staged Prettier pass cannot mutate the file content
-// out from under `.i18n-state.json`.
+// out from under `.i18n-state.json`. That only holds with the options the
+// `prettier --write` CLI resolves for the same path (prettier.config.mjs +
+// .editorconfig); Prettier's defaults wrap at 80 columns instead of 100.
 let prettierMod = null;
 async function getPrettier() {
   if (prettierMod !== null) return prettierMod;
@@ -92,11 +98,12 @@ async function getPrettier() {
   return prettierMod;
 }
 
-async function formatMarkdown(content, fileName) {
+export async function formatMarkdown(content, fileName) {
   const p = await getPrettier();
   if (!p) return content;
   try {
-    return await p.format(content, { parser: "markdown", filepath: fileName });
+    const config = (await p.resolveConfig(fileName, { editorconfig: true })) ?? {};
+    return await p.format(content, { ...config, parser: "markdown", filepath: fileName });
   } catch (err) {
     logWarn(`prettier could not format ${fileName}: ${err.message}`);
     return content;
@@ -334,11 +341,37 @@ function backendConfig() {
   const apiUrl = requireEnv("OMNIROUTE_TRANSLATION_API_URL").replace(/\/$/, "");
   const apiKey = requireEnv("OMNIROUTE_TRANSLATION_API_KEY");
   const model = requireEnv("OMNIROUTE_TRANSLATION_MODEL");
+  const { fallbackModels } = resolveModelChain();
   const timeoutMs = Number(process.env.OMNIROUTE_TRANSLATION_TIMEOUT_MS || 60000);
-  return { apiUrl, apiKey, model, timeoutMs };
+  return { apiUrl, apiKey, model, fallbackModels, timeoutMs };
 }
 
-async function callChat(messages, { apiUrl, apiKey, model, timeoutMs }, retry = 0) {
+// Model chain (2026-10-20): the configured model first, then each entry of
+// OMNIROUTE_TRANSLATION_FALLBACK_MODELS whenever the previous one failed for a reason the next
+// model could fix (quota 429, 402/401, 5xx, timeout, network — not a malformed request). A wave
+// used to stop dead on the single route's weekly quota; the per-chunk validator below still
+// rejects answers that drop lines or leak reasoning, whichever model produced them.
+export async function callChat(messages, backend, retry = 0) {
+  const chain = [backend.model, ...(backend.fallbackModels ?? [])].filter(Boolean);
+  let lastErr;
+  for (let i = 0; i < chain.length; i++) {
+    try {
+      const content = await callChatOnce(messages, { ...backend, model: chain[i] }, retry);
+      if (i > 0) console.warn(`[i18n-fallback] success index=${i}`);
+      return content;
+    } catch (err) {
+      lastErr = err;
+      if (i < chain.length - 1 && isFallbackWorthy(err)) {
+        console.warn(`[i18n-fallback] attempt index=${i + 1}`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr ?? new Error("no translation model configured");
+}
+
+async function callChatOnce(messages, { apiUrl, apiKey, model, timeoutMs }, retry = 0) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -363,7 +396,7 @@ async function callChat(messages, { apiUrl, apiKey, model, timeoutMs }, retry = 
         const wait = 1500 + retry * 1500;
         logWarn(`upstream ${res.status} — retrying after ${wait}ms`);
         await new Promise((r) => setTimeout(r, wait));
-        return callChat(messages, { apiUrl, apiKey, model, timeoutMs }, retry + 1);
+        return callChatOnce(messages, { apiUrl, apiKey, model, timeoutMs }, retry + 1);
       }
       throw new Error(`upstream ${res.status}: ${text.slice(0, 200)}`);
     }
@@ -377,7 +410,7 @@ async function callChat(messages, { apiUrl, apiKey, model, timeoutMs }, retry = 
     if (err?.name === "AbortError") {
       if (retry < 1) {
         logWarn(`timeout after ${timeoutMs}ms — retrying`);
-        return callChat(messages, { apiUrl, apiKey, model, timeoutMs }, retry + 1);
+        return callChatOnce(messages, { apiUrl, apiKey, model, timeoutMs }, retry + 1);
       }
       throw new Error(`timeout after ${timeoutMs}ms`);
     }
@@ -388,7 +421,7 @@ async function callChat(messages, { apiUrl, apiKey, model, timeoutMs }, retry = 
     ) {
       logWarn(`network error: ${err.message} — retrying`);
       await new Promise((r) => setTimeout(r, 1500));
-      return callChat(messages, { apiUrl, apiKey, model, timeoutMs }, retry + 1);
+      return callChatOnce(messages, { apiUrl, apiKey, model, timeoutMs }, retry + 1);
     }
     throw err;
   } finally {
