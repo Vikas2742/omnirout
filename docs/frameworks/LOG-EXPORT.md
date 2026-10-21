@@ -1,7 +1,7 @@
 ---
 title: "Log Export"
 version: 3.8.52
-lastUpdated: 2026-10-13
+lastUpdated: 2026-10-21
 ---
 
 # Log export
@@ -264,16 +264,17 @@ call logs, not the best-effort live routing-event sink in
 variables, timers or buffers. Enabling both can produce two independent kinds of spans;
 use the `omniroute.log-export` instrumentation scope to distinguish these call-log spans.
 
-| Key               | Default / purpose                                                    |
-| ----------------- | -------------------------------------------------------------------- |
-| `endpoint`        | Required full HTTP(S) traces URL; no `/v1/traces` suffix is appended |
-| `headers`         | Optional `Name: value` lines or JSON object of strings; encrypted    |
-| `serviceName`     | `omniroute`; resource `service.name`                                 |
-| `langfuseMapping` | `false`; adds Langfuse generation/session/user attributes            |
-| `identity`        | `pseudonymous`, `keyName`, or `none`                                 |
-| `paths`           | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`              |
-| `timeoutMs`       | `30000` per HTTP attempt                                             |
-| `environment`     | Unset; optional `langfuse.environment`                               |
+| Key                      | Default / purpose                                                       |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `endpoint`               | Required full HTTP(S) traces URL; no `/v1/traces` suffix is appended    |
+| `headers`                | Optional `Name: value` lines or JSON object of strings; encrypted       |
+| `requestHeaderAllowlist` | Empty (off); client header names/prefixes to capture as span attributes |
+| `serviceName`            | `omniroute`; resource `service.name`                                    |
+| `langfuseMapping`        | `false`; adds Langfuse generation/session/user attributes               |
+| `identity`               | `pseudonymous`, `keyName`, or `none`                                    |
+| `paths`                  | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                 |
+| `timeoutMs`              | `30000` per HTTP attempt                                                |
+| `environment`            | Unset; optional `langfuse.environment`                                  |
 
 The generic dashboard renders these fields. `paths` accepts an API array or a textarea
 with exact paths separated by newlines/commas. Embeddings, rerank and other paths are
@@ -324,9 +325,61 @@ bodies are emitted only as `langfuse.observation.input` / `langfuse.observation.
 the `gen_ai.*.messages` attributes are omitted so each body is sent once. Both modes
 inherit `maxBodyBytes` from the existing hydration path;
 `omniroute.bodies_truncated=true` marks clipping.
-No extra pipeline snapshots or unsanitized artifact reads are added by this destination.
+No extra pipeline snapshots or unsanitized artifact reads are added by this destination;
+optional request-header capture uses the existing hydrated client snapshot described below.
 Use a minute-level cadence such as `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` when exporting
 bodies, rather than accumulating an hourly backlog.
+
+### Optional client request headers
+
+Header capture is **off by default**. Set `requestHeaderAllowlist` in the destination config
+and enable **Export prompts and responses** (`includeBodies: true` on the destination).
+The allowlist accepts an API array or a textarea with newline/comma-separated names:
+
+```json
+{
+  "requestHeaderAllowlist": ["User-Agent", "X-Project", "X-OmniRoute-Meta-*"]
+}
+```
+
+Names match case-insensitively and exactly, unless a single terminal `*` selects a nonempty
+header-name prefix. Bare `*`, embedded wildcards and invalid HTTP header names are rejected.
+There are at most 64 selectors, each with a name/prefix of at most 256 ASCII bytes.
+This setting is separate from `headers`, which authenticates the exporter to the collector.
+
+Capture reads only `pipeline_client_request`, populated from the saved detailed pipeline's
+`clientRawRequest` (or legacy `clientRequest`). It never falls back to provider request headers.
+Detailed pipeline logging must have been enabled when the request was recorded. With
+`includeBodies` disabled, or with missing, corrupt or clipped client-snapshot JSON, no header
+attributes are emitted. Increasing `maxBodyBytes` can avoid export-time snapshot clipping;
+it cannot restore detail that was never saved. A snapshot over 1 MiB or containing more than
+256 header entries is ignored. The existing prompt/response export remains enabled alongside
+header capture; the allowlist does not provide a headers-only hydration mode.
+
+Selected values become `http.request.header.<full lowercase header name>` OTLP string arrays,
+even for a single string. For example, `X-OmniRoute-Meta-Team: example-team` becomes
+`http.request.header.x-omniroute-meta-team` with
+`{"arrayValue":{"values":[{"stringValue":"example-team"}]}}`.
+The full prefix is preserved: these are ordinary headers, with no business-field parsing or
+`omniroute.metadata.*` / Langfuse metadata conversion. `langfuseMapping` does not change header
+semantics. A selected single-valued `User-Agent` also sets the standard scalar
+`user_agent.original`. Commas inside one value are not split. Case variants merge in saved
+entry order; any invalid variant omits that entire header. Attributes are ordered by lowercase name.
+
+Authorization, Proxy-Authorization, Cookie, Set-Cookie, API-key headers, names containing
+auth/token/secret/password/credential markers, and internal gateway credentials are always
+excluded, even if selected or partially masked in storage. Known credential patterns reuse
+the shared credential detector; redaction markers are omitted, not exported as safe values.
+Only strings and nonempty string arrays are accepted; no numbers or objects are coerced.
+Invalid names, prototype keys, control characters (except horizontal tab) and malformed Unicode
+are ignored without failing the batch or reflecting their content in errors.
+
+Each span captures at most 32 headers, 16 values per header, 4096 UTF-8 bytes per value,
+and 16384 total UTF-8 bytes across captured header names and values. Oversized/invalid headers
+are omitted whole, not clipped. Selection is an operator privacy decision: safe-looking names
+can still contain personal data, and these bounds/detectors are not a general PII scrubber.
+
+### Delivery limits
 
 Requests are bounded to 500 spans and 4 MiB of UTF-8 JSON, including the envelope.
 Every allowed span is size-checked before the first request of a cursor batch. An individual

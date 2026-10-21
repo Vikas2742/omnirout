@@ -6,6 +6,7 @@ import { version } from "../../../../package.json";
 import { parseAndValidateNonMetadataUrl } from "../../../shared/network/outboundUrlGuard";
 import { safeExportError } from "../safeExportError";
 import type { LogExportDestinationType, LogExportRecord } from "../types";
+import { requestHeaderAllowlistSchema, requestHeaderAttributes } from "./otlpRequestHeaders";
 
 export const OTLP_MAX_REQUEST_BYTES = 4 * 1024 * 1024;
 const MAX_SPANS_PER_REQUEST = 500;
@@ -71,6 +72,7 @@ export const otlpHttpConfigSchema = z.object({
       }
     }, "Invalid OTLP endpoint: use an HTTP(S) traces URL without credentials or a metadata host"),
   headers: headersSchema,
+  requestHeaderAllowlist: requestHeaderAllowlistSchema,
   serviceName: z.string().min(1).max(256).default("omniroute"),
   langfuseMapping: z.boolean().default(false),
   identity: z.enum(["pseudonymous", "keyName", "none"]).default("pseudonymous"),
@@ -98,7 +100,11 @@ export const otlpHttpConfigSchema = z.object({
 });
 export type OtlpHttpConfig = z.infer<typeof otlpHttpConfigSchema>;
 type Value =
-  { stringValue: string } | { intValue: string } | { boolValue: boolean } | { doubleValue: number };
+  | { stringValue: string }
+  | { intValue: string }
+  | { boolValue: boolean }
+  | { doubleValue: number }
+  | { arrayValue: { values: { stringValue: string }[] } };
 type Attribute = { key: string; value: Value };
 interface Span {
   traceId: string;
@@ -255,6 +261,10 @@ function toSpan(row: LogExportRecord, config: OtlpHttpConfig): Span {
   add("omniroute.session_tag", row.sessionTag);
   add("omniroute.correlation_id", row.correlationId);
   add("omniroute.ttft_ms", row.ttftMs);
+  if (config.requestHeaderAllowlist?.length)
+    attributes.push(
+      ...requestHeaderAttributes(row.pipelineClientRequest, config.requestHeaderAllowlist)
+    );
   // Only the opt-in export hydration path populates these fields. No pipeline or unsanitized source reads here.
   const input = canonicalBody(row.requestBody);
   const output = canonicalBody(row.responseBody);
@@ -516,6 +526,14 @@ export const otlpHttpDestination: LogExportDestinationType<OtlpHttpConfig> = {
       helpFallback: "Name: value lines or JSON. Encrypted at rest; never returned.",
     },
     { key: "serviceName", labelFallback: "Service name", type: "text", defaultValue: "omniroute" },
+    {
+      key: "requestHeaderAllowlist",
+      labelFallback: "Captured client request headers",
+      type: "textarea",
+      defaultValue: "",
+      helpFallback:
+        "Opt-in; requires Export prompts and responses. Exact names or trailing prefix *, one per line or comma-separated. Credential headers are always excluded. Not collector HTTP headers.",
+    },
     {
       key: "langfuseMapping",
       labelFallback: "Langfuse attribute mapping",
