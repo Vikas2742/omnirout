@@ -113,6 +113,29 @@ function extractWordPressCookie(record: Record<string, unknown>): string | null 
   return null;
 }
 
+function parseJsonCookieRecord(raw: string): Record<string, unknown> | null {
+  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractCookieFromApiKey(rawKey?: string): string {
+  if (!rawKey || typeof rawKey !== "string") return "";
+  const trimmed = rawKey.trim();
+  if (!trimmed) return "";
+
+  const record = parseJsonCookieRecord(trimmed);
+  if (record) {
+    const fromJson = extractWordPressCookie(record);
+    if (fromJson) return fromJson;
+  }
+  return normalizeVeoSessionCookie(trimmed, "wordpress_logged_in");
+}
+
 function resolveVeoAiFreeCookie(credentials?: ProviderCredentials): string {
   if (!credentials) return "";
 
@@ -122,24 +145,7 @@ function resolveVeoAiFreeCookie(credentials?: ProviderCredentials): string {
     if (fromPsd) return fromPsd;
   }
 
-  const rawKey = credentials.apiKey;
-  if (typeof rawKey === "string" && rawKey.trim()) {
-    const trimmed = rawKey.trim();
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (parsed && typeof parsed === "object") {
-          const fromParsed = extractWordPressCookie(parsed as Record<string, unknown>);
-          if (fromParsed) return fromParsed;
-        }
-      } catch {
-        // Fall back to treating as cookie header
-      }
-    }
-    return normalizeVeoSessionCookie(trimmed, "wordpress_logged_in");
-  }
-
-  return "";
+  return extractCookieFromApiKey(credentials.apiKey);
 }
 
 // ————————————————————————— Helpers —————————————————————————
@@ -734,19 +740,7 @@ function extractCandidateUrls(value: string): string[] {
     .filter((part) => /^https?:\/\//i.test(part));
 }
 
-async function handleVideo(
-  context: VeoSessionContext,
-  nonce: string,
-  prompt: string,
-  aspectRatio: string
-): Promise<Response> {
-  const genResult = await postAjax(context, nonce, {
-    prompt,
-    totalVariations: "1",
-    aspectRatio,
-    actionType: "full-video-generate",
-  });
-  const sceneData = genResult.trim();
+function validateSceneDataResponse(sceneData: string): Response | null {
   if (isVeoAiFreeLoginRequired(sceneData)) {
     return errResp(
       "Authentication required: login to veoaifree.com to generate videos",
@@ -769,49 +763,83 @@ async function handleVideo(
   ) {
     return errResp("Video generation failed");
   }
+  return null;
+}
+
+async function processCandidateArtifact(
+  context: VeoSessionContext,
+  candidateUrl: string
+): Promise<Response> {
+  let artifactBuffer: Buffer | null = null;
+  try {
+    artifactBuffer = await downloadArtifactWithAvailabilityWindow(context, candidateUrl);
+    const b64 = artifactBuffer.toString("base64");
+    return jsonResp({
+      created: Math.floor(Date.now() / 1000),
+      data: [{ b64_json: b64, format: "mp4" }],
+    });
+  } catch (error) {
+    if (artifactBuffer) artifactBuffer.fill(0);
+    if (error instanceof VeoArtifactError) {
+      return errResp(error.message, error.status, error.code);
+    }
+    throw error;
+  } finally {
+    if (artifactBuffer) artifactBuffer.fill(0);
+  }
+}
+
+async function pollFinalVideoResults(
+  context: VeoSessionContext,
+  nonce: string,
+  sceneData: string
+): Promise<Response | null> {
+  const pollResult = await postAjax(context, nonce, {
+    sceneData,
+    actionType: "final-video-results",
+  });
+  const trimmed = pollResult.trim();
+  if (isVeoAiFreeLoginRequired(trimmed)) {
+    return errResp(
+      "Authentication required: login to veoaifree.com to generate videos",
+      401,
+      "authentication_required"
+    );
+  }
+  if (!trimmed || trimmed === "0" || trimmed.toLowerCase().includes("error")) {
+    return null;
+  }
+
+  const urls = extractCandidateUrls(trimmed);
+  if (urls.length === 0) {
+    return null;
+  }
+
+  return processCandidateArtifact(context, urls[0]);
+}
+
+async function handleVideo(
+  context: VeoSessionContext,
+  nonce: string,
+  prompt: string,
+  aspectRatio: string
+): Promise<Response> {
+  const genResult = await postAjax(context, nonce, {
+    prompt,
+    totalVariations: "1",
+    aspectRatio,
+    actionType: "full-video-generate",
+  });
+  const sceneData = genResult.trim();
+  const earlyErr = validateSceneDataResponse(sceneData);
+  if (earlyErr) return earlyErr;
 
   for (let i = 0; i < MAX_POLLS; i++) {
     await waitForPoll(context.signal);
     throwIfAborted(context.signal);
     try {
-      const pollResult = await postAjax(context, nonce, {
-        sceneData,
-        actionType: "final-video-results",
-      });
-      const trimmed = pollResult.trim();
-      if (isVeoAiFreeLoginRequired(trimmed)) {
-        return errResp(
-          "Authentication required: login to veoaifree.com to generate videos",
-          401,
-          "authentication_required"
-        );
-      }
-      if (!trimmed || trimmed === "0" || trimmed.toLowerCase().includes("error")) {
-        continue;
-      }
-
-      const urls = extractCandidateUrls(trimmed);
-      if (urls.length === 0) {
-        continue;
-      }
-
-      let artifactBuffer: Buffer | null = null;
-      try {
-        artifactBuffer = await downloadArtifactWithAvailabilityWindow(context, urls[0]);
-        const b64 = artifactBuffer.toString("base64");
-        return jsonResp({
-          created: Math.floor(Date.now() / 1000),
-          data: [{ b64_json: b64, format: "mp4" }],
-        });
-      } catch (error) {
-        if (artifactBuffer) artifactBuffer.fill(0);
-        if (error instanceof VeoArtifactError) {
-          return errResp(error.message, error.status, error.code);
-        }
-        throw error;
-      } finally {
-        if (artifactBuffer) artifactBuffer.fill(0);
-      }
+      const outcome = await pollFinalVideoResults(context, nonce, sceneData);
+      if (outcome) return outcome;
     } catch (error) {
       if (error instanceof VeoArtifactError) {
         return errResp(error.message, error.status, error.code);
