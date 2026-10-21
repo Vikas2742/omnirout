@@ -203,7 +203,10 @@ export function mergeConsecutiveSameRoleContents(
       // Claude requires tool results before user text; Gemini 4 requires them last.
       const parts = [...last.parts, ...entry.parts];
       last.parts = model.toLowerCase().includes("claude")
-        ? [...parts.filter(isFunctionResponsePart), ...parts.filter((part) => !isFunctionResponsePart(part))]
+        ? [
+            ...parts.filter(isFunctionResponsePart),
+            ...parts.filter((part) => !isFunctionResponsePart(part)),
+          ]
         : moveFunctionResponsesLast(parts);
     } else {
       // Shallow-copy the entry and its `parts` array so a later same-role merge
