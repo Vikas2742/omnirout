@@ -1,6 +1,6 @@
 /**
- * Regression: combo routing must not send an image request to a model that is
- * not confirmed vision-capable.
+ * Regression: combo routing must not send image requests to models
+ * explicitly known to lack vision, while allowing unknown-capability fallbacks.
  *
  * Root cause: `getResolvedModelCapabilities` returned `supportsVision: null` for
  * every Mistral model — including Pixtral, which IS multimodal — because Mistral
@@ -14,14 +14,10 @@
  *  A) resolveVisionCapability falls back to a conservative model-id heuristic so
  *     known-multimodal families (pixtral, llava, qwen-vl, gpt-4o, …) resolve to
  *     `true` when there is no synced/registry/spec data.
- *  B) the combo filter treats anything that is not confirmed `=== true` as
- *     vision-incompatible for image requests. Unlike the other requirement
- *     dimensions (tools, structured output, context window), the "keep all when
- *     none qualify" degrade-to-unfiltered safety net does NOT apply to vision
- *     (#8332): dispatching an image body to a confirmed-non-vision model can
- *     never succeed upstream, so a combo with zero confirmed-vision members must
- *     return no targets for an image request rather than resurrecting a
- *     guaranteed-to-fail one.
+ *  B) the combo filter excludes explicitly non-vision targets (#8332).
+ *     Unknown capability remains unknown and may be attempted only after
+ *     confirmed vision models (#17289); that does not resurrect a target with
+ *     an explicit negative verdict.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
