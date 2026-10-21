@@ -87,15 +87,18 @@ const imageBody = {
   ],
 };
 
-test("image request: combo drops the non-vision target, keeps the vision target", () => {
+test("image request: confirmed vision wins while unknown metadata remains fallback (#17289)", () => {
+  assert.equal(getResolvedModelCapabilities("mistral/ministral-14b-latest").supportsVision, null);
   const out = filterTargetsByRequestCompatibility(
-    [target("mistral/pixtral-12b-latest"), target("mistral/ministral-14b-latest")],
+    [target("mistral/ministral-14b-latest"), target("mistral/pixtral-12b-latest")],
     imageBody,
     noopLog
   );
-  const ids = out.map((t) => t.modelStr);
-  assert.ok(ids.includes("mistral/pixtral-12b-latest"), "vision target must be kept");
-  assert.ok(!ids.includes("mistral/ministral-14b-latest"), "non-vision target must be dropped");
+  assert.deepEqual(
+    out.map((t) => t.modelStr),
+    ["mistral/pixtral-12b-latest", "mistral/ministral-14b-latest"],
+    "confirmed vision must dispatch first; unknown metadata is last resort"
+  );
 });
 
 test("nested case-insensitive image indicators still enforce hard vision compatibility", () => {
