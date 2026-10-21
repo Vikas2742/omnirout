@@ -662,6 +662,34 @@ function mergeResponseItems(existing, incoming) {
   };
 }
 
+/**
+ * A provider can abort a Responses stream with a bare error frame (no `choices`, a non-empty
+ * `error`). Returns the first such error, or null.
+ */
+function findBareStreamError(events: Array<Record<string, unknown>>): unknown {
+  for (const evt of events) {
+    if (Array.isArray(evt?.choices)) continue;
+    const error = evt?.error;
+    if (typeof error === "string" ? error.trim() : Object.keys(toRecord(error)).length > 0) {
+      return error;
+    }
+  }
+  return null;
+}
+
+/**
+ * Choose the snapshot a buffered Responses stream is reported from. A bare error frame only
+ * decides the outcome when the stream never settled: it must not override a terminal
+ * snapshot, nor a latest snapshot that itself reports `completed`. An in-progress snapshot
+ * (e.g. `response.created`) or no snapshot at all, followed by an error frame, is a failure.
+ */
+function pickResponsesSnapshot(terminalResponse, latestResponse, events) {
+  const snapshot = terminalResponse || latestResponse;
+  const streamError = terminalResponse ? null : findBareStreamError(events);
+  if (!streamError || terminalResponse || latestResponse?.status === "completed") return snapshot;
+  return { ...(snapshot || {}), status: "failed", error: streamError };
+}
+
 export function parseSSEToResponsesOutput(rawSSE, fallbackModel) {
   const lines = String(rawSSE || "").split("\n");
   const events = [];
@@ -687,18 +715,9 @@ export function parseSSEToResponsesOutput(rawSSE, fallbackModel) {
   let terminalResponse = null;
   let terminalEventType = "";
   let latestResponse = null;
-  let streamError: unknown = null;
   const outputItems = new Map();
 
   for (const evt of events) {
-    // A provider can abort a Responses stream with a bare error frame that never
-    // produces a terminal snapshot. Capture it so the caller reports `failed`
-    // instead of an empty, apparently-successful response.
-    if (!Array.isArray(evt.choices)) {
-      const error = evt.error;
-      if ((typeof error === "string" && error.trim()) || Object.keys(toRecord(error)).length > 0)
-        streamError ??= error;
-    }
     const eventType = toString(evt?.type);
     const outputIndex = toOutputIndex(evt?.output_index);
     const item = toRecord(evt?.item);
@@ -827,7 +846,7 @@ export function parseSSEToResponsesOutput(rawSSE, fallbackModel) {
     }
   }
 
-  const picked = terminalResponse || latestResponse || (streamError ? {} : null);
+  const picked = pickResponsesSnapshot(terminalResponse, latestResponse, events);
   if (!picked || typeof picked !== "object") return null;
   const reconstructedOutput = [...outputItems.entries()]
     .sort((a, b) => a[0] - b[0])
@@ -889,8 +908,8 @@ export function parseSSEToResponsesOutput(rawSSE, fallbackModel) {
       };
     }),
     usage: picked.usage || null,
-    status: streamError ? "failed" : picked.status || statusFallback,
-    ...(streamError != null || picked.error != null ? { error: streamError ?? picked.error } : {}),
+    status: picked.status || statusFallback,
+    ...(picked.error != null ? { error: picked.error } : {}),
     created_at: picked.created_at || Math.floor(Date.now() / 1000),
     metadata: picked.metadata || {},
   };

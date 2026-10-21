@@ -113,3 +113,58 @@ test("well-formed tool arguments still translate into a tool_use block", () => {
   assert.ok(toolUse, "a valid tool call must still produce a tool_use block");
   assert.deepEqual(toolUse.input, { path: "a.txt" });
 });
+
+// Zero-argument tool calls commonly arrive with empty, missing or null `arguments`.
+// That must keep translating to `input: {}` (only non-empty unparseable strings and
+// non-object JSON are malformed).
+for (const [label, args] of [
+  ["an empty string", ""],
+  ["undefined", undefined],
+  ["null", null],
+] as const) {
+  test(`tool arguments that are ${label} still translate to an empty input object`, () => {
+    const translated = translateNonStreamingResponse(
+      toolCallResponse(args),
+      "openai",
+      "claude",
+      null,
+      null
+    ) as { content?: Array<{ type?: string; input?: unknown }> };
+
+    const toolUse = (translated.content ?? []).find((block) => block.type === "tool_use");
+    assert.ok(toolUse, "a zero-argument tool call must still produce a tool_use block");
+    assert.deepEqual(toolUse.input, {});
+  });
+}
+
+test("an error frame next to a completed snapshot does not override the completed status", () => {
+  const raw = sse([
+    { type: "response.created", response: { id: "resp_mix", object: "response", output: [] } },
+    { type: "error", error: { type: "server_error", message: "transient noise" } },
+    {
+      type: "response.completed",
+      response: {
+        id: "resp_mix",
+        object: "response",
+        status: "completed",
+        output: [
+          {
+            type: "message",
+            id: "msg_1",
+            role: "assistant",
+            content: [{ type: "output_text", text: "done" }],
+          },
+        ],
+      },
+    },
+  ]);
+
+  const parsed = parseSSEToResponsesOutput(raw, "gpt-test") as {
+    status?: string;
+    error?: unknown;
+  } | null;
+
+  assert.ok(parsed);
+  assert.equal(parsed.status, "completed");
+  assert.equal(parsed.error, undefined);
+});
