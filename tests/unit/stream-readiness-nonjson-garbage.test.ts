@@ -11,9 +11,11 @@ const encoder = new TextEncoder();
 // Gate contract: a non-JSON payload under `data:` (a proxy error page, a
 // raw log line, a truncated fragment) is garbage, not a readiness signal — it
 // must fail the gate (classified 502/504) instead of being released as a false
-// 200. Only a non-ping JSON payload, or a structural SSE field line outside the
-// `data:` payload, is a signal. A raw text line WITHOUT SSE field syntax stays
-// refused, so a non-SSE text upstream still fails rather than being replayed.
+// 200. Only a non-ping JSON payload is a signal. SSE preamble/structural field
+// lines outside `data:` (`retry:`, `id:`) are NOT signals: many servers send
+// `retry:` as the very first bytes and some put `id:` on every frame including
+// pings, so counting them would release a dead or ping-only upstream as ready.
+// A raw text line WITHOUT SSE field syntax stays refused as well.
 
 // --- The gate's signal contract (hasStreamReadinessSignal) ---
 
@@ -48,12 +50,19 @@ test("a non-ping JSON payload under data: is still a readiness signal", () => {
   );
 });
 
-// Red proof: before the fix a structural field line outside data: was not a
-// signal; after the fix it is.
-test("a structural SSE field line outside data: is a readiness signal", () => {
-  // `id:` and `retry:` are structural SSE fields outside the data: payload.
-  assert.equal(hasStreamReadinessSignal("id: 42\n\n"), true);
-  assert.equal(hasStreamReadinessSignal("retry: 3000\n\n"), true);
+// Guard: structural SSE field lines outside data: (`id:` / `retry:`) are a
+// preamble, not a payload — they must never release the readiness gate, or a
+// dead / ping-only upstream that sends them would become a false 200.
+test("a structural SSE field line outside data: is not a readiness signal", () => {
+  assert.equal(hasStreamReadinessSignal("id: 42\n\n"), false);
+  assert.equal(hasStreamReadinessSignal("retry: 3000\n\n"), false);
+  // A ping frame that carries an `id:` line is still only a ping.
+  assert.equal(hasStreamReadinessSignal("id: 1\nevent: ping\ndata: {}\n\n"), false);
+  // The preamble does not hide a real payload that follows it.
+  assert.equal(
+    hasStreamReadinessSignal('retry: 3000\n\ndata: {"choices":[{"delta":{"content":"x"}}]}\n\n'),
+    true
+  );
 });
 
 // Guard: a raw text line WITHOUT SSE field syntax is not a signal — a non-SSE
@@ -93,9 +102,9 @@ test("a non-JSON data: payload is refused, not replayed as a 200", async () => {
   }
 });
 
-// A stream whose first payload is a structural field line outside data: is
-// released as ready (200) — the fix must not over-refuse real streams.
-test("a structural field line outside data: is released as ready", async () => {
+// A stream that sends only a structural field line and then closes has produced
+// no payload: it ends as a classified early-EOF, never a released 200.
+test("a structural field line outside data: does not release the gate", async () => {
   const response = new Response(
     new ReadableStream<Uint8Array>({
       start(controller) {
@@ -108,14 +117,44 @@ test("a structural field line outside data: is released as ready", async () => {
 
   const result = await ensureStreamReadiness(response, { timeoutMs: 200 });
   try {
-    assert.equal(result.ok, true);
-    if (!result.ok)
-      assert.fail("a structural field line outside data: must release the readiness gate");
-    assert.equal(result.response.status, 200);
+    assert.equal(result.ok, false);
+    if (result.ok) assert.fail("a bare id: line must not release the readiness gate");
+    assert.equal(result.code, "STREAM_EARLY_EOF");
   } finally {
     await result.response.body?.cancel().catch(() => {});
   }
 });
+
+// A stream that stays open but only ever sends the preamble (`retry:` as the
+// first bytes, then silence) or a ping frame carrying an `id:` line must still
+// fail with STREAM_READINESS_TIMEOUT: neither is a readiness signal, and neither
+// may extend the deadline.
+for (const [name, chunk] of [
+  ["retry: preamble only", "retry: 3000\n\n"],
+  ["ping frame carrying an id: line", "id: 1\nevent: ping\ndata: {}\n\n"],
+] as const) {
+  test(`a stream with only a ${name} and then silence times out`, async () => {
+    const response = new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(chunk));
+        },
+        cancel() {},
+      }),
+      { status: 200, headers: { "Content-Type": "text/event-stream" } }
+    );
+
+    const result = await ensureStreamReadiness(response, { timeoutMs: 100, maxTimeoutMs: 400 });
+    try {
+      assert.equal(result.ok, false);
+      if (result.ok) assert.fail(`${name} then silence must remain a readiness failure`);
+      assert.equal(result.code, "STREAM_READINESS_TIMEOUT");
+      assert.equal(result.response.status, 504);
+    } finally {
+      await result.response.body?.cancel().catch(() => {});
+    }
+  });
+}
 
 // Guard: a stream whose first payload is a non-ping JSON data: line is released
 // as ready (200) — no over-refusal of real content.

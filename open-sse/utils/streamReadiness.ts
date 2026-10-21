@@ -542,8 +542,7 @@ function processStreamReadinessEvent(state: StreamReadinessSignalState): boolean
     // truncated fragment) is not a readiness signal. The previous non-empty
     // tolerance released such garbage as a false 200; refusing it here lets a
     // non-SSE text upstream fail with a classified error instead. Only a
-    // non-ping JSON payload, or a structural SSE field line outside data:, is
-    // a signal.
+    // non-ping JSON payload is a signal.
     return false;
   }
 }
@@ -565,12 +564,11 @@ function processStreamReadinessLine(state: StreamReadinessSignalState, line: str
     return false;
   }
 
-  // A structural SSE field line outside the data: payload (id: / retry:) is a
-  // readiness signal: a real SSE stream carries such fields. A raw text line
-  // without SSE field syntax is not — it stays refused so a non-SSE text
-  // upstream (a raw HTML page, a bare log line) still fails with a classified
-  // error instead of being replayed as a false 200.
-  if (/^(?:id|retry):/i.test(trimmed)) return true;
+  // Any other line (id: / retry: preamble, a raw text line) is not a readiness
+  // signal: retry: is commonly the very first bytes of an SSE stream and some
+  // servers put id: on every frame, pings included, so counting them would
+  // release a dead or ping-only upstream as a false 200. Only a non-ping JSON
+  // data: payload is a signal.
   return false;
 }
 
