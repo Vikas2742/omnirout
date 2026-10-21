@@ -33,6 +33,9 @@ export { pruneResilienceSettingsToProvided };
 // the same object identity within its 5s window, so this cache is naturally
 // invalidated when settings are updated (the old object is evicted and a new one
 // is created). WeakMap avoids holding onto stale settings objects.
+// Env-derived defaults (RATE_LIMIT_*, PROVIDER_COOLDOWN_*, STREAM_RECOVERY_*) are read
+// once per settings object, so they stay frozen for that object's lifetime (bounded by the
+// 5s cache TTL). The returned object is shared across callers and must be treated as read-only.
 const resolvedSettingsCache = new WeakMap<Record<string, unknown>, ResilienceSettings>();
 
 // Re-export the settings shape (moved to ./settings/types) so this module's
