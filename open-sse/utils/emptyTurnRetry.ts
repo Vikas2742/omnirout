@@ -32,6 +32,38 @@ export type EmptyTurnSummary = {
 };
 
 /**
+ * Draft / system-echo blocks a model can emit instead of an answer:
+ * `<summary>…</summary>`, `<analysis>…</analysis>`, `<system-reminder>…</system-reminder>`.
+ *
+ * OmniRoute already treats exactly these constructs as system echoes that must
+ * not reach the client (see `directivePreambleStripper.ts`), so a turn whose
+ * ENTIRE content is such markup carries no answer — the downstream consumer
+ * strips the tags and is left with an empty turn (#17461).
+ *
+ * Bounded, non-overlapping repetition: one pass over the text, no nested
+ * quantifiers, so it cannot backtrack on untrusted content.
+ */
+const DRAFT_BLOCK_PATTERN = /<(summary|analysis|system-reminder)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+
+/**
+ * True when the text carries something a client can use as an answer.
+ *
+ * Draft/system-echo markup alone does not count: the turn is then "empty" for
+ * the flush-empty-retry classifier, so the recovery path can retry it on
+ * another connection instead of shipping a degenerate turn.
+ */
+export function hasUsableContentText(contentText: string | null | undefined): boolean {
+  const text = typeof contentText === "string" ? contentText : "";
+  if (!text.trim()) return false;
+  if (!DRAFT_BLOCK_PATTERN.test(text)) return true;
+  // Reset the global regex state before reusing it (lastIndex is sticky).
+  DRAFT_BLOCK_PATTERN.lastIndex = 0;
+  const stripped = text.replace(DRAFT_BLOCK_PATTERN, "").trim();
+  DRAFT_BLOCK_PATTERN.lastIndex = 0;
+  return stripped.length > 0;
+}
+
+/**
  * Unified "turn with no usable content" classifier (one mechanism, two arms:
  * reasoning-only turn with stop + empty text + non-empty reasoning, and
  * zero-valuable-chunk turn via shared `isEmptyTurnCore`). Legit empty stops
@@ -40,7 +72,12 @@ export type EmptyTurnSummary = {
 export function isUselessEmptyTurn(summary: EmptyTurnSummary): boolean {
   if (LEGIT_EMPTY_TURN_FINISH.has(summary.finishReason)) return false;
   if (summary.toolCallsPresent) return false;
-  if (summary.contentText.length > 0) return false;
+  if (hasUsableContentText(summary.contentText)) return false;
+  // Draft-only turn (#17461): the chunks carried content, but only
+  // `<summary>`/`<analysis>`/`<system-reminder>` markup, so nothing usable
+  // reached the client. The forwarded-chunk / usage arms below would call
+  // this a normal turn — it is not.
+  if (summary.contentText.trim().length > 0) return true;
   // Reasoning-only arm: non-empty reasoning with no content. The stop gate
   // applies to chat turns (finish=stop disambiguates from mid-stream deltas);
   // Responses translators never set a probe finish reason, so Responses
@@ -647,10 +684,14 @@ function buildProbeSummary(probe: ProbeAccum): EmptyTurnSummary {
  * summary already carries usable content or a tool call. Reasoning-only
  * never stops (judged by the idle branch + `isUselessEmptyTurn`).
  * Pure read of the summary — never throws on a well-formed summary.
+ *
+ * #17461: draft-only content (`<summary>`/`<analysis>` markup) is not usable
+ * content, so it must not end the read early and hide the turn from the
+ * judge.
  */
 export function isUsefulSummary(summary: EmptyTurnSummary | null): boolean {
   if (!summary) return false;
-  return summary.contentText.length > 0 || summary.toolCallsPresent;
+  return hasUsableContentText(summary.contentText) || summary.toolCallsPresent;
 }
 
 /**

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 const {
   isUselessEmptyTurn,
+  hasUsableContentText,
   summarizeReplayedUpstreamTurn,
   readBoundedResponseText,
   readBoundedResponseOutcome,
@@ -57,6 +58,53 @@ test("shared core matches the frozen guard condition", () => {
   assert.equal(isEmptyTurnCore(false, false), true);
   assert.equal(isEmptyTurnCore(true, false), false);
   assert.equal(isEmptyTurnCore(false, true), false);
+});
+
+/**
+ * #17461: a turn whose whole output is draft/system-echo markup
+ * (`<summary>…</summary>`, `<analysis>…</analysis>`) carries no answer — the
+ * client strips the tags and is left with an empty turn. It must count as an
+ * empty turn so the recovery path can retry it on another connection.
+ */
+test("draft-only content is an empty turn (#17461)", () => {
+  assert.equal(
+    isUselessEmptyTurn({
+      ...base,
+      contentText: "<summary>draft</summary>\n<analysis>draft</analysis>",
+      forwardedValuableChunk: true,
+    }),
+    true
+  );
+  assert.equal(
+    isUselessEmptyTurn({
+      ...base,
+      contentText: "<summary>draft</summary>",
+      hasValidUsage: true,
+    }),
+    true
+  );
+});
+
+test("real content next to draft markup is not an empty turn (#17461)", () => {
+  assert.equal(
+    isUselessEmptyTurn({
+      ...base,
+      contentText: "<summary>draft</summary>\nThe actual answer.",
+    }),
+    false
+  );
+});
+
+test("hasUsableContentText ignores draft-only text and keeps real text (#17461)", () => {
+  assert.equal(hasUsableContentText(""), false);
+  assert.equal(hasUsableContentText("   \n "), false);
+  assert.equal(hasUsableContentText("<summary>draft</summary>"), false);
+  assert.equal(hasUsableContentText("<summary>draft</summary>\n<analysis>draft</analysis>"), false);
+  assert.equal(hasUsableContentText("<summary>draft</summary>answer"), true);
+  assert.equal(hasUsableContentText("hello"), true);
+  // Repeated use must stay stable (the matcher is a global regex).
+  assert.equal(hasUsableContentText("<summary>draft</summary>"), false);
+  assert.equal(hasUsableContentText("<summary>draft</summary>"), false);
 });
 
 test("memory cap is a positive bound", () => {
