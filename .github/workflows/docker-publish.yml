@@ -60,7 +60,7 @@ jobs:
     # publish jobs that currently exclude schedule entirely.
     if: >-
       github.event_name != 'schedule' &&
-      github.repository == 'diegosouzapw/OmniRoute'
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -152,7 +152,7 @@ jobs:
     needs: prepare
     if: >-
       github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true' && vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' &&
-      github.repository == 'diegosouzapw/OmniRoute'
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -190,7 +190,7 @@ jobs:
       !cancelled() && github.event_name != 'schedule' &&
       needs.prepare.result == 'success' && needs.prepare.outputs.skip != 'true' &&
       (needs.runner-preflight.result == 'success' || needs.runner-preflight.result == 'skipped') &&
-      github.repository == 'diegosouzapw/OmniRoute'
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     # amd64: the .113 omni-build pool (31 GB / 32 cores, ONE listener since
     # #12048). Hosted ubuntu-24.04 is ~7 GB and dies ResourceExhausted (#11976).
     # Falls back to hosted when USE_VPS_RUNNER is off. arm64: no ARM box — stay
@@ -427,7 +427,7 @@ jobs:
       - build
     if: >-
       github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true' &&
-      github.repository == 'diegosouzapw/OmniRoute'
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -712,7 +712,7 @@ jobs:
     if: >-
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
       vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' &&
-      github.repository == 'diegosouzapw/OmniRoute'
+      (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
