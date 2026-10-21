@@ -1,4 +1,5 @@
 import { FORMATS } from "../translator/formats.ts";
+import { cacheCreationFields } from "../utils/cacheWriteUsage.ts";
 import {
   buildGeminiThoughtSignatureKey,
   storeGeminiThoughtSignature,
@@ -702,7 +703,7 @@ export function translateNonStreamingResponse(
           usageOut.completion_tokens_details = { reasoning_tokens: reasoningTokens };
         }
         if (cachedTokens > 0 || cacheCreationTokens > 0) {
-          const details: JsonRecord = {};
+          const details: JsonRecord = { ...cacheCreationFields(usage) };
           if (cachedTokens > 0) details.cached_tokens = cachedTokens;
           if (cacheCreationTokens > 0) {
             details.cache_creation_tokens = cacheCreationTokens;
@@ -710,7 +711,7 @@ export function translateNonStreamingResponse(
           }
           usageOut.prompt_tokens_details = details;
         }
-        result.usage = usageOut;
+        result.usage = { ...usageOut, ...cacheCreationFields(usage) };
       }
 
       intermediateOpenAI = result;
@@ -876,6 +877,7 @@ function convertOpenAINonStreamingToClaude(
   );
 
   const usage: JsonRecord = {
+    ...cacheCreationFields(usageSrc),
     input_tokens: inputTokens,
     output_tokens: outputTokens,
   };
