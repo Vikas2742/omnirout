@@ -628,9 +628,10 @@ function resolveVisionCapability(
   if (typeof registryModel?.supportsVision === "boolean") return registryModel.supportsVision;
   if (typeof spec?.supportsVision === "boolean") return spec.supportsVision;
 
-  // Last resort: no capability data at all. Positively confirm known multimodal
-  // families by model id so image requests can be routed to them; everything
-  // else stays `null` (unknown).
+  // #17289: WorkBuddy's DeepSeek Flash endpoint has been verified to
+  // accept image_url (unlike other gateways serving the same upstream id).
+  // The provider-scoped verdict is handled at the caller, after explicit
+  // operator, synced and registry evidence have had their say.
   if (modelIdLikelyVision(modelId)) return true;
 
   return null;
@@ -1001,6 +1002,14 @@ export function getResolvedModelCapabilities(
     compatVisionOverride,
     syncedAvailableModelVision
   );
+  // Provider-scoped observed capability, not a global DeepSeek name heuristic.
+  // An explicit operator override or synced denial must still win.
+  const effectiveSupportsVision =
+    supportsVision === null &&
+    resolved.provider === "workbuddy" &&
+    /^(?:global:|cn:)?deepseek-v4\\.1-flash$/i.test(resolved.model ?? "")
+      ? true
+      : supportsVision;
   const supportsAudio = resolveAudioCapability(spec, registryModel, modalitiesInput);
   const supportsVideo = resolveVideoCapability(spec, registryModel, modalitiesInput);
 
@@ -1024,7 +1033,7 @@ export function getResolvedModelCapabilities(
       resolveSyncedEffortTierFallback(synced?.reasoning_efforts),
     reasoningEffortsOverride: reasoningEffortsOverride !== null,
     supportsTools,
-    supportsVision,
+    supportsVision: effectiveSupportsVision,
     supportsAudio,
     supportsVideo,
     supportsMaxTokens: heuristicMaxTokens(lookupKey),
