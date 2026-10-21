@@ -10,6 +10,7 @@ import dns from "node:dns";
 import { isIP } from "node:net";
 import { BaseExecutor, type ExecuteInput, type ProviderCredentials } from "./base.ts";
 import { sanitizeErrorMessage } from "../utils/error.ts";
+import { findWordPressLoggedInEntry } from "../utils/wordpressSessionKey.ts";
 import {
   OutboundUrlGuardError,
   isPrivateHost,
@@ -101,16 +102,8 @@ function extractWordPressCookie(record: Record<string, unknown>): string | null 
   if (typeof record.cookie === "string" && record.cookie.trim()) {
     return normalizeVeoSessionCookie(record.cookie.trim(), "wordpress_logged_in");
   }
-  for (const [key, val] of Object.entries(record)) {
-    if (
-      (key.startsWith("wordpress_logged_in") || key.includes("wordpress_logged_in")) &&
-      typeof val === "string" &&
-      val.trim()
-    ) {
-      return normalizeVeoSessionCookie(val.trim(), key);
-    }
-  }
-  return null;
+  const entry = findWordPressLoggedInEntry(record);
+  return entry ? normalizeVeoSessionCookie(entry.value, entry.key) : null;
 }
 
 function parseJsonCookieRecord(raw: string): Record<string, unknown> | null {

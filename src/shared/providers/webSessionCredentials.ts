@@ -1,4 +1,5 @@
 import { WEB_COOKIE_PROVIDERS, resolveProviderId } from "@/shared/constants/providers";
+import { findWordPressLoggedInEntry } from "@omniroute/open-sse/utils/wordpressSessionKey.ts";
 
 export type WebSessionCredentialRequirement =
   | {
@@ -462,7 +463,7 @@ export function hasUsableWebSessionCredential(
   const data = providerSpecificData as Record<string, unknown>;
   return (
     requirement.storageKeys.some((key) => hasNonEmptyString(data[key])) ||
-    Object.keys(data).some((k) => k.startsWith("wordpress_logged_in") && hasNonEmptyString(data[k]))
+    findWordPressLoggedInEntry(data) !== null
   );
 }
 

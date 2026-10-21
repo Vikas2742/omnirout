@@ -10,6 +10,7 @@
  */
 import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry.ts";
 import { isAccountUnavailable } from "@omniroute/open-sse/services/accountFallback.ts";
+import { findWordPressLoggedInEntry } from "@omniroute/open-sse/utils/wordpressSessionKey.ts";
 import { createLazyConnectionView } from "@/lib/db/providers/lazyConnectionView";
 import type { ProviderConnectionView } from "@/lib/db/providers/lazyConnectionView";
 import { buildConnectionConcurrencyFields } from "./connectionConcurrencyFields.ts";
@@ -32,16 +33,7 @@ function hasUsableConnectionCredential(connection: ProviderConnectionView): bool
   if (psd && typeof psd === "object") {
     const rec = psd as Record<string, unknown>;
     if (typeof rec.cookie === "string" && rec.cookie.trim().length > 0) return true;
-    if (
-      Object.keys(rec).some(
-        (k) =>
-          k.startsWith("wordpress_logged_in") &&
-          typeof rec[k] === "string" &&
-          (rec[k] as string).trim().length > 0
-      )
-    ) {
-      return true;
-    }
+    if (findWordPressLoggedInEntry(rec)) return true;
   }
   return false;
 }

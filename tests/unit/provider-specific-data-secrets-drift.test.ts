@@ -260,3 +260,25 @@ test("wordpress_logged_in is treated as a secret field and stripped from API res
   const decrypted = decryptConnectionFields(stored);
   assert.deepEqual(psdOf(decrypted), psd);
 });
+
+test("suffixed wordpress_logged_in_<hash> keys are encrypted at rest and stripped from responses (#17041)", () => {
+  const psd = {
+    wordpress_logged_in_abc123: "wp_user|123|secret_hash",
+    workspaceId: "ws-1",
+  };
+  const sanitized = sanitizeProviderSpecificDataForResponse(psd);
+  assert.equal(sanitized?.wordpress_logged_in_abc123, undefined);
+  assert.equal(sanitized?.workspaceId, "ws-1");
+
+  const stored = encryptConnectionFields({
+    id: "conn-wp-suffixed",
+    provider: "veoaifree-web",
+    providerSpecificData: psd,
+  });
+  const atRest = psdOf(stored);
+  assert.ok(looksEncrypted(atRest.wordpress_logged_in_abc123));
+  assert.equal(atRest.workspaceId, "ws-1");
+
+  const decrypted = decryptConnectionFields(stored);
+  assert.deepEqual(psdOf(decrypted), psd);
+});
