@@ -203,7 +203,7 @@ import {
 } from "@/lib/usage/pendingRequestScope";
 import { recordChatCallCost, buildCostCtx } from "@/domain/costRules";
 import { attachOmniRouteMetaToResponse as attachRouteMeta } from "@/domain/omnirouteResponseMeta";
-import { calculateCost } from "@/lib/usage/costCalculator";
+import { calculateCostDetailed } from "@/lib/usage/costCalculator";
 import {
   createDisabledCompressionConfig,
   resolveCompressionSettings,
@@ -3131,7 +3131,7 @@ async function handleChatCoreInner({
       buildCacheUsageLogMeta,
       buildCostCtx,
       buildErrorBody,
-      calculateCost,
+      calculateCostDetailed,
       calibrationEstimatedInputTokens,
       claudePromptCacheLogMeta,
       clientRawRequest,
