@@ -1,1 +1,0 @@
-- **feat(search):** add the standalone DeepSeek Search and Fetch APIs as a Search Providers card, with existing DeepSeek key fallback, normalized web results, Markdown fetch, MCP support, and zero search cost for empty responses.
