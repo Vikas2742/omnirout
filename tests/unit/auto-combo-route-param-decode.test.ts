@@ -36,12 +36,11 @@ test("decodeRouteParam makes the auto/* prefix check work on encoded ids", () =>
   assert.equal(persisted === "auto" || persisted.startsWith("auto/"), false);
 });
 
-test("repeated decodeRouteParam clears the double-encoded usePathname segment", () => {
-  // Breadcrumbs splits usePathname(), which re-encodes the raw URL segment
-  // (auto%2Ffast → auto%252Ffast). Two passes land on the display value.
-  assert.equal(decodeRouteParam(decodeRouteParam("auto%252Fchaos")), "auto/chaos");
-  assert.equal(decodeRouteParam(decodeRouteParam("auto%252Fcoding%253Afast")), "auto/coding:fast");
-  // Single-encoded and plain segments reach the same display value.
-  assert.equal(decodeRouteParam(decodeRouteParam("auto%2Fchaos")), "auto/chaos");
-  assert.equal(decodeRouteParam(decodeRouteParam("combos")), "combos");
+test("decodeRouteParam decodes a single layer — never recursively", () => {
+  // usePathname() returns url.pathname verbatim (single-encoded, e.g.
+  // auto%2Ffast) — one decode is all a display label needs. A %252F segment
+  // would mean a double-encoded URL, which the app never generates (links use
+  // one encodeURIComponent); the contract stays one pass everywhere.
+  assert.equal(decodeRouteParam("auto%252Fchaos"), "auto%2Fchaos");
+  assert.equal(decodeRouteParam("auto%2Fchaos"), "auto/chaos");
 });
