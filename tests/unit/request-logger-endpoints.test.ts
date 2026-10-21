@@ -186,8 +186,11 @@ test("updatePendingRequestStreamChunks stores empty streamChunks object (not nul
   assert.ok(detail.streamChunks, "streamChunks should be set even when empty");
   assert.deepEqual(detail.streamChunks, { provider: [], openai: [], client: [] });
 
-  // Verify the reference is live: mutations to the original object are visible
+  // Stream chunk updates retain an owned snapshot so external array mutations
+  // cannot bypass byte accounting.
   empty.provider.push("data: hello");
+  assert.equal(detail.streamChunks.provider.length, 0);
+  usageHistory.updatePendingRequestStreamChunks("gpt-4", "openai", "conn-1", empty);
   assert.equal(detail.streamChunks.provider.length, 1);
   assert.equal(detail.streamChunks.provider[0], "data: hello");
 });
