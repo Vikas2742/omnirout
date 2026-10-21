@@ -202,7 +202,9 @@ test("sweepStalePendingRequests marks over-age pending details and keeps counts"
   clearPendingRequests();
 
   // One request that will age past the max age (still in flight), one fresh.
-  const staleId = trackPendingRequest("gpt-x", "openai", "conn-stale", true);
+  const staleId = trackPendingRequest("gpt-x", "openai", "conn-stale", true, {
+    providerResponse: { body: "x".repeat(20_000) },
+  });
   const freshId = trackPendingRequest("gpt-x", "openai", "conn-fresh", true);
 
   assert.ok(staleId && freshId, "both started requests should produce ids");
@@ -212,6 +214,15 @@ test("sweepStalePendingRequests marks over-age pending details and keeps counts"
   // Age the stale entry well beyond the max age.
   const stale = getPendingById().get(staleId);
   assert.ok(stale, "stale detail should exist");
+  stale.tokens = {
+    in: 12,
+    out: 34,
+    cacheRead: null,
+    cacheCreation: null,
+    reasoning: null,
+    compressed: null,
+  };
+  const retainedBeforeSweep = getPendingRetainedBytes();
   stale.startedAt = Date.now() - 2 * HOUR_MS;
 
   const removed = sweepStalePendingRequests(Date.now(), HOUR_MS);
@@ -221,6 +232,12 @@ test("sweepStalePendingRequests marks over-age pending details and keeps counts"
   const marked = getPendingById().get(staleId);
   assert.equal(marked?.stale, true, "over-age entry should be marked");
   assert.ok(typeof marked?.sweptAt === "number", "marked entry should carry a sweep timestamp");
+  assert.equal(marked?.providerResponse, undefined, "stale payloads should be pruned");
+  assert.deepEqual(marked?.tokens, stale.tokens, "lightweight token metadata should be preserved");
+  assert.ok(
+    getPendingRetainedBytes() < retainedBeforeSweep,
+    "pruning stale payloads must reduce retained-byte accounting"
+  );
   assert.ok(getPendingById().has(freshId), "fresh entry must survive");
   assert.equal(getPendingById().get(freshId)?.stale, undefined);
 

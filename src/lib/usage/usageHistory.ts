@@ -364,16 +364,17 @@ export function sweepStalePendingRequests(
       // needed for dashboard visibility: model, provider, correlationId, tokens,
       // and the counters. The full request/response bodies are discarded so they
       // no longer accumulate in RSS.
+      const before = pendingDetailBytes(detail);
       detail.clientRequest = undefined;
       detail.providerRequest = undefined;
       detail.providerResponse = undefined;
       detail.clientResponse = undefined;
       detail.streamChunks = undefined;
-      detail.tokens = undefined;
       detail.stage = undefined;
       detail.stageUpdatedAt = undefined;
       detail.error = undefined;
       detail.errorCode = undefined;
+      totalPendingDetailBytes += pendingDetailBytes(detail) - before;
       detail.sweptAt = now;
       detail.stale = true;
     }
