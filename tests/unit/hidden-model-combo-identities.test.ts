@@ -143,3 +143,25 @@ test("opencode-zen hidden state is keyed by its own provider id", async () => {
   assert.equal(hidden.response.status, 404);
   assert.deepEqual(hidden.calls, []);
 });
+
+test("agy and antigravity retain independent hidden-model visibility in combos", async () => {
+  models.mergeModelCompatOverride("antigravity", "claude-opus-5-5-high", { isHidden: true });
+  const agyVisible = await dispatch(["agy/claude-opus-5-5-high"]);
+  assert.equal(agyVisible.response.status, 200);
+  assert.deepEqual(agyVisible.calls, ["agy/claude-opus-5-5-high"]);
+
+  const agHidden = await dispatch(["antigravity/claude-opus-5-5-high"]);
+  assert.equal(agHidden.response.status, 404);
+  assert.deepEqual(agHidden.calls, []);
+
+  models.mergeModelCompatOverride("antigravity", "claude-opus-5-5-high", { isHidden: false });
+  models.mergeModelCompatOverride("agy", "claude-opus-5-5-high", { isHidden: true });
+
+  const agyHidden = await dispatch(["agy/claude-opus-5-5-high"]);
+  assert.equal(agyHidden.response.status, 404);
+  assert.deepEqual(agyHidden.calls, []);
+
+  const agVisible = await dispatch(["antigravity/claude-opus-5-5-high"]);
+  assert.equal(agVisible.response.status, 200);
+  assert.deepEqual(agVisible.calls, ["antigravity/claude-opus-5-5-high"]);
+});
