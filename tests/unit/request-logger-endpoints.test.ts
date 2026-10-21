@@ -530,6 +530,8 @@ test("createRequestLogger with connectionId/model/provider populates streamChunk
   // append a provider chunk — this should call pushStreamChunks() → updatePendingRequestStreamChunks()
   logger.appendProviderChunk('data: {"content":"hello"}');
   logger.appendProviderChunk('data: {"content":" world"}');
+  // Stream chunks reach the pending map in batches (64 KiB deltas); getPipelinePayloads() flushes.
+  logger.getPipelinePayloads();
 
   const pending = usageHistory.getPendingRequests();
   const detail = pending.details["test-conn-1"]?.["gpt-4 (openai)"]?.[0];
@@ -558,6 +560,8 @@ test("createRequestLogger requestId binds streamChunks to the exact pending requ
   });
 
   logger.appendProviderChunk('data: {"content":"second"}');
+  // Stream chunks reach the pending map in batches (64 KiB deltas); getPipelinePayloads() flushes.
+  logger.getPipelinePayloads();
 
   const first = usageHistory.getPendingById().get(firstId);
   const second = usageHistory.getPendingById().get(secondId);
@@ -582,6 +586,8 @@ test("createRequestLogger fallback match does not cross connectionId boundaries"
   });
 
   logger.appendProviderChunk('data: {"content":"conn-b"}');
+  // Stream chunks reach the pending map in batches (64 KiB deltas); getPipelinePayloads() flushes.
+  logger.getPipelinePayloads();
 
   const second = usageHistory.getPendingById().get(secondId);
   assert.equal(stripChunkTs(second?.streamChunks?.provider[0]), 'data: {"content":"conn-b"}');
@@ -631,6 +637,8 @@ test("createRequestLogger appendOpenAIChunk and appendConvertedChunk also popula
 
   logger.appendOpenAIChunk('data: {"role":"assistant","content":"hi"}');
   logger.appendConvertedChunk('data: {"content":"there"}');
+  // Stream chunks reach the pending map in batches (64 KiB deltas); getPipelinePayloads() flushes.
+  logger.getPipelinePayloads();
 
   const pending = usageHistory.getPendingRequests();
   const detail = pending.details["test-conn-3"]?.["claude-3 (anthropic)"]?.[0];
@@ -663,6 +671,8 @@ test("createRequestLogger captures stream chunks even when enabled: false", asyn
   });
 
   logger.appendProviderChunk('data: {"content":"hello"}');
+  // Stream chunks reach the pending map in batches (64 KiB deltas); getPipelinePayloads() flushes.
+  logger.getPipelinePayloads();
 
   const pending = usageHistory.getPendingRequests();
   const detail = pending.details["test-conn-4"]?.["gpt-4 (openai)"]?.[0];

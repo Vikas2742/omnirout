@@ -68,6 +68,7 @@ type RequestLoggerOptions = {
 
 const DEFAULT_MAX_STREAM_CHUNK_BYTES = 128 * 1024;
 const DEFAULT_MAX_STREAM_CHUNK_ITEMS = 10_240;
+const STREAM_CHUNK_SYNC_THRESHOLD = 64 * 1024;
 const MAX_LOG_STRING_LENGTH = 64 * 1024;
 // Was its own separate hardcoded 24, independent of the sibling
 // cloneBoundedChatLogPayload (chatCore/logTruncation.ts) implementation's
@@ -352,13 +353,15 @@ function makeStreamChunkMethods(options: RequestLoggerOptions, captureChunks: bo
     Number.isInteger(options.maxStreamChunkItems) && Number(options.maxStreamChunkItems) > 0
       ? Number(options.maxStreamChunkItems)
       : DEFAULT_MAX_STREAM_CHUNK_ITEMS;
-  const push = () => {
-    if (!options.requestId && (!options.connectionId || !options.model)) return;
+  let lastSyncedBytes = 0;
+  const push = (): boolean => {
+    if (!options.requestId && (!options.connectionId || !options.model)) return false;
     try {
       // A finished exact request must never fall back to another concurrent attempt.
       if (options.requestId) {
-        updatePendingRequestStreamChunksById(options.requestId, streamChunks);
-        return;
+        const updated = updatePendingRequestStreamChunksById(options.requestId, streamChunks);
+        if (updated) lastSyncedBytes = totalCapturedBytes();
+        return updated;
       }
       const pending = getPendingById();
       for (const entry of pending.values()) {
@@ -367,28 +370,39 @@ function makeStreamChunkMethods(options: RequestLoggerOptions, captureChunks: bo
           entry?.model === options.model &&
           entry?.provider === (options.provider || "")
         ) {
-          updatePendingRequestStreamChunksById(entry.id, streamChunks);
-          return;
+          const updated = updatePendingRequestStreamChunksById(entry.id, streamChunks);
+          if (updated) lastSyncedBytes = totalCapturedBytes();
+          return updated;
         }
       }
+      return false;
     } catch (e) {
       // Do not allow logging failures to disrupt request handling
       try {
         console.warn("[requestLogger] updatePendingRequestStreamChunks failed:", e);
       } catch {}
+      return false;
     }
+  };
+  const totalCapturedBytes = () =>
+    streamChunkBytes.provider.value + streamChunkBytes.openai.value + streamChunkBytes.client.value;
+  const flush = () => {
+    push();
   };
 
   const append = (arr: string[], bytes: { value: number; truncated: boolean }, chunk: string) => {
     if (!captureChunks) return;
     const ts = new Date().toISOString().slice(11, 23);
     appendBoundedChunk(arr, bytes, `[${ts}] ${chunk}`, maxBytes, maxItems);
-    push();
+    if (totalCapturedBytes() - lastSyncedBytes >= STREAM_CHUNK_SYNC_THRESHOLD) {
+      push();
+    }
   };
 
   return {
     streamChunks,
     streamChunkBytes,
+    flush,
     appendProviderChunk(chunk: string) {
       append(streamChunks.provider, streamChunkBytes.provider, chunk);
     },
@@ -432,6 +446,7 @@ export async function createRequestLogger(
       logError() {},
       logToolLoopReceipt() {},
       getPipelinePayloads() {
+        chunkMethods.flush();
         return routeDecision ? { routeDecision } : null;
       },
     };
@@ -542,6 +557,7 @@ export async function createRequestLogger(
     },
 
     getPipelinePayloads() {
+      chunkMethods.flush();
       return compactPipelinePayloads(payloads);
     },
   };
