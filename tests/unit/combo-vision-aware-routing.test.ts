@@ -125,20 +125,16 @@ test("nested case-insensitive image indicators still enforce hard vision compati
 });
 
 test(
-  "image request with NO confirmed-vision target: strip all (#8332 — never dispatch " +
-    "an image body to a confirmed-non-vision target, even as a last resort)",
+  "image request with explicitly non-vision targets fails closed (#8332, #17289)",
   () => {
-    const out = filterTargetsByRequestCompatibility(
-      [target("mistral/ministral-14b-latest"), target("groq/llama-3.1-8b-instant")],
-      imageBody,
-      noopLog
-    );
-    assert.equal(
-      out.length,
-      0,
-      "an image request with zero confirmed-vision targets must yield no executable targets, " +
-        "not a guaranteed-to-fail dispatch to a text-only model"
-    );
+    // Explicitly text-only variants stay excluded even after unknown-capability
+    // fallbacks were enabled for other models.
+    const models = ["cmd/gpt-5.3-codex", "mimo/mimo-v2.5-pro"];
+    for (const model of models) {
+      assert.equal(getResolvedModelCapabilities(model).supportsVision, false, model);
+    }
+    const out = filterTargetsByRequestCompatibility(models.map(target), imageBody, noopLog);
+    assert.deepEqual(out, [], "confirmed text-only targets must not receive images");
   }
 );
 
