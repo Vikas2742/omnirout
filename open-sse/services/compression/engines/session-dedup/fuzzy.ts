@@ -90,6 +90,11 @@ export interface FuzzyPassResult {
   fuzzyCount: number;
 }
 
+/** True when `index` lies before the live-turn `boundary` (always true without a boundary). */
+function isBeforeBoundary(index: number, boundary?: number): boolean {
+  return boundary === undefined || index < boundary;
+}
+
 /**
  * Near-duplicate second pass over WHOLE string-content messages. A later message ≥minJaccard
  * similar to an earlier one is stored in the CCR store and replaced inline with a recoverable
@@ -107,12 +112,17 @@ export function applyFuzzyPass(messages: MessageLike[], opts: FuzzyPassOptions):
     }
     if (blocks.length < 2) return { messages, fuzzyCount: 0 };
 
-    const nearDups = findNearDuplicates(blocks, opts.minJaccard, opts.maxBlocks, opts.shingleSize);
+    // Blocks at/after the live-turn boundary are never rewritten.
+    const nearDups = findNearDuplicates(
+      blocks,
+      opts.minJaccard,
+      opts.maxBlocks,
+      opts.shingleSize
+    ).filter((nd) => isBeforeBoundary(nd.block.index, opts.boundary));
     if (nearDups.length === 0) return { messages, fuzzyCount: 0 };
 
     const replacements = new Map<number, string>();
     for (const nd of nearDups) {
-      if (opts.boundary !== undefined && nd.block.index >= opts.boundary) continue;
       const stored = tryStoreBlock(nd.block.text, opts.principalId, { source: "session-dedup" });
       if (!stored.stored) continue;
       const marker = buildCcrMarker(stored.hash, nd.block.text.length);
