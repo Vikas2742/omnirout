@@ -38,7 +38,7 @@ export const ROTATION_LOCK_GROUP: Record<string, string> = {
   "amazon-q": "kiro",
   // Openference rotates one-time-use refresh tokens on its own endpoint; a
   // concurrent sibling refresh would burn the token, so it gets its own lane.
-  "openference": "openference",
+  openference: "openference",
 };
 
 // Protective settle gap (ms) between two consecutive sibling refreshes when the
@@ -121,7 +121,7 @@ export async function serializeRefresh<T>(
   // rejection handled while the lane releases for queued siblings.
   let laneTimer: ReturnType<typeof setTimeout> | null = null;
   try {
-    return await Promise.race([
+    return (await Promise.race([
       fn(),
       new Promise<null>((resolve) => {
         laneTimer = setTimeout(() => {
@@ -133,7 +133,7 @@ export async function serializeRefresh<T>(
         }, refreshLaneMaxMs);
         (laneTimer as { unref?: () => void })?.unref?.();
       }),
-    ]) as T;
+    ])) as T;
   } finally {
     if (laneTimer) clearTimeout(laneTimer);
     // Only pay the settle gap when a sibling is already queued behind us — a
