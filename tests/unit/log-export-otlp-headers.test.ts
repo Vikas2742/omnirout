@@ -10,6 +10,14 @@ import test from "node:test";
 import { build } from "esbuild";
 import { writeEsmWorkerScopes } from "../../scripts/build/colocate-standalone.mjs";
 import {
+  containsSensitiveErrorCredential,
+  redactSensitiveErrorText,
+  sanitizeErrorMessage,
+} from "../../open-sse/utils/errorSanitization.ts";
+import { createRequestLogger } from "../../open-sse/utils/requestLogger.ts";
+import { protectPipelinePayloads } from "../../src/lib/usage/callLogs/format.ts";
+import { resolveCallLogDetail } from "../../src/lib/usage/callLogDetailResolver.ts";
+import {
   buildOtlpPayload,
   otlpHttpConfigSchema,
   otlpHttpDestination,
@@ -284,7 +292,73 @@ const credentialHeaderValues = [
   ["unterminated private PEM", "-----BEGIN RSA PRIVATE KEY----- synthetic"],
 ] as const;
 
-for (const [label, value] of credentialHeaderValues) {
+const escapedQuotedCredential = String.raw`https://fixture.invalid/\u0022password\u0022=synthetic-review-password-58`;
+const atValueByteLimit = (suffix: string, prefix = "") =>
+  prefix + "z".repeat(4096 - Buffer.byteLength(prefix + suffix)) + suffix;
+// Finite syntax already recognized by the public sanitizer, not a new decoding contract.
+const canonicalCredentialHeaderValues = [
+  ["Unicode double quotes", escapedQuotedCredential],
+  ["Unicode single quotes", String.raw`https://fixture.invalid/\u0027password\u0027=x`],
+  ["JSON double quotes", String.raw`https://fixture.invalid/\"password\"=x`],
+  ["JSON single quotes", String.raw`https://fixture.invalid/\'password\'=x`],
+  [
+    "Unicode delimiter and quotes",
+    String.raw`https://fixture.invalid/\u0022password\u0022\u003a\u0022x\u0022`,
+  ],
+  ["uppercase Unicode", String.raw`https://fixture.invalid/\U0022PASS\U0057ORD\U0022\U003DX`],
+  [
+    "second quote escape layer",
+    String.raw`https://fixture.invalid/\u005cu0022password\u005cu0022=x`,
+  ],
+  [
+    "third quote escape layer",
+    String.raw`https://fixture.invalid/\u005cu005cu0022password\u005cu005cu0022=x`,
+  ],
+  ["escaped whitespace", String.raw`https://fixture.invalid/\u0022password\u0022\t=x`],
+  ["escaped private key", String.raw`https://fixture.invalid/\u0022private_key\u0022=x`],
+  ["escaped short token", String.raw`https://fixture.invalid/\u0022token\u0022=x`],
+  ["HTML query separator", "https://fixture.invalid/?project=blue&amp;password=x"],
+  ["HTML quoted query value", "https://fixture.invalid/?password=&quot;x&quot;"],
+  ["percent-encoded query label", "https://fixture.invalid/?pass%77ord=x"],
+  ["POSIX path before assignment", "/srv/app/client.ts:44:9 password=x"],
+  ["Windows path before assignment", String.raw`C:\work\client.ts:44:9 password=x`],
+  ["serialized stack tail", String.raw`password=x\n    at handler (/srv/app/client.ts:44:9)`],
+  [
+    "escaped quotes before stack tail",
+    escapedQuotedCredential + String.raw`\n    at handler (/srv/app/client.ts:44:9)`,
+  ],
+  ["4096-byte quote tail", atValueByteLimit(" " + escapedQuotedCredential)],
+  [
+    "4096-byte UTF-8 quote tail",
+    atValueByteLimit(" " + escapedQuotedCredential, "🙂".repeat(1000)),
+  ],
+  ["4096-byte path tail", atValueByteLimit(" /srv/app/client.ts:44:9 password=x")],
+  [
+    "4096-byte stack tail",
+    atValueByteLimit(String.raw` password=x\n    at handler (/srv/app/client.ts:44:9)`),
+  ],
+  ["4096-byte marker expansion", atValueByteLimit(" password=x")],
+] as const;
+
+test("canonical credential fixtures reach the complete public recognition and tail bounds", () => {
+  assert.equal(containsSensitiveErrorCredential(escapedQuotedCredential), false);
+  assert.equal(redactSensitiveErrorText(escapedQuotedCredential).includes("[REDACTED"), false);
+  assert.equal(
+    sanitizeErrorMessage(escapedQuotedCredential),
+    'https://fixture.invalid/"password"=[REDACTED]'
+  );
+  for (const [label, value] of canonicalCredentialHeaderValues) {
+    assert.ok(Buffer.byteLength(value) <= 4096, label);
+    assert.ok(sanitizeErrorMessage(value).includes("[REDACTED"), label);
+    if (label.startsWith("4096-byte")) {
+      assert.equal(Buffer.byteLength(value), 4096, label);
+      assert.ok(Buffer.byteLength(value.slice(0, value.indexOf("password"))) > 4000, label);
+    }
+  }
+  assert.ok(sanitizeErrorMessage(atValueByteLimit(" password=x")).endsWith("[REDACTED]"));
+});
+
+for (const [label, value] of [...credentialHeaderValues, ...canonicalCredentialHeaderValues]) {
   test(`credential-valued headers are omitted in full: ${label}`, () => {
     const record = {
       ...row,
@@ -303,11 +377,32 @@ for (const [label, value] of credentialHeaderValues) {
         "http.request.header.x-safe": arr("alpha,beta", "project-v2"),
       });
       assert.equal(attrs(record, extra)["user_agent.original"], undefined);
+      for (const headers of [
+        { "X-Project": value },
+        { "X-Project": ["safe", value] },
+        { "X-Project": "safe", "x-project": value },
+        { "x-project": value, "X-Project": "safe" },
+        { "User-Agent": value },
+        { "User-Agent": ["safe", value] },
+        { "User-Agent": "safe", "user-agent": value },
+        { "user-agent": value, "User-Agent": "safe" },
+      ]) {
+        const shaped = {
+          ...row,
+          pipelineClientRequest: snapshot({ ...headers, "X-Safe": ["alpha,beta", "project-v2"] }),
+        };
+        assert.deepEqual(headerAttrs(shaped, extra), {
+          "http.request.header.x-safe": arr("alpha,beta", "project-v2"),
+        });
+        assert.equal(attrs(shaped, extra)["user_agent.original"], undefined);
+      }
     }
   });
 }
 
 test("safe UA, project strings and comma-containing arrays remain byte-identical", () => {
+  assert.equal(sanitizeErrorMessage(String.raw`project\u002dblue`), "project-blue");
+  assert.equal(sanitizeErrorMessage(String.raw`C:\work\project.txt`), "<path>");
   for (const value of [
     "ExampleClient/1.0 (linux; amd64)",
     "project=password-manager",
@@ -315,7 +410,14 @@ test("safe UA, project strings and comma-containing arrays remain byte-identical
     "credential-audit-team",
     "team=alpha,project=demo",
     String.raw`project\u002dblue`,
+    String.raw`https://fixture.invalid/\u0022project\u0022=blue`,
+    String.raw`project\u005cu002dblue`,
+    String.raw`project\tblue`,
+    String.raw`C:\work\project.txt`,
+    String.raw`project\n    at handler (/srv/app/client.ts:44:9)`,
+    "https://fixture.invalid/?project=blue&amp;team=demo",
   ]) {
+    assert.equal(sanitizeErrorMessage(value).includes("[REDACTED"), false);
     const record = {
       ...row,
       pipelineClientRequest: snapshot({ "X-Project": [value, "one,two"], "User-Agent": value }),
@@ -327,6 +429,14 @@ test("safe UA, project strings and comma-containing arrays remain byte-identical
         "http.request.header.user-agent": arr(value),
       });
       assert.deepEqual(attrs(record, extra)["user_agent.original"], { stringValue: value });
+      const duplicate = {
+        ...row,
+        pipelineClientRequest: snapshot({ "User-Agent": value, "user-agent": "OtherClient/2.0" }),
+      };
+      assert.deepEqual(headerAttrs(duplicate, extra), {
+        "http.request.header.user-agent": arr(value, "OtherClient/2.0"),
+      });
+      assert.equal(attrs(duplicate, extra)["user_agent.original"], undefined);
     }
   }
 });
@@ -491,7 +601,24 @@ test("real HTTP send carries arrays as span attributes, not as collector transpo
   }
 });
 
-async function exerciseExportChild(compiled = false) {
+test("standalone redactor still rejects credentials stripped with canonical stack tails", () => {
+  const value = String.raw`Error\n    at handler (/srv/app/client.ts:44:9 password=x)`;
+  assert.equal(sanitizeErrorMessage(value), "Error");
+  assert.ok(redactSensitiveErrorText(value).includes("[REDACTED"));
+  for (const langfuseMapping of [false, true])
+    assert.deepEqual(
+      headerAttrs(
+        { ...row, pipelineClientRequest: snapshot({ "X-Project": value }) },
+        {
+          requestHeaderAllowlist: "x-project",
+          langfuseMapping,
+        }
+      ),
+      {}
+    );
+});
+
+async function exerciseExportChild(compiled = false, langfuseMapping = false) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "otlp-header-child-"));
   const db = new DatabaseSync(path.join(dir, "storage.sqlite"));
   db.exec(`CREATE TABLE call_logs (id TEXT, timestamp TEXT, model TEXT, status INTEGER, path TEXT,
@@ -503,12 +630,27 @@ async function exerciseExportChild(compiled = false) {
   db.prepare(
     "INSERT INTO call_logs (id,timestamp,path,status,artifact_relpath,detail_state,has_pipeline_details) VALUES (?,?,?,200,?,'ready',1)"
   ).run(row.id, row.timestamp, row.path, "headers.json");
+  const logger = await createRequestLogger("openai", "openai", "synthetic", {
+    enabled: true,
+    captureStreamChunks: false,
+  });
+  logger.logClientRawRequest(
+    row.path,
+    { model: "example-model" },
+    {
+      "X-Review": escapedQuotedCredential,
+    }
+  );
+  const captured = protectPipelinePayloads(logger.getPipelinePayloads());
+  const capturedHeaders = captured?.clientRawRequest?.headers as Record<string, unknown>;
+  assert.equal(capturedHeaders["X-Review"], escapedQuotedCredential);
   fs.writeFileSync(
     path.join(dir, "call_logs/headers.json"),
     JSON.stringify({
       pipeline: {
         clientRawRequest: {
           headers: {
+            ...capturedHeaders,
             "x-project": "persisted-client",
             Authorization: "[REDACTED]",
             "user-agent": "ExampleClient/1.0",
@@ -521,6 +663,25 @@ async function exerciseExportChild(compiled = false) {
         providerRequest: { headers: { "x-project": "never-provider" } },
       },
     })
+  );
+  const detail = await resolveCallLogDetail(
+    db,
+    {
+      id: row.id,
+      timestamp: row.timestamp,
+      model: row.model,
+      status: row.status,
+      detailState: "ready",
+      artifactRelPath: "headers.json",
+      error: null,
+      hasPipelineDetails: true,
+    },
+    path.join(dir, "call_logs")
+  );
+  const hydrated = await attachExportBodies([{ rowId: 1, record: row }], 1024, async () => detail);
+  assert.equal(
+    JSON.parse(hydrated[0].record.pipelineClientRequest!).headers["X-Review"],
+    escapedQuotedCredential
   );
   const insert = db.prepare(
     "INSERT INTO call_logs (id,timestamp,path,status,artifact_relpath,detail_state,has_pipeline_details) VALUES (?,?,?,200,?,'ready',1)"
@@ -599,7 +760,8 @@ async function exerciseExportChild(compiled = false) {
           destination: { id: "fixture", type: "otlp-http", name: "fixture" },
           config: config({
             endpoint: `http://127.0.0.1:${address.port}/v1/traces`,
-            requestHeaderAllowlist: "x-project,Authorization,user-agent,x-sensitive-*",
+            requestHeaderAllowlist: "x-project,Authorization,user-agent,x-sensitive-*,x-review",
+            langfuseMapping,
           }),
           batchSize: 10,
           maxRowsPerRun: 10,
@@ -637,6 +799,16 @@ async function exerciseExportChild(compiled = false) {
         false
       );
       assert.equal(JSON.stringify(payloads.at(-1)).includes("synthetic-review-password-58"), false);
+      assert.equal(
+        sent.some((a) => a.key === "http.request.header.x-review"),
+        false
+      );
+      assert.equal(
+        JSON.stringify(payloads.at(-1)).includes(
+          JSON.stringify(escapedQuotedCredential).slice(1, -1)
+        ),
+        false
+      );
       const batch = spans(payloads.at(-1)!);
       assert.equal(batch.length, 4);
       for (const span of batch.slice(1))
@@ -659,3 +831,6 @@ test("real export child hydrates persisted artifacts only with includeBodies and
 
 test("compiled export child omits credential-valued headers through hydration and loopback HTTP", () =>
   exerciseExportChild(true));
+
+test("compiled export child excludes canonical escaped credentials with Langfuse mapping", () =>
+  exerciseExportChild(true, true));

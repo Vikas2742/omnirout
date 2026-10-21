@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   containsSensitiveErrorCredential,
   redactSensitiveErrorText,
+  sanitizeErrorMessage,
 } from "@omniroute/open-sse/utils/errorSanitization.ts";
 
 // '*' is reserved for a single terminal prefix wildcard, never an unrestricted selector.
@@ -80,7 +81,10 @@ function validValues(value: unknown): string[] | null {
       !/\[redacted|\[truncated\]/i.test(item) &&
       !containsSensitiveErrorCredential(item) &&
       // Cover labeled assignments/PEM without treating escape normalization as redaction.
-      !redactSensitiveErrorText(item).includes("[REDACTED")
+      !redactSensitiveErrorText(item).includes("[REDACTED") &&
+      // Include the complete public recognition chain (notably its final quote pass).
+      // Use only its credential marker: safe path/escape changes must not alter export.
+      !sanitizeErrorMessage(item).includes("[REDACTED")
   )
     ? values
     : null;
