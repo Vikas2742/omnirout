@@ -12,8 +12,7 @@
  */
 
 import crypto from "crypto";
-import { outputContractOf, SEMANTIC_CACHE_KEY_SCHEMA } from "@/lib/semanticCache";
-import { canonicalJson } from "@/lib/skills/stableJson";
+import { canonicalJson, outputContractOf, SEMANTIC_CACHE_KEY_SCHEMA } from "@/lib/semanticCache";
 import {
   type SemanticCacheConfig,
   type SemanticCacheType,

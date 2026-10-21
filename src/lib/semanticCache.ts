@@ -151,6 +151,13 @@ export function clearMemoryCache(): void {
  */
 export const SEMANTIC_CACHE_KEY_SCHEMA = 2;
 
+/**
+ * Canonical (sorted-key) JSON serializer shared by both exact-cache hashes. Re-exported here so the
+ * open-sse cache manager reuses its existing `@/lib/semanticCache` import instead of adding a new
+ * open-sse -> src boundary edge.
+ */
+export { canonicalJson };
+
 export interface SignatureConstraints extends Partial<Record<GenerationParamKey, unknown>> {
   toolChoice?: unknown;
   tools?: unknown;
