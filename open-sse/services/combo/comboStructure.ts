@@ -578,6 +578,8 @@ const HARD_COMPAT_REASONS = new Set(["tools", "vision", "structured_output", "ou
  * support was not confirmed. #17289 allows unknown support only in the initial
  * eligible pool, AFTER proven vision targets, not in a rejected-target bypass.
  * Explicitly unsupported models are never eligible for an image request.
+ * This predicate stays strict (`!== true`) on purpose: it also gates the fusion
+ * panel (dispatchPrelude.ts), which still requires confirmed vision.
  */
 export function isVisionIncompatibleTarget(
   target: ResolvedComboTarget,
@@ -720,7 +722,7 @@ export function describeCapabilityFilterExhaustion(
   if (primary === "tools") {
     message = `No target in combo ${name} supports tool calling; request carried ${toolCount} tools`;
   } else if (primary === "vision") {
-    message = `No target in combo ${name} has confirmed vision support for this image request`;
+    message = `No target in combo ${name} accepts image input: every target is explicitly marked non-vision for this image request`;
   } else if (primary === "output_tokens") {
     // #12229: name the real reason. Collapsing this into the structured-output
     // message sent operators chasing response_format when the request's
@@ -748,17 +750,21 @@ export function describeCapabilityFilterExhaustion(
 }
 
 /**
- * Keep image-capable targets ahead of unknown-capability fallbacks regardless
- * of strategy order or context-size tiering. Neither group includes confirmed
- * text-only targets: the hard filter already removed those.
+ * Stable split of an image request's targets into confirmed-vision (`=== true`)
+ * and unknown-capability tiers (#17289). Neither tier includes explicitly
+ * non-vision targets: the hard filter already removed those. `confirmedCount`
+ * is the length of the confirmed prefix of `targets`, or 0 when no tiering
+ * applies (not an image request, or one of the tiers is empty).
  */
-function preferConfirmedVisionTargets(
-  targets: ResolvedComboTarget[],
+export function partitionConfirmedVisionTargets<
+  T extends Pick<ResolvedComboTarget, "provider" | "providerId" | "modelStr">,
+>(
+  targets: T[],
   requirements: RequestCompatibilityRequirements
-): ResolvedComboTarget[] {
-  if (!requirements.requiresVision || targets.length <= 1) return targets;
-  const confirmed: ResolvedComboTarget[] = [];
-  const unknown: ResolvedComboTarget[] = [];
+): { targets: T[]; confirmedCount: number } {
+  if (!requirements.requiresVision || targets.length <= 1) return { targets, confirmedCount: 0 };
+  const confirmed: T[] = [];
+  const unknown: T[] = [];
   for (const target of targets) {
     const verdict = getResolvedModelCapabilities({
       provider: target.providerId || target.provider || null,
@@ -767,7 +773,21 @@ function preferConfirmedVisionTargets(
     if (verdict === true) confirmed.push(target);
     else unknown.push(target);
   }
-  return confirmed.length > 0 && unknown.length > 0 ? [...confirmed, ...unknown] : targets;
+  if (confirmed.length === 0 || unknown.length === 0) return { targets, confirmedCount: 0 };
+  return { targets: [...confirmed, ...unknown], confirmedCount: confirmed.length };
+}
+
+/**
+ * Keep image-capable targets ahead of unknown-capability fallbacks regardless
+ * of strategy order or context-size tiering. Strategies that rotate the result
+ * afterwards (round-robin) must rotate WITHIN each tier — see
+ * `partitionConfirmedVisionTargets` and roundRobinCombo.ts.
+ */
+function preferConfirmedVisionTargets(
+  targets: ResolvedComboTarget[],
+  requirements: RequestCompatibilityRequirements
+): ResolvedComboTarget[] {
+  return partitionConfirmedVisionTargets(targets, requirements).targets;
 }
 
 export function filterTargetsByRequestCompatibility(

@@ -12,6 +12,7 @@ const core = await import("../../src/lib/db/core.ts");
 const { getResolvedModelCapabilities } = await import("../../src/lib/modelCapabilities.ts");
 const { filterTargetsByRequestCompatibility, deriveRequestCompatibilityRequirements } =
   await import("../../open-sse/services/combo/comboStructure.ts");
+const { rotateWithinVisionTiers } = await import("../../open-sse/services/combo/rrState.ts");
 const { handleComboChat } = await import("../../open-sse/services/combo.ts");
 const { resetAllComboMetrics } = await import("../../open-sse/services/comboMetrics.ts");
 const { resetAllCircuitBreakers } = await import("../../src/shared/utils/circuitBreaker.ts");
@@ -84,14 +85,10 @@ test("#17289 confirmed vision takes precedence over unknown; explicit false stay
     ids(filterTargetsByRequestCompatibility([unknown, blind, known], request, log)),
     [known.modelStr, unknown.modelStr]
   );
-  assert.deepEqual(
-    ids(filterTargetsByRequestCompatibility([unknown, blind], request, log)),
-    [unknown.modelStr]
-  );
-  assert.deepEqual(
-    ids(filterTargetsByRequestCompatibility([blind], request, log)),
-    []
-  );
+  assert.deepEqual(ids(filterTargetsByRequestCompatibility([unknown, blind], request, log)), [
+    unknown.modelStr,
+  ]);
+  assert.deepEqual(ids(filterTargetsByRequestCompatibility([blind], request, log)), []);
 });
 
 test("#17289 priority dispatch reaches an unknown target if no confirmed target exists", async () => {
@@ -120,4 +117,86 @@ test("#17289 priority dispatch reaches an unknown target if no confirmed target 
   });
   assert.equal(response.status, 200);
   assert.deepEqual(calls, [model]);
+});
+
+test("#17289 round-robin rotates within the confirmed tier; unknown stays last resort", async () => {
+  const confirmed = "mistral/pixtral-12b-latest";
+  const unknown = "mistral/ministral-14b-latest";
+  // A different provider than the confirmed one: a quota/outage on one provider
+  // skips its siblings for the rest of the request (#1731), which would mask the fallback.
+  const unknownOtherProvider = "groq/llama-3.1-8b-instant";
+  assert.equal(getResolvedModelCapabilities(confirmed).supportsVision, true);
+  assert.equal(getResolvedModelCapabilities(unknown).supportsVision, null);
+  assert.equal(getResolvedModelCapabilities(unknownOtherProvider).supportsVision, null);
+  const run = async (name: string, models: string[], failing: Set<string>) => {
+    const calls: string[] = [];
+    const combo = { name, strategy: "round-robin", models, config: { maxRetries: 0 } };
+    for (let i = 0; i < 4; i++) {
+      const response = await handleComboChat({
+        body: request,
+        combo,
+        handleSingleModel: async (_body, modelStr) => {
+          calls.push(modelStr);
+          if (failing.has(modelStr)) {
+            return new Response(JSON.stringify({ error: { message: "upstream unavailable" } }), {
+              status: 503,
+              headers: { "content-type": "application/json" },
+            });
+          }
+          return new Response(JSON.stringify({ choices: [{ message: { content: "ok" } }] }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        },
+        isModelAvailable: async () => true,
+        log,
+        settings: null,
+        relayOptions: null,
+        allCombos: null,
+      });
+      assert.equal(response.status, 200, `${name} request ${i}: ${calls.join(",")}`);
+    }
+    return calls;
+  };
+  // Healthy confirmed target: every image request is served by it, never by the unknown one.
+  assert.deepEqual(await run("rr-vision-healthy-17289", [confirmed, unknown], new Set()), [
+    confirmed,
+    confirmed,
+    confirmed,
+    confirmed,
+  ]);
+  // Order in the combo does not matter: the confirmed tier still goes first.
+  assert.deepEqual(await run("rr-vision-reversed-17289", [unknown, confirmed], new Set()), [
+    confirmed,
+    confirmed,
+    confirmed,
+    confirmed,
+  ]);
+  // Confirmed target failing: the unknown target is still reachable as last resort.
+  const fallbackCalls = await run(
+    "rr-vision-fallback-17289",
+    [confirmed, unknownOtherProvider],
+    new Set([confirmed])
+  );
+  assert.ok(
+    fallbackCalls.includes(unknownOtherProvider),
+    "unknown target must serve when the confirmed one fails"
+  );
+});
+
+test("#17289 rotateWithinVisionTiers rotates the confirmed prefix, then the unknown tail", () => {
+  const order = (start: number, total: number, confirmed: number) =>
+    Array.from({ length: total }, (_, offset) =>
+      rotateWithinVisionTiers(offset, start, total, confirmed)
+    );
+  assert.deepEqual(order(0, 4, 0), [0, 1, 2, 3], "no tiering: plain rotation");
+  assert.deepEqual(order(2, 4, 0), [2, 3, 0, 1], "no tiering: plain rotation from start");
+  assert.deepEqual(order(0, 4, 2), [0, 1, 2, 3]);
+  assert.deepEqual(order(1, 4, 2), [1, 0, 2, 3], "confirmed tier rotates, unknown stays last");
+  assert.deepEqual(
+    order(3, 4, 2),
+    [1, 0, 3, 2],
+    "start inside the unknown tier still leads with confirmed"
+  );
+  assert.deepEqual(order(1, 2, 1), [0, 1], "one confirmed target is always first");
 });

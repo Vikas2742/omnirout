@@ -628,10 +628,9 @@ function resolveVisionCapability(
   if (typeof registryModel?.supportsVision === "boolean") return registryModel.supportsVision;
   if (typeof spec?.supportsVision === "boolean") return spec.supportsVision;
 
-  // #17289: WorkBuddy's DeepSeek Flash endpoint has been verified to
-  // accept image_url (unlike other gateways serving the same upstream id).
-  // The provider-scoped verdict is handled at the caller, after explicit
-  // operator, synced and registry evidence have had their say.
+  // Last resort: no capability data at all. Positively confirm known multimodal
+  // families by model id so image requests can be routed to them; everything
+  // else stays `null` (unknown).
   if (modelIdLikelyVision(modelId)) return true;
 
   return null;
@@ -1002,8 +1001,10 @@ export function getResolvedModelCapabilities(
     compatVisionOverride,
     syncedAvailableModelVision
   );
-  // Provider-scoped observed capability, not a global DeepSeek name heuristic.
-  // An explicit operator override or synced denial must still win.
+  // #17289: WorkBuddy's DeepSeek Flash endpoint was observed to accept image_url
+  // (unlike other gateways serving the same upstream id). Provider-scoped, not a
+  // global DeepSeek name heuristic, and only applied while the verdict is still
+  // unknown: an explicit operator override, synced denial or registry value wins.
   const effectiveSupportsVision =
     supportsVision === null &&
     resolved.provider === "workbuddy" &&

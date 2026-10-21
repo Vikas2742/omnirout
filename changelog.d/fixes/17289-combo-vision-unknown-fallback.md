@@ -1,1 +1,0 @@
-- Fix combo image requests incorrectly rejecting provider targets with unknown vision metadata. Confirmed vision-capable targets remain preferred; explicitly text-only models remain blocked, and WorkBuddy DeepSeek V4.1 Flash receives provider-scoped vision support.
