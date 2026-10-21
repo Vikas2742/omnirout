@@ -7,6 +7,8 @@ import { once } from "node:events";
 import { spawn } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
+import { build } from "esbuild";
+import { writeEsmWorkerScopes } from "../../scripts/build/colocate-standalone.mjs";
 import {
   buildOtlpPayload,
   otlpHttpConfigSchema,
@@ -249,6 +251,86 @@ test("invalid names/types/control values and known credentials are omitted witho
   );
 });
 
+const credentialHeaderValues = [
+  ["password assignment", "password=synthetic-review-password-58"],
+  ["one-character password", "password=x"],
+  ["empty password", "password="],
+  ["quoted password", '"password": "synthetic value"'],
+  ["single-quoted password", "'PASSWORD' = 'x'"],
+  ["CLI password", "--password x"],
+  ["escaped password label", String.raw`pass\u0077ord=x`],
+  ["escaped assignment delimiter", String.raw`password\u003dx`],
+  ["private key", "private key=x"],
+  ["private-key", "private-key: x"],
+  ["private_key", '"private_key":"x"'],
+  ["privatekey", "privatekey=x"],
+  ["credential", "credential=x"],
+  ["credentials", "credentials: x"],
+  ["quoted credential", 'credential="synthetic value"'],
+  ["unterminated credential", 'credential="synthetic value'],
+  ["short API key", "api_key=x"],
+  ["short access token", "access_token=x"],
+  ["short refresh token", "refresh-token=x"],
+  ["short authorization", "authorization=x"],
+  ["short cookie", "cookie=x"],
+  ["short secret", "secret=x"],
+  ["short token", "token=x"],
+  ["session ID", "session id=x"],
+  ["encryption key", "encryption_key=x"],
+  ["session key", "session-key=x"],
+  ["signing key", "signingkey=x"],
+  ["secret key", "secret key=x"],
+  ["private PEM", "-----BEGIN PRIVATE KEY----- synthetic -----END PRIVATE KEY-----"],
+  ["unterminated private PEM", "-----BEGIN RSA PRIVATE KEY----- synthetic"],
+] as const;
+
+for (const [label, value] of credentialHeaderValues) {
+  test(`credential-valued headers are omitted in full: ${label}`, () => {
+    const record = {
+      ...row,
+      pipelineClientRequest: snapshot({
+        "X-Project": value,
+        "X-Array": ["safe", value],
+        "X-Duplicate": "safe",
+        "x-duplicate": [value],
+        "User-Agent": value,
+        "X-Safe": ["alpha,beta", "project-v2"],
+      }),
+    };
+    for (const langfuseMapping of [false, true]) {
+      const extra = { requestHeaderAllowlist: "x-*,user-agent", langfuseMapping };
+      assert.deepEqual(headerAttrs(record, extra), {
+        "http.request.header.x-safe": arr("alpha,beta", "project-v2"),
+      });
+      assert.equal(attrs(record, extra)["user_agent.original"], undefined);
+    }
+  });
+}
+
+test("safe UA, project strings and comma-containing arrays remain byte-identical", () => {
+  for (const value of [
+    "ExampleClient/1.0 (linux; amd64)",
+    "project=password-manager",
+    "private-key-rotation",
+    "credential-audit-team",
+    "team=alpha,project=demo",
+    String.raw`project\u002dblue`,
+  ]) {
+    const record = {
+      ...row,
+      pipelineClientRequest: snapshot({ "X-Project": [value, "one,two"], "User-Agent": value }),
+    };
+    for (const langfuseMapping of [false, true]) {
+      const extra = { requestHeaderAllowlist: "x-project,user-agent", langfuseMapping };
+      assert.deepEqual(headerAttrs(record, extra), {
+        "http.request.header.x-project": arr(value, "one,two"),
+        "http.request.header.user-agent": arr(value),
+      });
+      assert.deepEqual(attrs(record, extra)["user_agent.original"], { stringValue: value });
+    }
+  }
+});
+
 test("header count, UTF-8 value bytes, array length and total bytes are bounded without clipping", () => {
   const headers: Record<string, unknown> = Object.fromEntries(
     Array.from({ length: 40 }, (_, i) => [`x-h${String(i).padStart(2, "0")}`, "v"])
@@ -409,7 +491,7 @@ test("real HTTP send carries arrays as span attributes, not as collector transpo
   }
 });
 
-test("real export child hydrates persisted artifacts only with includeBodies and sends headers", async () => {
+async function exerciseExportChild(compiled = false) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "otlp-header-child-"));
   const db = new DatabaseSync(path.join(dir, "storage.sqlite"));
   db.exec(`CREATE TABLE call_logs (id TEXT, timestamp TEXT, model TEXT, status INTEGER, path TEXT,
@@ -426,7 +508,15 @@ test("real export child hydrates persisted artifacts only with includeBodies and
     JSON.stringify({
       pipeline: {
         clientRawRequest: {
-          headers: { "x-project": "persisted-client", Authorization: "[REDACTED]" },
+          headers: {
+            "x-project": "persisted-client",
+            Authorization: "[REDACTED]",
+            "user-agent": "ExampleClient/1.0",
+            "x-sensitive-password": "password=synthetic-review-password-58",
+            "x-sensitive-short": ["safe", "password=x"],
+            "x-sensitive-private": "private key=x",
+            "x-sensitive-credential": "credential=x",
+          },
         },
         providerRequest: { headers: { "x-project": "never-provider" } },
       },
@@ -459,21 +549,40 @@ test("real export child hydrates persisted artifacts only with includeBodies and
   const address = server.address();
   assert.ok(address && typeof address !== "string");
   try {
-    for (const includeBodies of [false, true]) {
-      const child = spawn(
-        process.execPath,
-        ["--import", "tsx/esm", "src/lib/logExport/exportChild.ts"],
-        {
-          env: {
-            DATA_DIR: dir,
-            NODE_ENV: "test",
-            NODE_OPTIONS: process.env.NODE_OPTIONS,
-            HOME: process.env.HOME,
-            TMPDIR: process.env.TMPDIR,
-          },
-          stdio: ["ignore", "pipe", "pipe", "ipc"],
-        }
+    let childArgs = ["--import", "tsx/esm", "src/lib/logExport/exportChild.ts"];
+    if (compiled) {
+      const root = path.resolve(import.meta.dirname, "../..");
+      const childRoot = path.join(dir, "compiled-root");
+      const childFile = path.join(childRoot, "src/lib/logExport/exportChild.js");
+      fs.mkdirSync(path.dirname(childFile), { recursive: true });
+      fs.writeFileSync(path.join(childRoot, "package.json"), '{"type":"commonjs"}');
+      fs.symlinkSync(path.join(root, "node_modules"), path.join(childRoot, "node_modules"), "dir");
+      writeEsmWorkerScopes([path.dirname(childFile)]);
+      const built = await build({
+        entryPoints: [path.join(root, "src/lib/logExport/exportChild.ts")],
+        outfile: childFile,
+        bundle: true,
+        platform: "node",
+        packages: "external",
+        format: "esm",
+        metafile: true,
+      });
+      assert.ok(
+        Object.keys(built.metafile.inputs).some((f) => f.endsWith("otlpRequestHeaders.ts"))
       );
+      childArgs = [childFile];
+    }
+    for (const includeBodies of [false, true]) {
+      const child = spawn(process.execPath, childArgs, {
+        env: {
+          DATA_DIR: dir,
+          NODE_ENV: "test",
+          NODE_OPTIONS: process.env.NODE_OPTIONS,
+          HOME: process.env.HOME,
+          TMPDIR: process.env.TMPDIR,
+        },
+        stdio: ["ignore", "pipe", "pipe", "ipc"],
+      });
       let output = "";
       child.stderr!.on("data", (part) => {
         output += part.toString();
@@ -490,7 +599,7 @@ test("real export child hydrates persisted artifacts only with includeBodies and
           destination: { id: "fixture", type: "otlp-http", name: "fixture" },
           config: config({
             endpoint: `http://127.0.0.1:${address.port}/v1/traces`,
-            requestHeaderAllowlist: "x-project,Authorization",
+            requestHeaderAllowlist: "x-project,Authorization,user-agent,x-sensitive-*",
           }),
           batchSize: 10,
           maxRowsPerRun: 10,
@@ -519,6 +628,15 @@ test("real export child hydrates persisted artifacts only with includeBodies and
         false
       );
       assert.equal(JSON.stringify(sent).includes("never-provider"), false);
+      assert.deepEqual(
+        sent.find((a) => a.key === "user_agent.original")?.value,
+        includeBodies ? { stringValue: "ExampleClient/1.0" } : undefined
+      );
+      assert.equal(
+        sent.some((a) => a.key.startsWith("http.request.header.x-sensitive-")),
+        false
+      );
+      assert.equal(JSON.stringify(payloads.at(-1)).includes("synthetic-review-password-58"), false);
       const batch = spans(payloads.at(-1)!);
       assert.equal(batch.length, 4);
       for (const span of batch.slice(1))
@@ -534,4 +652,10 @@ test("real export child hydrates persisted artifacts only with includeBodies and
     await once(server, "close");
     fs.rmSync(dir, { recursive: true, force: true });
   }
-});
+}
+
+test("real export child hydrates persisted artifacts only with includeBodies and sends headers", () =>
+  exerciseExportChild());
+
+test("compiled export child omits credential-valued headers through hydration and loopback HTTP", () =>
+  exerciseExportChild(true));

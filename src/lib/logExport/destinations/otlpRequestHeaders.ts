@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { containsSensitiveErrorCredential } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import {
+  containsSensitiveErrorCredential,
+  redactSensitiveErrorText,
+} from "@omniroute/open-sse/utils/errorSanitization.ts";
 
 // '*' is reserved for a single terminal prefix wildcard, never an unrestricted selector.
 const HEADER_NAME = /^[!#$%&'+.^_`|~0-9a-z-]+$/i;
@@ -75,7 +78,9 @@ function validValues(value: unknown): string[] | null {
       Buffer.byteLength(item) <= MAX_VALUE_BYTES &&
       !/[\x00-\x08\x0a-\x1f\x7f\ud800-\udfff]/u.test(item) &&
       !/\[redacted|\[truncated\]/i.test(item) &&
-      !containsSensitiveErrorCredential(item)
+      !containsSensitiveErrorCredential(item) &&
+      // Cover labeled assignments/PEM without treating escape normalization as redaction.
+      !redactSensitiveErrorText(item).includes("[REDACTED")
   )
     ? values
     : null;
