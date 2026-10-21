@@ -21,13 +21,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
-vi.mock("../server.ts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../server.ts")>();
-  return { ...actual, omniRouteFetch: vi.fn() };
-});
+vi.mock("../../../open-sse/mcp-server/internalFetch.ts", () => ({ omniRouteFetch: vi.fn() }));
 
-import { createMcpServerV2 } from "../v2/server.js";
-import { omniRouteFetch } from "../server.js";
+import { createMcpServerV2 } from "../../../open-sse/mcp-server/v2/server.js";
+import { omniRouteFetch } from "../../../open-sse/mcp-server/internalFetch.js";
 
 const mockedFetch = vi.mocked(omniRouteFetch);
 

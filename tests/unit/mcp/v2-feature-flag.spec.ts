@@ -20,8 +20,8 @@ import { dirname, resolve } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { FEATURE_FLAG_DEFINITIONS } from "../../../src/shared/constants/featureFlagDefinitions.ts";
-import { isMcpV2Enabled, startMcpStdioV2 } from "../v2/server.ts";
-import { createMcpServer } from "../server.ts";
+import { isMcpV2Enabled, startMcpStdioV2 } from "../../../open-sse/mcp-server/v2/server.ts";
+import { createMcpServer } from "../../../open-sse/mcp-server/server.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "../../..");
@@ -52,10 +52,11 @@ describe("OMNIROUTE_MCP_V2 is read at module load", () => {
       "process.stdout.write('ENABLED:' + m.isMcpV2Enabled()))";
 
     const run = (env: NodeJS.ProcessEnv) =>
-      execFileSync(process.execPath, ["--import", "tsx/esm", "-e", probe], {
+      execFileSync(process.execPath, ["--import", "tsx", "-e", probe], {
         cwd: REPO_ROOT,
         env: { ...env, DISABLE_SQLITE_AUTO_BACKUP: "true" },
         encoding: "utf8",
+        timeout: 60_000,
       }).trim();
 
     const base = { ...process.env };

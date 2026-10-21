@@ -22,7 +22,7 @@ process.env.OMNIROUTE_MCP_V2 = "true";
 const { flag } = vi.hoisted(() => ({ flag: { enabled: true } }));
 
 vi.mock("@omniroute/open-sse/mcp-server/v2/server", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../v2/server.ts")>();
+  const actual = await importOriginal<typeof import("../../../open-sse/mcp-server/v2/server.ts")>();
   return { ...actual, isMcpV2Enabled: () => flag.enabled };
 });
 
@@ -36,19 +36,15 @@ vi.mock("@/lib/api/requireManagementAuth", () => ({
   requireManagementAuth: vi.fn(async () => authResult.value),
 }));
 
-vi.mock("../audit.ts", () => ({
+vi.mock("../../../open-sse/mcp-server/audit.ts", () => ({
   logToolCall: vi.fn(async () => undefined),
 }));
 
-vi.mock("../server.ts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../server.ts")>();
-  return {
-    ...actual,
-    omniRouteFetch: vi.fn(async () => ({ uptime: "1h", version: "test" })),
-  };
-});
+vi.mock("../../../open-sse/mcp-server/internalFetch.ts", () => ({
+  omniRouteFetch: vi.fn(async () => ({ uptime: "1h", version: "test" })),
+}));
 
-const { POST } = await import("../../../../src/app/api/mcp/v2/route.ts");
+const { POST } = await import("../../../src/app/api/mcp/v2/route.ts");
 
 beforeEach(() => {
   flag.enabled = true;
@@ -56,14 +52,33 @@ beforeEach(() => {
   authResult.value = null;
 });
 
-function post(body: unknown): Request {
+function post(body: {
+  method: string;
+  params?: Record<string, unknown>;
+  [key: string]: unknown;
+}): Request {
   return new Request("http://localhost/api/mcp/v2", {
     method: "POST",
     headers: {
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
+      "MCP-Protocol-Version": "2026-07-28",
+      "Mcp-Method": body.method,
+      ...(typeof body.params?.name === "string"
+        ? { "Mcp-Name": body.params.name, "Mcp-Param-Name": body.params.name }
+        : {}),
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      ...body,
+      params: {
+        ...body.params,
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientInfo": { name: "route-test", version: "1" },
+          "io.modelcontextprotocol/clientCapabilities": {},
+        },
+      },
+    }),
   });
 }
 
@@ -93,8 +108,8 @@ describe("v2 HTTP route — stateless protocol (no handshake)", () => {
     const res = await POST(post({ jsonrpc: "2.0", id: 1, method: "server/discover" }));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.result?.protocolVersion).toBe("2026-07-28");
-    expect(body.result?.toolsCount).toBeGreaterThan(0);
+    expect(body.result?.supportedVersions).toContain("2026-07-28");
+    expect(body.result.capabilities.tools).toEqual({ listChanged: false });
   }, 30_000);
 
   it("serves tools/list with no handshake and no Mcp-Session-Id", async () => {
@@ -118,7 +133,7 @@ describe("v2 HTTP route — stateless protocol (no handshake)", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.result?.content?.[0]?.text).toBeTruthy();
-    const audit = await import("../audit.ts");
+    const audit = await import("../../../open-sse/mcp-server/audit.ts");
     expect(audit.logToolCall).toHaveBeenCalled();
   }, 30_000);
 });

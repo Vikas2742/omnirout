@@ -5,7 +5,7 @@
  * tolerates a missing named export (it becomes undefined at call time, or is
  * elided). Real Node does not — it throws at link time:
  *
- *   Error [ERR_MODULE_NOT_FOUND]: The requested module '../server.ts'
+ *   Error [ERR_MODULE_NOT_FOUND]: The requested module '../../../open-sse/mcp-server/server.ts'
  *   does not provide an export named 'toArray'
  *
  * So a v2 module can show 40/40 GREEN under vitest and still be unloadable by

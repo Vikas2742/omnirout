@@ -16,14 +16,11 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
 // Intercept the network layer before v2 imports it (v2 pulls omniRouteFetch
-// from ../server.ts as a value import, so the module specifier must be mocked).
-vi.mock("../server.ts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../server.ts")>();
-  return { ...actual, omniRouteFetch: vi.fn() };
-});
+// from ../../../open-sse/mcp-server/internalFetch.ts as a value import, so the module specifier must be mocked).
+vi.mock("../../../open-sse/mcp-server/internalFetch.ts", () => ({ omniRouteFetch: vi.fn() }));
 
-import { createMcpServerV2 } from "../v2/server.js";
-import { omniRouteFetch } from "../server.js";
+import { createMcpServerV2 } from "../../../open-sse/mcp-server/v2/server.js";
+import { omniRouteFetch } from "../../../open-sse/mcp-server/internalFetch.js";
 
 const mockedFetch = vi.mocked(omniRouteFetch);
 

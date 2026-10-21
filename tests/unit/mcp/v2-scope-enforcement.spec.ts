@@ -15,13 +15,18 @@
  * a cache-busted copy for its scope grant.
  */
 
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 
-const V2_ENTRY = "../v2/server.ts";
+// Authorization probes must never dispatch into a running local dashboard.
+vi.mock("../../../open-sse/mcp-server/internalFetch.ts", () => ({
+  omniRouteFetch: vi.fn(async () => ({ combos: [], success: true })),
+}));
 
-type V2Module = typeof import("../v2/server.ts");
+const V2_ENTRY = "../../../open-sse/mcp-server/v2/server.ts";
+
+type V2Module = typeof import("../../../open-sse/mcp-server/v2/server.ts");
 type ToolResult = {
   isError?: boolean;
   content?: Array<{ type: string; text: string }>;

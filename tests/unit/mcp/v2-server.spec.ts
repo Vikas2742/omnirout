@@ -23,14 +23,14 @@ import {
   buildInputRequiredResult,
   SERVER_VERSION,
   CACHE_TTL,
-} from "../v2/server.ts";
+} from "../../../open-sse/mcp-server/v2/server.ts";
 
 // Mock fetch globally for integration tests
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 // Mock audit logging
-vi.mock("../audit.ts", () => ({
+vi.mock("../../../open-sse/mcp-server/audit.ts", () => ({
   logToolCall: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -52,7 +52,7 @@ describe("MCP v2 — 2026-07-28 Spec Compliance", () => {
       const v2 = createMcpServerV2();
       const result = v2.discover();
 
-      expect(result.capabilities.tools.listChanged).toBe(true);
+      expect(result.capabilities.tools.listChanged).toBe(false);
       // v2 registers ZERO resources and ZERO prompts, so it must NOT advertise
       // those capabilities — a client would probe resources/list, get nothing,
       // and be unable to tell a mis-declared capability from a broken server.
@@ -432,3 +432,6 @@ describe("MCP v2 — end-to-end with in-memory client", () => {
     expect(toolNames).toContain("omniroute_cost_report");
   });
 });
+
+// Registry/helper tests do not dispatch HTTP; legacy integration is exercised separately.
+vi.mock("../../../open-sse/mcp-server/internalFetch.ts", () => ({ omniRouteFetch: vi.fn() }));

@@ -3,7 +3,7 @@
  * actually implement.
  *
  * `buildDiscoverResult` previously hardcoded
- *   resources: { listChanged: true }, prompts: { listChanged: true }
+ *   resources: { listChanged: false }, prompts: { listChanged: false }
  * while v2 registers ZERO resources and ZERO prompts (verified:
  * registerResource/registerPrompt/.resource(/.prompt( all count 0 in v2).
  * That is a false claim in the record: a client that trusts it probes
@@ -13,14 +13,14 @@
  * The contract these tests lock in: the discover result reports only what
  * is really registered, so the two sources cannot disagree.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { buildDiscoverResult } from "../v2/server.ts";
+import { buildDiscoverResult } from "../../../open-sse/mcp-server/v2/server.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const V2_SOURCE = readFileSync(join(HERE, "../v2/server.ts"), "utf8");
+const V2_SOURCE = readFileSync(join(HERE, "../../../open-sse/mcp-server/v2/server.ts"), "utf8");
 
 /** Remove block and line comments so only real code is asserted on. */
 function stripComments(src: string): string {
@@ -49,7 +49,7 @@ describe("v2 server/discover capability honesty", () => {
   it("still advertises tools, and only tools", () => {
     const discover = buildDiscoverResult(8);
     expect(Object.keys(discover.capabilities)).toEqual(["tools"]);
-    expect(discover.capabilities.tools).toEqual({ listChanged: true });
+    expect(discover.capabilities.tools).toEqual({ listChanged: false });
   });
 
   it("does not list features the sidecar does not implement", () => {
@@ -61,3 +61,6 @@ describe("v2 server/discover capability honesty", () => {
     expect(discover.features).not.toContain("prompts/get");
   });
 });
+
+// Registry/helper tests do not dispatch HTTP; legacy integration is exercised separately.
+vi.mock("../../../open-sse/mcp-server/internalFetch.ts", () => ({ omniRouteFetch: vi.fn() }));

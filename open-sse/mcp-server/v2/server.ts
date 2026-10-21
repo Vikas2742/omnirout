@@ -1,24 +1,12 @@
 /**
- * MCP Server v2 — 2026-07-28 spec-compliant sidecar.
- *
- * Implements the key spec changes that the v1 server (pre-2026 SDK) does not:
- *   - server/discover RPC (replaces implicit initialize handshake)
- *   - resultType field on all results ("complete" | "input_required")
- *   - Cacheable list results (ttlMs + cacheScope)
- *   - _meta extraction (protocolVersion, clientInfo, clientCapabilities)
- *   - outputSchema on tool definitions
- *   - Header-based routing support (Mcp-Method, Mcp-Name)
- *   - MRTR contract shape (inputRequests + requestState)
- *
- * Designed as a parallel surface — the v1 server stays untouched.
- * Both servers can run simultaneously on different transports/ports.
- *
- * Reuses v1's omniRouteFetch, logToolCall, and data extraction helpers.
+ * Opt-in MCP sidecar. Native SDK v2 codecs serve 2026 requests while the
+ * existing v1 server and its transports remain unchanged. This sidecar exposes
+ * eight tools; it is not a migration of the full legacy tool catalog.
  */
 
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { McpServer, createMcpHandler, type ServerContext } from "@modelcontextprotocol/server";
+import { serveStdio, type StdioServerHandle } from "@modelcontextprotocol/server/stdio";
+import { sanitizeErrorMessage } from "../../utils/error.ts";
 import { z } from "zod";
 import { resolveMcpCallerAuthInfo, withMcpHttpAuthContext } from "../httpAuthContext.ts";
 import {
@@ -41,7 +29,7 @@ import {
   routeRequestTool,
   costReportTool,
 } from "../schemas/tools.ts";
-import { omniRouteFetch } from "../server.ts";
+import { omniRouteFetch } from "../internalFetch.ts";
 import { isMcpScopeEnforcementEnabled } from "../../../src/shared/utils/featureFlags.ts";
 import {
   buildScopeDenialMessage,
@@ -146,10 +134,11 @@ function withScopeEnforcement(
   handler: (args: unknown, extra?: McpToolExtraLike) => Promise<TextToolResult>,
   toolScopes?: readonly string[]
 ) {
-  return async (args: unknown, extra?: McpToolExtraLike): Promise<TextToolResult> => {
+  return async (args: unknown, context: ServerContext): Promise<TextToolResult> => {
+    const extra: McpToolExtraLike = { authInfo: context.http?.authInfo };
     const scopeContext = resolveCallerScopeContext(
       { authInfo: extra?.authInfo, sessionId: extra?.sessionId },
-      Array.from(MCP_ALLOWED_SCOPES)
+      extra.authInfo ? [] : Array.from(MCP_ALLOWED_SCOPES)
     );
     const scopeCheck = evaluateToolScopes(
       toolName,
@@ -279,8 +268,8 @@ export interface DiscoverResult {
 }
 
 /**
- * Builds the server/discover response.
- * This is the replacement for the implicit initialize handshake.
+ * Local sidecar summary retained for programmatic callers. The wire-level
+ * server/discover response is produced and validated by the native SDK.
  */
 export function buildDiscoverResult(toolCount: number): DiscoverResult {
   return {
@@ -288,7 +277,7 @@ export function buildDiscoverResult(toolCount: number): DiscoverResult {
     version: SERVER_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     capabilities: {
-      tools: { listChanged: true },
+      tools: { listChanged: false },
     },
     toolsCount: toolCount,
     features: [
@@ -313,8 +302,8 @@ export function buildDiscoverResult(toolCount: number): DiscoverResult {
 export interface V2ToolDefinition {
   name: string;
   description: string;
-  inputSchema: unknown;
-  outputSchema?: unknown;
+  inputSchema: z.ZodObject;
+  outputSchema?: z.ZodObject;
   scopes: readonly string[];
   cacheTtlMs?: number;
 }
@@ -388,14 +377,16 @@ export interface McpServerV2 {
 }
 
 /**
- * Creates a spec-compliant MCP v2 server.
- * Wraps the existing MCP SDK's McpServer to add 2026-07-28 features.
+ * Creates the sidecar tool registry. Native SDK serving entries select the wire era.
  */
 export function createMcpServerV2(): McpServerV2 {
-  const server = new McpServer({
-    name: SERVER_NAME,
-    version: SERVER_VERSION,
-  });
+  const server = new McpServer(
+    { name: SERVER_NAME, version: SERVER_VERSION },
+    {
+      capabilities: { tools: { listChanged: false } },
+      cacheHints: { "tools/list": { ttlMs: CACHE_TTL.tools, cacheScope: "private" } },
+    }
+  );
 
   // Register tools with outputSchema (v2 feature)
   for (const tool of V2_TOOLS) {
@@ -403,12 +394,10 @@ export function createMcpServerV2(): McpServerV2 {
       tool.name,
       {
         description: tool.description,
-        // @ts-ignore: dynamic zod access
         inputSchema: tool.inputSchema,
         // outputSchema is the v2 addition — v1 omitted it
         ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
       },
-      // @ts-ignore: handler wrapping
       withScopeEnforcement(
         tool.name,
         async (rawArgs: unknown, _extra?: McpToolExtraLike) => {
@@ -439,15 +428,7 @@ export function createMcpServerV2(): McpServerV2 {
 
   const discover = () => buildDiscoverResult(V2_TOOLS.length);
 
-  // Register server/discover as a REAL request handler, not just a function.
-  // The 2026-07-28 spec replaces the initialize handshake with this RPC, so it
-  // must answer over any transport (stdio or the stateless HTTP route). The
-  // method literal lives in the schema — getMethodLiteral reads it off the shape.
-  server.server.setRequestHandler(
-    z.object({ method: z.literal("server/discover"), params: z.any().optional() }),
-    // @ts-ignore: request schema is a bare method-literal object, not an SDK type
-    async () => buildDiscoverResult(V2_TOOLS.length)
-  );
+  // Discovery, version validation and wire result shapes belong to the native SDK.
 
   const getRegisteredToolCount = () => V2_TOOLS.length;
 
@@ -518,7 +499,7 @@ async function handleGetHealth() {
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall("omniroute_get_health", {}, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
@@ -565,7 +546,7 @@ async function handleListCombos(args: { includeMetrics?: boolean }) {
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall("omniroute_list_combos", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
@@ -587,7 +568,7 @@ async function handleGetComboMetrics(args: { comboId: string }) {
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall("omniroute_get_combo_metrics", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
@@ -612,7 +593,7 @@ async function handleSwitchCombo(args: { comboId: string; active: boolean }) {
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall("omniroute_switch_combo", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
@@ -642,7 +623,7 @@ async function handleCreateCombo(args: {
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall("omniroute_create_combo", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
@@ -672,7 +653,7 @@ async function handleCheckQuota(args: { provider?: string; connectionId?: string
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall("omniroute_check_quota", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
@@ -744,7 +725,7 @@ async function handleRouteRequest(args: {
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall(
       "omniroute_route_request",
       { model: args.model },
@@ -813,16 +794,13 @@ async function handleCostReport(args: { period?: string }) {
       resultType: _rt,
     };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+    const msg = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     await logToolCall("omniroute_cost_report", args, null, Date.now() - start, false, msg);
     return { content: [{ type: "text" as const, text: `Error: ${msg}` }], isError: true };
   }
 }
 
-const TOOL_HANDLERS: Record<
-  string,
-  (args: Record<string, unknown>) => Promise<TextToolResult>
-> = {
+const TOOL_HANDLERS: Record<string, (args: Record<string, unknown>) => Promise<TextToolResult>> = {
   omniroute_get_health: handleGetHealth,
   omniroute_list_combos: (args) => handleListCombos(toRecord(args) as { includeMetrics?: boolean }),
   omniroute_get_combo_metrics: (args) =>
@@ -898,15 +876,15 @@ export { CACHE_TTL, PROTOCOL_VERSION, SERVER_VERSION, SERVER_NAME };
  * Gated: v2 is experimental and off by default. Without OMNIROUTE_MCP_V2=true this
  * refuses to start rather than silently exposing a second, less-tested surface.
  */
-export async function startMcpStdioV2(): Promise<void> {
+export async function startMcpStdioV2(): Promise<StdioServerHandle> {
   if (!isMcpV2Enabled()) {
     throw new Error(
       "MCP v2 sidecar is disabled. Set OMNIROUTE_MCP_V2=true to enable the experimental 2026-07-28 server."
     );
   }
-  const server = createMcpServerV2();
-  const transport = new StdioServerTransport();
-  await server.server.connect(transport);
+  return serveStdio(() => createMcpServerV2().server, {
+    onerror: (error) => console.error("[MCP v2]", sanitizeErrorMessage(error.message)),
+  });
 }
 
 // ============================================================================
@@ -914,66 +892,38 @@ export async function startMcpStdioV2(): Promise<void> {
 // ============================================================================
 
 /**
- * Handles one Streamable HTTP request for the v2 sidecar.
- *
- * The 2026-07-28 spec removes the initialize handshake and all per-session state,
- * so v2 runs the transport in STATELESS mode: a fresh server + transport pair per
- * request, no Mcp-Session-Id. The pinned SDK serves `tools/list`, `tools/call`,
- * and the custom `server/discover` RPC over this path with no handshake — verified
- * against @modelcontextprotocol/sdk@1.30.0.
- *
- * Caller auth mirrors v1's HTTP path exactly: the route resolves the per-key
- * `api_keys.scopes` via `resolveMcpCallerAuthInfo` and threads it into
- * `extra.authInfo`, so `resolveCallerScopeContext` sees the real caller scopes
- * (never the env fallback for an authenticated HTTP caller). The route layer
- * (src/app/api/mcp/v2/route.ts) applies v1's loopback/dashboard/CLI/API-key
- * classification via `requireManagementAuth` BEFORE this handler runs.
+ * Native per-request HTTP serving. Authenticated scopes are supplied out of band;
+ * client metadata cannot grant permissions. Legacy /stream and /sse are untouched.
  */
+const httpHandler = createMcpHandler(() => createMcpServerV2().server, {
+  legacy: "stateless",
+  responseMode: "json",
+});
+
 export async function handleMcpV2Http(request: Request): Promise<Response> {
   if (!isMcpV2Enabled()) {
-    return new Response(
-      JSON.stringify({
+    return Response.json(
+      {
         jsonrpc: "2.0",
         error: {
           code: -32000,
           message: "MCP v2 sidecar is disabled. Set OMNIROUTE_MCP_V2=true to enable it.",
         },
         id: null,
-      }),
-      { status: 503, headers: { "Content-Type": "application/json" } }
+      },
+      { status: 503 }
     );
   }
-
-  const v2 = createMcpServerV2();
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    // Stateless: no session id, no session validation — the 2026-07-28 model.
-    sessionIdGenerator: undefined,
-    enableJsonResponse: true,
-  });
-
   try {
     const authInfo = await resolveMcpCallerAuthInfo(request);
-    await v2.server.connect(transport);
-    const response = await withMcpHttpAuthContext(request, () =>
-      transport.handleRequest(request, { authInfo })
-    );
-    // A stateless transport cannot be reused; its response is fully buffered in
-    // JSON mode, so closing it here does not truncate the body.
-    const body = await response.arrayBuffer();
-    await transport.close().catch(() => {});
-    await v2.server.close().catch(() => {});
-    return new Response(body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-    });
+    return await withMcpHttpAuthContext(request, () => httpHandler.fetch(request, { authInfo }));
   } catch (err) {
-    await transport.close().catch(() => {});
-    await v2.server.close().catch(() => {});
-    const message = err instanceof Error ? err.message : "MCP v2 transport error";
-    return new Response(
-      JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message }, id: null }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+    const message = sanitizeErrorMessage(
+      err instanceof Error ? err.message : "MCP v2 transport error"
+    );
+    return Response.json(
+      { jsonrpc: "2.0", error: { code: -32000, message }, id: null },
+      { status: 500 }
     );
   }
 }
