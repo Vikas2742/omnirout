@@ -5,6 +5,7 @@ import { initTranslators } from "@omniroute/open-sse/translator/index.ts";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
 import { withChatAdmission } from "@/shared/middleware/withChatAdmission";
 import { requireJsonContentType } from "@/shared/middleware/requireJsonContentType";
+import { enforceClientApiRouteAuth } from "@/shared/utils/clientApiRouteAuth";
 import {
   withEarlyStreamKeepalive,
   ANTHROPIC_PING_FRAME,
@@ -12,7 +13,6 @@ import {
 import { createStreamDeadlineSignal } from "@omniroute/open-sse/utils/streamDeadlineSignal";
 import { resolveKeepaliveThreshold } from "@omniroute/open-sse/utils/keepaliveThreshold";
 import { resolveStreamFlag } from "@omniroute/open-sse/utils/aiSdkCompat";
-import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
 
 let initialized = false;
 
@@ -45,7 +45,13 @@ export async function OPTIONS() {
  * `preParsedBody` is threaded from withInjectionGuard (#4041) so the body is
  * parsed at most once per request.
  */
-async function postHandlerInner(request: any, context: any, preParsedBody: any = null) {
+async function postHandler(request: any, context: any, preParsedBody: any = null) {
+  // Defense-in-depth: the authz proxy (src/proxy.ts) is the primary gate, but
+  // its matcher can miss path variants (e.g. uppercase /V1/ aliases), so the
+  // handler enforces authentication independently.
+  const authRejection = await enforceClientApiRouteAuth(request);
+  if (authRejection) return authRejection;
+
   // Reject non-JSON Content-Type with 415 before touching the body — mirrors OpenAI's
   // reference API and matches /v1/chat/completions (#6414).
   const ctRejection = requireJsonContentType(request);
@@ -91,21 +97,6 @@ async function postHandlerInner(request: any, context: any, preParsedBody: any =
     );
   }
   return await handleChat(request, null, body);
-}
-
-async function postHandler(request: any, context: any, preParsedBody: any = null) {
-  try {
-    return await postHandlerInner(request, context, preParsedBody);
-  } catch (error) {
-    const code = (error as { code?: unknown } | null)?.code;
-    if (code === "SEMAPHORE_TIMEOUT" || code === "SEMAPHORE_QUEUE_FULL") {
-      return errorResponse(429, error instanceof Error ? error.message : "Semaphore timeout", {
-        type: "rate_limit_error",
-        code: String(code),
-      });
-    }
-    throw error;
-  }
 }
 
 // `logger: null` — the guardrail registry re-evaluates this request inside
