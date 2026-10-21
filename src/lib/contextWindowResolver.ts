@@ -43,6 +43,61 @@ export interface ReconcileResult {
 }
 
 /**
+ * True when `existingSource` is an `auto:discovery` pin that already stores `window`, so the
+ * pass can skip rewriting it (the write would only churn `refreshedAt` and the read cache).
+ */
+function isAlreadyPinned(
+  existingSource: string | null,
+  deps: ReconcileDeps,
+  provider: string,
+  modelId: string,
+  window: number
+): boolean {
+  return (
+    existingSource === "auto:discovery" && deps.getExistingWindow?.(provider, modelId) === window
+  );
+}
+
+/** Remove an `auto:discovery` pin when discovery no longer reports a window; true if removed. */
+function dropStaleAutoPin(deps: ReconcileDeps, provider: string, modelId: string): boolean {
+  if (deps.getExistingSource(provider, modelId) !== "auto:discovery") return false;
+  deps.removeOverride(provider, modelId);
+  return true;
+}
+
+/** Reconcile one discovered window; mutates `result` and goes through the injected deps. */
+function reconcileOne(
+  { provider, modelId, window }: DiscoveredWindow,
+  deps: ReconcileDeps,
+  result: ReconcileResult
+): void {
+  if (!provider || !modelId) return;
+  if (typeof window !== "number" || !Number.isInteger(window) || window <= 0) {
+    // Discovery omitted a real window. Drop a stale auto:discovery pin
+    // (e.g. grok-cli's old 256k fallback) so registry/models.dev can win.
+    if (dropStaleAutoPin(deps, provider, modelId)) result.removed++;
+    return;
+  }
+
+  const existingSource = deps.getExistingSource(provider, modelId);
+  if (existingSource === "manual") {
+    result.skippedManual++;
+    return;
+  }
+
+  const catalog = deps.getCatalogWindow(provider, modelId);
+  if (window !== catalog) {
+    if (isAlreadyPinned(existingSource, deps, provider, modelId, window)) return;
+    deps.writeAuto(provider, modelId, window);
+    result.written++;
+  } else if (existingSource) {
+    // Discovered window now matches the catalog and a stale auto override exists → drop it.
+    deps.removeOverride(provider, modelId);
+    result.removed++;
+  }
+}
+
+/**
  * Pure reconcile: given the discovered windows and a set of injectable deps, decide
  * which auto overrides to write/remove. Deterministic and side-effect-free except
  * through the injected `writeAuto`/`removeOverride`.
@@ -52,40 +107,9 @@ export function reconcileContextWindows(
   deps: ReconcileDeps
 ): ReconcileResult {
   const result: ReconcileResult = { scanned: 0, written: 0, removed: 0, skippedManual: 0 };
-  for (const { provider, modelId, window } of discovered) {
+  for (const entry of discovered) {
     result.scanned++;
-    if (!provider || !modelId) continue;
-    if (typeof window !== "number" || !Number.isInteger(window) || window <= 0) {
-      // Discovery omitted a real window. Drop a stale auto:discovery pin
-      // (e.g. grok-cli's old 256k fallback) so registry/models.dev can win.
-      if (deps.getExistingSource(provider, modelId) === "auto:discovery") {
-        deps.removeOverride(provider, modelId);
-        result.removed++;
-      }
-      continue;
-    }
-
-    const existingSource = deps.getExistingSource(provider, modelId);
-    if (existingSource === "manual") {
-      result.skippedManual++;
-      continue;
-    }
-
-    const catalog = deps.getCatalogWindow(provider, modelId);
-    if (window !== catalog) {
-      if (
-        existingSource === "auto:discovery" &&
-        deps.getExistingWindow?.(provider, modelId) === window
-      ) {
-        continue;
-      }
-      deps.writeAuto(provider, modelId, window);
-      result.written++;
-    } else if (existingSource) {
-      // Discovered window now matches the catalog and a stale auto override exists → drop it.
-      deps.removeOverride(provider, modelId);
-      result.removed++;
-    }
+    reconcileOne(entry, deps, result);
   }
   return result;
 }
