@@ -211,8 +211,7 @@ const ROUTE_CASES: RouteCase[] = [
         jsonRequest("/v1/web/fetch", bearer, {
           url: "https://example.com/article",
           provider: "deepseek-search",
-        }),
-        noContext
+        })
       ),
   },
   {
