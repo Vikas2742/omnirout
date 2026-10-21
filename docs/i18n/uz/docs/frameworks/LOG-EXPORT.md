@@ -254,110 +254,164 @@ faqat qatorlar soni yetarli boʻlmaydi: promptlarni oʻz ichiga olgan 500 qator 
 
 ---
 
-## 5. OTLP/HTTP trassalari manzili
+## 5. OTLP/HTTP treyslarini yuborish manzili
 
-Konfiguratsiyada `type: "otlp-http"` ishlatiladi. Bu saqlangan chaqiruv jurnallarini kursor asosida,
-jadval bo‘yicha eksport qilish mexanizmi bo‘lib, `open-sse/services/routing/otel.ts` dagi
-imkon qadar yetkazib beriladigan jonli marshrutlash hodisalari qabul qiluvchisi emas. U o‘sha qabul qiluvchining muhit
-o‘zgaruvchilari, taymerlari yoki buferlarini o‘qimaydi va o‘zgartirmaydi. Ikkalasini yoqish ikki mustaqil turdagi spanlarni hosil qilishi mumkin;
-ushbu chaqiruv jurnali spanlarini farqlash uchun `omniroute.log-export` instrumentatsiya doirasidan foydalaning.
+Konfiguratsiyada `type: "otlp-http"` ishlatiladi. Bu saqlangan chaqiruv jurnallarini
+kursor asosida, jadval bo‘yicha eksport qilish mexanizmidir; u
+`open-sse/services/routing/otel.ts` ichidagi imkon qadar yetkazib berishga mo‘ljallangan jonli marshrutlash hodisalari qabul qiluvchisi emas. U o‘sha qabul qiluvchining muhit
+o‘zgaruvchilari, taymerlari yoki buferlarini o‘qimaydi va o‘zgartirmaydi. Ikkalasini ham yoqish ikki mustaqil turdagi spanlarni hosil qilishi mumkin;
+ushbu chaqiruv jurnali spanlarini ajratish uchun `omniroute.log-export` instrumentatsiya doirasidan foydalaning.
 
-| Kalit             | Standart qiymat / maqsad                                                              |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| `endpoint`        | Majburiy to‘liq HTTP(S) trassalar URL manzili; `/v1/traces` qo‘shimchasi qo‘shilmaydi |
-| `headers`         | Ixtiyoriy `Name: value` satrlari yoki satrlardan iborat JSON obyekti; shifrlanadi     |
-| `serviceName`     | `omniroute`; resursning `service.name` atributi                                       |
-| `langfuseMapping` | `false`; Langfuse generatsiya/sessiya/foydalanuvchi atributlarini qo‘shadi            |
-| `identity`        | `pseudonymous`, `keyName` yoki `none`                                                 |
-| `paths`           | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                               |
-| `timeoutMs`       | Har bir HTTP urinishiga `30000`                                                       |
-| `environment`     | O‘rnatilmagan; ixtiyoriy `langfuse.environment`                                       |
+| Kalit                    | Standart qiymat / maqsad                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ |
+| `endpoint`               | Treyslar uchun majburiy to‘liq HTTP(S) URL; `/v1/traces` qo‘shimchasi qo‘shilmaydi                     |
+| `headers`                | Ixtiyoriy `Name: value` satrlari yoki satrlardan iborat JSON obyekti; shifrlanadi                      |
+| `requestHeaderAllowlist` | Bo‘sh (o‘chirilgan); span atributlari sifatida yozib olinadigan mijoz sarlavhalari nomlari/prefikslari |
+| `serviceName`            | `omniroute`; resursning `service.name` atributi                                                        |
+| `langfuseMapping`        | `false`; Langfuse generatsiya/sessiya/foydalanuvchi atributlarini qo‘shadi                             |
+| `identity`               | `pseudonymous`, `keyName` yoki `none`                                                                  |
+| `paths`                  | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                                                |
+| `timeoutMs`              | Har bir HTTP urinishi uchun `30000`                                                                    |
+| `environment`            | Belgilanmagan; ixtiyoriy `langfuse.environment`                                                        |
 
-Umumiy boshqaruv paneli ushbu maydonlarni aks ettiradi. `paths` API massivini yoki aniq yo‘llar
-yangi satrlar/vergullar bilan ajratilgan matn maydonini qabul qiladi. Embedding, rerank va boshqa yo‘llar
+Umumiy boshqaruv paneli ushbu maydonlarni ko‘rsatadi. `paths` API massivi yoki aniq yo‘llar
+yangi satrlar/vergullar bilan ajratilgan ko‘p satrli matn maydonini qabul qiladi. Embedding, qayta saralash va boshqa yo‘llar
 aniq ruxsat berilmasa, o‘tkazib yuboriladi. O‘tkazib yuborilgan qatorlar ham kursorni oldinga suradi; mavjud
-bajaruvchining `exported`/`exportedTotal` hisoblagichlari qabul qilingan spanlarni emas, qayta ishlangan manba qatorlarini,
-jumladan filtrlab chiqarilgan qatorlarni hisoblaydi. Filtrlash uning
-IPC/kursor shartnomasini o‘zgartirmasdan, farzand jarayonda bajariladi.
+bajaruvchining `exported`/`exportedTotal` hisoblagichlari qabul qilingan spanlarni emas, balki qayta ishlangan manba qatorlarini, jumladan filtrlab chiqarilgan
+qatorlarni sanaydi. Filtrlash bola jarayonda, uning
+IPC/kursor shartnomasini o‘zgartirmasdan amalga oshiriladi.
 
-URL tekshiruvi `src/shared/network/outboundUrlGuard.ts` dagi ma’lumotlar bazasiga bog‘liq bo‘lmagan
-`parseAndValidateNonMetadataUrl` yordamchi funksiyasidan foydalanadi: `block-metadata` siyosati. Unda xususiy
-URL manzillariga ruxsat berilgan webhook tekshiruvchisidagi kabi shartsiz metadata/protokol/ichiga joylangan hisob ma’lumotlari tekshiruvlari
-mavjud, biroq u global funksiya bayrog‘i orqali istisno berishni talab qilmasdan localhost/LAN manzillariga ataylab ruxsat beradi.
-Bu o‘z serveringizda joylashtirilgan Langfuse, Phoenix, Tempo va Collector
-ulanish nuqtalaridan, jumladan xususiy HTTP ulanish nuqtalaridan foydalanish imkonini beradi. Bulut metama’lumotlari xostlari doimo bloklanadi.
-Qayta yo‘naltirishlarga amal qilinmaydi, shuning uchun kollektor hisob ma’lumotlarini boshqa xostga yo‘naltira olmaydi.
-Mavjud leksik URL himoyasi kabi, bu ham DNS aniqlash natijasini mahkamlab qo‘ymaydi; faqat
-operator nazoratidagi xostlarni sozlang. Ulanish nuqtasi ishonchli tarmoqda bo‘lmasa, HTTPS’ni afzal ko‘ring.
+URL tekshiruvi
+`src/shared/network/outboundUrlGuard.ts` faylidagi ma’lumotlar bazasiga bog‘liq bo‘lmagan `parseAndValidateNonMetadataUrl` yordamchi funksiyasidan, ya’ni
+`block-metadata` siyosatidan foydalanadi. Unda xususiy URL manzillariga ruxsat berilgan webhook tekshiruvchisidagi kabi
+metadata/protokol/URL ichiga joylangan hisob ma’lumotlari bo‘yicha bir xil shartsiz tekshiruvlar mavjud,
+ammo u global funksiya bayrog‘i orqali cheklovni bekor qilmasdan localhost/LAN manzillariga ataylab ruxsat beradi. Bu
+o‘z serverida joylashtirilgan Langfuse, Phoenix, Tempo va Collector
+oxirgi nuqtalaridan, jumladan xususiy HTTP oxirgi nuqtalaridan foydalanish imkonini beradi. Bulut metama’lumotlari xostlari doim bloklanadi.
+Qayta yo‘naltirishlarga amal qilinmaydi, shu sababli kollektor hisob ma’lumotlarini boshqa xostga yo‘naltira olmaydi.
+Mavjud leksik URL himoyasi kabi, bu mexanizm ham DNS aniqlash natijasini qat’iy bog‘lamaydi; faqat
+operator nazoratidagi xostlarni sozlang. Oxirgi nuqta ishonchli tarmoqda bo‘lmasa, HTTPS’dan foydalanishni afzal ko‘ring.
 
-### Yuklama va yetkazib berish
+### Foydali yuk va yetkazib berish
 
-OTLP/HTTP JSON (`ExportTraceServiceRequest`, `Content-Type: application/json`) har bir ruxsat etilgan qator uchun
-aniq so‘rov yo‘li bilan nomlangan bitta CLIENT spanini tashiydi. Yo‘l bo‘yicha nomlash
-span nomiga model yoki identifikatsiya ma’lumotlarini kiritmasdan Chat Completions, Responses va Messages’ni
-farqlaydi. Resurs atributlariga `service.name` va paketning `service.version` atributi kiradi.
+OTLP/HTTP JSON (`ExportTraceServiceRequest`, `Content-Type: application/json`) har bir
+ruxsat etilgan qator uchun aynan so‘rov yo‘li bilan nomlangan bitta CLIENT spanini uzatadi. Yo‘l asosida nomlash
+Chat Completions, Responses va Messages so‘rovlarini span nomiga model yoki identifikatsiya ma’lumotlarini
+kiritmasdan farqlaydi. Resurs atributlariga `service.name` va paketning `service.version` atributi kiradi.
 
 Oddiy chat urinishi jurnal yozuvchisi (`open-sse/handlers/chatCore/attemptLogging.ts`) yakunlanganda
-`duration = Date.now() - startTime` ni yozadi va vaqt belgisini bermaydi;
-`src/lib/usage/callLogs.ts` dagi `saveCallLogOperation` vaqt belgisini sukut bo‘yicha yozish
-(yakunlanish) vaqtiga o‘rnatadi. Shu sababli eksport tugash vaqtini qator vaqt belgisiga, boshlanish vaqtini esa tugash vaqtidan davomiylikni ayirish natijasiga tenglaydi
-(millisekundlar o‘nlik nanosekundlarga aylantiriladi). Chaqiruvchi taqdim etgan tarixiy vaqt belgilari
-ham tugash vaqti sifatida saqlanadi; har bir qator uchun boshlanish/yakunlanishni ajratuvchi belgi yo‘q.
+`duration = Date.now() - startTime` qiymatini yozadi va vaqt belgisini bermaydi;
+`src/lib/usage/callLogs.ts` ichidagi `saveCallLogOperation` vaqt belgisini sukut bo‘yicha yozish
+(yakunlanish) vaqtiga tenglaydi. Shuning uchun eksport tugash vaqtini qatorning vaqt belgisiga, boshlanish vaqtini esa tugash vaqti − davomiylikka
+(millisekundlardan o‘nlik nanosekundlarga o‘girilgan holda) tenglaydi. Chaqiruvchi taqdim etgan tarixiy vaqt belgilari
+ham tugash vaqti sifatida saqlanadi; har bir qator uchun boshlanish/yakunlanishni farqlovchi belgi yo‘q.
 Null davomiylik nolga aylanadi. Noto‘g‘ri yoki mavjud bo‘lmagan vaqt belgilari
-nodeterministik spanlar yaratish o‘rniga butun paketning bajarilishini xato bilan to‘xtatadi. `ttftMs` null bo‘lishi mumkin va `omniroute.ttft_ms` ga moslanadi.
+deterministik bo‘lmagan spanlar yaratish o‘rniga butun paketning xato bilan tugashiga olib keladi. `ttftMs` null bo‘lishi mumkin va `omniroute.ttft_ms` ga moslanadi.
 
-Atributlarga `gen_ai.operation.name="chat"`, provayder, so‘ralgan/javob modeli,
-kirish/chiqish tokenlari, ixtiyoriy keshni o‘qish/kesh yaratish/mulohaza yuritish tokenlari, HTTP holati,
+Atributlarga `gen_ai.operation.name="chat"`, provayder, so‘ralgan/javobdagi model,
+kirish/chiqish tokenlari, ixtiyoriy keshdan o‘qish/kesh yaratish/mulohaza tokenlari, HTTP holati,
 kombinatsiya, kesh manbasi, sessiya tegi va korrelyatsiya identifikatori kiradi. OTLP butun son qiymatlari va vaqt belgilari
-o‘nlik satrlar bo‘ladi; satrlar, mantiqiy qiymatlar va kasr sonlar o‘zlarining tabiiy OTLP qiymat
-variantlaridan foydalanadi. Xato spanlari ERROR holatiga va maxfiy ma’lumotlardan tozalangan holat xabariga ega bo‘ladi. Kanonik
-yozuvda yuqori oqim xostining URL manzili yo‘q, shu sababli kollektorni model serveri deb noto‘g‘ri
+o‘nlik satrlar ko‘rinishida beriladi; satrlar, mantiqiy qiymatlar va kasr sonlar o‘zining tabiiy OTLP qiymat
+variantlaridan foydalanadi. Xato spanlari ERROR holatiga va maxfiy ma’lumotlardan tozalangan holat xabariga ega. Kanonik
+yozuvda yuqori oqim xostining URL manzili yo‘q, shuning uchun kollektorni model serveri sifatida noto‘g‘ri
 ko‘rsatish o‘rniga `server.address` tashlab ketiladi. Xarajat eksport qilinmaydi.
 
-Faqat `includeBodies=true` kontentni yuklab to‘ldiradi. `langfuseMapping=false` bo‘lganda,
+Faqat `includeBodies=true` bo‘lgandagina mazmun yuklab to‘ldiriladi. `langfuseMapping=false` bo‘lganda,
 `gen_ai.input.messages` / `gen_ai.output.messages` qayta shakllantirilgan semconv
-xabarlar massivi emas, balki OmniRoute saqlaganidek maxfiy ma’lumotlardan tozalangan so‘rov/javob
-tanasi JSON’ini tashiydi (tahlil qilish mumkin bo‘lsa, kanonik shaklga keltiriladi). Qisqartirilgan/JSON bo‘lmagan tanalar oddiy matnligicha qoladi. `langfuseMapping=true` bo‘lganda,
+xabarlar massivi emas, balki OmniRoute’da saqlangan, maxfiy ma’lumotlardan tozalangan so‘rov/javob
+tanasi JSON’ini (tahlil qilish mumkin bo‘lsa, kanoniklashtirilgan holda) uzatadi. Qisqartirilgan/JSON bo‘lmagan tanalar oddiy matnligicha qoladi. `langfuseMapping=true` bo‘lganda,
 tanalar faqat `langfuse.observation.input` / `langfuse.observation.output` sifatida chiqariladi;
 har bir tana bir marta yuborilishi uchun `gen_ai.*.messages` atributlari tashlab ketiladi. Ikkala rejim ham
-mavjud yuklab to‘ldirish yo‘lidan `maxBodyBytes` ni meros oladi;
-`omniroute.bodies_truncated=true` qisqartirishni belgilaydi.
-Bu manzil qo‘shimcha konveyer holati nusxalarini yoki maxfiy ma’lumotlardan tozalanmagan artefaktlarni o‘qishni qo‘shmaydi.
-Tanalarni eksport qilishda bir soatlik navbat to‘planishiga yo‘l qo‘ymasdan,
+mavjud yuklab to‘ldirish yo‘lidan `maxBodyBytes` qiymatini oladi;
+`omniroute.bodies_truncated=true` qisqartirishni bildiradi.
+Ushbu manzil qo‘shimcha ishlov berish zanjiri oniy nusxalarini yoki maxfiy ma’lumotlardan tozalanmagan artefaktlarni o‘qishni qo‘shmaydi;
+ixtiyoriy so‘rov sarlavhalarini yozib olish quyida tavsiflangan mavjud yuklab to‘ldirilgan mijoz oniy nusxasidan foydalanadi.
+Tanalarni eksport qilishda bir soatlik navbatni to‘plash o‘rniga,
 `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"` kabi daqiqalik davriylikdan foydalaning.
 
-Soʻrovlar tashqi konvertni ham hisobga olgan holda 500 ta span va 4 MiB UTF-8 JSON bilan cheklangan.
-Kursor paketining birinchi soʻrovidan oldin ruxsat etilgan har bir spanning hajmi tekshiriladi. Alohida
-span limitdan katta boʻlsa, oʻsha paketning hech bir qismi yuborilmaydi va `maxBodyBytes` qiymatini kamaytirish
-boʻyicha koʻrsatma bilan xatolik yuz beradi; u bildirmasdan tashlab yuborilmaydi. Dastlabki tekshiruv faqat yozuv havolalari va
-baytlar sonini saqlab, har bir vaqtinchalik span/JSONni tashlab yuboradi; paketning ikkinchi seriyalashtirilgan nusxasini
-saqlash oʻrniga, spanlar hajmi cheklangan qismlar uchun qayta yaratiladi. HTTP 408/429/5xx, tarmoq nosozliklari va kutish vaqti tugashida
-250/500 ms eksponensial kechikish bilan koʻpi bilan uch marta uriniladi. `Retry-After` soniyalari yoki HTTP sanalari
-kechikishni 5 soniyagacha uzaytirishi mumkin. Boshqa holat kodlari darhol xatolikka olib keladi. OTLP 2xx qisman rad etilishi ham
-yoʻqolgan spanni tasdiqlash oʻrniga xatolik chiqaradi; boʻsh yoki toʻgʻri JSON tasdiqlari qabul qilinadi,
-javobni oʻqish chegarasi esa 64 KiB.
+### Ixtiyoriy mijoz so‘rovi sarlavhalari
 
-Xatolar faqat eksportchiga tegishli faktlarni oʻz ichiga oladi: HTTP holati, qayta urinish toifasi, urinishlar va yuborilgan spanlar
-soni yoki tasdiqlash/tarmoq nosozligi haqidagi oldindan belgilangan matn. Kollektor javoblarining tanalari,
-qisman muvaffaqiyat sonlari va javob sarlavhalari hech qachon xatolarga, jurnallarga yoki
-boshqaruv paneliga koʻchirilmaydi. Muvaffaqiyatsiz yoki qisman qabul qilingan paket tasdiqlanmaydi: manzil oʻsha holat bilan
-muvaffaqiyatsizlikni koʻrsatadi, kursor oxirgi tasdiqlangan paketda qoladi va keyingi ishga tushirish
-aynan oʻsha qatorlarni qayta yuboradi. Doimiy holat kodlari kollektor yoki konfiguratsiya
-tuzatilmaguncha xatolikka olib kelaveradi. Javob tafsilotlari uchun kollektorning oʻz jurnallaridan foydalaning. Chaqiruv jurnali xatolarining qisqacha bayonlari
-uchun alohida maxfiylashtirish saqlanadi.
-`prepare()` hech qanday resurs yaratmaydi; Sinov aynan `{"resourceSpans":[]}` ni yuboradi va
+Sarlavhalarni yozib olish **sukut bo‘yicha o‘chirilgan**. Manzil konfiguratsiyasida `requestHeaderAllowlist` ni belgilang
+va **Promptlar va javoblarni eksport qilish** parametrini yoqing (manzilda `includeBodies: true`).
+Ruxsat ro‘yxati API massivi yoki nomlar yangi satr/vergul bilan ajratilgan ko‘p satrli matn maydonini qabul qiladi:
+
+```json
+{
+  "requestHeaderAllowlist": ["User-Agent", "X-Project", "X-OmniRoute-Meta-*"]
+}
+```
+
+Nomlar katta-kichik harflarni hisobga olmasdan aniq moslashtiriladi, faqat oxiridagi yagona `*` bo‘sh bo‘lmagan
+sarlavha nomi prefiksini tanlaydigan holat bundan mustasno. Alohida `*`, nom ichidagi joker belgilar va yaroqsiz HTTP sarlavha nomlari rad etiladi.
+Ko‘pi bilan 64 ta selektor bo‘lishi mumkin, har birining nomi/prefiksi ko‘pi bilan 256 ASCII baytdan iborat bo‘ladi.
+Bu sozlama eksportyorni kollektorda autentifikatsiya qiladigan `headers` sozlamasidan alohida.
+
+Yig‘ish faqat saqlangan batafsil konveyerning `clientRawRequest` (yoki eski `clientRequest`) maydonidan
+to‘ldiriladigan `pipeline_client_request` maydonini o‘qiydi. U hech qachon provayder so‘rovi sarlavhalariga murojaat qilmaydi.
+So‘rov qayd etilgan paytda konveyerni batafsil jurnallash yoqilgan bo‘lishi kerak. Agar
+`includeBodies` o‘chirilgan bo‘lsa yoki mijoz holati nusxasining JSON ma’lumotlari yo‘q, buzilgan yoki kesilgan bo‘lsa, hech qanday sarlavha
+atributlari chiqarilmaydi. `maxBodyBytes` qiymatini oshirish eksport paytida holat nusxasi kesilishining oldini olishi mumkin;
+ammo u hech qachon saqlanmagan tafsilotlarni tiklay olmaydi. Hajmi 1 MiB dan oshgan yoki
+256 tadan ortiq sarlavha yozuvini o‘z ichiga olgan holat nusxasi e’tiborga olinmaydi. Mavjud prompt/javob eksporti
+sarlavhalarni yig‘ish bilan birga yoqilgan holda qoladi; ruxsat ro‘yxati faqat sarlavhalarni yuklash rejimini taqdim etmaydi.
+
+Tanlangan qiymatlar hatto bitta satr bo‘lsa ham, `http.request.header.<full lowercase header name>` OTLP satr massivlariga aylanadi.
+Masalan, `X-OmniRoute-Meta-Team: example-team`
+`http.request.header.x-omniroute-meta-team` atributiga aylanadi va qiymati
+`{"arrayValue":{"values":[{"stringValue":"example-team"}]}}` bo‘ladi.
+To‘liq prefiks saqlanadi: bular oddiy sarlavhalar bo‘lib, biznes maydonlari tahlili yoki
+`omniroute.metadata.*` / Langfuse metama’lumotlariga aylantirish bajarilmaydi. `langfuseMapping` sarlavha
+semantikasini o‘zgartirmaydi. Tanlangan bir qiymatli `User-Agent` standart skalyar
+`user_agent.original` atributini ham o‘rnatadi. Bitta qiymat ichidagi vergullar bo‘yicha ajratilmaydi. Harf registri bilan farqlanuvchi variantlar saqlangan
+yozuvlar tartibida birlashtiriladi; istalgan yaroqsiz variant butun sarlavhaning chiqarib tashlanishiga olib keladi. Atributlar kichik harfdagi nom bo‘yicha tartiblanadi.
+
+Authorization, Proxy-Authorization, Cookie, Set-Cookie, API kaliti sarlavhalari, nomida
+auth/token/secret/password/credential belgilari bor sarlavhalar va ichki shlyuz hisob ma’lumotlari, hatto
+tanlangan yoki saqlashda qisman niqoblangan bo‘lsa ham, doim chiqarib tashlanadi. Ma’lum hisob ma’lumotlari andozalari uchun
+umumiy hisob ma’lumotlari detektori qayta ishlatiladi; yashirish belgilari xavfsiz qiymat sifatida eksport qilinmaydi, balki chiqarib tashlanadi.
+Faqat satrlar va bo‘sh bo‘lmagan satr massivlari qabul qilinadi; sonlar yoki obyektlar majburan o‘zgartirilmaydi.
+Yaroqsiz nomlar, prototip kalitlari, boshqaruv belgilari (gorizontal tabulyatsiyadan tashqari) va noto‘g‘ri Unicode
+paketni xatoga uchratmasdan yoki ularning mazmunini xatolarda aks ettirmasdan e’tiborsiz qoldiriladi.
+
+Har bir span ko‘pi bilan 32 ta sarlavhani, har bir sarlavha uchun 16 ta qiymatni, har bir qiymat uchun 4096 UTF-8 baytni
+va yig‘ilgan sarlavha nomlari hamda qiymatlari bo‘yicha jami 16384 UTF-8 baytni qamrab oladi. Hajmi ortiqcha yoki yaroqsiz sarlavhalar
+kesilmaydi, balki butunlay chiqarib tashlanadi. Tanlash — operatorning maxfiylikka oid qarori: xavfsiz ko‘rinadigan nomlar
+ham shaxsiy ma’lumotlarni o‘z ichiga olishi mumkin, bu cheklovlar va detektorlar esa shaxsni aniqlash mumkin bo‘lgan ma’lumotlarni umumiy tozalash vositasi emas.
+
+### Yetkazib berish cheklovlari
+
+So‘rovlar tashqi qobiqni ham hisobga olgan holda 500 ta span va 4 MiB UTF-8 JSON bilan cheklanadi.
+Har bir ruxsat etilgan span kursor paketining birinchi so‘rovidan oldin hajm bo‘yicha tekshiriladi. Alohida
+span limitdan katta bo‘lsa, paketning hech bir qismi yuborilmaydi va `maxBodyBytes` qiymatini kamaytirish
+tavsiyasi bilan xato qaytariladi; u bildirmasdan tashlab yuborilmaydi. Dastlabki tekshiruv faqat yozuv havolalari va
+bayt sonlarini saqlab, har bir vaqtinchalik span/JSONni olib tashlaydi; paketning ikkinchi serializatsiyalangan nusxasini saqlash o‘rniga
+spanlar hajmi cheklangan qismlar uchun qayta tuziladi. HTTP 408/429/5xx, tarmoq nosozliklari va kutish vaqti tugashi holatlarida
+250/500 ms eksponensial kechikish bilan ko‘pi bilan uch marta uriniladi. `Retry-After` soniyalari yoki HTTP sanalari
+kechikishni 5 soniyagacha uzaytirishi mumkin. Boshqa holat kodlari darhol xatoga olib keladi. OTLP 2xx qisman rad etilishi ham
+yo‘qolgan spanni tasdiqlash o‘rniga xato chiqaradi; bo‘sh yoki yaroqli JSON tasdiqlari qabul qilinadi,
+javobni o‘qish hajmi esa 64 KiB bilan cheklanadi.
+
+Xatolar faqat eksportyorga tegishli faktlarni o‘z ichiga oladi: HTTP holati, qayta urinish toifasi, urinishlar va yuborilgan spanlar
+soni yoki tasdiq/tarmoq nosozligi haqidagi qat’iy belgilangan matn. Kollektor javobining tanasi,
+qisman muvaffaqiyat sonlari va javob sarlavhalari hech qachon xatolar, jurnallar yoki
+boshqaruv paneliga ko‘chirilmaydi. Xatoga uchragan yoki qisman qabul qilingan paket tasdiqlanmaydi: manzil
+shu holat bilan nosoz deb ko‘rsatiladi, kursor oxirgi tasdiqlangan paketda qoladi va keyingi ishga tushirishda
+ayni qatorlar qayta yuboriladi. Doimiy holat kodlari kollektor yoki konfiguratsiya
+tuzatilmaguncha xato berishda davom etadi. Javob tafsilotlari uchun kollektorning o‘z jurnallaridan foydalaning. Chaqiruv jurnali xatolari xulosalari
+uchun alohida yashirish mexanizmi saqlanadi.
+`prepare()` hech qanday resurs yaratmaydi; sinov aynan `{"resourceSpans":[]}` ni yuboradi va
 chaqiruv jurnali spanlarini yozmasdan HTTP holatini bildiradi.
 
-Trassa identifikatorlari va span identifikatorlari
-`"omniroute.trace\\0" + callLogId` va `"omniroute.span\\0" + callLogId` ustida hisoblangan SHA-256 xeshining dastlabki 32/16 oʻn oltilik raqamidir. Qayta yuborishlarda
+Trace identifikatorlari va span identifikatorlari
+`"omniroute.trace\\0" + callLogId` va `"omniroute.span\\0" + callLogId` ustidan hisoblangan SHA-256 ning dastlabki 32/16 ta o‘n oltilik raqamidir. Qayta yuborishlarda
 bir xil identifikatorlar ishlatiladi. Bu takrorlarni bartaraf etish kafolati emas: ayrim server tizimlari, jumladan Langfuse
-v4 qabul qilish tizimi, bir xil identifikatorli spanlarning takrorlarini bartaraf etmaydi. Dastur ishdan chiqishi yoki qismning qisman muvaffaqiyatsizligi
-koʻpi bilan bitta tasdiqlanmagan kursor paketining qayta yuborilishiga olib kelishi mumkin; faqat uning oxirgi HTTP qismi emas,
+v4 qabul qilish tizimi, bir xil identifikatorli spanlar takrorlarini bartaraf etmaydi. Avariya yoki qismning qisman xatosi
+ko‘pi bilan bitta tasdiqlanmagan kursor paketining qayta yuborilishiga olib kelishi mumkin; faqat uning oxirgi HTTP qismi emas,
 balki butun paket takrorlanishi mumkin. Kursor paketi hajmini tanlashda shu murosani hisobga oling.
 
 ### Langfuse misoli
 
-Oʻzingiz joylashtirgan Langfuse nusxasi uchun ushbu maydonlarni sozlang:
+O‘z serveringizda joylashtirilgan Langfuse nusxasi uchun quyidagi maydonlarni sozlang:
 
 ```json
 {
@@ -370,44 +424,44 @@ Oʻzingiz joylashtirgan Langfuse nusxasi uchun ushbu maydonlarni sozlang:
 }
 ```
 
-Authorization qiymatini mahalliy tarzda aynan `public-key:secret-key` satrining Base64 koʻrinishi sifatida yarating
-(masalan, `Buffer.from(publicKey + ":" + secretKey).toString("base64")` yordamida).
-Haqiqiy kirish maʼlumotlarini jurnallarga, ekran tasvirlariga yoki muammo xabarlariga qoʻymang. Moslashtirish avtomatik ravishda
-`x-langfuse-ingestion-version: 4` ni oʻrnatadi; Authorization hali ham `headers` orqali beriladi.
+Authorization qiymatini mahalliy ravishda aynan `public-key:secret-key` satrining Base64 ko‘rinishi sifatida
+tuzing (masalan, `Buffer.from(publicKey + ":" + secretKey).toString("base64")` yordamida).
+Haqiqiy hisob ma’lumotlarini jurnallar, skrinshotlar yoki muammo xabarlariga joylamang. Moslashtirish avtomatik ravishda
+`x-langfuse-ingestion-version: 4` ni o‘rnatadi; Authorization esa hali ham `headers` orqali beriladi.
 Sarlavhalar ham, yaratilgan identifikatsiya tuzi ham mavjud shifrlangan maxfiy maydon
-mexanizmi va API oʻrinbosarlaridan foydalanadi; `STORAGE_ENCRYPTION_KEY` talab qilinadi.
+mexanizmi va API o‘rinbosarlaridan foydalanadi; `STORAGE_ENCRYPTION_KEY` talab qilinadi.
 
-Moslashtirish generatsiya turi/modeli, JSON foydalanish tafsilotlari (kirish/chiqish/jami va mavjud
-kesh kalitlari), JSON kirish/chiqish suratlari, ERROR/DEFAULT darajasi, tozalangan holat xabari,
+Moslashtirish generatsiya turi/modeli, JSON formatidagi foydalanish tafsilotlari (kirish/chiqish/jami va mavjud
+kesh kalitlari), JSON formatidagi kirish/chiqish oniy nusxalari, ERROR/DEFAULT darajasi, maxfiy maʼlumotlardan tozalangan holat xabari,
 trassa nomi, sessiya identifikatori, ixtiyoriy muhit hamda provayder, soʻralgan model, yoʻl, kombinatsiya, kesh
-manbasi va holat uchun filtrlash mumkin boʻlgan `langfuse.observation.metadata.<key>` ni qoʻshadi.
-`langfuse.observation.completion_start_time` faqat TTFT maʼlum boʻlganda va davomiylik doirasida boʻlganda
-boshlanish + TTFT vaqtining ISO 8601 koʻrinishidir. Xarajat atributlari yuborilmaydi.
+manbasi va holati uchun filtrlash mumkin boʻlgan
+`langfuse.observation.metadata.<key>` atributlarini qoʻshadi. `langfuse.observation.completion_start_time` faqat
+TTFT maʼlum boʻlsa va davomiylik doirasida boʻlsa, boshlanish vaqti + TTFT qiymatining ISO 8601 formatidagi ifodasidir. Xarajat atributlari yuborilmaydi.
 
-Identifikatsiya rejimlari `langfuse.user.id` ga qoʻllanadi:
+Identifikatsiya rejimlari `langfuse.user.id` uchun qoʻllanadi:
 
 - `pseudonymous` (standart): API kalitining ichki identifikatoridan har bir manzil uchun tasodifiy
-  32 baytli tuz bilan hisoblangan HMAC-SHA256. Tuz mavjud boʻlmasa yaratish vaqtida hosil qilinadi, `identitySalt`
-  sifatida shifrlanadi, hech qachon qaytarilmaydi va tahrirlash paytida saqlanadi. Asl kalit identifikatorlari hech qachon
-  span atributlariga qoʻyilmaydi. Manzil tuzini qayta yaratish/almashtirish identifikatorlarni oʻzgartiradi.
+  32 baytli tuz bilan hisoblangan HMAC-SHA256. Tuz mavjud boʻlmasa, yaratish paytida hosil qilinadi, `identitySalt`
+  sifatida shifrlanadi, hech qachon qaytarilmaydi va tahrirlash paytida saqlab qolinadi. Kalitlarning asl identifikatorlari hech qachon
+  span atributlariga kiritilmaydi. Manzil tuzini qayta yaratish/almashtirish identifikatorlarni oʻzgartiradi.
 - `keyName`: sozlangan API kaliti nomi; bu operator belgisini ataylab oshkor qiladi.
 - `none`: foydalanuvchi identifikatori yoʻq. Sessiya teglari mavjud boʻlsa, baribir eksport qilinadi; bu rejimlar
-  ixtiyoriy prompt tarkibini yoki operator bergan sessiya/korrelyatsiya belgilarini anonimlashtirmaydi.
+  ixtiyoriy prompt mazmunini yoki operator taqdim etgan sessiya/korrelyatsiya belgilarini anonimlashtirmaydi.
 
-### Eski maʼlumotlarni toʻldirmasdan boshlash
+### Eski maʼlumotlarni yuklamasdan boshlash
 
-Faqat yaratish vaqtida **Joriy holatdan boshlash (mavjud jurnallarni oʻtkazib yuborish)** ni yoqing yoki
-yaratish API soʻrovi tanasining yuqori darajasida `startFromCurrentPosition: true` ni uzating. Bu mavjud kursor
-yordamchilari orqali `cursor_row_id` ni saqlangan chaqiruv jurnallarining joriy eng katta rowid qiymatiga
-migratsiyasiz oʻrnatadi. Standart qiymat false (kursor 0 va saqlangan tarixni toʻldirish).
+Faqat yaratish paytida **Joriy pozitsiyadan boshlash (mavjud jurnallarni oʻtkazib yuborish)** parametrini yoqing yoki
+yaratish API soʻrovi maʼlumotlarining yuqori darajasida `startFromCurrentPosition: true` ni uzating. U mavjud kursor
+yordamchilari orqali `cursor_row_id` ni saqlanayotgan chaqiruv jurnallarining joriy eng katta rowid qiymatiga oʻrnatadi,
+migratsiyasiz. Standart qiymat false (kursor 0 va saqlangan tarixni qayta yuklash).
 Bu yangilash paytida kursorni qayta oʻrnatish sozlamasi emas.
 
 Umumiy `ttftMs` qoʻshimchasi BigQuery moslashtiruvchisi
-va yangi jadval sxemasiga null qiymatga ruxsat beruvchi `ttft_ms` ustunini ham qoʻshadi: uning sxema testi har bir kanonik yozuv maydoni uchun
-ustun boʻlishini talab qiladi. Mavjud jadvallar oʻzgarishsiz eksport qilishda davom etadi: `prepare()` jadval sxemasini oʻqiydi va
-faqat `ttft_ms` ustuni mavjud boʻlmasa, uni chiqarib tashlaydi. Keyingi ishga tushirishda TTFTni olish uchun null qiymatga ruxsat beruvchi INT64 ustunini
-qoʻshing yoki yangi jadvaldan foydalaning. PATCH, sxemani avtomatik oʻzgartirish yoki qoʻshimcha
-ruxsatlar talab qilinmaydi; boshqa barcha qator maydonlari uchun qatʼiy sxema tekshiruvi saqlanadi.
+va yangi jadval sxemasiga null qiymat qabul qiluvchi `ttft_ms` ustunini ham qoʻshadi: uning sxema testi har bir kanonik yozuv maydoni uchun
+ustun boʻlishini talab qiladi. Mavjud jadvallar oʻzgarishsiz eksport qilinishda davom etadi: `prepare()` jadval sxemasini oʻqiydi va
+faqat `ttft_ms` ustuni mavjud boʻlmaganda uni tashlab ketadi. Keyingi ishga tushirishda TTFT olish uchun
+null qiymat qabul qiluvchi INT64 ustunini qoʻshing yoki yangi jadvaldan foydalaning. PATCH, sxemani avtomatik oʻzgartirish yoki qoʻshimcha
+ruxsatlar talab qilinmaydi; qolgan barcha qator maydonlari uchun qatʼiy sxema tekshiruvi saqlanadi.
 
 ---
 

@@ -257,107 +257,160 @@ odmítá požadavky větší než 10 MB. Část se uzavře při dosažení 500 �
 ## 5. Cíl pro trasování OTLP/HTTP
 
 Konfigurace používá `type: "otlp-http"`. Jde o plánovaný export uložených
-protokolů volání s využitím kurzoru, nikoli o průběžný výstup událostí směrování bez záruky doručení v
+protokolů volání využívající kurzor, nikoli o průběžný výstup událostí směrování s doručováním bez záruky v
 `open-sse/services/routing/otel.ts`. Nečte ani nemění proměnné prostředí,
 časovače ani vyrovnávací paměti tohoto výstupu. Zapnutí obou může vytvářet dva nezávislé druhy spanů;
-k rozlišení těchto spanů protokolů volání použijte instrumentační rozsah `omniroute.log-export`.
+k rozlišení těchto spanů z protokolů volání použijte instrumentační rozsah `omniroute.log-export`.
 
-| Klíč              | Výchozí hodnota / účel                                                       |
-| ----------------- | ---------------------------------------------------------------------------- |
-| `endpoint`        | Povinná úplná HTTP(S) URL pro trasování; přípona `/v1/traces` se nepřipojuje |
-| `headers`         | Volitelné řádky `Name: value` nebo objekt JSON s řetězci; šifrováno          |
-| `serviceName`     | `omniroute`; atribut prostředku `service.name`                               |
-| `langfuseMapping` | `false`; přidává atributy Langfuse pro generování/relaci/uživatele           |
-| `identity`        | `pseudonymous`, `keyName` nebo `none`                                        |
-| `paths`           | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                      |
-| `timeoutMs`       | `30000` na každý pokus HTTP                                                  |
-| `environment`     | Nenastaveno; volitelný atribut `langfuse.environment`                        |
+| Klíč                     | Výchozí hodnota / účel                                                                  |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `endpoint`               | Povinná úplná HTTP(S) URL pro trasování; přípona `/v1/traces` se nepřipojuje            |
+| `headers`                | Volitelné řádky `Name: value` nebo objekt JSON s řetězci; šifrováno                     |
+| `requestHeaderAllowlist` | Prázdné (vypnuto); názvy/prefixy klientských hlaviček zachycovaných jako atributy spanu |
+| `serviceName`            | `omniroute`; atribut prostředku `service.name`                                          |
+| `langfuseMapping`        | `false`; přidává atributy generování/relace/uživatele pro Langfuse                      |
+| `identity`               | `pseudonymous`, `keyName` nebo `none`                                                   |
+| `paths`                  | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                                 |
+| `timeoutMs`              | `30000` na každý pokus HTTP                                                             |
+| `environment`            | Nenastaveno; volitelný atribut `langfuse.environment`                                   |
 
-Obecný přehledový panel zobrazuje tato pole. `paths` přijímá pole API nebo víceřádkové textové pole
-s přesnými cestami oddělenými novými řádky nebo čárkami. Cesty pro embeddingy, rerank a další se
-přeskakují, pokud nejsou výslovně povoleny. I přeskočené řádky posouvají kurzor; čítače
-`exported`/`exportedTotal` stávajícího spouštěče počítají zpracované zdrojové řádky včetně odfiltrovaných
+Obecný řídicí panel zobrazuje tato pole. `paths` přijímá pole přes API nebo textovou oblast
+s přesnými cestami oddělenými novými řádky/čárkami. Cesty pro embeddingy, rerank a další se
+přeskakují, pokud nejsou výslovně povoleny. Přeskočené řádky přesto posouvají kurzor; stávající
+čítače `exported`/`exportedTotal` spouštěče počítají zpracované zdrojové řádky včetně odfiltrovaných
 řádků, nikoli přijaté spany. Filtrování probíhá v podřízeném procesu, aniž by se měnil jeho
 kontrakt IPC/kurzoru.
 
-Ověřování URL používá pomocnou funkci `parseAndValidateNonMetadataUrl` nezávislou na databázi ze souboru
+Ověřování URL používá pomocnou funkci `parseAndValidateNonMetadataUrl`, která nevyužívá databázi, ze souboru
 `src/shared/network/outboundUrlGuard.ts`: zásadu `block-metadata`. Provádí stejné
-bezpodmínečné kontroly metadat, protokolu a vložených přihlašovacích údajů jako validátor webhooků
-s povolenými privátními URL, ale záměrně povoluje cíle localhost/LAN bez přepsání globálním
-příznakem funkce. To umožňuje používat koncové body vlastních instancí Langfuse, Phoenix, Tempo a Collector,
+bezpodmínečné kontroly metadat/protokolu/vložených přihlašovacích údajů jako validátor webhooků
+s povolenými privátními URL, ale záměrně umožňuje cíle na localhostu/v LAN bez globálního
+přepsání příznaku funkce. To umožňuje používat koncové body samostatně hostovaných služeb Langfuse, Phoenix, Tempo a Collector,
 včetně privátních koncových bodů HTTP. Hostitelé cloudových metadat jsou vždy blokováni.
 Přesměrování se nenásledují, takže kolektor nemůže přesměrovat přihlašovací údaje na jiného hostitele.
-Stejně jako stávající lexikální ochrana URL ani tato ochrana nepřipíná výsledek překladu DNS; konfigurujte
-pouze hostitele pod kontrolou provozovatele. Pokud koncový bod není v důvěryhodné síti, upřednostňujte HTTPS.
+Stejně jako stávající lexikální ochrana URL ani tato nezajišťuje pevné svázání s výsledkem překladu DNS; konfigurujte pouze
+hostitele pod kontrolou provozovatele. Pokud koncový bod není v důvěryhodné síti, upřednostňujte HTTPS.
 
-### Datová část a doručení
+### Datová část a doručování
 
 OTLP/HTTP JSON (`ExportTraceServiceRequest`, `Content-Type: application/json`) přenáší jeden
 span typu CLIENT pro každý povolený řádek, pojmenovaný podle přesné cesty požadavku. Pojmenování podle cesty rozlišuje
-Chat Completions, Responses a Messages, aniž by do názvu
-spanu vkládalo údaje o modelu nebo identitě. Atributy prostředku zahrnují `service.name` a `service.version` balíčku.
+Chat Completions, Responses a Messages, aniž by do názvu spanu vkládalo údaje o modelu nebo identitě.
+Atributy prostředku zahrnují `service.name` a `service.version` balíčku.
 
-Běžný modul pro protokolování pokusů chatu (`open-sse/handlers/chatCore/attemptLogging.ts`) zapisuje
-při dokončení `duration = Date.now() - startTime` a neposkytuje časové razítko;
-`saveCallLogOperation` v `src/lib/usage/callLogs.ts` ve výchozím nastavení používá jako časové razítko čas zápisu
+Běžný zapisovač protokolů pokusů o chat (`open-sse/handlers/chatCore/attemptLogging.ts`) zapisuje
+`duration = Date.now() - startTime` při dokončení a neposkytuje časové razítko;
+`saveCallLogOperation` v `src/lib/usage/callLogs.ts` jako výchozí časové razítko používá čas zápisu
 (dokončení). Export proto nastavuje konec = časové razítko řádku a začátek = konec − doba trvání
-(milisekundy převedené na desítkově vyjádřené nanosekundy). Historická časová razítka dodaná volajícím
-se rovněž zachovávají jako čas konce; u jednotlivých řádků se nerozlišuje, zda jde o začátek, nebo dokončení.
-Doba trvání s hodnotou null se převede na nulu. Neplatná nebo chybějící časová razítka způsobí selhání dávky namísto vytváření
+(milisekundy převedené na nanosekundy v desítkovém zápisu). Historická časová razítka dodaná volajícím
+se rovněž zachovávají jako čas konce; u jednotlivých řádků neexistuje rozlišení mezi začátkem a dokončením.
+Doba trvání s hodnotou null se převede na nulu. Neplatná/chybějící časová razítka způsobí selhání dávky namísto vytvoření
 nedeterministických spanů. `ttftMs` může mít hodnotu null a mapuje se na `omniroute.ttft_ms`.
 
-Atributy zahrnují `gen_ai.operation.name="chat"`, poskytovatele, požadovaný model a model odpovědi,
-vstupní/výstupní tokeny, volitelné tokeny pro čtení z mezipaměti, vytváření mezipaměti a uvažování, stav HTTP,
-kombinaci, zdroj mezipaměti, značku relace a korelační ID. Celočíselné hodnoty OTLP a časová razítka
-jsou desítkové řetězce; řetězce, booleovské hodnoty a čísla s desetinnou částí používají své nativní varianty hodnot
+Atributy zahrnují `gen_ai.operation.name="chat"`, poskytovatele, požadovaný/vrácený model,
+vstupní/výstupní tokeny, volitelné tokeny čtení z mezipaměti/vytváření mezipaměti/uvažování, stav HTTP,
+combo, zdroj mezipaměti, značku relace a korelační ID. Celočíselné hodnoty OTLP a časová razítka
+jsou řetězce v desítkovém zápisu; řetězce, booleovské hodnoty a desetinná čísla používají odpovídající nativní varianty hodnot
 OTLP. Chybové spany mají stav ERROR a sanitizovanou stavovou zprávu. Kanonický
-záznam neobsahuje URL nadřazeného hostitele, takže se `server.address` vynechává, aby kolektor nebyl nesprávně
-označen jako server modelu. Náklady se neexportují.
+záznam neobsahuje URL nadřazeného hostitele, proto se `server.address` vynechává, místo aby
+nesprávně označoval kolektor jako server modelu. Náklady se neexportují.
 
 Obsah se načítá pouze při `includeBodies=true`. Při `langfuseMapping=false`
 obsahují `gen_ai.input.messages` / `gen_ai.output.messages` sanitizovaný JSON těla požadavku/odpovědi
 tak, jak jej ukládá OmniRoute (kanonizovaný, pokud jej lze parsovat), nikoli pole zpráv
-převedené do podoby podle sémantických konvencí. Zkrácená těla a těla, která nejsou ve formátu JSON, zůstávají prostým textem. Při `langfuseMapping=true`
+převedené do podoby sémantických konvencí. Zkrácená těla a těla v jiném formátu než JSON zůstávají prostým textem. Při `langfuseMapping=true`
 se těla odesílají pouze jako `langfuse.observation.input` / `langfuse.observation.output`;
-atributy `gen_ai.*.messages` se vynechávají, takže se každé tělo odešle jen jednou. Oba režimy
+atributy `gen_ai.*.messages` se vynechávají, takže se každé tělo odešle jednou. Oba režimy
 přebírají `maxBodyBytes` ze stávajícího postupu načítání obsahu;
 `omniroute.bodies_truncated=true` označuje zkrácení.
-Tento cíl nepřidává žádné další snímky pipeline ani čtení nesanitizovaných artefaktů.
+Tento cíl nepřidává žádné další snímky pipeline ani čtení nesanitizovaných artefaktů;
+volitelné zachytávání hlaviček požadavku používá stávající načtený snímek klienta popsaný níže.
 Při exportu těl používejte interval v řádu minut, například `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`,
-místo hromadění hodinového objemu nevyřízených dat.
+namísto hromadění hodinové fronty.
+
+### Volitelné hlavičky klientských požadavků
+
+Zachytávání hlaviček je **ve výchozím nastavení vypnuté**. Nastavte `requestHeaderAllowlist` v konfiguraci cíle
+a zapněte **Exportovat prompty a odpovědi** (`includeBodies: true` u cíle).
+Seznam povolených hlaviček přijímá pole přes API nebo textovou oblast s názvy oddělenými novými řádky/čárkami:
+
+```json
+{
+  "requestHeaderAllowlist": ["User-Agent", "X-Project", "X-OmniRoute-Meta-*"]
+}
+```
+
+Názvy se porovnávají přesně, bez rozlišování velikosti písmen, pokud jediný koncový znak `*` nevybírá neprázdný
+prefix názvu hlavičky. Samostatný znak `*`, zástupné znaky uvnitř názvu a neplatné názvy HTTP hlaviček se odmítají.
+Povoleno je nejvýše 64 selektorů, každý s názvem/prefixem o délce nejvýše 256 bajtů ASCII.
+Toto nastavení je oddělené od `headers`, které slouží k autentizaci exportéru vůči kolektoru.
+
+Zachytávání čte pouze `pipeline_client_request`, naplněný z `clientRawRequest`
+(nebo staršího `clientRequest`) uložené podrobné pipeline. Nikdy nepoužívá jako náhradu hlavičky požadavku poskytovatele.
+Podrobné protokolování pipeline muselo být povoleno v okamžiku zaznamenání požadavku. Pokud je
+`includeBodies` vypnuto nebo JSON snímku klientského požadavku chybí, je poškozený či zkrácený, žádné atributy
+hlaviček se nevytvoří. Zvýšení `maxBodyBytes` může zabránit zkrácení snímku při exportu;
+nemůže však obnovit podrobnosti, které nebyly nikdy uloženy. Snímek větší než 1 MiB nebo obsahující více než
+256 položek hlaviček se ignoruje. Stávající export promptů a odpovědí zůstává aktivní souběžně
+se zachytáváním hlaviček; seznam povolených položek neposkytuje režim načítání pouze hlaviček.
+
+Vybrané hodnoty se převedou na pole řetězců OTLP `http.request.header.<full lowercase header name>`,
+a to i v případě jediného řetězce. Například `X-OmniRoute-Meta-Team: example-team` se převede na
+`http.request.header.x-omniroute-meta-team` s hodnotou
+`{"arrayValue":{"values":[{"stringValue":"example-team"}]}}`.
+Celý prefix se zachovává: jde o běžné hlavičky, bez parsování obchodních polí nebo
+převodu na `omniroute.metadata.*` / metadata Langfuse. `langfuseMapping` nemění sémantiku
+hlaviček. Vybraná hlavička `User-Agent` s jedinou hodnotou nastaví také standardní skalární atribut
+`user_agent.original`. Čárky uvnitř jedné hodnoty nezpůsobují její rozdělení. Varianty lišící se velikostí písmen se slučují v pořadí uložených
+položek; jakákoli neplatná varianta způsobí vynechání celé hlavičky. Atributy jsou seřazeny podle názvu převedeného na malá písmena.
+
+Authorization, Proxy-Authorization, Cookie, Set-Cookie, hlavičky s klíči API, názvy obsahující
+značky auth/token/secret/password/credential a interní přihlašovací údaje brány jsou vždy
+vyloučeny, i když jsou vybrané nebo v úložišti částečně maskované. Rozpoznávání známých vzorů přihlašovacích údajů využívá
+sdílený detektor přihlašovacích údajů; značky redakce se vynechávají, nikoli exportují jako bezpečné hodnoty.
+Přijímají se pouze řetězce a neprázdná pole řetězců; čísla ani objekty se nepřevádějí.
+Neplatné názvy, klíče prototypu, řídicí znaky (kromě vodorovného tabulátoru) a chybně utvořené Unicode
+se ignorují, aniž by způsobily selhání dávky nebo se jejich obsah promítl do chybových zpráv.
+
+Každý span zachytí nejvýše 32 hlaviček, 16 hodnot na hlavičku, 4096 bajtů UTF-8 na hodnotu
+a celkem 16384 bajtů UTF-8 pro názvy a hodnoty zachycených hlaviček. Příliš velké či neplatné hlavičky
+se vynechávají celé, nezkracují se. Výběr je rozhodnutím provozovatele ohledně ochrany soukromí: i zdánlivě bezpečné názvy
+mohou obsahovat osobní údaje a tyto limity a detektory nejsou univerzálním nástrojem pro odstraňování osobních údajů.
+
+### Limity doručování
 
 Požadavky jsou omezeny na 500 spanů a 4 MiB JSON v UTF-8 včetně obálky.
-U každého povoleného spanu se před prvním požadavkem dávky kurzoru kontroluje velikost. Pokud jednotlivý
-span překračuje limit, neodešle se žádná část této dávky a operace selže s pokynem ke snížení
-`maxBodyBytes`; span se tiše nezahodí. Předběžná kontrola uchovává pouze odkazy na záznamy a
-počty bajtů a každý dočasný span/JSON zahazuje; spany se znovu sestavují pro bloky omezené velikosti,
-místo aby se uchovávala druhá serializovaná kopie dávky. U HTTP 408/429/5xx, síťových chyb a vypršení časového limitu se provedou nejvýše
-tři pokusy s exponenciální prodlevou 250/500 ms. Hodnota `Retry-After` v sekundách nebo ve formátu data HTTP
-může prodlevu prodloužit až na 5 sekund. Ostatní stavové kódy způsobí okamžité selhání. Částečné odmítnutí OTLP 2xx také vyvolá výjimku namísto
-potvrzení ztraceného spanu; přijímají se prázdná potvrzení nebo potvrzení v platném JSON, přičemž
-čtení odpovědi je omezeno na 64 KiB.
+Velikost každého povoleného spanu se kontroluje před prvním požadavkem dávky kurzoru. Pokud jednotlivý
+span překročí limit, neodešle se žádná část dané dávky a operace selže s doporučením snížit
+`maxBodyBytes`; span se nezahodí bez upozornění. Předběžná kontrola uchovává pouze odkazy na záznamy a
+počty bajtů a každý dočasný span/JSON zahodí; spany se znovu sestavují pro bloky s omezenou velikostí,
+místo aby se uchovávala druhá serializovaná kopie dávky. U HTTP 408/429/5xx, síťových selhání a vypršení časového limitu se provedou nejvýše
+tři pokusy s exponenciálně rostoucí prodlevou 250/500 ms. Počet sekund nebo datum HTTP v `Retry-After`
+může prodlevu prodloužit až na 5 sekund. Ostatní stavové kódy způsobí okamžité selhání. Částečné odmítnutí OTLP s kódem 2xx také vyvolá výjimku, místo aby
+potvrdilo ztracený span; přijímá se prázdné potvrzení nebo potvrzení v platném JSON, s
+limitem čtení odpovědi 64 KiB.
 
-Chyby obsahují pouze údaje spravované exportérem: stav HTTP, kategorii opakování, počet pokusů a počet odeslaných
-spanů nebo pevně dané znění chyby potvrzení či sítě. Těla odpovědí kolektoru,
+Chyby obsahují pouze údaje pocházející z exportéru: stavový kód HTTP, kategorii opakování, počet pokusů a počty odeslaných
+spanů nebo pevně dané znění chyby potvrzení či síťového selhání. Těla odpovědí kolektoru,
 počty částečně úspěšných položek ani hlavičky odpovědí se nikdy nekopírují do chyb, protokolů ani
-řídicího panelu. Neúspěšná nebo částečně přijatá dávka se nepotvrdí: cíl zobrazuje
-stav Selhává s daným stavovým kódem, kurzor zůstává u poslední potvrzené dávky a další spuštění
-znovu odešle stejné řádky. Trvalé stavové chyby přetrvávají, dokud se neopraví kolektor nebo konfigurace.
-Podrobnosti o odpovědích najdete ve vlastních protokolech kolektoru. Souhrny chyb protokolu volání si zachovávají
-své samostatné odstraňování citlivých údajů.
-`prepare()` nic nezřizuje; Test odešle přesně `{"resourceSpans":[]}` a oznámí
-stav HTTP, aniž by zapisoval spany protokolu volání.
+na řídicí panel. Neúspěšná nebo částečně přijatá dávka se nepotvrdí: cíl zobrazuje
+stav Selhává s příslušným stavovým kódem, kurzor zůstává na poslední potvrzené dávce a další spuštění
+znovu odešle stejné řádky. Trvalé stavové chyby způsobují opakovaná selhání, dokud se neopraví kolektor nebo
+konfigurace. Podrobnosti odpovědi hledejte v protokolech samotného kolektoru. Souhrny chyb v protokolu volání si zachovávají
+vlastní redakci citlivých údajů.
+`prepare()` nic nezřizuje; Test odešle metodou POST přesně `{"resourceSpans":[]}` a oznámí
+stavový kód HTTP, aniž by zapisoval spany protokolu volání.
 
 ID tras a ID spanů tvoří prvních 32/16 hexadecimálních číslic SHA-256 z
-`"omniroute.trace\\0" + callLogId` a `"omniroute.span\\0" + callLogId`. Opakovaná odeslání obsahují
-stejná ID. To nezaručuje deduplikaci: některé backendy, včetně příjmu dat Langfuse
-v4, spany se stejným ID nededuplikují. Pád nebo selhání části dávky může
-způsobit opětovné odeslání nejvýše jedné nepotvrzené dávky kurzoru; duplikovat se může celá tato dávka,
+`"omniroute.trace\\0" + callLogId` a `"omniroute.span\\0" + callLogId`. Opakovaná odeslání nesou
+shodná ID. To nezaručuje deduplikaci: některé backendy, včetně příjmu dat Langfuse
+v4, spany se stejným ID nededuplikují. Pád nebo selhání části bloků může
+způsobit opětovné odeslání nejvýše jedné nepotvrzené dávky kurzoru; duplicitní může být celá tato dávka,
 nejen její poslední blok HTTP. Při volbě velikosti dávky kurzoru tento kompromis zohledněte.
 
 ### Příklad pro Langfuse
 
-Pro instanci Langfuse na vlastní infrastruktuře nakonfigurujte tato pole:
+Pro instanci Langfuse provozovanou na vlastní infrastruktuře nakonfigurujte tato pole:
 
 ```json
 {
@@ -370,44 +423,44 @@ Pro instanci Langfuse na vlastní infrastruktuře nakonfigurujte tato pole:
 }
 ```
 
-Hodnotu Authorization vytvořte místně zakódováním doslovného řetězce `public-key:secret-key`
+Hodnotu Authorization sestavte lokálně zakódováním doslovného řetězce `public-key:secret-key`
 do Base64 (například pomocí `Buffer.from(publicKey + ":" + secretKey).toString("base64")`).
 Nevkládejte skutečné přihlašovací údaje do protokolů, snímků obrazovky ani hlášení problémů. Mapování automaticky
-nastavuje `x-langfuse-ingestion-version: 4`; Authorization se nadále zadává v `headers`.
-Hlavičky i vygenerovaná sůl identity používají stávající mechanismus šifrovaných tajných polí
+nastaví `x-langfuse-ingestion-version: 4`; Authorization se nadále zadává v `headers`.
+Hlavičky i vygenerovaná sůl identity používají stávající mechanismus šifrovaných polí pro tajné údaje
 a zástupné hodnoty API; je vyžadován `STORAGE_ENCRYPTION_KEY`.
 
-Mapování přidává typ generování/model, podrobnosti o využití v JSON (vstup/výstup/celkem a dostupné
-klíče mezipaměti), snímky vstupu/výstupu v JSON, úroveň ERROR/DEFAULT, očištěnou stavovou zprávu,
-název trasy, ID relace, volitelné prostředí a filtrovatelné
+Mapování přidává typ/model generování, podrobnosti o využití ve formátu JSON (vstup/výstup/celkem a dostupné
+klíče mezipaměti), snímky vstupu/výstupu ve formátu JSON, úroveň ERROR/DEFAULT, sanitizovanou stavovou zprávu,
+název trasování, ID relace, volitelné prostředí a filtrovatelné
 `langfuse.observation.metadata.<key>` pro poskytovatele, požadovaný model, cestu, kombinaci, zdroj
 mezipaměti a stav. `langfuse.observation.completion_start_time` je čas ve formátu ISO 8601 odpovídající
-začátku + TTFT, pouze pokud je TTFT známé a spadá do doby trvání. Žádné atributy nákladů se neodesílají.
+začátku + TTFT, pouze pokud je TTFT známé a nepřesahuje dobu trvání. Žádné atributy nákladů se neodesílají.
 
 Režimy identity se vztahují na `langfuse.user.id`:
 
 - `pseudonymous` (výchozí): HMAC-SHA256 interního ID klíče API s náhodnou
   32bajtovou solí pro každý cíl. Pokud sůl chybí, vygeneruje se při vytvoření, zašifruje se
   jako `identitySalt`, nikdy se nevrací a při úpravách se zachovává. Nezpracovaná ID klíčů se nikdy
-  nevkládají do atributů spanů. Opětovné vytvoření nebo rotace soli cíle mění identity.
-- `keyName`: nakonfigurovaný název klíče API, který záměrně odhaluje tento štítek zadaný operátorem.
-- `none`: žádné ID uživatele. Značky relace se nadále exportují, pokud jsou přítomny; tyto režimy
-  neanonymizují libovolný obsah promptů ani štítky relace/korelace zadané operátorem.
+  nevkládají do atributů spanů. Opětovné vytvoření nebo rotace soli cíle změní identity.
+- `keyName`: nakonfigurovaný název klíče API, který záměrně odhaluje toto označení zadané operátorem.
+- `none`: žádné ID uživatele. Tagy relací se nadále exportují, pokud jsou přítomny; tyto režimy
+  neanonymizují libovolný obsah promptů ani označení relací/korelací zadaná operátorem.
 
-### Spuštění bez doplnění historických dat
+### Spuštění bez zpětného doplnění
 
 Pouze při vytváření zapněte **Začít od aktuální pozice (přeskočit existující protokoly)** nebo předejte
 `startFromCurrentPosition: true` na nejvyšší úrovni dat požadavku API pro vytvoření. Tím se inicializuje
-`cursor_row_id` na aktuální maximální uchované rowid protokolu volání pomocí stávajících pomocných funkcí
-kurzoru, bez migrace. Výchozí hodnota je false (kurzor 0 a doplnění uchované historie).
-Nejde o nastavení pro reset kurzoru při aktualizaci.
+`cursor_row_id` na aktuální maximální rowid uchovávaných záznamů protokolu volání pomocí existujících pomocných funkcí
+pro kurzor, bez migrace. Výchozí hodnota je false (kurzor 0 a zpětné doplnění uchovávané historie).
+Nejde o nastavení pro resetování kurzoru při aktualizaci.
 
-Sdílené rozšíření `ttftMs` také přidává sloupec `ttft_ms` povolující hodnotu null do mapovače BigQuery
-a schématu nových tabulek: jeho test schématu vyžaduje, aby každé pole kanonického záznamu mělo
+Sdílené rozšíření o `ttftMs` také přidává sloupec `ttft_ms` umožňující hodnotu null do mapovače BigQuery
+a schématu nových tabulek: test schématu vyžaduje, aby každé pole kanonického záznamu mělo odpovídající
 sloupec. Existující tabulky se nadále exportují beze změn: `prepare()` načte schéma tabulky a
-vynechá pouze `ttft_ms`, pokud tento sloupec chybí. Přidejte sloupec INT64 povolující hodnotu null, abyste získali TTFT
-při příštím spuštění, nebo použijte novou tabulku. Není vyžadován PATCH, automatická změna schématu ani další
-oprávnění; všechna ostatní pole řádků si zachovávají přísnou kontrolu schématu.
+vynechá pouze `ttft_ms`, pokud tento sloupec chybí. Chcete-li získat TTFT
+při příštím spuštění, přidejte sloupec typu INT64 umožňující hodnotu null nebo použijte novou tabulku. Není vyžadován PATCH, automatická změna schématu ani další
+oprávnění; u všech ostatních polí řádků zůstává zachována přísná kontrola schématu.
 
 ---
 

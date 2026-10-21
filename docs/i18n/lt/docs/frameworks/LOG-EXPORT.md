@@ -254,110 +254,163 @@ atmeta didesnes nei 10 MB užklausas. Dalis užbaigiama pasiekus 500 eilučių a
 
 ---
 
-## 5. OTLP/HTTP trasų paskirties vieta
+## 5. OTLP/HTTP sekimo duomenų paskirties vieta
 
-Konfigūracijoje naudojama `type: "otlp-http"`. Tai suplanuotas, žymekliu valdomas išsaugotų
-iškvietimų žurnalų eksportas, o ne negarantuoto pristatymo tiesioginių maršruto parinkimo įvykių imtuvas faile
-`open-sse/services/routing/otel.ts`. Jis neskaito ir nekeičia to imtuvo aplinkos
-kintamųjų, laikmačių ar buferių. Įjungus abu, gali būti sukuriamos dvi nepriklausomos trasų atkarpų rūšys;
-šioms iškvietimų žurnalų atkarpoms atskirti naudokite `omniroute.log-export` instrumentavimo sritį.
+Konfigūracijoje naudojama `type: "otlp-http"`. Tai suplanuotas išsaugotų
+kvietimų žurnalų eksportas, kurio eigą seka žymeklis, o ne negarantuoto pristatymo tiesioginių maršruto parinkimo įvykių imtuvas,
+esantis `open-sse/services/routing/otel.ts`. Jis neskaito ir nekeičia to imtuvo aplinkos
+kintamųjų, laikmačių ar buferių. Įjungus abu, gali būti generuojami dviejų nepriklausomų rūšių sekimo segmentai;
+šiems kvietimų žurnalų segmentams atskirti naudokite `omniroute.log-export` instrumentavimo sritį.
 
-| Raktas            | Numatytoji reikšmė / paskirtis                                                 |
-| ----------------- | ------------------------------------------------------------------------------ |
-| `endpoint`        | Privalomas visas HTTP(S) trasų URL; priesaga `/v1/traces` nepridedama          |
-| `headers`         | Neprivalomos `Name: value` eilutės arba JSON objektas su eilutėmis; šifruojama |
-| `serviceName`     | `omniroute`; ištekliaus `service.name`                                         |
-| `langfuseMapping` | `false`; prideda Langfuse generavimo, seanso ir naudotojo atributus            |
-| `identity`        | `pseudonymous`, `keyName` arba `none`                                          |
-| `paths`           | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                        |
-| `timeoutMs`       | `30000` kiekvienam HTTP bandymui                                               |
-| `environment`     | Nenustatyta; neprivalomas `langfuse.environment`                               |
+| Raktas                   | Numatytoji reikšmė / paskirtis                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------ |
+| `endpoint`               | Privalomas visas HTTP(S) sekimo duomenų URL; priesaga `/v1/traces` nepridedama                   |
+| `headers`                | Neprivalomos `Name: value` eilutės arba eilučių JSON objektas; šifruojama                        |
+| `requestHeaderAllowlist` | Tuščias (išjungta); kliento antraščių pavadinimai / priešdėliai, įrašomi kaip segmento atributai |
+| `serviceName`            | `omniroute`; ištekliaus `service.name`                                                           |
+| `langfuseMapping`        | `false`; prideda Langfuse generavimo / sesijos / naudotojo atributus                             |
+| `identity`               | `pseudonymous`, `keyName` arba `none`                                                            |
+| `paths`                  | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                                          |
+| `timeoutMs`              | `30000` kiekvienam HTTP bandymui                                                                 |
+| `environment`            | Nenustatyta; neprivalomas `langfuse.environment`                                                 |
 
-Bendrasis valdymo skydelis atvaizduoja šiuos laukus. `paths` priima API masyvą arba teksto sritį
-su tiksliais keliais, atskirtais naujomis eilutėmis arba kableliais. Įterpinių, perrikiavimo ir kiti keliai
+Bendroji valdymo skydelio sąsaja rodo šiuos laukus. `paths` priima API masyvą arba teksto lauką
+su tiksliais keliais, atskirtais naujomis eilutėmis / kableliais. Vektorinių reprezentacijų, perrikiavimo ir kiti keliai
 praleidžiami, nebent jie aiškiai leidžiami. Praleistos eilutės taip pat pastumia žymeklį; esamo
-vykdymo komponento `exported`/`exportedTotal` skaitikliai skaičiuoja apdorotas šaltinio eilutes, įskaitant išfiltruotas
-eilutes, o ne priimtas atkarpas. Filtravimas atliekamas antriniame procese, nekeičiant jo
-IPC ir žymeklio sąsajos sutarties.
+vykdiklio `exported`/`exportedTotal` skaitikliai skaičiuoja apdorotas šaltinio eilutes, įskaitant išfiltruotas
+eilutes, o ne priimtus segmentus. Filtruojama antriniame procese, nekeičiant jo
+IPC / žymeklio sutarties.
 
-URL tikrinimui naudojama nuo DB nepriklausoma pagalbinė funkcija `parseAndValidateNonMetadataUrl` iš
+URL tikrinimui naudojama nuo DB nepriklausanti pagalbinė funkcija `parseAndValidateNonMetadataUrl` iš
 `src/shared/network/outboundUrlGuard.ts`: politika `block-metadata`. Ji atlieka tas pačias
-besąlygines metaduomenų, protokolo ir įterptųjų prisijungimo duomenų patikras kaip ir webhook tikrintuvas,
-kuriame leidžiami privatūs URL, tačiau sąmoningai leidžia localhost ir LAN paskirties vietas be globalaus
-funkcijos vėliavėlės nustatymo pakeitimo. Tai leidžia naudoti savarankiškai prieglobiamus Langfuse, Phoenix, Tempo ir Collector
-galinius taškus, įskaitant privačius HTTP galinius taškus. Debesijos metaduomenų prieglobos serveriai visada blokuojami.
-Peradresavimai nevykdomi, todėl rinktuvas negali peradresuoti prisijungimo duomenų į kitą prieglobos serverį.
-Kaip ir esama leksinė URL apsauga, ši priemonė nefiksuoja DNS vardų vertimo rezultatų; konfigūruokite tik
-operatoriaus valdomus prieglobos serverius. Kai galinis taškas nėra patikimame tinkle, pirmenybę teikite HTTPS.
+besąlygines metaduomenų / protokolo / įterptųjų prisijungimo duomenų patikras kaip webhook tikrintuvas,
+kai leidžiami privatūs URL, tačiau sąmoningai leidžia localhost / LAN paskirties adresus be visuotinio
+funkcijos vėliavėlės perrašymo. Tai leidžia naudoti savarankiškai priglobtus Langfuse, Phoenix, Tempo ir Collector
+galinius taškus, įskaitant privačius HTTP galinius taškus. Debesijos metaduomenų pagrindiniai kompiuteriai visada blokuojami.
+Peradresavimų nesekama, todėl rinktuvas negali peradresuoti prisijungimo duomenų į kitą pagrindinį kompiuterį.
+Kaip ir esama leksinė URL apsauga, ši apsauga nefiksuoja DNS vardų vertimo rezultato; konfigūruokite tik
+operatoriaus valdomus pagrindinius kompiuterius. Kai galinis taškas nėra patikimame tinkle, pirmenybę teikite HTTPS.
 
-### Naudingoji apkrova ir pristatymas
+### Duomenų turinys ir pristatymas
 
 OTLP/HTTP JSON (`ExportTraceServiceRequest`, `Content-Type: application/json`) perduoda po vieną
-CLIENT atkarpą kiekvienai leidžiamai eilutei, pavadintą pagal tikslų jos užklausos kelią. Pavadinimai pagal kelią leidžia atskirti
-Chat Completions, Responses ir Messages, neįtraukiant modelio ar tapatybės duomenų į
-atkarpos pavadinimą. Išteklių atributai apima `service.name` ir paketo `service.version`.
+CLIENT segmentą kiekvienai leidžiamai eilutei; jo pavadinimas yra tikslus užklausos kelias. Pavadinimas pagal kelią atskiria
+Chat Completions, Responses ir Messages, neįtraukdamas modelio ar tapatybės duomenų į
+segmento pavadinimą. Ištekliaus atributai apima `service.name` ir paketo `service.version`.
 
-Įprastas pokalbių bandymų žurnalavimo komponentas (`open-sse/handlers/chatCore/attemptLogging.ts`) užbaigimo metu įrašo
+Įprastas pokalbio bandymų registravimo modulis (`open-sse/handlers/chatCore/attemptLogging.ts`) užbaigimo metu įrašo
 `duration = Date.now() - startTime` ir nepateikia laiko žymos;
-`saveCallLogOperation` faile `src/lib/usage/callLogs.ts` pagal numatytąją nuostatą laiko žymą nustato į įrašymo
+`saveCallLogOperation`, esanti `src/lib/usage/callLogs.ts`, pagal numatytąją nuostatą laiko žymą nustato į įrašymo
 (užbaigimo) laiką. Todėl eksportuojant pabaiga nustatoma pagal eilutės laiko žymą, o pradžia = pabaiga − trukmė
 (milisekundėmis, konvertuotomis į dešimtaines nanosekundes). Kvietėjo pateiktos istorinės laiko žymos
-taip pat išsaugomos kaip pabaigos laikas; nėra atskiro kiekvienos eilutės pradžios ir užbaigimo skiriamojo požymio.
-Null trukmė tampa nuliu. Dėl netinkamų ar trūkstamų laiko žymų paketo apdorojimas nutraukiamas, užuot kūrus
-nedeterministines atkarpas. `ttftMs` gali būti null ir susiejamas su `omniroute.ttft_ms`.
+taip pat išsaugomos kaip pabaigos laikas; kiekvienai eilutei nėra pradžios / užbaigimo skiriamojo požymio.
+Null trukmė tampa nuliu. Dėl netinkamų arba trūkstamų laiko žymų paketas nepavyksta, užuot kūrus
+nedeterministinius segmentus. `ttftMs` gali būti null ir susiejamas su `omniroute.ttft_ms`.
 
-Atributai apima `gen_ai.operation.name="chat"`, teikėją, užklaustą ir atsakymo modelį,
-įvesties ir išvesties žetonus, neprivalomus podėlio skaitymo, podėlio kūrimo ir samprotavimo žetonus, HTTP būseną,
-kombinaciją, podėlio šaltinį, seanso žymą ir koreliacijos identifikatorių. Sveikųjų skaičių OTLP reikšmės ir laiko žymos
+Atributai apima `gen_ai.operation.name="chat"`, teikėją, užklausoje nurodytą / atsakyme pateiktą modelį,
+įvesties / išvesties žetonus, neprivalomus podėlio skaitymo / podėlio kūrimo / samprotavimo žetonus, HTTP būseną,
+kombinaciją, podėlio šaltinį, sesijos žymą ir koreliacijos identifikatorių. Sveikųjų skaičių OTLP reikšmės ir laiko žymos
 yra dešimtainės eilutės; eilutėms, loginėms reikšmėms ir trupmeniniams skaičiams naudojami jų savieji OTLP reikšmių
-variantai. Klaidų atkarpos turi ERROR būseną ir išvalytą būsenos pranešimą. Kanoniniame
-įraše nėra aukštesniojo lygmens prieglobos serverio URL, todėl `server.address` praleidžiamas, užuot klaidingai
+variantai. Klaidų segmentai turi ERROR būseną ir išvalytą būsenos pranešimą. Kanoniniame
+įraše nėra aukštesnio lygmens pagrindinio kompiuterio URL, todėl `server.address` praleidžiamas, užuot klaidingai
 nurodžius rinktuvą kaip modelio serverį. Kaina neeksportuojama.
 
 Turinys įkeliamas tik nustačius `includeBodies=true`. Kai `langfuseMapping=false`,
-`gen_ai.input.messages` / `gen_ai.output.messages` perduoda išvalytą užklausos ir atsakymo
-turinio JSON, kaip jį saugo OmniRoute (kanonizuotą, kai jį galima išanalizuoti), o ne performuotą semantinių konvencijų
-pranešimų masyvą. Nukirstas arba ne JSON turinys lieka paprastuoju tekstu. Kai `langfuseMapping=true`,
+`gen_ai.input.messages` / `gen_ai.output.messages` perduoda išvalytą užklausos / atsakymo
+turinio JSON taip, kaip jį saugo OmniRoute (kanonizuotą, kai galima išanalizuoti), o ne pertvarkytą semconv
+pranešimų masyvą. Sutrumpintas / ne JSON turinys lieka paprastuoju tekstu. Kai `langfuseMapping=true`,
 turinys pateikiamas tik kaip `langfuse.observation.input` / `langfuse.observation.output`;
-atributai `gen_ai.*.messages` praleidžiami, kad kiekvienas turinys būtų siunčiamas vieną kartą. Abu režimai
+`gen_ai.*.messages` atributai praleidžiami, kad kiekvienas turinys būtų siunčiamas vieną kartą. Abu režimai
 paveldi `maxBodyBytes` iš esamo turinio įkėlimo mechanizmo;
-`omniroute.bodies_truncated=true` žymi nukirpimą.
-Ši paskirties vieta neprideda papildomų apdorojimo grandinės momentinių kopijų ar neišvalytų artefaktų skaitymo.
-Eksportuodami turinį naudokite minučių lygmens periodiškumą, pvz., `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`,
+`omniroute.bodies_truncated=true` žymi sutrumpinimą.
+Ši paskirties vieta neprideda jokių papildomų apdorojimo grandinės momentinių kopijų ar neišvalytų artefaktų skaitymų;
+pasirenkamam užklausos antraščių fiksavimui naudojama toliau aprašyta esama įkelta kliento momentinė kopija.
+Eksportuodami turinį naudokite minučių lygmens periodiškumą, pavyzdžiui, `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`,
 užuot kaupę valandinę neapdorotų duomenų eilę.
 
-Užklausoms taikoma 500 atkarpų ir 4 MiB UTF-8 JSON dydžio riba, įskaitant apgaubą.
-Kiekvienos leidžiamos atkarpos dydis patikrinamas prieš pirmąją žymeklio paketo užklausą. Jei atskira
-atkarpa viršija ribą, nesiunčiama jokia to paketo dalis ir operacija baigiama klaida su nurodymu sumažinti
-`maxBodyBytes`; atkarpa nėra tyliai atmetama. Išankstinės patikros metu išsaugomos tik nuorodos į įrašus ir
-baitų skaičiai, o kiekviena laikina atkarpa ir JSON pašalinami; atkarpos iš naujo sudaromos riboto dydžio dalims,
-užuot saugojus antrą serializuotą paketo kopiją. Gavus HTTP 408/429/5xx atsakymus, įvykus tinklo klaidoms ar pasibaigus laukimo laikui, atliekami ne daugiau kaip
-trys bandymai, taikant 250/500 ms eksponentinį delsos didinimą. `Retry-After` nurodytos sekundės arba HTTP datos
-gali pailginti delsą iki 5 sekundžių. Gavus kitus būsenos kodus, operacija iškart baigiama klaida. Dalinis OTLP 2xx atmetimas taip pat sukelia klaidą, užuot
-patvirtinus prarastą atkarpą; priimami tušti patvirtinimai arba patvirtinimai su tinkamu JSON, taikant
-64 KiB atsakymo skaitymo ribą.
+### Pasirenkamos kliento užklausos antraštės
 
-Klaidose pateikiami tik eksportuotojo turimi faktai: HTTP būsenos kodas, pakartotinio bandymo klasė, bandymų ir išsiųstų atkarpų
-skaičius arba fiksuotos patvirtinimo ar tinklo klaidos formuluotės. Rinktuvo atsakymų turinys,
+Antraščių fiksavimas **pagal numatytąją nuostatą išjungtas**. Paskirties vietos konfigūracijoje nustatykite `requestHeaderAllowlist`
+ir įjunkite **Eksportuoti užklausas ir atsakymus** (`includeBodies: true` paskirties vietoje).
+Leidžiamųjų sąrašas priima API masyvą arba teksto lauką su naujomis eilutėmis / kableliais atskirtais pavadinimais:
+
+```json
+{
+  "requestHeaderAllowlist": ["User-Agent", "X-Project", "X-OmniRoute-Meta-*"]
+}
+```
+
+Pavadinimai turi tiksliai sutapti neatsižvelgiant į raidžių registrą, nebent vienas gale esantis `*` parenka netuščią
+antraštės pavadinimo priešdėlį. Atskiras `*`, viduje esantys pakaitos simboliai ir netinkami HTTP antraščių pavadinimai atmetami.
+Galimi ne daugiau kaip 64 atrankos kriterijai, kurių kiekvieno pavadinimas arba priešdėlis gali būti ne ilgesnis kaip 256 ASCII baitai.
+Šis nustatymas yra atskiras nuo `headers`, kuris naudojamas eksportuotojo tapatybei rinktuve patvirtinti.
+
+Fiksavimo funkcija skaito tik `pipeline_client_request`, užpildytą iš išsaugoto išsamaus apdorojimo konvejerio
+`clientRawRequest` (arba senojo `clientRequest`). Ji niekada nenaudoja teikėjo užklausos antraščių kaip atsarginio šaltinio.
+Įrašant užklausą turėjo būti įjungtas išsamus konvejerio registravimas. Kai
+`includeBodies` išjungtas arba kliento momentinės kopijos JSON trūksta, jis sugadintas ar nukirstas, antraščių
+atributai neišvedami. Padidinus `maxBodyBytes` galima išvengti momentinės kopijos nukirtimo eksportuojant;
+tačiau taip negalima atkurti niekada neišsaugotų duomenų. Didesnė nei 1 MiB momentinė kopija arba kopija, kurioje yra daugiau nei
+256 antraščių įrašai, ignoruojama. Esamas užklausos teksto ir atsakymo eksportas lieka įjungtas kartu su
+antraščių fiksavimu; leidžiamųjų sąrašas nesuteikia vien antraščių duomenų atkūrimo režimo.
+
+Pasirinktos reikšmės tampa `http.request.header.<full lowercase header name>` OTLP eilučių masyvais,
+net jei yra tik viena eilutė. Pavyzdžiui, `X-OmniRoute-Meta-Team: example-team` tampa
+`http.request.header.x-omniroute-meta-team` su
+`{"arrayValue":{"values":[{"stringValue":"example-team"}]}}`.
+Išsaugomas visas priešdėlis: tai įprastos antraštės, kurioms netaikoma verslo laukų analizė ar
+konvertavimas į `omniroute.metadata.*` / Langfuse metaduomenis. `langfuseMapping` nekeičia antraščių
+semantikos. Pasirinkta vieną reikšmę turinti `User-Agent` taip pat nustato standartinį skaliarinį atributą
+`user_agent.original`. Vienoje reikšmėje esantys kableliai jos neskaido. Raidžių registru besiskiriantys variantai sujungiami išsaugotų
+įrašų tvarka; jei bent vienas variantas netinkamas, visa antraštė praleidžiama. Atributai rikiuojami pagal mažosiomis raidėmis užrašytą pavadinimą.
+
+Authorization, Proxy-Authorization, Cookie, Set-Cookie, API raktų antraštės, pavadinimai, kuriuose yra
+auth/token/secret/password/credential žymenų, ir vidiniai šliuzo prisijungimo duomenys visada
+neįtraukiami, net jei jie pasirinkti arba saugykloje iš dalies užmaskuoti. Žinomiems prisijungimo duomenų šablonams atpažinti naudojamas
+bendras prisijungimo duomenų detektorius; užmaskavimo žymenys praleidžiami, o ne eksportuojami kaip saugios reikšmės.
+Priimamos tik eilutės ir netušti eilučių masyvai; skaičiai ir objektai nekonvertuojami.
+Netinkami pavadinimai, prototipo raktai, valdymo simboliai (išskyrus horizontaliąją tabuliaciją) ir netaisyklingas Unicode
+ignoruojami nesukeliant paketo klaidos ir neatkartojant jų turinio klaidų pranešimuose.
+
+Kiekviename sekimo intervale fiksuojamos ne daugiau kaip 32 antraštės, po 16 reikšmių vienai antraštei, po 4096 UTF-8 baitus vienai reikšmei
+ir iš viso 16384 UTF-8 baitai visiems užfiksuotų antraščių pavadinimams ir reikšmėms. Per didelės arba netinkamos antraštės
+praleidžiamos visos, o ne nukerpamos. Atranka yra operatoriaus sprendimas dėl privatumo: iš pažiūros saugūs pavadinimai
+vis tiek gali turėti asmens duomenų, o šie apribojimai ir detektoriai nėra bendrosios paskirties asmenį identifikuojančios informacijos šalinimo priemonė.
+
+### Pristatymo apribojimai
+
+Užklausos ribojamos iki 500 sekimo intervalų ir 4 MiB UTF-8 JSON, įskaitant apvalkalą.
+Kiekvieno leidžiamo sekimo intervalo dydis tikrinamas prieš pirmąją žymeklio paketo užklausą. Jei atskiras
+sekimo intervalas viršija ribą, nesiunčiama jokia to paketo dalis ir grąžinama klaida su nurodymu sumažinti
+`maxBodyBytes`; jis nėra tyliai atmetamas. Išankstinė patikra išsaugo tik įrašų nuorodas ir
+baitų skaičius, pašalindama kiekvieną laikiną sekimo intervalą ir JSON; sekimo intervalai iš naujo sudaromi riboto dydžio dalims,
+užuot laikius antrą serializuotą paketo kopiją. Gavus HTTP 408/429/5xx, įvykus tinklo klaidoms ar pasibaigus laukimo laikui, atliekami ne daugiau kaip
+trys bandymai su 250/500 ms eksponentiškai didėjančia delsa. `Retry-After` sekundės arba HTTP datos
+gali pailginti delsą iki 5 sekundžių. Kitos būsenos iš karto sukelia klaidą. OTLP 2xx dalinis atmetimas taip pat sukelia klaidą, užuot
+patvirtinus prarastą sekimo intervalą; priimami tušti arba tinkamo JSON formato patvirtinimai, taikant
+64 KiB atsakymo nuskaitymo ribą.
+
+Klaidose pateikiami tik eksportuotojo turimi faktai: HTTP būsena, pakartotinio bandymo klasė, bandymų ir išsiųstų sekimo intervalų
+skaičiai arba fiksuotos patvirtinimo ar tinklo klaidos formuluotės. Rinktuvo atsakymų turinys,
 dalinės sėkmės skaičiai ir atsakymų antraštės niekada nekopijuojami į klaidas, žurnalus ar
-valdymo skydelį. Nepavykęs arba iš dalies priimtas paketas nepatvirtinamas: paskirties vietai rodoma
-klaidos būsena su tuo būsenos kodu, žymeklis lieka ties paskutiniu patvirtintu paketu, o kito vykdymo metu
-tos pačios eilutės siunčiamos iš naujo. Nuolatinės klaidų būsenos kartojasi, kol pataisomas rinktuvas arba konfigūracija.
-Atsakymo išsamios informacijos ieškokite paties rinktuvo žurnaluose. Iškvietimų žurnalo klaidų suvestinėms ir toliau taikomas
-atskiras neskelbtinų duomenų šalinimas.
-`prepare()` nesukuria jokių išteklių; testas siunčia tiksliai `{"resourceSpans":[]}` ir praneša
-HTTP būsenos kodą, neįrašydamas iškvietimų žurnalo atkarpų.
+valdymo skydą. Nepavykęs arba iš dalies priimtas paketas nepatvirtinamas: paskirties vietoje rodoma
+klaidos būsena su tuo būsenos kodu, žymeklis lieka ties paskutiniu patvirtintu paketu, o per kitą vykdymą
+tos pačios eilutės siunčiamos iš naujo. Nuolatinės klaidų būsenos kartosis, kol bus pataisytas rinktuvas arba konfigūracija.
+Atsakymo išsamios informacijos ieškokite paties rinktuvo žurnaluose. Iškvietimų žurnalo klaidų santraukoms išlieka
+atskiras slaptų duomenų maskavimas.
+`prepare()` nieko neparengia; testavimo veiksmas siunčia tiksliai `{"resourceSpans":[]}` ir praneša
+HTTP būseną neįrašydamas iškvietimų žurnalo sekimo intervalų.
 
-Sekimo identifikatoriai ir atkarpų identifikatoriai yra pirmieji 32/16 šešioliktainių SHA-256 maišos skaitmenų, apskaičiuotų iš
-`"omniroute.trace\\0" + callLogId` ir `"omniroute.span\\0" + callLogId`. Pakartotinai siunčiant naudojami
-identiški identifikatoriai. Tai negarantuoja dublikatų šalinimo: kai kurios serverinės sistemos, įskaitant Langfuse
-v4 duomenų priėmimą, nešalina atkarpų su tais pačiais identifikatoriais dublikatų. Dėl strigties arba dalies siuntimo klaidos gali būti
-pakartotinai išsiųstas daugiausia vienas nepatvirtintas žymeklio paketas; gali būti dubliuotas visas tas paketas,
-o ne tik paskutinė jo HTTP dalis. Rinkdamiesi žymeklio paketo dydį atsižvelkite į šį kompromisą.
+Trasų ir sekimo intervalų identifikatoriai yra pirmieji 32/16 šešioliktainių SHA-256 skaitmenų, apskaičiuotų iš
+`"omniroute.trace\\0" + callLogId` ir `"omniroute.span\\0" + callLogId`. Siunčiant pakartotinai naudojami
+tie patys identifikatoriai. Tai negarantuoja dublikatų šalinimo: kai kurios serverinės sistemos, įskaitant Langfuse
+v4 duomenų priėmimą, nešalina sekimo intervalų su tuo pačiu identifikatoriumi dublikatų. Strigtis arba dalies siuntimo klaida gali
+lemti pakartotinį ne daugiau kaip vieno nepatvirtinto žymeklio paketo siuntimą; gali būti dubliuotas visas paketas,
+ne tik paskutinė jo HTTP dalis. Rinkdamiesi žymeklio paketo dydį atsižvelkite į šį kompromisą.
 
 ### Langfuse pavyzdys
 
-Savarankiškai valdomam Langfuse egzemplioriui sukonfigūruokite šiuos laukus:
+Savarankiškai talpinamam Langfuse egzemplioriui sukonfigūruokite šiuos laukus:
 
 ```json
 {
@@ -370,43 +423,43 @@ Savarankiškai valdomam Langfuse egzemplioriui sukonfigūruokite šiuos laukus:
 }
 ```
 
-Authorization reikšmę sukurkite vietoje, užkoduodami pažodinę `public-key:secret-key`
+Authorization reikšmę sukurkite lokaliai, užkoduodami tikslią `public-key:secret-key`
 eilutę Base64 formatu (pavyzdžiui, naudodami `Buffer.from(publicKey + ":" + secretKey).toString("base64")`).
 Nekopijuokite tikrų prisijungimo duomenų į žurnalus, ekrano kopijas ar problemų pranešimus. Susiejimas automatiškai
-nustato `x-langfuse-ingestion-version: 4`; Authorization vis tiek pateikiama lauke `headers`.
-Tiek antraštėms, tiek sugeneruotai tapatybės druskai naudojamas esamas šifruotų slaptųjų laukų
+nustato `x-langfuse-ingestion-version: 4`; Authorization vis tiek pateikiama per `headers`.
+Tiek antraštėms, tiek sugeneruotai tapatybės druskai naudojamas esamas šifruotų slaptų laukų
 mechanizmas ir API vietaženkliai; būtinas `STORAGE_ENCRYPTION_KEY`.
 
-Susiejimas prideda generavimo tipą ir modelį, JSON naudojimo informaciją (įvestį, išvestį, bendrą kiekį ir galimus
-podėlio raktus), JSON įvesties ir išvesties momentines kopijas, ERROR/DEFAULT lygį, išvalytą būsenos pranešimą,
-sekimo pavadinimą, seanso identifikatorių, pasirenkamą aplinką ir filtruojamą
-`langfuse.observation.metadata.<key>` reikšmę tiekėjui, prašomam modeliui, keliui, deriniui, podėlio
-šaltiniui ir būsenai. `langfuse.observation.completion_start_time` yra ISO 8601 formato laikas,
-lygus pradžiai + TTFT, tik kai TTFT žinomas ir neviršija trukmės. Kainos atributai nesiunčiami.
+Susiejimas prideda generavimo tipą / modelį, JSON naudojimo duomenis (įvesties / išvesties / bendrą kiekį ir galimus
+podėlio raktus), JSON įvesties / išvesties momentines kopijas, ERROR/DEFAULT lygį, išvalytą būsenos pranešimą,
+sekimo pavadinimą, seanso ID, pasirenkamą aplinką ir filtruojamus
+`langfuse.observation.metadata.<key>` teikėjo, prašomo modelio, kelio, derinio, podėlio
+šaltinio ir būsenos duomenis. `langfuse.observation.completion_start_time` yra ISO 8601 formato laikas,
+lygus pradžios laikui + TTFT, tik kai TTFT žinomas ir neviršija trukmės. Kainos atributai nesiunčiami.
 
 Tapatybės režimai taikomi `langfuse.user.id`:
 
-- `pseudonymous` (numatytasis): vidinio API rakto identifikatoriaus HMAC-SHA256 su atsitiktine
+- `pseudonymous` (numatytasis): API rakto vidinio ID HMAC-SHA256 reikšmė su atsitiktine
   kiekvienai paskirties vietai skirta 32 baitų druska. Jei druskos nėra, ji sugeneruojama kuriant, užšifruojama
-  kaip `identitySalt`, niekada negrąžinama ir išsaugoma redaguojant. Neapdoroti raktų identifikatoriai niekada
-  neįtraukiami į atkarpų atributus. Iš naujo sukūrus arba pakeitus paskirties vietos druską, tapatybės pasikeičia.
+  kaip `identitySalt`, niekada negrąžinama ir išsaugoma redaguojant. Neapdoroti raktų ID niekada
+  neįrašomi į atkarpų atributus. Iš naujo sukūrus ar pakeitus paskirties vietos druską, tapatybės pasikeičia.
 - `keyName`: sukonfigūruotas API rakto pavadinimas, sąmoningai atskleidžiantis šią operatoriaus žymą.
-- `none`: be naudotojo identifikatoriaus. Seansų žymos vis tiek eksportuojamos, jei jos yra; šie režimai
-  neanonimizuoja savavališko užklausų turinio ar operatoriaus pateiktų seanso ir koreliacijos žymų.
+- `none`: naudotojo ID nėra. Seanso žymos vis tiek eksportuojamos, jei jos yra; šie režimai
+  neanonimizuoja laisvos formos užklausų turinio ar operatoriaus pateiktų seanso / koreliacijos žymų.
 
-### Paleidimas be istorinių duomenų įkėlimo
+### Pradžia be istorinių duomenų užpildymo
 
-Tik kuriant įjunkite **Pradėti nuo dabartinės padėties (praleisti esamus žurnalus)** arba perduokite
-`startFromCurrentPosition: true` aukščiausiu kūrimo API užklausos turinio lygiu. Tai nustato pradinę
-`cursor_row_id` reikšmę į didžiausią šiuo metu išsaugoto iškvietimų žurnalo rowid, naudojant esamas žymeklio
-pagalbines funkcijas, be migracijos. Numatytoji reikšmė yra false (žymeklis 0 ir išsaugotos istorijos įkėlimas).
-Tai nėra žymeklio nustatymo iš naujo atnaujinimo metu parinktis.
+Tik kuriant įjunkite **Pradėti nuo dabartinės pozicijos (praleisti esamus žurnalus)** arba perduokite
+`startFromCurrentPosition: true` kūrimo API užklausos duomenų aukščiausiame lygyje. Taip
+`cursor_row_id` nustatomas į dabartinį didžiausią išsaugoto iškvietimų žurnalo rowid, naudojant esamas žymeklio
+pagalbines funkcijas, be migracijos. Numatytoji reikšmė yra false (žymeklis 0 ir išsaugotos istorijos užpildymas).
+Tai nėra žymeklio nustatymo iš naujo atnaujinimo metu nuostata.
 
-Bendras `ttftMs` papildymas taip pat prideda stulpelį `ttft_ms`, kuriame leidžiamos null reikšmės, prie BigQuery susiejimo
-ir naujos lentelės schemos: schemos testas reikalauja, kad kiekvienas kanoninio įrašo laukas turėtų
-stulpelį. Esamų lentelių eksportavimas nesikeičia: `prepare()` perskaito lentelės schemą ir
-praleidžia tik `ttft_ms`, jei to stulpelio nėra. Pridėkite INT64 stulpelį, kuriame leidžiamos null reikšmės, kad gautumėte TTFT
-kito vykdymo metu, arba naudokite naują lentelę. Nereikia PATCH, automatinio schemos keitimo ar papildomų
+Bendras `ttftMs` papildymas taip pat prideda NULL reikšmę leidžiantį `ttft_ms` stulpelį prie BigQuery susiejimo modulio
+ir naujos lentelės schemos: jos schemos testas reikalauja, kad kiekvienas kanoninio įrašo laukas turėtų
+stulpelį. Esamų lentelių eksportavimas nesikeičia: `prepare()` nuskaito lentelės schemą ir
+praleidžia tik `ttft_ms`, kai šio stulpelio nėra. Pridėkite NULL reikšmę leidžiantį INT64 stulpelį, kad gautumėte TTFT
+kito vykdymo metu, arba naudokite naują lentelę. Nereikia nei PATCH, nei automatinio schemos keitimo, nei papildomų
 leidimų; visiems kitiems eilutės laukams ir toliau taikoma griežta schemos patikra.
 
 ---

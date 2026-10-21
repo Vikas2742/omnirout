@@ -256,100 +256,153 @@ Telegram webhook 採用相同的防護機制）。
 
 ## 5. OTLP/HTTP 追蹤資料目的地
 
-設定使用 `type: "otlp-http"`。這是以游標為基礎、定期匯出已持久化呼叫日誌的機制，
-而非 `open-sse/services/routing/otel.ts` 中以盡力而為方式即時接收路由事件的接收端。
+設定使用 `type: "otlp-http"`。這是以游標為基礎、定期匯出已持久化呼叫記錄的機制，
+並非 `open-sse/services/routing/otel.ts` 中盡力而為的即時路由事件接收端。
 它不會讀取或變更該接收端的環境變數、計時器或緩衝區。同時啟用兩者可能產生兩種獨立的 span；
-請使用 `omniroute.log-export` 儀器化範圍來區分這些呼叫日誌 span。
+請使用 `omniroute.log-export` 插樁範圍來區分這些呼叫記錄 span。
 
-| 索引鍵            | 預設值 / 用途                                               |
-| ----------------- | ----------------------------------------------------------- |
-| `endpoint`        | 必填的完整 HTTP(S) 追蹤資料 URL；不會附加 `/v1/traces` 後綴 |
-| `headers`         | 選填的 `Name: value` 行或由字串組成的 JSON 物件；會加密     |
-| `serviceName`     | `omniroute`；資源 `service.name`                            |
-| `langfuseMapping` | `false`；新增 Langfuse 生成／工作階段／使用者屬性           |
-| `identity`        | `pseudonymous`、`keyName` 或 `none`                         |
-| `paths`           | `/v1/chat/completions`、`/v1/responses`、`/v1/messages`     |
-| `timeoutMs`       | 每次 HTTP 嘗試為 `30000`                                    |
-| `environment`     | 未設定；選填的 `langfuse.environment`                       |
+| 索引鍵                   | 預設值 / 用途                                               |
+| ------------------------ | ----------------------------------------------------------- |
+| `endpoint`               | 必填的完整 HTTP(S) 追蹤資料 URL；不會附加 `/v1/traces` 後綴 |
+| `headers`                | 選填的 `Name: value` 行或由字串組成的 JSON 物件；會加密     |
+| `requestHeaderAllowlist` | 空白（關閉）；要擷取為 span 屬性的用戶端標頭名稱／前綴      |
+| `serviceName`            | `omniroute`；資源的 `service.name`                          |
+| `langfuseMapping`        | `false`；新增 Langfuse 生成／工作階段／使用者屬性           |
+| `identity`               | `pseudonymous`、`keyName` 或 `none`                         |
+| `paths`                  | `/v1/chat/completions`、`/v1/responses`、`/v1/messages`     |
+| `timeoutMs`              | 每次 HTTP 嘗試為 `30000`                                    |
+| `environment`            | 未設定；選填的 `langfuse.environment`                       |
 
-通用儀表板會呈現這些欄位。`paths` 接受透過 API 傳入的陣列，或文字區域中
-以換行／逗號分隔的精確路徑。除非明確允許，否則會略過嵌入、重新排序及其他路徑。
+通用儀表板會呈現這些欄位。`paths` 接受 API 陣列，或在文字區域中以換行／逗號
+分隔的精確路徑。除非明確允許，否則會略過嵌入、重新排序及其他路徑。
 略過的資料列仍會推進游標；現有執行器的 `exported`/`exportedTotal` 計數器
-計算的是已處理的來源資料列（包含被篩除的資料列），而非已接受的 span。
+計算的是已處理的來源資料列（包含已篩除的資料列），而非已接受的 span。
 篩選會在子程序中執行，不會變更其 IPC／游標契約。
 
-URL 驗證使用來自 `src/shared/network/outboundUrlGuard.ts`、不依賴資料庫的
-`parseAndValidateNonMetadataUrl` 輔助函式：即 `block-metadata` 原則。它與
-允許私有 URL 的 webhook 驗證器具有相同的無條件中繼資料／通訊協定／內嵌認證資訊檢查，
-但刻意允許 localhost／LAN 目標，無須透過全域功能旗標覆寫。
-這可支援自行託管的 Langfuse、Phoenix、Tempo 和 Collector
-端點，包括私有 HTTP 端點。雲端中繼資料主機一律會被封鎖。
-系統不會跟隨重新導向，因此收集器無法將認證資訊重新導向至其他主機。
-與現有的詞法 URL 防護機制一樣，這不會固定 DNS 解析結果；請僅設定
-由操作人員控制的主機。只要端點不在受信任的網路上，就應優先使用 HTTPS。
+URL 驗證使用 `src/shared/network/outboundUrlGuard.ts` 中不依賴資料庫的
+`parseAndValidateNonMetadataUrl` 輔助函式，也就是 `block-metadata` 原則。
+它與已允許私人 URL 的 webhook 驗證器一樣，會無條件檢查中繼資料／通訊協定／內嵌認證資訊，
+但刻意允許 localhost／LAN 目標，而不需要全域功能旗標覆寫。
+這讓自行託管的 Langfuse、Phoenix、Tempo 和 Collector 端點得以使用，包括私人 HTTP 端點。
+雲端中繼資料主機一律會遭到封鎖。
+不會跟隨重新導向，因此收集器無法將認證資訊重新導向至其他主機。
+如同現有的詞彙式 URL 防護機制，這不會固定 DNS 解析結果；請只設定由營運者控制的主機。
+只要端點不在受信任的網路上，就應優先使用 HTTPS。
 
-### 承載內容與傳送
+### 承載資料與傳遞
 
 OTLP/HTTP JSON（`ExportTraceServiceRequest`、`Content-Type: application/json`）會為每個
-允許的資料列攜帶一個 CLIENT span，並以其精確的請求路徑命名。以路徑命名可區分
-Chat Completions、Responses 和 Messages，而不必將模型或身分資料嵌入
-span 名稱。資源屬性包含 `service.name` 及套件的 `service.version`。
+允許的資料列傳送一個 CLIENT span，並以其精確的請求路徑命名。以路徑命名可區分
+Chat Completions、Responses 和 Messages，而不會將模型或身分資料嵌入 span 名稱。
+資源屬性包含 `service.name` 和套件的 `service.version`。
 
 一般聊天嘗試記錄器（`open-sse/handlers/chatCore/attemptLogging.ts`）會在完成時寫入
-`duration = Date.now() - startTime`，且不提供時間戳記；
+`duration = Date.now() - startTime`，但不提供時間戳記；
 `src/lib/usage/callLogs.ts` 中的 `saveCallLogOperation` 預設會將時間戳記設為寫入
-（完成）時間。因此，匯出時會將結束時間設為資料列時間戳記，起始時間設為結束時間減去持續時間
-（以毫秒為單位，再轉換為十進位奈秒）。呼叫端提供的歷史時間戳記
-也會保留為結束時間；每個資料列並沒有用來區分起始／完成時間的標記。
-null 持續時間會轉為零。無效或遺漏的時間戳記會導致批次失敗，而非建立
-不具確定性的 span。`ttftMs` 可為 null，並對應至 `omniroute.ttft_ms`。
+（完成）時間。因此，匯出時會將結束時間設為資料列時間戳記，開始時間設為結束時間減去持續時間
+（以毫秒為單位，轉換為十進位奈秒）。呼叫端提供的歷史時間戳記
+也會保留為結束時間；並沒有逐列區分開始／完成時間的標記。
+空值持續時間會變成零。無效或缺少的時間戳記會導致整批失敗，而不是建立
+非確定性的 span。`ttftMs` 可為空值，並對應至 `omniroute.ttft_ms`。
 
 屬性包含 `gen_ai.operation.name="chat"`、提供者、請求／回應模型、
-輸入／輸出 token 數、選填的快取讀取／快取建立／推理 token 數、HTTP 狀態、
-組合、快取來源、工作階段標籤及關聯 ID。整數 OTLP 值與時間戳記
-皆為十進位字串；字串、布林值及小數則使用各自原生的 OTLP 值
-變體。錯誤 span 具有 ERROR 狀態及經淨化的狀態訊息。標準
-記錄沒有上游主機 URL，因此會省略 `server.address`，而非錯誤地
+輸入／輸出權杖數、選填的快取讀取／快取建立／推理權杖數、HTTP 狀態、
+組合、快取來源、工作階段標籤及關聯識別碼。OTLP 整數值與時間戳記
+使用十進位字串；字串、布林值及小數則使用其原生 OTLP 值變體。
+錯誤 span 的狀態為 ERROR，並帶有經清理的狀態訊息。標準記錄
+沒有上游主機 URL，因此會省略 `server.address`，而非錯誤地
 將收集器識別為模型伺服器。不會匯出費用。
 
 只有 `includeBodies=true` 才會載入內容。當 `langfuseMapping=false` 時，
-`gen_ai.input.messages` / `gen_ai.output.messages` 會攜帶 OmniRoute 儲存的經淨化請求／回應
-主體 JSON（可剖析時會進行正規化），而非重新塑形的 semconv
+`gen_ai.input.messages` / `gen_ai.output.messages` 會承載 OmniRoute 所儲存、經清理的請求／回應
+主體 JSON（可解析時會正規化），而非重新塑形的 semconv
 訊息陣列。遭截斷／非 JSON 的主體會保留為原始文字。當 `langfuseMapping=true` 時，
-主體僅會以 `langfuse.observation.input` / `langfuse.observation.output` 輸出；
-`gen_ai.*.messages` 屬性會被省略，因此每個主體只會傳送一次。兩種模式
-都會繼承現有內容載入流程的 `maxBodyBytes`；
-`omniroute.bodies_truncated=true` 表示發生截斷。
-此目的地不會新增額外的管線快照，也不會讀取未經淨化的產物。
-匯出主體時，請採用分鐘級的執行頻率，例如 `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`，
-而非每小時才執行一次，導致待處理資料累積。
+主體只會以 `langfuse.observation.input` / `langfuse.observation.output` 輸出；
+會省略 `gen_ai.*.messages` 屬性，讓每個主體只傳送一次。兩種模式
+皆從現有的內容載入流程繼承 `maxBodyBytes`；
+`omniroute.bodies_truncated=true` 表示內容遭截斷。
+此目的地不會新增額外的管線快照，也不會讀取未經清理的產物；
+選用的請求標頭擷取功能會使用下方所述、現有已載入的用戶端快照。
+匯出主體時，請使用分鐘級的排程間隔，例如 `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`，
+而非累積每小時的待處理資料。
 
-每個請求最多包含 500 個 span，且 UTF-8 JSON 大小不得超過 4 MiB（含封裝結構）。
-在游標批次的第一個請求送出前，會先檢查每個允許傳送的 span 大小。若單一
-span 超過限制，該批次的任何部分都不會送出，並會失敗且提示降低
-`maxBodyBytes`；不會無聲地捨棄該 span。預先檢查僅保留記錄參照與
-位元組計數，並捨棄每個暫存的 span/JSON；span 會依大小受限的區塊重新建構，
-而非在記憶體中保留批次的第二份序列化副本。HTTP 408/429/5xx、網路故障與逾時最多
+### 選用的用戶端請求標頭
+
+標頭擷取**預設為關閉**。請在目的地設定中指定 `requestHeaderAllowlist`，
+並啟用**匯出提示與回應**（目的地上的 `includeBodies: true`）。
+允許清單接受 API 陣列，或在文字區域中以換行／逗號分隔的名稱：
+
+```json
+{
+  "requestHeaderAllowlist": ["User-Agent", "X-Project", "X-OmniRoute-Meta-*"]
+}
+```
+
+名稱比對不區分大小寫，且必須完全相符；但若結尾有單一 `*`，則會選取符合非空標頭名稱前綴的項目。
+不接受單獨的 `*`、嵌入式萬用字元及無效的 HTTP 標頭名稱。
+最多可設定 64 個選取器，每個名稱／前綴最多為 256 個 ASCII 位元組。
+此設定與 `headers` 分開，後者用於讓匯出器向收集器進行驗證。
+
+擷取作業僅讀取 `pipeline_client_request`，其內容來自已儲存的詳細管線中的
+`clientRawRequest`（或舊版的 `clientRequest`）。它絕不會退而使用提供者的請求標頭。
+記錄請求時，必須已啟用詳細管線記錄。若停用
+`includeBodies`，或用戶端快照 JSON 遺失、損毀或遭截斷，則不會輸出任何標頭
+屬性。增加 `maxBodyBytes` 可避免匯出時截斷快照；
+但無法還原從未儲存的詳細資料。超過 1 MiB 或包含超過
+256 個標頭項目的快照會被忽略。既有的提示／回應匯出功能會與
+標頭擷取一併保持啟用；允許清單不提供僅載入標頭的模式。
+
+選取的值會成為 `http.request.header.<full lowercase header name>` OTLP 字串陣列，
+即使只有單一字串也一樣。例如，`X-OmniRoute-Meta-Team: example-team` 會成為
+`http.request.header.x-omniroute-meta-team`，其值為
+`{"arrayValue":{"values":[{"stringValue":"example-team"}]}}`。
+完整前綴會予以保留：這些是一般標頭，不會進行業務欄位剖析，也不會
+轉換為 `omniroute.metadata.*` / Langfuse 中繼資料。`langfuseMapping` 不會改變標頭
+語意。選取的單值 `User-Agent` 也會設定標準純量屬性
+`user_agent.original`。單一值中的逗號不會用來分割值。大小寫不同的項目會依儲存的
+項目順序合併；只要其中任一變體無效，就會略過整個標頭。屬性依小寫名稱排序。
+
+Authorization、Proxy-Authorization、Cookie、Set-Cookie、API 金鑰標頭、名稱含有
+auth/token/secret/password/credential 標記的標頭，以及內部閘道憑證，一律會被
+排除，即使已選取或在儲存時已部分遮罩也一樣。已知憑證模式會重用
+共用的憑證偵測器；遮蔽標記會被略過，而不會當作安全值匯出。
+僅接受字串與非空的字串陣列；不會強制轉換數字或物件。
+無效名稱、原型鍵、控制字元（水平定位字元除外）及格式錯誤的 Unicode
+會被忽略，不會導致整批失敗，也不會在錯誤中呈現其內容。
+
+每個 span 最多擷取 32 個標頭，每個標頭最多 16 個值，每個值最多 4096 個 UTF-8 位元組，
+且所擷取的標頭名稱與值合計最多 16384 個 UTF-8 位元組。過大／無效的標頭
+會整個略過，而非截斷。選取哪些標頭是操作人員的隱私決策：看似安全的名稱
+仍可能包含個人資料，這些限制／偵測器並非通用的個人識別資訊清除工具。
+
+### 傳送限制
+
+每個請求上限為 500 個 span，以及包含封裝在內的 4 MiB UTF-8 JSON。
+游標批次的第一個請求送出前，會先檢查每個允許的 span 的大小。若個別
+span 超過限制，該批次的任何部分都不會送出，並會回報失敗，提示降低
+`maxBodyBytes`；不會默默將其捨棄。預先檢查只保留記錄參照與
+位元組計數，並捨棄每個暫存的 span／JSON；系統會針對大小受限的區塊重建 span，
+而非保留整批資料的第二份序列化副本。HTTP 408/429/5xx、網路失敗及逾時最多會
 嘗試三次，並採用 250/500 ms 的指數退避。`Retry-After` 的秒數或 HTTP 日期
 可將延遲延長至最多 5 秒。其他狀態會立即失敗。OTLP 2xx 部分拒絕也會擲出錯誤，而非
-確認已遺失的 span；接受空白或有效的 JSON 確認回應，
+將遺失的 span 視為已確認；接受空白或有效 JSON 的確認回應，
 回應讀取上限為 64 KiB。
 
-錯誤僅包含匯出器本身掌握的資訊：HTTP 狀態、重試類別、嘗試次數與已傳送的 span
-數量，或固定的確認回應／網路故障文字。收集器回應本文、
-部分成功計數與回應標頭絕不會複製到錯誤、日誌或
-儀表板中。失敗或部分接受的批次不會獲得確認：目的地會顯示
-失敗及該狀態，游標停留在最後一個已確認的批次，而下次執行時
-會重新傳送相同的資料列。永久性狀態會持續失敗，直到收集器或設定
-修正為止。請使用收集器本身的日誌查看回應詳細資訊。呼叫日誌的錯誤摘要仍保留
-其獨立的敏感資訊遮蔽處理。
-`prepare()` 不會佈建任何資源；測試只會傳送 `{"resourceSpans":[]}`，並回報
-HTTP 狀態，不會寫入呼叫日誌 span。
+錯誤僅包含匯出器自身掌握的資訊：HTTP 狀態、重試類別、嘗試次數及已傳送的 span
+數量，或固定的確認回應／網路失敗訊息。收集器的回應本文、
+部分成功計數及回應標頭絕不會複製到錯誤、記錄或
+儀表板中。失敗或部分接受的批次不會被確認：目的地會顯示
+失敗及該狀態，游標會停留在最後一個已確認的批次，而下次執行
+會重新傳送相同的資料列。永久性狀態會持續造成失敗，直到收集器或設定
+修正為止。請使用收集器本身的記錄查看回應詳細資訊。呼叫記錄的錯誤摘要會保留
+其獨立的遮蔽處理。
+`prepare()` 不會佈建任何資源；測試會精確地 POST `{"resourceSpans":[]}`，並回報
+HTTP 狀態，不會寫入呼叫記錄 span。
 
 追蹤 ID 與 span ID 分別是對
-`"omniroute.trace\\0" + callLogId` 和 `"omniroute.span\\0" + callLogId` 計算 SHA-256 後的前 32/16 個十六進位數字。重新傳送時會帶有
-相同的 ID。這不保證去除重複資料：某些後端（包括 Langfuse
-v4 資料擷取）不會對相同 ID 的 span 去除重複資料。當機或部分區塊失敗時，
+`"omniroute.trace\\0" + callLogId` 與 `"omniroute.span\\0" + callLogId` 計算 SHA-256 後，取前 32/16 個十六進位數字。重新傳送時會使用
+相同的 ID。這不保證去重：某些後端（包括 Langfuse
+v4 資料擷取）不會對相同 ID 的 span 去重。當機或部分區塊失敗時，
 最多可能重新傳送一個尚未確認的游標批次；整個批次都可能重複，
 而不只是最後一個 HTTP 區塊。選擇游標批次大小時，請考量此取捨。
 
@@ -368,44 +421,44 @@ v4 資料擷取）不會對相同 ID 的 span 去除重複資料。當機或部�
 }
 ```
 
-在本機將字面字串 `public-key:secret-key` 轉為 Base64，以建立 Authorization 值
-（例如使用 `Buffer.from(publicKey + ":" + secretKey).toString("base64")`）。
-請勿將真實憑證貼到日誌、螢幕截圖或議題中。對應功能會自動
-設定 `x-langfuse-ingestion-version: 4`；Authorization 仍需透過 `headers` 提供。
-標頭與產生的身分識別鹽值都使用現有的加密機密欄位
-機制與 API 預留位置；必須提供 `STORAGE_ENCRYPTION_KEY`。
+在本機將字面值 `public-key:secret-key`
+字串以 Base64 編碼，建立 Authorization 值（例如使用 `Buffer.from(publicKey + ":" + secretKey).toString("base64")`）。
+請勿將真實憑證貼到記錄、螢幕擷取畫面或議題中。此對應會自動
+設定 `x-langfuse-ingestion-version: 4`；Authorization 仍透過 `headers` 提供。
+標頭與產生的身分識別鹽值皆使用既有的加密機密欄位
+機制與 API 預留位置；必須設定 `STORAGE_ENCRYPTION_KEY`。
 
-對應功能會新增生成類型／模型、JSON 用量詳細資訊（輸入／輸出／總計與可用的
-快取鍵）、JSON 輸入／輸出快照、ERROR/DEFAULT 層級、經過清理的狀態訊息、
+對應會新增生成類型／模型、JSON 用量詳細資訊（輸入／輸出／總計及可用的
+快取鍵）、JSON 輸入／輸出快照、ERROR/DEFAULT 層級、經清理的狀態訊息、
 追蹤名稱、工作階段 ID、選用的環境，以及可篩選的
 `langfuse.observation.metadata.<key>`，用於提供者、請求的模型、路徑、組合、快取
-來源與狀態。只有在 TTFT 已知且位於持續時間範圍內時，才會將 `langfuse.observation.completion_start_time` 設為
-開始時間加上 TTFT 的 ISO 8601 時間。不會傳送任何成本屬性。
+來源及狀態。只有在 TTFT 已知且位於持續時間範圍內時，才會將 `langfuse.observation.completion_start_time` 設為
+開始時間 + TTFT，並採用 ISO 8601 格式。不會傳送任何費用屬性。
 
 身分識別模式適用於 `langfuse.user.id`：
 
-- `pseudonymous`（預設）：以每個目的地專屬的隨機 32 位元組
-  鹽值，對 API 金鑰的內部 ID 計算 HMAC-SHA256。若建立時沒有鹽值，便會產生鹽值，
-  加密儲存為 `identitySalt`，絕不傳回，並在編輯時保留。原始金鑰 ID 絕不會
-  放入 span 屬性。重新建立／輪替目的地的鹽值會改變身分識別。
-- `keyName`：已設定的 API 金鑰名稱，會刻意揭露該操作者標籤。
-- `none`：不含使用者 ID。若有工作階段標籤，仍會匯出；這些模式不會
-  將任意提示內容或操作者提供的工作階段／關聯標籤匿名化。
+- `pseudonymous`（預設）：使用每個目的地專屬的隨機
+  32 位元組鹽值，對 API 金鑰的內部 ID 進行 HMAC-SHA256 運算。若建立時未提供鹽值，則會產生鹽值，並加密
+  儲存為 `identitySalt`，絕不回傳，且在編輯時保留。原始金鑰 ID 絕不會
+  放入 span 屬性中。重新建立／輪替目的地的鹽值會改變身分識別結果。
+- `keyName`：設定的 API 金鑰名稱，會刻意揭露該操作人員標籤。
+- `none`：不提供使用者 ID。若有工作階段標籤，仍會匯出；這些模式不會
+  將任意提示內容或操作人員提供的工作階段／關聯標籤匿名化。
 
-### 不回填歷史資料即開始
+### 不回填歷史資料直接開始
 
-僅在建立時，啟用 **從目前位置開始（略過現有日誌）**，或在建立 API 的承載資料頂層傳入
-`startFromCurrentPosition: true`。這會使用現有的游標
+僅在建立時，啟用 **從目前位置開始（略過現有日誌）**，或在
+建立 API 的負載最上層傳入 `startFromCurrentPosition: true`。這會使用現有的游標
 輔助函式，將 `cursor_row_id` 初始化為目前保留的呼叫日誌中最大的 rowid，
-無須遷移。預設為 false（游標為 0，並回填保留的歷史資料）。
-這不是更新時重設游標的設定。
+不需進行遷移。預設為 false（游標為 0，並回填保留的歷史資料）。
+這不是更新時用來重設游標的設定。
 
-共用的 `ttftMs` 新增功能也會在 BigQuery 對應器
-與新資料表結構中新增可為 null 的 `ttft_ms` 欄位：其結構測試要求每個標準記錄欄位都有
-對應的資料欄。現有資料表仍會照常匯出：`prepare()` 會讀取資料表結構，
-並僅在缺少 `ttft_ms` 欄位時省略該欄位。新增可為 null 的 INT64 欄位，即可在
-下次執行時取得 TTFT，或改用新資料表。不需要 PATCH、自動結構變更或額外
-權限；所有其他資料列欄位仍會接受嚴格的結構檢查。
+共用的 `ttftMs` 新增項目也會在 BigQuery 對應器
+和新資料表結構中新增可為 null 的 `ttft_ms` 欄位：其結構測試要求每個標準記錄欄位都有
+對應的資料表欄位。現有資料表會維持原樣繼續匯出：`prepare()` 會讀取資料表結構，
+並僅在缺少 `ttft_ms` 欄位時省略該欄位。新增可為 null 的 INT64 欄位，即可在下次執行時取得 TTFT，
+或改用新資料表。不需要 PATCH、自動變更結構或額外
+權限；所有其他資料列欄位仍會進行嚴格的結構檢查。
 
 ---
 

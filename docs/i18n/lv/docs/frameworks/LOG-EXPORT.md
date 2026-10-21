@@ -255,104 +255,157 @@ noraida pieprasījumu, kas pārsniedz 10 MB. Daļa tiek noslēgta, sasniedzot 50
 
 ## 5. OTLP/HTTP trasējumu galamērķis
 
-Konfigurācijā izmanto `type: "otlp-http"`. Tā ir plānota saglabāto izsaukumu žurnālu eksportēšana
-ar kursora atbalstu, nevis reāllaika maršrutēšanas notikumu saņēmējs failā
-`open-sse/services/routing/otel.ts`, kas darbojas bez piegādes garantijas. Tā nelasa un nemaina šī saņēmēja vides
-mainīgos, taimerus vai buferus. Iespējojot abus, var tikt radīti divi neatkarīgi laidumu veidi;
+Konfigurācijā tiek izmantots `type: "otlp-http"`. Tas ir plānots saglabāto izsaukumu žurnālu eksports,
+kas izmanto kursoru, nevis reāllaika maršrutēšanas notikumu saņēmējs failā
+`open-sse/services/routing/otel.ts`, kas darbojas bez piegādes garantijas. Tas nelasa un nemaina šī saņēmēja vides
+mainīgos, taimerus vai buferus. Iespējojot abus, var tikt izveidoti divi neatkarīgi laidumu veidi;
 izmantojiet instrumentācijas tvērumu `omniroute.log-export`, lai atšķirtu šos izsaukumu žurnālu laidumus.
 
-| Atslēga           | Noklusējums / mērķis                                                         |
-| ----------------- | ---------------------------------------------------------------------------- |
-| `endpoint`        | Obligāts pilns HTTP(S) trasējumu URL; sufikss `/v1/traces` netiek pievienots |
-| `headers`         | Neobligātas `Name: value` rindas vai virkņu JSON objekts; šifrēts            |
-| `serviceName`     | `omniroute`; resursa atribūts `service.name`                                 |
-| `langfuseMapping` | `false`; pievieno Langfuse ģenerēšanas/sesijas/lietotāja atribūtus           |
-| `identity`        | `pseudonymous`, `keyName` vai `none`                                         |
-| `paths`           | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                      |
-| `timeoutMs`       | `30000` katram HTTP mēģinājumam                                              |
-| `environment`     | Nav iestatīts; neobligāts `langfuse.environment`                             |
+| Atslēga                  | Noklusējums / mērķis                                                                |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `endpoint`               | Obligāts pilns HTTP(S) trasējumu URL; sufikss `/v1/traces` netiek pievienots        |
+| `headers`                | Neobligātas `Name: value` rindas vai JSON objekts ar virknēm; šifrēts               |
+| `requestHeaderAllowlist` | Tukšs (izslēgts); klienta galveņu nosaukumi/prefiksi, ko tvert kā laidumu atribūtus |
+| `serviceName`            | `omniroute`; resursa atribūts `service.name`                                        |
+| `langfuseMapping`        | `false`; pievieno Langfuse ģenerēšanas/sesijas/lietotāja atribūtus                  |
+| `identity`               | `pseudonymous`, `keyName` vai `none`                                                |
+| `paths`                  | `/v1/chat/completions`, `/v1/responses`, `/v1/messages`                             |
+| `timeoutMs`              | `30000` katram HTTP mēģinājumam                                                     |
+| `environment`            | Nav iestatīts; neobligāts `langfuse.environment`                                    |
 
-Vispārīgais informācijas panelis attēlo šos laukus. `paths` pieņem API masīvu vai teksta apgabalu
-ar precīziem ceļiem, kas atdalīti ar jaunām rindām/komatiem. Iegultņu, pārkārtošanas un citi ceļi tiek
-izlaisti, ja vien tie nav skaidri atļauti. Arī izlaistās rindas virza kursoru uz priekšu; esošā
-izpildītāja `exported`/`exportedTotal` skaitītāji uzskaita apstrādātās avota rindas, tostarp filtrētās
+Vispārīgais informācijas panelis attēlo šos laukus. `paths` pieņem API masīvu vai teksta lauku
+ar precīziem ceļiem, kas atdalīti ar jaunām rindām/komatiem. Iegulumu, pārkārtošanas un citi ceļi tiek
+izlaisti, ja vien tie nav skaidri atļauti. Arī izlaistās rindas pārvieto kursoru uz priekšu; esošā
+izpildītāja `exported`/`exportedTotal` skaitītāji uzskaita apstrādātās avota rindas, ieskaitot izfiltrētās
 rindas, nevis pieņemtos laidumus. Filtrēšana tiek veikta pakārtotajā procesā, nemainot tā
 IPC/kursora līgumu.
 
-URL validācijai izmanto palīgfunkciju `parseAndValidateNonMetadataUrl` no
-`src/shared/network/outboundUrlGuard.ts`, kurai nav nepieciešama datubāze: politiku `block-metadata`. Tai ir tādas pašas
+URL validācija izmanto palīgfunkciju `parseAndValidateNonMetadataUrl` no
+`src/shared/network/outboundUrlGuard.ts`, kas neizmanto datubāzi: politiku `block-metadata`. Tai ir tādas pašas
 beznosacījumu metadatu/protokola/iegulto akreditācijas datu pārbaudes kā tīmekļa aizķeres validatoram ar
-atļautiem privātajiem URL, taču tā apzināti atļauj localhost/LAN mērķus bez globālas
+atļautiem privātiem URL, taču tā apzināti atļauj localhost/LAN mērķus bez globālas
 funkcionalitātes karodziņa ignorēšanas. Tas ļauj izmantot pašmitinātus Langfuse, Phoenix, Tempo un Collector
 galapunktus, tostarp privātus HTTP galapunktus. Mākoņa metadatu resursdatori vienmēr tiek bloķēti.
-Pārvirzīšanai netiek sekots, tāpēc savācējs nevar pārvirzīt akreditācijas datus uz citu resursdatoru.
+Novirzīšanām netiek sekots, tāpēc savācējs nevar novirzīt akreditācijas datus uz citu resursdatoru.
 Tāpat kā esošā leksiskā URL aizsardzība, arī šī nefiksē DNS atrisinājumu; konfigurējiet tikai
 operatora kontrolētus resursdatorus. Dodiet priekšroku HTTPS, ja galapunkts neatrodas uzticamā tīklā.
 
 ### Datu saturs un piegāde
 
-OTLP/HTTP JSON (`ExportTraceServiceRequest`, `Content-Type: application/json`) satur vienu
-CLIENT laidumu katrai atļautajai rindai, nosaucot to pēc precīzā pieprasījuma ceļa. Nosaukumu veidošana pēc ceļa ļauj atšķirt
-Chat Completions, Responses un Messages, neiekļaujot laiduma nosaukumā modeļa vai identitātes datus.
-Resursa atribūti ietver `service.name` un pakotnes `service.version`.
+OTLP/HTTP JSON (`ExportTraceServiceRequest`, `Content-Type: application/json`) pārraida vienu
+CLIENT laidumu katrai atļautajai rindai, nosaucot to pēc precīzā pieprasījuma ceļa. Nosaukšana pēc ceļa atšķir
+Chat Completions, Responses un Messages, neiekļaujot modeļa vai identitātes datus
+laiduma nosaukumā. Resursa atribūti ietver `service.name` un pakotnes `service.version`.
 
-Parastais tērzēšanas mēģinājumu žurnalētājs (`open-sse/handlers/chatCore/attemptLogging.ts`) pabeigšanas brīdī ieraksta
+Parastais tērzēšanas mēģinājumu reģistrētājs (`open-sse/handlers/chatCore/attemptLogging.ts`) pabeigšanas brīdī ieraksta
 `duration = Date.now() - startTime` un nenorāda laikspiedolu;
 `saveCallLogOperation` failā `src/lib/usage/callLogs.ts` pēc noklusējuma iestata laikspiedolu uz ierakstīšanas
-(pabeigšanas) laiku. Tāpēc eksportā beigas = rindas laikspiedols un sākums = beigas − ilgums
-(milisekundēs, pārveidots par nanosekundēm decimālā pierakstā). Arī izsaucēja norādītie vēsturiskie laikspiedoli
-tiek saglabāti kā beigu laiks; atsevišķām rindām nav sākuma/pabeigšanas atšķīrēja.
-Nulles vērtības ilgums tiek pārvērsts par nulli. Nederīgu vai trūkstošu laikspiedolu gadījumā visa pakete beidzas ar kļūdu, nevis tiek izveidoti
+(pabeigšanas) laiku. Tāpēc eksports iestata beigas = rindas laikspiedols un sākums = beigas − ilgums
+(milisekundes, pārvērstas decimālās nanosekundēs). Arī izsaucēja norādītie vēsturiskie laikspiedoli
+tiek saglabāti kā beigu laiks; katrai rindai nav sākuma/pabeigšanas atšķiršanas pazīmes.
+Nulles vērtības ilgums kļūst par nulli. Nederīgu/trūkstošu laikspiedolu dēļ visa pakete neizdodas, nevis tiek izveidoti
 nedeterministiski laidumi. `ttftMs` var būt nulles vērtība, un tas tiek kartēts uz `omniroute.ttft_ms`.
 
 Atribūti ietver `gen_ai.operation.name="chat"`, pakalpojumu sniedzēju, pieprasīto/atbildes modeli,
 ievades/izvades tokenus, neobligātus kešatmiņas lasīšanas/kešatmiņas izveides/spriešanas tokenus, HTTP statusu,
-kombināciju, kešatmiņas avotu, sesijas birku un korelācijas ID. OTLP veselo skaitļu vērtības un laikspiedoli
-ir decimālas virknes; virknēm, Būla vērtībām un daļskaitļiem izmanto to dabiskos OTLP vērtību
-variantus. Kļūdu laidumiem ir ERROR statuss un sanitizēts statusa ziņojums. Kanoniskajā
-ierakstā nav augšupējā resursdatora URL, tāpēc `server.address` tiek izlaists, nevis savācējs kļūdaini
-norādīts kā modeļa serveris. Izmaksas netiek eksportētas.
+kombināciju, kešatmiņas avotu, sesijas birku un korelācijas identifikatoru. Veselu skaitļu OTLP vērtības un laikspiedoli
+ir decimālas virknes; virknes, Būla vērtības un daļskaitļi izmanto savus sākotnējos OTLP vērtību
+variantus. Kļūdu laidumiem ir ERROR statuss un attīrīts statusa ziņojums. Kanoniskajā
+ierakstā nav augšupējā resursdatora URL, tāpēc `server.address` tiek izlaists, nevis kļūdaini
+identificē savācēju kā modeļa serveri. Izmaksas netiek eksportētas.
 
 Tikai `includeBodies=true` ielādē saturu. Ja `langfuseMapping=false`,
-`gen_ai.input.messages` / `gen_ai.output.messages` satur sanitizētu pieprasījuma/atbildes
-pamatteksta JSON tādā formā, kādā tas saglabāts OmniRoute (kanonizētu, ja to var parsēt), nevis pārveidotu semconv
-ziņojumu masīvu. Saīsināti pamatteksti un pamatteksti, kas nav JSON, paliek neapstrādāta teksta formā. Ja `langfuseMapping=true`,
-pamatteksti tiek izvadīti tikai kā `langfuse.observation.input` / `langfuse.observation.output`;
-atribūti `gen_ai.*.messages` tiek izlaisti, lai katrs pamatteksts tiktu nosūtīts vienreiz. Abi režīmi
-pārmanto `maxBodyBytes` no esošā satura ielādes ceļa;
+`gen_ai.input.messages` / `gen_ai.output.messages` satur attīrītu pieprasījuma/atbildes
+satura JSON tādā formā, kādā to saglabā OmniRoute (kanonizētu, ja to var parsēt), nevis pārveidotu semconv
+ziņojumu masīvu. Saīsināts saturs vai saturs, kas nav JSON, paliek neapstrādāta teksta veidā. Ja `langfuseMapping=true`,
+saturs tiek izvadīts tikai kā `langfuse.observation.input` / `langfuse.observation.output`;
+atribūti `gen_ai.*.messages` tiek izlaisti, lai katrs saturs tiktu nosūtīts vienreiz. Abi režīmi
+manto `maxBodyBytes` no esošā satura ielādes ceļa;
 `omniroute.bodies_truncated=true` norāda uz saīsināšanu.
-Šis galamērķis nepievieno papildu apstrādes konveijera momentuzņēmumus vai nesanitizētu artefaktu lasīšanu.
-Eksportējot pamattekstus, izmantojiet dažu minūšu intervālu, piemēram, `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`,
-nevis uzkrājiet stundas laikā neizpildītu darbu apjomu.
+Šis galamērķis nepievieno papildu konveijera momentuzņēmumus vai neattīrītu artefaktu lasīšanu;
+neobligātā pieprasījuma galveņu tveršana izmanto tālāk aprakstīto esošo ielādēto klienta momentuzņēmumu.
+Eksportējot saturu, izmantojiet minūšu līmeņa periodiskumu, piemēram, `OMNIROUTE_LOG_EXPORT_CRON="*/5 * * * *"`,
+nevis uzkrājiet stundas laikā neapstrādātu ierakstu rindu.
 
-Pieprasījumu ierobežojums ir 500 laidumi un 4 MiB UTF-8 JSON, ieskaitot aploksni.
-Pirms kursora paketes pirmā pieprasījuma tiek pārbaudīts katra atļautā laiduma lielums. Ja atsevišķs
-laidums pārsniedz ierobežojumu, netiek nosūtīta neviena šīs paketes daļa, un darbība neizdodas ar norādi samazināt
-`maxBodyBytes`; laidums netiek atmests bez brīdinājuma. Sākotnējā pārbaude saglabā tikai atsauces uz ierakstiem un
-baitu skaitu, atmetot katru pagaidu laidumu/JSON; laidumi tiek izveidoti atkārtoti ierobežota lieluma daļām,
-nevis glabājot otru paketes serializēto kopiju. HTTP 408/429/5xx, tīkla kļūmju un taimautu gadījumā tiek veikti ne vairāk kā
-trīs mēģinājumi ar 250/500 ms eksponenciālu atkārtošanas aizturi. `Retry-After` sekundes vai HTTP datumi
-var pagarināt aizturi līdz 5 sekundēm. Citu statusu gadījumā darbība neizdodas nekavējoties. Arī OTLP 2xx daļējas noraidīšanas gadījumā tiek izmests izņēmums, nevis
-apstiprināts zaudēts laidums; tiek pieņemti tukši apstiprinājumi vai apstiprinājumi derīgā JSON formātā, piemērojot
+### Neobligātas klienta pieprasījuma galvenes
+
+Galveņu tveršana **pēc noklusējuma ir izslēgta**. Galamērķa konfigurācijā iestatiet `requestHeaderAllowlist`
+un iespējojiet **Eksportēt uzvednes un atbildes** (`includeBodies: true` galamērķī).
+Atļauto saraksts pieņem API masīvu vai teksta lauku ar nosaukumiem, kas atdalīti ar jaunām rindām/komatiem:
+
+```json
+{
+  "requestHeaderAllowlist": ["User-Agent", "X-Project", "X-OmniRoute-Meta-*"]
+}
+```
+
+Nosaukumi tiek salīdzināti precīzi, neņemot vērā burtu reģistru, izņemot gadījumu, kad viens `*` beigās atlasa netukšu
+galvenes nosaukuma prefiksu. Atsevišķs `*`, iegultas aizstājējzīmes un nederīgi HTTP galveņu nosaukumi tiek noraidīti.
+Atļauti ne vairāk kā 64 atlasītāji, katram nosaukums/prefikss nedrīkst pārsniegt 256 ASCII baitus.
+Šis iestatījums ir atsevišķs no `headers`, kas autentificē eksportētāju kolektorā.
+
+Tveršana lasa tikai `pipeline_client_request`, kas tiek aizpildīts no saglabātā detalizētā konveijera
+`clientRawRequest` (vai mantotā `clientRequest`). Tā nekad neizmanto pakalpojuma sniedzēja pieprasījuma galvenes kā rezerves avotu.
+Pieprasījuma ierakstīšanas brīdī bija jābūt iespējotai detalizētai konveijera žurnalēšanai. Ja
+`includeBodies` ir atspējots vai klienta momentuzņēmuma JSON trūkst, ir bojāts vai apgriezts, galveņu
+atribūti netiek izvadīti. Palielinot `maxBodyBytes`, var novērst momentuzņēmuma apgriešanu eksportēšanas laikā;
+tas nevar atjaunot detaļas, kas nekad nav saglabātas. Momentuzņēmums, kas pārsniedz 1 MiB vai satur vairāk nekā
+256 galveņu ierakstus, tiek ignorēts. Esošā uzvedņu/atbilžu eksportēšana paliek iespējota līdztekus
+galveņu tveršanai; atļauto elementu saraksts nenodrošina datu ielādes režīmu tikai galvenēm.
+
+Atlasītās vērtības kļūst par `http.request.header.<full lowercase header name>` OTLP virkņu masīviem,
+pat ja ir tikai viena virkne. Piemēram, `X-OmniRoute-Meta-Team: example-team` kļūst par
+`http.request.header.x-omniroute-meta-team` ar
+`{"arrayValue":{"values":[{"stringValue":"example-team"}]}}`.
+Pilnais prefikss tiek saglabāts: tās ir parastas galvenes bez biznesa lauku parsēšanas vai
+`omniroute.metadata.*` / Langfuse metadatu pārveidošanas. `langfuseMapping` nemaina galveņu
+semantiku. Atlasīta `User-Agent` galvene ar vienu vērtību iestata arī standarta skalāro atribūtu
+`user_agent.original`. Komati vienas vērtības ietvaros netiek izmantoti sadalīšanai. Reģistra varianti tiek apvienoti saglabāto
+ierakstu secībā; jebkurš nederīgs variants izraisa visas attiecīgās galvenes izlaišanu. Atribūti tiek sakārtoti pēc nosaukuma ar mazajiem burtiem.
+
+Authorization, Proxy-Authorization, Cookie, Set-Cookie, API atslēgu galvenes, nosaukumi, kas satur
+auth/token/secret/password/credential marķierus, un iekšējie vārtejas akreditācijas dati vienmēr tiek
+izslēgti, pat ja tie ir atlasīti vai krātuvē daļēji maskēti. Zināmu akreditācijas datu paraugu atpazīšanai tiek atkārtoti izmantots
+koplietotais akreditācijas datu detektors; aizklāšanas marķieri tiek izlaisti, nevis eksportēti kā drošas vērtības.
+Tiek pieņemtas tikai virknes un netukši virkņu masīvi; skaitļi un objekti netiek automātiski pārveidoti.
+Nederīgi nosaukumi, prototipa atslēgas, vadības rakstzīmes (izņemot horizontālo tabulāciju) un nepareizi veidots Unicode
+tiek ignorēti, neizraisot paketes kļūmi un neatspoguļojot to saturu kļūdu ziņojumos.
+
+Katrs laidums tver ne vairāk kā 32 galvenes, 16 vērtības katrai galvenei, 4096 UTF-8 baitus katrai vērtībai
+un kopā 16384 UTF-8 baitus visu tverto galveņu nosaukumiem un vērtībām. Pārāk lielas vai nederīgas galvenes
+tiek pilnībā izlaistas, nevis apgrieztas. Atlase ir operatora lēmums par privātumu: šķietami droši nosaukumi
+joprojām var saturēt personas datus, un šie ierobežojumi/detektori nav vispārīgs personas identificējošas informācijas attīrīšanas līdzeklis.
+
+### Piegādes ierobežojumi
+
+Pieprasījumiem ir noteikts 500 laidumu un 4 MiB UTF-8 JSON ierobežojums, ieskaitot aploksni.
+Katra atļautā laiduma lielums tiek pārbaudīts pirms kursora paketes pirmā pieprasījuma. Ja atsevišķs
+laidums pārsniedz ierobežojumu, netiek nosūtīta neviena šīs paketes daļa, un tiek ziņots par kļūmi ar norādi samazināt
+`maxBodyBytes`; tas netiek klusi atmests. Iepriekšējā pārbaude saglabā tikai atsauces uz ierakstiem un
+baitu skaitu, atmetot katru pagaidu laidumu/JSON; laidumi tiek veidoti no jauna ierobežota izmēra daļām,
+nevis atmiņā tiek turēta otra serializēta paketes kopija. HTTP 408/429/5xx, tīkla kļūmju un noildžu gadījumā tiek veikti ne vairāk kā
+trīs mēģinājumi ar 250/500 ms eksponenciālu aizturi. `Retry-After` norādītās sekundes vai HTTP datumi
+var pagarināt aizturi līdz 5 sekundēm. Citi statusi izraisa tūlītēju kļūmi. Arī OTLP 2xx daļēja noraidīšana izraisa izņēmumu, nevis
+zaudēta laiduma apstiprināšanu; tiek pieņemti tukši apstiprinājumi vai derīgi JSON apstiprinājumi ar
 64 KiB atbildes nolasīšanas ierobežojumu.
 
-Kļūdas satur tikai eksportētāja rīcībā esošus faktus: HTTP statusu, atkārtošanas klasi, mēģinājumu un nosūtīto laidumu
-skaitu vai fiksētu apstiprinājuma/tīkla kļūmes formulējumu. Savācēja atbilžu saturs,
-daļējas izdošanās skaitītāji un atbilžu galvenes nekad netiek kopētas kļūdās, žurnālos vai
-informācijas panelī. Neizdevusies vai daļēji pieņemta pakete netiek apstiprināta: galamērķis rāda
-kļūmes stāvokli ar attiecīgo statusu, kursors paliek pie pēdējās apstiprinātās paketes, un nākamajā izpildes reizē
-tās pašas rindas tiek nosūtītas atkārtoti. Pastāvīgu kļūdu statusu gadījumā darbība turpina neizdoties, līdz tiek novērsta savācēja vai konfigurācijas
-problēma. Lai iegūtu atbildes detalizēto informāciju, izmantojiet paša savācēja žurnālus. Izsaukumu žurnāla kļūdu kopsavilkumiem tiek saglabāta
+Kļūdu ziņojumi satur tikai eksportētāja rīcībā esošus faktus: HTTP statusu, atkārtoto mēģinājumu kategoriju, mēģinājumu un nosūtīto laidumu
+skaitu vai fiksētu apstiprinājuma/tīkla kļūmes formulējumu. Kolektora atbilžu saturs,
+daļējas izdošanās skaitļi un atbilžu galvenes nekad netiek kopētas kļūdu ziņojumos, žurnālos vai
+informācijas panelī. Neveiksmīga vai daļēji pieņemta pakete netiek apstiprināta: galamērķī tiek rādīts
+kļūmes stāvoklis ar attiecīgo statusu, kursors paliek pie pēdējās apstiprinātās paketes, un nākamā izpilde
+atkārtoti nosūta tās pašas rindas. Pastāvīgie statusi turpina izraisīt kļūmes, līdz tiek novērsta kolektora vai konfigurācijas
+problēma. Lai iegūtu detalizētu informāciju par atbildēm, izmantojiet paša kolektora žurnālus. Izsaukumu žurnāla kļūdu kopsavilkumiem tiek saglabāta
 atsevišķa sensitīvās informācijas aizklāšana.
-`prepare()` neko nesagatavo infrastruktūrā; pārbaude nosūta tieši `{"resourceSpans":[]}` un ziņo par
+`prepare()` neko nesagatavo; pārbaude nosūta tieši `{"resourceSpans":[]}` un ziņo par
 HTTP statusu, neierakstot izsaukumu žurnāla laidumus.
 
-Trasējumu ID un laidumu ID ir pirmie 32/16 heksadecimālie cipari no SHA-256 vērtības, kas aprēķināta attiecīgi no
-`"omniroute.trace\\0" + callLogId` un `"omniroute.span\\0" + callLogId`. Atkārtotiem sūtījumiem ir
-identiski ID. Tas negarantē dublikātu novēršanu: dažas aizmugursistēmas, tostarp Langfuse
-v4 datu uzņemšana, nenovērš laidumu dublikātus ar vienādiem ID. Avārijas vai atsevišķas daļas kļūmes dēļ var
-atkārtoti nosūtīt ne vairāk kā vienu neapstiprināto kursora paketi; var tikt dublēta visa šī pakete,
-ne tikai tās pēdējā HTTP daļa. Izvēlieties kursora paketes lielumu, ņemot vērā šo kompromisu.
+Trasējumu ID un laidumu ID ir pirmie 32/16 heksadecimālie cipari no SHA-256 vērtības, kas aprēķināta attiecīgi virknei
+`"omniroute.trace\\0" + callLogId` un `"omniroute.span\\0" + callLogId`. Atkārtoti sūtījumi izmanto
+identiskus ID. Tas negarantē dublikātu novēršanu: dažas aizmugursistēmas, tostarp Langfuse
+v4 datu saņemšana, nenovērš laidumu ar vienādiem ID dublēšanos. Avārija vai daļēja daļas kļūme var
+izraisīt ne vairāk kā vienas neapstiprinātās kursora paketes atkārtotu nosūtīšanu; var tikt dublēta visa šī pakete,
+nevis tikai tās pēdējā HTTP daļa. Izvēloties kursora paketes lielumu, ņemiet vērā šo kompromisu.
 
 ### Langfuse piemērs
 
@@ -369,43 +422,43 @@ Pašmitinātai Langfuse instancei konfigurējiet šos laukus:
 }
 ```
 
-Izveidojiet Authorization vērtību lokāli kā burtiskās virknes `public-key:secret-key`
+Izveidojiet Authorization vērtību lokāli kā burtiskas virknes `public-key:secret-key`
 Base64 kodējumu (piemēram, ar `Buffer.from(publicKey + ":" + secretKey).toString("base64")`).
-Neievietojiet īstus piekļuves datus žurnālos, ekrānuzņēmumos vai problēmu pieteikumos. Kartēšana automātiski
-iestata `x-langfuse-ingestion-version: 4`; Authorization joprojām tiek norādīts laukā `headers`.
-Gan galvenes, gan ģenerētā identitātes sāls vērtība izmanto esošo šifrēto slepeno lauku
+Neielīmējiet īstus akreditācijas datus žurnālos, ekrānuzņēmumos vai problēmu pieteikumos. Kartēšana automātiski
+iestata `x-langfuse-ingestion-version: 4`; Authorization joprojām tiek norādīta laukā `headers`.
+Gan galvenes, gan ģenerētā identitātes sāls izmanto esošo šifrēto slepeno lauku
 mehānismu un API vietturus; ir nepieciešams `STORAGE_ENCRYPTION_KEY`.
 
-Kartēšana pievieno ģenerēšanas tipu/modeli, JSON lietojuma informāciju (ievadi/izvadi/kopsummu un pieejamās
-kešatmiņas atslēgas), ievades/izvades JSON momentuzņēmumus, ERROR/DEFAULT līmeni, attīrītu statusa ziņojumu,
-trasējuma nosaukumu, sesijas ID, neobligātu vidi un filtrējamu
-`langfuse.observation.metadata.<key>` informāciju par pakalpojuma sniedzēju, pieprasīto modeli, ceļu, kombināciju, kešatmiņas
-avotu un statusu. `langfuse.observation.completion_start_time` ir ISO 8601 formātā izteikts
+Kartējums pievieno ģenerēšanas tipu/modeli, JSON lietojuma informāciju (ievade/izvade/kopā un pieejamās
+kešatmiņas atslēgas), JSON ievades/izvades momentuzņēmumus, ERROR/DEFAULT līmeni, sanitizētu statusa ziņojumu,
+izsekošanas nosaukumu, sesijas ID, neobligātu vidi un filtrējamu
+`langfuse.observation.metadata.<key>` pakalpojumu sniedzējam, pieprasītajam modelim, ceļam, kombinācijai, kešatmiņas
+avotam un statusam. `langfuse.observation.completion_start_time` ir ISO 8601 formātā izteikts
 sākuma laiks + TTFT tikai tad, ja TTFT ir zināms un ietilpst ilgumā. Izmaksu atribūti netiek sūtīti.
 
 Identitātes režīmi attiecas uz `langfuse.user.id`:
 
 - `pseudonymous` (noklusējums): API atslēgas iekšējā ID HMAC-SHA256 ar nejaušu,
-  katram galamērķim atsevišķu 32 baitu sāls vērtību. Ja sāls vērtības nav, tā tiek ģenerēta izveides brīdī, šifrēta
-  kā `identitySalt`, nekad netiek atgriezta un tiek saglabāta rediģēšanas laikā. Neapstrādāti atslēgu ID nekad
-  netiek ievietoti laidumu atribūtos. Galamērķa sāls vērtības atkārtota izveide/rotācija maina identitātes.
+  katram galamērķim atsevišķu 32 baitu sāli. Ja sāls nav, tas tiek ģenerēts izveides laikā, šifrēts
+  kā `identitySalt`, nekad netiek atgriezts un tiek saglabāts rediģēšanas laikā. Neapstrādāti atslēgu ID nekad
+  netiek ievietoti izsekošanas posmu atribūtos. Galamērķa sāls atkārtota izveide vai rotācija maina identitātes.
 - `keyName`: konfigurētais API atslēgas nosaukums, apzināti atklājot šo operatora etiķeti.
-- `none`: bez lietotāja ID. Sesiju tagi joprojām tiek eksportēti, ja tie ir pieejami; šie režīmi
+- `none`: bez lietotāja ID. Sesiju birkas joprojām tiek eksportētas, ja tās ir pieejamas; šie režīmi
   neanonimizē patvaļīgu uzvedņu saturu vai operatora norādītas sesiju/korelācijas etiķetes.
 
-### Sākšana bez vēsturisko datu aizpildīšanas
+### Sākšana bez vēsturisko datu ielādes
 
-Tikai izveides laikā iespējojiet **Sākt no pašreizējās pozīcijas (izlaist esošos žurnālus)** vai norādiet
+Tikai izveides laikā iespējojiet **Sākt no pašreizējās pozīcijas (izlaist esošos žurnālus)** vai nododiet
 `startFromCurrentPosition: true` izveides API pieprasījuma satura augšējā līmenī. Tas inicializē
 `cursor_row_id` ar pašreizējo maksimālo saglabāto izsaukumu žurnāla rowid, izmantojot esošās kursora
-palīgfunkcijas, bez migrācijas. Noklusējuma vērtība ir false (kursors 0 un saglabātās vēstures aizpildīšana).
-Tas nav iestatījums kursora atiestatīšanai atjaunināšanas laikā.
+palīgfunkcijas, bez migrācijas. Noklusējuma vērtība ir false (kursors 0 un saglabātās vēstures ielāde).
+Tas nav kursora atiestatīšanas iestatījums atjaunināšanas laikā.
 
-Koplietojamā `ttftMs` pievienošana arī pievieno kolonnu `ttft_ms`, kurā atļauta null vērtība, BigQuery kartētājam
-un jaunās tabulas shēmai: tās shēmas tests pieprasa, lai katram kanoniskā ieraksta laukam būtu
-kolonna. Esošās tabulas turpina eksportēt bez izmaiņām: `prepare()` nolasa tabulas shēmu un
-izlaiž tikai `ttft_ms`, ja šīs kolonnas nav. Pievienojiet INT64 kolonnu, kurā atļauta null vērtība, lai saņemtu TTFT
-nākamajā izpildes reizē, vai izmantojiet jaunu tabulu. Nav nepieciešams PATCH, automātiskas shēmas izmaiņas vai papildu
+Koplietojamais `ttftMs` papildinājums BigQuery kartētājam
+un jaunu tabulu shēmai pievieno arī kolonnu `ttft_ms`, kurā ir atļauta null vērtība: shēmas tests pieprasa, lai katram kanoniskā ieraksta laukam būtu
+kolonna. Esošo tabulu eksports turpinās bez izmaiņām: `prepare()` nolasa tabulas shēmu un
+izlaiž tikai `ttft_ms`, ja šīs kolonnas nav. Pievienojiet INT64 kolonnu, kurā ir atļauta null vērtība, lai iegūtu TTFT
+nākamajā izpildes reizē, vai izmantojiet jaunu tabulu. Nav nepieciešams PATCH, automātiska shēmas mainīšana vai papildu
 atļaujas; visiem pārējiem rindas laukiem tiek saglabāta stingra shēmas pārbaude.
 
 ---
