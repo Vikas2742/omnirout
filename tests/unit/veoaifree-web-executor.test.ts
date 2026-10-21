@@ -492,7 +492,7 @@ test("VeoAIFreeWebExecutor fails fast on HTML error tag response instead of poll
     if (stringUrl === "https://veoaifree.com/wp-admin/admin-ajax.php") {
       const params = new URLSearchParams(String(init?.body || ""));
       if (params.get("actionType") === "full-video-generate") {
-        return createResponse("<span>Unknown server error occurred</span>", {
+        return createResponse('<div class="notice-box">Temporary maintenance window active</div>', {
           status: 200,
           headers: { "content-type": "text/html" },
         });

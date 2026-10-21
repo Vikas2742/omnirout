@@ -67,6 +67,7 @@ test("the shared allowlist covers the rotation pool, refresh-flow sub-tokens and
     "access_token",
     "refresh_token",
     "app-config-uuid",
+    "wordpress_logged_in",
   ]) {
     assert.ok(SECRET_FIELDS.has(key), `${key} must be a declared secret field`);
   }
@@ -236,4 +237,26 @@ test("reconcileMaskedExtraApiKeys maps placeholders back to stored tokens and dr
   assert.deepEqual(apiKeyMask.reconcileMaskedExtraApiKeys(["plain"], undefined), ["plain"]);
   assert.equal(apiKeyMask.reconcileMaskedExtraApiKeys(undefined, stored), undefined);
   assert.equal(apiKeyMask.reconcileMaskedExtraApiKeys("oops", stored), "oops");
+});
+
+test("wordpress_logged_in is treated as a secret field and stripped from API responses", () => {
+  const psd = {
+    wordpress_logged_in: "test_secret_cookie_data",
+    workspaceId: "ws-1",
+  };
+  const sanitized = sanitizeProviderSpecificDataForResponse(psd);
+  assert.equal(sanitized?.wordpress_logged_in, undefined);
+  assert.equal(sanitized?.workspaceId, "ws-1");
+
+  const stored = encryptConnectionFields({
+    id: "conn-wp",
+    provider: "veoaifree-web",
+    providerSpecificData: psd,
+  });
+  const atRest = psdOf(stored);
+  assert.ok(looksEncrypted(atRest.wordpress_logged_in));
+  assert.equal(atRest.workspaceId, "ws-1");
+
+  const decrypted = decryptConnectionFields(stored);
+  assert.deepEqual(psdOf(decrypted), psd);
 });

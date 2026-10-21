@@ -110,6 +110,7 @@ export const PROVIDER_SPECIFIC_SECRET_FIELDS = [
   "ucCookies",
   "ucClientCookie",
   "clientCookie",
+  "wordpress_logged_in",
 ] as const;
 
 /**

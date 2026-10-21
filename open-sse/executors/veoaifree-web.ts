@@ -9,7 +9,6 @@
 import dns from "node:dns";
 import { isIP } from "node:net";
 import { BaseExecutor, type ExecuteInput, type ProviderCredentials } from "./base.ts";
-import { normalizeSessionCookieHeader } from "@/lib/providers/webCookieAuth";
 import { sanitizeErrorMessage } from "../utils/error.ts";
 import {
   OutboundUrlGuardError,
@@ -66,24 +65,61 @@ function isVeoAiFreeLoginRequired(text: string): boolean {
   );
 }
 
+function normalizeVeoSessionCookie(rawValue: string, defaultName: string): string {
+  const trimmed = (rawValue || "")
+    .trim()
+    .replace(/^bearer\s+/i, "")
+    .replace(/^cookie:/i, "")
+    .trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+          .filter(
+            (e): e is { name: string; value: string } =>
+              Boolean(e) &&
+              typeof e === "object" &&
+              typeof (e as { name?: unknown }).name === "string" &&
+              typeof (e as { value?: unknown }).value === "string"
+          )
+          .map((e) => `${e.name}=${e.value}`)
+          .join("; ");
+      }
+    } catch {
+      // Fall through to plain string handling
+    }
+  }
+
+  if (trimmed.includes("=")) return trimmed;
+  return `${defaultName}=${trimmed}`;
+}
+
+function extractWordPressCookie(record: Record<string, unknown>): string | null {
+  if (typeof record.cookie === "string" && record.cookie.trim()) {
+    return normalizeVeoSessionCookie(record.cookie.trim(), "wordpress_logged_in");
+  }
+  for (const [key, val] of Object.entries(record)) {
+    if (
+      (key.startsWith("wordpress_logged_in") || key.includes("wordpress_logged_in")) &&
+      typeof val === "string" &&
+      val.trim()
+    ) {
+      return normalizeVeoSessionCookie(val.trim(), key);
+    }
+  }
+  return null;
+}
+
 function resolveVeoAiFreeCookie(credentials?: ProviderCredentials): string {
   if (!credentials) return "";
 
   const psd = credentials.providerSpecificData;
   if (psd && typeof psd === "object") {
-    const data = psd as Record<string, unknown>;
-    if (typeof data.cookie === "string" && data.cookie.trim()) {
-      return normalizeSessionCookieHeader(data.cookie.trim(), "wordpress_logged_in");
-    }
-    const wpKey = Object.keys(data).find(
-      (k) =>
-        (k.startsWith("wordpress_logged_in") || k.includes("wordpress_logged_in")) &&
-        typeof data[k] === "string" &&
-        (data[k] as string).trim()
-    );
-    if (wpKey) {
-      return normalizeSessionCookieHeader(String(data[wpKey]).trim(), wpKey);
-    }
+    const fromPsd = extractWordPressCookie(psd as Record<string, unknown>);
+    if (fromPsd) return fromPsd;
   }
 
   const rawKey = credentials.apiKey;
@@ -91,24 +127,16 @@ function resolveVeoAiFreeCookie(credentials?: ProviderCredentials): string {
     const trimmed = rawKey.trim();
     if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
       try {
-        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-        if (typeof parsed.cookie === "string" && parsed.cookie.trim()) {
-          return normalizeSessionCookieHeader(parsed.cookie.trim(), "wordpress_logged_in");
-        }
-        const wpKey = Object.keys(parsed).find(
-          (k) =>
-            (k.startsWith("wordpress_logged_in") || k.includes("wordpress_logged_in")) &&
-            typeof parsed[k] === "string" &&
-            (parsed[k] as string).trim()
-        );
-        if (wpKey) {
-          return normalizeSessionCookieHeader(String(parsed[wpKey]).trim(), wpKey);
+        const parsed = JSON.parse(trimmed);
+        if (parsed && typeof parsed === "object") {
+          const fromParsed = extractWordPressCookie(parsed as Record<string, unknown>);
+          if (fromParsed) return fromParsed;
         }
       } catch {
         // Fall back to treating as cookie header
       }
     }
-    return normalizeSessionCookieHeader(trimmed, "wordpress_logged_in");
+    return normalizeVeoSessionCookie(trimmed, "wordpress_logged_in");
   }
 
   return "";
