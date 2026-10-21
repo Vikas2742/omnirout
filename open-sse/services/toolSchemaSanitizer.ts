@@ -184,11 +184,13 @@ function applyAnyOfBranch(merged: Record<string, unknown>, branch: unknown): voi
   if (!isPlainObject(branch)) return;
   if (isPlainObject(branch.properties)) {
     const base = isPlainObject(merged.properties) ? merged.properties : {};
-    merged.properties = { ...base, ...branch.properties };
-  }
-  if (Array.isArray(branch.required)) {
-    const base = Array.isArray(merged.required) ? merged.required : [];
-    merged.required = [...new Set([...base, ...branch.required])];
+    // First definition wins: a property already declared by the root or an earlier branch
+    // is never overwritten by a later branch that declares the same key.
+    const next: Record<string, unknown> = { ...base };
+    for (const [key, value] of Object.entries(branch.properties)) {
+      if (!hasOwn(next, key)) next[key] = value;
+    }
+    merged.properties = next;
   }
   if (branch.additionalProperties !== undefined && merged.additionalProperties === undefined) {
     merged.additionalProperties = branch.additionalProperties;
@@ -198,6 +200,23 @@ function applyAnyOfBranch(merged: Record<string, unknown>, branch: unknown): voi
   }
 }
 
+/**
+ * `anyOf` means "any one branch", so a flattened schema may only require what EVERY
+ * branch requires: the intersection of the branches' `required` lists. A branch without
+ * `required` requires nothing, which empties the intersection.
+ */
+function intersectBranchRequired(branches: unknown[]): string[] {
+  let common: string[] | null = null;
+  for (const branch of branches) {
+    const required =
+      isPlainObject(branch) && Array.isArray(branch.required)
+        ? (branch.required as unknown[]).filter((r): r is string => typeof r === "string")
+        : [];
+    common = common === null ? [...new Set(required)] : common.filter((r) => required.includes(r));
+  }
+  return common ?? [];
+}
+
 function mergeRootAnyOfBranches(
   parameters: Record<string, unknown>,
   branches: unknown[]
@@ -205,9 +224,15 @@ function mergeRootAnyOfBranches(
   const merged = { ...parameters };
   delete merged.anyOf;
   for (const branch of branches) applyAnyOfBranch(merged, branch);
-  if (Array.isArray(merged.required) && isPlainObject(merged.properties)) {
-    const validKeys = new Set(Object.keys(merged.properties));
-    merged.required = (merged.required as string[]).filter((r) => validKeys.has(r));
+  const rootRequired = Array.isArray(parameters.required) ? (parameters.required as string[]) : [];
+  const required = [...new Set([...rootRequired, ...intersectBranchRequired(branches)])];
+  if (required.length > 0) {
+    const validKeys = isPlainObject(merged.properties)
+      ? new Set(Object.keys(merged.properties))
+      : null;
+    merged.required = validKeys ? required.filter((r) => validKeys.has(r)) : required;
+  } else {
+    delete merged.required;
   }
   if (merged.type === undefined) merged.type = "object";
   return merged;

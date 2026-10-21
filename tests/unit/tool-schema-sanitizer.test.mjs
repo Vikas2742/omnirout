@@ -483,10 +483,116 @@ describe("toolSchemaSanitizer", () => {
       assert.equal(params.anyOf, undefined);
       assert.deepEqual(params.properties, {
         path: { type: "string" },
-        mode: { type: "integer" },
+        mode: { type: "string" },
         scope: { type: "string" },
       });
       assert.notDeepEqual(params, {});
+    });
+
+    it("keeps the first definition when branches declare the same property with different types", () => {
+      const tool = {
+        type: "function",
+        function: {
+          name: "x",
+          parameters: {
+            anyOf: [
+              { type: "object", properties: { mode: { type: "string" } } },
+              { type: "object", properties: { mode: { type: "integer" } } },
+            ],
+          },
+        },
+      };
+      const out = flattenOpenAIToolRootAnyOf([tool]);
+      assert.deepEqual(out[0].function.parameters.properties.mode, { type: "string" });
+    });
+
+    it("keeps the root's own property definition over a conflicting branch definition", () => {
+      const tool = {
+        type: "function",
+        function: {
+          name: "x",
+          parameters: {
+            type: "object",
+            properties: { mode: { type: "string" } },
+            anyOf: [{ properties: { mode: { type: "integer" }, extra: { type: "string" } } }],
+          },
+        },
+      };
+      const out = flattenOpenAIToolRootAnyOf([tool]);
+      assert.deepEqual(out[0].function.parameters.properties, {
+        mode: { type: "string" },
+        extra: { type: "string" },
+      });
+    });
+
+    it("requires only the intersection of the branches' required lists (anyOf = either branch)", () => {
+      const tool = {
+        type: "function",
+        function: {
+          name: "x",
+          parameters: {
+            anyOf: [
+              {
+                type: "object",
+                properties: { path: { type: "string" }, id: { type: "string" } },
+                required: ["path", "id"],
+              },
+              {
+                type: "object",
+                properties: { scope: { type: "string" }, id: { type: "string" } },
+                required: ["scope", "id"],
+              },
+            ],
+          },
+        },
+      };
+      const out = flattenOpenAIToolRootAnyOf([tool]);
+      assert.deepEqual(out[0].function.parameters.required, ["id"]);
+    });
+
+    it("does not require arguments that only one anyOf branch needs", () => {
+      const tool = {
+        type: "function",
+        function: {
+          name: "x",
+          parameters: {
+            anyOf: [
+              {
+                type: "object",
+                properties: { path: { type: "string" } },
+                required: ["path"],
+              },
+              {
+                type: "object",
+                properties: { scope: { type: "string" } },
+                required: ["scope"],
+              },
+            ],
+          },
+        },
+      };
+      const out = flattenOpenAIToolRootAnyOf([tool]);
+      assert.equal(out[0].function.parameters.required, undefined);
+    });
+
+    it("a branch without required makes nothing required; root-level required is preserved", () => {
+      const tool = {
+        type: "function",
+        function: {
+          name: "x",
+          parameters: {
+            type: "object",
+            properties: { base: { type: "string" } },
+            required: ["base"],
+            anyOf: [
+              { properties: { a: { type: "string" } }, required: ["a"] },
+              { properties: { b: { type: "string" } } },
+            ],
+          },
+        },
+      };
+      const out = flattenOpenAIToolRootAnyOf([tool]);
+      assert.deepEqual(out[0].function.parameters.required, ["base"]);
     });
 
     it("keeps root anyOf when a branch is not object-compatible (no silent widening)", () => {
@@ -527,7 +633,8 @@ describe("toolSchemaSanitizer", () => {
         },
       };
       const out1 = flattenOpenAIToolRootAnyOf([ce1]);
-      assert.deepEqual(out1[0].function.parameters, { required: ["a", "b"], type: "object" });
+      // Either branch satisfies the anyOf, so neither "a" nor "b" may be required on its own.
+      assert.deepEqual(out1[0].function.parameters, { type: "object" });
 
       const ce2 = {
         type: "function",
