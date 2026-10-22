@@ -4,6 +4,7 @@ import type { SearchProviderConfig } from "../../config/searchRegistry.ts";
 import type { SearchResult } from "../search.ts";
 import { resolveSearchBaseUrl } from "./baseUrl.ts";
 import {
+  clearSearchConnectionError,
   emitSearchProxyEvent,
   fetchWithSearchProxy,
   resolveSearchProxy,
@@ -354,18 +355,8 @@ export async function executeCodexSearch(
       responseBody: { results_count: results.length, searches: parsed.searches, cached: false },
     });
     await emit("success");
-    if (connectionId) {
-      try {
-        const { getProviderConnectionById } = await import("@/lib/db/providers");
-        const current = await getProviderConnectionById(connectionId);
-        if (current) {
-          const { clearAccountError } = await import("@/sse/services/auth.ts");
-          await clearAccountError(connectionId, current as never);
-        }
-      } catch {
-        /* Stale-error cleanup must not block a successful search. */
-      }
-    }
+    /* Stale-error cleanup must not block a successful search. */
+    await clearSearchConnectionError(connectionId);
     const duration = Date.now() - startTime;
     return {
       success: true,

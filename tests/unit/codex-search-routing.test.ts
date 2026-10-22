@@ -99,6 +99,38 @@ test("with a usable Codex OAuth connection last-resort search precedes DuckDuckG
   });
 });
 
+for (const testStatus of ["error", "unavailable"]) {
+  test(`successful Codex search clears stale ${testStatus} connection state`, async () => {
+    const connection = await seedCodex();
+    const connectionId = connection.id as string;
+    await providers.updateProviderConnection(connectionId, {
+      testStatus,
+      lastError: "Previous search failed",
+      lastErrorAt: new Date(Date.now() - 60_000).toISOString(),
+      errorCode: testStatus === "error" ? "401" : "429",
+      rateLimitedUntil:
+        testStatus === "unavailable" ? new Date(Date.now() - 1000).toISOString() : null,
+    });
+    await stub(async () => {
+      const result = await handleSearch({
+        query: "clear stale Codex error",
+        provider: "codex-search",
+        searchType: "web",
+        maxResults: 1,
+        credentials: { accessToken: "synthetic-token" },
+        connectionId,
+      });
+      assert.equal(result.success, true);
+    });
+    const updated = await providers.getProviderConnectionById(connectionId);
+    assert.equal(updated?.testStatus, "active");
+    assert.equal(updated?.lastError ?? null, null);
+    assert.equal(updated?.lastErrorAt ?? null, null);
+    assert.equal(updated?.errorCode ?? null, null);
+    assert.equal(updated?.rateLimitedUntil ?? null, null);
+  });
+}
+
 test("connection scope excluding Codex allows DuckDuckGo only with the existing noauth opt-in", async () => {
   await seedCodex();
   const key = await apiKeys.createApiKey("codex-search-excluded", "codex-search-machine", [], {

@@ -45,6 +45,21 @@ export function shouldCoolDownSearchConnection(status: number, errorText: string
   return isSubscriptionQuotaText(lower);
 }
 
+/** Post-dispatch state cleanup shared by JSON and SSE search providers. */
+export async function clearSearchConnectionError(connectionId?: string): Promise<void> {
+  if (!connectionId) return;
+  try {
+    const { getProviderConnectionById } = await import("@/lib/db/providers");
+    const current = await getProviderConnectionById(connectionId);
+    if (current) {
+      const { clearAccountError } = await import("@/sse/services/auth.ts");
+      await clearAccountError(connectionId, current as never);
+    }
+  } catch {
+    /* non-critical - clearing stale error state must not break the search response */
+  }
+}
+
 /** Resolved proxy binding for a single provider attempt. */
 export interface ResolvedSearchProxy {
   proxy: unknown;
@@ -292,18 +307,7 @@ export async function executeProviderFetch(
     // any recorded error (stale failed test, elapsed cooldown) so the dashboard
     // stops painting a serving connection red. clearAccountError() is a no-op
     // when the row is already clean.
-    if (connectionId) {
-      try {
-        const { getProviderConnectionById } = await import("@/lib/db/providers");
-        const current = await getProviderConnectionById(connectionId);
-        if (current) {
-          const { clearAccountError } = await import("@/sse/services/auth.ts");
-          await clearAccountError(connectionId, current as never);
-        }
-      } catch {
-        /* non-critical - clearing stale error state must not break the search response */
-      }
-    }
+    await clearSearchConnectionError(connectionId);
 
     return {
       success: true,

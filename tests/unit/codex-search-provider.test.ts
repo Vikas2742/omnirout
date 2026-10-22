@@ -176,7 +176,11 @@ for (const [name, rows, tokens] of [
   ["real_zh_beijing_weather.sse", 4, 8755],
 ] as const) {
   test(`parses real upstream fixture ${name} with grounded rows and upstream usage`, () => {
-    const parsed = parseCodexSearchSse(fixture(name), 10);
+    const text = fixture(name);
+    assert.match(text, /\ndata: [^\n]+\n$/);
+    assert.ok(!text.endsWith("\n\n"), "fixture must not end with a blank line");
+    const parsed = parseCodexSearchSse(text, 10);
+    assert.deepEqual(parsed, parseCodexSearchSse(text + "\n", 10));
     assert.equal(parsed.results.length, rows);
     assert.equal(parsed.searches, 1);
     assert.equal(parsed.usage.input_tokens, tokens);
