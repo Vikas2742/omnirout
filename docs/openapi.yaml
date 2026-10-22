@@ -3437,7 +3437,9 @@ paths:
         The CLI client version OmniRoute advertises for the Claude Code and
         Codex identity presets. Each row reports the operator override, the
         version actually advertised, which layer produced it (`settings` >
-        `env` > `default`), and the captured pin it resets to. The `source`
+        `env` > `discovered` > `default`), and the captured pin it resets to.
+        `discovered` is the auto-discovered latest release, used only when it
+        is newer than the pin. The `source`
         field exists because the usual support question is why an override is
         not taking effect, and the answer is the precedence order.
       responses:
