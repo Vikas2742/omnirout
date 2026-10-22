@@ -10,9 +10,7 @@ async function resolveAntigravityVisibilityProvider(
 ): Promise<"agy" | "antigravity"> {
   const trimmed = typeof requestedModelStr === "string" ? requestedModelStr.trim() : "";
   if (trimmed.startsWith("agy/")) return "agy";
-  if (trimmed.startsWith("antigravity/") || trimmed.startsWith("ag/")) {
-    return "antigravity";
-  }
+  if (trimmed.startsWith("antigravity/")) return "antigravity";
   try {
     const connections = await getCachedProviderConnections({ isActive: true });
     let hasAgy = false;

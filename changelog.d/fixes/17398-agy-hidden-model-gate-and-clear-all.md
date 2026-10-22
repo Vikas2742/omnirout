@@ -1,1 +1,0 @@
-- **fix(providers):** keep `agy` and `antigravity` hidden-model visibility independent across chat and combo dispatch, clear `modelCompatOverrides` on `DELETE /api/provider-models?all=true`, and expose the **Clear All Models** action on OAuth providers whenever synced models or visibility overrides exist ([#17398](https://github.com/diegosouzapw/OmniRoute/issues/17398))
