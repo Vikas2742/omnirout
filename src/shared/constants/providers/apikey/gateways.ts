@@ -698,22 +698,6 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     apiHint:
       "Get your API key from https://panel.api.airforce — OpenAI-compatible endpoint at https://api.airforce/v1",
   },
-  onomeo: {
-    id: "onomeo",
-    serviceKinds: ["llm"],
-    alias: "onm",
-    name: "onomeo",
-    icon: "hub",
-    color: "#6366F1",
-    textIcon: "ON",
-    website: "https://onomeo.com",
-    hasFree: true,
-    freeNote:
-      "19 free models (auto, DeepSeek V4/V4.1 Flash, GLM 5.2/5.3/4.5/4.6v/4.7 Flash, Gemini 3.1/3.5/3.6/3.7/3.8 Flash, GPT-OSS 20B, Muse Glimmer 30B, Codestral, Mistral 14B, HY4 Preview) — 30 calls per 5-hour window that refill automatically, no card required. Every 50K characters counts as one call; shared global pool may limit availability.",
-    apiHint:
-      "Sign up at https://onomeo.com (Google/GitHub/email, no card) to create an API key. OpenAI-compatible endpoint at https://onomeo.com/v1. Model pages at https://onomeo.com/models/<id> list upstream provenance and training policies.",
-    passthroughModels: true,
-  },
   crof: {
     id: "crof",
     serviceKinds: ["llm"],
@@ -782,7 +766,6 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     icon: "opencode",
     color: "#6366f1",
     website: "https://opencode.ai/zen",
-    anonymousFallback: true,
     // One credential fronts many upstream models (deepseek, glm, qwen, grok,
     // minimax, ...). A 402 means "this MODEL is not in the plan", not "the
     // account is out of credit", so it must reach the per-model lockout branch
@@ -797,7 +780,6 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     icon: "opencode",
     color: "#6366f1",
     website: "https://opencode.ai/go",
-    anonymousFallback: true,
     // One credential fronts many upstream models (deepseek, glm, qwen, grok,
     // minimax, ...). A 402 means "this MODEL is not in the plan", not "the
     // account is out of credit", so it must reach the per-model lockout branch
@@ -1015,6 +997,20 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     color: "#4F46E5",
     textIcon: "NG",
     website: "https://nano-gpt.com",
+  },
+  // NaN.Builders (https://nan.builders) — OpenAI-compatible /v1 covering chat, vision,
+  // embeddings, STT, TTS, images and rerank; per-model token quotas feed the limits panel.
+  nan: {
+    id: "nan",
+    serviceKinds: ["llm", "imageToText", "embedding", "stt", "tts", "image"],
+    alias: "nan",
+    name: "NaN.Builders",
+    icon: "hub",
+    color: "#6D5EF3",
+    textIcon: "NaN",
+    website: "https://nan.builders",
+    apiHint:
+      "Create an API key at https://cloud.nan.builders, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.nan.builders/v1.",
   },
   aimlapi: {
     id: "aimlapi",
@@ -1601,5 +1597,34 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     authHint: "Create an API key at https://seekai.cc, then paste it here as a Bearer token.",
     apiHint:
       "Create an API key at https://seekai.cc, then paste it here as a Bearer token. OpenAI-compatible base URL: https://seekai.cc/v1.",
+  },
+  // Demon Route: OpenAI-compatible, key-gated account model discovery.
+  demonroute: {
+    id: "demonroute",
+    serviceKinds: ["llm"],
+    alias: "demonroute",
+    name: "Demon Route",
+    icon: "hub",
+    color: "#6D28D9",
+    textIcon: "DR",
+    passthroughModels: true,
+    website: "https://demonroute.com",
+    apiHint:
+      "Create an API key at https://demonroute.com, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.demonroute.com/v1.",
+  },
+  // DaoXE (https://daoxe.com) — QuantumNous New-API gateway. OpenAI-compatible /v1;
+  // /v1/models is key-gated and account-scoped, so models are discovered live.
+  daoxe: {
+    id: "daoxe",
+    serviceKinds: ["llm"],
+    alias: "daoxe",
+    name: "DaoXE",
+    icon: "hub",
+    color: "#0F766E",
+    textIcon: "DX",
+    passthroughModels: true,
+    website: "https://daoxe.com",
+    apiHint:
+      "Create an API token at https://daoxe.com/token, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.daoxe.com/v1.",
   },
 };
