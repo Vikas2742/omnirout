@@ -135,27 +135,46 @@ test("UPDATE path measures payloads (regression: the ceiling must not no-op in p
   updatePendingRequest("m", "p", "c-b", { providerResponse: worstCaseObject });
   assert.equal(getPendingRetainedBytes(), afterBucket, "replacing a payload must not accumulate");
 
-  // After inserting enough fat entries, the byte ceiling should cap retained bytes.
-  // Insert entries until we're at or near the ceiling, then verify we can't exceed it
-  // by adding more payloads — the ceiling should reclaim or refuse.
-  const CEILING = 256 * 1024 * 1024;
-  const perEntry = afterById - afterInsertA;
-  const extra = Math.ceil(CEILING / perEntry) + 50;
-  for (let i = 0; i < extra; i++) {
-    const nextId = trackPendingRequest("m", "p", `c${i}`, true);
-    assert.ok(nextId);
-    updatePendingRequestById(nextId, { providerResponse: worstCaseObject });
-  }
-  // After the burst, retained bytes should be close to but not exceed the ceiling.
-  assert.ok(
-    getPendingRetainedBytes() <= CEILING * 1.01,
-    `the map should stay at or near the ceiling after a fat insert burst (retained ${getPendingRetainedBytes()})`
-  );
+  clearPendingRequests();
+  assert.equal(getPendingRetainedBytes(), 0, "clear resets retained bytes");
+});
 
-  trackPendingRequest("m", "p", "c-trigger", true);
+test("UPDATE path enforces the byte ceiling when growing bare entries (regression)", () => {
+  clearPendingRequests();
+
+  const worstCaseString = "x".repeat(1200);
+  const worstCaseArray = Array.from({ length: 12 }, () => ({
+    role: "user",
+    content: worstCaseString,
+  }));
+  const worstCaseObject = Object.fromEntries(
+    Array.from({ length: 24 }, (_, i) => [`key${i}`, worstCaseArray])
+  );
+  const ceiling = 256 * 1024 * 1024;
+  const count = getMaxPendingDetails();
+  const ids: string[] = [];
+
+  // Keep insertion below the byte ceiling, then grow every entry through the
+  // update path. Without update-time enforcement, the count-capped map exceeds
+  // the byte ceiling because each protected preview is larger than 1/5000 of it.
+  for (let i = 0; i < count; i++) {
+    const id = trackPendingRequest("m", "p", `c-update-${i}`, true);
+    assert.ok(id, "id tracked");
+    ids.push(id);
+  }
+  assert.ok(getPendingRetainedBytes() < ceiling, "bare inserts stay below the byte ceiling");
+
+  for (const id of ids) {
+    updatePendingRequestById(id, { providerResponse: worstCaseObject });
+  }
+
   assert.ok(
-    getPendingRetainedBytes() <= CEILING,
-    `ceiling must reclaim on insert (retained ${getPendingRetainedBytes()})`
+    getPendingRetainedBytes() <= ceiling,
+    `update-time growth must stay under the ${ceiling} byte ceiling`
+  );
+  assert.ok(
+    getPendingById().size < count,
+    "update-time byte enforcement must evict entries after the count cap is reached"
   );
 
   clearPendingRequests();
