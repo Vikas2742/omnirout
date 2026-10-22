@@ -46,6 +46,8 @@ const lazyExecutors: Record<string, () => Promise<BaseExecutor>> = {
     ),
   maxai: () => import("./maxai.ts").then((m) => new m.MaxAiExecutor()),
   uc: () => import("./uc.ts").then((m) => new m.UcExecutor()),
+  "abit-chatgpt-relay": () =>
+    import("./abit-chatgpt-relay.ts").then((m) => new m.AbitChatGptRelayExecutor()),
   "chatgpt-web-codex": () =>
     import("./chatgpt-web-codex.ts").then((m) => new m.ChatGptWebCodexExecutor()),
   "cgpt-codex": () => import("./chatgpt-web-codex.ts").then((m) => new m.ChatGptWebCodexExecutor()),
