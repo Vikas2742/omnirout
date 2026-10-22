@@ -210,3 +210,36 @@ test("#17348: stale custom-model rows cannot prevent display-only classification
   assert.equal(published[prefixA].modelOverrideEligible, false);
   assert.equal(published[A].pricingKey, undefined);
 });
+
+
+test("#17348: deleting a node that reused a retired prefix leaves an ambiguity tombstone", async () => {
+  await create(A, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(A, A, [{ id: "foo", name: "Foo A" }]);
+  await nodes.updateProviderNode(A, { prefix: prefixB });
+  await create(B, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(B, B, [{ id: "foo", name: "Foo B" }]);
+  await nodes.deleteProviderNode(B);
+  assert.equal(
+    history.getDeletedNodePrefixTombstones(core.getDbInstance()).has(prefixA),
+    true,
+    "deletion must not make a reused public identity appear unclaimed"
+  );
+  persistPrice(prefixA, { foo: { input: 51 } });
+  const published = await catalog();
+  assert.equal(published[A].historicalPrefixes, undefined,
+    "A must never inherit B's later prices for the same prefix and model");
+  assert.equal(published[A].pricingKey, undefined);
+  assert.equal(published[prefixA].historicalPricingNamespace, true);
+  assert.equal(published[prefixA].modelOverrideEligible, false);
+});
+
+test("#17348: deletion archives all historic node prefixes as non-routable vetoes", async () => {
+  await create(A, prefixA);
+  await nodes.updateProviderNode(A, { prefix: prefixB });
+  await nodes.deleteProviderNode(A);
+  assert.deepEqual(
+    [...history.getDeletedNodePrefixTombstones(core.getDbInstance())].sort(),
+    [prefixA, prefixB].sort()
+  );
+  assert.deepEqual(history.getNodePrefixHistory(core.getDbInstance(), A), []);
+});
