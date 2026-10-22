@@ -144,7 +144,7 @@ export function hasIdenticalModelErrorStreak(
   if (comboErrors.length < streak) return false;
   const tail = comboErrors.slice(-streak);
   const [first, ...rest] = tail;
-  if (first.kind !== "model") return false;
+  if (first.kind !== "model" || first.status !== 400) return false;
   return rest.every(
     (e) => e.kind === first.kind && e.status === first.status && e.error === first.error
   );
