@@ -90,6 +90,7 @@ export function reconcileHistoricalEnrichment(
       served.has(key) &&
       output.pricing === undefined &&
       candidates.length === 1 &&
+      !served.has(candidates[0].previousPublicId) &&
       !served.has(`${alias}/${candidates[0].previousPublicId}`)
     ) {
       output.pricing = { ...candidates[0].pricing };
