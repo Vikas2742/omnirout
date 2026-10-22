@@ -46,7 +46,9 @@ export async function GET() {
     const db = getDbInstance();
     const historyByNode = new Map<string, HistoricalNodePrefix[]>();
     const historicalOwners = new Map<string, string | null>();
-    for (const nodeId of eligibleNodeIds) {
+    // Include ineligible compatible nodes as possible prior owners: a losing
+    // node must not allow a different node to claim a shared historical prefix.
+    for (const nodeId of compatibleNodeIds) {
       const currentPrefix = nodeToPrefix.get(nodeId);
       const history = getNodePrefixHistory(db, nodeId).filter(
         (entry) => entry.prefix !== currentPrefix
@@ -61,11 +63,11 @@ export async function GET() {
     }
     const attachCompatibleMetadata = (providerId: string, slot: Record<string, any>) => {
       const publicPrefix = nodeToPrefix.get(providerId);
-      if (publicPrefix) {
-        slot.displayPrefix = publicPrefix;
-        const history = historyByNode.get(providerId);
-        if (history?.length) slot.historicalPrefixes = history;
-      }
+      if (publicPrefix) slot.displayPrefix = publicPrefix;
+      // Historical evidence is separate from current routability; a node that
+      // drops its prefix still has history, but may not be an override target.
+      const history = historyByNode.get(providerId);
+      if (history?.length) slot.historicalPrefixes = history;
       if (compatibleNodeIds.has(providerId)) {
         slot.modelOverrideEligible = eligibleNodeIds.has(providerId);
       }
@@ -199,12 +201,14 @@ export async function GET() {
     for (const [rawProviderAlias, models] of Object.entries(pricingData)) {
       // `rawProviderAlias` is the original pricing namespace the operator used.
       const pricingKey = rawProviderAlias;
-      // An OLD prefix may belong to this node, but only with recorded unique
-      // ownership and no current, reserved or ambiguous prefix collision.
-      const previousOwner = historicalOwners.get(rawProviderAlias);
-      const providerAlias =
-        prefixToNode.get(rawProviderAlias) || previousOwner || rawProviderAlias;
-      if (orphanedCompatibleNode(providerAlias)) continue;
+      // An old public prefix is not proof that EVERY price row belongs to
+      // its former node. Keep historical namespaces separate for management;
+      // OpenCode may recover an individual price only with recorded raw-ID
+      // provenance AND a matching current served model (#17348).
+      const providerAlias = prefixToNode.get(rawProviderAlias) || rawProviderAlias;
+      const historicalNamespace = historicalOwners.has(rawProviderAlias) &&
+        !prefixToNode.has(rawProviderAlias);
+      const orphaned = orphanedCompatibleNode(providerAlias);
       if (!catalog[providerAlias]) {
         catalog[providerAlias] = {
           id: providerAlias,
@@ -214,7 +218,16 @@ export async function GET() {
           format: "openai",
           models: [],
         };
-        attachCompatibleMetadata(providerAlias, catalog[providerAlias]);
+        if (orphaned || historicalNamespace) {
+          // Render price rows for recovery, but never represent these entries
+          // as routable/overridable model sources.
+          catalog[providerAlias].pricingOnly = true;
+          catalog[providerAlias].modelOverrideEligible = false;
+          if (orphaned) catalog[providerAlias].orphaned = true;
+          if (historicalNamespace) catalog[providerAlias].historicalPricingNamespace = true;
+        } else {
+          attachCompatibleMetadata(providerAlias, catalog[providerAlias]);
+        }
       }
       // When the entry is keyed internally by the node id but priced under a
       // public prefix, remember the original pricing namespace for PricingTab.
