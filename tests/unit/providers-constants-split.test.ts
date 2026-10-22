@@ -54,8 +54,10 @@ const P = await import("../../src/shared/constants/providers.ts");
 
 // Apmix (#14821) adds one apikey/regional entry — 246.
 // Token Market (#13191) adds one apikey/gateways entry — measured 248 on the #13191 branch.
-// ParalonCloud adds one apikey entry in its own extract, apikey/paraloncloud.ts — 250.
-const APIKEY_PROVIDER_COUNT = 250;
+// NaN.Builders adds one apikey/gateways entry — 250.
+// DaoXE adds one apikey/gateways entry — 251.
+// Base is 252; ParalonCloud adds one apikey entry in its own extract, apikey/paraloncloud.ts — 253.
+const APIKEY_PROVIDER_COUNT = 253;
 
 test("barrel still exports every catalog + key helpers", () => {
   for (const name of [
