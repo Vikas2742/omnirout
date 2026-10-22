@@ -24,6 +24,10 @@ import { getRuntimePorts } from "@/lib/runtime/ports";
 import { resolveApiKey } from "@/shared/services/apiKeyResolver";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { cliModelConfigSchema } from "@/shared/validation/schemas";
+import {
+  ConfigClobberRefusedError,
+  configClobberRefusalResponse,
+} from "../_lib/readExistingConfig";
 
 /**
  * /api/cli-tools/pi-settings
@@ -139,6 +143,16 @@ export async function POST(request: Request) {
     if (refusal) return refusal;
 
     const modelsPath = getPiModelsPath();
+
+    // Only a missing models.json starts fresh. One that exists but is unreadable
+    // as a models.json (bad JSON, no `providers` object, wrong shape) would be
+    // replaced by our single provider and lose the user's other providers, so it
+    // is refused with the shared 409 contract (#16523) and left untouched.
+    const { error: modelsError } = await readPiModelsJson();
+    if (modelsError) {
+      throw new ConfigClobberRefusedError(modelsPath, { cause: new Error(modelsError) });
+    }
+
     await createBackup(PI_TOOL_ID, modelsPath);
     await applyOmniRoutePiProvider({ baseUrl, apiKey, model, modelName: model });
 
@@ -154,6 +168,8 @@ export async function POST(request: Request) {
       configPath: modelsPath,
     });
   } catch (err) {
+    const refusal = configClobberRefusalResponse(err);
+    if (refusal) return refusal;
     return NextResponse.json({ error: { message: sanitizeErrorMessage(err) } }, { status: 500 });
   }
 }

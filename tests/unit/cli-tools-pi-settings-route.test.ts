@@ -28,6 +28,15 @@ const routePath = path.join(process.cwd(), "src/app/api/cli-tools/pi-settings/ro
 const TMP_ROOT = path.join(os.tmpdir(), "omniroute-pi-settings-route-test");
 const tempDirs = new Set<string>();
 
+// Hermetic runtime: GET short-circuits to "Pi CLI is not installed" when no `pi`
+// binary is found, and write routes answer 422 on a container devbox. Neither
+// depends on the code under test, so every test starts with a stub `pi` on PATH
+// and container detection forced off (the container-guard test opts back in).
+const STUB_BIN_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-pi-stub-bin-"));
+tempDirs.add(STUB_BIN_DIR);
+const STUB_PI = path.join(STUB_BIN_DIR, "pi");
+fs.writeFileSync(STUB_PI, '#!/bin/sh\necho "pi 1.0.0"\n', { mode: 0o755 });
+
 const originalEnv = { ...process.env };
 
 async function importRoute(label: string) {
@@ -57,6 +66,13 @@ function jsonRequest(method: string, body?: unknown) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
+
+test.beforeEach(() => {
+  process.env.PATH = `${STUB_BIN_DIR}${path.delimiter}${originalEnv.PATH ?? ""}`;
+  delete process.env.CLI_PI_BIN;
+  process.env.OMNIROUTE_CONTAINER = "0";
+  delete process.env.OMNIROUTE_ALLOW_CONTAINER_CONFIG_WRITE;
+});
 
 test.afterEach(restoreEnv);
 
@@ -243,11 +259,34 @@ test("POST rejects a non-HTTP endpoint without touching models.json", async () =
   assert.equal(fs.existsSync(path.join(dir, "models.json")), false);
 });
 
+test("POST refuses a corrupt models.json with 409 and leaves it byte-identical", async () => {
+  const dir = await tempAgentDir();
+  const bytes = '{"providers": {"personal-openai": {"apiKey": "sk-personal"';
+  await writeFile(path.join(dir, "models.json"), bytes, "utf-8");
+  const { POST } = await importRoute("apply-corrupt");
+
+  const response = await POST(
+    jsonRequest("POST", {
+      baseUrl: "http://127.0.0.1:20128",
+      apiKey: "sk-test",
+      model: "auto/best-coding",
+    })
+  );
+
+  assert.equal(response.status, 409);
+  const body = await response.json();
+  assert.equal(body.error.code, "config_unparseable");
+  assert.match(body.error.message, /models\.json/);
+  assert.equal(await readFile(path.join(dir, "models.json"), "utf-8"), bytes);
+});
+
 test("POST error bodies never leak a stack trace", async () => {
   // Point PI_CODING_AGENT_DIR at a path that cannot be written to, so the write
   // throws and the route goes through sanitizeErrorMessage().
   const unwritable = await mkdir(path.join(TMP_ROOT, "unwritable"), { recursive: true });
-  await writeFile(path.join(unwritable, "models.json"), "{}", "utf-8");
+  // Valid but empty models.json: the pre-write read passes and only the write
+  // itself fails (a `{}` file would be refused earlier with the 409 contract).
+  await writeFile(path.join(unwritable, "models.json"), '{"providers":{}}', "utf-8");
   await chmod(path.join(unwritable, "models.json"), 0o444);
   tempDirs.add(unwritable);
 
