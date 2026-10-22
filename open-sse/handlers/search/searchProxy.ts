@@ -23,6 +23,10 @@ import {
   type SearchUsage,
 } from "./reportedCost.ts";
 
+export function saveSearchCallLog(entry: Record<string, unknown>): Promise<void> {
+  return saveCallLog(entry);
+}
+
 export const SEARCH_COOLDOWN_STATUSES = new Set([
   HTTP_STATUS.PAYMENT_REQUIRED,
   HTTP_STATUS.REQUEST_TIMEOUT,

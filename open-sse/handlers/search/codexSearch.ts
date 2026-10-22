@@ -1,4 +1,3 @@
-import { saveCallLog } from "@/lib/usageDb";
 import { getCodexBackendIdentityHeaders } from "../../config/codexClient.ts";
 import type { SearchProviderConfig } from "../../config/searchRegistry.ts";
 import type { SearchResult } from "../search.ts";
@@ -8,6 +7,7 @@ import {
   emitSearchProxyEvent,
   fetchWithSearchProxy,
   resolveSearchProxy,
+  saveSearchCallLog,
   shouldCoolDownSearchConnection,
   type ProviderFetchResult,
 } from "./searchProxy.ts";
@@ -29,8 +29,7 @@ function nonempty(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-/** Domain and time constraints are instruction hints, NOT hard upstream filters. */
-export function buildCodexSearchRequest(config: SearchProviderConfig, params: CodexSearchParams) {
+function resolveCodexSearchOptions(params: CodexSearchParams) {
   const options = params.providerOptions;
   const model =
     nonempty(options?.model) || nonempty(params.providerSpecificData?.searchModel) || "gpt-6-luna";
@@ -38,6 +37,11 @@ export function buildCodexSearchRequest(config: SearchProviderConfig, params: Co
   const effort = ["low", "medium", "high", "xhigh"].includes(String(requestedEffort))
     ? requestedEffort
     : "low";
+  return { model, effort };
+}
+
+/** Domain and time constraints are instruction hints, NOT hard upstream filters. */
+function buildCodexSearchHints(params: CodexSearchParams): string[] {
   const hints = [
     `Search the web and return only JSON: {"results":[{"title":"...","url":"...","description":"..."}]}. Return up to ${Math.min(10, Math.max(1, params.maxResults))} relevant results.`,
     "Use the web_search tool. Only return URLs actually observed in search sources or citations. Do not invent URLs.",
@@ -52,6 +56,12 @@ export function buildCodexSearchRequest(config: SearchProviderConfig, params: Co
     .map((domain) => domain.slice(1));
   if (include?.length) hints.push(`Prefer these domains: ${include.join(", ")}.`);
   if (exclude?.length) hints.push(`Avoid these domains: ${exclude.join(", ")}.`);
+  return hints;
+}
+
+export function buildCodexSearchRequest(config: SearchProviderConfig, params: CodexSearchParams) {
+  const { model, effort } = resolveCodexSearchOptions(params);
+  const hints = buildCodexSearchHints(params);
   const headers: Record<string, string> = {
     ...getCodexBackendIdentityHeaders(),
     Authorization: `Bearer ${params.token || ""}`,
@@ -153,85 +163,110 @@ function modelRows(text: string): Row[] {
   }
 }
 
-/** Parse final snapshots, not deltas: completed items must never duplicate rows/text. */
-export function parseCodexSearchSse(text: string, maxResults: number) {
-  if (Buffer.byteLength(text, "utf8") > CODEX_SEARCH_MAX_BYTES) throw new CodexSearchError();
-  const sources: Row[] = [];
-  const annotations: Row[] = [];
-  const messages: string[] = [];
-  const outputTexts: string[] = [];
-  const observed = new Set<string>();
-  let calls = 0;
-  let completed = false;
-  let searches = 0;
-  let usage: Record<string, unknown> = {};
-  const observe = (value: unknown, target: Row[], title?: unknown) => {
-    const url = cleanUrl(value);
-    if (!url) return;
-    observed.add(groundingKey(url));
-    target.push({ url, title: nonempty(title) || new URL(url).hostname, snippet: "" });
-  };
-  for (const block of text.replace(/\r\n/g, "\n").split("\n\n")) {
-    const lines = block.split("\n");
-    const event = lines
-      .find((line) => line.startsWith("event:"))
-      ?.slice(6)
-      .trim();
-    const data = lines
-      .filter((line) => line.startsWith("data:"))
-      .map((line) => line.slice(5).trimStart())
-      .join("\n");
-    if (!data || data === "[DONE]") continue;
-    let payload: Record<string, unknown>;
-    try {
-      payload = record(JSON.parse(data));
-    } catch {
-      throw new CodexSearchError();
-    }
-    const type = nonempty(payload.type) || event;
-    if (type === "error" || type === "response.failed") {
-      throw new CodexSearchError(
-        upstreamStatus(payload.error || record(payload.response).error || payload)
-      );
-    }
-    if (type === "response.output_item.done") {
-      const item = record(payload.item);
-      if (item.type === "web_search_call") {
-        calls++;
-        const action = record(item.action);
-        for (const source of array(action.sources)) observe(record(source).url, sources);
-        if (action.type === "open_page") observe(action.url, sources);
-      }
-      if (item.type === "message") {
-        for (const content of array(item.content)) {
-          const part = record(content);
-          if (typeof part.text === "string") messages.push(part.text);
-          for (const annotation of array(part.annotations)) {
-            const citation = record(annotation);
-            if (citation.type === "url_citation")
-              observe(citation.url, annotations, citation.title);
-          }
-        }
-      }
-    }
-    if (type === "response.output_text.done" && typeof payload.text === "string")
-      outputTexts.push(payload.text);
-    if (type === "response.completed") {
-      const response = record(payload.response);
-      if (response.status && response.status !== "completed") throw new CodexSearchError();
-      completed = true;
-      usage = record(response.usage);
-      const count = record(record(response.tool_usage).web_search).num_requests;
-      if (typeof count === "number" && Number.isFinite(count) && count >= 0) searches = count;
+interface CodexSearchParseState {
+  sources: Row[];
+  annotations: Row[];
+  messages: string[];
+  outputTexts: string[];
+  observed: Set<string>;
+  calls: number;
+  completed: boolean;
+  searches: number;
+  usage: Record<string, unknown>;
+}
+
+function observeCodexSearchUrl(
+  state: CodexSearchParseState,
+  value: unknown,
+  target: Row[],
+  title?: unknown
+) {
+  const url = cleanUrl(value);
+  if (!url) return;
+  state.observed.add(groundingKey(url));
+  target.push({ url, title: nonempty(title) || new URL(url).hostname, snippet: "" });
+}
+
+function parseCodexSearchBlock(block: string) {
+  const lines = block.split("\n");
+  const event = lines
+    .find((line) => line.startsWith("event:"))
+    ?.slice(6)
+    .trim();
+  const data = lines
+    .filter((line) => line.startsWith("data:"))
+    .map((line) => line.slice(5).trimStart())
+    .join("\n");
+  if (!data || data === "[DONE]") return null;
+  let payload: Record<string, unknown>;
+  try {
+    payload = record(JSON.parse(data));
+  } catch {
+    throw new CodexSearchError();
+  }
+  return { type: nonempty(payload.type) || event, payload };
+}
+
+function handleCodexWebSearchCall(state: CodexSearchParseState, item: Record<string, unknown>) {
+  state.calls++;
+  const action = record(item.action);
+  for (const source of array(action.sources))
+    observeCodexSearchUrl(state, record(source).url, state.sources);
+  if (action.type === "open_page") observeCodexSearchUrl(state, action.url, state.sources);
+}
+
+function handleCodexSearchMessage(state: CodexSearchParseState, item: Record<string, unknown>) {
+  for (const content of array(item.content)) {
+    const part = record(content);
+    if (typeof part.text === "string") state.messages.push(part.text);
+    for (const annotation of array(part.annotations)) {
+      const citation = record(annotation);
+      if (citation.type === "url_citation")
+        observeCodexSearchUrl(state, citation.url, state.annotations, citation.title);
     }
   }
-  if (!completed || calls === 0) throw new CodexSearchError();
+}
+
+function handleCodexSearchCompleted(
+  state: CodexSearchParseState,
+  payload: Record<string, unknown>
+) {
+  const response = record(payload.response);
+  if (response.status && response.status !== "completed") throw new CodexSearchError();
+  state.completed = true;
+  state.usage = record(response.usage);
+  const count = record(record(response.tool_usage).web_search).num_requests;
+  if (typeof count === "number" && Number.isFinite(count) && count >= 0) state.searches = count;
+}
+
+function handleCodexSearchEvent(
+  state: CodexSearchParseState,
+  type: string | undefined,
+  payload: Record<string, unknown>
+) {
+  if (type === "error" || type === "response.failed") {
+    throw new CodexSearchError(
+      upstreamStatus(payload.error || record(payload.response).error || payload)
+    );
+  }
+  if (type === "response.output_item.done") {
+    const item = record(payload.item);
+    if (item.type === "web_search_call") handleCodexWebSearchCall(state, item);
+    if (item.type === "message") handleCodexSearchMessage(state, item);
+  }
+  if (type === "response.output_text.done" && typeof payload.text === "string")
+    state.outputTexts.push(payload.text);
+  if (type === "response.completed") handleCodexSearchCompleted(state, payload);
+}
+
+function selectCodexSearchRows(state: CodexSearchParseState, maxResults: number): Row[] {
+  const { outputTexts, messages, observed, annotations, sources } = state;
   const grounded = (outputTexts.length ? outputTexts : messages)
     .flatMap(modelRows)
     .filter((row) => observed.has(groundingKey(row.url)));
   const rows = grounded.length ? grounded : annotations.length ? annotations : sources;
   const seen = new Set<string>();
-  const results = rows
+  return rows
     .filter((row) => {
       const key = groundingKey(row.url);
       if (seen.has(key)) return false;
@@ -239,7 +274,29 @@ export function parseCodexSearchSse(text: string, maxResults: number) {
       return true;
     })
     .slice(0, Math.min(10, Math.max(1, maxResults)));
-  return { results, searches: searches || calls, usage };
+}
+
+/** Parse final snapshots, not deltas: completed items must never duplicate rows/text. */
+export function parseCodexSearchSse(text: string, maxResults: number) {
+  if (Buffer.byteLength(text, "utf8") > CODEX_SEARCH_MAX_BYTES) throw new CodexSearchError();
+  const state: CodexSearchParseState = {
+    sources: [],
+    annotations: [],
+    messages: [],
+    outputTexts: [],
+    observed: new Set<string>(),
+    calls: 0,
+    completed: false,
+    searches: 0,
+    usage: {},
+  };
+  for (const block of text.replace(/\r\n/g, "\n").split("\n\n")) {
+    const event = parseCodexSearchBlock(block);
+    if (event) handleCodexSearchEvent(state, event.type, event.payload);
+  }
+  if (!state.completed || state.calls === 0) throw new CodexSearchError();
+  const results = selectCodexSearchRows(state, maxResults);
+  return { results, searches: state.searches || state.calls, usage: state.usage };
 }
 
 /** Bound the streamed body, including error bodies, and keep abort active until EOF. */
@@ -273,6 +330,113 @@ async function readBody(response: Response, signal: AbortSignal): Promise<string
   }
 }
 
+function createCodexSearchCallLogger(
+  config: SearchProviderConfig,
+  params: CodexSearchParams,
+  startTime: number,
+  connectionId?: string,
+  apiKeyId?: string
+) {
+  return (fields: Record<string, unknown>) =>
+    saveSearchCallLog({
+      method: "POST",
+      path: "/v1/search",
+      model: config.id,
+      provider: config.id,
+      connectionId: connectionId || null,
+      apiKeyId,
+      requestType: "search",
+      requestBody: {
+        query: params.query.slice(0, 200),
+        search_type: params.searchType,
+        max_results: params.maxResults,
+      },
+      duration: Date.now() - startTime,
+      ...fields,
+    }).catch(() => {
+      /* Logging must not block the response. */
+    });
+}
+
+async function readCodexSearchResponse(
+  response: Response,
+  signal: AbortSignal,
+  connectionId?: string
+): Promise<string> {
+  if (response.status === 401) {
+    await response.body?.cancel();
+    throw new CodexSearchError(401);
+  }
+  const text = await readBody(response, signal);
+  if (!response.ok) {
+    if (connectionId && shouldCoolDownSearchConnection(response.status, text)) {
+      await coolDown(connectionId, response.status, text);
+    }
+    throw new CodexSearchError(response.status);
+  }
+  return text;
+}
+
+type CodexSearchCallLogger = ReturnType<typeof createCodexSearchCallLogger>;
+type CodexSearchEmitter = (status: string) => Promise<void>;
+
+async function finishCodexSearchSuccess(
+  config: SearchProviderConfig,
+  params: CodexSearchParams,
+  parsed: ReturnType<typeof parseCodexSearchSse>,
+  makeResult: (provider: string, item: Row, index: number, now: string) => SearchResult,
+  startTime: number,
+  logCall: CodexSearchCallLogger,
+  emit: CodexSearchEmitter
+): Promise<ProviderFetchResult> {
+  const now = new Date().toISOString();
+  const results = parsed.results.map((row, index) => makeResult(config.id, row, index, now));
+  await logCall({
+    status: 200,
+    tokens: {
+      prompt_tokens: parsed.usage.input_tokens || 0,
+      completion_tokens: parsed.usage.output_tokens || 0,
+    },
+    responseBody: { results_count: results.length, searches: parsed.searches, cached: false },
+  });
+  await emit("success");
+  // Search success is not evidence that the shared Codex chat account recovered.
+  const duration = Date.now() - startTime;
+  return {
+    success: true,
+    data: {
+      provider: config.id,
+      query: params.query,
+      results,
+      answer: null,
+      usage: { queries_used: parsed.searches, search_cost_usd: 0 },
+      metrics: {
+        response_time_ms: duration,
+        upstream_latency_ms: duration,
+        total_results_available: results.length,
+      },
+      errors: [],
+    },
+  };
+}
+
+async function finishCodexSearchFailure(
+  error: unknown,
+  signal: AbortSignal,
+  upstreamStatusCode: number | null,
+  connectionId: string | undefined,
+  logCall: CodexSearchCallLogger,
+  emit: CodexSearchEmitter
+): Promise<ProviderFetchResult> {
+  const status = signal.aborted ? 504 : error instanceof CodexSearchError ? error.statusHint : 502;
+  if (connectionId && upstreamStatusCode === 200 && shouldCoolDownSearchConnection(status, "")) {
+    await coolDown(connectionId, status, "Codex web search failed");
+  }
+  await logCall({ status, error: "Codex web search failed" });
+  await emit(status === 504 ? "timeout" : "error");
+  return { success: false, status, error: "Codex web search failed" };
+}
+
 export async function executeCodexSearch(
   config: SearchProviderConfig,
   params: CodexSearchParams,
@@ -295,25 +459,7 @@ export async function executeCodexSearch(
   );
   let upstreamStatusCode: number | null = null;
   let url = config.baseUrl;
-  const logCall = (fields: Record<string, unknown>) =>
-    saveCallLog({
-      method: "POST",
-      path: "/v1/search",
-      model: config.id,
-      provider: config.id,
-      connectionId: connectionId || null,
-      apiKeyId,
-      requestType: "search",
-      requestBody: {
-        query: params.query.slice(0, 200),
-        search_type: params.searchType,
-        max_results: params.maxResults,
-      },
-      duration: Date.now() - startTime,
-      ...fields,
-    }).catch(() => {
-      /* Logging must not block the response. */
-    });
+  const logCall = createCodexSearchCallLogger(config, params, startTime, connectionId, apiKeyId);
   const emit = (status: string) =>
     emitSearchProxyEvent(
       config.id,
@@ -332,59 +478,26 @@ export async function executeCodexSearch(
       fetch(url, { ...request.init, signal: controller.signal })
     );
     upstreamStatusCode = response.status;
-    if (response.status === 401) {
-      await response.body?.cancel();
-      throw new CodexSearchError(401);
-    }
-    const text = await readBody(response, controller.signal);
-    if (!response.ok) {
-      if (connectionId && shouldCoolDownSearchConnection(response.status, text)) {
-        await coolDown(connectionId, response.status, text);
-      }
-      throw new CodexSearchError(response.status);
-    }
+    const text = await readCodexSearchResponse(response, controller.signal, connectionId);
     const parsed = parseCodexSearchSse(text, params.maxResults);
-    const now = new Date().toISOString();
-    const results = parsed.results.map((row, index) => makeResult(config.id, row, index, now));
-    await logCall({
-      status: 200,
-      tokens: {
-        prompt_tokens: parsed.usage.input_tokens || 0,
-        completion_tokens: parsed.usage.output_tokens || 0,
-      },
-      responseBody: { results_count: results.length, searches: parsed.searches, cached: false },
-    });
-    await emit("success");
-    // Search success is not evidence that the shared Codex chat account recovered.
-    const duration = Date.now() - startTime;
-    return {
-      success: true,
-      data: {
-        provider: config.id,
-        query: params.query,
-        results,
-        answer: null,
-        usage: { queries_used: parsed.searches, search_cost_usd: 0 },
-        metrics: {
-          response_time_ms: duration,
-          upstream_latency_ms: duration,
-          total_results_available: results.length,
-        },
-        errors: [],
-      },
-    };
+    return await finishCodexSearchSuccess(
+      config,
+      params,
+      parsed,
+      makeResult,
+      startTime,
+      logCall,
+      emit
+    );
   } catch (error: unknown) {
-    const status = controller.signal.aborted
-      ? 504
-      : error instanceof CodexSearchError
-        ? error.statusHint
-        : 502;
-    if (connectionId && upstreamStatusCode === 200 && shouldCoolDownSearchConnection(status, "")) {
-      await coolDown(connectionId, status, "Codex web search failed");
-    }
-    await logCall({ status, error: "Codex web search failed" });
-    await emit(status === 504 ? "timeout" : "error");
-    return { success: false, status, error: "Codex web search failed" };
+    return await finishCodexSearchFailure(
+      error,
+      controller.signal,
+      upstreamStatusCode,
+      connectionId,
+      logCall,
+      emit
+    );
   } finally {
     clearTimeout(timer);
   }
