@@ -667,7 +667,8 @@ export async function executeChatWithBreaker({
     let wasProviderProbe = false;
     const probeOptions = {
       classifyResult: chatPathOwnsBreakerAccounting,
-      classifyProbeResult: classifyProviderProbeResult,
+      classifyProbeResult: (value: Parameters<typeof classifyProviderProbeResult>[0]) =>
+        classifyProviderProbeResult(value, provider),
       onProbeAcquired: () => (wasProviderProbe = true),
     };
     const tracked = await breaker.execute(
