@@ -1,1 +1,1 @@
-- **fix(compression):** caveman compression keeps the latest user turn intact when earlier turns exist ([#17954](https://github.com/diegosouzapw/OmniRoute/pull/17954)) — thanks @levinkin
+- **fix(compression):** caveman compression keeps the latest user turn intact when earlier turns exist (#17954) — thanks @levinkin
