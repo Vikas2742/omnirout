@@ -10,7 +10,7 @@ const settings = await import("../../src/lib/db/settings.ts");
 const apiKeys = await import("../../src/lib/db/apiKeys.ts");
 const route = await import("../../src/app/api/v1/search/route.ts");
 const { executeWebSearch } = await import("../../src/lib/search/executeWebSearch.ts");
-const { handleSearch } = await import("../../open-sse/handlers/search.ts");
+
 const { getCallLogs, closeCallLogSaves } = await import("../../src/lib/usage/callLogs.ts");
 const fixture = readFileSync(
   new URL("../fixtures/codex-search/real_en_ref_param.sse", import.meta.url),
@@ -98,38 +98,6 @@ test("with a usable Codex OAuth connection last-resort search precedes DuckDuckG
     assert.equal(log.tokens.out, 92);
   });
 });
-
-for (const testStatus of ["error", "unavailable"]) {
-  test(`successful Codex search clears stale ${testStatus} connection state`, async () => {
-    const connection = await seedCodex();
-    const connectionId = connection.id as string;
-    await providers.updateProviderConnection(connectionId, {
-      testStatus,
-      lastError: "Previous search failed",
-      lastErrorAt: new Date(Date.now() - 60_000).toISOString(),
-      errorCode: testStatus === "error" ? "401" : "429",
-      rateLimitedUntil:
-        testStatus === "unavailable" ? new Date(Date.now() - 1000).toISOString() : null,
-    });
-    await stub(async () => {
-      const result = await handleSearch({
-        query: "clear stale Codex error",
-        provider: "codex-search",
-        searchType: "web",
-        maxResults: 1,
-        credentials: { accessToken: "synthetic-token" },
-        connectionId,
-      });
-      assert.equal(result.success, true);
-    });
-    const updated = await providers.getProviderConnectionById(connectionId);
-    assert.equal(updated?.testStatus, "active");
-    assert.equal(updated?.lastError ?? null, null);
-    assert.equal(updated?.lastErrorAt ?? null, null);
-    assert.equal(updated?.errorCode ?? null, null);
-    assert.equal(updated?.rateLimitedUntil ?? null, null);
-  });
-}
 
 test("connection scope excluding Codex allows DuckDuckGo only with the existing noauth opt-in", async () => {
   await seedCodex();
@@ -246,39 +214,3 @@ for (const [budget, expected] of [
     t.mock.restoreAll();
   });
 }
-
-test("HTTP 429/5xx/quota and SSE overload cool down the selected Codex account", async () => {
-  for (const [status, body] of [
-    [429, "Too many requests"],
-    [503, "Service unavailable"],
-    [400, "Insufficient credits"],
-    [
-      200,
-      'event: error\ndata: {"error":{"code":"server_is_overloaded","message":"private detail"}}\n\n',
-    ],
-  ] as const) {
-    const connection = await seedCodex();
-    const original = globalThis.fetch;
-    globalThis.fetch = async () => new Response(body, { status });
-    try {
-      const result = await handleSearch({
-        query: "cooldown",
-        provider: "codex-search",
-        searchType: "web",
-        maxResults: 1,
-        credentials: { accessToken: "synthetic-token" },
-        connectionId: connection.id as string,
-      });
-      assert.equal(result.status, status === 200 ? 503 : status);
-      const updated = await providers.getProviderConnectionById(connection.id as string);
-      if (status === 400) {
-        assert.equal(updated?.testStatus, "credits_exhausted");
-        continue;
-      }
-      assert.ok(updated?.rateLimitedUntil, `cooldown missing for ${status}`);
-      assert.ok(Date.parse(String(updated.rateLimitedUntil)) > Date.now());
-    } finally {
-      globalThis.fetch = original;
-    }
-  }
-});

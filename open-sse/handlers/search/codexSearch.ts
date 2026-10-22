@@ -2,9 +2,9 @@ import { saveCallLog } from "@/lib/usageDb";
 import { getCodexBackendIdentityHeaders } from "../../config/codexClient.ts";
 import type { SearchProviderConfig } from "../../config/searchRegistry.ts";
 import type { SearchResult } from "../search.ts";
+import { checkFallbackError, lockModel } from "../../services/accountFallback.ts";
 import { resolveSearchBaseUrl } from "./baseUrl.ts";
 import {
-  clearSearchConnectionError,
   emitSearchProxyEvent,
   fetchWithSearchProxy,
   resolveSearchProxy,
@@ -355,8 +355,7 @@ export async function executeCodexSearch(
       responseBody: { results_count: results.length, searches: parsed.searches, cached: false },
     });
     await emit("success");
-    /* Stale-error cleanup must not block a successful search. */
-    await clearSearchConnectionError(connectionId);
+    // Search success is not evidence that the shared Codex chat account recovered.
     const duration = Date.now() - startTime;
     return {
       success: true,
@@ -392,13 +391,16 @@ export async function executeCodexSearch(
 }
 
 async function coolDown(connectionId: string, status: number, text: string) {
-  try {
-    const { markAccountUnavailable } = await import("@/sse/services/auth.ts");
-    // Like the generic search path, cool the selected connection for this
-    // search service. Codex's chat-only virtual-child path needs a chat model
-    // and intentionally does not persist a parent cooldown for model-less 429s.
-    await markAccountUnavailable(connectionId, status, text, "codex-search", null);
-  } catch {
-    /* Cooldown persistence must not break the search response. */
+  // Reuse generic fallback classification, but never its parent-row persistence.
+  // The separate provider+connection+model key cannot cool any Codex chat scope.
+  const { cooldownMs, reason } = checkFallbackError(status, text, 0, "web_search", "codex-search");
+  if (cooldownMs > 0) {
+    lockModel(
+      "codex-search",
+      connectionId,
+      "web_search",
+      reason || "unknown",
+      Math.min(cooldownMs, 60_000)
+    );
   }
 }
