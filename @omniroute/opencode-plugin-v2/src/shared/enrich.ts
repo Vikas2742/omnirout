@@ -563,31 +563,35 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
     report("/api/pricing/models", `HTTP ${catalogStatus}`);
   }
 
-  // Historical namespace aliases require unique provenance, and cannot
-  // shadow any active catalog prefix or canonical provider key. Importantly,
-  // a previous public prefix is NOT automatically a valid routing prefix.
+  // Resolve ALL claims (historical prefix + explicit pricingKey) together.
+  // A conflict between categories is just as dangerous as two legacy nodes
+  // claiming the same prefix: do not silently grant priority to either one.
   const historyAliasClaims = new Map<string, string | null>();
-  for (const claim of pendingHistoryClaims) {
-    if (currentCatalogKeys.has(claim.oldPrefix)) continue;
-    if (!historyAliasClaims.has(claim.oldPrefix)) {
-      historyAliasClaims.set(claim.oldPrefix, claim.alias);
-    } else if (historyAliasClaims.get(claim.oldPrefix) !== claim.alias) {
-      historyAliasClaims.set(claim.oldPrefix, null);
+  const allClaims = new Map<string, Set<string>>();
+  const addClaim = (key: string, alias: string) => {
+    if (currentCatalogKeys.has(key)) return;
+    const owners = allClaims.get(key) ?? new Set<string>();
+    owners.add(alias);
+    allClaims.set(key, owners);
+  };
+  for (const { oldPrefix, alias } of pendingHistoryClaims) {
+    addClaim(oldPrefix, alias);
+    if (!historyAliasClaims.has(oldPrefix)) historyAliasClaims.set(oldPrefix, alias);
+    else if (historyAliasClaims.get(oldPrefix) !== alias) {
+      historyAliasClaims.set(oldPrefix, null);
     }
   }
-  for (const [previous, current] of historyAliasClaims) {
-    if (current && !catalogAliasByKey.has(previous)) {
-      catalogAliasByKey.set(previous, current);
+  for (const { pricingKey, alias } of pendingPricingClaims) addClaim(pricingKey, alias);
+
+  const ambiguousPricingNamespaces = new Set<string>();
+  for (const [key, claims] of allClaims) {
+    const owner = [...claims][0];
+    const currentOwner = catalogAliasByKey.get(key);
+    if (claims.size !== 1 || (currentOwner && currentOwner !== owner)) {
+      ambiguousPricingNamespaces.add(key);
+      continue;
     }
-  }
-  const explicitPricingClaims = new Map<string, string | null>();
-  for (const { pricingKey, alias } of pendingPricingClaims) {
-    if (currentCatalogKeys.has(pricingKey)) continue;
-    if (!explicitPricingClaims.has(pricingKey)) explicitPricingClaims.set(pricingKey, alias);
-    else if (explicitPricingClaims.get(pricingKey) !== alias) explicitPricingClaims.set(pricingKey, null);
-  }
-  for (const [key, alias] of explicitPricingClaims) {
-    if (alias && !catalogAliasByKey.has(key)) catalogAliasByKey.set(key, alias);
+    if (!currentOwner) catalogAliasByKey.set(key, owner);
   }
 
   // 2. Pricing values from /api/pricing.
@@ -606,6 +610,9 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
       if (body && typeof body === "object" && !Array.isArray(body)) {
         for (const [pricingProviderKey, slot] of Object.entries(body as Record<string, unknown>)) {
           if (!slot || typeof slot !== "object" || Array.isArray(slot)) continue;
+          // Never leak a disputed historical pricing namespace into either
+          // provider, not even through the bare-key fallback.
+          if (ambiguousPricingNamespaces.has(pricingProviderKey)) continue;
           const providerAlias = catalogAliasByKey.get(pricingProviderKey) ?? pricingProviderKey;
           for (const [rawModelId, raw] of Object.entries(slot as Record<string, unknown>)) {
             const modelId =
