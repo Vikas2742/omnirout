@@ -235,11 +235,37 @@ test("#17348: deleting a node that reused a retired prefix leaves an ambiguity t
 
 test("#17348: deletion archives all historic node prefixes as non-routable vetoes", async () => {
   await create(A, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(A, A, [{ id: "foo", name: "Foo" }]);
   await nodes.updateProviderNode(A, { prefix: prefixB });
   await nodes.deleteProviderNode(A);
+  assert.deepEqual(
+    history.getArchivedDeletedNodePrefixHistory(core.getDbInstance(), A),
+    [{ prefix: prefixA, modelIds: ["foo"] }],
+    "deleted node keeps its old raw-ID provenance for manual recovery"
+  );
   assert.deepEqual(
     [...history.getDeletedNodePrefixTombstones(core.getDbInstance())].sort(),
     [prefixA, prefixB].sort()
   );
   assert.deepEqual(history.getNodePrefixHistory(core.getDbInstance(), A), []);
+});
+
+
+test("#17348: recreated provider IDs must not erase archived prefix ownership", async () => {
+  await create(A, prefixA);
+  await nodes.updateProviderNode(A, { prefix: prefixB });
+  await nodes.deleteProviderNode(A);
+  await create(A, "syntheticfourth");
+  await nodes.deleteProviderNode(A);
+  assert.deepEqual(
+    [...history.getDeletedNodePrefixTombstones(core.getDbInstance())].sort(),
+    [prefixA, prefixB, "syntheticfourth"].sort()
+  );
+});
+
+test("#17348: older array-form tombstones still prevent historical reassignment", () => {
+  core.getDbInstance().prepare(
+    "INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES (?, ?, ?)"
+  ).run("providerNodePrefixTombstones", "old-format", JSON.stringify(["legacy-prefix"]));
+  assert.equal(history.getDeletedNodePrefixTombstones(core.getDbInstance()).has("legacy-prefix"), true);
 });
