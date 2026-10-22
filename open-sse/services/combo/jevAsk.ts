@@ -1,7 +1,11 @@
 /** Shared TypeSafe System One ask port for the Jev model and runtime-unit paths. */
 
 import { getProviderCredentials } from "../../../src/sse/services/auth.ts";
-import { evaluateSystemOneChoice, TYPESAFE_PROVIDER_ID } from "../typesafe/systemOne.ts";
+import {
+  evaluateSystemOneChoice,
+  TYPESAFE_PROVIDER_ID,
+  type SystemOneChoiceUnavailable,
+} from "../typesafe/systemOne.ts";
 import type { ComboLogger } from "./types.ts";
 import type { JevAsk } from "./jevOrdering.ts";
 
@@ -37,10 +41,12 @@ export function createJevAsk(args: {
           },
         };
       }
-      if (result.reason === "missing_api_key") {
+      // `strict: false` does not narrow the `ok` union, so name the unavailable variant.
+      const unavailable = result as SystemOneChoiceUnavailable;
+      if (unavailable.reason === "missing_api_key") {
         return { ok: false, reason: "missing_api_key" };
       }
-      args.log.info("COMBO", `[jev] System One unavailable: ${result.reason}`);
+      args.log.info("COMBO", `[jev] System One unavailable: ${unavailable.reason}`);
       return { ok: false, reason: "unavailable" };
     } catch (error) {
       args.log.warn(

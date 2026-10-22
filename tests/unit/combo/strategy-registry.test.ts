@@ -69,7 +69,16 @@ const LEGACY_DECISIONS: { [K in keyof StrategyTraits]: (s: string) => StrategyTr
   stickyPin: (s) => (s === "weighted" ? "weighted" : s === "round-robin" ? "round-robin" : "none"),
   // dispatchPrelude.ts simpleExecuteStrategies + orderRuntimeUnits
   runtimeUnitOrder: (s) => {
-    const simple = ["priority", "round-robin", "random", "strict-random", "weighted", "fill-first"];
+    // `jev` orders its runtime units through jevRuntimeUnits.ts (declared user order, then admission).
+    const simple = [
+      "priority",
+      "round-robin",
+      "random",
+      "strict-random",
+      "weighted",
+      "fill-first",
+      "jev",
+    ];
     if (!simple.includes(s)) return "unsupported";
     if (s === "random") return "shuffle";
     if (s === "strict-random") return "deck";

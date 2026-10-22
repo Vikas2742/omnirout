@@ -64,6 +64,7 @@ import {
 import { normalizeComboConfigMode } from "@/shared/constants/comboConfigMode";
 import AutoComboCatalog from "./AutoComboCatalog";
 import { ComboTestSummaryNote, getI18nOrFallback } from "./comboPageHelpers";
+import ComboReferencePicker from "./ComboReferencePicker";
 import KimiComboPresetCard from "./KimiComboPresetCard";
 import { KIMI_CODING_PRESET, hasKimiCodingPreset } from "./kimiComboPreset";
 import BuilderIntelligentStep from "./BuilderIntelligentStep";
@@ -3793,40 +3794,13 @@ function ComboFormModal({
                     )}
 
                     {strategy !== "jev" && (
-                      <div className="mt-3 pt-3 border-t border-black/5 dark:border-white/5">
-                        <label className="text-[10px] font-medium uppercase tracking-wide text-text-muted block mb-1">
-                          {getI18nOrFallback(t, "builderComboRef", "Reference another combo")}
-                        </label>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <select
-                            value={builderComboRefName}
-                            onChange={(e) => setBuilderComboRefName(e.target.value)}
-                            className="flex-1 text-xs py-2 px-2 rounded border border-black/10 dark:border-white/10 bg-white dark:bg-white/5 text-text-main focus:border-primary focus:outline-none"
-                          >
-                            <option value="">
-                              {getI18nOrFallback(
-                                t,
-                                "selectComboToReference",
-                                "Select an existing combo to reference"
-                              )}
-                            </option>
-                            {builderComboRefs.map((comboRef) => (
-                              <option key={comboRef.id} value={comboRef.name}>
-                                {comboRef.name} · {comboRef.strategy} · {comboRef.stepCount} step
-                                {comboRef.stepCount === 1 ? "" : "s"}
-                              </option>
-                            ))}
-                          </select>
-                          <Button
-                            onClick={handleAddComboReference}
-                            variant="ghost"
-                            size="sm"
-                            disabled={!builderComboRefName}
-                          >
-                            {getI18nOrFallback(t, "builderAddComboRef", "Add combo ref")}
-                          </Button>
-                        </div>
-                      </div>
+                      <ComboReferencePicker
+                        t={t}
+                        value={builderComboRefName}
+                        onChange={setBuilderComboRefName}
+                        options={builderComboRefs}
+                        onAdd={handleAddComboReference}
+                      />
                     )}
                   </>
                 )}
