@@ -39,7 +39,13 @@ test.after(() => {
   else process.env.INITIAL_PASSWORD = ORIGINAL_INITIAL_PASSWORD;
 });
 
-function seed(model: string, score: number, eloRaw: number | null = null, confidence: string | null = null, category: string = "chat") {
+function seed(
+  model: string,
+  score: number,
+  eloRaw: number | null = null,
+  confidence: string | null = null,
+  category: string = "chat"
+) {
   modelIntelligenceDb.upsertModelIntelligence({
     model,
     source: "arena_elo",
@@ -77,7 +83,9 @@ test("GET returns 400 when the provider query parameter is missing", async () =>
 
 test("GET returns 400 when the provider query parameter is empty", async () => {
   const res = await listRoute.GET(
-    asNextRequest(await makeManagementSessionRequest("http://localhost/api/provider-intelligence?provider="))
+    asNextRequest(
+      await makeManagementSessionRequest("http://localhost/api/provider-intelligence?provider=")
+    )
   );
   assert.equal(res.status, 400);
   const body = (await res.json()) as { error: string };
@@ -93,9 +101,7 @@ test("GET returns sorted model intelligence for a provider", async () => {
 
   const res = await listRoute.GET(
     asNextRequest(
-      await makeManagementSessionRequest(
-        "http://localhost/api/provider-intelligence?provider=kimi"
-      )
+      await makeManagementSessionRequest("http://localhost/api/provider-intelligence?provider=kimi")
     )
   );
   assert.equal(res.status, 200);
@@ -142,9 +148,7 @@ test("GET includes isFree flag for each model", async () => {
 
   const res = await listRoute.GET(
     asNextRequest(
-      await makeManagementSessionRequest(
-        "http://localhost/api/provider-intelligence?provider=kimi"
-      )
+      await makeManagementSessionRequest("http://localhost/api/provider-intelligence?provider=kimi")
     )
   );
   assert.equal(res.status, 200);
@@ -152,4 +156,19 @@ test("GET includes isFree flag for each model", async () => {
   for (const model of body) {
     assert.equal(typeof model.isFree, "boolean", `expected isFree boolean for ${model}`);
   }
+});
+
+test("GET returns a sanitized 500 (no stack trace) when the intelligence read fails", async () => {
+  // Force a DB failure after auth + param validation: the table the route reads is gone.
+  core.getDbInstance().exec("DROP TABLE model_intelligence");
+
+  const res = await listRoute.GET(
+    asNextRequest(
+      await makeManagementSessionRequest("http://localhost/api/provider-intelligence?provider=kimi")
+    )
+  );
+  assert.equal(res.status, 500);
+  const body = (await res.json()) as { error?: unknown };
+  assert.equal(typeof body.error, "string");
+  assert.ok(!/\n\s+at /.test(String(body.error)), "response must not carry a stack trace");
 });

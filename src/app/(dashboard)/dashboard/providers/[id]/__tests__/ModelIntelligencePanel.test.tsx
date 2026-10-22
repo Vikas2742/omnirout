@@ -5,8 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent } from "@testing-library/react";
 
 import ModelIntelligencePanel from "../components/ModelIntelligencePanel";
+import type { ProviderMessageTranslator } from "../providerCredentialText";
 
 const noop = () => {};
+
+// Minimal translator stub: no `has`, so providerText() always yields the English fallback.
+const t = ((key: string) => key) as ProviderMessageTranslator;
 
 function render(ui: React.ReactNode) {
   const container = document.createElement("div");
@@ -29,7 +33,7 @@ describe("ModelIntelligencePanel", () => {
   it("renders the loading state on mount", async () => {
     vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})) as unknown as typeof fetch);
     const { container } = render(
-      <ModelIntelligencePanel providerId="openai" providerName="OpenAI" onClose={noop} />
+      <ModelIntelligencePanel t={t} providerId="openai" providerName="OpenAI" onClose={noop} />
     );
     expect(container.textContent).toContain("Loading intelligence scores");
   });
@@ -46,7 +50,7 @@ describe("ModelIntelligencePanel", () => {
       ) as unknown as typeof fetch
     );
     const { container } = render(
-      <ModelIntelligencePanel providerId="openai" providerName="OpenAI" onClose={noop} />
+      <ModelIntelligencePanel t={t} providerId="openai" providerName="OpenAI" onClose={noop} />
     );
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
@@ -67,14 +71,12 @@ describe("ModelIntelligencePanel", () => {
       ) as unknown as typeof fetch
     );
     const { container } = render(
-      <ModelIntelligencePanel providerId="openai" providerName="OpenAI" onClose={noop} />
+      <ModelIntelligencePanel t={t} providerId="openai" providerName="OpenAI" onClose={noop} />
     );
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
     });
-    expect(container.textContent).toContain(
-      "No intelligence scores available for this provider."
-    );
+    expect(container.textContent).toContain("No intelligence scores available for this provider.");
   });
 
   it("renders the toolbar with Select All, Free-only toggle, search, and close", async () => {
@@ -100,7 +102,7 @@ describe("ModelIntelligencePanel", () => {
       ) as unknown as typeof fetch
     );
     const { container } = render(
-      <ModelIntelligencePanel providerId="openai" providerName="OpenAI" onClose={noop} />
+      <ModelIntelligencePanel t={t} providerId="openai" providerName="OpenAI" onClose={noop} />
     );
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
@@ -125,7 +127,7 @@ describe("ModelIntelligencePanel", () => {
       ) as unknown as typeof fetch
     );
     const { container } = render(
-      <ModelIntelligencePanel providerId="openai" providerName="OpenAI" onClose={onClose} />
+      <ModelIntelligencePanel t={t} providerId="openai" providerName="OpenAI" onClose={onClose} />
     );
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
@@ -172,17 +174,55 @@ describe("ModelIntelligencePanel", () => {
       ) as unknown as typeof fetch
     );
     const { container } = render(
-      <ModelIntelligencePanel providerId="openai" providerName="OpenAI" onClose={noop} />
+      <ModelIntelligencePanel t={t} providerId="openai" providerName="OpenAI" onClose={noop} />
     );
     await act(async () => {
       await new Promise((r) => setTimeout(r, 50));
     });
-    const searchInput = container.querySelector('input[placeholder="Search models…"]') as HTMLInputElement;
+    const searchInput = container.querySelector(
+      'input[placeholder="Search models…"]'
+    ) as HTMLInputElement;
     expect(searchInput).toBeTruthy();
     await act(async () => {
       fireEvent.change(searchInput, { target: { value: "kimi" } });
     });
     expect(container.textContent).toContain("kimi-k2.6");
     expect(container.textContent).not.toContain("glm-4.7");
+  });
+
+  it("routes the user-visible strings through the translator when the keys exist", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve([]),
+        })
+      ) as unknown as typeof fetch
+    );
+    const translated = Object.assign(
+      (key: string, values?: Record<string, unknown>) =>
+        `tr:${key}${values ? JSON.stringify(values) : ""}`,
+      { has: () => true }
+    ) as ProviderMessageTranslator;
+    const { container } = render(
+      <ModelIntelligencePanel
+        t={translated}
+        providerId="openai"
+        providerName="OpenAI"
+        onClose={noop}
+      />
+    );
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(container.textContent).toContain('tr:intelligenceTitle{"name":"OpenAI"}');
+    expect(container.textContent).toContain("tr:intelligenceEmpty");
+    expect(container.textContent).toContain("tr:intelligenceSelectAll");
+    expect(container.textContent).toContain("tr:intelligenceFreeOnly");
+    expect(container.textContent).not.toContain("Select All");
+    expect(container.querySelector('input[placeholder="tr:intelligenceSearch"]')).toBeTruthy();
+    expect(container.querySelector('button[aria-label="tr:intelligenceClose"]')).toBeTruthy();
   });
 });

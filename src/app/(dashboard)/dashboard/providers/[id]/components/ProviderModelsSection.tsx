@@ -517,6 +517,7 @@ export default function ProviderModelsSection({
       <AutoGrid className="relative">
         {showIntelligence && (
           <ModelIntelligencePanel
+            t={t}
             providerId={providerId}
             providerName={providerInfo?.name || providerId}
             onClose={() => setShowIntelligence(false)}
