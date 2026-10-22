@@ -132,6 +132,7 @@ export function recordNodePrefixChange(
  * a permanent ambiguity veto until an explicit operator reconciliation.
  */
 const TOMBSTONE_NAMESPACE = "providerNodePrefixTombstones";
+const ARCHIVE_NAMESPACE = "providerNodePrefixArchivedHistories";
 
 export interface ArchivedPrefixClaim {
   prefixes: string[];
@@ -170,10 +171,15 @@ export function getArchivedDeletedNodePrefixHistory(
   db: PrefixHistoryDb,
   nodeId: string
 ): HistoricalNodePrefix[] {
-  const row = db.prepare(
+  const archive = db.prepare(
+    "SELECT value FROM key_value WHERE namespace = ? AND key = ?"
+  ).get(ARCHIVE_NAMESPACE, nodeId) as { value?: unknown } | undefined;
+  if (archive?.value != null) return parseNodePrefixHistory(archive.value);
+  // One-version transition: support tombstones that embedded historic IDs.
+  const oldRecord = db.prepare(
     "SELECT value FROM key_value WHERE namespace = ? AND key = ?"
   ).get(TOMBSTONE_NAMESPACE, nodeId) as { value?: unknown } | undefined;
-  return parseArchivedPrefixClaim(row?.value).history;
+  return parseArchivedPrefixClaim(oldRecord?.value).history;
 }
 
 export function recordDeletedNodePrefixTombstone(
@@ -185,6 +191,7 @@ export function recordDeletedNodePrefixTombstone(
     "SELECT value FROM key_value WHERE namespace = ? AND key = ?"
   ).get(TOMBSTONE_NAMESPACE, nodeId) as { value?: unknown } | undefined;
   const previous = parseArchivedPrefixClaim(previousRow?.value);
+  const archived = getArchivedDeletedNodePrefixHistory(db, nodeId);
   const presentHistory = getNodePrefixHistory(db, nodeId);
   const prefixes = new Set([
     ...previous.prefixes,
@@ -193,14 +200,15 @@ export function recordDeletedNodePrefixTombstone(
   const current = currentPrefix?.trim();
   if (current && current.length <= 128 && !current.includes("/")) prefixes.add(current);
   if (prefixes.size === 0) return;
-  const archivedHistory = parseNodePrefixHistory([...previous.history, ...presentHistory]);
-  db.prepare(`
+  const archivedHistory = parseNodePrefixHistory([...archived, ...presentHistory]);
+  const upsert = db.prepare(`
     INSERT INTO key_value (namespace, key, value) VALUES (?, ?, ?)
     ON CONFLICT(namespace, key) DO UPDATE SET value = excluded.value
-  `).run(TOMBSTONE_NAMESPACE, nodeId, JSON.stringify({
-    prefixes: [...prefixes],
-    history: archivedHistory,
-  }));
+  `);
+  // Keep the hot GET /api/pricing/models veto query tiny: it loads only
+  // prefix strings, not up to 12 x 8,000 archived raw model identities.
+  upsert.run(TOMBSTONE_NAMESPACE, nodeId, JSON.stringify([...prefixes]));
+  upsert.run(ARCHIVE_NAMESPACE, nodeId, JSON.stringify(archivedHistory));
 }
 
 export function getDeletedNodePrefixTombstones(db: PrefixHistoryDb): Set<string> {
