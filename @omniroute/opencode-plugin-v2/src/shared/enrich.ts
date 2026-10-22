@@ -661,9 +661,10 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
                 ? rawModelId.slice(providerAlias.length + 1)
                 : rawModelId;
             if (
-              pricingProviderKey === providerAlias &&
-              canonicalByPublicPrefix.get(providerAlias) !== pricingProviderKey &&
-              canonicalPricedModels.get(providerAlias)?.has(modelId)
+              // Compare the ORIGINAL pricing namespace with the direct node
+              // price index, not an alias remapped from another catalog key.
+              canonicalByPublicPrefix.has(pricingProviderKey) &&
+              canonicalPricedModels.get(pricingProviderKey)?.has(modelId)
             ) continue;
             if (!raw || typeof raw !== "object") continue;
             const p = raw as Record<string, unknown>;
