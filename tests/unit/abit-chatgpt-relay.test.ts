@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const { AbitChatGptRelayExecutor, buildAbitChatGptRelayPrompt } =
+const { AbitChatGptRelayExecutor, buildAbitChatGptRelayPrompt, normalizeAbitChatGptRelayResponse } =
   await import("@omniroute/open-sse/executors/abit-chatgpt-relay");
 
 const originalFetch = globalThis.fetch;
@@ -24,6 +24,36 @@ test("buildAbitChatGptRelayPrompt preserves system/user/assistant transcript", (
   assert.match(prompt, /\[USER\]\nStatus\?/);
   assert.match(prompt, /\[ASSISTANT\]\nWorking\./);
   assert.match(prompt, /\[USER\]\nContinue\./);
+});
+
+test("normalizeAbitChatGptRelayResponse removes the project attribution wrapper", () => {
+  assert.equal(
+    normalizeAbitChatGptRelayResponse("ChatGPT said:\n\nABIT_RELAY_OK"),
+    "ABIT_RELAY_OK"
+  );
+  assert.equal(normalizeAbitChatGptRelayResponse("Direct response"), "Direct response");
+});
+
+test("non-streaming executor returns the normalized project response", async () => {
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        type: "complete",
+        result: { response: "ChatGPT said:\n\nABIT_RELAY_OK" },
+      }) + "\n",
+      { status: 200, headers: { "Content-Type": "application/x-ndjson" } }
+    )) as typeof fetch;
+
+  const executor = new AbitChatGptRelayExecutor();
+  const { response } = await executor.execute({
+    model: "project-management",
+    body: { messages: [{ role: "user", content: "Reply exactly ABIT_RELAY_OK" }] },
+    stream: false,
+    credentials: { apiKey: "relay-secret", providerSpecificData: {} },
+  });
+
+  const body = await response.json();
+  assert.equal(body.choices[0].message.content, "ABIT_RELAY_OK");
 });
 
 test("non-streaming executor sends the request through the local ABiT relay", async () => {

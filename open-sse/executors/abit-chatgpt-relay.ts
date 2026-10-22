@@ -39,6 +39,11 @@ function contentText(content: unknown): string {
     .join("\n");
 }
 
+export function normalizeAbitChatGptRelayResponse(content: string): string {
+  const trimmed = content.trim();
+  return trimmed.replace(/^ChatGPT said:\s*/i, "").trim();
+}
+
 export function buildAbitChatGptRelayPrompt(body: unknown): string {
   const source = record(body);
   const messages = Array.isArray(source.messages) ? source.messages : [];
@@ -219,7 +224,7 @@ async function readRelayStreamCompletion(response: Response): Promise<string> {
       const result = record(event.result);
       const completed = configuredString(result.response);
       if (completed) latest = completed;
-      return latest || undefined;
+      return latest ? normalizeAbitChatGptRelayResponse(latest) : undefined;
     }
     if (type === "error") {
       throw new Error(configuredString(event.message) ?? "ABiT ChatGPT Relay stream failed");
@@ -248,7 +253,7 @@ async function readRelayStreamCompletion(response: Response): Promise<string> {
     reader.releaseLock();
   }
 
-  if (latest) return latest;
+  if (latest) return normalizeAbitChatGptRelayResponse(latest);
   throw new Error("ChatGPT browser relay ended without a completion");
 }
 
