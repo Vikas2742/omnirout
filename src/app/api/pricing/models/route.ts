@@ -32,7 +32,9 @@ function asModelArray(value: unknown): Array<{ id?: string; name?: string }> {
  */
 export async function GET() {
   try {
-    const catalog: Record<string, any> = {};
+    // Pricing/provider IDs are operator input; a null prototype prevents
+    // "__proto__", "constructor", etc. from resolving inherited objects.
+    const catalog: Record<string, any> = Object.create(null);
 
     // Pre-load compatible-provider node public prefixes once (shared across the
     // whole catalog build — never N lookups per model). Only uniquely-routable
@@ -224,8 +226,16 @@ export async function GET() {
       // old namespace as display-only, and use the new node's canonical key
       // for verified new prices.
       const unverifiedReusedPrefix = Boolean(currentNode && tombstonedPrefixes.has(rawProviderAlias));
+      // The PricingTab edits a single pricingKey per provider card. If both
+      // node-ID and public-prefix prices exist, merging their model rows would
+      // make saves target the wrong namespace (and be enumeration-order dependent).
+      // Keep both visible in separate, exact-key cards instead.
+      const duplicatePricingSources = Boolean(
+        currentNode && Object.hasOwn(pricingData, currentNode)
+      );
+      const separatePricingKey = unverifiedReusedPrefix || duplicatePricingSources;
       const providerAlias =
-        unverifiedReusedPrefix ? rawProviderAlias : currentNode || rawProviderAlias;
+        separatePricingKey ? rawProviderAlias : currentNode || rawProviderAlias;
       const historicalNamespace = tombstonedPrefixes.has(rawProviderAlias) ||
         (historicalOwners.has(rawProviderAlias) && !currentNode);
       const orphaned = orphanedCompatibleNode(providerAlias);
@@ -238,17 +248,20 @@ export async function GET() {
           format: "openai",
           models: [],
         };
-        if (!orphaned && !historicalNamespace) {
+        if (!orphaned && !historicalNamespace && !separatePricingKey) {
           attachCompatibleMetadata(providerAlias, catalog[providerAlias]);
         }
       }
       // A stale custom/synced catalog entry may already exist at this key.
       // Classify regardless of whether the pricing loop created the slot.
-      if (orphaned || historicalNamespace) {
+      if (orphaned || historicalNamespace || separatePricingKey) {
         catalog[providerAlias].pricingOnly = true;
         catalog[providerAlias].modelOverrideEligible = false;
         if (orphaned) catalog[providerAlias].orphaned = true;
         if (historicalNamespace) catalog[providerAlias].historicalPricingNamespace = true;
+        if (duplicatePricingSources && !historicalNamespace) {
+          catalog[providerAlias].separatePricingNamespace = true;
+        }
       }
       // When the entry is keyed internally by the node id but priced under a
       // public prefix, remember the original pricing namespace for PricingTab.
