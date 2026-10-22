@@ -1,4 +1,5 @@
-import { WEB_COOKIE_PROVIDERS } from "@/shared/constants/providers";
+import { WEB_COOKIE_PROVIDERS, resolveProviderId } from "@/shared/constants/providers";
+import { findWordPressLoggedInEntry } from "@omniroute/open-sse/utils/wordpressSessionKey.ts";
 
 export type WebSessionCredentialRequirement =
   | {
@@ -227,10 +228,10 @@ export const WEB_SESSION_CREDENTIAL_REQUIREMENTS = {
   },
   "venice-web": {
     kind: "cookie",
-    credentialName: "session",
-    placeholder: "session=... or full Cookie header from venice.ai",
+    credentialName: "__client",
+    placeholder: "__client=... or full Cookie header from clerk.venice.ai",
     acceptsFullCookieHeader: true,
-    storageKeys: ["cookie", "session"],
+    storageKeys: ["cookie", "__client"],
   },
   "v0-vercel-web": {
     kind: "cookie",
@@ -356,6 +357,20 @@ export const WEB_SESSION_CREDENTIAL_REQUIREMENTS = {
     acceptsFullCookieHeader: true,
     storageKeys: ["cookie", "__Secure-better-auth.session_token"],
   },
+  twinmind: {
+    kind: "token",
+    credentialName: "Firebase stsTokenManager JSON (accessToken + refreshToken)",
+    placeholder: "Paste stsTokenManager JSON, or accessToken JWT + refreshToken",
+    acceptsFullCookieHeader: false,
+    storageKeys: ["token", "refreshToken", "refresh_token", "apiKey", "accessToken"],
+  },
+  syntx: {
+    kind: "token",
+    credentialName: "SYNTX.ai Bearer JWT",
+    placeholder: "Paste eyJ… JWT from Authorization: Bearer on api.syntx.ai",
+    acceptsFullCookieHeader: false,
+    storageKeys: ["token", "apiKey", "accessToken"],
+  },
   maxai: {
     kind: "token",
     credentialName: "MaxAI access token (Bearer) + device id",
@@ -396,6 +411,13 @@ export const WEB_SESSION_CREDENTIAL_REQUIREMENTS = {
       "uid",
     ],
   },
+  "veoaifree-web": {
+    kind: "cookie",
+    credentialName: "wordpress_logged_in cookie",
+    placeholder: "wordpress_logged_in_...=... or full Cookie header from veoaifree.com",
+    acceptsFullCookieHeader: true,
+    storageKeys: ["cookie", "wordpress_logged_in"],
+  },
 } satisfies Record<string, WebSessionCredentialRequirement> &
   Record<keyof typeof WEB_COOKIE_PROVIDERS, WebSessionCredentialRequirement>;
 
@@ -403,10 +425,15 @@ export function getWebSessionCredentialRequirement(
   providerId: unknown
 ): WebSessionCredentialRequirement | null {
   if (typeof providerId !== "string") return null;
+  const canonical = resolveProviderId(providerId);
   return (
     WEB_SESSION_CREDENTIAL_REQUIREMENTS[
+      canonical as keyof typeof WEB_SESSION_CREDENTIAL_REQUIREMENTS
+    ] ??
+    WEB_SESSION_CREDENTIAL_REQUIREMENTS[
       providerId as keyof typeof WEB_SESSION_CREDENTIAL_REQUIREMENTS
-    ] ?? null
+    ] ??
+    null
   );
 }
 
@@ -434,7 +461,10 @@ export function hasUsableWebSessionCredential(
   if (!providerSpecificData || typeof providerSpecificData !== "object") return false;
 
   const data = providerSpecificData as Record<string, unknown>;
-  return requirement.storageKeys.some((key) => hasNonEmptyString(data[key]));
+  return (
+    requirement.storageKeys.some((key) => hasNonEmptyString(data[key])) ||
+    findWordPressLoggedInEntry(data) !== null
+  );
 }
 
 /**

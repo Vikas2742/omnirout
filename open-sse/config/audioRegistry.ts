@@ -10,6 +10,10 @@
 import { getProviderAlias } from "@/shared/constants/providers";
 import { isLoopbackNodeHost } from "@/shared/network/loopbackNodeHost";
 import { hasUnsafeModelIdSyntax } from "../utils/modelIdSafety.ts";
+import {
+  toRegistrySpeechModels as toSyntxSpeechModels,
+  toRegistryTranscriptionModels as toSyntxTranscriptionModels,
+} from "../services/syntxMediaCatalog.ts";
 
 interface AudioModel {
   id: string;
@@ -26,12 +30,18 @@ export interface AudioProvider {
    * id already is the credential key.
    */
   credentialProviderId?: string;
+  alias?: string;
   baseUrl: string;
   authType: string;
   authHeader: string;
   format?: string;
   supportedFormats?: string[];
   async?: boolean;
+  /**
+   * Voice sent by the OpenAI-compatible speech path when the request omits `voice`.
+   * Absent means the OpenAI stock default ("alloy").
+   */
+  defaultVoice?: string;
   models: AudioModel[];
 }
 
@@ -140,7 +150,8 @@ export const AUDIO_TRANSCRIPTION_PROVIDERS: Record<string, AudioProvider> = {
     id: "assemblyai",
     baseUrl: "https://api.assemblyai.com/v2/transcript",
     authType: "apikey",
-    authHeader: "bearer",
+    // AssemblyAI expects `Authorization: <API_KEY>` with no "Bearer" scheme.
+    authHeader: "authorization",
     async: true,
     format: "assemblyai",
     models: [
@@ -261,6 +272,22 @@ export const AUDIO_TRANSCRIPTION_PROVIDERS: Record<string, AudioProvider> = {
       { id: "whisper-1", name: "Whisper 1" },
       { id: "gpt-4o-transcription", name: "GPT-4o Transcription" },
     ],
+  },
+  nan: {
+    id: "nan",
+    baseUrl: "https://api.nan.builders/v1/audio/transcriptions",
+    authType: "apikey",
+    authHeader: "bearer",
+    models: [{ id: "whisper", name: "Whisper" }],
+  },
+  syntx: {
+    id: "syntx",
+    alias: "stx",
+    baseUrl: "https://api.syntx.ai/api/v1/audio/transcriptions",
+    authType: "apikey",
+    authHeader: "bearer",
+    format: "syntx-audio",
+    models: toSyntxTranscriptionModels(),
   },
 };
 
@@ -425,6 +452,20 @@ export const AUDIO_SPEECH_PROVIDERS: Record<string, AudioProvider> = {
     authHeader: "none",
     format: "openai",
     models: [{ id: "qwen3-tts", name: "Qwen3 TTS" }],
+  },
+
+  // Qwen Cloud Token Plan — DashScope SpeechSynthesizer (JSON → inline base64 or an
+  // expiring audio URL). The host follows the connection's region (Singapore/Beijing).
+  "qwen-cloud-token-plan": {
+    id: "qwen-cloud-token-plan",
+    alias: "qct",
+    baseUrl:
+      "https://token-plan.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer",
+    authType: "apikey",
+    authHeader: "bearer",
+    format: "dashscope-tts",
+    supportedFormats: ["mp3"],
+    models: [{ id: "qwen-audio-3.0-tts-plus", name: "Qwen Audio 3.0 TTS Plus" }],
   },
 
   // ── Cloud TTS Providers (#248) ────────────────────────────────────────────
@@ -595,6 +636,17 @@ export const AUDIO_SPEECH_PROVIDERS: Record<string, AudioProvider> = {
     ],
   },
 
+  // Kokoro has no OpenAI stock voices, so a request without `voice` must not fall
+  // back to "alloy" — defaultVoice supplies a Kokoro voice id instead.
+  nan: {
+    id: "nan",
+    baseUrl: "https://api.nan.builders/v1/audio/speech",
+    authType: "apikey",
+    authHeader: "bearer",
+    defaultVoice: "af_heart",
+    models: [{ id: "kokoro", name: "Kokoro" }],
+  },
+
   // UC (uncensored.com) voice synthesis over its dedicated TTS WebSocket. Auth is
   // a Clerk session JWT minted per-connect from the durable connection cred; the
   // `format: "uc-tts"` branch in audioSpeech.ts drives the socket. The baseUrl is
@@ -607,6 +659,15 @@ export const AUDIO_SPEECH_PROVIDERS: Record<string, AudioProvider> = {
     authHeader: "none",
     format: "uc-tts",
     models: [{ id: "jade", name: "UC Voice (Jade)" }],
+  },
+  syntx: {
+    id: "syntx",
+    alias: "stx",
+    baseUrl: "https://api.syntx.ai/api/v1/audio/speech",
+    authType: "apikey",
+    authHeader: "bearer",
+    format: "syntx-audio",
+    models: toSyntxSpeechModels(),
   },
 };
 

@@ -306,7 +306,8 @@ export const WEB_COOKIE_PROVIDERS = {
     color: "#22C55E",
     textIcon: "VW",
     website: "https://venice.ai",
-    authHint: "Paste your session cookie from venice.ai (DevTools → Application → Cookies)",
+    authHint:
+      "Paste your __client cookie value from .clerk.venice.ai (DevTools → Application → Cookies)",
     riskNoticeVariant: "webCookie",
   },
   "v0-vercel-web": {
@@ -479,6 +480,36 @@ export const WEB_COOKIE_PROVIDERS = {
     riskNoticeVariant: "webCookie",
     authHint:
       "Use browser sign-in, or paste the full Cookie header from conol.ai. The __Secure-better-auth.session_token cookie is required.",
+  },
+  twinmind: {
+    id: "twinmind",
+    serviceKinds: ["llm"],
+    alias: "tm",
+    name: "Twinmind (Unofficial/Experimental)",
+    icon: "auto_awesome",
+    color: "#4F46E5",
+    textIcon: "TM",
+    website: "https://app.twinmind.com",
+    subscriptionRisk: true,
+    riskNoticeVariant: "webCookie",
+    toolCalling: "emulated",
+    authHint:
+      "Paste the stsTokenManager JSON from app.twinmind.com IndexedDB (accessToken + refreshToken). Chat uses accessToken; refreshToken mints a new JWT when it expires.",
+  },
+  syntx: {
+    id: "syntx",
+    serviceKinds: ["llm"],
+    alias: "stx",
+    name: "SYNTX.ai (Unofficial/Experimental)",
+    icon: "auto_awesome",
+    color: "#FF4D00",
+    textIcon: "SX",
+    website: "https://syntx.ai",
+    subscriptionRisk: true,
+    riskNoticeVariant: "webCookie",
+    toolCalling: "emulated",
+    authHint:
+      "Paste the Authorization Bearer JWT from syntx.ai (DevTools → Network → api.syntx.ai → Request Headers). Chat, models, Limits, and media use this token.",
   },
   maxai: {
     id: "maxai",

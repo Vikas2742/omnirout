@@ -766,7 +766,6 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     icon: "opencode",
     color: "#6366f1",
     website: "https://opencode.ai/zen",
-    anonymousFallback: true,
     // One credential fronts many upstream models (deepseek, glm, qwen, grok,
     // minimax, ...). A 402 means "this MODEL is not in the plan", not "the
     // account is out of credit", so it must reach the per-model lockout branch
@@ -781,7 +780,6 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     icon: "opencode",
     color: "#6366f1",
     website: "https://opencode.ai/go",
-    anonymousFallback: true,
     // One credential fronts many upstream models (deepseek, glm, qwen, grok,
     // minimax, ...). A 402 means "this MODEL is not in the plan", not "the
     // account is out of credit", so it must reach the per-model lockout branch
@@ -999,6 +997,20 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     color: "#4F46E5",
     textIcon: "NG",
     website: "https://nano-gpt.com",
+  },
+  // NaN.Builders (https://nan.builders) — OpenAI-compatible /v1 covering chat, vision,
+  // embeddings, STT, TTS, images and rerank; per-model token quotas feed the limits panel.
+  nan: {
+    id: "nan",
+    serviceKinds: ["llm", "imageToText", "embedding", "stt", "tts", "image"],
+    alias: "nan",
+    name: "NaN.Builders",
+    icon: "hub",
+    color: "#6D5EF3",
+    textIcon: "NaN",
+    website: "https://nan.builders",
+    apiHint:
+      "Create an API key at https://cloud.nan.builders, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.nan.builders/v1.",
   },
   aimlapi: {
     id: "aimlapi",
@@ -1342,6 +1354,21 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     apiHint:
       "Kenari exposes an OpenAI-compatible chat completions endpoint at https://kenari.id/v1/chat/completions, plus a live /v1/models catalog covering Claude, GPT, DeepSeek, GLM, Kimi and more. OmniRoute uses the OpenAI protocol and lists models via passthrough.",
   },
+  tokenmarket: {
+    id: "tokenmarket",
+    serviceKinds: ["llm"],
+    alias: "tokenmarket",
+    name: "Token Market",
+    icon: "hub",
+    color: "#2563EB",
+    textIcon: "TM",
+    passthroughModels: true,
+    website: "https://www.tokensmarket.ai",
+    authHint:
+      "Create an API key in the Token Market console, then paste it here as a Bearer token.",
+    apiHint:
+      "Token Market provides an OpenAI-compatible API at https://api.tokensmarket.ai/v1 and discovers its current model catalog from /v1/models.",
+  },
   navy: {
     id: "navy",
     serviceKinds: ["llm"],
@@ -1570,5 +1597,34 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     authHint: "Create an API key at https://seekai.cc, then paste it here as a Bearer token.",
     apiHint:
       "Create an API key at https://seekai.cc, then paste it here as a Bearer token. OpenAI-compatible base URL: https://seekai.cc/v1.",
+  },
+  // Demon Route: OpenAI-compatible, key-gated account model discovery.
+  demonroute: {
+    id: "demonroute",
+    serviceKinds: ["llm"],
+    alias: "demonroute",
+    name: "Demon Route",
+    icon: "hub",
+    color: "#6D28D9",
+    textIcon: "DR",
+    passthroughModels: true,
+    website: "https://demonroute.com",
+    apiHint:
+      "Create an API key at https://demonroute.com, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.demonroute.com/v1.",
+  },
+  // DaoXE (https://daoxe.com) — QuantumNous New-API gateway. OpenAI-compatible /v1;
+  // /v1/models is key-gated and account-scoped, so models are discovered live.
+  daoxe: {
+    id: "daoxe",
+    serviceKinds: ["llm"],
+    alias: "daoxe",
+    name: "DaoXE",
+    icon: "hub",
+    color: "#0F766E",
+    textIcon: "DX",
+    passthroughModels: true,
+    website: "https://daoxe.com",
+    apiHint:
+      "Create an API token at https://daoxe.com/token, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.daoxe.com/v1.",
   },
 };

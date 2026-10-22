@@ -12,7 +12,14 @@ import {
 } from "./transport";
 import { SafeOutboundFetchError } from "@/shared/network/safeOutboundFetch";
 import { normalizeSessionCookieHeader } from "@/lib/providers/webCookieAuth";
+import { parseM365PastedCredential } from "@omniroute/open-sse/utils/m365Credentials.ts";
 import { normalizeGeminiValidationCookie } from "@omniroute/open-sse/utils/geminiCookies.ts";
+import {
+  looksLikeJwt,
+  resolveSyntxToken,
+  syntxAuthHeaders,
+} from "@omniroute/open-sse/services/syntxAuth.ts";
+import { SYNTX_MODELS_URL } from "@omniroute/open-sse/services/syntxModels.ts";
 import { buildJulesApiUrl } from "@/lib/cloudAgent/julesApi.ts";
 import {
   META_AI_ASBD_ID,
@@ -371,42 +378,10 @@ export function extractM365CredentialParts(
   raw: string,
   providerSpecificData: Record<string, unknown>
 ) {
-  const text = raw.trim();
-  const parts: Record<string, string> = {};
-
-  for (const segment of text.split(/[;\n]/)) {
-    const index = segment.indexOf("=");
-    if (index <= 0) continue;
-    const key = segment.slice(0, index).trim();
-    const value = segment.slice(index + 1).trim();
-    if (key && value) parts[key] = value;
-  }
-
-  // Accept the current M365 web endpoint (m365.cloud.microsoft, including
-  // regional subdomains) plus the two legacy hosts (substrate.office.com,
-  // copilot.microsoft.com). The path still carries /m365Copilot/Chathub/<tenant>,
-  // so extraction is unchanged. (OmniRoute issue #7078)
-  if (/^wss:\/\//i.test(text)) {
-    try {
-      const url = new URL(text);
-      const hostOk =
-        /^(?:[\w-]+\.)*(?:m365\.cloud\.microsoft|copilot\.microsoft\.com|substrate\.office\.com)$/i.test(
-          url.hostname
-        );
-      if (hostOk && url.pathname.startsWith("/m365Copilot/Chathub/")) {
-        parts.access_token ||= url.searchParams.get("access_token") || "";
-        parts.chathubPath ||= decodeURIComponent(
-          url.pathname.split("/m365Copilot/Chathub/")[1] || ""
-        );
-      }
-    } catch {
-      // Fall through to the structured key/value parser result.
-    }
-  }
+  const parts = parseM365PastedCredential(raw);
 
   return {
     accessToken:
-      parts.access_token ||
       parts.accessToken ||
       (typeof providerSpecificData.access_token === "string"
         ? providerSpecificData.access_token
@@ -416,7 +391,6 @@ export function extractM365CredentialParts(
         : ""),
     chathubPath:
       parts.chathubPath ||
-      parts.userTenant ||
       (typeof providerSpecificData.chathubPath === "string"
         ? providerSpecificData.chathubPath
         : "") ||
@@ -802,6 +776,41 @@ export async function validateTinyCmsWebProvider({ apiKey, providerSpecificData 
     }
 
     return { valid: true, error: null };
+  } catch (error: any) {
+    return toValidationErrorResult(error);
+  }
+}
+
+export async function validateSyntxProvider({
+  apiKey,
+  providerSpecificData = {},
+  accessToken,
+}: any) {
+  try {
+    const token = resolveSyntxToken({ apiKey, accessToken, providerSpecificData });
+    if (!looksLikeJwt(token)) {
+      return {
+        valid: false,
+        error: "Paste your SYNTX.ai Bearer JWT from syntx.ai DevTools -> Network -> api.syntx.ai",
+      };
+    }
+
+    const response = await validationRead(SYNTX_MODELS_URL, {
+      method: "GET",
+      headers: applyCustomUserAgent(syntxAuthHeaders(token), providerSpecificData),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      return {
+        valid: false,
+        error: "Invalid or expired SYNTX JWT — re-paste Authorization Bearer from syntx.ai",
+      };
+    }
+    if (response.status >= 500) {
+      return { valid: false, error: `SYNTX unavailable (${response.status})` };
+    }
+    if (response.ok) return { valid: true, error: null };
+    return { valid: false, error: `SYNTX validation failed (${response.status})` };
   } catch (error: any) {
     return toValidationErrorResult(error);
   }
