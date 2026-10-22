@@ -40,6 +40,7 @@ function insertUsageHistory(row: Record<string, unknown>) {
     connection_id: null,
     api_key_id: null,
     api_key_name: null,
+    provider_cost_usd: null,
     ...row,
     timestamp: row.timestamp ?? new Date().toISOString(),
   };
@@ -48,11 +49,11 @@ function insertUsageHistory(row: Record<string, unknown>) {
     `INSERT INTO usage_history (
       timestamp, provider, model,
       tokens_input, tokens_output, tokens_cache_read, tokens_cache_creation, tokens_reasoning,
-      service_tier, success, latency_ms, connection_id, api_key_id, api_key_name
+      service_tier, success, latency_ms, connection_id, api_key_id, api_key_name, provider_cost_usd
     ) VALUES (
       @timestamp, @provider, @model,
       @tokens_input, @tokens_output, @tokens_cache_read, @tokens_cache_creation, @tokens_reasoning,
-      @service_tier, @success, @latency_ms, @connection_id, @api_key_id, @api_key_name
+      @service_tier, @success, @latency_ms, @connection_id, @api_key_id, @api_key_name, @provider_cost_usd
     )`
   ).run(full);
 }
@@ -754,4 +755,142 @@ test("#3500 buildUnifiedSource UNION — summary rows merged into getDailyUsage 
   assert.ok(june1, "2023-06-01 summary row is visible through UNION");
   // daily_usage_summary synthesizes a timestamp at noon; totalTokens = 500+750 = 1250
   assert.equal(june1!.totalTokens, 1250, "tokens from summary row: 500+750=1250");
+});
+
+// ---------------------------------------------------------------------------
+// Cost attribution — stored cost split and summary token pricing
+// ---------------------------------------------------------------------------
+
+function matrixFor(
+  provider: string,
+  model: string,
+  sinceIso: string,
+  untilIso: string,
+  rawCutoffDate: string
+) {
+  const { unifiedSource, unifiedParams } = mod.buildUnifiedSource({
+    sinceIso,
+    untilIso,
+    rawCutoffDate,
+    apiKeyWhere: "",
+    apiKeyParams: {},
+  });
+  return mod
+    .getModelUsageMatrixRows(unifiedSource, unifiedParams)
+    .filter((row) => row.provider === provider && row.model === model);
+}
+
+test("#3500 getModelUsageMatrixRows — splits aggregated and raw stored cost, both additive", () => {
+  const day = "2024-09-01";
+  insertUsageHistory({
+    timestamp: `${day}T10:00:00.000Z`,
+    provider: "splita",
+    model: "m1",
+    provider_cost_usd: 0.5,
+  });
+  insertUsageHistory({
+    timestamp: `${day}T11:00:00.000Z`,
+    provider: "splita",
+    model: "m1",
+    provider_cost_usd: 0.25,
+  });
+  insertDailyUsageSummary({
+    date: "2024-08-20",
+    provider: "splita",
+    model: "m1",
+    total_cost: 1.25,
+  });
+
+  const rows = matrixFor(
+    "splita",
+    "m1",
+    "2024-08-01T00:00:00.000Z",
+    "2024-09-30T00:00:00.000Z",
+    "2024-09-01"
+  );
+  const summaryRow = rows.find((row) => row.isAggregated > 0);
+  const rawRow = rows.reduce(
+    (acc, row) => (row.isAggregated > 0 ? acc : acc + row.storedCost),
+    0
+  );
+
+  assert.ok(summaryRow, "summary leg present");
+  assert.equal(summaryRow!.aggregatedStoredCost, 1.25, "aggregated leg carries total_cost");
+  assert.equal(summaryRow!.rawStoredCost, 0, "aggregated row contributes no raw stored cost");
+  assert.equal(summaryRow!.storedCost, 1.25, "storedCost stays the plain sum");
+  assert.equal(rawRow, 0.75, "usage_history rows keep their provider-reported cost");
+});
+
+test("#3500 deriveModelUsageRows — aggregated and raw stored cost survive the roll-up", () => {
+  const day = "2024-09-02";
+  insertUsageHistory({
+    timestamp: `${day}T10:00:00.000Z`,
+    provider: "splitb",
+    model: "m2",
+    provider_cost_usd: 1.0,
+  });
+  insertDailyUsageSummary({ date: "2024-08-21", provider: "splitb", model: "m2", total_cost: 2.5 });
+
+  const { unifiedSource, unifiedParams } = mod.buildUnifiedSource({
+    sinceIso: "2024-08-01T00:00:00.000Z",
+    untilIso: "2024-09-30T00:00:00.000Z",
+    rawCutoffDate: "2024-09-01",
+    apiKeyWhere: "",
+    apiKeyParams: {},
+  });
+  const matrix = mod.getModelUsageMatrixRows(unifiedSource, unifiedParams);
+  const collapsed = mod.deriveModelUsageRows(matrix).find((row) => row.model === "m2");
+
+  assert.ok(collapsed, "collapsed model row present");
+  assert.equal(collapsed!.aggregatedStoredCost, 2.5, "aggregated cost rolled up across days");
+  assert.equal(collapsed!.rawStoredCost, 1, "raw stored cost rolled up across days");
+  assert.equal(collapsed!.storedCost, 3.5, "storedCost equals the two legs combined");
+});
+
+test("#3500 summary cost columns — priced summaries keep their tokens out of the priceable sums", () => {
+  const { unifiedSource } = mod.buildUnifiedSource({
+    sinceIso: "2024-07-01T00:00:00.000Z",
+    untilIso: "2024-07-31T00:00:00.000Z",
+    rawCutoffDate: "2024-07-31",
+    apiKeyWhere: "",
+    apiKeyParams: {},
+  });
+
+  assert.ok(
+    unifiedSource.includes("CASE WHEN COALESCE(total_cost, 0.0) = 0.0 THEN total_input_tokens ELSE 0 END"),
+    "priced summary rows report zero priceable input tokens"
+  );
+  assert.ok(
+    unifiedSource.includes("CASE WHEN COALESCE(total_cost, 0.0) = 0.0 THEN total_output_tokens ELSE 0 END"),
+    "priced summary rows report zero priceable output tokens"
+  );
+});
+
+test("#3500 summary cost columns — zero-cost summaries still expose their token totals", () => {
+  const pastDate = "2023-11-01";
+  insertDailyUsageSummary({
+    date: pastDate,
+    provider: "legacyzero",
+    model: "gemini-1.0",
+    total_input_tokens: 400,
+    total_output_tokens: 600,
+    total_requests: 3,
+    total_cost: 0.0,
+  });
+
+  const { unifiedSource, unifiedParams } = mod.buildUnifiedSource({
+    sinceIso: `${pastDate}T00:00:00.000Z`,
+    untilIso: `${pastDate}T23:59:59.000Z`,
+    rawCutoffDate: "2023-11-02",
+    apiKeyWhere: "",
+    apiKeyParams: {},
+  });
+  const row = mod
+    .getModelUsageMatrixRows(unifiedSource, unifiedParams)
+    .find((candidate) => candidate.provider === "legacyzero");
+
+  assert.ok(row, "legacy zero-cost summary row present");
+  assert.equal(row!.storedCost, 0, "no stored cost to bill");
+  assert.equal(row!.costPromptTokens, 400, "input tokens stay priceable");
+  assert.equal(row!.costCompletionTokens, 600, "output tokens stay priceable");
 });

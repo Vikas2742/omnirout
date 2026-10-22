@@ -38,6 +38,8 @@ function rawCostSums(table: string): string {
     `COALESCE(SUM(CASE WHEN ${table}.provider_cost_usd IS NULL THEN ${table}.${column} ELSE 0 END), 0)`;
   return `
         COALESCE(SUM(${table}.provider_cost_usd), 0.0) as storedCost,
+        0.0 as aggregatedStoredCost,
+        COALESCE(SUM(${table}.provider_cost_usd), 0.0) as rawStoredCost,
         0 as isAggregated,
         ${priceable("tokens_input")} as costPromptTokens,
         ${priceable("tokens_output")} as costCompletionTokens,
@@ -162,6 +164,8 @@ export interface DailyCostRow extends CostTokenFields {
   cacheCreationTokens: number;
   reasoningTokens: number;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -191,6 +195,8 @@ export interface ModelUsageMatrixRow extends CostTokenFields {
   successfulRequests: number;
   lastUsed: string;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -222,6 +228,8 @@ export function getModelUsageMatrixRows(
         COALESCE(SUM(CASE WHEN success = 1 THEN requests ELSE 0 END), 0) as successfulRequests,
         COALESCE(MAX(timestamp), '') as lastUsed,
         COALESCE(SUM(stored_cost), 0.0) as storedCost,
+        COALESCE(SUM(CASE WHEN is_aggregated > 0 THEN stored_cost ELSE 0 END), 0.0) as aggregatedStoredCost,
+        COALESCE(SUM(CASE WHEN is_aggregated > 0 THEN 0 ELSE stored_cost END), 0.0) as rawStoredCost,
         MAX(is_aggregated) as isAggregated,
         ${UNIFIED_COST_TOKEN_SUMS}
       FROM ${unifiedSource} AS _u
@@ -242,6 +250,7 @@ const MATRIX_ADDITIVE_FIELDS = [
   ["latencyWeightedMs", "latencyWeightedMs"],
   ["latencySamples", "latencySamples"],
   ["successfulRequests", "successfulRequests"],
+  ["storedCost", "storedCost"],
   ["costPromptTokens", "costPromptTokens"],
   ["costCompletionTokens", "costCompletionTokens"],
   ["costCacheReadTokens", "costCacheReadTokens"],
@@ -277,6 +286,8 @@ function rollupMatrixRows(
       lastUsed: string;
       aggregated: number;
       date: string | null;
+      aggregatedStoredCost: number;
+      rawStoredCost: number;
     }
   >();
   for (const row of rows) {
@@ -291,6 +302,8 @@ function rollupMatrixRows(
         lastUsed: "",
         aggregated: Number(row.isAggregated) || 0,
         date: String(row.date ?? ""),
+        aggregatedStoredCost: 0,
+        rawStoredCost: 0,
       };
       for (const [field] of MATRIX_ADDITIVE_FIELDS) group.totals[field] = 0;
       groups.set(identity, group);
@@ -302,6 +315,8 @@ function rollupMatrixRows(
       group.lastUsed = String(row.lastUsed || "");
     }
     group.aggregated = Math.max(group.aggregated, Number(row.isAggregated) || 0);
+    group.aggregatedStoredCost += Number(row.aggregatedStoredCost) || 0;
+    group.rawStoredCost += Number(row.rawStoredCost) || 0;
     if (options.collapseDate && group.date !== String(row.date ?? "")) {
       group.date = null;
     }
@@ -313,8 +328,12 @@ function rollupMatrixRows(
     const samples = group.totals.latencySamples;
     for (const [field, source] of MATRIX_ADDITIVE_FIELDS) {
       if (field === "latencyWeightedMs" || field === "latencySamples") continue;
+      if (field === "storedCost") continue;
       merged[field] = group.totals[source] ?? 0;
     }
+    merged.storedCost = group.aggregatedStoredCost + group.rawStoredCost;
+    merged.aggregatedStoredCost = group.aggregatedStoredCost;
+    merged.rawStoredCost = group.rawStoredCost;
     merged.avgLatencyMs = samples > 0 ? weighted / samples : 0;
     merged.lastUsed = group.lastUsed;
     merged.isAggregated = group.aggregated;
@@ -324,15 +343,17 @@ function rollupMatrixRows(
 
 /**
  * Per-day, per-provider, per-model token breakdown for cost calculation,
- * rolled up from {@link getModelUsageMatrixRows}.
+ * rolled up from {@link getModelUsageMatrixRows}. Sorted by date ascending, the
+ * order the daily cost panels render in.
  */
 export function deriveDailyCostRows(rows: readonly ModelUsageMatrixRow[]): DailyCostRow[] {
-  return rollupMatrixRows(rows, (row) => ({
+  const rolled = rollupMatrixRows(rows, (row) => ({
     date: row.date,
     provider: row.provider,
     model: row.model,
     serviceTier: row.serviceTier,
   })) as unknown as DailyCostRow[];
+  return rolled.sort((left, right) => String(left.date).localeCompare(String(right.date)));
 }
 
 // ---------------------------------------------------------------------------
@@ -384,6 +405,8 @@ export interface ModelUsageRow extends CostTokenFields {
   successfulRequests: number;
   lastUsed: string;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -399,6 +422,8 @@ export interface ProviderCostRow extends CostTokenFields {
   cacheCreationTokens: number;
   reasoningTokens: number;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -427,6 +452,8 @@ export interface AccountCostRow extends CostTokenFields {
   cacheCreationTokens: number;
   reasoningTokens: number;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -593,6 +620,8 @@ export interface ApiKeyUsageRow extends CostTokenFields {
   reasoningTokens: number;
   totalTokens: number;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -646,6 +675,8 @@ export interface ApiKeyTotalsRow extends CostTokenFields {
   reasoningTokens: number;
   lastUsed: string | null;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -701,6 +732,8 @@ export interface ServiceTierUsageRow extends CostTokenFields {
   reasoningTokens: number;
   totalTokens: number;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -862,6 +895,8 @@ export interface PresetCostModelRow extends CostTokenFields {
   cacheCreationTokens: number;
   reasoningTokens: number;
   storedCost: number;
+  aggregatedStoredCost: number;
+  rawStoredCost: number;
   isAggregated: number;
 }
 
@@ -887,6 +922,8 @@ export function getPresetCostModelRows(
         COALESCE(SUM(tokens_cache_creation), 0) as cacheCreationTokens,
         COALESCE(SUM(tokens_reasoning), 0) as reasoningTokens,
         COALESCE(SUM(stored_cost), 0.0) as storedCost,
+        COALESCE(SUM(CASE WHEN is_aggregated > 0 THEN stored_cost ELSE 0 END), 0.0) as aggregatedStoredCost,
+        COALESCE(SUM(CASE WHEN is_aggregated > 0 THEN 0 ELSE stored_cost END), 0.0) as rawStoredCost,
         MAX(is_aggregated) as isAggregated,
         ${UNIFIED_COST_TOKEN_SUMS}
       FROM ${presetUnifiedSource} AS _pu
