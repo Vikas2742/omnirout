@@ -41,7 +41,7 @@ export function extendCodexGpt56EffortValues(
   }
 
   const match = normalizedModel.match(
-    /^gpt-(?:5\.6-(sol|terra|luna)|6-(astra|sol|luna))(?:-(?:none|low|medium|high|xhigh|max|ultra))?$/
+    /^gpt-(?:5\.6-(sol|terra|luna)|6(?:\.1)?-(astra|sol|luna))(?:-(?:none|low|medium|high|xhigh|max|ultra))?$/
   );
   if (!match) return values;
 
@@ -91,7 +91,7 @@ export function extendDeepSeekEffortValues(
  * DeepSeek provider (registry id `deepseek`, alias `ds`).
  *
  * Deliberately scoped to the native provider: routed namespaces such as
- * `openrouter/deepseek/...` or `oc/deepseek-v4-flash-free` terminate at a different
+ * `openrouter/deepseek/...` or `opencode-zen/deepseek-v4-flash-free` terminate at a different
  * upstream whose accepted effort vocabulary we do not control.
  */
 export function isDeepSeekNativeMaxModel(
