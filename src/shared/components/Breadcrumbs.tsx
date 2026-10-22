@@ -14,6 +14,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { decodeRouteParam } from "@/shared/utils/decodeRouteParam";
 
 const PATH_LABELS = {
   dashboard: "dashboard",
@@ -115,7 +116,10 @@ const PATH_LABELS = {
  */
 function getLabel(segment, t) {
   const key = PATH_LABELS[segment];
-  const fallback = segment.charAt(0).toUpperCase() + segment.slice(1);
+  // usePathname() returns url.pathname verbatim — the URL's single encoding
+  // layer (auto%2Ffast) — so one decode yields the display label.
+  const decoded = decodeRouteParam(segment);
+  const fallback = decoded.charAt(0).toUpperCase() + decoded.slice(1);
   return key && typeof t.has === "function" && t.has(key) ? t(key) : fallback;
 }
 
