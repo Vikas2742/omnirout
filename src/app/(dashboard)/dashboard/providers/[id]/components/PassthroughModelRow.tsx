@@ -9,9 +9,10 @@
  * Never imports from ProviderDetailPageClient.
  */
 import React, { useState, useRef, useEffect } from "react";
-import { Badge } from "@/shared/components";
+import { Badge, CapabilityBadge } from "@/shared/components";
 import { parseContextWindowOverrideInput, providerText } from "../providerPageHelpers";
 import ModelCompatPopover from "./ModelCompatPopover";
+import ModelEndpointTagsEditor, { type ModelEndpointEditorInfo } from "./ModelEndpointTagsEditor";
 import ModelComboBadge from "./ModelComboBadge";
 import ModelOutputTokenEditor from "./ModelOutputTokenEditor";
 import { ModelSourceBadge, type ModelCompatSavePatch } from "./ModelRow";
@@ -61,6 +62,7 @@ export interface PassthroughModelRowProps {
   contextWindowOverride?: number | null;
   onSaveContextWindowOverride?: (modelId: string, value: number | null) => Promise<void>;
   savingContextOverride?: boolean;
+  endpointInfo?: ModelEndpointEditorInfo;
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +102,7 @@ export default function PassthroughModelRow({
   contextWindowOverride,
   onSaveContextWindowOverride,
   savingContextOverride,
+  endpointInfo,
 }: PassthroughModelRowProps) {
   const [editing, setEditing] = useState(false);
   const [aliasValue, setAliasValue] = useState(alias || "");
@@ -236,6 +239,14 @@ export default function PassthroughModelRow({
       <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <ModelSourceBadge source={source} />
+          {endpointInfo && (
+            <ModelEndpointTagsEditor
+              provider={provider}
+              modelId={modelId}
+              t={t}
+              {...endpointInfo}
+            />
+          )}
           {combos && combos.length > 0 && <ModelComboBadge combos={combos} t={t} />}
           {supportsVision === true && (
             <Badge variant="success" className="shrink-0 px-1.5 py-0 text-[10px]">
@@ -254,15 +265,16 @@ export default function PassthroughModelRow({
               {providerText(t, "freeBadge", "Free")}
             </Badge>
           )}
-          {/* #14337: the same 🪟 badge custom rows carry, so an override set here
-              is visible after reload instead of being write-only. */}
+          {/* #14337: the same context-window badge custom rows carry, so an override set
+              here is visible after reload instead of being write-only. */}
           {typeof contextWindowOverride === "number" && !editingContext && (
-            <span
-              className="shrink-0 rounded-full bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-medium text-orange-400"
+            <CapabilityBadge
+              icon="width_normal"
+              className="shrink-0 bg-orange-500/15 text-orange-400"
               title={t("contextWindowOverrideHint")}
             >
-              {`🪟 ${contextWindowOverride.toLocaleString()}`}
-            </span>
+              {contextWindowOverride.toLocaleString()}
+            </CapabilityBadge>
           )}
           {editingContext && (
             <span className="flex items-center gap-1">

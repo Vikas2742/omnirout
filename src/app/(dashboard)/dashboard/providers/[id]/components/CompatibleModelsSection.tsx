@@ -50,6 +50,7 @@ export interface CompatibleModelsSectionProps {
   syncedCatalogAuthoritative?: boolean;
   customModels?: CompatModelRow[];
   fallbackModels?: CompatModelRow[];
+  endpointAdapters?: Record<string, "available" | "unavailable" | "unknown">;
   allowImport: boolean;
   description: string;
   inputLabel: string;
@@ -120,6 +121,7 @@ export default function CompatibleModelsSection({
   syncedCatalogAuthoritative = false,
   customModels = [],
   fallbackModels = [],
+  endpointAdapters = {},
   description,
   inputLabel,
   inputPlaceholder,
@@ -565,6 +567,27 @@ export default function CompatibleModelsSection({
                   <PassthroughModelRow
                     key={`${providerStorageAlias}:${modelId}`}
                     modelId={modelId}
+                    endpointInfo={(() => {
+                      const discovered = availableModels.find((row) => row.id === modelId);
+                      const selected = customModelMap.get(modelId);
+                      const catalog = fallbackModels.find((row) => row.id === modelId);
+                      return {
+                        supportedEndpoints:
+                          selected?.supportedEndpoints ??
+                          discovered?.supportedEndpoints ??
+                          catalog?.supportedEndpoints,
+                        endpointCapabilitySource:
+                          selected?.endpointCapabilitySource ??
+                          discovered?.endpointCapabilitySource ??
+                          catalog?.endpointCapabilitySource,
+                        discoveredEndpoints: discovered?.supportedEndpoints,
+                        resettable: Boolean(
+                          discovered && selected?.endpointCapabilitySource === "operator"
+                        ),
+                        onChanged: onModelsChanged,
+                        adapterStatuses: endpointAdapters,
+                      };
+                    })()}
                     fullModel={fullModel}
                     alias={alias}
                     displayName={displayName}
