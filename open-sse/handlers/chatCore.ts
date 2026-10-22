@@ -203,7 +203,7 @@ import {
 } from "@/lib/usage/pendingRequestScope";
 import { recordChatCallCost, buildCostCtx } from "@/domain/costRules";
 import { attachOmniRouteMetaToResponse as attachRouteMeta } from "@/domain/omnirouteResponseMeta";
-import { calculateCost } from "@/lib/usage/costCalculator";
+import { calculateCostDetailed } from "@/lib/usage/costCalculator";
 import {
   createDisabledCompressionConfig,
   resolveCompressionSettings,
@@ -3127,7 +3127,7 @@ async function handleChatCoreInner({
       buildCacheUsageLogMeta,
       buildCostCtx,
       buildErrorBody,
-      calculateCost,
+      calculateCostDetailed,
       calibrationEstimatedInputTokens,
       claudePromptCacheLogMeta,
       clientRawRequest,
@@ -3254,6 +3254,13 @@ async function handleChatCoreInner({
   }
 
   const streamingTailOutcome = await runStreamingTail({
+    registerStreamFinalizers: (
+      pipelineError: streamFailure.PipelineStreamErrorHandler,
+      clientDisconnect: (event: { reason: string; duration: number }) => boolean
+    ) => {
+      onPipelineStreamError = pipelineError;
+      onClientDisconnectFinalize = clientDisconnect;
+    },
     agentGoalPolicy,
     modelInfo,
     forcedConnectionId,
