@@ -102,7 +102,10 @@ test("#17348: pricing for deleted compatible nodes stays in DB but never appears
   persistPrice(A, { "legacy/orphan": { input: 99 } });
   await nodes.deleteProviderNode(A);
   const published = await catalog();
-  assert.equal(published[A], undefined);
+  assert.equal(published[A]?.orphaned, true, "deleted compatible node must be labelled, not routable");
+  assert.equal(published[A]?.pricingOnly, true);
+  assert.equal(published[A]?.modelOverrideEligible, false);
+  assert.deepEqual(published[A]?.models.map((m: { id: string }) => m.id), ["legacy/orphan"]);
   const row = core.getDbInstance().prepare(
     "SELECT value FROM key_value WHERE namespace = 'pricing' AND key = ?"
   ).get(A) as { value: string };
@@ -143,4 +146,51 @@ test("#17348: missing and malformed prefix histories never authorize speculative
   assert.deepEqual(history.parseNodePrefixHistory([
     { prefix: "old", modelIds: [{ id: "foo" }, { id: "foo" }, { id: "a/b" }] },
   ]), [{ prefix: "old", modelIds: ["foo", "a/b"] }]);
+});
+
+
+test("#17348: historical pricing rows are display-only, never inherited wholesale", async () => {
+  await create(A, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(A, A, [{ id: "foo", name: "Foo" }]);
+  await nodes.updateProviderNode(A, { prefix: prefixB });
+  persistPrice(prefixA, {
+    foo: { input: 2 },
+    "unproven-model": { input: 99 },
+  });
+  const published = await catalog();
+  assert.equal(published[A].displayPrefix, prefixB);
+  assert.deepEqual(published[A].historicalPrefixes, [{
+    prefix: prefixA,
+    modelIds: ["foo"],
+  }]);
+  assert.equal(published[A].pricingKey, undefined, "old price namespace is not a live pricingKey");
+  assert.equal(
+    published[A].models.some((m: { id: string }) => m.id === "unproven-model"),
+    false,
+    "historical pricing is never upstream model-identity evidence"
+  );
+  assert.equal(published[prefixA].historicalPricingNamespace, true);
+  assert.equal(published[prefixA].pricingOnly, true);
+  assert.equal(published[prefixA].modelOverrideEligible, false);
+  assert.deepEqual(
+    published[prefixA].models.map((m: { id: string }) => m.id).sort(),
+    ["foo", "unproven-model"]
+  );
+});
+
+test("#17348: conflicting old prefix claims from two historical nodes stay isolated", async () => {
+  await create(A, prefixA);
+  await create(B, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(A, A, [{ id: "foo", name: "Foo A" }]);
+  await models.replaceSyncedAvailableModelsForConnection(B, B, [{ id: "foo", name: "Foo B" }]);
+  await nodes.updateProviderNode(A, { prefix: prefixB });
+  await nodes.updateProviderNode(B, { prefix: "syntheticthird" });
+  persistPrice(prefixA, { foo: { input: 88 } });
+  const published = await catalog();
+  assert.equal(published[A].historicalPrefixes, undefined);
+  assert.equal(published[B].historicalPrefixes, undefined);
+  assert.equal(published[prefixA].historicalPricingNamespace, true);
+  assert.equal(published[prefixA].pricingOnly, true);
+  assert.equal(published[A].pricingKey, undefined);
+  assert.equal(published[B].pricingKey, undefined);
 });
