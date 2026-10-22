@@ -1,5 +1,5 @@
 import { inheritTrustedLocalRateLimitResponse } from "@omniroute/open-sse/services/rateLimitManager/errors.ts";
-import { inheritProviderProbeResponse } from "../../../shared/utils/providerProbeResult";
+import { inheritResponsePolicies } from "./responsePolicies.ts";
 
 export function withSelectedConnectionHeader(
   response: Response,
@@ -17,9 +17,10 @@ export function withSelectedConnectionHeader(
       headers: response.headers,
     });
     cloned.headers.set("X-OmniRoute-Selected-Connection-Id", connectionId);
-    // #15594: a cloned response must keep both the trusted local rate-limit marker and
-    // the provider-probe marker of the original, or the probe fence loses track of it.
+    // A cloned response must keep the trusted local rate-limit marker plus the per-Response
+    // routing policies of the original (#15594 provider-probe marker, #16072 empty-turn
+    // execution record), or the probe fence / empty-turn guard loses track of it.
     const trusted = inheritTrustedLocalRateLimitResponse(response, cloned);
-    return inheritProviderProbeResponse(response, trusted);
+    return inheritResponsePolicies(response, trusted);
   }
 }

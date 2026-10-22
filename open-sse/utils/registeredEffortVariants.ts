@@ -1,5 +1,8 @@
 import { getProviderModels } from "../config/providerModels.ts";
 
+// `ultra` is the Codex Astra/Sol/Terra alias tier (`gpt-6.1-sol-ultra`). A suffix only counts
+// when both the variant and its base are registry ids of the same provider, so a non-Codex id
+// such as `nemotron-ultra` is never collapsed (#16027).
 const REGISTERED_EFFORT_SUFFIXES = [
   "none",
   "minimal",
@@ -8,6 +11,7 @@ const REGISTERED_EFFORT_SUFFIXES = [
   "high",
   "max",
   "xhigh",
+  "ultra",
 ] as const;
 
 /**

@@ -153,23 +153,30 @@ function opaqueHashes(value: unknown, hashes = new Set<string>()): Set<string> {
   return hashes;
 }
 
+/** Continuation ids a single object node carries directly (not those of its nested values). */
+function ownContinuationIds(item: Record<string, unknown>): string[] {
+  const ids: string[] = [];
+  if (
+    ["function_call", "function_call_output"].includes(String(item.type)) &&
+    typeof item.call_id === "string"
+  )
+    ids.push(`call:${item.call_id}`);
+  if (item.role === "tool" && typeof item.tool_call_id === "string")
+    ids.push(`call:${item.tool_call_id}`);
+  if (Array.isArray(item.tool_calls)) {
+    for (const call of item.tool_calls)
+      if (call && typeof call.id === "string") ids.push(`call:${call.id}`);
+  }
+  if (item.type === "item_reference" && typeof item.id === "string") ids.push(`item:${item.id}`);
+  return ids;
+}
+
 function continuationIds(value: unknown, ids = new Set<string>()): Set<string> {
   if (Array.isArray(value)) {
     for (const item of value) continuationIds(item, ids);
   } else if (value && typeof value === "object") {
     const item = value as Record<string, unknown>;
-    if (
-      ["function_call", "function_call_output"].includes(String(item.type)) &&
-      typeof item.call_id === "string"
-    )
-      ids.add(`call:${item.call_id}`);
-    if (item.role === "tool" && typeof item.tool_call_id === "string")
-      ids.add(`call:${item.tool_call_id}`);
-    if (Array.isArray(item.tool_calls)) {
-      for (const call of item.tool_calls)
-        if (call && typeof call.id === "string") ids.add(`call:${call.id}`);
-    }
-    if (item.type === "item_reference" && typeof item.id === "string") ids.add(`item:${item.id}`);
+    for (const id of ownContinuationIds(item)) ids.add(id);
     for (const nested of Object.values(item))
       if (nested && typeof nested === "object") continuationIds(nested, ids);
   }

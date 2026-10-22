@@ -4,7 +4,7 @@ import { getModelTargetFormat } from "../../open-sse/config/providerModels.ts";
 import { parseEffortLevel, OpencodeExecutor } from "../../open-sse/executors/opencode.ts";
 import { sanitizeReasoningEffortForProvider } from "../../open-sse/executors/base/reasoningEffort.ts";
 
-test("muse-spark-1.3 models route to Responses API on opencode, opencode-go, and opencode-zen", () => {
+test("muse-spark-1.3 models route to Responses API on opencode-go and opencode-zen (and their short aliases)", () => {
   const opencodeGoModels = [
     "muse-spark-1.3-contributor",
     "muse-spark-1.3-contributor-minimal",
@@ -28,6 +28,7 @@ test("muse-spark-1.3 models route to Responses API on opencode, opencode-go, and
     );
   }
 
+  // OpenCode Free (`opencode` / `oc`) was removed in #16310; Zen keeps `opencode-zen` / `ocz`.
   const opencodeModels = [
     "muse-spark-1.3",
     "muse-spark-1.3-contributor",
@@ -36,9 +37,9 @@ test("muse-spark-1.3 models route to Responses API on opencode, opencode-go, and
 
   for (const id of opencodeModels) {
     assert.equal(
-      getModelTargetFormat("opencode", id),
+      getModelTargetFormat("ocz", id),
       "openai-responses",
-      `getModelTargetFormat("opencode", "${id}") should be openai-responses`
+      `getModelTargetFormat("ocz", "${id}") should be openai-responses`
     );
     assert.equal(
       getModelTargetFormat("opencode-zen", id),

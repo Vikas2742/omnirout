@@ -40,3 +40,31 @@ test("a non-probe response is not marked as a probe after cloning", () => {
   const out = withSelectedConnectionHeader(original, "conn-2");
   assert.equal(isProviderProbeResponse(out), false);
 });
+
+// The release tip (#16072) taught the policy-inheritance helper to also carry the trusted
+// empty-turn execution record; the extracted helper has to go through it, not through the
+// probe-only inheritance, or a valid empty terminal turn is re-classified as failed.
+test("cloned response keeps the trusted empty-turn execution record (#16072)", async () => {
+  const { markEmptyTurnExecution, hasTrustedEmptyTurn } =
+    await import("../../open-sse/utils/emptyTurnPolicy.ts");
+  const upstream = new Response(
+    'data: {"choices":[{"finish_reason":"stop","delta":{}}]}\n\ndata: [DONE]\n\n',
+    { status: 200, headers: { "content-type": "text/event-stream" } }
+  );
+  const executed = markEmptyTurnExecution(upstream, "https://api.openai.com/v1/chat/completions", {
+    connectionId: "conn-3",
+    apiKey: "sk-test",
+  });
+  await executed.clone().text();
+  assert.equal(hasTrustedEmptyTurn(executed), true, "fixture must be a trusted empty turn");
+  // Force the clone path: the headers of this response refuse mutation.
+  Object.defineProperty(executed.headers, "set", {
+    value: () => {
+      throw new TypeError("immutable headers");
+    },
+  });
+  const out = withSelectedConnectionHeader(executed, "conn-3");
+  assert.notEqual(out, executed, "immutable headers must produce a clone");
+  assert.equal(out.headers.get("X-OmniRoute-Selected-Connection-Id"), "conn-3");
+  assert.equal(hasTrustedEmptyTurn(out), true);
+});
