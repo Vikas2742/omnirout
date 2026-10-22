@@ -1,7 +1,7 @@
 /**
  * Column helpers for `proxy_subscriptions` readers/writers.
  *
- * The `mirror_urls` column lands via migration 207; databases migrated
+ * The `mirror_urls` column lands via migration 213; databases migrated
  * before it (and unit tests seeding legacy rows) lack the column. Readers
  * pick the SELECT list by probing `PRAGMA table_info`, writers add the
  * column only when present — so both paths stay green with and without
@@ -9,10 +9,10 @@
  */
 
 const SUBSCRIPTION_COLUMNS =
-  "id, name, url, mirror_urls, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at";
+  "id, name, url, mirror_urls, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, selector_last_switch_by_selector, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at";
 
 const SUBSCRIPTION_COLUMNS_LEGACY =
-  "id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at";
+  "id, name, url, enabled, mode, rule_providers, local_core_endpoint, update_interval_minutes, control_url, core_config_path, control_secret_enc, selector_min_gap_seconds, selector_last_switch_at, selector_last_switch_result, selector_last_switch_member, selector_last_switch_kind, selector_last_switch_by_selector, last_fetched_at, status, error, last_nodes, last_error_at, consecutive_failures, created_at, updated_at";
 
 interface ColumnProbe {
   prepare: (sql: string) => { all: (...args: unknown[]) => unknown };
