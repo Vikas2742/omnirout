@@ -621,7 +621,32 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
     if (res.ok) {
       const body = (await res.json()) as unknown;
       if (body && typeof body === "object" && !Array.isArray(body)) {
-        for (const [pricingProviderKey, slot] of Object.entries(body as Record<string, unknown>)) {
+        const allPrices = body as Record<string, unknown>;
+        // Two historical/current pricing namespaces can coexist. A price
+        // explicitly keyed by the CURRENT compatible node ID is authoritative
+        // for that model; a public alias must not override it based on JSON
+        // enumeration order (#17348). Keep distinct alias-only model prices.
+        const canonicalPricedModels = new Map<string, Set<string>>();
+        for (const [publicAlias, canonical] of canonicalByPublicPrefix) {
+          if (publicAlias === canonical) continue;
+          const nodeSlot = allPrices[canonical];
+          if (!nodeSlot || typeof nodeSlot !== "object" || Array.isArray(nodeSlot)) continue;
+          const available = new Set<string>();
+          for (const [rawId, value] of Object.entries(nodeSlot)) {
+            if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+            const fields = value as Record<string, unknown>;
+            if (!["input", "output", "cached", "cacheRead", "cache_creation", "cacheWrite"]
+              .some((field) => typeof fields[field] === "number")) continue;
+            const normalized =
+              rawId.startsWith(`${publicAlias}/`) &&
+              !upstreamModelIdsByAlias.get(publicAlias)?.has(rawId)
+                ? rawId.slice(publicAlias.length + 1)
+                : rawId;
+            available.add(normalized);
+          }
+          if (available.size > 0) canonicalPricedModels.set(publicAlias, available);
+        }
+        for (const [pricingProviderKey, slot] of Object.entries(allPrices)) {
           if (!slot || typeof slot !== "object" || Array.isArray(slot)) continue;
           // Never leak a disputed historical pricing namespace into either
           // provider, not even through the bare-key fallback.
@@ -635,6 +660,11 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
               !upstreamModelIdsByAlias.get(providerAlias)?.has(rawModelId)
                 ? rawModelId.slice(providerAlias.length + 1)
                 : rawModelId;
+            if (
+              pricingProviderKey === providerAlias &&
+              canonicalByPublicPrefix.get(providerAlias) !== pricingProviderKey &&
+              canonicalPricedModels.get(providerAlias)?.has(modelId)
+            ) continue;
             if (!raw || typeof raw !== "object") continue;
             const p = raw as Record<string, unknown>;
             const parsed: NonNullable<OmniRouteEnrichmentEntry["pricing"]> = {};
