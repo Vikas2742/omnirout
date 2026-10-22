@@ -83,7 +83,7 @@ export function getNodeSyncedAndCustomModelIds(
   // substr equality avoids LIKE metacharacter collisions in operator IDs.
   const rows = db.prepare(
     "SELECT value FROM key_value WHERE namespace = 'syncedAvailableModels' AND substr(key, 1, ?) = ?"
-  ).all(syncedPrefix.length, syncedPrefix) as { value?: unknown }[];
+  ).all([...syncedPrefix].length, syncedPrefix) as { value?: unknown }[];
   const custom = db.prepare(
     "SELECT value FROM key_value WHERE namespace = 'customModels' AND key = ?"
   ).get(nodeId) as { value?: unknown } | undefined;
@@ -123,6 +123,51 @@ export function recordNodePrefixChange(
     ON CONFLICT(namespace, key) DO UPDATE SET value = excluded.value
   `).run(NAMESPACE, nodeId, JSON.stringify(history.slice(-MAX_HISTORY)));
   return true;
+}
+
+/**
+ * Deleted compatible nodes must not silently release their old public
+ * prefixes for historical price reassignment. The tombstone stores ONLY the
+ * occupied prefix identities (no credentials, no model data), and is used as
+ * a permanent ambiguity veto until an explicit operator reconciliation.
+ */
+const TOMBSTONE_NAMESPACE = "providerNodePrefixTombstones";
+
+export function recordDeletedNodePrefixTombstone(
+  db: PrefixHistoryDb,
+  nodeId: string,
+  currentPrefix: string | null | undefined
+): void {
+  const prefixes = new Set(getNodePrefixHistory(db, nodeId).map((entry) => entry.prefix));
+  const current = currentPrefix?.trim();
+  if (current && current.length <= 128 && !current.includes("/")) prefixes.add(current);
+  if (prefixes.size === 0) return;
+  db.prepare(`
+    INSERT INTO key_value (namespace, key, value) VALUES (?, ?, ?)
+    ON CONFLICT(namespace, key) DO UPDATE SET value = excluded.value
+  `).run(TOMBSTONE_NAMESPACE, nodeId, JSON.stringify([...prefixes]));
+}
+
+export function getDeletedNodePrefixTombstones(db: PrefixHistoryDb): Set<string> {
+  const rows = db.prepare(
+    "SELECT value FROM key_value WHERE namespace = ?"
+  ).all(TOMBSTONE_NAMESPACE) as { value?: unknown }[];
+  const prefixes = new Set<string>();
+  for (const row of rows) {
+    if (typeof row.value !== "string") continue;
+    try {
+      const parsed: unknown = JSON.parse(row.value);
+      if (!Array.isArray(parsed)) continue;
+      for (const candidate of parsed) {
+        if (typeof candidate !== "string") continue;
+        if (!candidate || candidate.length > 128 || candidate.includes("/")) continue;
+        prefixes.add(candidate);
+      }
+    } catch {
+      // Damaged tombstones never create new ownership claims.
+    }
+  }
+  return prefixes;
 }
 
 export function deleteNodePrefixHistory(db: PrefixHistoryDb, nodeId: string): void {
