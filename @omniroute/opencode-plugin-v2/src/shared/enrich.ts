@@ -424,6 +424,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
   const canonicalByPublicPrefix = new Map<string, string>();
   const historyCandidatesByAlias = new Map<string, Map<string, string>>();
   const pendingHistoryClaims: Array<{ oldPrefix: string; alias: string }> = [];
+  const pendingPricingClaims: Array<{ pricingKey: string; alias: string }> = [];
   if (!baseURL || !apiKey) return out;
   const root = trimTrailingSlashes(baseURL.replace(/\/v1\/?$/, ""));
   const headers = {
@@ -463,6 +464,10 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
             typeof canonicalRaw === "string" && canonicalRaw.length > 0 ? canonicalRaw : catalogKey;
           catalogAliasByKey.set(catalogKey, providerAlias);
           catalogAliasByKey.set(providerCanonical, providerAlias);
+          const storedPricingKey = (slot as { pricingKey?: unknown }).pricingKey;
+          if (typeof storedPricingKey === "string" && storedPricingKey.trim()) {
+            pendingPricingClaims.push({ pricingKey: storedPricingKey.trim(), alias: providerAlias });
+          }
           if (publicPrefix) {
             canonicalByPublicPrefix.set(publicPrefix, providerCanonical);
             const snapshots = (slot as { historicalPrefixes?: unknown }).historicalPrefixes;
@@ -557,6 +562,15 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
     if (current && !catalogAliasByKey.has(previous)) {
       catalogAliasByKey.set(previous, current);
     }
+  }
+  const explicitPricingClaims = new Map<string, string | null>();
+  for (const { pricingKey, alias } of pendingPricingClaims) {
+    if (currentCatalogKeys.has(pricingKey)) continue;
+    if (!explicitPricingClaims.has(pricingKey)) explicitPricingClaims.set(pricingKey, alias);
+    else if (explicitPricingClaims.get(pricingKey) !== alias) explicitPricingClaims.set(pricingKey, null);
+  }
+  for (const [key, alias] of explicitPricingClaims) {
+    if (alias && !catalogAliasByKey.has(key)) catalogAliasByKey.set(key, alias);
   }
 
   // 2. Pricing values from /api/pricing.
