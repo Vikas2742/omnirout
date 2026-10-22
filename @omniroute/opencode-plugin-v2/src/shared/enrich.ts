@@ -655,7 +655,13 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
                 providerCanonical: canonicalByPublicPrefix.get(providerAlias),
               };
               const pending = existing.historicalPricingCandidates ?? [];
-              if (!pending.some((candidate) => candidate.previousPublicId === historicalId)) {
+              // Keep contradictory quotes as separate candidates. The served-ID
+              // reconciler only promotes a single unambiguous quote; silently
+              // keeping the first price would make JSON key order decide cost.
+              if (!pending.some((candidate) =>
+                candidate.previousPublicId === historicalId &&
+                JSON.stringify(candidate.pricing) === JSON.stringify(parsed)
+              )) {
                 pending.push({ previousPublicId: historicalId, pricing: parsed });
               }
               existing.historicalPricingCandidates = pending;
