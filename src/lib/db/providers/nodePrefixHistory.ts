@@ -133,19 +133,74 @@ export function recordNodePrefixChange(
  */
 const TOMBSTONE_NAMESPACE = "providerNodePrefixTombstones";
 
+export interface ArchivedPrefixClaim {
+  prefixes: string[];
+  history: HistoricalNodePrefix[];
+}
+
+function parseArchivedPrefixClaim(raw: unknown): ArchivedPrefixClaim {
+  let value: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      return { prefixes: [], history: [] };
+    }
+  }
+  const record = value && typeof value === "object" && !Array.isArray(value)
+    ? value as { prefixes?: unknown; history?: unknown }
+    : null;
+  // Read older array-only tombstones without discarding existing vetoes.
+  const candidates = Array.isArray(value) ? value : record?.prefixes;
+  const prefixes = new Set<string>();
+  if (Array.isArray(candidates)) {
+    for (const item of candidates) {
+      if (typeof item === "string" && item && item.length <= 128 && !item.includes("/")) {
+        prefixes.add(item);
+      }
+    }
+  }
+  return {
+    prefixes: [...prefixes],
+    history: parseNodePrefixHistory(record?.history),
+  };
+}
+
+export function getArchivedDeletedNodePrefixHistory(
+  db: PrefixHistoryDb,
+  nodeId: string
+): HistoricalNodePrefix[] {
+  const row = db.prepare(
+    "SELECT value FROM key_value WHERE namespace = ? AND key = ?"
+  ).get(TOMBSTONE_NAMESPACE, nodeId) as { value?: unknown } | undefined;
+  return parseArchivedPrefixClaim(row?.value).history;
+}
+
 export function recordDeletedNodePrefixTombstone(
   db: PrefixHistoryDb,
   nodeId: string,
   currentPrefix: string | null | undefined
 ): void {
-  const prefixes = new Set(getNodePrefixHistory(db, nodeId).map((entry) => entry.prefix));
+  const previousRow = db.prepare(
+    "SELECT value FROM key_value WHERE namespace = ? AND key = ?"
+  ).get(TOMBSTONE_NAMESPACE, nodeId) as { value?: unknown } | undefined;
+  const previous = parseArchivedPrefixClaim(previousRow?.value);
+  const presentHistory = getNodePrefixHistory(db, nodeId);
+  const prefixes = new Set([
+    ...previous.prefixes,
+    ...presentHistory.map((entry) => entry.prefix),
+  ]);
   const current = currentPrefix?.trim();
   if (current && current.length <= 128 && !current.includes("/")) prefixes.add(current);
   if (prefixes.size === 0) return;
+  const archivedHistory = parseNodePrefixHistory([...previous.history, ...presentHistory]);
   db.prepare(`
     INSERT INTO key_value (namespace, key, value) VALUES (?, ?, ?)
     ON CONFLICT(namespace, key) DO UPDATE SET value = excluded.value
-  `).run(TOMBSTONE_NAMESPACE, nodeId, JSON.stringify([...prefixes]));
+  `).run(TOMBSTONE_NAMESPACE, nodeId, JSON.stringify({
+    prefixes: [...prefixes],
+    history: archivedHistory,
+  }));
 }
 
 export function getDeletedNodePrefixTombstones(db: PrefixHistoryDb): Set<string> {
@@ -154,17 +209,8 @@ export function getDeletedNodePrefixTombstones(db: PrefixHistoryDb): Set<string>
   ).all(TOMBSTONE_NAMESPACE) as { value?: unknown }[];
   const prefixes = new Set<string>();
   for (const row of rows) {
-    if (typeof row.value !== "string") continue;
-    try {
-      const parsed: unknown = JSON.parse(row.value);
-      if (!Array.isArray(parsed)) continue;
-      for (const candidate of parsed) {
-        if (typeof candidate !== "string") continue;
-        if (!candidate || candidate.length > 128 || candidate.includes("/")) continue;
-        prefixes.add(candidate);
-      }
-    } catch {
-      // Damaged tombstones never create new ownership claims.
+    for (const prefix of parseArchivedPrefixClaim(row.value).prefixes) {
+      prefixes.add(prefix);
     }
   }
   return prefixes;
