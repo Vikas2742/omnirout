@@ -472,6 +472,13 @@ const SYSTEM_GROUP: SidebarItemGroup = {
       subtitleKey: "resilienceConnectionsSubtitle",
       icon: "shield",
     },
+    {
+      id: "resilience-cooldowns",
+      href: "/dashboard/resilience/cooldowns",
+      i18nKey: "resilienceCooldowns",
+      subtitleKey: "resilienceCooldownsSubtitle",
+      icon: "timer_off",
+    },
   ],
 };
 
@@ -800,7 +807,7 @@ const HELP_ITEMS: readonly SidebarItemDefinition[] = [
   },
   {
     id: "issues",
-    href: "https://github.com/diegosouzapw/OmniRoute/issues",
+    href: "https://github.com/cheaper-inference/OmniRoute/issues",
     i18nKey: "issues",
     subtitleKey: "issuesSubtitle",
     icon: "bug_report",
