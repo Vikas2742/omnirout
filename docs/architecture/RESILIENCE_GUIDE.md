@@ -736,8 +736,7 @@ A rule's `scope` (`model` / `provider` / `connection`) is a separate opt-in
 from `FULL_TEXT_RULE_PROVIDERS`: `checkFallbackError` only surfaces it as
 `fallbackResult.ruleScope`, and downstream consumers only honor it as
 anything other than an informational label, for providers in the
-`HONORS_RULE_LOCK_SCOPE_PROVIDERS` allowlist in the same file (`gated via
-honorsRuleLockScope()` — today only `"agentrouter"`). See "Restated quota
+`HONORS_RULE_LOCK_SCOPE_PROVIDERS` allowlist in the same file (gated via `honorsRuleLockScope()` — today only `"agentrouter"`). See "Restated quota
 errors" above for what a `scope: "connection"` match actually does once a
 provider is on that allowlist.
 
