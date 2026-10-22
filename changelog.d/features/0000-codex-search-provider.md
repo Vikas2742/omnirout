@@ -1,6 +1,1 @@
-### Codex Web Search through connected ChatGPT accounts
-
-- Add `codex-search` (alias `codex_search`) for web and news search using connected OpenAI Codex accounts, with no separate search key.
-- Keep configured search providers first; prefer credentialed last-resort providers before keyless DuckDuckGo search, honoring API key connection scopes.
-- Parse Codex SSE with a 4 MB response cap and ground result URLs in observed source/citation host+path pairs. Log upstream token usage and apply search connection cooldowns.
-- Allow Codex's 60-second timeout when no operator search timeout is set. Searches spend subscription quota (catalog price 0 is not free usage); time-range and domain constraints are instruction hints, not hard filters.
+- **feat(search):** Add `codex-search` (alias `codex_search`) for web/news search through connected Codex (ChatGPT) accounts. Keep configured search providers first, and try Codex before keyless fallbacks while preserving other providers' order, API-key connection scopes and REST provider blocks. Parse bounded SSE responses into source-grounded rows and log upstream tokens/search counts. Search failures only apply an in-memory search-specific backoff, capped at 60 seconds; they never change shared chat-account health. Searches consume subscription quota, use a 60-second default timeout unless explicitly configured otherwise, and treat time/domain constraints as hints. A search-locked account is skipped in favour of another provider rather than another Codex account.
