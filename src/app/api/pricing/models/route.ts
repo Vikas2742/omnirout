@@ -48,6 +48,7 @@ export async function GET() {
     const db = getDbInstance();
     const tombstonedPrefixes = getDeletedNodePrefixTombstones(db);
     const historyByNode = new Map<string, HistoricalNodePrefix[]>();
+    const historicallyUsedPrefixes = new Set<string>();
     const historicalOwners = new Map<string, string | null>();
     // Include ineligible compatible nodes as possible prior owners: a losing
     // node must not allow a different node to claim a shared historical prefix.
@@ -59,8 +60,11 @@ export async function GET() {
       if (!history.length) continue;
       historyByNode.set(nodeId, history);
       for (const { prefix } of history) {
-        if (prefixToNode.has(prefix) || isReservedProviderPrefix(prefix) ||
-            tombstonedPrefixes.has(prefix)) continue;
+        if (isReservedProviderPrefix(prefix)) continue;
+        // A previous owner is relevant even when ANOTHER live node currently
+        // serves the old public prefix. Do not hand old prices to that new node.
+        historicallyUsedPrefixes.add(prefix);
+        if (prefixToNode.has(prefix) || tombstonedPrefixes.has(prefix)) continue;
         if (!historicalOwners.has(prefix)) historicalOwners.set(prefix, nodeId);
         else if (historicalOwners.get(prefix) !== nodeId) historicalOwners.set(prefix, null);
       }
@@ -71,7 +75,9 @@ export async function GET() {
         slot.displayPrefix = publicPrefix;
         // A deleted node previously held this public prefix. Its price rows
         // could predate the new node, so require node-ID-keyed current pricing.
-        if (tombstonedPrefixes.has(publicPrefix)) slot.pricingUnsafePublicPrefix = true;
+        if (tombstonedPrefixes.has(publicPrefix) || historicallyUsedPrefixes.has(publicPrefix)) {
+          slot.pricingUnsafePublicPrefix = true;
+        }
       }
       // Historical evidence is separate from current routability; a node that
       // drops its prefix still has history, but may not be an override target.
@@ -225,7 +231,11 @@ export async function GET() {
       // under that prefix may belong to its deleted predecessor. Leave that
       // old namespace as display-only, and use the new node's canonical key
       // for verified new prices.
-      const unverifiedReusedPrefix = Boolean(currentNode && tombstonedPrefixes.has(rawProviderAlias));
+      const unverifiedReusedPrefix = Boolean(
+        currentNode &&
+        (tombstonedPrefixes.has(rawProviderAlias) ||
+          historicallyUsedPrefixes.has(rawProviderAlias))
+      );
       // The PricingTab edits a single pricingKey per provider card. If both
       // node-ID and public-prefix prices exist, merging their model rows would
       // make saves target the wrong namespace (and be enumeration-order dependent).
@@ -236,8 +246,9 @@ export async function GET() {
       const separatePricingKey = unverifiedReusedPrefix || duplicatePricingSources;
       const providerAlias =
         separatePricingKey ? rawProviderAlias : currentNode || rawProviderAlias;
-      const historicalNamespace = tombstonedPrefixes.has(rawProviderAlias) ||
-        (historicalOwners.has(rawProviderAlias) && !currentNode);
+      const historicalNamespace =
+        tombstonedPrefixes.has(rawProviderAlias) ||
+        historicallyUsedPrefixes.has(rawProviderAlias);
       const orphaned = orphanedCompatibleNode(providerAlias);
       if (!catalog[providerAlias]) {
         catalog[providerAlias] = {
