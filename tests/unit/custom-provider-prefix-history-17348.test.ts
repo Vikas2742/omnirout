@@ -343,7 +343,10 @@ test("#17348: pricing provider/model names cannot mutate object prototypes or va
   assert.equal((priced as any)["__proto__"].ordinary.input, 9);
   assert.equal(Object.hasOwn(priced["safe-provider"], "__proto__"), true);
   assert.equal(priced["safe-provider"]["__proto__"].input, 11);
-  assert.equal(priced["safe-provider"].constructor.output, 22);
+  const constructorPrice = Object.getOwnPropertyDescriptor(
+    priced["safe-provider"], "constructor"
+  )?.value as { output?: unknown } | undefined;
+  assert.equal(constructorPrice?.output, 22);
   assert.equal(({} as Record<string, unknown>).ordinary, undefined);
   const bundle = await pricingDb.getPricingWithSources();
   assert.equal(Object.hasOwn(bundle.sourceMap, "__proto__"), true);
