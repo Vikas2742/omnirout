@@ -419,6 +419,44 @@ function windowedQuotaCutoffResult(
  * Pure cutoff evaluator used by routing paths that already fetched quota.
  * Mirrors preflightQuota threshold semantics without performing I/O or logging.
  */
+function configuredCurrentWindows(
+  windows: NonNullable<QuotaInfo["windows"]>,
+  configured: (window: string | null) => boolean
+): NonNullable<QuotaInfo["windows"]> {
+  const groups = groupQuotaWindowsByBase(windows);
+  const selected: NonNullable<QuotaInfo["windows"]> = {};
+  for (const entries of groups.values()) {
+    if (!entries.some(([name]) => configured(name))) continue;
+    for (const [name, info] of entries) {
+      if (!info.resetAt || new Date(info.resetAt).getTime() > Date.now()) {
+        selected[name] = info;
+      }
+    }
+  }
+  return selected;
+}
+
+function healthyQuotaCutoffResult(
+  quota: QuotaInfo,
+  thresholds: PreflightQuotaThresholds | undefined,
+  scope: QuotaCutoffScope | undefined
+): PreflightQuotaResult {
+  const configured = thresholds?.isConfiguredCutoff;
+  if (!configured) return { proceed: true, quotaPercent: quota.percentUsed };
+  const windows = quota.windows;
+  if (windows && Object.keys(windows).length > 0) {
+    const scoped = windowsForScope(windows, scope);
+    const cutoff = quotaWindowCutoffResult(
+      configuredCurrentWindows(scoped, configured),
+      thresholds
+    );
+    return cutoff ?? { proceed: true, quotaPercent: quota.percentUsed };
+  }
+  return configured(null) && (!quota.resetAt || new Date(quota.resetAt).getTime() > Date.now())
+    ? quotaPercentCutoffResult(quota, thresholds)
+    : { proceed: true, quotaPercent: quota.percentUsed };
+}
+
 export function evaluateQuotaCutoff(
   quota: QuotaInfo | null | undefined,
   thresholds?: PreflightQuotaThresholds,
@@ -437,27 +475,7 @@ export function evaluateQuotaCutoff(
   // #14359 — a recent success discounts default exhaustion hints. Explicit
   // cutoffs are still evaluated against their measured windows (#17879).
   if (scope?.connectionId && isQuotaHealthy(scope.connectionId)) {
-    const configured = thresholds?.isConfiguredCutoff;
-    if (!configured) return { proceed: true, quotaPercent: quota.percentUsed };
-    const windows = quota.windows;
-    if (windows && Object.keys(windows).length > 0) {
-      const scoped = windowsForScope(windows, scope);
-      const groups = groupQuotaWindowsByBase(scoped);
-      const selected: NonNullable<QuotaInfo["windows"]> = {};
-      for (const entries of groups.values()) {
-        if (!entries.some(([name]) => configured(name))) continue;
-        for (const [name, info] of entries) {
-          if (!info.resetAt || new Date(info.resetAt).getTime() > Date.now()) {
-            selected[name] = info;
-          }
-        }
-      }
-      const cutoff = quotaWindowCutoffResult(selected, thresholds);
-      return cutoff ?? { proceed: true, quotaPercent: quota.percentUsed };
-    }
-    return configured(null) && (!quota.resetAt || new Date(quota.resetAt).getTime() > Date.now())
-      ? quotaPercentCutoffResult(quota, thresholds)
-      : { proceed: true, quotaPercent: quota.percentUsed };
+    return healthyQuotaCutoffResult(quota, thresholds, scope);
   }
 
   const windowedResult = windowedQuotaCutoffResult(quota, thresholds, scope);
