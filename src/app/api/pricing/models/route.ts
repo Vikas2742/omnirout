@@ -224,16 +224,17 @@ export async function GET() {
           format: "openai",
           models: [],
         };
-        if (orphaned || historicalNamespace) {
-          // Render price rows for recovery, but never represent these entries
-          // as routable/overridable model sources.
-          catalog[providerAlias].pricingOnly = true;
-          catalog[providerAlias].modelOverrideEligible = false;
-          if (orphaned) catalog[providerAlias].orphaned = true;
-          if (historicalNamespace) catalog[providerAlias].historicalPricingNamespace = true;
-        } else {
+        if (!orphaned && !historicalNamespace) {
           attachCompatibleMetadata(providerAlias, catalog[providerAlias]);
         }
+      }
+      // A stale custom/synced catalog entry may already exist at this key.
+      // Classify regardless of whether the pricing loop created the slot.
+      if (orphaned || historicalNamespace) {
+        catalog[providerAlias].pricingOnly = true;
+        catalog[providerAlias].modelOverrideEligible = false;
+        if (orphaned) catalog[providerAlias].orphaned = true;
+        if (historicalNamespace) catalog[providerAlias].historicalPricingNamespace = true;
       }
       // When the entry is keyed internally by the node id but priced under a
       // public prefix, remember the original pricing namespace for PricingTab.
