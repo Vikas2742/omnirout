@@ -8,7 +8,7 @@
  */
 
 import { Buffer } from "node:buffer";
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import WebSocket from "ws";
 import { sleep } from "../utils/sleep.ts";
 
@@ -79,68 +79,175 @@ export function extractPcmFrom16kWav(buffer: Buffer): Buffer | null {
   return null;
 }
 
-/**
- * Convert arbitrary audio data (MP3, WAV, AAC, etc.) to 16kHz mono 16-bit LE PCM using FFmpeg.
- */
-export async function convertToPcm16k(audioBuffer: Buffer): Promise<Buffer> {
-  const existingPcm = extractPcmFrom16kWav(audioBuffer);
-  if (existingPcm && existingPcm.length > 0) {
-    return existingPcm;
+/** Upload cap for the ffmpeg path (matches the 25 MiB audio upload ceiling used elsewhere). */
+export const GEMINI_LIVE_MAX_INPUT_BYTES = 25 * 1024 * 1024;
+/** Longest clip decoded for a transcription request. */
+export const GEMINI_LIVE_MAX_AUDIO_SECONDS = 600;
+/** 16 kHz * 2 bytes * mono: the decoded PCM byte ceiling for GEMINI_LIVE_MAX_AUDIO_SECONDS. */
+export const GEMINI_LIVE_MAX_PCM_BYTES = 16_000 * 2 * GEMINI_LIVE_MAX_AUDIO_SECONDS;
+/** Wall-clock budget for one ffmpeg conversion before the child is killed. */
+export const GEMINI_LIVE_FFMPEG_TIMEOUT_MS = 60_000;
+const FFMPEG_STDERR_MAX_BYTES = 8 * 1024;
+
+export interface ConvertToPcm16kOptions {
+  timeoutMs?: number;
+  maxInputBytes?: number;
+  maxPcmBytes?: number;
+  /** Test seam: replaces child_process.spawn. */
+  spawnFn?: (command: string, args: string[]) => ChildProcessWithoutNullStreams;
+}
+
+const FFMPEG_PCM16K_ARGS = [
+  "-nostdin",
+  "-hide_banner",
+  "-loglevel",
+  "error",
+  // Pipe-only: blocks playlist/concat demuxers from opening local files or network URLs.
+  "-protocol_whitelist",
+  "pipe",
+  "-threads",
+  "1",
+  "-i",
+  "pipe:0",
+  "-vn",
+  "-t",
+  String(GEMINI_LIVE_MAX_AUDIO_SECONDS),
+  "-f",
+  "s16le",
+  "-acodec",
+  "pcm_s16le",
+  "-ac",
+  "1",
+  "-ar",
+  "16000",
+  "pipe:1",
+];
+
+function ffmpegSpawnError(err: NodeJS.ErrnoException): GeminiLiveError {
+  if (err.code === "ENOENT") {
+    return new GeminiLiveError(
+      "FFmpeg is required for converting audio to 16kHz PCM, but was not found on PATH.",
+      500
+    );
   }
+  return new GeminiLiveError(`FFmpeg process error: ${err.message}`, 500);
+}
 
+function ffmpegExitError(code: number | null, stderrChunks: Buffer[]): GeminiLiveError {
+  const stderrMsg = Buffer.concat(stderrChunks).toString("utf-8").trim();
+  return new GeminiLiveError(
+    `FFmpeg audio conversion failed (exit code ${code}): ${stderrMsg || "unknown error"}`,
+    400
+  );
+}
+
+function runFfmpegPcm16k(
+  audioBuffer: Buffer,
+  spawnFn: NonNullable<ConvertToPcm16kOptions["spawnFn"]>,
+  timeoutMs: number,
+  maxPcmBytes: number
+): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
-    const ffmpeg = spawn("ffmpeg", [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-i",
-      "pipe:0",
-      "-f",
-      "s16le",
-      "-acodec",
-      "pcm_s16le",
-      "-ac",
-      "1",
-      "-ar",
-      "16000",
-      "pipe:1",
-    ]);
-
+    const ffmpeg = spawnFn("ffmpeg", FFMPEG_PCM16K_ARGS);
     const stdoutChunks: Buffer[] = [];
     const stderrChunks: Buffer[] = [];
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+    let settled = false;
 
-    ffmpeg.stdout.on("data", (chunk: Buffer) => stdoutChunks.push(chunk));
-    ffmpeg.stderr.on("data", (chunk: Buffer) => stderrChunks.push(chunk));
+    // First outcome wins; the child is killed on every failure so it never outlives the request.
+    const settle = (error: GeminiLiveError | null, result?: Buffer) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) {
+        try {
+          ffmpeg.kill("SIGKILL");
+        } catch {
+          /* already gone */
+        }
+        reject(error);
+      } else {
+        resolve(result as Buffer);
+      }
+    };
+    const timer = setTimeout(
+      () => settle(new GeminiLiveError("FFmpeg audio conversion timed out", 504)),
+      timeoutMs
+    );
 
-    ffmpeg.on("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "ENOENT") {
-        reject(
+    ffmpeg.stdout.on("data", (chunk: Buffer) => {
+      stdoutBytes += chunk.length;
+      if (stdoutBytes > maxPcmBytes) {
+        settle(
           new GeminiLiveError(
-            "FFmpeg is required for converting audio to 16kHz PCM, but was not found on PATH.",
-            500
+            "Decoded audio exceeds the maximum duration for Gemini Live transcription",
+            413
           )
         );
-      } else {
-        reject(new GeminiLiveError(`FFmpeg process error: ${err.message}`, 500));
+        return;
       }
+      stdoutChunks.push(chunk);
+    });
+    ffmpeg.stderr.on("data", (chunk: Buffer) => {
+      if (stderrBytes >= FFMPEG_STDERR_MAX_BYTES) return;
+      stderrBytes += chunk.length;
+      stderrChunks.push(chunk);
     });
 
-    ffmpeg.on("close", (code) => {
-      if (code !== 0) {
-        const stderrMsg = Buffer.concat(stderrChunks).toString("utf-8").trim();
-        reject(
-          new GeminiLiveError(
-            `FFmpeg audio conversion failed (exit code ${code}): ${stderrMsg || "unknown error"}`,
-            400
-          )
-        );
-      } else {
-        resolve(Buffer.concat(stdoutChunks));
-      }
-    });
+    // ffmpeg may exit (or be killed) before it consumed the whole upload: EPIPE on stdin is
+    // reported through the "close" handler, it must not become an unhandled stream error.
+    ffmpeg.stdin.on("error", () => {});
+    ffmpeg.on("error", (err: NodeJS.ErrnoException) => settle(ffmpegSpawnError(err)));
+    ffmpeg.on("close", (code) =>
+      code === 0
+        ? settle(null, Buffer.concat(stdoutChunks))
+        : settle(ffmpegExitError(code, stderrChunks))
+    );
 
     ffmpeg.stdin.end(audioBuffer);
   });
+}
+
+/**
+ * Convert arbitrary audio data (MP3, WAV, AAC, etc.) to 16kHz mono 16-bit LE PCM using FFmpeg.
+ *
+ * The input is an untrusted upload, so ffmpeg runs with the same guard rails as
+ * src/lib/guardrails/videoBridgeAudioExtraction.ts: array arguments (Hard Rule #13), no stdin
+ * interaction, a pipe-only protocol whitelist, a decoded-duration cap, a wall-clock timeout
+ * that kills the child, and byte caps on both the upload and the decoded PCM.
+ */
+export async function convertToPcm16k(
+  audioBuffer: Buffer,
+  options: ConvertToPcm16kOptions = {}
+): Promise<Buffer> {
+  const maxInputBytes = options.maxInputBytes ?? GEMINI_LIVE_MAX_INPUT_BYTES;
+  const maxPcmBytes = options.maxPcmBytes ?? GEMINI_LIVE_MAX_PCM_BYTES;
+
+  if (audioBuffer.length > maxInputBytes) {
+    throw new GeminiLiveError(
+      `Audio file exceeds the ${Math.floor(maxInputBytes / (1024 * 1024))} MiB limit for Gemini Live transcription`,
+      413
+    );
+  }
+
+  const existingPcm = extractPcmFrom16kWav(audioBuffer);
+  if (existingPcm && existingPcm.length > 0) {
+    if (existingPcm.length > maxPcmBytes) {
+      throw new GeminiLiveError(
+        "Audio exceeds the maximum duration for Gemini Live transcription",
+        413
+      );
+    }
+    return existingPcm;
+  }
+
+  return runFfmpegPcm16k(
+    audioBuffer,
+    options.spawnFn ?? (spawn as NonNullable<ConvertToPcm16kOptions["spawnFn"]>),
+    options.timeoutMs ?? GEMINI_LIVE_FFMPEG_TIMEOUT_MS,
+    maxPcmBytes
+  );
 }
 
 const DEFAULT_GEMINI_LIVE_WS_URL =
@@ -168,11 +275,11 @@ export function resolveLiveWsUrlAndHeaders(
       ? credentials.accessToken.trim()
       : null;
 
+  // Credentials travel in headers only: a query-string copy ends up in proxy/access logs and
+  // in WebSocket error messages.
   if (apiKey) {
-    wsUrl.searchParams.set("key", apiKey);
     headers["x-goog-api-key"] = apiKey;
   } else if (accessToken) {
-    wsUrl.searchParams.set("access_token", accessToken);
     headers["Authorization"] = `Bearer ${accessToken}`;
   } else {
     throw new GeminiLiveError("No credentials for Gemini Live transcription", 401);

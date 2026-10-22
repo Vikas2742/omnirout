@@ -2,12 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import http from "node:http";
+import { EventEmitter } from "node:events";
+import { PassThrough } from "node:stream";
 import { WebSocketServer } from "ws";
 
 const { AUDIO_TRANSCRIPTION_PROVIDERS, parseTranscriptionModel } =
   await import("../../open-sse/config/audioRegistry.ts");
-const { extractPcmFrom16kWav, resolveLiveWsUrlAndHeaders, geminiLiveTranscribe } =
-  await import("../../open-sse/executors/geminiLiveTranscribe.ts");
+const {
+  GEMINI_LIVE_MAX_INPUT_BYTES,
+  GEMINI_LIVE_MAX_PCM_BYTES,
+  convertToPcm16k,
+  extractPcmFrom16kWav,
+  resolveLiveWsUrlAndHeaders,
+  geminiLiveTranscribe,
+} = await import("../../open-sse/executors/geminiLiveTranscribe.ts");
 const { handleAudioTranscription } = await import("../../open-sse/handlers/audioTranscription.ts");
 
 /**
@@ -111,14 +119,17 @@ test("resolveLiveWsUrlAndHeaders handles apiKey and accessToken", () => {
     { apiKey: "test-gemini-key" },
     "ws://localhost:9999/ws"
   );
-  assert.ok(withKey.url.includes("key=test-gemini-key"));
+  // The credential travels in the header only: a query-string copy leaks into proxy/access
+  // logs and error messages.
+  assert.ok(!withKey.url.includes("test-gemini-key"));
+  assert.equal(new URL(withKey.url).search, "");
   assert.equal(withKey.headers["x-goog-api-key"], "test-gemini-key");
 
   const withToken = resolveLiveWsUrlAndHeaders(
     { accessToken: "test-oauth-token" },
     "ws://localhost:9999/ws"
   );
-  assert.ok(withToken.url.includes("access_token=test-oauth-token"));
+  assert.ok(!withToken.url.includes("test-oauth-token"));
   assert.equal(withToken.headers.Authorization, "Bearer test-oauth-token");
 
   assert.throws(() => {
@@ -132,12 +143,14 @@ test("geminiLiveTranscribe transcribes file via mock Live WebSocket session", as
     setup?: Record<string, unknown>;
     chunks: string[];
     ended?: boolean;
-    queryKey?: string;
+    queryString?: string;
+    apiKeyHeader?: string;
   } = { chunks: [] };
 
   mockServer.wss.on("connection", (ws, req) => {
     const reqUrl = new URL(req.url || "", "ws://localhost");
-    captured.queryKey = reqUrl.searchParams.get("key") || undefined;
+    captured.queryString = reqUrl.search;
+    captured.apiKeyHeader = req.headers["x-goog-api-key"] as string | undefined;
 
     ws.on("message", (msg) => {
       const data = JSON.parse(msg.toString());
@@ -182,7 +195,8 @@ test("geminiLiveTranscribe transcribes file via mock Live WebSocket session", as
     );
 
     assert.equal(text, "Testing gemini live transcription");
-    assert.equal(captured.queryKey, "secret-key");
+    assert.equal(captured.queryString, "");
+    assert.equal(captured.apiKeyHeader, "secret-key");
     assert.equal(captured.setup?.model, "models/gemini-3.5-transcribe-live");
     assert.deepEqual(
       (captured.setup?.generationConfig as Record<string, unknown>)?.responseModalities,
@@ -411,4 +425,127 @@ test("handleAudioTranscription returns 200 with empty text for music-only on gem
   } finally {
     await mockServer.close();
   }
+});
+
+// ─── ffmpeg hardening (convertToPcm16k) ───────────────────────────────────────
+
+type FakeChild = EventEmitter & {
+  stdin: PassThrough;
+  stdout: PassThrough;
+  stderr: PassThrough;
+  killed: boolean;
+  killSignal?: string;
+  kill: (signal?: string) => boolean;
+};
+
+function createFakeFfmpeg(): FakeChild {
+  const child = new EventEmitter() as FakeChild;
+  child.stdin = new PassThrough();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  child.killed = false;
+  child.kill = (signal?: string) => {
+    child.killed = true;
+    child.killSignal = signal;
+    // a killed process closes with a signal exit code
+    setImmediate(() => child.emit("close", null, signal ?? "SIGTERM"));
+    return true;
+  };
+  return child;
+}
+
+// Not a 16 kHz mono WAV, so the ffmpeg path is taken.
+const NON_WAV_AUDIO = Buffer.from("ID3-not-a-wav-file-any-audio-container");
+
+test("convertToPcm16k launches ffmpeg with -nostdin and a pipe-only protocol whitelist", async () => {
+  const child = createFakeFfmpeg();
+  let captured: { command: string; args: string[] } | null = null;
+  const pending = convertToPcm16k(NON_WAV_AUDIO, {
+    spawnFn: ((command: string, args: string[]) => {
+      captured = { command, args };
+      return child;
+    }) as never,
+  });
+  child.stdout.write(Buffer.alloc(3200));
+  child.stdout.end();
+  setImmediate(() => child.emit("close", 0, null));
+  const pcm = await pending;
+
+  assert.equal(pcm.length, 3200);
+  assert.ok(captured, "spawn must be called");
+  const { command, args } = captured as { command: string; args: string[] };
+  assert.equal(command, "ffmpeg");
+  assert.ok(args.includes("-nostdin"));
+  const whitelistAt = args.indexOf("-protocol_whitelist");
+  assert.ok(whitelistAt >= 0, "-protocol_whitelist is required");
+  assert.equal(args[whitelistAt + 1], "pipe");
+  assert.ok(
+    whitelistAt < args.indexOf("-i"),
+    "the whitelist must precede -i to apply to the input"
+  );
+  assert.ok(args.includes("-t"), "decoded duration must be capped");
+});
+
+test("convertToPcm16k rejects an oversized upload with 413 before spawning ffmpeg", async () => {
+  let spawned = false;
+  await assert.rejects(
+    convertToPcm16k(Buffer.alloc(GEMINI_LIVE_MAX_INPUT_BYTES + 1), {
+      spawnFn: (() => {
+        spawned = true;
+        return createFakeFfmpeg();
+      }) as never,
+    }),
+    (err: { status?: number }) => err.status === 413
+  );
+  assert.equal(spawned, false);
+});
+
+test("convertToPcm16k kills ffmpeg and answers 504 on a wall-clock timeout", async () => {
+  const child = createFakeFfmpeg();
+  await assert.rejects(
+    convertToPcm16k(NON_WAV_AUDIO, { spawnFn: (() => child) as never, timeoutMs: 20 }),
+    (err: { status?: number }) => err.status === 504
+  );
+  assert.equal(child.killed, true);
+  assert.equal(child.killSignal, "SIGKILL");
+});
+
+test("convertToPcm16k kills ffmpeg and answers 413 when the decoded PCM exceeds the cap", async () => {
+  const child = createFakeFfmpeg();
+  const pending = convertToPcm16k(NON_WAV_AUDIO, {
+    spawnFn: (() => child) as never,
+    maxPcmBytes: 6400,
+  });
+  child.stdout.write(Buffer.alloc(4000));
+  child.stdout.write(Buffer.alloc(4000));
+  await assert.rejects(pending, (err: { status?: number }) => err.status === 413);
+  assert.equal(child.killed, true);
+  assert.ok(GEMINI_LIVE_MAX_PCM_BYTES > 0);
+});
+
+test("convertToPcm16k survives an EPIPE on ffmpeg stdin and reports the ffmpeg failure", async () => {
+  const child = createFakeFfmpeg();
+  const pending = convertToPcm16k(NON_WAV_AUDIO, { spawnFn: (() => child) as never });
+  child.stdin.emit("error", Object.assign(new Error("write EPIPE"), { code: "EPIPE" }));
+  child.stderr.write("Invalid data found when processing input");
+  child.emit("close", 1, null);
+  await assert.rejects(pending, (err: { status?: number; message: string }) => {
+    return err.status === 400 && /Invalid data/.test(err.message);
+  });
+});
+
+test("handleAudioTranscription answers 413 for an oversized gemini-live upload without converting it", async () => {
+  const oversized = new File([Buffer.alloc(GEMINI_LIVE_MAX_INPUT_BYTES + 1)], "huge.mp3", {
+    type: "audio/mpeg",
+  });
+  const formData = new FormData();
+  formData.append("model", "gemini/gemini-3.5-transcribe-live");
+  formData.append("file", oversized);
+
+  const response = await handleAudioTranscription({
+    formData,
+    credentials: { apiKey: "gemini-key-test" },
+  });
+
+  assert.equal(response.status, 413);
 });

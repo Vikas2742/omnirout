@@ -24,7 +24,10 @@ import {
 import { buildAuthHeaders } from "../config/registryUtils.ts";
 import { kieExecutor } from "../executors/kie.ts";
 import { vertexTranscribe } from "../executors/vertexMedia.ts";
-import { geminiLiveTranscribe } from "../executors/geminiLiveTranscribe.ts";
+import {
+  GEMINI_LIVE_MAX_INPUT_BYTES,
+  geminiLiveTranscribe,
+} from "../executors/geminiLiveTranscribe.ts";
 import { errorResponse } from "../utils/error.ts";
 import { hasUnsafeModelIdSyntax } from "../utils/modelIdSafety.ts";
 import { isJsonObject } from "../utils/kieTask.ts";
@@ -914,6 +917,10 @@ export async function handleAudioTranscription({
   // Route to provider-specific handler
   if (providerConfig.format === "gemini-live") {
     try {
+      if (file.size > GEMINI_LIVE_MAX_INPUT_BYTES) {
+        // Reject before buffering the upload a second time.
+        return errorResponse(413, "Audio file is too large for Gemini Live transcription");
+      }
       const buffer = Buffer.from(await file.arrayBuffer());
       const languageValue = formData.get("language");
       const promptValue = formData.get("prompt");
