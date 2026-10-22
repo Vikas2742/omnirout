@@ -1,0 +1,1 @@
+- **fix(sse):** stop injecting `outputDimensionality` into Gemini embeddings ([#17158](https://github.com/diegosouzapw/OmniRoute/issues/17158))

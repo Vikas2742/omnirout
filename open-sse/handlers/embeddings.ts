@@ -284,12 +284,8 @@ function buildUpstreamBody(runtime: EmbeddingRuntime): Record<string, unknown> {
     if (!KNOWN_EMBEDDING_FIELDS.has(key) && value !== undefined) upstreamBody[key] = value;
   }
 
-  if (runtime.provider === "gemini" && upstreamBody.outputDimensionality === undefined) {
-    const outputDimensionality = Number(runtime.body.dimensions);
-    if (Number.isFinite(outputDimensionality) && outputDimensionality > 0) {
-      upstreamBody.outputDimensionality = outputDimensionality;
-    }
-  }
+  // Google's OpenAI-compatible endpoint honors `dimensions` natively and rejects `outputDimensionality`;
+  // native embedContent handles `output_dimensionality` via geminiRequestExtras (see #17158).
   const defaultParams = getEmbeddingModelDefaultParams(runtime.providerConfig, runtime.model);
   for (const [key, value] of Object.entries(defaultParams ?? {})) {
     if (upstreamBody[key] === undefined) upstreamBody[key] = value;
