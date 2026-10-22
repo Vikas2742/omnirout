@@ -115,10 +115,10 @@ import { buildModalityBridgeHeader } from "@/lib/guardrails/modalityBridge/bridg
 import type { VideoBridgeLogRedactionEntry } from "@/lib/guardrails/videoBridge";
 import { reanchorVideoBridgeRedaction } from "@/lib/guardrails/videoBridge";
 import { resolveConversationId } from "@omniroute/open-sse/services/conversationTracker.ts";
+import { isRequestShapeError } from "../services/requestShape";
 import {
   classifyProviderBreakerResult,
   isAntigravityMissingProjectError,
-  isRequestShapeRejection,
   isProviderBreakerFailureStatus,
   resolveStreamReadinessClassificationError,
 } from "./chatPredicates";
@@ -2140,7 +2140,7 @@ async function handleSingleModelChat(
       // A 422 body-deserialization rejection describes THIS request's shape, not the
       // account. Cooling the connection down would make every other client routed to
       // the same (often single) account fail with the stale error for ~1 minute.
-      if (isRequestShapeRejection(result, provider)) {
+      if (isRequestShapeError(result.status, result.error, provider)) {
         return withSelectedConnectionHeader(result.response, credentials.connectionId);
       }
 

@@ -66,6 +66,7 @@ import {
 } from "@omniroute/open-sse/services/antigravityFamilyCooldown.ts";
 import { markQuotaPreflightAccountUnavailable } from "./quotaPreflightUnavailable.ts";
 import { buildNoAuthModelCooldown } from "./noAuthModelCooldown.ts";
+import { isRequestShapeError } from "./requestShape.ts";
 import { getCreditsMode } from "@omniroute/open-sse/services/antigravityCredits.ts";
 import { preferAntigravityConnectionsWithStoredProject } from "@omniroute/open-sse/services/antigravityProjectPersistence.ts";
 import {
@@ -2666,24 +2667,6 @@ export function buildExhaustionOptions(
   correlationId: string | null;
 } {
   return { ...rest, correlationId };
-}
-
-const REQUEST_SHAPE_ERROR_RE =
-  /failed to deserialize the json body|unknown variant `|missing field `|argument not supported|unknown content type|invalid request content/i;
-
-/** xAI reports auth/quota as 401/403/429 — its 400/422 are always about the request body. */
-const REQUEST_SHAPE_ALL_4XX_PROVIDERS = new Set(["xai", "xai-oauth", "xao"]);
-
-/** 400/422 that describes the request body (schema mismatch), not the account's health. */
-export function isRequestShapeError(
-  status: number,
-  errorText: unknown,
-  provider: string | null = null
-): boolean {
-  const code = Number(status);
-  if (code !== 400 && code !== 422) return false;
-  if (provider && REQUEST_SHAPE_ALL_4XX_PROVIDERS.has(provider)) return true;
-  return REQUEST_SHAPE_ERROR_RE.test(typeof errorText === "string" ? errorText : "");
 }
 
 /** Persist exponential-backoff state for an unavailable provider connection. */
