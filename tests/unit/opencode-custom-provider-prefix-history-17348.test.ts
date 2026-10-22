@@ -371,3 +371,28 @@ test("#17348: a current node-ID price beats a public alias quote independently o
     });
   }
 });
+
+test("#17348: canonical pricing precedence is stable for prefixed and literal-slash IDs", async () => {
+  for (const [rawModelId, publicPriceKey, servedId] of [
+    ["org/nested", "ih/org/nested", "ih/org/nested"],
+    ["ih/org/nested", "ih/ih/org/nested", "ih/ih/org/nested"],
+  ] as const) {
+    const fixture = {
+      [NODE]: {
+        id: NODE,
+        displayPrefix: "ih",
+        models: [{ id: rawModelId, upstreamId: true }],
+      },
+    };
+    for (const prices of [
+      { ih: { [publicPriceKey]: { input: 99 } }, [NODE]: { [rawModelId]: { input: 7 } } },
+      { [NODE]: { [rawModelId]: { input: 7 } }, ih: { [publicPriceKey]: { input: 99 } } },
+    ]) {
+      await withMockedCatalog(fixture, prices, (overlay) => {
+        const reconciled = reconcileHistoricalEnrichment(overlay, [{ id: servedId }]);
+        assert.deepEqual(reconciled.get(servedId)?.pricing, { input: 7 },
+          "canonical pricing must beat prefixed public namespace without stripping a literal raw ID");
+      });
+    }
+  }
+});
