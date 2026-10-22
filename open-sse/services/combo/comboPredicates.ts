@@ -458,6 +458,9 @@ export function shouldSkipConnDisable(
         result.errorType === "context_length_exceeded"));
 
   return (
+    // Local turn deduplication is not an account or provider failure.
+    (result.status === 409 &&
+      (result.errorCode === "turn_in_progress" || result.errorType === "turn_in_progress")) ||
     result.status === 499 ||
     result.errorCode === "client_disconnected" ||
     result.errorType === "client_disconnected" ||

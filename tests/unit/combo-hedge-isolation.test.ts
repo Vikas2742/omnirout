@@ -298,3 +298,27 @@ test("all nonterminal failures aggregate only after all branches settle", async 
   assert.equal(settled, 2);
   assert.equal(response.status, 502);
 });
+
+test("local turn conflicts never disable accounts; upstream conflicts retain normal handling", async () => {
+  const { shouldSkipConnDisable } =
+    await import("../../open-sse/services/combo/comboPredicates.ts");
+  for (const provider of ["groq", "codex", "antigravity"]) {
+    assert.equal(
+      shouldSkipConnDisable({ status: 409, errorCode: "turn_in_progress" }, false, false, provider),
+      true
+    );
+    assert.equal(
+      shouldSkipConnDisable({ status: 409, errorType: "turn_in_progress" }, false, false, provider),
+      true
+    );
+    assert.equal(
+      shouldSkipConnDisable(
+        { status: 409, errorCode: "upstream_conflict" },
+        false,
+        false,
+        provider
+      ),
+      false
+    );
+  }
+});
