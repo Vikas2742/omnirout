@@ -38,6 +38,7 @@ import * as xSearch from "./search/xSearch.ts";
 import * as xquikSearch from "./search/xquikSearch.ts";
 import * as anysearchSearch from "./search/anysearchSearch.ts";
 import * as parallelSearch from "./search/parallelSearch.ts";
+import { executeCodexSearch } from "./search/codexSearch.ts";
 import { freeWebSearch } from "../services/freeWebSearch.ts";
 import { saveCallLog } from "@/lib/usageDb";
 import { safeOutboundFetch } from "@/shared/network/safeOutboundFetch";
@@ -1769,6 +1770,15 @@ async function tryProvider(
   }
 
   const { query, searchType, maxResults } = params;
+
+  if (config.id === "codex-search") {
+    return executeCodexSearch(
+      config,
+      { ...params, token, providerSpecificData },
+      { connectionId, apiKeyId, globalStartTime, globalTimeoutMs },
+      makeResult
+    );
+  }
 
   if (config.id === "duckduckgo-free") {
     return tryDuckDuckGoFreeProvider(
