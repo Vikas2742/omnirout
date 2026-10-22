@@ -13,6 +13,40 @@ const core = await import("../../src/lib/db/core.ts");
 const providersDb = await import("../../src/lib/db/providers.ts");
 const auth = await import("../../src/sse/services/auth.ts");
 const fallback = await import("../../open-sse/services/accountFallback.ts");
+const readCache = await import("../../src/lib/db/readCache.ts");
+const modelLockoutSettings = await import("../../src/lib/resilience/modelLockoutSettings.ts");
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+// The retired-model lock must be bounded by the operator's model-lockout cap
+// (mlSettings.maxCooldownMs, ~30min by default), not the old 24h connection cooldown.
+async function assertLockBoundedByMaxCooldown(
+  provider: string,
+  connectionId: string,
+  model: string,
+  cooldownMs: number | undefined
+) {
+  const { maxCooldownMs } = modelLockoutSettings.resolveModelLockoutSettings(
+    await readCache.getCachedSettings()
+  );
+  const lock = fallback.getModelLockoutInfo(provider, connectionId, model);
+
+  assert.ok(lock, "the retired model must hold an active lock");
+  assert.ok(lock.remainingMs > 0, "the retired model lock must still be active");
+  // remainingMs is measured after the lock was created, so it can only shrink: no slack needed.
+  assert.ok(
+    lock.remainingMs <= maxCooldownMs,
+    `lock must be bounded by maxCooldownMs (${maxCooldownMs}ms), got ${lock.remainingMs}ms`
+  );
+  assert.ok(
+    lock.remainingMs < ONE_DAY_MS,
+    "lock must be far below the old 24h connection cooldown"
+  );
+  assert.ok(
+    typeof cooldownMs === "number" && cooldownMs > 0 && cooldownMs <= maxCooldownMs,
+    `reported cooldown must be bounded by maxCooldownMs (${maxCooldownMs}ms), got ${cooldownMs}ms`
+  );
+}
 
 const DEAD_MODEL = "mimo-v2.5-free";
 const HEALTHY_MODEL = "mimo-v2.6-flash-free";
@@ -87,6 +121,13 @@ test("OpenCode 410 on a retired model stays model-scoped and leaves the connecti
     "the retired model itself should be locked"
   );
 
+  await assertLockBoundedByMaxCooldown(
+    "opencode-zen",
+    connection.id,
+    DEAD_MODEL,
+    result.cooldownMs
+  );
+
   assert.equal(
     fallback.isModelLocked("opencode-zen", connection.id, HEALTHY_MODEL),
     false,
@@ -134,6 +175,13 @@ test("OpenCode 410 without a model name in the body still locks only that model"
     fallback.isModelLocked("opencode-zen", connection.id, DEAD_MODEL),
     true,
     "the retired model should be locked even when the body names no model"
+  );
+
+  await assertLockBoundedByMaxCooldown(
+    "opencode-zen",
+    connection.id,
+    DEAD_MODEL,
+    result.cooldownMs
   );
 });
 
