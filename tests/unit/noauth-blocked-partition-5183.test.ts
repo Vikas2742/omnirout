@@ -16,7 +16,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { partitionNoAuthEntriesByBlocked } from "../../src/shared/utils/noAuthProviders.ts";
+import {
+  computeNextBlockedProviders,
+  partitionNoAuthEntriesByBlocked,
+} from "../../src/shared/utils/noAuthProviders.ts";
 
 type Entry = { providerId: string; provider: { name: string; alias?: string } };
 
@@ -66,4 +69,50 @@ test("#5183 partition order is preserved within each bucket", () => {
     blocked.map((e) => e.providerId),
     ["gemini-web"]
   );
+});
+
+test("computeNextBlockedProviders: single provider block and unblock", () => {
+  // Block single provider
+  const blocked = computeNextBlockedProviders([], "devin-cli-agentic", false);
+  assert.deepEqual(blocked, ["devin-cli-agentic"]);
+
+  // Unblock single provider with alias in list
+  const unblocked = computeNextBlockedProviders(
+    ["devin-cli-agentic", "dva", "unrelated"],
+    "devin-cli-agentic",
+    true
+  );
+  assert.deepEqual(unblocked, ["unrelated"]);
+});
+
+test("computeNextBlockedProviders: alias resolution on block and unblock", () => {
+  // Unblock using alias key removes both alias and canonical id
+  const unblocked = computeNextBlockedProviders(
+    ["devin-cli-agentic", "dva", "unrelated"],
+    "dva",
+    true
+  );
+  assert.deepEqual(unblocked, ["unrelated"]);
+
+  // Block using alias key stores canonical id
+  const blocked = computeNextBlockedProviders(["unrelated"], "dva", false);
+  assert.deepEqual(blocked, ["unrelated", "devin-cli-agentic"]);
+});
+
+test("computeNextBlockedProviders: bulk block and unblock", () => {
+  const targets = ["devin-cli-agentic", "duckduckgo-web"];
+
+  // Bulk block
+  const blocked = computeNextBlockedProviders(["custom-blocked"], targets, false);
+  assert.ok(blocked.includes("custom-blocked"));
+  assert.ok(blocked.includes("devin-cli-agentic"));
+  assert.ok(blocked.includes("duckduckgo-web"));
+
+  // Bulk unblock removes all targets and their aliases
+  const unblocked = computeNextBlockedProviders(
+    ["custom-blocked", "devin-cli-agentic", "dva", "duckduckgo-web", "ddgw"],
+    targets,
+    true
+  );
+  assert.deepEqual(unblocked, ["custom-blocked"]);
 });
