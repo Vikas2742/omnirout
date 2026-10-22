@@ -6809,7 +6809,9 @@
     "codexPaidCreditsDisabled": "Codex 유료 크레딧 사용 안 함",
     "failedUpdateCodexPaidCredits": "Codex 유료 크레딧 정책을 업데이트하지 못했습니다",
     "allowCodexPaidCreditsLabel": "유료 Codex 크레딧 허용",
-    "allowCodexPaidCreditsDescription": "Allow this account to use paid credits after its subscription quota reaches the cutoff. Requires available credits reported by OpenAI; may incur charges. Spark limits and upstream cooldowns still apply. Credit availability is checked even if quota preflight is disabled."
+    "allowCodexPaidCreditsDescription": "Allow this account to use paid credits after its subscription quota reaches the cutoff. Requires available credits reported by OpenAI; may incur charges. Spark limits and upstream cooldowns still apply. Credit availability is checked even if quota preflight is disabled.",
+    "usedInComboTooltip": "Used in {count} combo(s): {combos}",
+    "openComboTooltip": "Open Combos — used by {combo}"
   },
   "settings": {
     "title": "설정",

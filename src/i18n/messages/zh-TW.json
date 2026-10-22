@@ -6809,7 +6809,9 @@
     "codexPaidCreditsDisabled": "已停用 Codex 付費額度",
     "failedUpdateCodexPaidCredits": "更新 Codex 付費額度政策失敗",
     "allowCodexPaidCreditsLabel": "允許使用付費 Codex 額度",
-    "allowCodexPaidCreditsDescription": "Allow this account to use paid credits after its subscription quota reaches the cutoff. Requires available credits reported by OpenAI; may incur charges. Spark limits and upstream cooldowns still apply. Credit availability is checked even if quota preflight is disabled."
+    "allowCodexPaidCreditsDescription": "Allow this account to use paid credits after its subscription quota reaches the cutoff. Requires available credits reported by OpenAI; may incur charges. Spark limits and upstream cooldowns still apply. Credit availability is checked even if quota preflight is disabled.",
+    "usedInComboTooltip": "Used in {count} combo(s): {combos}",
+    "openComboTooltip": "Open Combos — used by {combo}"
   },
   "settings": {
     "title": "設定",

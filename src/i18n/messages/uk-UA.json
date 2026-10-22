@@ -6809,7 +6809,9 @@
     "codexPaidCreditsDisabled": "Платні кредити Codex вимкнено",
     "failedUpdateCodexPaidCredits": "Не вдалося оновити політику платних кредитів Codex",
     "allowCodexPaidCreditsLabel": "Дозволити платні кредити Codex",
-    "allowCodexPaidCreditsDescription": "Allow this account to use paid credits after its subscription quota reaches the cutoff. Requires available credits reported by OpenAI; may incur charges. Spark limits and upstream cooldowns still apply. Credit availability is checked even if quota preflight is disabled."
+    "allowCodexPaidCreditsDescription": "Allow this account to use paid credits after its subscription quota reaches the cutoff. Requires available credits reported by OpenAI; may incur charges. Spark limits and upstream cooldowns still apply. Credit availability is checked even if quota preflight is disabled.",
+    "usedInComboTooltip": "Used in {count} combo(s): {combos}",
+    "openComboTooltip": "Open Combos — used by {combo}"
   },
   "settings": {
     "title": "Налаштування",
