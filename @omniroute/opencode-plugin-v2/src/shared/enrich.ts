@@ -660,7 +660,9 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
               // keeping the first price would make JSON key order decide cost.
               if (!pending.some((candidate) =>
                 candidate.previousPublicId === historicalId &&
-                JSON.stringify(candidate.pricing) === JSON.stringify(parsed)
+                (["input", "output", "cacheRead", "cacheWrite"] as const).every(
+                  (field) => candidate.pricing[field] === parsed[field]
+                )
               )) {
                 pending.push({ previousPublicId: historicalId, pricing: parsed });
               }
