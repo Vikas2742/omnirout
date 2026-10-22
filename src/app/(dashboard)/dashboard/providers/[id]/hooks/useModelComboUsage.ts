@@ -25,10 +25,23 @@ type ComboStepLike = {
   providerId?: unknown;
 };
 
+type ComboLike = {
+  name?: unknown;
+  models?: unknown;
+};
+
 export type ModelComboUsage = Record<string, string[]>;
 
-function isComboStep(value: unknown): value is ComboStepLike {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isCombo(value: unknown): value is ComboLike {
+  return isPlainObject(value);
+}
+
+function isComboStep(value: unknown): value is ComboStepLike {
+  return isPlainObject(value);
 }
 
 /**
@@ -52,7 +65,7 @@ export function buildModelComboUsage(combos: unknown, providerId: string): Model
   const usage: ModelComboUsage = {};
 
   for (const combo of combos) {
-    if (!isComboStep(combo)) continue;
+    if (!isCombo(combo)) continue;
     const name = typeof combo.name === "string" ? combo.name.trim() : "";
     if (!name) continue;
 
