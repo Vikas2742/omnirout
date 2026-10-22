@@ -26,6 +26,7 @@ export interface WizardInput {
   fileName: string | null;
   rawContent: string | null; // JSONL input or converted CSV; null until mapped
   csvContent?: string; // original CSV; rawContent holds converted JSONL
+  originalFile?: File; // JSONL upload source; rawContent may be a preview sample
   csvMapping?: WizardCsvMapping; // only when kind === "csv"
 }
 
