@@ -10,7 +10,7 @@
 // deactivate the account instead of looping every 60s.
 import { isPassiveCodex } from "./passiveCodex.ts";
 import type { RefreshLogger } from "./shared.ts";
-import { isUnrecoverableRefreshError } from "./shared.ts";
+import { isUnrecoverableRefreshError, NO_REFRESH_NEEDED } from "./shared.ts";
 
 // ─── Circuit Breaker State ──────────────────────────────────────────────────
 const _circuitBreaker: Record<string, { failures: number; blockedUntil: number }> = {};
@@ -243,6 +243,7 @@ export async function refreshWithRetry(
     try {
       const result = await withTimeout(refreshFn, REFRESH_TIMEOUT_MS);
       if (isUnrecoverableRefreshError(result)) {
+        if (result === NO_REFRESH_NEEDED) return null;
         log?.warn?.(
           "TOKEN_REFRESH",
           `Unrecoverable refresh error for ${key}: ${result.error} — skipping retries`

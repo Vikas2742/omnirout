@@ -1,7 +1,10 @@
 import { updateProviderConnection } from "@/lib/db/providers";
 import * as passive from "@omniroute/open-sse/services/tokenRefresh/passiveCodex.ts";
 import type { BaseExecutor } from "@omniroute/open-sse/executors/base";
-import { isUnrecoverableRefreshError } from "@omniroute/open-sse/services/tokenRefresh/shared.ts";
+import {
+  isUnrecoverableRefreshError,
+  NO_REFRESH_NEEDED,
+} from "@omniroute/open-sse/services/tokenRefresh/shared.ts";
 import {
   rotationGroupFor,
   serializeRefresh,
@@ -137,7 +140,8 @@ export async function refreshAndUpdateCredentialsWithResolver(
   // A dead refresh token surfaces as an unrecoverable sentinel, not a falsy
   // result: without this guard the truthy sentinel would read as a success
   // and the helper would persist it as refreshed credentials.
-  if (!refreshResult || isUnrecoverableRefreshError(refreshResult)) {
+  const effectiveRefreshResult = refreshResult === NO_REFRESH_NEEDED ? null : refreshResult;
+  if (!effectiveRefreshResult || isUnrecoverableRefreshError(effectiveRefreshResult)) {
     if (connection.accessToken) {
       return { connection, refreshed: false };
     }
