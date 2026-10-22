@@ -67,7 +67,13 @@ export async function GET() {
       // Historical evidence is separate from current routability; a node that
       // drops its prefix still has history, but may not be an override target.
       const history = historyByNode.get(providerId);
-      if (history?.length) slot.historicalPrefixes = history;
+      // Only advertise provably unique, non-reserved historical claims to
+      // enrichment consumers. Losing nodes and reused public prefixes cannot
+      // authorize migration of an old namespace.
+      const safeHistory = history?.filter(
+        (snapshot) => historicalOwners.get(snapshot.prefix) === providerId
+      );
+      if (safeHistory?.length) slot.historicalPrefixes = safeHistory;
       if (compatibleNodeIds.has(providerId)) {
         slot.modelOverrideEligible = eligibleNodeIds.has(providerId);
       }
