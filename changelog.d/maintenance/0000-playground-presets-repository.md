@@ -1,0 +1,1 @@
+- **refactor(db):** move Playground preset persistence behind a Promise-based domain repository with a SQLite implementation; routes use the async path, legacy synchronous helpers stay SQLite-only (#17952)
