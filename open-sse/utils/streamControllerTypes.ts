@@ -20,6 +20,7 @@ export type StreamControllerOptions = {
   pendingRequestId?: string | null;
   clientResponseFormat?: string | null;
   clientAbortSignal?: AbortSignal | null;
+  correlationId?: string | null;
   allowCompletedToolHandoffGrace?: boolean;
   clientDisconnectGracePeriodMs?: number;
 };

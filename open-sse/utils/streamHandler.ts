@@ -232,6 +232,7 @@ export function createStreamController({
   pendingRequestId = null,
   clientResponseFormat,
   clientAbortSignal,
+  correlationId,
   allowCompletedToolHandoffGrace = false,
   clientDisconnectGracePeriodMs = 0,
 }: StreamControllerOptions = {}) {
@@ -438,6 +439,16 @@ export function createStreamController({
 
   if (clientAbortSignal && typeof clientAbortSignal.addEventListener === "function") {
     const handleClientAbort = () => {
+      if (provider === "abit-chatgpt-relay") {
+        const reason = clientAbortSignal.reason;
+        console.info("[ABIT_RELAY_TRACE]", JSON.stringify({
+          event: "client_request_signal_abort", correlation_id: correlationId || "unavailable",
+          provider, model, at: new Date().toISOString(), elapsed_ms: Date.now() - startTime,
+          source: "clientRawRequest.signal", reason_type:
+            reason instanceof Error ? reason.name : typeof reason === "string" ? (["client_closed", "request_signal_aborted", "deadline_exceeded", "timeout"].includes(reason) ? reason : "string_reason_redacted") : "unspecified",
+          client_connection_state: disconnected ? "disconnected" : "active",
+        }));
+      }
       const reason = clientAbortSignal.reason;
       if (isDeadlineAbortReason(reason)) {
         // An AbortSignal can represent an OmniRoute-owned deadline as well as
