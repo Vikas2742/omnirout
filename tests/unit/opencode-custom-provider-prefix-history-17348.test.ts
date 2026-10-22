@@ -272,3 +272,41 @@ test("#17348: agreeing historical quotes may be deduplicated safely", async () =
     assert.deepEqual(reconciled.get("ih/foo")?.pricing, { input: 2, output: 4 });
   });
 });
+
+
+test("#17348: historical display-only pricing slot cannot impersonate a live catalog owner", async () => {
+  const priceOnlySlot = {
+    id: "ag",
+    alias: "ag",
+    pricingOnly: true,
+    historicalPricingNamespace: true,
+    modelOverrideEligible: false,
+    models: [{ id: "foo", custom: true }, { id: "not-old", custom: true }],
+  };
+  await withMockedCatalog({ ...current, ag: priceOnlySlot }, {
+    ag: { foo: { input: 6 }, "not-old": { input: 42 } },
+  }, (overlay) => {
+    const resolved = reconcileHistoricalEnrichment(overlay, [{ id: "ih/foo" }, { id: "ih/not-old" }]);
+    assert.deepEqual(resolved.get("ih/foo")?.pricing, { input: 6 });
+    assert.equal(resolved.get("ih/not-old")?.pricing, undefined,
+      "pricing-only model without recorded provenance cannot be migrated");
+    assert.equal(overlay.get("ag/foo")?.providerCanonical, undefined,
+      "the display-only slot must not be treated as current ownership");
+  });
+});
+
+test("#17348: deleted compatible provider rows are not current enrichment evidence", async () => {
+  await withMockedCatalog({
+    [NODE]: {
+      id: NODE,
+      alias: NODE,
+      pricingOnly: true,
+      orphaned: true,
+      modelOverrideEligible: false,
+      models: [{ id: "deleted-model", custom: true }],
+    },
+  }, { [NODE]: { "deleted-model": { input: 80 } } }, (overlay) => {
+    assert.equal(overlay.get(NODE + "/deleted-model")?.providerCanonical, undefined);
+    assert.equal(overlay.get(NODE + "/deleted-model")?.providerAlias, undefined);
+  });
+});
