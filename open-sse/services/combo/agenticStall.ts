@@ -40,8 +40,9 @@
  * applyComboStepResponseGuards). It must NEVER throw or break the request
  * path: every failure mode returns null (not a stall).
  *
- * Kill switch: OMNIROUTE_AGENTIC_STALL_FAILOVER=0 disables classification
- * (default: enabled).
+ * Opt-in flag: OMNIROUTE_AGENTIC_STALL_FAILOVER=1 (or "true") enables
+ * classification. Default: OFF — new behavior-changing flags are opt-in. This
+ * module is classification only; no combo call site consumes the verdict yet.
  */
 
 export const AGENTIC_STALL_SIGNATURE = "agentic_stall_no_toolcall";
@@ -51,7 +52,8 @@ export const AGENTIC_STALL_SIGNATURE = "agentic_stall_no_toolcall";
 const MAX_STALL_INSPECT_BYTES = 1024 * 1024;
 
 export function isAgenticStallFailoverEnabled(): boolean {
-  return process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER !== "0";
+  const raw = (process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER ?? "").trim().toLowerCase();
+  return raw === "1" || raw === "true";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

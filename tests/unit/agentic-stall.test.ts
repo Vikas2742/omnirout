@@ -18,6 +18,7 @@ import {
   AGENTIC_STALL_SIGNATURE,
   classifyAgenticStallResponse,
   contentLooksLikeStallNarration,
+  isAgenticStallFailoverEnabled,
   isInstructedTerminalEcho,
   isIntentionalSilenceNarration,
   requestExpectsToolCall,
@@ -236,6 +237,15 @@ describe("intentional-silence tokens are NOT stalls", () => {
 // combo. The response is turn-over BY DESIGN because the REQUEST asked for that
 // exact literal — a different class from the drift the guard exists to catch.
 describe("lane-instructed terminal literals are NOT stalls", () => {
+  // classifyAgenticStallResponse is opt-in (default OFF): enable it so the null
+  // verdicts below prove the exemption, not a disabled classifier.
+  beforeEach(() => {
+    process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER = "1";
+  });
+  afterEach(() => {
+    delete process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER;
+  });
+
   const brief = (instruction: string) => ({
     model: "some/model",
     tools: TOOLS,
@@ -367,7 +377,8 @@ describe("lane-instructed terminal literals are NOT stalls", () => {
 
 describe("classifyAgenticStallResponse", () => {
   beforeEach(() => {
-    delete process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER;
+    // Opt-in flag (default OFF): the classification cases below run with it enabled.
+    process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER = "1";
   });
   afterEach(() => {
     delete process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER;
@@ -568,8 +579,9 @@ describe("classifyAgenticStallResponse", () => {
     assert.equal(verdict, null);
   });
 
-  test("kill switch: OMNIROUTE_AGENTIC_STALL_FAILOVER=0 → never classifies", async () => {
-    process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER = "0";
+  test("default OFF: OMNIROUTE_AGENTIC_STALL_FAILOVER unset → never classifies", async () => {
+    delete process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER;
+    assert.equal(isAgenticStallFailoverEnabled(), false);
     const verdict = await classifyAgenticStallResponse({
       body: openAiToolTailBody(),
       response: jsonResponse({
@@ -577,6 +589,27 @@ describe("classifyAgenticStallResponse", () => {
       }),
     });
     assert.equal(verdict, null);
+  });
+
+  test("OMNIROUTE_AGENTIC_STALL_FAILOVER=0 / false / empty → never classifies", async () => {
+    for (const value of ["0", "false", ""]) {
+      process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER = value;
+      assert.equal(isAgenticStallFailoverEnabled(), false, `value=${JSON.stringify(value)}`);
+      const verdict = await classifyAgenticStallResponse({
+        body: openAiToolTailBody(),
+        response: jsonResponse({
+          choices: [{ finish_reason: "stop", message: { role: "assistant", content: STALL_TEXT } }],
+        }),
+      });
+      assert.equal(verdict, null, `value=${JSON.stringify(value)}`);
+    }
+  });
+
+  test("OMNIROUTE_AGENTIC_STALL_FAILOVER=1 / true enables classification", () => {
+    for (const value of ["1", "true", "TRUE"]) {
+      process.env.OMNIROUTE_AGENTIC_STALL_FAILOVER = value;
+      assert.equal(isAgenticStallFailoverEnabled(), true, `value=${JSON.stringify(value)}`);
+    }
   });
 
   test("unrecognized content-type → null (cannot classify, never breaks path)", async () => {
