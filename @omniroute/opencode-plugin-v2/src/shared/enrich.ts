@@ -2,6 +2,13 @@ import type { LegacyModel as ModelV2 } from "../legacy-model.js";
 import { buildModelDisplayName } from "./naming.js";
 import type { FreeModelFreeType } from "./naming.js";
 
+export interface HistoricalPricingCandidate {
+  /** Fully qualified historical public ID, proven by the old node snapshot. */
+  previousPublicId: string;
+  /** Price from the original node/legacy namespace. No zero-cost fallback. */
+  pricing: NonNullable<OmniRouteEnrichmentEntry["pricing"]>;
+}
+
 export interface OmniRouteEnrichmentEntry {
   /** Human-readable display name. Replaces ModelV2.name when present. */
   name?: string;
@@ -40,10 +47,58 @@ export interface OmniRouteEnrichmentEntry {
   monthlyTokens?: number;
   /** Credit token budget for credit-based free models. */
   creditTokens?: number;
+  /** Pending evidence only: never publish this price before served-ID validation. */
+  historicalPricingCandidates?: HistoricalPricingCandidate[];
 }
 
 /** Map keyed by full model id (possibly namespaced, e.g. `cc/claude-sonnet-4-6`). */
 export type OmniRouteEnrichmentMap = Map<string, OmniRouteEnrichmentEntry>;
+
+/**
+ * Reconcile a historical price only against ACTUALLY served model IDs.
+ * This runs on every publish, including warm disk snapshots and partial
+ * catalog refreshes. A live `ih/ag/foo` always wins over an old `ag/foo`
+ * hypothesis, and a current price always wins over historical candidates.
+ *
+ * The function does not mutate the cached source map: the same stored overlay
+ * can safely be re-projected after /v1/models changes during a prefix rename.
+ */
+export function reconcileHistoricalEnrichment(
+  enrichment: OmniRouteEnrichmentMap,
+  servedModels: ReadonlyArray<{ id: string }>
+): OmniRouteEnrichmentMap {
+  const served = new Set(servedModels.map((item) => item.id));
+  const result: OmniRouteEnrichmentMap = new Map();
+  for (const [key, entry] of enrichment) {
+    const alias = entry.providerAlias;
+    const isCompatible =
+      typeof entry.providerCanonical === "string" &&
+      /^(?:openai-compatible-(?:chat|responses)-|anthropic-compatible-)/.test(
+        entry.providerCanonical
+      );
+    // Old prefixed catalog entries cached before a rename are not evidence
+    // for any new current route; drop only unserved compatible namespaced keys.
+    if (isCompatible && alias && key.startsWith(`${alias}/`) && !served.has(key)) continue;
+    const candidates = entry.historicalPricingCandidates;
+    if (!candidates?.length) {
+      result.set(key, entry);
+      continue;
+    }
+    const output = { ...entry };
+    if (
+      alias &&
+      served.has(key) &&
+      output.pricing === undefined &&
+      candidates.length === 1 &&
+      !served.has(`${alias}/${candidates[0].previousPublicId}`)
+    ) {
+      output.pricing = { ...candidates[0].pricing };
+    }
+    result.set(key, output);
+  }
+  return result;
+}
+
 
 /**
  * Free-tier match between the enrichment overlay and the served catalog:
