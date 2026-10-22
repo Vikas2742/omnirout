@@ -4,9 +4,13 @@
  * Payload-aware cascading failover protection (Anti-Avalanche Guard).
  *
  * Prevents domino exhaustion across multiple credentials when an upstream
- * rate limit (HTTP 429) or payload rejection (HTTP 413 / context overflow) is
+ * rate limit (HTTP 429) or context-overflow rejection (HTTP 400) is
  * triggered by the payload size, prompt token volume, or TPM/burst limits
  * rather than transient per-key exhaustion.
+ *
+ * HTTP 413 is deliberately NOT handled here: accountFallback.ts treats
+ * PAYLOAD_TOO_LARGE as a retryable fallback (#13350), so another account or
+ * provider may still accept the payload.
  *
  * When a request fails with 429 and:
  *  1. Upstream explicitly indicates token rate / TPM exhaustion (e.g. Gemini
@@ -17,6 +21,8 @@
  * the guard suppresses cascading fallback across the remaining active credentials
  * in the pool. This prevents 1 oversized request from knocking down all N keys
  * and triggering escalated 1800s model lockouts on healthy accounts.
+ *
+ * Tuning is env-only (OMNIROUTE_AVALANCHE_*, see docs/reference/ENVIRONMENT.md).
  */
 
 import { classifyGeminiQuotaMetricFromText, isTpmExhausted } from "../geminiRateLimitTracker.ts";
@@ -34,16 +40,11 @@ const EXPLICIT_TPM_PATTERNS = [
   /\btoken\s*rate\s*limit\b/i,
   /\binput\s*tokens?\s*exceed(?:ed)?\b/i,
   /\brate_limit_exceeded.*tokens?\b/i,
-  /\bexceeded.*token.*quota\b/i,
-  /\btoken_count\b/i,
   /\btoken\s*limit\s*reached\b/i,
 ];
 
 export type AvalancheFailureReason =
-  | "explicit_tpm_limit"
-  | "oversized_payload_rate_limit"
-  | "payload_too_large"
-  | "context_length_exceeded";
+  "explicit_tpm_limit" | "oversized_payload_rate_limit" | "context_length_exceeded";
 
 export interface AvalancheEvaluationContext {
   status: number;
@@ -52,7 +53,6 @@ export interface AvalancheEvaluationContext {
   model?: string | null;
   promptTokens?: number | null;
   fallbackAttemptCount?: number;
-  settings?: Record<string, unknown> | null;
 }
 
 export interface AvalancheRiskResult {
@@ -72,53 +72,33 @@ export interface AvalancheSettings {
   burstCooldownMs: number;
 }
 
-export function resolveAvalancheSettings(
-  settings?: Record<string, unknown> | null
-): AvalancheSettings {
+function readPositiveNumber(raw: string | undefined, fallback: number, allowZero = false): number {
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  return (allowZero ? parsed >= 0 : parsed > 0) ? parsed : fallback;
+}
+
+export function resolveAvalancheSettings(): AvalancheSettings {
   const envEnabled = process.env.OMNIROUTE_AVALANCHE_PROTECTION_ENABLED;
-  const enabled =
-    envEnabled === "false" || envEnabled === "0"
-      ? false
-      : typeof settings?.avalancheProtectionEnabled === "boolean"
-        ? settings.avalancheProtectionEnabled
-        : true;
-
-  const parsedThreshold = Number(
-    process.env.OMNIROUTE_AVALANCHE_TOKEN_THRESHOLD ||
-      settings?.avalancheTokenThreshold ||
-      DEFAULT_AVALANCHE_TOKEN_THRESHOLD
-  );
-  const tokenThreshold =
-    Number.isFinite(parsedThreshold) && parsedThreshold > 0
-      ? parsedThreshold
-      : DEFAULT_AVALANCHE_TOKEN_THRESHOLD;
-
-  const parsedMaxRetries = Number(
-    process.env.OMNIROUTE_AVALANCHE_MAX_RETRIES ||
-      settings?.avalancheMaxRetries ||
-      DEFAULT_AVALANCHE_MAX_RETRIES
-  );
-  const maxRetries =
-    Number.isFinite(parsedMaxRetries) && parsedMaxRetries >= 0
-      ? parsedMaxRetries
-      : DEFAULT_AVALANCHE_MAX_RETRIES;
-
-  const parsedCooldown = Number(
-    process.env.OMNIROUTE_AVALANCHE_BURST_COOLDOWN_MS ||
-      settings?.avalancheBurstCooldownMs ||
-      DEFAULT_AVALANCHE_BURST_COOLDOWN_MS
-  );
-  const burstCooldownMs =
-    Number.isFinite(parsedCooldown) && parsedCooldown > 0
-      ? parsedCooldown
-      : DEFAULT_AVALANCHE_BURST_COOLDOWN_MS;
+  const enabled = !(envEnabled === "false" || envEnabled === "0");
 
   return {
     enabled,
-    tokenThreshold,
+    tokenThreshold: readPositiveNumber(
+      process.env.OMNIROUTE_AVALANCHE_TOKEN_THRESHOLD,
+      DEFAULT_AVALANCHE_TOKEN_THRESHOLD
+    ),
     massiveThreshold: MASSIVE_PAYLOAD_TOKEN_THRESHOLD,
-    maxRetries,
-    burstCooldownMs,
+    maxRetries: readPositiveNumber(
+      process.env.OMNIROUTE_AVALANCHE_MAX_RETRIES,
+      DEFAULT_AVALANCHE_MAX_RETRIES,
+      true
+    ),
+    burstCooldownMs: readPositiveNumber(
+      process.env.OMNIROUTE_AVALANCHE_BURST_COOLDOWN_MS,
+      DEFAULT_AVALANCHE_BURST_COOLDOWN_MS
+    ),
   };
 }
 
@@ -140,7 +120,7 @@ export function isExplicitTokenRateLimitError(
 }
 
 export function evaluateAvalancheRisk(ctx: AvalancheEvaluationContext): AvalancheRiskResult {
-  const settings = resolveAvalancheSettings(ctx.settings);
+  const settings = resolveAvalancheSettings();
   const promptTokens =
     typeof ctx.promptTokens === "number" && ctx.promptTokens >= 0 ? ctx.promptTokens : 0;
   const attempt =
@@ -159,19 +139,7 @@ export function evaluateAvalancheRisk(ctx: AvalancheEvaluationContext): Avalanch
     };
   }
 
-  // 1. HTTP 413: Payload Too Large
-  if (ctx.status === 413) {
-    return {
-      isAvalancheRisk: true,
-      reason: "payload_too_large",
-      shouldSuppressFallback: true,
-      suggestedCooldownMs: settings.burstCooldownMs,
-      promptTokens,
-      explanation: `[OmniRoute Anti-Avalanche] Request rejected with HTTP 413 (Payload Too Large) for ${provider}/${model}. Cascading fallback suppressed.`,
-    };
-  }
-
-  // 2. HTTP 400: Context length / overflow
+  // 1. HTTP 400: Context length / overflow
   if (ctx.status === 400 && isContextOverflow400(ctx.errorText)) {
     return {
       isAvalancheRisk: true,
@@ -183,9 +151,9 @@ export function evaluateAvalancheRisk(ctx: AvalancheEvaluationContext): Avalanch
     };
   }
 
-  // 3. HTTP 429: Rate limited
+  // 2. HTTP 429: Rate limited
   if (ctx.status === 429) {
-    // 3a. Explicit TPM / Token Limit in error body or metric
+    // 2a. Explicit TPM / Token Limit in error body or metric
     if (isExplicitTokenRateLimitError(ctx.status, ctx.errorText, ctx.provider, ctx.model)) {
       return {
         isAvalancheRisk: true,
@@ -197,7 +165,7 @@ export function evaluateAvalancheRisk(ctx: AvalancheEvaluationContext): Avalanch
       };
     }
 
-    // 3b. Massive payload (>= 100k tokens)
+    // 2b. Massive payload (>= 100k tokens)
     if (promptTokens >= settings.massiveThreshold) {
       return {
         isAvalancheRisk: true,
@@ -209,7 +177,7 @@ export function evaluateAvalancheRisk(ctx: AvalancheEvaluationContext): Avalanch
       };
     }
 
-    // 3c. Oversized payload (>= 50k tokens) with bounded retry limit
+    // 2c. Oversized payload (>= 50k tokens) with bounded retry limit
     if (promptTokens >= settings.tokenThreshold) {
       const shouldSuppress = attempt >= settings.maxRetries;
       return {
@@ -247,4 +215,23 @@ export function formatAntiAvalancheMessage(
       : ` Tip: Consider reducing context size or waiting for rate limit window to clear.`;
   const upstream = originalError ? ` Upstream error: ${originalError}` : "";
   return `${base}${suggestion}${upstream}`;
+}
+
+/**
+ * Tags a suppressed failover on the client-facing response. Best-effort: the headers of
+ * some Response objects (e.g. Response.error() or a response built by a fetch wrapper) are
+ * immutable and .set() throws, which must never break the failover/error path.
+ */
+export function applyAvalancheSuppressionHeaders(
+  response: Response | null | undefined,
+  reason?: AvalancheFailureReason
+): void {
+  const headers = response?.headers;
+  if (!headers) return;
+  try {
+    headers.set("x-omniroute-anti-avalanche", "suppressed");
+    if (reason) headers.set("x-omniroute-avalanche-reason", reason);
+  } catch {
+    // immutable headers: the suppression is still enforced, only the debug tag is dropped.
+  }
 }

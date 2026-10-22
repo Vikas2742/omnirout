@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
+// The markAccountUnavailable tests below create provider connections: keep them off the real
+// home database.
+const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-anti-avalanche-"));
+const previousDataDir = process.env.DATA_DIR;
+process.env.DATA_DIR = TEST_DATA_DIR;
 import {
+  applyAvalancheSuppressionHeaders,
   evaluateAvalancheRisk,
   formatAntiAvalancheMessage,
   resolveAvalancheSettings,
@@ -107,7 +117,9 @@ test("Anti-Avalanche: oversized payload (50k-100k tokens) allows 1 retry then su
   assert.match(attempt1.explanation || "", /Cascading fallback suppressed/);
 });
 
-test("Anti-Avalanche: HTTP 413 Payload Too Large suppresses failover immediately", () => {
+test("Anti-Avalanche: HTTP 413 Payload Too Large keeps the #13350 fallback contract (not suppressed)", () => {
+  // accountFallback.ts classifies 413 PAYLOAD_TOO_LARGE as a retryable fallback (#13350):
+  // another account/provider may accept the payload, so the guard must not suppress it.
   const result = evaluateAvalancheRisk({
     status: 413,
     errorText: "Request entity too large",
@@ -117,9 +129,27 @@ test("Anti-Avalanche: HTTP 413 Payload Too Large suppresses failover immediately
     fallbackAttemptCount: 0,
   });
 
-  assert.equal(result.isAvalancheRisk, true);
-  assert.equal(result.reason, "payload_too_large");
-  assert.equal(result.shouldSuppressFallback, true);
+  assert.equal(result.isAvalancheRisk, false);
+  assert.equal(result.shouldSuppressFallback, false);
+  assert.equal(result.suggestedCooldownMs, 0);
+});
+
+test("Anti-Avalanche: generic token_count / token-quota wording on a 429 is not an explicit TPM limit", () => {
+  for (const errorText of [
+    "Invalid request: token_count field is required",
+    "You exceeded your current token quota, please check your plan and billing details.",
+  ]) {
+    const result = evaluateAvalancheRisk({
+      status: 429,
+      errorText,
+      provider: "openai",
+      model: "gpt-4o",
+      promptTokens: 1200,
+      fallbackAttemptCount: 0,
+    });
+    assert.equal(result.isAvalancheRisk, false, errorText);
+    assert.equal(result.shouldSuppressFallback, false, errorText);
+  }
 });
 
 test("Anti-Avalanche: HTTP 400 context length overflow suppresses failover immediately", () => {
@@ -138,19 +168,25 @@ test("Anti-Avalanche: HTTP 400 context length overflow suppresses failover immed
   assert.equal(result.shouldSuppressFallback, true);
 });
 
-test("Anti-Avalanche: disabled via settings bypasses protection", () => {
-  const result = evaluateAvalancheRisk({
-    status: 429,
-    errorText: "generate_content_free_tier_input_token_count",
-    provider: "gemini",
-    model: "gemini-3.8-flash",
-    promptTokens: 115618,
-    fallbackAttemptCount: 5,
-    settings: { avalancheProtectionEnabled: false },
-  });
+test("Anti-Avalanche: disabled via OMNIROUTE_AVALANCHE_PROTECTION_ENABLED bypasses protection", () => {
+  const previous = process.env.OMNIROUTE_AVALANCHE_PROTECTION_ENABLED;
+  process.env.OMNIROUTE_AVALANCHE_PROTECTION_ENABLED = "false";
+  try {
+    const result = evaluateAvalancheRisk({
+      status: 429,
+      errorText: "generate_content_free_tier_input_token_count",
+      provider: "gemini",
+      model: "gemini-3.8-flash",
+      promptTokens: 115618,
+      fallbackAttemptCount: 5,
+    });
 
-  assert.equal(result.isAvalancheRisk, false);
-  assert.equal(result.shouldSuppressFallback, false);
+    assert.equal(result.isAvalancheRisk, false);
+    assert.equal(result.shouldSuppressFallback, false);
+  } finally {
+    if (previous === undefined) delete process.env.OMNIROUTE_AVALANCHE_PROTECTION_ENABLED;
+    else process.env.OMNIROUTE_AVALANCHE_PROTECTION_ENABLED = previous;
+  }
 });
 
 test("Anti-Avalanche: formatAntiAvalancheMessage provides actionable guidance", () => {
@@ -168,17 +204,41 @@ test("Anti-Avalanche: formatAntiAvalancheMessage provides actionable guidance", 
   assert.match(msg, /RESOURCE_EXHAUSTED/);
 });
 
-test("Anti-Avalanche: resolveAvalancheSettings respects custom thresholds", () => {
-  const custom = resolveAvalancheSettings({
-    avalancheTokenThreshold: 30000,
-    avalancheMaxRetries: 2,
-    avalancheBurstCooldownMs: 45000,
-  });
+test("Anti-Avalanche: resolveAvalancheSettings respects env thresholds", () => {
+  const keys = [
+    "OMNIROUTE_AVALANCHE_TOKEN_THRESHOLD",
+    "OMNIROUTE_AVALANCHE_MAX_RETRIES",
+    "OMNIROUTE_AVALANCHE_BURST_COOLDOWN_MS",
+  ] as const;
+  const previous = keys.map((key) => process.env[key]);
+  process.env.OMNIROUTE_AVALANCHE_TOKEN_THRESHOLD = "30000";
+  process.env.OMNIROUTE_AVALANCHE_MAX_RETRIES = "2";
+  process.env.OMNIROUTE_AVALANCHE_BURST_COOLDOWN_MS = "45000";
+  try {
+    const custom = resolveAvalancheSettings();
+    assert.equal(custom.enabled, true);
+    assert.equal(custom.tokenThreshold, 30000);
+    assert.equal(custom.maxRetries, 2);
+    assert.equal(custom.burstCooldownMs, 45000);
+  } finally {
+    keys.forEach((key, index) => {
+      const value = previous[index];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    });
+  }
+});
 
-  assert.equal(custom.enabled, true);
-  assert.equal(custom.tokenThreshold, 30000);
-  assert.equal(custom.maxRetries, 2);
-  assert.equal(custom.burstCooldownMs, 45000);
+test("Anti-Avalanche: suppression headers are best-effort on an immutable response", () => {
+  const mutable = new Response("x", { status: 429 });
+  applyAvalancheSuppressionHeaders(mutable, "explicit_tpm_limit");
+  assert.equal(mutable.headers.get("x-omniroute-anti-avalanche"), "suppressed");
+  assert.equal(mutable.headers.get("x-omniroute-avalanche-reason"), "explicit_tpm_limit");
+
+  // Response.error() has immutable headers: .set() throws a TypeError.
+  const immutable = Response.error();
+  assert.doesNotThrow(() => applyAvalancheSuppressionHeaders(immutable, "explicit_tpm_limit"));
+  assert.doesNotThrow(() => applyAvalancheSuppressionHeaders(null, undefined));
 });
 
 test("Anti-Avalanche: markAccountUnavailable honors suppressFallback and bounds lockout cooldown", async () => {
@@ -236,4 +296,12 @@ test("Anti-Avalanche: normal 429 without suppressFallback still allows fallback"
   );
 
   assert.equal(result.shouldFallback, true, "normal 429 must allow fallback across accounts");
+});
+
+test.after(async () => {
+  const core = await import("../../src/lib/db/core.ts");
+  core.resetDbInstance();
+  if (previousDataDir === undefined) delete process.env.DATA_DIR;
+  else process.env.DATA_DIR = previousDataDir;
+  fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
