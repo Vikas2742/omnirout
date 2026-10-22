@@ -10,15 +10,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
-import {
-  intelligenceOverrideRequestSchema,
-} from "@/shared/validation/schemas";
+import { intelligenceOverrideRequestSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
 import {
   setUserFitnessOverrideEntry,
   deleteUserFitnessOverrideEntry,
 } from "@/lib/db/modelIntelligence";
+import { invalidateFitnessCache } from "@omniroute/open-sse/services/autoCombo/taskFitness";
 
 function normalizeModel(model: string): string {
   return model.trim().toLowerCase();
@@ -59,9 +58,6 @@ export async function POST(request: NextRequest) {
 
     setUserFitnessOverrideEntry(normalizedModel, normalizedCategory, clampedScore);
 
-    const { invalidateFitnessCache } = await import(
-      "@/open-sse/services/autoCombo/taskFitness"
-    );
     invalidateFitnessCache();
 
     console.info(
@@ -82,10 +78,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (err) {
-    return NextResponse.json(
-      { error: sanitizeErrorMessage(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: sanitizeErrorMessage(err) }, { status: 500 });
   }
 }
 
@@ -127,9 +120,6 @@ export async function DELETE(request: NextRequest) {
     const normalizedCategory = normalizeCategory(category);
     const deleted = deleteUserFitnessOverrideEntry(normalizedModel, normalizedCategory);
 
-    const { invalidateFitnessCache } = await import(
-      "@/open-sse/services/autoCombo/taskFitness"
-    );
     invalidateFitnessCache();
 
     console.info(
@@ -138,9 +128,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, deleted }, { status: 200 });
   } catch (err) {
-    return NextResponse.json(
-      { error: sanitizeErrorMessage(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: sanitizeErrorMessage(err) }, { status: 500 });
   }
 }

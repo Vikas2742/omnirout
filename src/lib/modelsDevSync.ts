@@ -682,8 +682,12 @@ export function upsertSyncedCapabilities(
       ...persistedModels,
     };
   }
-  if (changed) invalidateDbCache("model-capabilities");
-  _triggerTierRebuild("upsertSyncedCapabilities");
+  if (changed) {
+    invalidateDbCache("model-capabilities");
+    // Only a semantic capability change can move a tier; the OpenRouter catalog
+    // walk calls this on every read and must not re-derive the table each time.
+    _triggerTierRebuild("upsertSyncedCapabilities");
+  }
 }
 
 /**

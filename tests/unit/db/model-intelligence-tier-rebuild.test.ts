@@ -143,7 +143,13 @@ describe("buildModelsDevTierEntries", () => {
     // config/quality/model-lifecycle.json fixture this module reads.
     seedCapabilities([
       { provider: "openai", modelId: "chatgpt-4o-latest", reasoning: true, toolCall: true },
-      { provider: "openai", modelId: "gpt-4o", reasoning: false, toolCall: true, limitContext: 128000 },
+      {
+        provider: "openai",
+        modelId: "gpt-4o",
+        reasoning: false,
+        toolCall: true,
+        limitContext: 128000,
+      },
     ]);
 
     const entries = mi.buildModelsDevTierEntries();
@@ -267,8 +273,35 @@ describe("rebuildModelsDevTierIntelligence", () => {
 
     const latest = mi.getLatestSyncedAt("models_dev_tier");
     assert.ok(latest, "synced_at should be populated after rebuild");
-    const ageMs = Date.now() - new Date(latest + "Z".replace(/Z?$/, latest.endsWith("Z") ? "" : "Z")).getTime();
+    const ageMs =
+      Date.now() - new Date(latest + "Z".replace(/Z?$/, latest.endsWith("Z") ? "" : "Z")).getTime();
     assert.ok(ageMs < 60_000, "rebuild timestamp should be within the last minute");
+  });
+});
+
+describe("rebuildModelsDevTierIntelligence cache coherence", () => {
+  beforeEach(() => {
+    resetStorage();
+  });
+
+  it("bumps the write generation so cached fitness lookups (incl. misses) are dropped", async () => {
+    const generation = await import("../../../src/lib/db/modelIntelligenceGeneration.ts");
+    seedCapabilities([{ provider: "a", modelId: "model-x", toolCall: true, reasoning: true }]);
+
+    const before = generation.getModelIntelligenceWriteGeneration();
+    mi.rebuildModelsDevTierIntelligence();
+    assert.ok(
+      generation.getModelIntelligenceWriteGeneration() > before,
+      "a tier refresh is a model_intelligence write and must invalidate in-memory readers"
+    );
+  });
+
+  it("reports the real number of rows upserted", () => {
+    seedCapabilities([
+      { provider: "a", modelId: "model-x", toolCall: true, reasoning: true },
+      { provider: "b", modelId: "model-y", toolCall: true },
+    ]);
+    assert.strictEqual(mi.rebuildModelsDevTierIntelligence().upserted, 14);
   });
 });
 

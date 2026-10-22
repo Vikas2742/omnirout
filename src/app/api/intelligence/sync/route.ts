@@ -12,9 +12,50 @@ import { intelligenceSyncRequestSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
 import {
+  buildModelsDevTierEntries,
   getIntelligenceSourcesHealth,
   rebuildModelsDevTierIntelligence,
 } from "@/lib/db/modelIntelligence";
+
+async function runArenaSync(dryRun: boolean) {
+  const { syncArenaElo } = await import("@/lib/arenaEloSync");
+  return syncArenaElo(dryRun);
+}
+
+interface IntelligenceSyncOptions {
+  dryRun?: boolean;
+  rebuildTier?: boolean;
+  syncArenaElo?: boolean;
+}
+
+/**
+ * Run the requested intelligence sources.
+ *
+ * Back-compat: a body without an explicit source flag (including the historical
+ * `{}` and `{ dryRun }`) is an Arena ELO sync, exactly as before this route
+ * learned about `rebuildTier`. Arena keeps its historical top-level response
+ * shape (and its 502 on failure); `tier` is additive.
+ */
+async function runIntelligenceSync(
+  options: IntelligenceSyncOptions
+): Promise<{ body: Record<string, unknown>; status: number }> {
+  const { dryRun = false, rebuildTier = false, syncArenaElo = false } = options;
+
+  const arenaResult = syncArenaElo || !rebuildTier ? await runArenaSync(dryRun) : null;
+
+  let tier: { upserted: number; pruned: number } | null = null;
+  if (rebuildTier) {
+    // dryRun previews the rows a rebuild would write and touches nothing.
+    const rebuilt = dryRun
+      ? { upserted: buildModelsDevTierEntries().length, pruned: 0 }
+      : rebuildModelsDevTierIntelligence();
+    tier = { upserted: rebuilt.upserted, pruned: rebuilt.pruned };
+  }
+
+  const body: Record<string, unknown> = arenaResult ? { ...arenaResult } : { success: true };
+  if (tier) body.tier = tier;
+  return { body, status: arenaResult && !arenaResult.success ? 502 : 200 };
+}
 
 export async function POST(request: NextRequest) {
   const authError = await requireManagementAuth(request);
@@ -40,36 +81,10 @@ export async function POST(request: NextRequest) {
     if (isValidationFailure(validation)) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-    const { dryRun = false, rebuildTier = false, syncArenaElo = false } = validation.data;
-
-    const { syncArenaElo: _syncArenaElo, getArenaEloSyncStatus } = await import("@/lib/arenaEloSync");
-
-    let arenaResult: Awaited<ReturnType<typeof _syncArenaElo>> | null = null;
-    if (syncArenaElo || (!dryRun && !rebuildTier && !syncArenaElo)) {
-      arenaResult = await _syncArenaElo(dryRun);
-    }
-
-    let tierResult: { success: boolean; source: string; modelCount: number; pruned: number } | null = null;
-    if (rebuildTier) {
-      if (dryRun) {
-        tierResult = { success: true, source: "models_dev_tier", modelCount: 0, pruned: 0 };
-      } else {
-        tierResult = rebuildModelsDevTierIntelligence();
-      }
-    }
-
-    const merged: Record<string, unknown> = { success: true };
-    if (arenaResult) Object.assign(merged, arenaResult);
-    if (tierResult) {
-      merged.tier = { upserted: tierResult.modelCount * 7, pruned: tierResult.pruned };
-    }
-
-    return NextResponse.json(merged, { status: 200 });
+    const { body, status } = await runIntelligenceSync(validation.data);
+    return NextResponse.json(body, { status });
   } catch (err) {
-    return NextResponse.json(
-      { error: sanitizeErrorMessage(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: sanitizeErrorMessage(err) }, { status: 500 });
   }
 }
 
@@ -87,10 +102,7 @@ export async function GET(request: NextRequest) {
       sourcesDetail,
     });
   } catch (err) {
-    return NextResponse.json(
-      { error: sanitizeErrorMessage(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: sanitizeErrorMessage(err) }, { status: 500 });
   }
 }
 
@@ -103,9 +115,6 @@ export async function DELETE(request: NextRequest) {
     clearSyncedIntelligence();
     return NextResponse.json({ success: true, message: "Synced intelligence data cleared" });
   } catch (err) {
-    return NextResponse.json(
-      { error: sanitizeErrorMessage(err) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: sanitizeErrorMessage(err) }, { status: 500 });
   }
 }
