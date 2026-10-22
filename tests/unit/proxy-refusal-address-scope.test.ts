@@ -45,7 +45,7 @@ test.after(() => {
 
 let seq = 0;
 
-async function dbTrio(scope = "provider", scopeId: string | null = "opencode") {
+async function dbTrio(scope = "provider", scopeId: string | null = "opencode-go") {
   const members: Array<{ type: string; host: string; port: number }> = [];
   for (let i = 0; i < 3; i++) {
     seq++;
@@ -60,7 +60,7 @@ async function dbTrio(scope = "provider", scopeId: string | null = "opencode") {
 function logEgress(row: { type: string; host: string; port: number }, egressIp: string) {
   proxyLogger.logProxyEvent({
     status: "success",
-    provider: "opencode",
+    provider: "opencode-go",
     targetUrl: "https://api.opencode.ai/chat",
     proxy: { type: "http", host: row.host, port: row.port },
     egressIp,
@@ -71,7 +71,7 @@ function flush() {
   proxyLogger.flushProxyLogsSync();
 }
 
-async function pick(scope = "provider", scopeId: string | null = "opencode") {
+async function pick(scope = "provider", scopeId: string | null = "opencode-go") {
   const resolved = await proxiesDb.resolveProxyForScopeFromRegistry(scope, scopeId);
   return (resolved as { proxy: { host: string } }).proxy.host;
 }
@@ -127,7 +127,7 @@ test("a held sticky member sharing the refused address advances to the next elig
   logEgress(b, "203.0.113.7");
   logEgress(c, "203.0.113.44");
   flush();
-  await proxiesDb.setScopeRotationStrategy("provider", "opencode", "sticky", {
+  await proxiesDb.setScopeRotationStrategy("provider", "opencode-go", "sticky", {
     stickyWindowMinutes: 30,
   });
   const heldHost = await pick();
@@ -156,17 +156,17 @@ test("without a provider the shared address keeps the plain hot-egress order", a
 test("a refusal born on one bucketed scope stays eligible on another scope sharing the entry", async () => {
   // One proxy entry shared by two provider pools (the assignments table allows
   // it), each pool with its own standby: the refusal below is born through the
-  // production traffic path for opencode only, and the openai pool must keep
+  // production traffic path for opencode-go only, and the openai pool must keep
   // serving the shared entry through the legacy path.
   seq++;
   const shared = { type: "http", host: `10.11.0.${seq}`, port: 9300 + seq, name: `shared ${seq}` };
   const sharedProxy = await proxiesDb.createProxy(shared);
-  await proxiesDb.addProxyToScopePool("provider", "opencode", sharedProxy.id);
+  await proxiesDb.addProxyToScopePool("provider", "opencode-go", sharedProxy.id);
   await proxiesDb.addProxyToScopePool("provider", "openai", sharedProxy.id);
   seq++;
   const spareA = { type: "http", host: `10.11.0.${seq}`, port: 9300 + seq, name: `spare ${seq}` };
   const proxyA = await proxiesDb.createProxy(spareA);
-  await proxiesDb.addProxyToScopePool("provider", "opencode", proxyA.id);
+  await proxiesDb.addProxyToScopePool("provider", "opencode-go", proxyA.id);
   seq++;
   const spareB = { type: "http", host: `10.11.0.${seq}`, port: 9300 + seq, name: `spare ${seq}` };
   const proxyB = await proxiesDb.createProxy(spareB);
@@ -175,12 +175,12 @@ test("a refusal born on one bucketed scope stays eligible on another scope shari
   logEgress(spareA, "203.0.113.44");
   logEgress(spareB, "203.0.113.99");
   flush();
-  outcome.noteProxyOutcome("opencode", {
+  outcome.noteProxyOutcome("opencode-go", {
     proxy: { type: "http", host: shared.host, port: shared.port },
     upstreamStatus: 429,
   });
-  // The opencode pool skips the refused shared entry and serves its standby;
+  // The opencode-go pool skips the refused shared entry and serves its standby;
   // the openai pool is outside the gate and keeps the legacy entry-level read.
   assert.equal(await pick("provider", "openai"), spareB.host);
-  assert.equal(await pick("provider", "opencode"), spareA.host);
+  assert.equal(await pick("provider", "opencode-go"), spareA.host);
 });
