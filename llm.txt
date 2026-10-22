@@ -389,7 +389,7 @@ diagnostics) plus **memory**, **skill**, **agentSkill**, **githubSkill**, **pool
 
 8. **ProviderIcon component:** Unified icon system using `@lobehub/icons` (130+ SVG) with PNG fallback and generic icon fallback chain. Used on providers, dashboard, and agents pages.
 
-9. **DB architecture:** `localDb.ts` is a re-export layer only — real logic lives in 147 `src/lib/db/` modules with 210 SQL migrations.
+9. **DB architecture:** `localDb.ts` is a re-export layer only — real logic lives in 147 `src/lib/db/` modules with 210 SQL migrations. Usage analytics reads the unified cost source once via `getModelUsageMatrixRows` and rolls every dashboard panel up in memory (`deriveDailyCostRows`, `deriveModelUsageRows`, `deriveProviderCostRows`, `deriveProviderUsageRows`, `deriveServiceTierUsageRows`), so a new panel costs no extra SQL pass.
 
 10. **Upstream headers:** Custom headers merged in executors after default auth; same header name replaces executor value. Forbidden header names in `src/shared/constants/upstreamHeaders.ts`.
 

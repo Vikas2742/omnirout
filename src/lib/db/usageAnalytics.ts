@@ -166,9 +166,41 @@ export interface DailyCostRow extends CostTokenFields {
 }
 
 /**
- * Per-day, per-provider, per-model token breakdown for cost calculation.
+ * The one read the dashboard panels share. Every model/provider/service-tier
+ * panel groups on the same four keys, so each extra panel used to cost another
+ * full pass over the unified source plus another temp B-tree sort. The keys are
+ * mutually unique (all four from one row), so rolling a panel up from these rows
+ * is exact: SUM is additive, and the only non-additive measure — the latency
+ * average — is carried as `latencySamples`, letting a roll-up recombine it as
+ * SUM(latency * requests) / SUM(requests).
  */
-export function getDailyCostRows(unifiedSource: string, params: AnalyticsParams): DailyCostRow[] {
+export interface ModelUsageMatrixRow extends CostTokenFields {
+  date: string;
+  provider: string;
+  model: string;
+  serviceTier: string;
+  requests: number;
+  promptTokens: number;
+  completionTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  reasoningTokens: number;
+  totalTokens: number;
+  latencyWeightedMs: number;
+  latencySamples: number;
+  successfulRequests: number;
+  lastUsed: string;
+  storedCost: number;
+  isAggregated: number;
+}
+
+/**
+ * Per-day, per-provider, per-model, per-service-tier aggregates.
+ */
+export function getModelUsageMatrixRows(
+  unifiedSource: string,
+  params: AnalyticsParams
+): ModelUsageMatrixRow[] {
   const db = getDbInstance();
   return db
     .prepare(
@@ -178,20 +210,129 @@ export function getDailyCostRows(unifiedSource: string, params: AnalyticsParams)
         LOWER(provider) as provider,
         LOWER(model) as model,
         COALESCE(NULLIF(service_tier, ''), 'standard') as serviceTier,
+        COALESCE(SUM(requests), 0) as requests,
         COALESCE(SUM(tokens_input), 0) as promptTokens,
         COALESCE(SUM(tokens_output), 0) as completionTokens,
         COALESCE(SUM(tokens_cache_read), 0) as cacheReadTokens,
         COALESCE(SUM(tokens_cache_creation), 0) as cacheCreationTokens,
         COALESCE(SUM(tokens_reasoning), 0) as reasoningTokens,
+        COALESCE(SUM(tokens_input + tokens_output), 0) as totalTokens,
+        COALESCE(SUM(latency_ms * requests), 0) as latencyWeightedMs,
+        COALESCE(SUM(CASE WHEN latency_ms IS NULL THEN 0 ELSE requests END), 0) as latencySamples,
+        COALESCE(SUM(CASE WHEN success = 1 THEN requests ELSE 0 END), 0) as successfulRequests,
+        COALESCE(MAX(timestamp), '') as lastUsed,
         COALESCE(SUM(stored_cost), 0.0) as storedCost,
         MAX(is_aggregated) as isAggregated,
         ${UNIFIED_COST_TOKEN_SUMS}
       FROM ${unifiedSource} AS _u
       GROUP BY DATE(timestamp), LOWER(provider), LOWER(model), serviceTier
-      ORDER BY date ASC
     `
     )
-    .all(params) as DailyCostRow[];
+    .all(params) as ModelUsageMatrixRow[];
+}
+
+const MATRIX_ADDITIVE_FIELDS = [
+  ["requests", "requests"],
+  ["promptTokens", "promptTokens"],
+  ["completionTokens", "completionTokens"],
+  ["cacheReadTokens", "cacheReadTokens"],
+  ["cacheCreationTokens", "cacheCreationTokens"],
+  ["reasoningTokens", "reasoningTokens"],
+  ["totalTokens", "totalTokens"],
+  ["latencyWeightedMs", "latencyWeightedMs"],
+  ["latencySamples", "latencySamples"],
+  ["successfulRequests", "successfulRequests"],
+  ["costPromptTokens", "costPromptTokens"],
+  ["costCompletionTokens", "costCompletionTokens"],
+  ["costCacheReadTokens", "costCacheReadTokens"],
+  ["costCacheCreationTokens", "costCacheCreationTokens"],
+  ["costReasoningTokens", "costReasoningTokens"],
+] as const satisfies ReadonlyArray<readonly [keyof ModelUsageMatrixRow, string]>;
+
+interface RollupOptions {
+  /**
+   * Collapse the group's `date` to null when the roll-up spans more than one
+   * day. Panels that report a single window (model, provider, service tier)
+   * have no date to show; per-day panels keep it.
+   */
+  collapseDate?: boolean;
+}
+
+/**
+ * Rolls matrix rows up to `keys`, combining every additive measure and keeping
+ * the newest `lastUsed` and the highest `isAggregated`. Rows for which `keys`
+ * yields null are dropped.
+ */
+
+function rollupMatrixRows(
+  rows: readonly ModelUsageMatrixRow[],
+  keys: (row: ModelUsageMatrixRow) => Record<string, string> | null,
+  options: RollupOptions = {}
+): Array<Record<string, string | number | null>> {
+  const groups = new Map<
+    string,
+    {
+      keys: Record<string, string>;
+      totals: Record<string, number>;
+      lastUsed: string;
+      aggregated: number;
+      date: string | null;
+    }
+  >();
+  for (const row of rows) {
+    const keyValues = keys(row);
+    if (!keyValues) continue;
+    const identity = JSON.stringify(keyValues);
+    let group = groups.get(identity);
+    if (!group) {
+      group = {
+        keys: keyValues,
+        totals: {},
+        lastUsed: "",
+        aggregated: Number(row.isAggregated) || 0,
+        date: String(row.date ?? ""),
+      };
+      for (const [field] of MATRIX_ADDITIVE_FIELDS) group.totals[field] = 0;
+      groups.set(identity, group);
+    }
+    for (const [field] of MATRIX_ADDITIVE_FIELDS) {
+      group.totals[field] += Number(row[field]) || 0;
+    }
+    if (!group.lastUsed || String(row.lastUsed || "") > group.lastUsed) {
+      group.lastUsed = String(row.lastUsed || "");
+    }
+    group.aggregated = Math.max(group.aggregated, Number(row.isAggregated) || 0);
+    if (options.collapseDate && group.date !== String(row.date ?? "")) {
+      group.date = null;
+    }
+  }
+  return Array.from(groups.values()).map((group) => {
+    const merged: Record<string, string | number | null> = { ...group.keys };
+    if (options.collapseDate) merged.date = group.date;
+    const weighted = group.totals.latencyWeightedMs;
+    const samples = group.totals.latencySamples;
+    for (const [field, source] of MATRIX_ADDITIVE_FIELDS) {
+      if (field === "latencyWeightedMs" || field === "latencySamples") continue;
+      merged[field] = group.totals[source] ?? 0;
+    }
+    merged.avgLatencyMs = samples > 0 ? weighted / samples : 0;
+    merged.lastUsed = group.lastUsed;
+    merged.isAggregated = group.aggregated;
+    return merged;
+  });
+}
+
+/**
+ * Per-day, per-provider, per-model token breakdown for cost calculation,
+ * rolled up from {@link getModelUsageMatrixRows}.
+ */
+export function deriveDailyCostRows(rows: readonly ModelUsageMatrixRow[]): DailyCostRow[] {
+  return rollupMatrixRows(rows, (row) => ({
+    date: row.date,
+    provider: row.provider,
+    model: row.model,
+    serviceTier: row.serviceTier,
+  })) as unknown as DailyCostRow[];
 }
 
 // ---------------------------------------------------------------------------
@@ -246,42 +387,6 @@ export interface ModelUsageRow extends CostTokenFields {
   isAggregated: number;
 }
 
-/**
- * Per-model usage aggregates from the unified source CTE.
- */
-export function getModelUsageRows(unifiedSource: string, params: AnalyticsParams): ModelUsageRow[] {
-  const db = getDbInstance();
-  return db
-    .prepare(
-      `
-      SELECT
-        LOWER(model) as model,
-        LOWER(provider) as provider,
-        COALESCE(NULLIF(service_tier, ''), 'standard') as serviceTier,
-        COALESCE(SUM(requests), 0) as requests,
-        COALESCE(SUM(tokens_input), 0) as promptTokens,
-        COALESCE(SUM(tokens_output), 0) as completionTokens,
-        COALESCE(SUM(tokens_cache_read), 0) as cacheReadTokens,
-        COALESCE(SUM(tokens_cache_creation), 0) as cacheCreationTokens,
-        COALESCE(SUM(tokens_reasoning), 0) as reasoningTokens,
-        COALESCE(SUM(tokens_input + tokens_output), 0) as totalTokens,
-        COALESCE(AVG(latency_ms), 0) as avgLatencyMs,
-        COALESCE(SUM(CASE WHEN success = 1 THEN requests ELSE 0 END), 0) as successfulRequests,
-        COALESCE(MAX(timestamp), '') as lastUsed,
-        COALESCE(SUM(stored_cost), 0.0) as storedCost,
-        MAX(is_aggregated) as isAggregated,
-        ${UNIFIED_COST_TOKEN_SUMS}
-      FROM ${unifiedSource} AS _u
-      -- Keep cost inputs separated by day. Historical provider rows do not
-      -- always use one cache-token convention, and computeCostFromPricing's
-      -- non-cached-input clamp is intentionally non-linear across those rows.
-      GROUP BY DATE(timestamp), LOWER(model), LOWER(provider), serviceTier
-      ORDER BY requests DESC
-    `
-    )
-    .all(params) as ModelUsageRow[];
-}
-
 // ---------------------------------------------------------------------------
 
 export interface ProviderCostRow extends CostTokenFields {
@@ -297,36 +402,6 @@ export interface ProviderCostRow extends CostTokenFields {
   isAggregated: number;
 }
 
-/**
- * Per-provider, per-model token breakdown for provider cost calculation.
- */
-export function getProviderCostRows(
-  unifiedSource: string,
-  params: AnalyticsParams
-): ProviderCostRow[] {
-  const db = getDbInstance();
-  return db
-    .prepare(
-      `
-      SELECT
-        LOWER(provider) as provider,
-        LOWER(model) as model,
-        COALESCE(NULLIF(service_tier, ''), 'standard') as serviceTier,
-        COALESCE(SUM(tokens_input), 0) as promptTokens,
-        COALESCE(SUM(tokens_output), 0) as completionTokens,
-        COALESCE(SUM(tokens_cache_read), 0) as cacheReadTokens,
-        COALESCE(SUM(tokens_cache_creation), 0) as cacheCreationTokens,
-        COALESCE(SUM(tokens_reasoning), 0) as reasoningTokens,
-        COALESCE(SUM(stored_cost), 0.0) as storedCost,
-        MAX(is_aggregated) as isAggregated,
-        ${UNIFIED_COST_TOKEN_SUMS}
-      FROM ${unifiedSource} AS _u
-      GROUP BY DATE(timestamp), LOWER(provider), LOWER(model), serviceTier
-    `
-    )
-    .all(params) as ProviderCostRow[];
-}
-
 // ---------------------------------------------------------------------------
 
 export interface ProviderUsageRow {
@@ -337,33 +412,6 @@ export interface ProviderUsageRow {
   totalTokens: number;
   avgLatencyMs: number;
   successfulRequests: number;
-}
-
-/**
- * Per-provider usage aggregates from the unified source CTE.
- */
-export function getProviderUsageRows(
-  unifiedSource: string,
-  params: AnalyticsParams
-): ProviderUsageRow[] {
-  const db = getDbInstance();
-  return db
-    .prepare(
-      `
-      SELECT
-        LOWER(provider) as provider,
-        COALESCE(SUM(requests), 0) as requests,
-        COALESCE(SUM(tokens_input), 0) as promptTokens,
-        COALESCE(SUM(tokens_output), 0) as completionTokens,
-        COALESCE(SUM(tokens_input + tokens_output), 0) as totalTokens,
-        COALESCE(AVG(latency_ms), 0) as avgLatencyMs,
-        COALESCE(SUM(CASE WHEN success = 1 THEN requests ELSE 0 END), 0) as successfulRequests
-      FROM ${unifiedSource} AS _u
-      GROUP BY LOWER(provider)
-      ORDER BY requests DESC
-    `
-    )
-    .all(params) as ProviderUsageRow[];
 }
 
 // ---------------------------------------------------------------------------
@@ -657,36 +705,71 @@ export interface ServiceTierUsageRow extends CostTokenFields {
 }
 
 /**
- * Per-service-tier, per-provider, per-model usage aggregates.
+ * Per-model aggregates, rolled up from {@link getModelUsageMatrixRows}.
  */
-export function getServiceTierUsageRows(
-  unifiedSource: string,
-  params: AnalyticsParams
+export function deriveModelUsageRows(rows: readonly ModelUsageMatrixRow[]): ModelUsageRow[] {
+  return rollupMatrixRows(
+    rows,
+    (row) => ({
+      model: row.model,
+      provider: row.provider,
+      serviceTier: row.serviceTier,
+    }),
+    { collapseDate: true }
+  ) as unknown as ModelUsageRow[];
+}
+
+/**
+ * Per-provider, per-model token breakdown for cost calculation, rolled up from
+ * {@link getModelUsageMatrixRows}.
+ */
+export function deriveProviderCostRows(rows: readonly ModelUsageMatrixRow[]): ProviderCostRow[] {
+  return rollupMatrixRows(
+    rows,
+    (row) => ({
+      provider: row.provider,
+      model: row.model,
+      serviceTier: row.serviceTier,
+    }),
+    { collapseDate: true }
+  ) as unknown as ProviderCostRow[];
+}
+
+/**
+ * Per-service-tier aggregates, rolled up from {@link getModelUsageMatrixRows}.
+ */
+export function deriveServiceTierUsageRows(
+  rows: readonly ModelUsageMatrixRow[]
 ): ServiceTierUsageRow[] {
-  const db = getDbInstance();
-  return db
-    .prepare(
-      `
-      SELECT
-        COALESCE(NULLIF(service_tier, ''), 'standard') as serviceTier,
-        LOWER(provider) as provider,
-        LOWER(model) as model,
-        COALESCE(NULLIF(service_tier, ''), 'standard') as serviceTier,
-        COALESCE(SUM(requests), 0) as requests,
-        COALESCE(SUM(tokens_input), 0) as promptTokens,
-        COALESCE(SUM(tokens_output), 0) as completionTokens,
-        COALESCE(SUM(tokens_cache_read), 0) as cacheReadTokens,
-        COALESCE(SUM(tokens_cache_creation), 0) as cacheCreationTokens,
-        COALESCE(SUM(tokens_reasoning), 0) as reasoningTokens,
-        COALESCE(SUM(tokens_input + tokens_output), 0) as totalTokens,
-        COALESCE(SUM(stored_cost), 0.0) as storedCost,
-        MAX(is_aggregated) as isAggregated,
-        ${UNIFIED_COST_TOKEN_SUMS}
-      FROM ${unifiedSource} AS _u
-      GROUP BY DATE(timestamp), serviceTier, LOWER(provider), LOWER(model)
-    `
-    )
-    .all(params) as ServiceTierUsageRow[];
+  return rollupMatrixRows(
+    rows,
+    (row) => ({
+      serviceTier: row.serviceTier,
+      provider: row.provider,
+      model: row.model,
+    }),
+    { collapseDate: true }
+  ) as unknown as ServiceTierUsageRow[];
+}
+
+/**
+ * Per-provider aggregates, rolled up from {@link getModelUsageMatrixRows}.
+ */
+export function deriveProviderUsageRows(rows: readonly ModelUsageMatrixRow[]): ProviderUsageRow[] {
+  const rolled = rollupMatrixRows(rows, (row) => ({ provider: row.provider }), {
+    collapseDate: true,
+  });
+  return rolled
+    .map((row) => ({
+      provider: String(row.provider),
+      requests: Number(row.requests),
+      promptTokens: Number(row.promptTokens),
+      completionTokens: Number(row.completionTokens),
+      totalTokens: Number(row.totalTokens),
+      avgLatencyMs: Number(row.avgLatencyMs),
+      successfulRequests: Number(row.successfulRequests),
+    }))
+    .sort((left, right) => right.requests - left.requests);
 }
 
 // ---------------------------------------------------------------------------
@@ -903,7 +986,7 @@ export interface ProviderDailyUsageRow {
  * Per-day, per-provider request counts + token totals from the unified source CTE.
  * Answers "how many requests did provider X get on date Y" (#4009) — providers that
  * bill per-request rather than per-token need this breakdown, not just the
- * per-provider aggregate (`getProviderUsageRows`) or the per-day aggregate
+ * per-provider aggregate (`deriveProviderUsageRows`) or the per-day aggregate
  * (`getDailyUsage`).
  */
 export function getProviderDailyUsageRows(

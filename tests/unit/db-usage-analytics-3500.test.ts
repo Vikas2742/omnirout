@@ -255,13 +255,21 @@ test("#3500 getDailyUsage — groups by date, ascending order", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getDailyCostRows
+// deriveDailyCostRows
 // ---------------------------------------------------------------------------
 
-test("#3500 getDailyCostRows — groups by date+provider+model+serviceTier", () => {
+test("#3500 deriveDailyCostRows — groups by date+provider+model+serviceTier", () => {
   const rawCutoffDate = "2020-01-01";
   const ts = "2025-04-01T12:00:00.000Z";
 
+  insertUsageHistory({
+    timestamp: "2025-04-02T12:00:00.000Z",
+    provider: "anthropic",
+    model: "claude-3-5-sonnet",
+    tokens_input: 25,
+    tokens_output: 50,
+    service_tier: "priority",
+  });
   insertUsageHistory({
     timestamp: ts,
     provider: "anthropic",
@@ -287,14 +295,57 @@ test("#3500 getDailyCostRows — groups by date+provider+model+serviceTier", () 
     apiKeyParams: {},
   });
 
-  const rows = mod.getDailyCostRows(unifiedSource, unifiedParams);
+  const rows = mod.deriveDailyCostRows(mod.getModelUsageMatrixRows(unifiedSource, unifiedParams));
   const row = rows.find((r) => r.provider === "anthropic" && r.model === "claude-3-5-sonnet");
 
   assert.ok(row, "anthropic/claude row present");
   assert.equal(row!.date, "2025-04-01");
+  assert.equal(row!.model, "claude-3-5-sonnet");
   assert.equal(row!.serviceTier, "priority");
   assert.equal(row!.promptTokens, 150, "promptTokens aggregated");
   assert.equal(row!.completionTokens, 300, "completionTokens aggregated");
+});
+
+test("#3500 deriveDailyCostRows — keeps one row per day, matrix totals preserved", () => {
+  const { unifiedSource, unifiedParams } = mod.buildUnifiedSource({
+    sinceIso: "2025-04-01T00:00:00.000Z",
+    untilIso: "2025-04-02T23:59:59.000Z",
+    rawCutoffDate: "2020-01-01",
+    apiKeyWhere: "",
+    apiKeyParams: {},
+  });
+
+  const matrix = mod.getModelUsageMatrixRows(unifiedSource, unifiedParams);
+  const rows = mod.deriveDailyCostRows(matrix);
+  const april1 = rows.filter((r) => r.date === "2025-04-01");
+  const april2 = rows.filter((r) => r.date === "2025-04-02");
+
+  assert.equal(april1.length, 1, "one row for 2025-04-01");
+  assert.equal(april2.length, 1, "one row for 2025-04-02");
+  assert.equal(april1[0]!.promptTokens, 150, "april 1 keeps its own subtotal");
+  assert.equal(april2[0]!.promptTokens, 25, "april 2 keeps its own subtotal");
+  assert.equal(
+    rows.reduce((sum, r) => sum + r.promptTokens, 0),
+    matrix.reduce((sum, r) => sum + r.promptTokens, 0),
+    "per-day roll-up preserves the matrix total"
+  );
+});
+
+test("#3500 deriveModelUsageRows — collapses the date across days", () => {
+  const { unifiedSource, unifiedParams } = mod.buildUnifiedSource({
+    sinceIso: "2025-04-01T00:00:00.000Z",
+    untilIso: "2025-04-02T23:59:59.000Z",
+    rawCutoffDate: "2020-01-01",
+    apiKeyWhere: "",
+    apiKeyParams: {},
+  });
+
+  const rows = mod.deriveModelUsageRows(mod.getModelUsageMatrixRows(unifiedSource, unifiedParams));
+  const row = rows.find((r) => r.provider === "anthropic" && r.model === "claude-3-5-sonnet");
+
+  assert.ok(row, "single window-wide row for the model");
+  assert.equal(row!.date, null, "a multi-day roll-up carries no single date");
+  assert.equal(row!.promptTokens, 175, "tokens summed across both days");
 });
 
 // ---------------------------------------------------------------------------
@@ -315,10 +366,10 @@ test("#3500 getHeatmapRows — groups by date, respects conditions", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getModelUsageRows
+// deriveModelUsageRows
 // ---------------------------------------------------------------------------
 
-test("#3500 getModelUsageRows — returns per-model aggregates", () => {
+test("#3500 deriveModelUsageRows — returns per-model aggregates", () => {
   const rawCutoffDate = "2020-01-01";
   const ts = "2025-06-01T10:00:00.000Z";
 
@@ -349,7 +400,7 @@ test("#3500 getModelUsageRows — returns per-model aggregates", () => {
     apiKeyParams: {},
   });
 
-  const rows = mod.getModelUsageRows(unifiedSource, unifiedParams);
+  const rows = mod.deriveModelUsageRows(mod.getModelUsageMatrixRows(unifiedSource, unifiedParams));
   const row = rows.find((r) => r.model === "gpt-5" && r.provider === "openai");
 
   assert.ok(row, "gpt-5/openai row present");
@@ -361,10 +412,10 @@ test("#3500 getModelUsageRows — returns per-model aggregates", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getProviderCostRows
+// deriveProviderCostRows
 // ---------------------------------------------------------------------------
 
-test("#3500 getProviderCostRows — groups by provider+model+serviceTier", () => {
+test("#3500 deriveProviderCostRows — groups by provider+model+serviceTier", () => {
   const rawCutoffDate = "2020-01-01";
   const ts = "2025-07-01T12:00:00.000Z";
 
@@ -385,7 +436,9 @@ test("#3500 getProviderCostRows — groups by provider+model+serviceTier", () =>
     apiKeyParams: {},
   });
 
-  const rows = mod.getProviderCostRows(unifiedSource, unifiedParams);
+  const rows = mod.deriveProviderCostRows(
+    mod.getModelUsageMatrixRows(unifiedSource, unifiedParams)
+  );
   const row = rows.find((r) => r.provider === "gemini");
 
   assert.ok(row, "gemini row present");
@@ -393,10 +446,10 @@ test("#3500 getProviderCostRows — groups by provider+model+serviceTier", () =>
 });
 
 // ---------------------------------------------------------------------------
-// getProviderUsageRows
+// deriveProviderUsageRows
 // ---------------------------------------------------------------------------
 
-test("#3500 getProviderUsageRows — aggregates per provider", () => {
+test("#3500 deriveProviderUsageRows — aggregates per provider", () => {
   const rawCutoffDate = "2020-01-01";
   const ts = "2025-08-01T12:00:00.000Z";
 
@@ -425,7 +478,9 @@ test("#3500 getProviderUsageRows — aggregates per provider", () => {
     apiKeyParams: {},
   });
 
-  const rows = mod.getProviderUsageRows(unifiedSource, unifiedParams);
+  const rows = mod.deriveProviderUsageRows(
+    mod.getModelUsageMatrixRows(unifiedSource, unifiedParams)
+  );
   const row = rows.find((r) => r.provider === "mistral");
 
   assert.ok(row, "mistral row present");
@@ -485,10 +540,10 @@ test("#3500 getApiKeyMetadataRows — returns api key metadata with lastUsed", (
 });
 
 // ---------------------------------------------------------------------------
-// getServiceTierUsageRows
+// deriveServiceTierUsageRows
 // ---------------------------------------------------------------------------
 
-test("#3500 getServiceTierUsageRows — groups by serviceTier+provider+model", () => {
+test("#3500 deriveServiceTierUsageRows — groups by serviceTier+provider+model", () => {
   const rawCutoffDate = "2020-01-01";
   const ts = "2025-09-01T12:00:00.000Z";
 
@@ -525,7 +580,9 @@ test("#3500 getServiceTierUsageRows — groups by serviceTier+provider+model", (
     apiKeyParams: {},
   });
 
-  const rows = mod.getServiceTierUsageRows(unifiedSource, unifiedParams);
+  const rows = mod.deriveServiceTierUsageRows(
+    mod.getModelUsageMatrixRows(unifiedSource, unifiedParams)
+  );
 
   const flexRow = rows.find((r) => r.serviceTier === "flex" && r.model === "gpt-5");
   const stdRow = rows.find((r) => r.serviceTier === "standard" && r.model === "gpt-5");

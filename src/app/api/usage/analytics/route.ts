@@ -10,17 +10,17 @@ import {
   buildPresetUnifiedSource,
   getUsageSummary,
   getDailyUsage,
-  getDailyCostRows,
-  getHeatmapRows,
-  getModelUsageRows,
-  getProviderCostRows,
-  getProviderUsageRows,
+  getModelUsageMatrixRows,
+  deriveDailyCostRows,
+  deriveModelUsageRows,
+  deriveProviderCostRows,
+  deriveProviderUsageRows,
+  deriveServiceTierUsageRows,
   getAccountCostRows,
   getAccountUsageRows,
   getApiKeyUsageRows,
   getApiKeyTotalsRows,
   type ApiKeyTotalsRow,
-  getServiceTierUsageRows,
   getApiKeyMetadataRows,
   getWeeklyPatternRows,
   getPresetCostModelRows,
@@ -632,7 +632,8 @@ async function computeAnalyticsResponse(
     const summaryRow = getUsageSummary(unifiedSource, unifiedParams) as Record<string, unknown>;
 
     const dailyRows = getDailyUsage(unifiedSource, unifiedParams) as UsageRows;
-    const dailyCostRows = getDailyCostRows(unifiedSource, unifiedParams) as UsageRows;
+    const matrixRows = getModelUsageMatrixRows(unifiedSource, unifiedParams);
+    const dailyCostRows = deriveDailyCostRows(matrixRows) as UsageRows;
 
     const heatmapStart = new Date();
     heatmapStart.setUTCDate(heatmapStart.getUTCDate() - 364);
@@ -656,11 +657,11 @@ async function computeAnalyticsResponse(
 
     const heatmapRows = getHeatmapRows(heatmapConditions, heatmapParams) as UsageRows;
 
-    const modelRows = getModelUsageRows(unifiedSource, unifiedParams) as UsageRows;
+    const modelRows = deriveModelUsageRows(matrixRows) as UsageRows;
 
-    const providerCostRows = getProviderCostRows(unifiedSource, unifiedParams) as UsageRows;
+    const providerCostRows = deriveProviderCostRows(matrixRows) as UsageRows;
 
-    const providerRows = getProviderUsageRows(unifiedSource, unifiedParams) as UsageRows;
+    const providerRows = deriveProviderUsageRows(matrixRows) as UsageRows;
 
     const accountCostWhereClause = whereClause
       .replace(/timestamp/g, "usage_history.timestamp")
@@ -671,7 +672,7 @@ async function computeAnalyticsResponse(
 
     const apiKeyRows = getApiKeyUsageRows(apiKeyWhereClause, params) as UsageRows;
 
-    const serviceTierRows = getServiceTierUsageRows(unifiedSource, unifiedParams) as UsageRows;
+    const serviceTierRows = deriveServiceTierUsageRows(matrixRows) as UsageRows;
 
     const apiKeyMetadataRows = getApiKeyMetadataRows(apiKeyWhereClause, params) as UsageRows;
 
