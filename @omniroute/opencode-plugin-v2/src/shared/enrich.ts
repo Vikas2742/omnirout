@@ -422,6 +422,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
   const catalogAliasByKey = new Map<string, string>();
   const compatiblePublicPrefixes = new Set<string>();
   const currentCatalogKeys = new Set<string>();
+  const unsafeReusedPrefixPriceKeys = new Set<string>();
   const canonicalByPublicPrefix = new Map<string, string>();
   const upstreamModelIdsByAlias = new Map<string, Set<string>>();
   const historyCandidatesByAlias = new Map<string, Map<string, string>>();
@@ -462,7 +463,15 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
           const providerAlias = publicPrefix || catalogKey;
           currentCatalogKeys.add(catalogKey);
           currentCatalogKeys.add(providerAlias);
-          if (publicPrefix) compatiblePublicPrefixes.add(publicPrefix);
+          if (publicPrefix) {
+            compatiblePublicPrefixes.add(publicPrefix);
+            // A public prefix re-used after node deletion cannot prove the
+            // existing price belongs to the new owner. Only direct node-ID
+            // pricing is eligible; the old namespace stays management-only.
+            if ((slot as { pricingUnsafePublicPrefix?: unknown }).pricingUnsafePublicPrefix === true) {
+              unsafeReusedPrefixPriceKeys.add(publicPrefix);
+            }
+          }
           const models = (slot as { models?: unknown[] }).models;
           if (!Array.isArray(models)) continue;
           if (publicPrefix) {
@@ -616,7 +625,8 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
           if (!slot || typeof slot !== "object" || Array.isArray(slot)) continue;
           // Never leak a disputed historical pricing namespace into either
           // provider, not even through the bare-key fallback.
-          if (ambiguousPricingNamespaces.has(pricingProviderKey)) continue;
+          if (ambiguousPricingNamespaces.has(pricingProviderKey) ||
+              unsafeReusedPrefixPriceKeys.has(pricingProviderKey)) continue;
           const providerAlias = catalogAliasByKey.get(pricingProviderKey) ?? pricingProviderKey;
           for (const [rawModelId, raw] of Object.entries(slot as Record<string, unknown>)) {
             const modelId =
