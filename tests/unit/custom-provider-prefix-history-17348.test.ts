@@ -133,10 +133,20 @@ test("#17348: previous prefix reused by a live node cannot redirect its prices t
   await models.replaceSyncedAvailableModelsForConnection(A, A, [{ id: "foo", name: "Foo A" }]);
   await nodes.updateProviderNode(A, { prefix: prefixB });
   await create(B, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(B, B, [
+    { id: "foo", name: "Current owner Foo" },
+  ]);
   persistPrice(prefixA, { foo: { input: 15 } });
+  persistPrice(B, { foo: { input: 7 } });
   const published = await catalog();
   assert.equal(published[B].displayPrefix, prefixA);
   assert.ok(published[B].models.some((m: { id: string }) => m.id === "foo"));
+  assert.equal(published[B].pricingUnsafePublicPrefix, true);
+  assert.equal(published[B].pricingKey, undefined,
+    "new owner may not inherit old public-prefix pricing");
+  assert.equal(published[prefixA].pricingOnly, true);
+  assert.equal(published[prefixA].historicalPricingNamespace, true);
+  assert.equal(published[A].historicalPrefixes, undefined);
   assert.notEqual(published[A].pricingKey, prefixA);
 });
 
