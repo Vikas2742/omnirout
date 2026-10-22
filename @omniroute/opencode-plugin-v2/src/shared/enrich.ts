@@ -453,6 +453,10 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
       if (providers && typeof providers === "object") {
         for (const [catalogKey, slot] of Object.entries(providers)) {
           if (!slot || typeof slot !== "object") continue;
+          // Display-only orphan / historical-pricing records are not live
+          // ownership evidence. They must not shadow historical claims or
+          // inject their price-only IDs into a published model catalog.
+          if ((slot as { pricingOnly?: unknown }).pricingOnly === true) continue;
           const configuredPrefix = (slot as { displayPrefix?: unknown }).displayPrefix;
           const publicPrefix = typeof configuredPrefix === "string" ? configuredPrefix.trim() : "";
           const providerAlias = publicPrefix || catalogKey;
