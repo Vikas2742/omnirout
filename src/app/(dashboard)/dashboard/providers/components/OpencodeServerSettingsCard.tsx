@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
+import Icon from "@/shared/components/Icon";
 import { Card, Input } from "@/shared/components";
 
 const DEFAULT_URL = "http://127.0.0.1:4096";
@@ -24,7 +25,7 @@ function StatusBanner({ ok, text }: { ok: boolean; text: string }) {
           : "bg-red-500/10 text-red-600 dark:text-red-400"
       }`}
     >
-      <span className="material-symbols-outlined text-[12px]">{ok ? "check_circle" : "error"}</span>
+      <Icon name={ok ? "check_circle" : "error"} size={12} />
       {text}
     </div>
   );
@@ -94,7 +95,7 @@ export default function OpencodeServerSettingsCard() {
     <Card padding="md">
       <div className="flex items-center gap-3 mb-4">
         <div className="size-8 rounded-lg flex items-center justify-center bg-amber-500/10">
-          <span className="material-symbols-outlined text-amber-500 text-xl">terminal</span>
+          <Icon name="terminal" size={20} className="text-amber-500" />
         </div>
         <div>
           <h3 className="font-medium text-sm">{t("opencodeServerConnection")}</h3>
