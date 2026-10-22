@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import { getProviderSearchPool } from "@omniroute/open-sse/services/providerConnectionPool.ts";
 import { hydrateConnectionProviderSpecificData } from "./compatibleNodeBaseUrl.ts"; // #13452
 import { extractGoogApiKeyHeader } from "./googApiKeyAuth.ts";
+import { isCooldownRetrySkipRefusalsEnabled } from "./cooldownAwareRetry.ts";
 import { describeUpstreamFailure } from "@/shared/utils/upstreamError";
 import { buildAllExpiredCredentials } from "./authExpiredCredentials.ts";
 import { pickExpiryFirstConnection } from "./expiryFirstAccountSelection.ts";
@@ -704,9 +705,9 @@ function mergeNoAuthProviderSpecificData(
  * and resolve by-id Proxy Pool references to live records (./noAuthProxyResolution)
  * so the executor gets a resolved inline `proxy`. Best-effort: failures → empty.
  *
- * #7993: also checks sibling ids (e.g. "opencode-zen" -> "opencode") so a
- * proxy/fingerprint row saved under the no-auth id is still found when
- * credentials are hydrated for the apikey-gateway id that shares its public
+ * #7993: also checks sibling ids (see noAuthProviderSiblings.ts) so a
+ * proxy/fingerprint row saved under a no-auth id is still found when
+ * credentials are hydrated for an apikey-gateway id that shares its public
  * endpoint.
  */
 async function loadNoAuthProviderSpecificData(providerId: string): Promise<JsonRecord> {
@@ -800,7 +801,7 @@ async function maybeSyntheticNoAuthFallback(
     return refuse("disabled");
   }
   // #4954: hydrate per-account proxy/rotation config off the connection row so
-  // no-auth executors (opencode, mimocode) actually honor configured proxies.
+  // no-auth executors actually honor configured proxies.
   const providerSpecificData = await loadNoAuthProviderSpecificData(providerId);
   return buildSyntheticNoAuthCredentials(providerSpecificData);
 }
@@ -1030,7 +1031,7 @@ export async function getProviderCredentials(
   try {
     await selectionLock?.wait;
 
-    // No-auth providers (e.g. opencode) need no DB connection — return synthetic credentials
+    // No-auth providers need no DB connection — return synthetic credentials
     // so the executor receives a valid credentials object without auth headers being added.
     const resolvedId = resolveProviderId(provider);
     const providerMaps: Record<string, { noAuth?: boolean } | undefined>[] = [
@@ -2725,7 +2726,11 @@ export async function markAccountUnavailable(
     // #16824: a verified ModelScope model-access refusal does not invalidate
     // the credential. Probe isolation above takes precedence; real requests
     // lock only the rejected model and leave sibling models routable.
-    if (provider && model && isModelScopedAccessDenial(provider, status, errorText, options.structuredError)) {
+    if (
+      provider &&
+      model &&
+      isModelScopedAccessDenial(provider, status, errorText, options.structuredError)
+    ) {
       lockModel(provider, connectionId, model, "model_not_found", COOLDOWN_MS.notFound);
       return { shouldFallback: true, cooldownMs: 0 };
     }
@@ -2795,7 +2800,10 @@ export async function markAccountUnavailable(
         lastErrorType: fallbackResult.reason || RateLimitReason.QUOTA_EXHAUSTED,
         lastError: `Account quota exhausted (${provider})`,
         lastErrorAt: new Date().toISOString(),
-        errorCode: status,
+        // #16305 (opt-in, COOLDOWN_RETRY_SKIP_REFUSALS_ENABLED): this branch only runs for a
+        // renewing connection-scoped quota (ruleScopeIsConnection), so persist it as 429 —
+        // with the flag on a persisted 403 would make the cooldown-aware retry skip the wait.
+        errorCode: isCooldownRetrySkipRefusalsEnabled() ? 429 : status,
         backoffLevel: fallbackResult.newBackoffLevel ?? backoffLevel,
         rateLimitedUntil: getUnavailableUntil(connectionCooldownMs),
         testStatus: "unavailable",

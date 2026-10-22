@@ -58,6 +58,7 @@ export const LOCAL_ONLY_API_PREFIXES: ReadonlyArray<string> = [
   "/api/cli-tools/droid-settings", // spawns via getCliRuntimeStatus() to detect the `droid` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/kilo-settings", // spawns via getCliRuntimeStatus() to detect the `kilo` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/openclaw-settings", // spawns via getCliRuntimeStatus() to detect the `openclaw` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373). Does NOT cover the non-spawning sibling /api/cli-tools/openclaw/auto-order (different segment).
+  "/api/providers/devin-cli-agentic/auth-status", // GET spawns `devin auth status` via getDevinAgenticAuthStatus() (src/lib/providers/devinAgenticAuthStatus.ts) — RCE-via-tunnel surface (Hard Rules #15 + #17, #15446). Narrow-scoped like /api/providers/cursor/agent-availability.
   "/api/cli-tools/pi-settings", // spawns via getCliRuntimeStatus() to detect the `pi` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/smelt-settings", // spawns via getCliRuntimeStatus() to detect the `smelt` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/status", // GET calls getCliRuntimeStatus() per CLI_TOOL_IDS entry (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
@@ -222,6 +223,21 @@ export const ALWAYS_PROTECTED_API_PATHS: ReadonlyArray<string> = [
   // requireLogin=false (GHSA-qxg2-rm3h-4cxp). The dashboard consumers send the
   // session cookie, so ALWAYS_PROTECTED keeps them working through a tunnel.
   "/api/providers/client",
+  // Relay token management. POST mints a reusable inference credential and
+  // returns it in clear once, GET lists every token's id/prefix/limits, and the
+  // [id] child edits, toggles or revokes one. Credential issuance stays
+  // authenticated in open mode (requireLogin=false), like the WebDAV credentials
+  // above: "anonymous" is never the right audience for "mint me a token". The
+  // dashboard sends the session cookie and automation a manage-scoped key, so
+  // both keep working; the plain prefix covers the /{id} child routes.
+  "/api/relay/tokens",
+  // Sync token management. POST mints a token that opens GET /api/sync/bundle,
+  // which returns decrypted provider credentials and plaintext API keys — the
+  // material /api/settings/export-json above hands out — GET lists the tokens
+  // and the [id] child revokes one. Issuance already needed a dashboard session
+  // or the local CLI when login is on; in open mode it fell back to "anyone".
+  // The bundle itself stays a public route: it authenticates with the token.
+  "/api/sync/tokens",
 ];
 
 /**
