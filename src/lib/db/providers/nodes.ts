@@ -9,7 +9,7 @@ import { backupDbFile } from "../backup";
 import { invalidateDbCache } from "../readCache";
 import { toRecord, type JsonRecord } from "./columns";
 import { resetProviderNodePrefixCache } from "./nodePrefix";
-import { recordNodePrefixChange, deleteNodePrefixHistory } from "./nodePrefixHistory";
+import { recordNodePrefixChange, deleteNodePrefixHistory, recordDeletedNodePrefixTombstone } from "./nodePrefixHistory";
 
 function normalizeDailyQuotaResetHour(value: unknown): number | null {
   return value === 0 || value ? Number(value) : null;
@@ -245,6 +245,12 @@ export async function deleteProviderNode(id: string) {
   if (!existing) return null;
 
   db.transaction(() => {
+    const row = existing as { type?: string; prefix?: string | null };
+    if (row.type === "openai-compatible" || row.type === "anthropic-compatible") {
+      // Make reuse of this deleted node's public prefixes an ambiguity veto
+      // for future historical-price recovery, even after the node is gone.
+      recordDeletedNodePrefixTombstone(db, id, row.prefix);
+    }
     db.prepare("DELETE FROM provider_nodes WHERE id = ?").run(id);
     deleteNodePrefixHistory(db, id);
   })();
