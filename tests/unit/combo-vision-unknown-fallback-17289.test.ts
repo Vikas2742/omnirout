@@ -219,7 +219,7 @@ test("#17289: unknown-vision fallback reports actionable upstream attachment rej
         return new Response(
           JSON.stringify({
             error: {
-              message: "this profile has no attachment handler installed; cannot process images",
+              message: "this profile has no attachment handler installed; 无法处理图片",
               code: "unsupported_content",
             },
           }),
@@ -237,6 +237,8 @@ test("#17289: unknown-vision fallback reports actionable upstream attachment rej
     const json = await response.json() as { error: { message: string; code?: string } };
     assert.match(json.error.message, /attachment handler/i,
       "upstream explanation must survive the combo error boundary");
+    assert.match(json.error.message, /无法处理图片/,
+      "non-English upstream explanation must not collapse to a generic 400");
     assert.doesNotMatch(json.error.message, /No target.*confirmed vision support|capability_mismatch/i);
   }
 });
