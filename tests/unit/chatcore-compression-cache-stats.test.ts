@@ -13,6 +13,7 @@ const testDataDir = fs.mkdtempSync(path.join(os.tmpdir(), "omni-comp-cache-test-
 process.env.DATA_DIR = testDataDir;
 
 const coreDb = await import("../../src/lib/db/core.ts");
+const { clearFeatureFlagOverrideCache } = await import("../../src/lib/db/featureFlags.ts");
 const { recordCompressionCacheStats } =
   await import("../../open-sse/handlers/chatCore/compressionCacheStats.ts");
 
@@ -88,19 +89,73 @@ test("clamps negative tokens-saved to 0", async () => {
   assert.equal(rows[0].saved, 0);
 });
 
-test("records estimated_cache_hit=1 for automatic caching provider without explicit markers", async () => {
+const AUTO_PREFIX_FLAG = "COMPRESSION_CACHE_AUTOMATIC_PREFIX_ESTIMATE";
+
+// The flag resolver caches DB-override lookups for ~1 s; drop it after toggling the env value.
+function setAutoPrefixFlag(value: string | undefined) {
+  if (value === undefined) delete process.env[AUTO_PREFIX_FLAG];
+  else process.env[AUTO_PREFIX_FLAG] = value;
+  clearFeatureFlagOverrideCache();
+}
+
+function recordAutomaticPrefixRequest(provider: string, model: string) {
   recordCompressionCacheStats({
-    compressionInputBody: { messages: [{ role: "user", content: "hello openai" }] },
-    provider: "openai",
+    compressionInputBody: { messages: [{ role: "user", content: `hello ${provider}` }] },
+    provider,
     targetFormat: "openai",
-    effectiveModel: "gpt-4o",
+    effectiveModel: model,
     mode: "balanced",
     stats: { originalTokens: 200, compressedTokens: 100 },
   });
-  const rows = await waitForRows("openai", 1);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].cache_control_present, 0);
-  assert.equal(rows[0].estimated_cache_hit, 1);
+}
+
+test("flag off (default): automatic caching providers without markers keep estimated_cache_hit=0", async () => {
+  setAutoPrefixFlag(undefined);
+  for (const provider of ["openai", "codex", "azure"]) {
+    const before = rowsFor(provider).length;
+    recordAutomaticPrefixRequest(provider, "gpt-4o");
+    const rows = (await waitForRows(provider, before + 1)).slice(before);
+    assert.equal(rows.length, 1, provider);
+    assert.equal(rows[0].cache_control_present, 0, provider);
+    assert.equal(rows[0].estimated_cache_hit, 0, provider);
+  }
+});
+
+test("flag on: automatic caching providers without markers record estimated_cache_hit=1", async () => {
+  setAutoPrefixFlag("true");
+  try {
+    for (const provider of ["openai", "codex", "azure"]) {
+      const before = rowsFor(provider).length;
+      recordAutomaticPrefixRequest(provider, "gpt-4o");
+      const rows = (await waitForRows(provider, before + 1)).slice(before);
+      assert.equal(rows.length, 1, provider);
+      assert.equal(rows[0].cache_control_present, 0, provider);
+      assert.equal(rows[0].estimated_cache_hit, 1, provider);
+    }
+  } finally {
+    setAutoPrefixFlag(undefined);
+  }
+});
+
+test("flag on does not turn a non-automatic provider into an estimated hit", async () => {
+  setAutoPrefixFlag("true");
+  try {
+    recordAutomaticPrefixRequest("groq-flag-on", "llama-3");
+    const rows = await waitForRows("groq-flag-on", 1);
+    assert.equal(rows[0].estimated_cache_hit, 0);
+    recordCompressionCacheStats({
+      compressionInputBody: { messages: [{ role: "user", content: "hello anthropic" }] },
+      provider: "anthropic-flag-on-no-marker",
+      targetFormat: "claude",
+      effectiveModel: "claude-3-5-sonnet",
+      mode: "balanced",
+      stats: { originalTokens: 200, compressedTokens: 100 },
+    });
+    const anth = await waitForRows("anthropic-flag-on-no-marker", 1);
+    assert.equal(anth[0].estimated_cache_hit, 0);
+  } finally {
+    setAutoPrefixFlag(undefined);
+  }
 });
 
 test("records estimated_cache_hit=0 for non-caching provider", async () => {
