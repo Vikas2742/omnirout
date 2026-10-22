@@ -266,6 +266,19 @@ export function resolveFreeTierCredential(): FreeTierCredential {
   return { mode: "literal", value: raw };
 }
 
+/**
+ * Pick the bearer key for a request. Outside the gated lane (`freeTier` null) or in `key`
+ * mode the operator's key wins; `literal` sends the configured token and `none` sends nothing.
+ * `operatorKey` is lazy so Extra API Keys rotation only advances when that key is used.
+ */
+export function resolveGatedCredential(
+  freeTier: FreeTierCredential | null,
+  operatorKey: () => string | undefined
+): string | undefined {
+  if (!freeTier || freeTier.mode === "key") return operatorKey();
+  return freeTier.mode === "literal" ? freeTier.value : undefined;
+}
+
 /** Tell the surfaces apart by registry `baseUrl`, so provider ids and aliases stay out. */
 export function surfaceFromBaseUrl(baseUrl: string | null | undefined): OpencodeSurface {
   if (baseUrl === ZEN_SURFACE_BASE_URL) return "zen";

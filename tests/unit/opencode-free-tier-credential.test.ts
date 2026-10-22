@@ -20,6 +20,7 @@ import {
   FREE_TIER_PUBLIC_CREDENTIAL,
   isGatedFreeTierRequest,
   resolveFreeTierCredential,
+  resolveGatedCredential,
 } from "../../open-sse/executors/opencodeFreeTierContract.ts";
 import { OpencodeExecutor } from "../../open-sse/executors/opencode.ts";
 
@@ -202,4 +203,18 @@ test("a gated request is built against the /inference lane the credential belong
   } finally {
     _setOpencodeFreeModelsForTests(null);
   }
+});
+
+test("resolveGatedCredential: lane credential vs operator key, operator key read lazily", () => {
+  let reads = 0;
+  const operatorKey = () => {
+    reads += 1;
+    return REAL_KEY;
+  };
+  assert.equal(resolveGatedCredential(null, operatorKey), REAL_KEY);
+  assert.equal(resolveGatedCredential({ mode: "key" }, operatorKey), REAL_KEY);
+  assert.equal(reads, 2);
+  assert.equal(resolveGatedCredential({ mode: "literal", value: "public" }, operatorKey), "public");
+  assert.equal(resolveGatedCredential({ mode: "none" }, operatorKey), undefined);
+  assert.equal(reads, 2, "literal/none must not consume the operator key");
 });
