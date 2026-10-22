@@ -420,6 +420,10 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
   // index the served /v1/models names. No prefix guessing for stale IDs.
   const catalogAliasByKey = new Map<string, string>();
   const compatiblePublicPrefixes = new Set<string>();
+  const currentCatalogKeys = new Set<string>();
+  const canonicalByPublicPrefix = new Map<string, string>();
+  const historyCandidatesByAlias = new Map<string, Map<string, string>>();
+  const pendingHistoryClaims: Array<{ oldPrefix: string; alias: string }> = [];
   if (!baseURL || !apiKey) return out;
   const root = trimTrailingSlashes(baseURL.replace(/\/v1\/?$/, ""));
   const headers = {
@@ -449,6 +453,8 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
           const configuredPrefix = (slot as { displayPrefix?: unknown }).displayPrefix;
           const publicPrefix = typeof configuredPrefix === "string" ? configuredPrefix.trim() : "";
           const providerAlias = publicPrefix || catalogKey;
+          currentCatalogKeys.add(catalogKey);
+          currentCatalogKeys.add(providerAlias);
           if (publicPrefix) compatiblePublicPrefixes.add(publicPrefix);
           const models = (slot as { models?: unknown[] }).models;
           if (!Array.isArray(models)) continue;
@@ -457,6 +463,33 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
             typeof canonicalRaw === "string" && canonicalRaw.length > 0 ? canonicalRaw : catalogKey;
           catalogAliasByKey.set(catalogKey, providerAlias);
           catalogAliasByKey.set(providerCanonical, providerAlias);
+          if (publicPrefix) {
+            canonicalByPublicPrefix.set(publicPrefix, providerCanonical);
+            const snapshots = (slot as { historicalPrefixes?: unknown }).historicalPrefixes;
+            if (Array.isArray(snapshots)) {
+              const byOldId = historyCandidatesByAlias.get(publicPrefix) ?? new Map<string, string>();
+              for (const snapshot of snapshots) {
+                if (!snapshot || typeof snapshot !== "object") continue;
+                const oldPrefix = (snapshot as { prefix?: unknown }).prefix;
+                const oldIds = (snapshot as { modelIds?: unknown }).modelIds;
+                if (
+                  typeof oldPrefix !== "string" || !oldPrefix || oldPrefix.includes("/") ||
+                  oldPrefix === publicPrefix || !Array.isArray(oldIds)
+                ) continue;
+                const knownIds = new Set(oldIds.filter(
+                  (id): id is string => typeof id === "string" && id.length > 0
+                ));
+                // If the raw upstream itself included "ag/foo", then "ag/foo"
+                // could name TWO different objects. Such rows cannot migrate.
+                for (const bare of knownIds) {
+                  const legacyId = `${oldPrefix}/${bare}`;
+                  if (!knownIds.has(legacyId)) byOldId.set(legacyId, bare);
+                }
+                pendingHistoryClaims.push({ oldPrefix, alias: publicPrefix });
+              }
+              historyCandidatesByAlias.set(publicPrefix, byOldId);
+            }
+          }
           const slotNameRaw = (slot as { name?: unknown }).name;
           const providerDisplayName =
             typeof slotNameRaw === "string" && slotNameRaw.trim().length > 0
@@ -508,6 +541,24 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
     report("/api/pricing/models", `HTTP ${catalogStatus}`);
   }
 
+  // Historical namespace aliases require unique provenance, and cannot
+  // shadow any active catalog prefix or canonical provider key. Importantly,
+  // a previous public prefix is NOT automatically a valid routing prefix.
+  const historyAliasClaims = new Map<string, string | null>();
+  for (const claim of pendingHistoryClaims) {
+    if (currentCatalogKeys.has(claim.oldPrefix)) continue;
+    if (!historyAliasClaims.has(claim.oldPrefix)) {
+      historyAliasClaims.set(claim.oldPrefix, claim.alias);
+    } else if (historyAliasClaims.get(claim.oldPrefix) !== claim.alias) {
+      historyAliasClaims.set(claim.oldPrefix, null);
+    }
+  }
+  for (const [previous, current] of historyAliasClaims) {
+    if (current && !catalogAliasByKey.has(previous)) {
+      catalogAliasByKey.set(previous, current);
+    }
+  }
+
   // 2. Pricing values from /api/pricing.
   const priceAc = new AbortController();
   const priceTimer = setTimeout(() => priceAc.abort(), timeoutMs);
@@ -551,6 +602,29 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
                   : undefined;
             if (typeof cacheWrite === "number") parsed.cacheWrite = cacheWrite;
             if (Object.keys(parsed).length === 0) continue;
+            const candidates = historyCandidatesByAlias.get(providerAlias);
+            const fromHistoricalNamespace =
+              historyAliasClaims.get(pricingProviderKey) === providerAlias;
+            const historicalId = fromHistoricalNamespace &&
+              !rawModelId.startsWith(`${pricingProviderKey}/`)
+              ? `${pricingProviderKey}/${rawModelId}` : rawModelId;
+            const currentBareId = candidates?.get(historicalId);
+            if (currentBareId) {
+              const target = `${providerAlias}/${currentBareId}`;
+              const existing = out.get(target) ?? {
+                providerAlias,
+                providerCanonical: canonicalByPublicPrefix.get(providerAlias),
+              };
+              const pending = existing.historicalPricingCandidates ?? [];
+              if (!pending.some((candidate) => candidate.previousPublicId === historicalId)) {
+                pending.push({ previousPublicId: historicalId, pricing: parsed });
+              }
+              existing.historicalPricingCandidates = pending;
+              out.set(target, existing);
+            }
+            // A pricing key that was an old public namespace cannot claim
+            // unproven IDs. Keep those orphan prices in DB, not in the client.
+            if (fromHistoricalNamespace && !currentBareId) continue;
             const namespaced = `${providerAlias}/${modelId}`;
             const existingNs = out.get(namespaced);
             if (existingNs) {
