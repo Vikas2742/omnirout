@@ -54,9 +54,11 @@ const P = await import("../../src/shared/constants/providers.ts");
 
 // Apmix (#14821) adds one apikey/regional entry — 246.
 // Token Market (#13191) adds one apikey/gateways entry — measured 248 on the #13191 branch.
+// NaN.Builders adds one apikey/gateways entry — 250.
+// DaoXE adds one apikey/gateways entry — 251.
 // Atlas Cloud extracts one aggregator gateway into apikey/atlascloud.ts and spreads it from
-// the barrel, like BeatAPI — 250.
-const APIKEY_PROVIDER_COUNT = 250;
+// the barrel, like BeatAPI — 252.
+const APIKEY_PROVIDER_COUNT = 253;
 
 test("barrel still exports every catalog + key helpers", () => {
   for (const name of [
