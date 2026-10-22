@@ -194,3 +194,19 @@ test("#17348: conflicting old prefix claims from two historical nodes stay isola
   assert.equal(published[A].pricingKey, undefined);
   assert.equal(published[B].pricingKey, undefined);
 });
+
+
+test("#17348: stale custom-model rows cannot prevent display-only classification", async () => {
+  await create(A, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(A, A, [{ id: "foo", name: "Live Foo" }]);
+  await nodes.updateProviderNode(A, { prefix: prefixB });
+  // A historic public alias may still have stale custom models in the DB.
+  // That source creates a catalog entry BEFORE the pricing-only pass.
+  await models.addCustomModel(prefixA, "stale-custom");
+  persistPrice(prefixA, { "stale-custom": { input: 44 } });
+  const published = await catalog();
+  assert.equal(published[prefixA].historicalPricingNamespace, true);
+  assert.equal(published[prefixA].pricingOnly, true);
+  assert.equal(published[prefixA].modelOverrideEligible, false);
+  assert.equal(published[A].pricingKey, undefined);
+});
