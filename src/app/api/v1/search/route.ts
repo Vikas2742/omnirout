@@ -301,7 +301,12 @@ async function postHandler(request: Request, context: unknown) {
             supportsSearchType(provider, body.search_type) &&
             !isProviderBlockedByIdOrAlias(provider.id, blockedProviders)
         )
-        .sort((a, b) => a.costPerQuery - b.costPerQuery);
+        // Try credentialed subscription/API providers before keyless scraping.
+        .sort(
+          (a, b) =>
+            Number(b.authType === "apikey") - Number(a.authType === "apikey") ||
+            a.costPerQuery - b.costPerQuery
+        );
 
       for (const fallbackProvider of fallbackProviders) {
         providerConfig = fallbackProvider;
@@ -363,7 +368,9 @@ async function postHandler(request: Request, context: unknown) {
     // failover so out-of-the-box search still works when no credentialed provider
     // is configured. Only used when no real alternate was found above.
     if (!alternateProviderId) {
-      for (const provider of Object.values(SEARCH_PROVIDERS)) {
+      for (const provider of Object.values(SEARCH_PROVIDERS).sort(
+        (a, b) => Number(b.authType === "apikey") - Number(a.authType === "apikey")
+      )) {
         if (!provider.fallbackOnly || provider.id === providerConfig.id) continue;
         if (isUnconfiguredLoopbackSearchProvider(provider)) continue;
         if (!supportsSearchType(provider, body.search_type)) continue;

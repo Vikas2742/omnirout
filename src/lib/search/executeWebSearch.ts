@@ -209,7 +209,11 @@ export async function executeWebSearch(
       // still works when no credentialed provider is configured.
       const fallbackProviders = Object.values(SEARCH_PROVIDERS)
         .filter((provider) => provider.fallbackOnly && supportsSearchType(provider, searchType))
-        .sort((a, b) => a.costPerQuery - b.costPerQuery);
+        .sort(
+          (a, b) =>
+            Number(b.authType === "apikey") - Number(a.authType === "apikey") ||
+            a.costPerQuery - b.costPerQuery
+        );
 
       for (const fallbackProvider of fallbackProviders) {
         providerConfig = fallbackProvider;

@@ -152,8 +152,13 @@ function clampSearchTimeoutMs(
   return Math.min(MAX_SEARCH_TIMEOUT_MS, Math.max(floor, Math.floor(override)));
 }
 
-function resolveGlobalTimeoutMs(override?: number): number {
-  return clampSearchTimeoutMs(override, DEFAULT_GLOBAL_TIMEOUT_MS, MIN_SEARCH_TIMEOUT_MS);
+function resolveGlobalTimeoutMs(override?: number, provider?: string, alternate?: string): number {
+  // An explicit operator budget still wins, including values below Codex's 60s.
+  const fallback =
+    provider === "codex-search" || alternate === "codex-search"
+      ? getSearchProvider("codex-search")!.timeoutMs
+      : DEFAULT_GLOBAL_TIMEOUT_MS;
+  return clampSearchTimeoutMs(override, fallback, MIN_SEARCH_TIMEOUT_MS);
 }
 
 // Non-retriable HTTP status codes — fail immediately, don't try alternate
@@ -1492,7 +1497,7 @@ export async function handleSearch(options: SearchHandlerOptions): Promise<Searc
     providerTimeoutsMs,
   } = options;
   const startTime = Date.now();
-  const globalTimeoutMs = resolveGlobalTimeoutMs(timeoutMs);
+  const globalTimeoutMs = resolveGlobalTimeoutMs(timeoutMs, providerId, alternateProvider);
   const providerTimeoutOverride = clampSearchTimeoutMs(providerTimeoutsMs?.[providerId], 0, 1);
 
   // 1. Sanitize input
