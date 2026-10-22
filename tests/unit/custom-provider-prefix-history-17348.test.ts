@@ -298,3 +298,58 @@ test("#17348: reused live prefix cannot inherit the deleted node's unverified pr
   assert.deepEqual(published[prefixA].models.map((m: { id: string }) => m.id), ["foo"]);
   assert.equal(published[A].historicalPrefixes, undefined);
 });
+
+
+test("#17348: node and current public pricing namespaces remain separate in either insert order", async () => {
+  for (const [id, prefix, reverse] of [
+    [A, prefixA, false],
+    [B, prefixB, true],
+  ] as const) {
+    await create(id, prefix);
+    await models.replaceSyncedAvailableModelsForConnection(id, id, [
+      { id: "under-node", name: "Under node" },
+      { id: "under-prefix", name: "Under prefix" },
+    ]);
+    if (reverse) {
+      persistPrice(prefix, { "under-prefix": { input: 4 } });
+      persistPrice(id, { "under-node": { input: 7 } });
+    } else {
+      persistPrice(id, { "under-node": { input: 7 } });
+      persistPrice(prefix, { "under-prefix": { input: 4 } });
+    }
+    const published = await catalog();
+    assert.equal(published[id].pricingKey, undefined);
+    assert.equal(published[prefix].pricingOnly, true);
+    assert.equal(published[prefix].separatePricingNamespace, true);
+    assert.equal(published[prefix].modelOverrideEligible, false);
+    assert.deepEqual(
+      published[prefix].models.map((model: { id: string }) => model.id),
+      ["under-prefix"],
+      "public pricing card must only contain models from its own price namespace"
+    );
+    assert.ok(published[id].models.some((model: { id: string }) => model.id === "under-node"));
+  }
+});
+
+test("#17348: pricing provider/model names cannot mutate object prototypes or vanish", async () => {
+  const pricingDb = await import("../../src/lib/db/settings/pricing.ts");
+  const rawModelPrices = JSON.parse(
+    '{"__proto__":{"input":11},"constructor":{"output":22}}'
+  ) as Record<string, unknown>;
+  persistPrice("__proto__", { ordinary: { input: 9 } });
+  persistPrice("safe-provider", rawModelPrices);
+  const priced = await pricingDb.getPricing();
+  assert.equal(Object.hasOwn(priced, "__proto__"), true);
+  assert.equal((priced as any)["__proto__"].ordinary.input, 9);
+  assert.equal(Object.hasOwn(priced["safe-provider"], "__proto__"), true);
+  assert.equal(priced["safe-provider"]["__proto__"].input, 11);
+  assert.equal(priced["safe-provider"].constructor.output, 22);
+  assert.equal(({} as Record<string, unknown>).ordinary, undefined);
+  const bundle = await pricingDb.getPricingWithSources();
+  assert.equal(Object.hasOwn(bundle.sourceMap, "__proto__"), true);
+  assert.equal(bundle.sourceMap["safe-provider"]["__proto__"], "user");
+  assert.equal(bundle.sourceMap["safe-provider"].constructor, "user");
+  const published = await catalog();
+  assert.equal(Object.hasOwn(published, "__proto__"), true);
+  assert.ok(published["__proto__"].models.some((model: { id: string }) => model.id === "ordinary"));
+});
