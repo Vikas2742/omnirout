@@ -243,6 +243,13 @@ test("#17348: deletion archives all historic node prefixes as non-routable vetoe
     [{ prefix: prefixA, modelIds: ["foo"] }],
     "deleted node keeps its old raw-ID provenance for manual recovery"
   );
+  const compactRow = core.getDbInstance().prepare(
+    "SELECT value FROM key_value WHERE namespace = ? AND key = ?"
+  ).get("providerNodePrefixTombstones", A) as { value: string };
+  assert.deepEqual(
+    JSON.parse(compactRow.value), [prefixA, prefixB],
+    "hot catalog guard keeps a small prefix-only tombstone"
+  );
   assert.deepEqual(
     [...history.getDeletedNodePrefixTombstones(core.getDbInstance())].sort(),
     [prefixA, prefixB].sort()
