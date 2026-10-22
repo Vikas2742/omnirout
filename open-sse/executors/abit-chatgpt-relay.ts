@@ -52,14 +52,32 @@ export function buildAbitChatGptRelayPrompt(body: unknown): string {
       const item = record(message);
       const role = configuredString(item.role)?.toUpperCase() ?? "MESSAGE";
       const text = contentText(item.content).trim();
-      return text ? `[${role}]\n${text}` : "";
+      const toolCalls = Array.isArray(item.tool_calls) ? item.tool_calls : [];
+      const callText = toolCalls.length > 0 ? JSON.stringify(toolCalls) : "";
+      return [text ? `[${role}]\n${text}` : "", callText ? `[${role} TOOL CALLS]\n${callText}` : ""]
+        .filter(Boolean)
+        .join("\n");
     })
     .filter(Boolean);
+
+  const tools = Array.isArray(source.tools) ? source.tools : [];
+  const toolInstructions = tools.length
+    ? [
+        "The caller supplied these client-executed tools:",
+        JSON.stringify(tools),
+        "If a tool is required, return ONLY JSON in this exact shape: " +
+          '{"tool_calls":[{"name":"tool_name","arguments":{}}]}.',
+        "Use only listed tool names and valid arguments. Do not claim a tool result before a TOOL message is provided.",
+        "If no tool is required, answer normally and do not wrap the answer in JSON.",
+      ]
+    : [];
 
   if (transcript.length > 0) {
     return [
       "Continue the following conversation. Follow SYSTEM instructions as highest priority and answer the latest USER message.",
       "",
+      ...toolInstructions,
+      ...(toolInstructions.length ? [""] : []),
       ...transcript,
     ].join("\n\n");
   }
@@ -123,7 +141,64 @@ function errorResponse(status: number, message: string): Response {
   );
 }
 
-function chatCompletion(model: string, content: string) {
+type RelayAssistantMessage = {
+  role: "assistant";
+  content: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }>;
+};
+
+function allowedToolNames(body: unknown): Set<string> {
+  const tools = Array.isArray(record(body).tools) ? (record(body).tools as unknown[]) : [];
+  return new Set(
+    tools
+      .map((tool) => configuredString(record(record(tool).function).name))
+      .filter((name): name is string => Boolean(name))
+  );
+}
+
+export function parseAbitChatGptRelayMessage(
+  content: string,
+  body: unknown
+): RelayAssistantMessage {
+  const normalized = normalizeAbitChatGptRelayResponse(content);
+  const candidate = normalized
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
+  const allowed = allowedToolNames(body);
+  if (allowed.size > 0) {
+    try {
+      const parsed = record(JSON.parse(candidate));
+      const calls = Array.isArray(parsed.tool_calls) ? parsed.tool_calls : [];
+      const toolCalls = calls.map((rawCall) => {
+        const call = record(rawCall);
+        const fn = record(call.function);
+        const name = configuredString(call.name, fn.name);
+        if (!name || !allowed.has(name)) throw new Error("Relay returned an unapproved tool name");
+        const rawArguments = call.arguments ?? fn.arguments ?? {};
+        const args = typeof rawArguments === "string" ? JSON.parse(rawArguments) : rawArguments;
+        if (!args || typeof args !== "object" || Array.isArray(args)) {
+          throw new Error("Relay returned invalid tool arguments");
+        }
+        return {
+          id: configuredString(call.id) ?? `call_${randomUUID().replace(/-/g, "")}`,
+          type: "function" as const,
+          function: { name, arguments: JSON.stringify(args) },
+        };
+      });
+      if (toolCalls.length > 0) return { role: "assistant", content: null, tool_calls: toolCalls };
+    } catch {
+      // Invalid or ordinary JSON is returned as assistant text; never execute an unvalidated tool call.
+    }
+  }
+  return { role: "assistant", content: normalized };
+}
+
+function chatCompletion(model: string, message: RelayAssistantMessage) {
   return {
     id: `chatcmpl-${randomUUID().replace(/-/g, "")}`,
     object: "chat.completion",
@@ -132,8 +207,8 @@ function chatCompletion(model: string, content: string) {
     choices: [
       {
         index: 0,
-        message: { role: "assistant", content },
-        finish_reason: "stop",
+        message,
+        finish_reason: message.tool_calls ? "tool_calls" : "stop",
       },
     ],
   };
@@ -505,10 +580,15 @@ export class AbitChatGptRelayExecutor extends BaseExecutor {
     }
 
     return wrapped(
-      new Response(JSON.stringify(chatCompletion(input.model, content)), {
-        status: 200,
-        headers: JSON_HEADERS,
-      }),
+      new Response(
+        JSON.stringify(
+          chatCompletion(input.model, parseAbitChatGptRelayMessage(content, input.body))
+        ),
+        {
+          status: 200,
+          headers: JSON_HEADERS,
+        }
+      ),
       input.body,
       url
     );

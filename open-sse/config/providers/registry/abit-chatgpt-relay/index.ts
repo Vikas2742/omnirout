@@ -13,7 +13,7 @@ export const abit_chatgpt_relayProvider: RegistryEntry = {
     {
       id: "project-management",
       name: "ChatGPT Browser — Project Management",
-      toolCalling: false,
+      toolCalling: true,
       supportsReasoning: false,
       supportsVision: false,
       contextLength: 128_000,

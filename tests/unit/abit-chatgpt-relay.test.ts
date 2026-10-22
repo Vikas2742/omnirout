@@ -1,8 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-const { AbitChatGptRelayExecutor, buildAbitChatGptRelayPrompt, normalizeAbitChatGptRelayResponse } =
-  await import("@omniroute/open-sse/executors/abit-chatgpt-relay");
+const {
+  AbitChatGptRelayExecutor,
+  buildAbitChatGptRelayPrompt,
+  normalizeAbitChatGptRelayResponse,
+  parseAbitChatGptRelayMessage,
+} = await import("@omniroute/open-sse/executors/abit-chatgpt-relay");
 
 const originalFetch = globalThis.fetch;
 
@@ -32,6 +36,36 @@ test("normalizeAbitChatGptRelayResponse removes the project attribution wrapper"
     "ABIT_RELAY_OK"
   );
   assert.equal(normalizeAbitChatGptRelayResponse("Direct response"), "Direct response");
+});
+
+test("relay tool bridge accepts only tools supplied by the caller", () => {
+  const body = {
+    tools: [{ type: "function", function: { name: "odoo_read", parameters: { type: "object" } } }],
+  };
+  const message = parseAbitChatGptRelayMessage(
+    '{"tool_calls":[{"name":"odoo_read","arguments":{"model":"res.partner"}}]}',
+    body
+  );
+  assert.equal(message.content, null);
+  assert.equal(message.tool_calls?.[0]?.function.name, "odoo_read");
+  assert.equal(message.tool_calls?.[0]?.function.arguments, '{"model":"res.partner"}');
+
+  const rejected = parseAbitChatGptRelayMessage(
+    '{"tool_calls":[{"name":"unlisted_tool","arguments":{}}]}',
+    body
+  );
+  assert.equal(rejected.tool_calls, undefined);
+  assert.match(String(rejected.content), /unlisted_tool/);
+});
+
+test("relay prompt includes the constrained client tool protocol", () => {
+  const prompt = buildAbitChatGptRelayPrompt({
+    messages: [{ role: "user", content: "Read customers" }],
+    tools: [{ type: "function", function: { name: "odoo_read", parameters: { type: "object" } } }],
+  });
+  assert.match(prompt, /client-executed tools/);
+  assert.match(prompt, /odoo_read/);
+  assert.match(prompt, /return ONLY JSON/);
 });
 
 test("non-streaming executor returns the normalized project response", async () => {
