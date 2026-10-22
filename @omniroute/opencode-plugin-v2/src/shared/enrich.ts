@@ -639,7 +639,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
             }
             // A pricing key that was an old public namespace cannot claim
             // unproven IDs. Keep those orphan prices in DB, not in the client.
-            if (fromHistoricalNamespace && !currentBareId) continue;
+            if (fromHistoricalNamespace) continue;
             const namespaced = `${providerAlias}/${modelId}`;
             const existingNs = out.get(namespaced);
             if (existingNs) {
