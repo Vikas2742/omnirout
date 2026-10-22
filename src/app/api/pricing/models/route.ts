@@ -65,7 +65,12 @@ export async function GET() {
     }
     const attachCompatibleMetadata = (providerId: string, slot: Record<string, any>) => {
       const publicPrefix = nodeToPrefix.get(providerId);
-      if (publicPrefix) slot.displayPrefix = publicPrefix;
+      if (publicPrefix) {
+        slot.displayPrefix = publicPrefix;
+        // A deleted node previously held this public prefix. Its price rows
+        // could predate the new node, so require node-ID-keyed current pricing.
+        if (tombstonedPrefixes.has(publicPrefix)) slot.pricingUnsafePublicPrefix = true;
+      }
       // Historical evidence is separate from current routability; a node that
       // drops its prefix still has history, but may not be an override target.
       const history = historyByNode.get(providerId);
@@ -213,10 +218,16 @@ export async function GET() {
       // its former node. Keep historical namespaces separate for management;
       // OpenCode may recover an individual price only with recorded raw-ID
       // provenance AND a matching current served model (#17348).
-      const providerAlias = prefixToNode.get(rawProviderAlias) || rawProviderAlias;
-      const historicalNamespace =
-        (historicalOwners.has(rawProviderAlias) || tombstonedPrefixes.has(rawProviderAlias)) &&
-        !prefixToNode.has(rawProviderAlias);
+      const currentNode = prefixToNode.get(rawProviderAlias);
+      // Even if a NEW node currently serves the retired prefix, a price row
+      // under that prefix may belong to its deleted predecessor. Leave that
+      // old namespace as display-only, and use the new node's canonical key
+      // for verified new prices.
+      const unverifiedReusedPrefix = Boolean(currentNode && tombstonedPrefixes.has(rawProviderAlias));
+      const providerAlias =
+        unverifiedReusedPrefix ? rawProviderAlias : currentNode || rawProviderAlias;
+      const historicalNamespace = tombstonedPrefixes.has(rawProviderAlias) ||
+        (historicalOwners.has(rawProviderAlias) && !currentNode);
       const orphaned = orphanedCompatibleNode(providerAlias);
       if (!catalog[providerAlias]) {
         catalog[providerAlias] = {
