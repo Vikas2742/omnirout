@@ -484,6 +484,19 @@ terminale viene promossa a `429 rate_limit_error` con `retry_after` / `reset_at`
 dalla scadenza del lock transitorio più vicina; i lock per quota, autenticazione e
 non trovato mantengono il 503 privo di hint.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
+---
+
 ## 5. Controllo di ammissione della coda di richieste (v3.8.49 · issue #6593)
 
 **Ambito**: la coda locale di rate-limit per provider+connessione (`open-sse/services/rateLimitManager.ts`,

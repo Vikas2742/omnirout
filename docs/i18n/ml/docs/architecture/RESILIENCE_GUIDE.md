@@ -435,6 +435,17 @@ glm-4.7=3
 `429 rate_limit_error` ആയി അപ്ഗ്രേഡ് ചെയ്യപ്പെടുന്നു; ക്വോട്ട, ഓത്ത്,
 നോട്ട്-ഫൗണ്ട് ലോക്കുകൾ സൂചനയില്ലാത്ത 503 ആയി നിലനിൽക്കും.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. അഭ്യർത്ഥന ക്യൂ അഡ്മിഷൻ നിയന്ത്രണം (v3.8.49 · ഇഷ്യൂ #6593)

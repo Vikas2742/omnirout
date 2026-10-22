@@ -357,6 +357,19 @@ glm-4.7=3
 
 gate ដូចគ្នានេះក៏គ្របដណ្តប់ករណី pre-dispatch ផងដែរ (#16319): នៅពេលគោលដៅទាំងអស់នៃ combo ត្រូវបានរំលងមុនពេលមានការព្យាយាមណាមួយ ដោយសារ model របស់វាស្ថិតក្នុងការចាក់សោបណ្តោះអាសន្នខ្លី path ដែលគ្មានការព្យាយាមនឹងរង់ចាំសោឲ្យអស់ក្រោមដែនកំណត់ដូចគ្នា រួច dispatch ម្តងទៀត ជំនួសឲ្យការឆ្លើយតបដោយ `503 ALL_TARGETS_SKIPPED` ដែលគ្មាន hint។ នៅពេលមិនអនុញ្ញាតឲ្យរង់ចាំ (ដែនកំណត់ ចំនួនការព្យាយាម ឬថវិកាអស់ ឬមុខងារត្រូវបានបិទ) ចម្លើយចុងក្រោយត្រូវបានបង្កើនកម្រិតទៅជា `429 rate_limit_error` ដែលផ្ទុក `retry_after` / `reset_at` ពីការផុតកំណត់នៃសោបណ្តោះអាសន្នដំបូងបង្អស់; សោ quota, auth និង not-found រក្សា 503 ដែលគ្មាន hint នៅដដែល។
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
+---
+
 ## 5. ការគ្រប់គ្រងការទទួលយកជួររងសំណើ (v3.8.49 · issue #6593)
 
 **វិសាលភាព**: ជួររងលីមីតប្រាក់ប្រចាំអ្នកផ្គត់ផ្គង់+ការតភ្ជាប់ក្នុងស្រុក (`open-sse/services/rateLimitManager.ts`, ដែលបានគាំទ្រដោយ Bottleneck) ជាមួយជាន់មួយក្រោមម៉ាស៊ីនចំណាត់ថ្នាក់បីខាងលើ។

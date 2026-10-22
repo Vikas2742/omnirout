@@ -363,6 +363,17 @@ glm-4.7=3
 
 אותו שער מכסה גם את המקרה שלפני השיגור (#16319): כאשר כל יעד של קומבו מדולג לפני שנעשתה בקשה כלשהי מפני שהמודל שלו נמצא בנעילה חולפת קצרה, המסלול של אפס ניסיונות ממתין לנעילה תחת אותן תקרות ומשגר מחדש, במקום להשיב `503 ALL_TARGETS_SKIPPED` בלי רמז. כאשר אין אפשרות להמתין (תקרה, ניצול מקסימלי של ניסיונות או תקציב, או שהתכונה כבויה), התגובה הסופית משתדרגת ל-`429 rate_limit_error` הנושאת `retry_after` / `reset_at` מפקיעת הנעילה החולפת המוקדמת ביותר; נעילות מכסה, אימות ולא-נמצא נשארות עם 503 בלי רמז.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. בקרת קבלה לתור הבקשות (v3.8.49 · issue #6593)

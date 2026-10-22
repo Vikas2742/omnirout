@@ -348,6 +348,17 @@ glm-4.7=3
 
 ተመሳሳዩ በር ከመላክ በፊት ያለውን ሁኔታ (#16319) ይሸፍናል፦ የኮምቦው እያንዳንዱ ዒላማ ማንኛውም ሙከራ ከመድረጉ በፊት ሞዴሉ በአጭር ጊዜያዊ መቆለፊያ ውስጥ ስለሚቀመጥ ሲዝለል፣ የዜሮ-ሙከራ መንገዱ ቆለፉን በተመሳሳይ ገደቦች ሥር ይጠብቃል እና እንደገና ይልካል፣ ምልክት-አልባ `503 ALL_TARGETS_SKIPPED` ከመመለስ ይልቅ። መጠበቅ ሳይፈቀድ ሲቀር (ገደብ፣ ሙከራ ወይም በጀት ሲያልቅ፣ ወይም ባህሪው ሲጠፋ)፣ የመጨረሻው ምላሽ ወደ `429 rate_limit_error` ይሻረዋል ከቀዳሚው ጊዜያዊ ቆለፍ ማብቂያ `retry_after` / `reset_at` ጋር; የኮታ፣ የማረጋገጫ እና አልተገኘም ቆለፎች ምልክት-አልባውን 503 ያዝናሉ።
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. የጥያቄ ሰልፍ መግቢያ ቁጥጥር (v3.8.49 · ጉዳይ #6593)

@@ -419,6 +419,17 @@ terminálna odpoveď sa povýši na `429 rate_limit_error` nesúcu `retry_after`
 / `reset_at` z najskoršej expirácie prechodného blokovania; blokovania typu
 kvóta, auth a not-found si ponechávajú 503 bez indície.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. Riadenie prijímania do fronty požiadaviek (v3.8.49 · issue #6593)

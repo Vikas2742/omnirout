@@ -417,6 +417,17 @@ TPM/RPM சாளரங்களை (~60வி. மறுமுயற்சி-�
 `retry_after` / `reset_at` மதிப்புகளை ஏந்தும்; ஒதுக்கீடு, அங்கீகாரம் மற்றும் கிடைக்கவில்லை பூட்டுகள்
 குறிப்பில்லாத 503 பதிலையே தக்கவைத்துக்கொள்ளும்.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. கோரிக்கை வரிசை அனுமதிக் கட்டுப்பாடு (v3.8.49 · issue #6593)

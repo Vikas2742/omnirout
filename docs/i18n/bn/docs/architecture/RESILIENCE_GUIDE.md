@@ -437,6 +437,17 @@ concurrency**-এ টগল করুন (`resilienceSettings.quotaShareConcurre
 ক্ষণস্থায়ী লক মেয়াদোত্তীর্ণের `retry_after` / `reset_at` বহন করে; কোটা, auth
 এবং not-found লকগুলো ইঙ্গিত-বিহীন 503-ই বজায় রাখে।
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. রিকোয়েস্ট কিউ অ্যাডমিশন কন্ট্রোল (v3.8.49 · ইস্যু #6593)

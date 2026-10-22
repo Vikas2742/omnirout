@@ -420,6 +420,17 @@ Gemini-ವರ್ಗದ TPM/RPM ವಿಂಡೋಗಳನ್ನು (~60s retry-aft
 ಅನ್ನು ಹೊತ್ತುಕೊಂಡು ಹೋಗುತ್ತದೆ; ಕೋಟಾ, auth ಮತ್ತು not-found ಲಾಕ್ಗಳು
 ಸುಳಿವುರಹಿತ 503 ಅನ್ನು ಹಾಗೆಯೇ ಇರಿಸಿಕೊಳ್ಳುತ್ತವೆ.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. ರಿಕ್ವೆಸ್ಟ್ ಕ್ಯೂ ಅಡ್ಮಿಷನ್ ಕಂಟ್ರೋಲ್ (v3.8.49 · issue #6593)

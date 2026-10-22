@@ -398,6 +398,17 @@ Iga kombineeritud strateegia puhul (kui see on lubatud) ootab päring, mis krist
 
 Sama värav katab eeldispetšerimise juhtumi (#16319): kui iga kombinatsiooni sihtmärk jäetakse vahele enne mis tahes katse tegemist, kuna selle mudel on lühiajalises mööduvas lukustuses, ootab nullkatse tee luku ära samade piirangute all ja dispetšeerib uuesti, selle asemel et vastata vihjeta `503 ALL_TARGETS_SKIPPED`. Kui ootamine pole lubatud (piirang, katse või eelarve on ammendatud või funktsioon on välja lülitatud), uuendatakse lõplik vastus `429 rate_limit_error`-ks, mis sisaldab `retry_after` / `reset_at` varaseimast mööduvast luku aegumisest; kvoodi-, autentimis- ja mitteleidmise lukud säilitavad vihjeta 503.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. Päringujärjekorra vastuvõtukontroll (v3.8.49 · issue #6593)

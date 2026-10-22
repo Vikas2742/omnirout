@@ -380,6 +380,17 @@ Combo strategy အားလုံး (enable လုပ်ထားသောအ�
 
 တူညီသော gate သည် pre-dispatch case (#16319) ကိုလည်း လွှမ်းခြုံပေးသည်။ combo ၏ target အားလုံးသည် ၎င်းတို့၏ model များ short transient lockout အတွင်းတွင် ရှိနေသောကြောင့် မည်သည့် ကြိုးပမ်းမှုမျှ မပြုလုပ်ရသေးဘဲ skip ခံရသောအခါ၊ zero-attempt path သည် hint-less `503 ALL_TARGETS_SKIPPED` ကို ဖြေကြားမည့်အစား တူညီသော ceiling များအောက်တွင် lock ကို စောင့်ဆိုင်းပြီး ပြန်လည် dispatch လုပ်သည်။ စောင့်ဆိုင်းခွင့် မပြုနိုင်သောအခါ (ceiling၊ attempt သို့မဟုတ် budget ကုန်ဆုံးခြင်း၊ သို့မဟုတ် feature ပိတ်ထားခြင်း)၊ terminal response သည် အစောဆုံး transient lock သက်တမ်းကုန်ချိန်မှ `retry_after` / `reset_at` ကို သယ်ဆောင်လာသည့် `429 rate_limit_error` သို့ upgrade ဖြစ်သည်။ quota၊ auth နှင့် not-found lock များကမူ hint-less 503 ကို ဆက်လက်ထားရှိသည်။
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. တောင်းဆိုမှုတန်းစီစာရင်း ဝင်ခွင့်ထိန်းချုပ်မှု (v3.8.49 · issue #6593)

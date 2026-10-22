@@ -413,6 +413,17 @@ per-connection concurrency** లో టాగుల్ చేయండి
 `429 rate_limit_error`కు అప్గ్రేడ్ అవుతుంది, ఇది మొదటి ట్రాన్షియంట్ లాక్ ఎక్స్పైరీ నుండి
 `retry_after` / `reset_at`ను మోస్తుంది; కోటా, auth మరియు not-found లాక్లు హింట్ లేని 503నే ఉంచుతాయి.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. రిక్వెస్ట్ క్యూ అడ్మిషన్ కంట్రోల్ (v3.8.49 · issue #6593)

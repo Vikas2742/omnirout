@@ -407,6 +407,19 @@ quota-share 디스패치가 양의 `max_concurrent`를 선언한 연결을 대�
 `503 ALL_TARGETS_SKIPPED`로 응답하는 대신 동일한 상한 아래에서 잠금이 풀릴 때까지 기다렸다가 재디스패치합니다. 대기가 허용되지 않는 경우(상한, 시도 횟수 또는 예산 소진, 또는 기능 꺼짐), 최종 응답은 가장 빠른 일시적 잠금 만료 시점의 `retry_after` / `reset_at`을 담은
 `429 rate_limit_error`로 업그레이드됩니다; 쿼터, 인증, 찾을 수 없음 잠금은 힌트 없는 503을 유지합니다.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
+---
+
 ## 5. 요청 큐 어드미션 제어 (v3.8.49 · issue #6593)
 
 **범위**: 로컬 프로바이더+커넥션별 레이트 리밋 큐(`open-sse/services/rateLimitManager.ts`,

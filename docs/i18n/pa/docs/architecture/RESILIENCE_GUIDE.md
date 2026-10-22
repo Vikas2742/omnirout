@@ -316,6 +316,17 @@ glm-4.7=3
 
 ਉਹੀ ਗੇਟ ਪ੍ਰੀ-ਡਿਸਪੈਚ ਮਾਮਲੇ (#16319) ਨੂੰ ਵੀ ਕਵਰ ਕਰਦਾ ਹੈ: ਜਦੋਂ ਕਿਸੇ ਕੌਮਬੋ ਦਾ ਹਰ ਟਾਰਗੈਟ ਕਿਸੇ ਵੀ ਕੋਸ਼ਿਸ਼ ਤੋਂ ਪਹਿਲਾਂ ਛੱਡ ਦਿੱਤਾ ਜਾਂਦਾ ਹੈ ਕਿਉਂਕਿ ਉਸਦਾ ਮਾਡਲ ਛੋਟੇ ਅਸਥਾਈ ਲੌਕਆਉਟ ਵਿੱਚ ਹੈ, ਜ਼ੀਰੋ-ਅਟੈਂਪਟ ਪਾਥ ਉਹੀਆਂ ਸੀਮਾਵਾਂ ਦੇ ਅੰਦਰ ਲੌਕ ਦੀ ਉਡੀਕ ਕਰਦਾ ਹੈ ਅਤੇ ਮੁੜ-ਡਿਸਪੈਚ ਕਰਦਾ ਹੈ, ਸੰਕੇਤ-ਰਹਿਤ `503 ALL_TARGETS_SKIPPED` ਦਾ ਜਵਾਬ ਦੇਣ ਦੀ ਬਜਾਏ। ਜਦੋਂ ਕਿਸੇ ਵੀ ਉਡੀਕ ਦੀ ਇਜਾਜ਼ਤ ਨਹੀਂ ਹੁੰਦੀ (ਸੀਮਾ, ਕੋਸ਼ਿਸ਼ ਜਾਂ ਬਜਟ ਖਤਮ, ਜਾਂ ਫੀਚਰ ਬੰਦ), ਅੰਤਿਮ ਜਵਾਬ `429 rate_limit_error` ਵਿੱਚ ਅੱਪਗ੍ਰੇਡ ਹੋ ਜਾਂਦਾ ਹੈ, ਜੋ ਸਭ ਤੋਂ ਪਹਿਲਾਂ ਖਤਮ ਹੋਣ ਵਾਲੀ ਅਸਥਾਈ ਲੌਕ ਮਿਆਦ ਤੋਂ `retry_after` / `reset_at` ਲੈ ਕੇ ਆਉਂਦਾ ਹੈ; quota, auth ਅਤੇ not-found ਲੌਕ ਸੰਕੇਤ-ਰਹਿਤ 503 ਹੀ ਰੱਖਦੇ ਹਨ।
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. ਬੇਨਤੀ ਕਤਾਰ ਦਾਖਲਾ ਨਿਯੰਤਰਣ (v3.8.49 · issue #6593)

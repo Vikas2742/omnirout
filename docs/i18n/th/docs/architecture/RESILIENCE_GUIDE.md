@@ -380,6 +380,17 @@ concurrency** (`resilienceSettings.quotaShareConcurrencyLimit.enabled` ค่า
 เกตเดียวกันนี้ยังครอบคลุมกรณีก่อน dispatch ด้วย (#16319): เมื่อเป้าหมายทุกตัวของคอมโบถูกข้ามก่อนที่จะมีการพยายามใด ๆ เนื่องจากโมเดลของมันติดการล็อกชั่วคราวระยะสั้น เส้นทางแบบ zero-attempt จะรอการล็อกนั้นภายใต้เพดานเดียวกันแล้ว dispatch ใหม่ แทนที่จะตอบกลับด้วย `503 ALL_TARGETS_SKIPPED` ที่ไม่มีคำใบ้ เมื่อไม่อนุญาตให้รอ (เพดาน จำนวนครั้ง หรืองบประมาณหมด หรือฟีเจอร์ถูกปิด) การตอบกลับขั้นสุดท้ายจะถูกอัปเกรดเป็น
 `429 rate_limit_error` พร้อมพก `retry_after` / `reset_at` จากการหมดอายุของการล็อกชั่วคราวที่เร็วที่สุด ส่วนการล็อก quota, auth และ not-found จะยังคงเป็น 503 ที่ไม่มีคำใบ้
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. การควบคุมการเข้าคิวของ Request (v3.8.49 · issue #6593)

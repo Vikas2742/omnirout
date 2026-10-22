@@ -376,6 +376,19 @@ glm-4.7=3
 
 Նույն դարպասը ընդգրկում է նաև նախաուղարկման դեպքը (#16319). երբ կոմբոի բոլոր թիրախները բաց են թողնվում ցանկացած փորձից առաջ, քանի որ նրանց մոդելը կարճ ժամանակավոր արգելափակման մեջ է, զրո-փորձային ուղին սպասում է արգելափակման ավարտին նույն սահմանների ներքո և վերաուղարկվում է՝ հուշում չպարունակող `503 ALL_TARGETS_SKIPPED` պատասխանելու փոխարեն։ Երբ սպասումը թույլատրված չէ (սահմանաչափը, փորձերի թիվը կամ բյուջեն սպառված են, կամ հնարավորությունն անջատված է), վերջնական պատասխանը բարձրացվում է `429 rate_limit_error`-ի՝ կրելով `retry_after` / `reset_at` արժեքները ամենավաղ ժամանակավոր արգելափակման ավարտից. quota, auth և not-found արգելափակումները պահպանում են հուշում չպարունակող 503-ը։
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
+---
+
 ## 5. Հարցումների հերթի ընդունման կառավարում (v3.8.49 · issue #6593)
 
 **Շրջանակ**. լոկալ per-provider+connection rate-limit հերթը (`open-sse/services/rateLimitManager.ts`,

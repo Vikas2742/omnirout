@@ -376,6 +376,17 @@ Ga kowace dabarar combo (idan an kunna), buƙata da za ta kafa 429 saboda GAJERE
 
 Wannan ƙofar ma tana rufe yanayin kafin aikawa (#16319): idan an tsallake kowace manufa ta combo kafin a yi wani gwaji saboda samfurinta yana cikin kulle na wucin gadi na gajere, hanyar marar gwaji tana jira kulle ya wuce ƙarƙashin wannan iyakoki kuma tana sake aikawa, maimakon amsa `503 ALL_TARGETS_SKIPPED` marar-bayanin kula. Idan ba a yarda da jira ba (iyaka, gwaji ko kasafin kuɗi ya ƙare, ko fasalin ya kashe), amsar ƙarshe tana haɓakawa zuwa `429 rate_limit_error` tana ɗauke da `retry_after` / `reset_at` daga mafi farkon ƙarewar kulle na wucin gadi; kulle na quota, auth da not-found suna riƙe da 503 marar-bayanin kula.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
 ---
 
 ## 5. Sarrafa Karɓar Jerin Jiran Buƙatu (v3.8.49 · issue #6593)

@@ -409,6 +409,19 @@ Para sa bawat combo strategy (kapag naka-enable), ang isang request na magbubung
 
 Ang parehong gate ay sumasaklaw sa pre-dispatch na kaso (#16319): kapag ang bawat target ng isang combo ay nilaktawan bago pa man magawa ang anumang pagtatangka dahil ang modelo nito ay nasa isang maikling transient lockout, ang zero-attempt path ay hinihintay na matapos ang lock sa ilalim ng parehong mga limit at muling nag-dispatch, sa halip na sagutin ang isang walang-pahiwatig na `503 ALL_TARGETS_SKIPPED`. Kapag walang pinapayagang paghihintay (limit, pagtatangka, o budget na naubos, o naka-off ang feature), ang pangwakas na tugon ay uma-upgrade sa `429 rate_limit_error` na nagdadala ng `retry_after` / `reset_at` mula sa pinakamaagang pag-expire ng transient lock; ang mga quota, auth, at not-found na lock ay nagpapanatili ng walang-pahiwatig na 503.
 
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
+
+---
+
 ## 5. Admission Control ng Request Queue (v3.8.49 · isyu #6593)
 
 **Saklaw**: ang lokal na rate-limit queue na bawat provider+koneksyon (`open-sse/services/rateLimitManager.ts`, na nakabatay sa Bottleneck), isang layer sa ibaba ng tatlong mekanismo sa itaas.
