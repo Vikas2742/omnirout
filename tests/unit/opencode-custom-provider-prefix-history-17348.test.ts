@@ -241,3 +241,34 @@ test("#17348: old prefix of A colliding with explicit pricingKey of B cannot ass
     assert.equal(served.get("foo")?.pricing, undefined);
   });
 });
+
+
+test("#17348: disagreeing historical prices for the same old ID remain unresolved", async () => {
+  // The same old public identity can appear under a node's internal pricing key
+  // and an old-prefix pricing namespace. Neither source is authoritative when
+  // they disagree, regardless of response object enumeration order.
+  for (const prices of [
+    { [NODE]: { "ag/foo": { input: 1 } }, ag: { foo: { input: 9 } } },
+    { ag: { foo: { input: 9 } }, [NODE]: { "ag/foo": { input: 1 } } },
+  ]) {
+    await withMockedCatalog(current, prices, (overlay) => {
+      assert.equal(overlay.get("ih/foo")?.pricing, undefined, "never apply old prices eagerly");
+      const reconciled = reconcileHistoricalEnrichment(overlay, [{ id: "ih/foo" }]);
+      assert.equal(
+        reconciled.get("ih/foo")?.pricing,
+        undefined,
+        "conflicting historical quotes must not publish an arbitrary price"
+      );
+    });
+  }
+});
+
+test("#17348: agreeing historical quotes may be deduplicated safely", async () => {
+  await withMockedCatalog(current, {
+    [NODE]: { "ag/foo": { input: 2, output: 4 } },
+    ag: { foo: { input: 2, output: 4 } },
+  }, (overlay) => {
+    const reconciled = reconcileHistoricalEnrichment(overlay, [{ id: "ih/foo" }]);
+    assert.deepEqual(reconciled.get("ih/foo")?.pricing, { input: 2, output: 4 });
+  });
+});
