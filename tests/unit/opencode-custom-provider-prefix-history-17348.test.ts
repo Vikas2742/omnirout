@@ -310,3 +310,37 @@ test("#17348: deleted compatible provider rows are not current enrichment eviden
     assert.equal(overlay.get(NODE + "/deleted-model")?.providerAlias, undefined);
   });
 });
+
+
+test("#17348: reused public prefix can only be priced by the current node ID", async () => {
+  const active = {
+    [NODE]: {
+      id: NODE,
+      displayPrefix: "ag",
+      pricingUnsafePublicPrefix: true,
+      models: [{ id: "foo", upstreamId: true }],
+    },
+    ag: {
+      id: "ag",
+      alias: "ag",
+      pricingOnly: true,
+      historicalPricingNamespace: true,
+      models: [{ id: "foo", custom: true }],
+    },
+  };
+  await withMockedCatalog(active, {
+    ag: { foo: { input: 99 } },
+  }, (overlay) => {
+    assert.equal(reconcileHistoricalEnrichment(overlay, [{ id: "ag/foo" }])
+      .get("ag/foo")?.pricing, undefined,
+      "unverified inherited public price must not be assigned to the new owner");
+  });
+  await withMockedCatalog(active, {
+    ag: { foo: { input: 99 } },
+    [NODE]: { foo: { input: 7 } },
+  }, (overlay) => {
+    assert.deepEqual(reconcileHistoricalEnrichment(overlay, [{ id: "ag/foo" }])
+      .get("ag/foo")?.pricing, { input: 7 },
+      "explicit price under the new owner node ID remains valid");
+  });
+});
