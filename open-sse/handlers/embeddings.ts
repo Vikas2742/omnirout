@@ -27,6 +27,7 @@ import {
   hasStructuredEmbeddingInput,
   normalizeClovaEmbeddingV2Response,
   prepareJinaMixedEmbeddingInput,
+  prepareLlamaCppEmbeddingInput,
   prepareStructuredEmbeddingRequest,
 } from "./embeddingStructuredInput.ts";
 import { MAX_EMBEDDING_INLINE_ITEM_BYTES } from "@/shared/validation/schemas/apiV1";
@@ -283,12 +284,6 @@ function buildUpstreamBody(runtime: EmbeddingRuntime): Record<string, unknown> {
     if (!KNOWN_EMBEDDING_FIELDS.has(key) && value !== undefined) upstreamBody[key] = value;
   }
 
-  if (runtime.provider === "gemini" && upstreamBody.outputDimensionality === undefined) {
-    const outputDimensionality = Number(runtime.body.dimensions);
-    if (Number.isFinite(outputDimensionality) && outputDimensionality > 0) {
-      upstreamBody.outputDimensionality = outputDimensionality;
-    }
-  }
   const defaultParams = getEmbeddingModelDefaultParams(runtime.providerConfig, runtime.model);
   for (const [key, value] of Object.entries(defaultParams ?? {})) {
     if (upstreamBody[key] === undefined) upstreamBody[key] = value;
@@ -368,6 +363,14 @@ async function prepareMixedJinaInput(
   prepared.upstreamBody.input = await prepareJinaMixedEmbeddingInput(mixed, fetchEmbeddingMedia);
 }
 
+async function prepareLlamaCppInput(
+  runtime: EmbeddingRuntime,
+  prepared: PreparedEmbeddingRequest
+): Promise<void> {
+  const items = Array.isArray(runtime.body.input) ? runtime.body.input : [runtime.body.input];
+  prepared.upstreamBody.input = await prepareLlamaCppEmbeddingInput(items, fetchEmbeddingMedia);
+}
+
 async function prepareNativeTransport(
   runtime: EmbeddingRuntime,
   prepared: PreparedEmbeddingRequest,
@@ -409,6 +412,9 @@ async function applyStructuredTransport(
 
   if (isJinaProtocol && jinaNative && canonical) {
     await prepareMixedJinaInput(runtime, prepared);
+  } else if (runtime.providerConfig.structuredInputProtocol === "llama-cpp-mtmd") {
+    // Same URL/auth as text; only the canonical items change shape.
+    if (canonical) await prepareLlamaCppInput(runtime, prepared);
   } else if (useGeminiNative || (!passThroughJina && canonical)) {
     await prepareNativeTransport(runtime, prepared, token);
   }
