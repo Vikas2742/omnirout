@@ -276,3 +276,25 @@ test("#17348: older array-form tombstones still prevent historical reassignment"
   ).run("providerNodePrefixTombstones", "old-format", JSON.stringify(["legacy-prefix"]));
   assert.equal(history.getDeletedNodePrefixTombstones(core.getDbInstance()).has("legacy-prefix"), true);
 });
+
+
+test("#17348: reused live prefix cannot inherit the deleted node's unverified pricing", async () => {
+  await create(A, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(A, A, [{ id: "foo", name: "Foo A" }]);
+  await nodes.updateProviderNode(A, { prefix: prefixB });
+  await create(B, prefixA);
+  await nodes.deleteProviderNode(B);
+  await create(B, prefixA);
+  await models.replaceSyncedAvailableModelsForConnection(B, B, [{ id: "foo", name: "Foo B" }]);
+  persistPrice(prefixA, { foo: { input: 91 } });
+  persistPrice(B, { foo: { input: 7 } });
+  const published = await catalog();
+  assert.equal(published[B].displayPrefix, prefixA);
+  assert.equal(published[B].pricingUnsafePublicPrefix, true);
+  assert.equal(published[B].pricingKey, undefined,
+    "pricing at a retired public alias must not be attached to the new owner");
+  assert.equal(published[prefixA].pricingOnly, true);
+  assert.equal(published[prefixA].historicalPricingNamespace, true);
+  assert.deepEqual(published[prefixA].models.map((m: { id: string }) => m.id), ["foo"]);
+  assert.equal(published[A].historicalPrefixes, undefined);
+});
