@@ -21,7 +21,11 @@ export interface UsageModelGroupRow {
   lastSeenAt: string | null;
 }
 
-/** Successful usage since `sinceIso`, grouped by lower-cased provider/model (same keys enforcement groups by). */
+/**
+ * Successful usage since `sinceIso`, grouped by lower-cased provider/model (same keys enforcement groups by).
+ * Rows carrying a provider-reported cost (`provider_cost_usd`) are billed at that amount and never need
+ * a pricing row, so — like enforcement in `apiKeyUsageLimits.ts` — they are left out.
+ */
 export function getSuccessfulUsageModelGroupsSince(sinceIso: string): UsageModelGroupRow[] {
   const rows = getDbInstance()
     .prepare(
@@ -37,6 +41,7 @@ export function getSuccessfulUsageModelGroupsSince(sinceIso: string): UsageModel
       LEFT JOIN api_keys k ON k.id = u.api_key_id
       WHERE u.timestamp >= @sinceIso
         AND u.success = 1
+        AND u.provider_cost_usd IS NULL
       GROUP BY LOWER(u.provider), LOWER(u.model)
     `
     )
@@ -70,6 +75,7 @@ export function countLimitedApiKeysUsingModelsSince(sinceIso: string, labels: st
       JOIN api_keys k ON k.id = u.api_key_id
       WHERE u.timestamp >= @sinceIso
         AND u.success = 1
+        AND u.provider_cost_usd IS NULL
         AND ${LIMITED_KEY_SQL}
         AND (LOWER(u.provider) || '/' || LOWER(u.model)) IN (SELECT value FROM json_each(@labels))
     `

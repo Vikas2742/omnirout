@@ -80,6 +80,46 @@ test("eight-day report includes its boundary but excludes older and unsuccessful
   assert.equal(report.limitedApiKeysAffected, 1);
 });
 
+test("rows with a provider-reported cost are not reported as unpriced, matching enforcement", async () => {
+  const now = Date.parse("2026-10-09T12:00:00.000Z");
+  const key = await keys.createApiKey("metered", "unpriced-route-metered");
+  await keys.updateApiKeyPermissions(key.id, { usageLimitEnabled: true, weeklyUsageLimitUsd: 100 });
+  for (const model of ["metered-only", "metered-and-plain"]) {
+    await usage.saveRequestUsage({
+      provider: "unpriced-route-metered-fixture",
+      model,
+      apiKeyId: key.id,
+      tokens: { input: 100, output: 10 },
+      timestamp: new Date(now).toISOString(),
+      success: true,
+    });
+  }
+  // A second, token-priced row only for one model: that model is genuinely unpriced.
+  await usage.saveRequestUsage({
+    provider: "unpriced-route-metered-fixture",
+    model: "metered-and-plain",
+    apiKeyId: key.id,
+    tokens: { input: 5, output: 1 },
+    timestamp: new Date(now).toISOString(),
+    success: true,
+  });
+  core
+    .getDbInstance()
+    .prepare(
+      `UPDATE usage_history SET provider_cost_usd = 0.25
+       WHERE model = 'metered-only'
+          OR (model = 'metered-and-plain' AND tokens_input = 100)`
+    )
+    .run();
+  const report = await getUnpricedUsageReport({ now: () => now });
+  const labels = report.models
+    .filter((m) => m.provider === "unpriced-route-metered-fixture")
+    .map((m) => m.model);
+  assert.deepEqual(labels, ["metered-and-plain"]);
+  const plain = report.models.find((m) => m.model === "metered-and-plain");
+  assert.equal(plain?.requests, 1, "only the row without a stored cost is unpriced usage");
+});
+
 test("report failures return a fixed error without stack traces or storage paths", async () => {
   const { secret } = accessTokens.createAccessToken({ name: "failure-reader", scope: "read" });
   core.getDbInstance().exec("ALTER TABLE usage_history RENAME TO usage_history_offline");

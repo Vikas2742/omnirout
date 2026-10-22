@@ -20,6 +20,7 @@ const { mintDashboardSessionToken } =
 const { getUnpricedUsageReport } = await import("../../src/lib/usage/unpricedUsage.ts");
 const { saveRequestUsage } = await import("../../src/lib/usage/usageHistory.ts");
 const { enforceApiKeyPolicy } = await import("../../src/shared/utils/apiKeyPolicy.ts");
+const { getCachedSettings } = await import("../../src/lib/db/readCache.ts");
 
 const POLICY = "UNPRICED_USAGE_BUDGET_POLICY";
 const LEGACY = "USAGE_LIMIT_IGNORE_UNPRICED";
@@ -239,6 +240,10 @@ test("invalid enum PUT is rejected without changing either flag", async () => {
 test("unreadable flag store never advertises success or relaxes enforcement via env", async () => {
   process.env[POLICY] = "count_as_zero";
   process.env[LEGACY] = "true";
+  // Dashboard session verification fails closed (401) when the cached settings cannot be
+  // read (#15063). Warm that cache first so this test still reaches the route's own
+  // unreadable-flag-store handling (500) once the table goes offline.
+  await getCachedSettings();
   const db = core.getDbInstance();
   db.exec("ALTER TABLE key_value RENAME TO key_value_offline");
   flagsDb.clearFeatureFlagOverrideCache();
