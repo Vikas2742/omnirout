@@ -423,6 +423,7 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
   const compatiblePublicPrefixes = new Set<string>();
   const currentCatalogKeys = new Set<string>();
   const canonicalByPublicPrefix = new Map<string, string>();
+  const upstreamModelIdsByAlias = new Map<string, Set<string>>();
   const historyCandidatesByAlias = new Map<string, Map<string, string>>();
   const pendingHistoryClaims: Array<{ oldPrefix: string; alias: string }> = [];
   const pendingPricingClaims: Array<{ pricingKey: string; alias: string }> = [];
@@ -460,6 +461,20 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
           if (publicPrefix) compatiblePublicPrefixes.add(publicPrefix);
           const models = (slot as { models?: unknown[] }).models;
           if (!Array.isArray(models)) continue;
+          if (publicPrefix) {
+            // The gateway's upstreamId=true bit disambiguates a literal
+            // upstream "ih/foo" from a pre-prefixed representation of "foo".
+            // IDs containing '/' must not be normalized by startsWith alone.
+            const literal = new Set<string>();
+            for (const candidate of models) {
+              if (!candidate || typeof candidate !== "object") continue;
+              const record = candidate as { id?: unknown; upstreamId?: unknown };
+              if (record.upstreamId === true && typeof record.id === "string") {
+                literal.add(record.id);
+              }
+            }
+            upstreamModelIdsByAlias.set(publicPrefix, literal);
+          }
           const canonicalRaw = (slot as { id?: unknown }).id;
           const providerCanonical =
             typeof canonicalRaw === "string" && canonicalRaw.length > 0 ? canonicalRaw : catalogKey;
@@ -516,7 +531,8 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
             // Canonical providers keep their upstream IDs intact.
             // Never strip an arbitrary segment: upstream model IDs may contain /.
             const modelId =
-              publicPrefix && id.startsWith(`${providerAlias}/`)
+              publicPrefix && id.startsWith(`${providerAlias}/`) &&
+              !upstreamModelIdsByAlias.get(providerAlias)?.has(id)
                 ? id.slice(providerAlias.length + 1)
                 : id;
             const namespaced = `${providerAlias}/${modelId}`;
@@ -594,7 +610,8 @@ export const defaultOmniRouteEnrichmentFetcher: OmniRouteEnrichmentFetcher = asy
           for (const [rawModelId, raw] of Object.entries(slot as Record<string, unknown>)) {
             const modelId =
               compatiblePublicPrefixes.has(providerAlias) &&
-              rawModelId.startsWith(`${providerAlias}/`)
+              rawModelId.startsWith(`${providerAlias}/`) &&
+              !upstreamModelIdsByAlias.get(providerAlias)?.has(rawModelId)
                 ? rawModelId.slice(providerAlias.length + 1)
                 : rawModelId;
             if (!raw || typeof raw !== "object") continue;
