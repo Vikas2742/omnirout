@@ -137,6 +137,9 @@ export async function GET() {
           id: modelId,
           name: typeof model.name === "string" && model.name.trim() ? model.name : modelId,
           custom: true,
+          // Distinguish a literal upstream "ih/foo" from an already-prefixed
+          // public "ih/foo". The latter appears only in pricing-only rows.
+          upstreamId: true,
         });
         existingIds.add(modelId);
       }
@@ -172,6 +175,7 @@ export async function GET() {
           id: modelId,
           name: typeof model.name === "string" && model.name.trim() ? model.name : modelId,
           custom: true,
+          upstreamId: true,
         };
         const existingIndex = providerCatalog.models.findIndex(
           (entry: { id?: string }) => entry.id === modelId
