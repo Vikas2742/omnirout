@@ -300,6 +300,46 @@ test("DELETE resolves the model as submitted and by its normalized form", async 
   );
 });
 
+test("DELETE resetEndpoints resolves an endpoint override by its normalized form", async () => {
+  await resetStorage();
+  await seedCompatibleNode();
+  process.env.OMNIROUTE_API_KEY = "sk-prefix-stack-mgmt";
+
+  // Discovered model plus an operator endpoint override, both stored under
+  // the bare upstream id (the current write path).
+  await modelsDb.replaceSyncedAvailableModelsForConnection(NODE_ID, "connection-1", [
+    {
+      id: MODEL_IQ1M,
+      name: "Qwen",
+      supportedEndpoints: ["chat"],
+      endpointCapabilitySource: "declared",
+    },
+  ]);
+  const edited = await modelsDb.updateCustomModel(
+    NODE_ID,
+    MODEL_IQ1M,
+    { supportedEndpoints: ["chat", "embeddings"] },
+    { createIfMissing: true }
+  );
+  assert.equal(edited?.endpointCapabilitySource, "operator");
+
+  // Resetting by the prefixed paste must reach the bare-id override.
+  const resetByPrefixedPaste = () =>
+    providerModelsRoute.DELETE(
+      new Request(
+        `http://localhost/api/provider-models?provider=${encodeURIComponent(NODE_ID)}&model=${encodeURIComponent(STACKED_IQ1M)}&resetEndpoints=true`,
+        { method: "DELETE", headers: { Authorization: "Bearer sk-prefix-stack-mgmt" } }
+      )
+    );
+  const reset = await resetByPrefixedPaste();
+  assert.equal(reset.status, 200);
+  assert.deepEqual(await reset.json(), { restored: true, resetEndpoints: true });
+  assert.deepEqual(await modelsDb.getCustomModels(NODE_ID), []);
+
+  const again = await resetByPrefixedPaste();
+  assert.equal(again.status, 404);
+});
+
 test("a hide rule keyed on the bare id suppresses a stacked stored row", async () => {
   await resetStorage();
   await seedCompatibleNode();

@@ -57,6 +57,64 @@ function normalizeRequestedModelIds(
 }
 
 /**
+ * Run `action` on a model id as submitted, then (when it differs) on its
+ * node-normalized form, stopping at the first id the action handles. Legacy
+ * rows can still be stored under a prefixed id while writes store the bare
+ * upstream id, so id-addressed resets and deletes resolve both forms.
+ */
+async function tryEachIdForm(
+  submittedId: string,
+  normalizedId: string,
+  action: (id: string) => Promise<boolean>
+): Promise<boolean> {
+  if (await action(submittedId)) return true;
+  return normalizedId !== submittedId && (await action(normalizedId));
+}
+
+/**
+ * Hide or unhide each requested model under its stored (bare) id so a prefixed
+ * paste hits the same row the catalog emits. Returns every id form touched:
+ * managed aliases are keyed `<storagePrefix>/<storedId>`, so the alias layer
+ * gets both forms and a prefixed paste cannot leave the bare row's alias (or
+ * vice versa) pointing at a still-visible model.
+ */
+async function setHiddenByStoredIds(
+  provider: string,
+  modelIds: string[],
+  isHidden: boolean,
+  modality: string | undefined
+): Promise<string[]> {
+  const normalizedIds: string[] = [];
+  for (const requestedId of modelIds) {
+    const modelId = await normalizeNodeModelId(provider, requestedId);
+    normalizedIds.push(modelId);
+    const updatedModel = await updateCustomModel(provider, modelId, { isHidden });
+    if (!updatedModel) {
+      mergeModelCompatOverride(provider, modelId, { isHidden, modality });
+    }
+  }
+  return Array.from(new Set([...modelIds, ...normalizedIds]));
+}
+
+/**
+ * DELETE ?resetEndpoints=true: restore a model's endpoint override. Overrides
+ * follow the same write contract as the rows they annotate (bare upstream id),
+ * so the id resolves as submitted, then by its normalized form.
+ */
+async function resetEndpointOverrideResponse(provider: string, modelId: string) {
+  const normalizedId = await normalizeNodeModelId(provider, modelId);
+  const restored = await tryEachIdForm(modelId, normalizedId, (id) =>
+    resetModelEndpointOverride(provider, id)
+  );
+  if (!restored)
+    return Response.json(
+      { error: { message: "No endpoint override to reset", type: "not_found" } },
+      { status: 404 }
+    );
+  return Response.json({ restored: true, resetEndpoints: true });
+}
+
+/**
  * GET /api/provider-models?provider=<id>
  * List custom models (all providers if no provider param)
  */
@@ -490,22 +548,7 @@ export async function PATCH(request) {
       );
     }
 
-    const normalizedIds: string[] = [];
-    for (const requestedId of modelIds) {
-      // Hide/unhide keyed by the stored (bare) id so a prefixed paste hits
-      // the same row the catalog emits.
-      const modelId = await normalizeNodeModelId(provider, requestedId);
-      normalizedIds.push(modelId);
-      const updatedModel = await updateCustomModel(provider, modelId, { isHidden: body.isHidden });
-      if (!updatedModel) {
-        mergeModelCompatOverride(provider, modelId, { isHidden: body.isHidden, modality });
-      }
-    }
-
-    // Managed aliases are keyed `<storagePrefix>/<storedId>`; hand the alias
-    // layer both forms so a prefixed paste cannot leave the bare row's alias
-    // (or vice versa) pointing at a still-visible model.
-    const aliasTargetIds = Array.from(new Set([...modelIds, ...normalizedIds]));
+    const aliasTargetIds = await setHiddenByStoredIds(provider, modelIds, body.isHidden, modality);
     const aliasChanges =
       body.isHidden === true
         ? {
@@ -589,23 +632,7 @@ export async function DELETE(request) {
       );
     }
 
-    if (resetEndpoints) {
-      // Endpoint overrides follow the same write contract as the rows they
-      // annotate (bare upstream id); resolve the id as submitted, then its
-      // normalized form.
-      const normalizedResetId = await normalizeNodeModelId(provider, modelId);
-      const restored =
-        (await resetModelEndpointOverride(provider, modelId)) ||
-        (normalizedResetId !== modelId
-          ? await resetModelEndpointOverride(provider, normalizedResetId)
-          : false);
-      if (!restored)
-        return Response.json(
-          { error: { message: "No endpoint override to reset", type: "not_found" } },
-          { status: 404 }
-        );
-      return Response.json({ restored: true, resetEndpoints: true });
-    }
+    if (resetEndpoints) return await resetEndpointOverrideResponse(provider, modelId);
 
     // Resetting a user-owned overlay must never delete the same-id synced base.
     // The normal delete action retains its existing behavior for a standalone
@@ -614,29 +641,22 @@ export async function DELETE(request) {
     // node-normalized form, so both legacy stacked rows and pasted prefixed
     // ids resolve to the same delete.
     const normalizedModelId = await normalizeNodeModelId(provider, modelId);
-    const removedCustom = await removeCustomModel(provider, modelId);
-    const removedCustomNormalized =
-      removedCustom || normalizedModelId === modelId
-        ? false
-        : await removeCustomModel(provider, normalizedModelId);
+    const modelIdForms = Array.from(new Set([modelId, normalizedModelId]));
+    const removedCustom = await tryEachIdForm(modelId, normalizedModelId, (id) =>
+      removeCustomModel(provider, id)
+    );
     const removedSynced =
-      removedCustom || removedCustomNormalized || resetOverride
+      removedCustom || resetOverride
         ? false
-        : (await removeSyncedAvailableModel(provider, modelId)) ||
-          (normalizedModelId !== modelId
-            ? await removeSyncedAvailableModel(provider, normalizedModelId)
-            : false);
-    const removed = removedCustom || removedCustomNormalized || removedSynced;
-    if (resetOverride && (removedCustom || removedCustomNormalized)) {
-      removeModelContextOverride(provider, modelId);
-      if (normalizedModelId !== modelId) removeModelContextOverride(provider, normalizedModelId);
-      const aliasChanges = await syncManagedAvailableModelAliases(
-        provider,
-        Array.from(new Set([modelId, normalizedModelId])),
-        {
-          pruneMissing: false,
-        }
-      );
+        : await tryEachIdForm(modelId, normalizedModelId, (id) =>
+            removeSyncedAvailableModel(provider, id)
+          );
+    const removed = removedCustom || removedSynced;
+    if (resetOverride && removedCustom) {
+      modelIdForms.forEach((id) => removeModelContextOverride(provider, id));
+      const aliasChanges = await syncManagedAvailableModelAliases(provider, modelIdForms, {
+        pruneMissing: false,
+      });
       return Response.json({
         removed,
         resetOverride: true,
@@ -644,10 +664,7 @@ export async function DELETE(request) {
       });
     }
 
-    const removedAliases = await deleteManagedAvailableModelAliases(
-      provider,
-      Array.from(new Set([modelId, normalizedModelId]))
-    );
+    const removedAliases = await deleteManagedAvailableModelAliases(provider, modelIdForms);
     return Response.json({ removed, aliasChanges: { removed: removedAliases, assigned: [] } });
   } catch (error) {
     console.error("Error removing provider model:", error);
