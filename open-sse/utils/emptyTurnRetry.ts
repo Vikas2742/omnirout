@@ -12,6 +12,7 @@ import {
 import { isEmptyTurnCore } from "./streamEmptyChoices.ts";
 import { sanitizeStreamingChunk } from "../handlers/responseSanitizer.ts";
 import { getAnyReasoningValue, getReadableReasoningValue } from "./reasoningFields.ts";
+import { SYSTEM_ECHO_THRESHOLD } from "./directivePreambleStripper.ts";
 
 /** Max upstream bytes buffered for flush-empty-retry classification (flag-gated). */
 export const FLUSH_EMPTY_RETRY_MAX_BYTES = 256_000;
@@ -40,27 +41,35 @@ export type EmptyTurnSummary = {
  * ENTIRE content is such markup carries no answer — the downstream consumer
  * strips the tags and is left with an empty turn (#17461).
  *
+ * A block carrying >= `SYSTEM_ECHO_THRESHOLD` chars of content is NOT a draft
+ * skeleton: `directivePreambleStripper` preserves it as the model's real response
+ * (e.g. a Claude Code compaction reply `<analysis>…</analysis><summary>…</summary>`),
+ * so it counts as usable here too and is never retried as an empty turn.
+ *
  * Bounded, non-overlapping repetition: one pass over the text, no nested
  * quantifiers, so it cannot backtrack on untrusted content.
  */
-const DRAFT_BLOCK_PATTERN = /<(summary|analysis|system-reminder)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+const DRAFT_BLOCK_PATTERN = /<(summary|analysis|system-reminder)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi;
 
 /**
  * True when the text carries something a client can use as an answer.
  *
  * Draft/system-echo markup alone does not count: the turn is then "empty" for
  * the flush-empty-retry classifier, so the recovery path can retry it on
- * another connection instead of shipping a degenerate turn.
+ * another connection instead of shipping a degenerate turn. Whitespace-only
+ * text does not count either (it used to, via `length > 0`).
  */
 export function hasUsableContentText(contentText: string | null | undefined): boolean {
   const text = typeof contentText === "string" ? contentText : "";
   if (!text.trim()) return false;
-  if (!DRAFT_BLOCK_PATTERN.test(text)) return true;
-  // Reset the global regex state before reusing it (lastIndex is sticky).
-  DRAFT_BLOCK_PATTERN.lastIndex = 0;
-  const stripped = text.replace(DRAFT_BLOCK_PATTERN, "").trim();
-  DRAFT_BLOCK_PATTERN.lastIndex = 0;
-  return stripped.length > 0;
+  let hasSubstantialBlock = false;
+  // `String.prototype.replace` with a global regex always starts at index 0 and
+  // leaves `lastIndex` reset, so no manual state handling is needed.
+  const stripped = text.replace(DRAFT_BLOCK_PATTERN, (_match, _tag, inner: string) => {
+    if (inner.length >= SYSTEM_ECHO_THRESHOLD) hasSubstantialBlock = true;
+    return "";
+  });
+  return hasSubstantialBlock || stripped.trim().length > 0;
 }
 
 /**
