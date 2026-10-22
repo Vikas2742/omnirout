@@ -200,3 +200,66 @@ test("#17289 rotateWithinVisionTiers rotates the confirmed prefix, then the unkn
   );
   assert.deepEqual(order(1, 2, 1), [0, 1], "one confirmed target is always first");
 });
+
+
+test("#17289: unknown-vision fallback reports actionable upstream attachment rejection", async () => {
+  for (const strategy of ["priority", "round-robin"] as const) {
+    const attempted: string[] = [];
+    const model = "workbuddy/unknown-vision-upstream-17289";
+    const response = await handleComboChat({
+      body: request,
+      combo: {
+        name: "unknown-vision-upstream-" + strategy,
+        strategy,
+        models: [model],
+        config: { maxRetries: 0 },
+      },
+      handleSingleModel: async (_body, modelStr) => {
+        attempted.push(modelStr);
+        return new Response(
+          JSON.stringify({
+            error: {
+              message: "this profile has no attachment handler installed; cannot process images",
+              code: "unsupported_content",
+            },
+          }),
+          { status: 400, headers: { "content-type": "application/json" } }
+        );
+      },
+      isModelAvailable: async () => true,
+      log,
+      settings: null,
+      relayOptions: null,
+      allCombos: null,
+    });
+    assert.deepEqual(attempted, [model], strategy + " must dispatch unknown vision before failing");
+    assert.equal(response.status, 400);
+    const json = await response.json() as { error: { message: string; code?: string } };
+    assert.match(json.error.message, /attachment handler/i,
+      "upstream explanation must survive the combo error boundary");
+    assert.doesNotMatch(json.error.message, /No target.*confirmed vision support|capability_mismatch/i);
+  }
+});
+
+test("#17289: an empty upstream 404 identifies the attempted model in combo diagnostics", async () => {
+  const model = "workbuddy/unknown-vision-404-17289";
+  const response = await handleComboChat({
+    body: request,
+    combo: {
+      name: "unknown-vision-404-detail-17289",
+      strategy: "priority",
+      models: [model],
+      config: { maxRetries: 0 },
+    },
+    handleSingleModel: async () => new Response(null, { status: 404 }),
+    isModelAvailable: async () => true,
+    log,
+    settings: null,
+    relayOptions: null,
+    allCombos: null,
+  });
+  assert.equal(response.status, 404);
+  const json = await response.json() as { error: { message: string } };
+  assert.match(json.error.message, /unknown-vision-404-17289/,
+    "404 diagnostic must identify which upstream target was attempted");
+});
