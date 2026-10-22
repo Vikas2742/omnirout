@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button, Modal } from "@/shared/components";
 
 interface OAuthExportImportModalProps {
@@ -8,8 +9,6 @@ interface OAuthExportImportModalProps {
   onClose: () => void;
   onImported: () => Promise<void>;
 }
-
-type Translator = (key: string, values?: Record<string, unknown>) => string;
 
 type PreviewAccount = {
   index: number;
@@ -48,7 +47,7 @@ function accountEmail(account: Record<string, unknown>): string {
   if (typeof account.email === "string" && account.email) return account.email;
   const token = account.token as Record<string, unknown> | undefined;
   if (token && typeof token.email === "string" && token.email) return token.email;
-  return "(no email)";
+  return "";
 }
 
 function accountHasRefreshToken(account: Record<string, unknown>): boolean {
@@ -84,34 +83,7 @@ export function OAuthExportImportModal({
   const [importing, setImporting] = useState(false);
   const [outcome, setOutcome] = useState<ImportOutcome | null>(null);
 
-  const t: Translator = (key, values) => {
-    const dict: Record<string, string> = {
-      oauthExportTitle: "Import account-manager export",
-      oauthExportDescription:
-        "Upload a plaintext export from an account manager (e.g. Antigravity Manager's cloud-accounts export). Tokens are refreshed server-side and each account becomes an OAuth connection — duplicates refresh in place.",
-      oauthExportProviderLabel: "Provider",
-      oauthExportChoose: "Choose file",
-      oauthExportSchemaHint:
-        "Accepted: {accounts:[…]} document, a bare array, or a single record. Tokens may live under a nested token object or flat on the record.",
-      oauthExportDetected: "{count} account(s) detected",
-      oauthExportColEmail: "Email",
-      oauthExportColProvider: "Provider",
-      oauthExportColRefresh: "Refresh token",
-      oauthExportYes: "yes",
-      oauthExportNo: "no",
-      oauthExportImporting: "Importing…",
-      oauthExportImport: "Import {count} account(s)",
-      oauthExportResult: "Imported {imported}/{total} — {failed} failed",
-      oauthExportCancel: "Cancel",
-      oauthExportClose: "Close",
-      oauthExportParseError: "Could not read any accounts from this file.",
-    };
-    let text = dict[key] ?? key;
-    if (values) {
-      for (const [k, v] of Object.entries(values)) text = text.replace(`{${k}}`, String(v));
-    }
-    return text;
-  };
+  const t = useTranslations("providers");
 
   const resetFile = () => {
     setFileName("");
@@ -127,7 +99,7 @@ export function OAuthExportImportModal({
     setOutcome(null);
     setParseError("");
     try {
-      if (file.size > 5 * 1024 * 1024) throw new Error("File too large");
+      if (file.size > 5 * 1024 * 1024) throw new Error("file too large");
       const doc = JSON.parse(await file.text());
       const parsed = extractAccounts(doc);
       if (parsed.length === 0 || parsed.length > 100) {
@@ -202,7 +174,7 @@ export function OAuthExportImportModal({
         errorLines: (data.results ?? [])
           .filter((r) => !r.ok)
           .slice(0, 8)
-          .map((r) => `${r.email ?? `#${r.index}`}: ${r.error ?? "unknown error"}`),
+          .map((r) => `${r.email ?? `#${r.index}`}: ${r.error ?? t("oauthExportUnknownError")}`),
       });
       if ((data.imported ?? 0) > 0) {
         try {
@@ -255,7 +227,7 @@ export function OAuthExportImportModal({
           <input
             ref={fileInputRef}
             type="file"
-            aria-label="Account export JSON file"
+            aria-label={t("oauthExportFileAria")}
             disabled={importing}
             accept=".json,application/json"
             className="hidden"
@@ -294,7 +266,7 @@ export function OAuthExportImportModal({
                     <th className="py-1.5 px-2">
                       <input
                         type="checkbox"
-                        aria-label="Select all accounts"
+                        aria-label={t("oauthExportSelectAll")}
                         disabled={importing}
                         checked={selectedCount === preview.length}
                         onChange={(e) => toggleAll(e.target.checked)}
@@ -311,13 +283,15 @@ export function OAuthExportImportModal({
                       <td className="py-1 px-2">
                         <input
                           type="checkbox"
-                          aria-label={`Select account ${row.index + 1}`}
+                          aria-label={t("oauthExportSelectAccount", { index: row.index + 1 })}
                           disabled={importing}
                           checked={row.selected}
                           onChange={() => toggleRow(row.index)}
                         />
                       </td>
-                      <td className="py-1 px-2 font-medium text-text-main">{row.email}</td>
+                      <td className="py-1 px-2 font-medium text-text-main">
+                        {row.email || t("oauthExportNoEmail")}
+                      </td>
                       <td className="py-1 px-2 font-mono text-text-muted">{row.provider}</td>
                       <td
                         className={`py-1 px-2 ${row.hasRefreshToken ? "text-emerald-400" : "text-amber-400"}`}
@@ -357,7 +331,7 @@ export function OAuthExportImportModal({
 
         <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
           <Button size="sm" variant="secondary" onClick={handleClose}>
-            {t("oauthExportCancel")}
+            {t("cancel")}
           </Button>
           <Button
             size="sm"
