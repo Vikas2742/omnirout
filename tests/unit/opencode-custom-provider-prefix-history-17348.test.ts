@@ -171,3 +171,73 @@ test("#17348: reused old prefix cannot steal another live provider's pricing", a
       "reused live old alias invalidates historical mapping when it is also served");
   });
 });
+
+test("#17348: old namespace must never bypass ambiguous served-ID reconciliation", async () => {
+  await withMockedCatalog(current, { ag: { foo: { input: 42 } } }, (overlay) => {
+    const bothServed = reconcileHistoricalEnrichment(overlay, [
+      { id: "ih/foo" }, { id: "ih/ag/foo" },
+    ]);
+    assert.equal(bothServed.get("ih/foo")?.pricing, undefined);
+    assert.equal(bothServed.get("ih/ag/foo")?.pricing, undefined);
+    assert.equal(overlay.get("ih/foo")?.pricing, undefined,
+      "legacy namespace pricing must only exist as a pending candidate");
+  });
+});
+
+test("#17348: direct current prices dominate legacy pricing in either enumeration order", async () => {
+  for (const prices of [
+    { ag: { foo: { input: 1 } }, [NODE]: { foo: { input: 9 } } },
+    { [NODE]: { foo: { input: 9 } }, ag: { foo: { input: 1 } } },
+  ]) {
+    await withMockedCatalog(current, prices, (overlay) => {
+      assert.equal(
+        reconcileHistoricalEnrichment(overlay, [{ id: "ih/foo" }]).get("ih/foo")?.pricing?.input,
+        9
+      );
+    });
+  }
+});
+
+test("#17348: compatible upstream foo and ih/foo remain two different identities", async () => {
+  await withMockedCatalog({
+    [NODE]: {
+      id: NODE,
+      displayPrefix: "ih",
+      models: [
+        { id: "foo", name: "Short", upstreamId: true },
+        { id: "ih/foo", name: "Literal upstream namespace", upstreamId: true },
+      ],
+    },
+  }, {
+    [NODE]: { foo: { input: 2 }, "ih/foo": { input: 12 } },
+  }, (overlay) => {
+    const served = reconcileHistoricalEnrichment(overlay, [
+      { id: "ih/foo" }, { id: "ih/ih/foo" },
+    ]);
+    assert.equal(served.get("ih/foo")?.name, "Short");
+    assert.equal(served.get("ih/foo")?.pricing?.input, 2);
+    assert.equal(served.get("ih/ih/foo")?.name, "Literal upstream namespace");
+    assert.equal(served.get("ih/ih/foo")?.pricing?.input, 12);
+    assert.notEqual(served.get("ih/ih/foo"), served.get("ih/foo"));
+  });
+});
+
+test("#17348: old prefix of A colliding with explicit pricingKey of B cannot assign prices", async () => {
+  const nodeB = "openai-compatible-chat-explicit-pricing-b";
+  await withMockedCatalog({
+    [NODE]: current[NODE],
+    [nodeB]: {
+      id: nodeB,
+      displayPrefix: "si",
+      pricingKey: "ag",
+      models: [{ id: "foo", upstreamId: true }],
+    },
+  }, { ag: { foo: { input: 77 } } }, (overlay) => {
+    const served = reconcileHistoricalEnrichment(overlay, [
+      { id: "ih/foo" }, { id: "si/foo" },
+    ]);
+    assert.equal(served.get("ih/foo")?.pricing, undefined);
+    assert.equal(served.get("si/foo")?.pricing, undefined);
+    assert.equal(served.get("foo")?.pricing, undefined);
+  });
+});
