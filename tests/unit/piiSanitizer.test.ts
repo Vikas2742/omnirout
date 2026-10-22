@@ -269,8 +269,8 @@ test("sanitizePII detects and redacts DE Steuer-ID", async () => {
   delete process.env.PII_RESPONSE_SANITIZATION_MODE;
 
   const { sanitizePII } = await import("@/lib/piiSanitizer");
-  // Valid Steuer-ID: 77777777778 (ISO 7064 Mod 11,10)
-  const input = "Steuer-ID: 77777777778";
+  // Valid Steuer-ID: 65929970489 (ISO 7064 Mod 11,10 + digit-structure rules)
+  const input = "Steuer-ID: 65929970489";
   const result = sanitizePII(input);
 
   assert.ok(result.text.includes("[DE_STEUERID_REDACTED]"), "DE Steuer-ID should be redacted");
@@ -299,8 +299,8 @@ test("sanitizePII detects and redacts ZA ID", async () => {
   delete process.env.PII_RESPONSE_SANITIZATION_MODE;
 
   const { sanitizePII } = await import("@/lib/piiSanitizer");
-  // Valid SA ID: 8001015009083 (Luhn check digit valid)
-  const input = "SA ID: 8001015009083";
+  // Valid SA ID: 8001015009087 (standard Luhn over all 13 digits)
+  const input = "SA ID: 8001015009087";
   const result = sanitizePII(input);
 
   assert.ok(result.text.includes("[ZA_ID_REDACTED]"), "ZA ID should be redacted");
@@ -341,8 +341,8 @@ test("sanitizePII detects and redacts ZA tax reference", async () => {
   delete process.env.PII_RESPONSE_SANITIZATION_MODE;
 
   const { sanitizePII } = await import("@/lib/piiSanitizer");
-  // Valid SA tax ref: 1000000000 (10 digits)
-  const input = "Tax Ref: 1000000000";
+  // Valid SA tax ref: 1000000008 (10 digits, Luhn) with a "tax" cue in front of it
+  const input = "Tax Ref: 1000000008";
   const result = sanitizePII(input);
 
   assert.ok(result.text.includes("[ZA_TAXREF_REDACTED]"), "ZA tax ref should be redacted");

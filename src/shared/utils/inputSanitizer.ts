@@ -9,10 +9,8 @@
 
 import { parseEnvBoolean } from "@/shared/utils/envBoolean";
 import { resolveBlockThreshold, shouldBlockDetections } from "@/shared/utils/injectionSeverity";
-import {
-  PII_PATTERNS as SHARED_PII_PATTERNS,
-  validators,
-} from "@/shared/utils/piiPatterns";
+import { PII_REQUEST_TYPE_ALIASES } from "@/shared/constants/piiTypes";
+import { buildGdprPopiaRules, precedingContext } from "@/shared/utils/piiPatterns";
 
 // ─── Prompt Injection Patterns ───────────────────────────────────────
 
@@ -118,9 +116,8 @@ const SCAN_GAP = "\n[GAP]\n";
 
 // ─── PII Patterns ────────────────────────────────────────────────────
 
-/** @type {Array<{name: string, pattern: RegExp, replacement: string}>} */
+/** @type {Array<{name: string, pattern: RegExp, replacement: string, validate?: (match: string, context: string) => boolean}>} */
 const PII_PATTERNS = [
-  // Existing patterns with specific formats (checked first)
   {
     name: "email",
     pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
@@ -142,47 +139,17 @@ const PII_PATTERNS = [
     replacement: "[CARD_REDACTED]",
   },
 
-  // GDPR / EU patterns with specific formats (checked before general patterns)
-  {
-    name: "iban",
-    pattern: /\b[A-Z]{2}\d{2}[A-Z0-9]{1,30}\b/gi,
-    replacement: "[IBAN_REDACTED]",
-  },
-  {
-    name: "eu_vat",
-    // Require at least 4 chars after country code to avoid matching IBAN prefixes like "GB29"
-    pattern: /\b[A-Z]{2}[A-Z0-9]{4,12}\b/g,
-    replacement: "[EU_VAT_REDACTED]",
-  },
-  {
-    name: "es_dni_nie",
-    pattern: /\b[XYZ]?\d{8}[A-Z]\b/gi,
-    replacement: "[ES_DNI_REDACTED]",
-  },
-  {
-    name: "it_codice_fiscale",
-    pattern: /\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b/gi,
-    replacement: "[IT_CF_REDACTED]",
-  },
-
-  // POPIA / South Africa specific patterns (checked before general digit patterns)
-  {
-    name: "za_phone",
-    pattern: /\b(?:\+?27|0)[\s-]?(?:1[0-9]|2[1-9]|3[1-9]|4[0-9]|5[1-9]|7[1-9]|8[1-9])[\s-]?\d{3}[\s-]?\d{4}\b/g,
-    replacement: "[ZA_PHONE_REDACTED]",
-  },
-  {
-    name: "za_vat",
-    pattern: /\b4\d{9}\b/g,
-    replacement: "[ZA_VAT_REDACTED]",
-  },
-  {
-    name: "za_tax_ref",
-    pattern: /\b\d{10}\b/g,
-    replacement: "[ZA_TAXREF_REDACTED]",
-  },
-
-  // General patterns (checked last)
+  // GDPR (EU) and POPIA (ZA) identifiers, shared with the response-side sanitizer
+  // (src/shared/utils/piiPatterns.ts). Each match is redacted only when its
+  // validator accepts it, and the group sits ahead of the generic phone pattern so a
+  // validated ID keeps its own label. Order numbers, timestamps and identifiers such as
+  // `gpt4o` or `gh12abc` stay untouched.
+  ...buildGdprPopiaRules().map((rule) => ({
+    name: rule.name,
+    pattern: rule.regex,
+    replacement: rule.replacement,
+    validate: rule.validate,
+  })),
   {
     name: "phone_br",
     pattern: /\b\(?\d{2}\)?\s?\d{4,5}-?\d{4}\b/g,
@@ -192,35 +159,6 @@ const PII_PATTERNS = [
     name: "ssn_us",
     pattern: /\b\d{3}-\d{2}-\d{4}\b/g,
     replacement: "[SSN_REDACTED]",
-  },
-
-  // EU digit-only patterns with validators on response side
-  {
-    name: "se_personnummer",
-    pattern: /\b\d{6}[-+]?\d{4}\b/g,
-    replacement: "[SE_PNR_REDACTED]",
-  },
-  {
-    name: "pl_pesel",
-    pattern: /\b\d{11}\b/g,
-    replacement: "[PL_PESEL_REDACTED]",
-  },
-  {
-    name: "nl_bsn",
-    pattern: /\b\d{9}\b/g,
-    replacement: "[NL_BSN_REDACTED]",
-  },
-  {
-    name: "de_steuer_id",
-    pattern: /\b\d{11}\b/g,
-    replacement: "[DE_STEUERID_REDACTED]",
-  },
-
-  // ZA ID (13 digits, checked last among specific patterns)
-  {
-    name: "za_id",
-    pattern: /\b\d{13}\b/g,
-    replacement: "[ZA_ID_REDACTED]",
   },
 ];
 
@@ -375,16 +313,43 @@ function detectInjection(text) {
 }
 
 /**
+ * Built-in rules narrowed to the operator's per-type selection (null = all),
+ * followed by any pre-compiled custom rules.
+ * @param {{ enabledTypes?: ReadonlySet<string> | null, customRules?: Array<{name: string, regex: RegExp, replacement: string}> }} [options]
+ */
+function resolvePiiRules(options) {
+  const enabled = options?.enabledTypes ?? null;
+  const builtins = enabled
+    ? PII_PATTERNS.filter((rule) => enabled.has(PII_REQUEST_TYPE_ALIASES[rule.name] ?? rule.name))
+    : PII_PATTERNS;
+  const custom = (options?.customRules ?? []).map((rule) => ({
+    name: rule.name,
+    pattern: rule.regex,
+    replacement: rule.replacement,
+  }));
+  return custom.length > 0 ? [...builtins, ...custom] : builtins;
+}
+
+/**
  * Scan and optionally redact PII from text.
  * @param {string} text
  * @param {boolean} redact - If true, replaces PII with placeholders
+ * @param {{ enabledTypes?: ReadonlySet<string> | null, customRules?: Array<{name: string, regex: RegExp, replacement: string}> }} [options] - per-type selection and custom rules
  * @returns {{ text: string, detections: Array<{type: string, count: number}> }}
  */
-function processPII(text, redact = false) {
+function processPII(text, redact = false, options = undefined) {
   const detections = [];
   let processed = text;
 
-  for (const rule of PII_PATTERNS) {
+  for (const rule of resolvePiiRules(options)) {
+    if (rule.validate) {
+      const validated = redactValidatedMatches(processed, rule, redact);
+      if (validated.count > 0) {
+        detections.push({ type: rule.name, count: validated.count });
+        processed = validated.text;
+      }
+      continue;
+    }
     const matches = text.match(rule.pattern);
     if (matches && matches.length > 0) {
       detections.push({ type: rule.name, count: matches.length });
@@ -395,6 +360,27 @@ function processPII(text, redact = false) {
   }
 
   return { text: processed, detections };
+}
+
+/**
+ * Count (and optionally redact) only the matches the rule's validator accepts.
+ * @param {string} text
+ * @param {{ pattern: RegExp, replacement: string, validate: (match: string, context: string) => boolean }} rule
+ * @param {boolean} redact
+ * @returns {{ text: string, count: number }}
+ */
+function redactValidatedMatches(text, rule, redact) {
+  let count = 0;
+  let output = "";
+  let cursor = 0;
+  for (const match of text.matchAll(rule.pattern)) {
+    const index = match.index ?? 0;
+    if (!rule.validate(match[0], precedingContext(text, index))) continue;
+    count++;
+    output += text.slice(cursor, index) + rule.replacement;
+    cursor = index + match[0].length;
+  }
+  return { text: redact ? output + text.slice(cursor) : text, count };
 }
 
 /**
@@ -570,6 +556,4 @@ export {
   buildInjectionScanText,
   INJECTION_PATTERNS,
   PII_PATTERNS,
-  SHARED_PII_PATTERNS,
-  validators,
 };
