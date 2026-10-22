@@ -37,29 +37,45 @@ test("Claude Haiku 5.5 does not support max effort", () => {
   assert.equal(supportsClaudeMaxEffort(`claude/${MODEL_ID}`), false);
 });
 
-test("Claude Haiku 5.5 is priced at the eco rate", () => {
+// Source: https://platform.claude.com/docs/en/about-claude/pricing (Claude Haiku 5.5 rows):
+// prompts up to 100k tokens $0.10 in / $0.50 out / $0.01 cache hit / $0.125 5m cache write;
+// prompts over 100k tokens $0.50 / $2.50 / $0.05 / $0.625.
+test("Claude Haiku 5.5 is priced at the documented length-tiered rate", () => {
   const pricing = getModelPricing("claude", MODEL_ID);
-  assert.equal(pricing?.inputCostPer1M, 1);
-  assert.equal(pricing?.outputCostPer1M, 5);
-  assert.equal(CLAUDE_HAIKU_5_PRICING.input, 1);
-  assert.equal(CLAUDE_HAIKU_5_PRICING.output, 5);
-  assert.equal(CLAUDE_HAIKU_5_PRICING.cached, 0.1);
-  assert.equal(CLAUDE_HAIKU_5_PRICING.cache_creation, 1.25);
+  assert.equal(pricing?.inputCostPer1M, 0.1);
+  assert.equal(pricing?.outputCostPer1M, 0.5);
+  assert.equal(CLAUDE_HAIKU_5_PRICING.input, 0.1);
+  assert.equal(CLAUDE_HAIKU_5_PRICING.output, 0.5);
+  assert.equal(CLAUDE_HAIKU_5_PRICING.cached, 0.01);
+  assert.equal(CLAUDE_HAIKU_5_PRICING.cache_creation, 0.125);
+  assert.deepEqual(CLAUDE_HAIKU_5_PRICING.long_context, {
+    threshold: 100_000,
+    input: 0.5,
+    output: 2.5,
+    cached: 0.05,
+    reasoning: 2.5,
+    cache_creation: 0.625,
+  });
 
-  const anthropic = (getDefaultPricing() as Record<string, Record<string, { input: number }>>)
-    .anthropic[MODEL_ID];
-  assert.equal(anthropic.input, 1);
+  const defaults = getDefaultPricing() as Record<
+    string,
+    Record<string, { input: number; output: number; long_context?: { threshold: number } }>
+  >;
+  assert.equal(defaults.anthropic[MODEL_ID].input, 0.1);
+  assert.equal(defaults.anthropic[MODEL_ID].output, 0.5);
+  assert.equal(defaults.anthropic[MODEL_ID].long_context?.threshold, 100_000);
+  assert.equal(defaults.cc[MODEL_ID].input, 0.1);
+  assert.equal(defaults.cc[MODEL_ID].output, 0.5);
+  assert.equal(defaults.cc[MODEL_ID].long_context?.threshold, 100_000);
+});
+
+test("Claude Haiku 5.5 is not exposed on claude-web (not a confirmed claude.ai model)", () => {
+  const ids = new Set(getModelsByProviderId("claude-web").map((entry) => entry.id));
+  assert.equal(ids.has(MODEL_ID), false);
 });
 
 test("Claude Haiku 5.5 is registered on first-party and cloud providers", () => {
-  for (const providerId of [
-    "claude",
-    "claude-web",
-    "anthropic",
-    "vertex",
-    "vertex-partner",
-    "bedrock",
-  ]) {
+  for (const providerId of ["claude", "anthropic", "vertex", "vertex-partner", "bedrock"]) {
     const ids = new Set(getModelsByProviderId(providerId).map((entry) => entry.id));
     const targetId = providerId === "bedrock" ? "anthropic.claude-haiku-5-5" : MODEL_ID;
     assert.ok(ids.has(targetId), `${providerId} must expose ${targetId}`);
