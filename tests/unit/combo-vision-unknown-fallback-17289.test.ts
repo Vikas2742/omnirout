@@ -259,7 +259,51 @@ test("#17289: an empty upstream 404 identifies the attempted model in combo diag
     allCombos: null,
   });
   assert.equal(response.status, 404);
-  const json = await response.json() as { error: { message: string } };
+  const bodyText = await response.text();
+  assert.ok(bodyText.trim(), "combo must synthesize a nonempty JSON error for blank upstream 404");
+  const json = JSON.parse(bodyText) as { error: { message: string } };
   assert.match(json.error.message, /unknown-vision-404-17289/,
     "404 diagnostic must identify which upstream target was attempted");
+});
+
+
+test("#17289: mixed multi-model vision fallback preserves both upstream failure reasons", async () => {
+  const confirmed = "mistral/pixtral-12b-latest";
+  const unknown = "workbuddy/unknown-vision-mixed-errors-17289";
+  for (const strategy of ["priority", "round-robin"] as const) {
+    const calls: string[] = [];
+    const response = await handleComboChat({
+      body: request,
+      combo: {
+        name: "vision-upstream-multi-" + strategy,
+        strategy,
+        models: [confirmed, unknown],
+        config: { maxRetries: 0 },
+      },
+      handleSingleModel: async (_body, modelStr) => {
+        calls.push(modelStr);
+        return modelStr === confirmed
+          ? new Response(JSON.stringify({ error: { message: "temporary confirmed-model outage" } }), {
+              status: 503,
+              headers: { "content-type": "application/json" },
+            })
+          : new Response(JSON.stringify({ error: { message: "missing attachment handler" } }), {
+              status: 400,
+              headers: { "content-type": "application/json" },
+            });
+      },
+      isModelAvailable: async () => true,
+      log,
+      settings: null,
+      relayOptions: null,
+      allCombos: null,
+    });
+    assert.deepEqual(calls, [confirmed, unknown],
+      strategy + " must try confirmed vision first and unknown last");
+    assert.equal(response.status, 502, "heterogeneous upstream errors must aggregate as gateway failure");
+    const bodyText = await response.text();
+    assert.match(bodyText, /temporary confirmed-model outage/);
+    assert.match(bodyText, /missing attachment handler/);
+    assert.doesNotMatch(bodyText, /No target in combo .*confirmed vision/i);
+  }
 });
