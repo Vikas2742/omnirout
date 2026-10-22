@@ -49,6 +49,11 @@ const pluginOptionsSchema = z
     hiddenModels: z.array(z.string()).optional(),
     providersAllow: z.array(z.string()).optional(),
     usableOnly: z.boolean().default(false),
+    // Combo source: "api" (default) folds /api/combos over each combo's
+    // members, so a combo publishes only when every member passes the
+    // filters. "models" skips that request and publishes the combo rows
+    // /v1/models serves; any member-level filter keeps the "api" source.
+    combosSource: z.enum(["api", "models"]).default("api"),
     freeOnly: z.boolean().default(false),
     // Extra signals that admit a model under `freeOnly` besides the declared
     // free-tier catalog. Opt-in: the default keeps the declared-only rule.
@@ -170,6 +175,7 @@ export function toResolvedOptions(parsed: PluginOptions): ResolvedOptions {
     hiddenModels: parsed.hiddenModels,
     providersAllow: parsed.providersAllow,
     usableOnly: parsed.usableOnly,
+    combosSource: parsed.combosSource,
     freeOnly: parsed.freeOnly,
     freeSignals: parsed.freeSignals,
     freeProviders: parsed.freeProviders,

@@ -8,6 +8,7 @@ import {
   type ProviderResolve,
 } from "./provider-filter.js";
 import type { LegacyModel } from "./legacy-model.js";
+import { isUserComboRow, usesModelsComboSource, type CombosSource } from "./combos-source.js";
 import {
   comboLookupName,
   filterRawPoolByPreset,
@@ -111,6 +112,12 @@ export interface ResolvedOptions extends FreeOptions {
   hiddenModels?: string[];
   providersAllow?: string[];
   usableOnly: boolean;
+  /**
+   * Combo source. Absent or `"api"` keeps the member-verified `/api/combos`
+   * pass; `"models"` opts into the `/v1/models` combo rows when no
+   * member-level filter is on (see `usesModelsComboSource`).
+   */
+  combosSource?: CombosSource;
   toolsOnly?: boolean;
   visionOnly?: boolean;
   enrichment?: OmniRouteEnrichmentMap | boolean;
@@ -926,6 +933,16 @@ export async function collectCatalog(
   // and the summary keeps reading the filter stages, not the restore.
   let afterDefaultView = 0;
   let afterPresets = 0;
+  // Opt-in `combosSource: "models"`: the user combo rows of /v1/models are
+  // the published combos, so they skip the default-view narrowing exactly
+  // like the /api/combos pass never narrows a combo.
+  const modelsComboSource = usesModelsComboSource(opts);
+  if (opts.combosSource === "models" && !modelsComboSource) {
+    log.debug(
+      "[omniroute-v2] combosSource=models needs no member-level filter; a preset, usableOnly, providersAllow or a visible/hidden list is on, so combos keep the /api/combos source."
+    );
+  }
+  let modelsComboCount = 0;
   for (const entry of rawModels) {
     if (!entry.id) continue;
     if (canonicalDedup.has(entry.id)) continue;
@@ -935,8 +952,10 @@ export async function collectCatalog(
       providerDroppedCount += 1;
       continue;
     }
+    const servedCombo = modelsComboSource && isUserComboRow(entry);
     if (
       !catalogAll &&
+      !servedCombo &&
       !passesWhatServes(entry, showcased, visibleFilter, nowMs, freshKept, windowMs)
     ) {
       staticallyDropped.push(entry);
@@ -948,7 +967,12 @@ export async function collectCatalog(
       baseURL: opts.baseURL,
       apiFormat: opts.apiFormat,
     });
-    const enrichmentEntry = lookupEnrichment(entry.id, enrichment, canonicalToAlias);
+    const enrichmentEntry = lookupEnrichment(
+      entry.id,
+      enrichment,
+      canonicalToAlias,
+      entry.owned_by
+    );
     applyEnrichment(mapped, enrichmentEntry, {
       providerTag: opts.providerTag !== false,
     });
@@ -969,7 +993,8 @@ export async function collectCatalog(
     collected.set(key, mapped);
     publishedKeys.add(key);
     publishedModelIds.set(key, mapped.id);
-    modelCount += 1;
+    if (servedCombo) modelsComboCount += 1;
+    else modelCount += 1;
   }
   // Memory branch: restore only what the static pass dropped and the last
   // 30 days of usage still names. Empty usage, a failed fetch, no token or
@@ -989,7 +1014,12 @@ export async function collectCatalog(
         baseURL: opts.baseURL,
         apiFormat: opts.apiFormat,
       });
-      const restoreEnrichment = lookupEnrichment(entry.id, enrichment, canonicalToAlias);
+      const restoreEnrichment = lookupEnrichment(
+        entry.id,
+        enrichment,
+        canonicalToAlias,
+        entry.owned_by
+      );
       applyEnrichment(mapped, restoreEnrichment, {
         providerTag: opts.providerTag !== false,
       });
@@ -1020,28 +1050,30 @@ export async function collectCatalog(
   }
 
   const cacheKey = `${opts.baseURL}::${opts.providerId}`;
-  const comboResult = await publishCombos({
-    opts,
-    log,
-    providerId: X,
-    enrichment,
-    rawModelById,
-    collected,
-    publishedKeys,
-    publishedModelIds,
-    visibleFilter,
-    hiddenFilter,
-    usable,
-    canonicalToAlias,
-    providerFilter,
-    providerResolve,
-    providerAllUnknown,
-    combosFetcher,
-    combosTimeout,
-    warnedCombos,
-    cacheKey,
-    isFreeInferred,
-  });
+  const comboResult = modelsComboSource
+    ? { published: modelsComboCount, providerDropped: 0 }
+    : await publishCombos({
+        opts,
+        log,
+        providerId: X,
+        enrichment,
+        rawModelById,
+        collected,
+        publishedKeys,
+        publishedModelIds,
+        visibleFilter,
+        hiddenFilter,
+        usable,
+        canonicalToAlias,
+        providerFilter,
+        providerResolve,
+        providerAllUnknown,
+        combosFetcher,
+        combosTimeout,
+        warnedCombos,
+        cacheKey,
+        isFreeInferred,
+      });
   // One summary line per successful refresh: the stage counters plus the
   // free-tier lines the served catalog never reached. Audible at the
   // default `warn` level so a service install (stdout lost) still reads

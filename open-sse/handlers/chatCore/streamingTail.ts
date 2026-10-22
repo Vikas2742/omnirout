@@ -1,5 +1,6 @@
 import { inheritEmptyTurnPolicy } from "../../utils/emptyTurnPolicy.ts";
 import { getCodexClientSessionId } from "../../config/codexIdentity.ts";
+import { modelAfterFamilyFallback } from "../../services/modelFamilyFallbackPolicy.ts";
 import {
   noteCodexTurnStateProvenance,
   readCodexTurnStateHeader,
@@ -33,7 +34,7 @@ import { ensureStreamReadiness } from "../../utils/streamReadiness.ts";
 import { resolveStreamReadinessTimeout } from "../../utils/streamReadinessPolicy.ts";
 import { maybeFallbackAfterReadiness } from "./streamReadinessFallback.ts";
 import { captureStreamReasoningForReplay } from "./streamReasoningCapture.ts";
-import { meteredBudgetCost } from "@/lib/usage/meteredBudgetPolicy";
+import { isUnpricedMeteredCost, meteredBudgetCost } from "@/lib/usage/meteredBudgetPolicy";
 import { resolveSuppressThinkClose } from "../../utils/thinkCloseMarker.ts";
 import { hasActiveClaudeThinking } from "../../utils/thinkingBudget.ts";
 import { buildCacheUsageLogMeta } from "./cacheUsageMeta.ts";
@@ -55,11 +56,12 @@ import { recordFinalInputCalibration } from "./contextEstimation.ts";
 import { recordStreamingUsageStats } from "./streamingUsageStats.ts";
 import { maybeSyncClaudeExtraUsageState } from "./telemetryHelpers.ts";
 import { getExecutorTimeoutMs, resolveConnectionTimeoutMs } from "./upstreamTimeouts.ts";
-import { recordCost } from "@/domain/costRules";
+import { recordCost, recordUnpricedBudgetUsage } from "@/domain/costRules";
 import { extractFacts } from "@/lib/memory/extraction";
-import { calculateCost } from "@/lib/usage/costCalculator";
+import { calculateCost, calculateCostDetailed } from "@/lib/usage/costCalculator";
 import { appendRequestLog, trackPendingRequest } from "@/lib/usageDb";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags.ts";
+import { isEmptyStreamSiblingRecoveryEnabled } from "../../services/streamRecovery.ts";
 import { getProviderCredentials } from "@/sse/services/auth";
 import { resolveCredentialGate } from "@/lib/streamingCredentialTransform";
 
@@ -182,6 +184,12 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     provider,
     model,
     log,
+    // #16438 opt-in: briefly probe Claude/Codex streams for usable output after the first
+    // lifecycle event so an empty turn can be retried on a sibling connection.
+    contentProbeMs:
+      (provider === "claude" || provider === "codex") && isEmptyStreamSiblingRecoveryEnabled()
+        ? 1000
+        : undefined,
   });
   // A stall is an upstream issue, not an account fault — the executor loop
   // already ended at headers, so this bounded retry is the only recovery left.
@@ -309,10 +317,11 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     await onRequestSuccess();
   }
 
+  const responseModel = modelAfterFamilyFallback(model, currentModel, effectiveModel, finalBody);
   const responseHeaders = assembleStreamingResponseHeaders({
     providerHeaders: providerResponse.headers,
     provider,
-    model,
+    model: responseModel,
     pendingRequestId,
     compressionResponseMeta,
     comboStrategy,
@@ -535,11 +544,17 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       model,
       streamUsage,
       serviceTier: effectiveServiceTier,
-      calculateCost,
+      calculateCost: calculateCostDetailed,
       // Only the budget-consumable share may draw down the allowance.
       recordCost: (apiKeyId, cost, details) => {
         const budgetCost = meteredBudgetCost(provider, cost);
         if (budgetCost > 0) recordCost(apiKeyId, budgetCost, details);
+      },
+      // A metered model with no price must not pass the dollar budget as $0.
+      recordUnpricedCost: (apiKeyId, cost) => {
+        if (isUnpricedMeteredCost(provider, cost)) {
+          recordUnpricedBudgetUsage(apiKeyId, { provider, model });
+        }
       },
       ledger: buildStreamLedgerDetails(effectiveServiceTier, normalizedStreamStatus < 400, traceId),
     });
@@ -633,6 +648,9 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       }),
   });
 
+  // The pipeline can fail before the awaited response hooks return to chatCore.
+  deps.registerStreamFinalizers?.(onPipelineStreamError, onClientDisconnectFinalize);
+
   // For providers using Responses API format, translate stream back to openai (Chat Completions) format
   // UNLESS client is Droid CLI which expects openai-responses format back
   const needsResponsesTranslation =
@@ -640,7 +658,11 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     clientResponseFormat === FORMATS.OPENAI &&
     !isResponsesEndpoint &&
     !isDroidCLI;
-  const streamStateBody = finalBody || body;
+  // Response arguments belong to the client's schema, before provider cloaking.
+  const streamStateBody =
+    clientResponseFormat === FORMATS.CLAUDE && Array.isArray(body?.tools)
+      ? { ...(finalBody || body), tools: body.tools }
+      : finalBody || body;
 
   // Client's explicit thinking intent (Anthropic Messages shape). Claude Code
   // sends `{type:"enabled"}` or `{type:"adaptive"}` to opt into relaying
@@ -709,7 +731,10 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       }),
       requestedThinking,
       customToolNames,
-      requestToolIdentityMap
+      requestToolIdentityMap,
+      // The CLIENT's declared tools[]: an Anthropic-format client gets its own
+      // tool-name casing back from any provider (OpenCode `read`, Claude Code `Read`).
+      (body as Record<string, unknown> | null | undefined)?.tools ?? null
     );
   } else {
     log?.debug?.("STREAM", `Standard passthrough mode`);
@@ -724,7 +749,8 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       apiKeyInfo,
       handleStreamFailure,
       clientResponseFormat,
-      requestToolIdentityMap
+      requestToolIdentityMap,
+      (body as Record<string, unknown> | null | undefined)?.tools ?? null
     );
   }
 
@@ -745,7 +771,7 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     createPiiTransform,
     clientRawRequestHeaders: clientRawRequest?.headers,
     clientResponseFormat,
-    echoModel,
+    echoModel: echoModel || (currentModel !== effectiveModel ? responseModel : null),
     responseHeaders,
     credentialRedactionEnabled: credentialGate.credentialRedactionEnabled,
     credentialDisabledGuardrails: credentialGate.credentialDisabledGuardrails,
