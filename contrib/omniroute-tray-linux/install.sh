@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# OmniRoute Tray for Linux - One-Line Installer
-# Repository: https://github.com/Susanthakuri92/omniroute-tray-linux
+# OmniRoute Tray for Linux - Installer
+# Installs from the local OmniRoute checkout (contrib/omniroute-tray-linux).
+# It never clones or pulls code from a remote repository.
 # ==============================================================================
 
 set -euo pipefail
@@ -14,7 +15,6 @@ YELLOW="\033[1;33m"
 RED="\033[0;31m"
 RESET="\033[0m"
 
-REPO_URL="https://github.com/Susanthakuri92/omniroute-tray-linux.git"
 INSTALL_DIR="${HOME}/.local/share/omniroute-tray"
 BIN_DIR="${HOME}/.local/bin"
 PLASMOID_DIR="${HOME}/.local/share/plasma/plasmoids/org.omniroute.plasmoid"
@@ -68,7 +68,8 @@ remove_managed_path() {
     fi
 }
 
-# Helper: true if DIR is a git clone of the omniroute-tray repo
+# Helper: true if DIR is a legacy git clone left by older installers (they cloned a
+# standalone repo into ~/.local/share/omniroute-tray); used only to clean it up
 is_omniroute_clone() {
     local dir="$1"
     if [ -d "$dir/.git" ]; then
@@ -178,16 +179,11 @@ if ! command -v python3 &>/dev/null; then
     exit 1
 fi
 
-if ! command -v git &>/dev/null; then
-    log_error "git is required for installation and auto-updates. Please install git."
-    exit 1
-fi
-
 PYSIDE_INSTALLED=1
 python3 -c "import PySide6" &>/dev/null || PYSIDE_INSTALLED=0
 
-# 2. Clone or Update Repository
-log_info "Setting up repository..."
+# 2. Locate the tray sources (local checkout only)
+log_info "Locating tray sources..."
 mkdir -p "${HOME}/.local/share"
 mkdir -p "${BIN_DIR}"
 mkdir -p "${DESKTOP_DIR}"
@@ -207,16 +203,9 @@ elif [ -n "${SCRIPT_DIR}" ] && [ -f "${SCRIPT_DIR}/omniroute_tray.py" ] && [ "${
     SOURCE_DIR="${SCRIPT_DIR}"
     log_info "Installing from local directory: ${SOURCE_DIR}"
 else
-    SOURCE_DIR="${INSTALL_DIR}"
-    if [ -d "${INSTALL_DIR}/.git" ]; then
-        log_info "Updating existing repository in ${INSTALL_DIR}..."
-        git -C "${INSTALL_DIR}" fetch --quiet origin main 2>/dev/null || true
-        git -C "${INSTALL_DIR}" reset --hard origin/main --quiet 2>/dev/null || git -C "${INSTALL_DIR}" pull --quiet || true
-    else
-        log_info "Cloning repository into ${INSTALL_DIR}..."
-        rm -rf "${INSTALL_DIR}"
-        git clone --quiet "${REPO_URL}" "${INSTALL_DIR}"
-    fi
+    log_error "omniroute_tray.py was not found next to install.sh (${SCRIPT_DIR:-unknown})."
+    log_error "Run this installer from an OmniRoute checkout: bash contrib/omniroute-tray-linux/install.sh"
+    exit 1
 fi
 log_success "Files ready."
 
@@ -375,17 +364,12 @@ check_path "Binary symlink" "$BIN_DIR/omniroute-tray" "[ -L \"$BIN_DIR/omniroute
 check_path "Binary target" "$BIN_DIR/omniroute-tray" "[ -f \"${SOURCE_DIR}/omniroute_tray.py\" ]" || all_good=$((all_good+1))
 # No nested plasmoid inside plasmoid dir (would indicate ln -sfn on a directory)
 check_path "No nested plasmoid" "$PLASMOID_DIR/org.omniroute.plasmoid" "[ ! -e \"$PLASMOID_DIR/org.omniroute.plasmoid\" ]" || all_good=$((all_good+1))
-# No second repo clone at $INSTALL_DIR unless it's the source we're using
-if [ "$SOURCE_DIR" = "$INSTALL_DIR" ]; then
-    check_path "Single repo clone" "$INSTALL_DIR" "[ -d \"$INSTALL_DIR/.git\" ]" || all_good=$((all_good+1))
+# Installing from the checkout means no legacy clone should remain at $INSTALL_DIR
+if [ -d "$INSTALL_DIR" ] && is_omniroute_clone "$INSTALL_DIR"; then
+    echo -e "  [✗] Legacy repo clone present at $INSTALL_DIR"
+    all_good=$((all_good+1))
 else
-    # When installing from local source, we expect INSTALL_DIR either absent or not a clone
-    if [ -d "$INSTALL_DIR" ] && is_omniroute_clone "$INSTALL_DIR"; then
-        echo -e "  [✗] Second repo clone present at $INSTALL_DIR"
-        all_good=$((all_good+1))
-    else
-        echo -e "  [✓] No second repo clone: OK"
-    fi
+    echo -e "  [✓] No legacy repo clone: OK"
 fi
 
 if [ $all_good -eq 0 ]; then
@@ -398,4 +382,4 @@ echo -e "\n${GREEN}${BOLD}Installation completed successfully!${RESET}\n"
 echo -e "${BOLD}Next steps:${RESET}"
 echo -e "  • ${BOLD}KDE Plasma 6:${RESET} Right-click panel → ${BLUE}Add Widgets...${RESET} → search for ${BOLD}OmniRoute${RESET} and drag it to your panel."
 echo -e "  • ${BOLD}GNOME / XFCE / Tiling WMs:${RESET} Run ${BOLD}omniroute-tray &${RESET} or launch it from your application menu."
-echo -e "  • ${BOLD}In-App Updates:${RESET} Click ${BOLD}[Check for omniroute-tray updates]${RESET} in the tray or run ${BOLD}omniroute-tray --update-tray${RESET} anytime."
+echo -e "  • ${BOLD}Updating:${RESET} the tray ships with OmniRoute; update your checkout and re-run ${BOLD}contrib/omniroute-tray-linux/install.sh${RESET}."

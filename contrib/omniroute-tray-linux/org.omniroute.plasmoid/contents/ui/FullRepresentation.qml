@@ -1616,7 +1616,7 @@ Item {
                                 text: {
                                     if (!plasmoidItem) return "Ready";
                                     if (plasmoidItem.isUpdatingTray) return "Pulling latest git changes…";
-                                    if (plasmoidItem.isCheckingTrayUpdate) return "Checking GitHub repository…";
+                                    if (plasmoidItem.isCheckingTrayUpdate) return "Checking tray version…";
                                     if (plasmoidItem.trayUpdateError) return plasmoidItem.trayUpdateErrorMsg || "Git check failed";
                                     if (plasmoidItem.trayUpdateAvailable) {
                                         var c = plasmoidItem.trayRemoteCommit;

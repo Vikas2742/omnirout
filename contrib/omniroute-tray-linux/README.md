@@ -5,11 +5,10 @@
 </p>
 
 <p align="center">
-  <strong>A system tray supervisor, telemetry dashboard, diagnostics tool, and auto-updater for <a href="https://github.com/diegosouzapw/OmniRoute">OmniRoute</a> on Linux.</strong>
+  <strong>A system tray supervisor, telemetry dashboard, diagnostics tool for <a href="https://github.com/diegosouzapw/OmniRoute">OmniRoute</a> on Linux.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Susanthakuri92/omniroute-tray-linux/actions/workflows/ci.yml"><img src="https://github.com/Susanthakuri92/omniroute-tray-linux/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="#features"><img src="https://img.shields.io/badge/Platform-Linux-blue?logo=linux" alt="Linux" /></a>
   <a href="#requirements"><img src="https://img.shields.io/badge/Desktop-KDE%20Plasma%20%7C%20GNOME%20%7C%20XFCE%20%7C%20Wayland-brightgreen" alt="Desktops" /></a>
   <a href="#requirements"><img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python" alt="Python" /></a>
@@ -29,10 +28,10 @@ Inspired by [zoispag/omniroute-tray](https://github.com/zoispag/omniroute-tray) 
 
 ## Screenshots
 
-| 🖥️ Server Supervisor | 📊 Telemetry & Quotas |
-| :---: | :---: |
-| [![Server Tab](screenshot/Server.png)](screenshot/Server.png) | [![Monitor Tab](screenshot/Monitor.png)](screenshot/Monitor.png) |
-| 🩺 Diagnostics & Logs | 🔄 Updates Center |
+|                         🖥️ Server Supervisor                         |                      📊 Telemetry & Quotas                       |
+| :------------------------------------------------------------------: | :--------------------------------------------------------------: |
+|    [![Server Tab](screenshot/Server.png)](screenshot/Server.png)     | [![Monitor Tab](screenshot/Monitor.png)](screenshot/Monitor.png) |
+|                        🩺 Diagnostics & Logs                         |                        🔄 Updates Center                         |
 | [![Doctor & Logs Tab](screenshot/Doctor.png)](screenshot/Doctor.png) | [![Updates Tab](screenshot/Updates.png)](screenshot/Updates.png) |
 
 ---
@@ -45,7 +44,7 @@ Inspired by [zoispag/omniroute-tray](https://github.com/zoispag/omniroute-tray) 
 - **Analytics & Spend**: Spend breakdown by model across 24h, 7d, and 30d with token and percentage toggles.
 - **System Diagnostics**: Built-in health checks for Node.js runtime, OmniRoute CLI, and database connectivity.
 - **Live Logs**: Real-time log viewer with quick access to log files.
-- **Updates Center**: Check for OmniRoute CLI and Tray updates with one-click self-updating.
+- **Updates Center**: Check for OmniRoute CLI releases (the tray itself is updated with your OmniRoute checkout).
 - **Autostart & Integration**: Native desktop system tray integration with optional startup on login.
 
 ---
@@ -55,7 +54,7 @@ Inspired by [zoispag/omniroute-tray](https://github.com/zoispag/omniroute-tray) 
 - **Linux** (X11 or Wayland) with a system tray or panel.
 - **Python 3.10+**.
 - **OmniRoute** installed and accessible on your `PATH`.
-- *For GNOME / XFCE / Tiling WMs only*: `python3-pyside6` (not needed on KDE Plasma).
+- _For GNOME / XFCE / Tiling WMs only_: `python3-pyside6` (not needed on KDE Plasma).
 
 ---
 
@@ -65,15 +64,10 @@ Choose either the automated installer or the manual steps below:
 
 ### Method 1: Automated Installer (Quickest)
 
-Run the installer from your terminal:
+From your OmniRoute checkout, run the installer (it installs from the local checkout and never downloads code):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Susanthakuri92/omniroute-tray-linux/main/install.sh | bash
-```
-
-*Or, if you already have the repository cloned locally:*
-```bash
-./install.sh
+bash contrib/omniroute-tray-linux/install.sh
 ```
 
 The script automatically detects your desktop environment, links the widget or executable, and creates application menu shortcuts.
@@ -82,11 +76,10 @@ The script automatically detects your desktop environment, links the widget or e
 
 ### Method 2: Manual Installation (By Hand)
 
-First, clone and enter the directory (or `cd contrib/omniroute-tray-linux` if inside the OmniRoute repository):
+First, enter the directory inside your OmniRoute checkout:
 
 ```bash
-git clone https://github.com/Susanthakuri92/omniroute-tray-linux.git
-cd omniroute-tray-linux
+cd contrib/omniroute-tray-linux
 ```
 
 #### A. KDE Plasma 6 (Native Widget)
@@ -99,7 +92,7 @@ ln -sfn "$(pwd)/org.omniroute.plasmoid" ~/.local/share/plasma/plasmoids/org.omni
 systemctl --user restart plasma-plasmashell
 ```
 
-*Then right-click your panel → **Add Widgets…** → drag **OmniRoute** onto your panel or system tray.*
+_Then right-click your panel → **Add Widgets…** → drag **OmniRoute** onto your panel or system tray._
 
 #### B. Other Desktops (GNOME, XFCE, i3, Waybar)
 
@@ -107,9 +100,10 @@ systemctl --user restart plasma-plasmashell
    - **Debian / Ubuntu:** `sudo apt install python3-pyside6`
    - **Fedora:** `sudo dnf install python3-pyside6`
    - **Arch Linux:** `sudo pacman -S python-pyside6`
-   *(GNOME users: enable the `AppIndicator` extension for top bar tray icons).*
+     _(GNOME users: enable the `AppIndicator` extension for top bar tray icons)._
 
 2. **Link the executable:**
+
    ```bash
    chmod +x omniroute_tray.py
    mkdir -p ~/.local/bin
@@ -127,22 +121,23 @@ systemctl --user restart plasma-plasmashell
 
 `omniroute-tray` can also be used as a CLI utility:
 
-| Command | Action |
-| :--- | :--- |
-| `omniroute-tray --start` | Start the OmniRoute server daemon in background |
-| `omniroute-tray --stop` | Gracefully stop OmniRoute processes |
-| `omniroute-tray --restart` | Restart the OmniRoute server daemon |
-| `omniroute-tray --cost --range 30d` | JSON dump of 30-day spend by model (also `1d`, `7d`) |
-| `omniroute-tray --snapshot` | Full telemetry JSON snapshot (health, quotas, rates, cost) |
-| `omniroute-tray --update-tray` | Pull latest code from GitHub and sync widgets |
-| `omniroute-tray --toggle-autostart` | Toggle start on desktop login |
+| Command                             | Action                                                           |
+| :---------------------------------- | :--------------------------------------------------------------- |
+| `omniroute-tray --start`            | Start the OmniRoute server daemon in background                  |
+| `omniroute-tray --stop`             | Gracefully stop OmniRoute processes                              |
+| `omniroute-tray --restart`          | Restart the OmniRoute server daemon                              |
+| `omniroute-tray --cost --range 30d` | JSON dump of 30-day spend by model (also `1d`, `7d`)             |
+| `omniroute-tray --snapshot`         | Full telemetry JSON snapshot (health, quotas, rates, cost)       |
+| `omniroute-tray --check-tray`       | Show the tray version (updates ship with the OmniRoute checkout) |
+| `omniroute-tray --toggle-autostart` | Toggle start on desktop login                                    |
 
 ---
 
 ## Updating
 
-- **Via GUI**: Open the **Updates** tab in the tray popup and click **Check for Tray Updates**.
-- **Via CLI**: Run `omniroute-tray --update-tray`.
+The tray ships with OmniRoute and never downloads or runs code from a remote repository.
+Update your OmniRoute checkout, then re-run `bash contrib/omniroute-tray-linux/install.sh`.
+`omniroute-tray --update-tray` is disabled and only prints this guidance.
 
 ---
 
@@ -155,6 +150,7 @@ To remove OmniRoute Tray:
 ```
 
 Pass `--purge` to also delete configuration and log files:
+
 ```bash
 ./uninstall.sh --purge
 ```

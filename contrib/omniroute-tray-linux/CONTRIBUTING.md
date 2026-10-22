@@ -13,12 +13,11 @@ Open an issue and include:
 
 ## Development setup
 
-The app has no build step and only needs Python 3.10+ and Git. PySide6 is required only
+The app has no build step and only needs Python 3.10+. PySide6 is required only
 for the standalone tray, not for the KDE plasmoid or the CLI.
 
 ```bash
-git clone https://github.com/Susanthakuri92/omniroute-tray-linux.git
-cd omniroute-tray-linux
+cd contrib/omniroute-tray-linux   # inside your OmniRoute checkout
 ./install.sh
 ```
 

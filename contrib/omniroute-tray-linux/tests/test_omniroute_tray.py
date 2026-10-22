@@ -234,36 +234,34 @@ class TestSettings(unittest.TestCase):
 
 
 class TestTrayUpdateLogic(unittest.TestCase):
-    """Test check_tray_update evaluation logic."""
+    """The tray never fetches or pulls code from a remote origin.
 
-    @patch("omniroute_tray.get_tray_repo_dir", return_value=Path("/tmp/fake_repo"))
+    Updates ship with the OmniRoute checkout, so check/update must be inert:
+    no git subprocess, no network, and a stable, honest result.
+    """
+
     @patch("omniroute_tray.get_tray_commit", return_value="abc1234")
     @patch("omniroute_tray.subprocess.run")
-    def test_check_tray_update_available(self, mock_run, mock_commit, mock_repo):
-        mock_proc = unittest.mock.MagicMock()
-        mock_proc.returncode = 0
-        mock_proc.stdout = "def5678901234567890\trefs/heads/main\n"
-        mock_run.return_value = mock_proc
-
+    def test_check_tray_update_is_inert(self, mock_run, mock_commit):
         res = tray.check_tray_update()
-        self.assertTrue(res["success"])
-        self.assertTrue(res["update_available"])
-        self.assertEqual(res["remote_commit"], "def5678")
-        self.assertIn("Update available", res["message"])
-
-    @patch("omniroute_tray.get_tray_repo_dir", return_value=Path("/tmp/fake_repo"))
-    @patch("omniroute_tray.get_tray_commit", return_value="abc1234")
-    @patch("omniroute_tray.subprocess.run")
-    def test_check_tray_already_up_to_date(self, mock_run, mock_commit, mock_repo):
-        mock_proc = unittest.mock.MagicMock()
-        mock_proc.returncode = 0
-        mock_proc.stdout = "abc1234901234567890\trefs/heads/main\n"
-        mock_run.return_value = mock_proc
-
-        res = tray.check_tray_update()
+        mock_run.assert_not_called()
         self.assertTrue(res["success"])
         self.assertFalse(res["update_available"])
-        self.assertEqual(res["message"], "Up to date with latest release")
+        self.assertEqual(res["local_commit"], "abc1234")
+        self.assertEqual(res["remote_commit"], "")
+        self.assertIn("OmniRoute checkout", res["message"])
+
+    @patch("omniroute_tray.subprocess.run")
+    def test_self_update_tray_never_pulls(self, mock_run):
+        res = tray.self_update_tray()
+        mock_run.assert_not_called()
+        self.assertFalse(res["success"])
+        self.assertIn("install.sh", res["message"])
+
+    def test_no_external_repo_in_update_code(self):
+        src = (Path(tray.__file__).resolve()).read_text(encoding="utf-8")
+        self.assertNotIn("ls-remote", src)
+        self.assertNotIn('"pull"', src)
 
 
 if __name__ == "__main__":

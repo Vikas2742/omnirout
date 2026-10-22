@@ -18,9 +18,9 @@ First public release.
   spawning a duplicate.
 - Provider health, circuit-breaker, quota, spend (1d/7d/30d), and 30-day trend telemetry.
 - Doctor diagnostics and a live log viewer.
-- Updates center: tray self-update from GitHub plus server release checks against npm.
+- Updates center: server release checks against npm (the tray is updated with the OmniRoute checkout; it never pulls remote code).
 - Single-instance protection and XDG desktop autostart.
-- One-line installer and a dedicated uninstaller with `--purge`.
+- Local-checkout installer and a dedicated uninstaller with `--purge`.
 
 ### Changed
 

@@ -829,35 +829,6 @@ docs live at <a href="https://github.com/zoispag/omniroute-tray">zoispag/omnirou
 
 <div align="center">
 
-### 🐧 New: OmniRoute Tray for Linux — KDE Plasma Widget & System Tray
-
-</div>
-
-> A native supervisor, live quota monitor, and diagnostics panel for **Linux** in `contrib/omniroute-tray-linux`. Built with a native **KDE Plasma 6 Plasmoid** (QML) and a universal **Qt/PySide6 tray** for GNOME, XFCE, and Wayland/X11 compositors (Hyprland, Sway, i3).
-
-<table>
-  <tr><th align="left">What it does</th><th align="left">How</th></tr>
-  <tr><td align="left" nowrap>🟢 <b>Supervises the server</b></td><td align="left">Spawns <code>omniroute serve</code>, adopts an already-running instance on port 20128 instead of duplicating it</td></tr>
-  <tr><td align="left" nowrap>📊 <b>Live quotas &amp; spend</b></td><td align="left">Provider quotas, reset countdowns, 1d/7d/30d analytics and 30-day spend sparkline</td></tr>
-  <tr><td align="left" nowrap>🩺 <b>Doctor &amp; live logs</b></td><td align="left">Live diagnostics for Node runtime, CLI, SQLite DB, loopback auth, and streaming server logs</td></tr>
-  <tr><td align="left" nowrap>🚀 <b>KDE Plasma 6 + Universal Qt</b></td><td align="left">Native QML popover widget for Plasma panels, or PySide6 popover for GNOME / tiling Wayland</td></tr>
-</table>
-
-```sh
-# Install from repository
-bash contrib/omniroute-tray-linux/install.sh
-
-# Or install via one-liner
-curl -fsSL https://raw.githubusercontent.com/Susanthakuri92/omniroute-tray-linux/main/install.sh | bash
-```
-
-<sub>Documentation, features, and setup details live at <a href="contrib/omniroute-tray-linux/README.md">contrib/omniroute-tray-linux</a>.
-<br/>💛 Contributed by <a href="https://github.com/Susanthakuri92">@Susanthakuri92</a>.</sub>
-
-<br/>
-
-<div align="center">
-
 ## 🔒 Private & Local-First
 
 </div>

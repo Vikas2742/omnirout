@@ -917,99 +917,30 @@ def get_installed_server_version(settings: "Settings") -> str:
 
 
 def check_tray_update() -> dict:
-    """Checks remote git repository for available updates without pulling."""
-    repo = get_tray_repo_dir()
-    if not repo:
-        return {"success": False, "message": "Git repository not found", "update_available": False}
+    """Report the tray version without contacting any remote.
 
-    try:
-        local_head = get_tray_commit()
-        res = subprocess.run(
-            ["git", "-C", str(repo), "ls-remote", "origin", "-h", "refs/heads/main"],
-            capture_output=True,
-            text=True,
-            timeout=8,
-        )
-        if res.returncode != 0:
-            return {"success": False, "message": "Could not connect to GitHub", "update_available": False}
-
-        lines = res.stdout.strip().splitlines()
-        remote_hash = ""
-        for line in lines:
-            parts = line.split()
-            if len(parts) >= 2 and parts[1] == "refs/heads/main":
-                remote_hash = parts[0]
-                break
-
-        if not remote_hash:
-            return {"success": False, "message": "Remote branch not found", "update_available": False}
-
-        remote_short = remote_hash[:7]
-        update_avail = bool(local_head and remote_short and local_head != remote_short)
-        return {
-            "success": True,
-            "update_available": update_avail,
-            "local_commit": local_head,
-            "remote_commit": remote_short,
-            "message": f"Update available: #{remote_short}" if update_avail else "Up to date with latest release",
-        }
-    except Exception as e:
-        return {"success": False, "message": str(e), "update_available": False}
+    The tray ships inside the OmniRoute checkout and is updated together with it
+    (re-run ``contrib/omniroute-tray-linux/install.sh``). It never fetches code
+    from a remote origin, so there is nothing to compare against.
+    """
+    return {
+        "success": True,
+        "update_available": False,
+        "local_commit": get_tray_commit(),
+        "remote_commit": "",
+        "message": "Tray updates ship with your OmniRoute checkout",
+    }
 
 
 def self_update_tray() -> dict:
-    """Updates the tray application from its git repository."""
-    repo = get_tray_repo_dir()
-    if not repo:
-        return {"success": False, "message": "Git repository not found"}
-
-    try:
-        res = subprocess.run(["git", "-C", str(repo), "pull"], capture_output=True, text=True, timeout=25)
-        stdout = res.stdout.strip()
-        stderr = res.stderr.strip()
-        if res.returncode != 0:
-            return {"success": False, "message": f"Pull failed: {stderr or stdout}"}
-
-        already_up_to_date = "Already up to date" in stdout
-
-        # 1. Sync executable to ~/.local/bin/omniroute-tray
-        bin_target = Path.home() / ".local" / "bin" / "omniroute-tray"
-        bin_target.parent.mkdir(parents=True, exist_ok=True)
-        src_py = repo / "omniroute_tray.py"
-        if not bin_target.is_symlink() and src_py.is_file():
-            shutil.copy2(src_py, bin_target)
-            bin_target.chmod(0o755)
-        elif not bin_target.exists() and src_py.is_file():
-            try:
-                bin_target.symlink_to(src_py)
-            except Exception:
-                shutil.copy2(src_py, bin_target)
-                bin_target.chmod(0o755)
-
-        # 2. Sync plasmoid directory if installed as a copy
-        plasmoid_target = Path.home() / ".local" / "share" / "plasma" / "plasmoids" / "org.omniroute.plasmoid"
-        src_plasmoid = repo / "org.omniroute.plasmoid"
-        if plasmoid_target.exists() and not plasmoid_target.is_symlink() and src_plasmoid.is_dir():
-            shutil.copytree(src_plasmoid, plasmoid_target, dirs_exist_ok=True)
-
-        # 3. Clear QML cache
-        for qml_cache_dir in [
-            Path.home() / ".cache" / "plasmashell" / "qmlcache",
-            Path.home() / ".cache" / "qmlcache",
-        ]:
-            if qml_cache_dir.is_dir():
-                shutil.rmtree(qml_cache_dir, ignore_errors=True)
-
-        msg = "Up to date with latest release" if already_up_to_date else "Updated successfully!"
-        return {
-            "success": True,
-            "already_up_to_date": already_up_to_date,
-            "message": msg,
-            "tray_version": TRAY_VERSION,
-            "tray_commit": get_tray_commit(),
-        }
-    except Exception as e:
-        return {"success": False, "message": str(e)}
+    """Self-update is disabled: the tray never downloads or runs remote code."""
+    return {
+        "success": False,
+        "message": (
+            "Self-update is disabled. Update your OmniRoute checkout, then re-run "
+            "contrib/omniroute-tray-linux/install.sh"
+        ),
+    }
 
 
 def fetch_cost_data(settings: Settings, range_str: str) -> Optional[CostData]:
@@ -2369,7 +2300,7 @@ class OmniRoutePopover(QWidget):
     def _check_tray_updates(self):
         """Kick off remote git check; result lands via bridge.update_status."""
         self.btn_upd_tray.setEnabled(False)
-        self.lbl_upd_tray.setText("Tray: Checking GitHub repository…")
+        self.lbl_upd_tray.setText("Tray: Checking version…")
         self.lbl_upd_tray.setStyleSheet("font-size: 11px; color: #f59e0b;")
         def _run():
             res = check_tray_update()
@@ -2381,7 +2312,7 @@ class OmniRoutePopover(QWidget):
     def _update_tray_app(self):
         """Kick off the tray self-update; the result lands via bridge.update_status."""
         self.btn_upd_tray.setEnabled(False)
-        self.lbl_upd_tray.setText("Tray: Updating from GitHub…")
+        self.lbl_upd_tray.setText("Tray: Updating…")
         self.lbl_upd_tray.setStyleSheet("font-size: 11px; color: #f59e0b;")
         self.tray_app._manual_update_tray()
 
@@ -2830,8 +2761,8 @@ class TrayApp:
         )
 
     def _manual_update_tray(self):
-        self.bridge.update_status.emit("tray", "Updating from GitHub…", False)
-        self.tray.showMessage("OmniRoute Tray", "Updating tray from GitHub repository…", QSystemTrayIcon.Information, 3000)
+        self.bridge.update_status.emit("tray", "Updating…", False)
+        self.tray.showMessage("OmniRoute Tray", "Updating tray…", QSystemTrayIcon.Information, 3000)
         def _run():
             res = self_update_tray()
             ok = bool(res.get("success"))
@@ -2906,8 +2837,8 @@ Options:
   --snapshot [--range <1d|7d|30d>]
                            Print full telemetry JSON snapshot
   --toggle-autostart       Toggle start on desktop login
-  --check-tray             Check GitHub for tray updates without pulling
-  --update-tray            Pull the latest code from GitHub and sync widgets
+  --check-tray             Show the tray version (updates ship with the OmniRoute checkout)
+  --update-tray            Self-update is disabled; re-run install.sh from your OmniRoute checkout
   --standalone, --force    Run the standalone Qt tray even if KDE Plasmoid is active
   -v, --version            Show version information and exit
   -h, --help               Show this help message and exit
