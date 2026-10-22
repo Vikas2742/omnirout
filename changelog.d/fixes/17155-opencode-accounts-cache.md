@@ -1,1 +1,0 @@
-- Keep the cached Opencode account view current after public health Map additions, removals, clearing, or replacement, preserving retained health references and request writeback behavior ([#17155](https://github.com/diegosouzapw/OmniRoute/pull/17155)) — thanks @opensource-elearning.
