@@ -344,3 +344,30 @@ test("#17348: reused public prefix can only be priced by the current node ID", a
       "explicit price under the new owner node ID remains valid");
   });
 });
+
+test("#17348: a current node-ID price beats a public alias quote independently of JSON key order", async () => {
+  const pricesByNode = {
+    foo: { input: 7 },
+  };
+  const pricesByPublicAlias = {
+    foo: { input: 99, output: 300 },
+    "org/nested": { input: 11 },
+  };
+  for (const prices of [
+    { ih: pricesByPublicAlias, [NODE]: pricesByNode },
+    { [NODE]: pricesByNode, ih: pricesByPublicAlias },
+  ]) {
+    await withMockedCatalog(current, prices, (overlay) => {
+      const served = reconcileHistoricalEnrichment(overlay, [
+        { id: "ih/foo" },
+        { id: "ih/org/nested" },
+      ]);
+      assert.deepEqual(served.get("ih/foo")?.pricing, { input: 7 },
+        "canonical node price wins entirely, not just one property");
+      assert.deepEqual(served.get("ih/org/nested")?.pricing, { input: 11 },
+        "uncontested public-alias-only price remains usable");
+      assert.deepEqual(served.get("foo")?.pricing, { input: 7 },
+        "bare-key fallback cannot restore the rejected alias price");
+    });
+  }
+});
