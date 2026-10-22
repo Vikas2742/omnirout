@@ -3,6 +3,10 @@ import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry.ts";
 import { getAllCustomModels, getAllSyncedAvailableModels } from "@/lib/db/models";
 import { getPricing } from "@/lib/db/settings";
 import { getProviderPrefixIndex } from "@/lib/providerNodePrefixes";
+import { getDbInstance } from "@/lib/db/core";
+import { getNodePrefixHistory, type HistoricalNodePrefix } from "@/lib/db/providers/nodePrefixHistory";
+import { isCompatibleProviderConnectionId } from "@/shared/utils/compatibleProviderId";
+import { isReservedProviderPrefix } from "@/shared/constants/reservedProviderPrefixes";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -35,6 +39,39 @@ export async function GET() {
     // prefixes are exposed as public targets (reserved/ambiguous are not).
     const { nodeToPrefix, prefixToNode, eligibleNodeIds, compatibleNodeIds } =
       await getProviderPrefixIndex();
+
+    // Immutable per-request snapshot of recorded prefix changes. Historical
+    // associations cannot override a live prefix, built-in alias, or another
+    // node's claim. The raw model IDs are captured BEFORE the operator's edit.
+    const db = getDbInstance();
+    const historyByNode = new Map<string, HistoricalNodePrefix[]>();
+    const historicalOwners = new Map<string, string | null>();
+    for (const nodeId of eligibleNodeIds) {
+      const currentPrefix = nodeToPrefix.get(nodeId);
+      const history = getNodePrefixHistory(db, nodeId).filter(
+        (entry) => entry.prefix !== currentPrefix
+      );
+      if (!history.length) continue;
+      historyByNode.set(nodeId, history);
+      for (const { prefix } of history) {
+        if (prefixToNode.has(prefix) || isReservedProviderPrefix(prefix)) continue;
+        if (!historicalOwners.has(prefix)) historicalOwners.set(prefix, nodeId);
+        else if (historicalOwners.get(prefix) !== nodeId) historicalOwners.set(prefix, null);
+      }
+    }
+    const attachCompatibleMetadata = (providerId: string, slot: Record<string, any>) => {
+      const publicPrefix = nodeToPrefix.get(providerId);
+      if (publicPrefix) {
+        slot.displayPrefix = publicPrefix;
+        const history = historyByNode.get(providerId);
+        if (history?.length) slot.historicalPrefixes = history;
+      }
+      if (compatibleNodeIds.has(providerId)) {
+        slot.modelOverrideEligible = eligibleNodeIds.has(providerId);
+      }
+    };
+    const orphanedCompatibleNode = (id: string) =>
+      isCompatibleProviderConnectionId(id) && !compatibleNodeIds.has(id);
 
     // ── 1. Registry models (hardcoded) ──────────────────────────────
     for (const entry of Object.values(REGISTRY)) {
@@ -79,16 +116,15 @@ export async function GET() {
           format: "openai",
           models: [],
         };
-        const prefix = nodeToPrefix.get(providerId);
-        if (prefix) catalog[alias].displayPrefix = prefix;
-        if (compatibleNodeIds.has(providerId)) {
-          catalog[alias].modelOverrideEligible = eligibleNodeIds.has(providerId);
-        }
+        attachCompatibleMetadata(providerId, catalog[alias]);
       }
       return catalog[alias];
     };
 
     const appendDbModels = (providerId: string, rawModels: unknown) => {
+      // Deleted compatible nodes are never routable. Keep orphan DB records
+      // untouched for operator recovery, but never re-publish them as models.
+      if (orphanedCompatibleNode(providerId)) return;
       const models = asModelArray(rawModels);
       const alias = resolveAlias(providerId);
       const providerCatalog = ensureCatalogProvider(providerId, alias);
@@ -126,6 +162,7 @@ export async function GET() {
       /* DB may not be ready */
     }
     for (const [providerId, rawModels] of Object.entries(customModelsMap)) {
+      if (orphanedCompatibleNode(providerId)) continue;
       const alias = resolveAlias(providerId);
       const providerCatalog = ensureCatalogProvider(providerId, alias);
       for (const model of asModelArray(rawModels)) {
@@ -158,7 +195,12 @@ export async function GET() {
     for (const [rawProviderAlias, models] of Object.entries(pricingData)) {
       // `rawProviderAlias` is the original pricing namespace the operator used.
       const pricingKey = rawProviderAlias;
-      const providerAlias = prefixToNode.get(rawProviderAlias) || rawProviderAlias;
+      // An OLD prefix may belong to this node, but only with recorded unique
+      // ownership and no current, reserved or ambiguous prefix collision.
+      const previousOwner = historicalOwners.get(rawProviderAlias);
+      const providerAlias =
+        prefixToNode.get(rawProviderAlias) || previousOwner || rawProviderAlias;
+      if (orphanedCompatibleNode(providerAlias)) continue;
       if (!catalog[providerAlias]) {
         catalog[providerAlias] = {
           id: providerAlias,
@@ -168,11 +210,7 @@ export async function GET() {
           format: "openai",
           models: [],
         };
-        const prefix = nodeToPrefix.get(providerAlias);
-        if (prefix) catalog[providerAlias].displayPrefix = prefix;
-        if (compatibleNodeIds.has(providerAlias)) {
-          catalog[providerAlias].modelOverrideEligible = eligibleNodeIds.has(providerAlias);
-        }
+        attachCompatibleMetadata(providerAlias, catalog[providerAlias]);
       }
       // When the entry is keyed internally by the node id but priced under a
       // public prefix, remember the original pricing namespace for PricingTab.
