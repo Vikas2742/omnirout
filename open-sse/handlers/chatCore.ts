@@ -2424,6 +2424,7 @@ async function handleChatCoreInner({
     pendingRequestId,
     clientResponseFormat,
     clientAbortSignal: clientRawRequest?.signal,
+    correlationId: getHeaderValueCaseInsensitive(clientRawRequest?.headers ?? null, "x-correlation-id"),
     allowCompletedToolHandoffGrace: isCodexResponsesEcho,
   });
 
