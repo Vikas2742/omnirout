@@ -132,3 +132,102 @@ test("bifrostClient: dispatchToBifrost sanitizes a 4xx sidecar body instead of p
 
   globalThis.fetch = ORIGINAL_FETCH;
 });
+
+const ECHO_CONFIG = {
+  baseUrl: "http://127.0.0.1:8080",
+  apiKey: "bifrost-secret",
+  timeoutMs: 5000,
+  streamingEnabled: true,
+  enabled: true,
+};
+
+test("bifrostClient: a 2xx sidecar response never relays echoed credentials, cookies or stale encoding", async () => {
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ id: "chatcmpl-1", choices: [] }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "content-encoding": "gzip",
+        authorization: "Bearer bifrost-secret",
+        "x-api-key": "bifrost-secret",
+        "set-cookie": "session=sidecar-session; Path=/",
+        "x-bifrost-trace": "trace-1",
+      },
+    });
+
+  const dummyReq = new Request("http://localhost:20128/v1/chat/completions", { method: "POST" });
+  const result = await dispatchToBifrost({
+    request: dummyReq,
+    body: { model: "gpt-4", messages: [] },
+    config: ECHO_CONFIG,
+  });
+
+  const headers = result.response.headers;
+  assert.equal(headers.get("authorization"), null);
+  assert.equal(headers.get("x-api-key"), null);
+  assert.equal(headers.get("set-cookie"), null);
+  assert.equal(headers.get("content-encoding"), null);
+  assert.equal(headers.get("x-bifrost-trace"), "trace-1", "non-sensitive headers still relay");
+  assert.equal(headers.get("X-Routed-By"), "bifrost");
+
+  globalThis.fetch = ORIGINAL_FETCH;
+});
+
+test("bifrostClient: a 4xx sidecar response never relays echoed credentials or cookies", async () => {
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ error: "bad request" }), {
+      status: 400,
+      headers: {
+        "content-type": "application/json",
+        "content-length": "999",
+        authorization: "Bearer bifrost-secret",
+        "set-cookie": "session=sidecar-session; Path=/",
+        "proxy-authorization": "Basic abc",
+      },
+    });
+
+  const dummyReq = new Request("http://localhost:20128/v1/chat/completions", { method: "POST" });
+  const result = await dispatchToBifrost({
+    request: dummyReq,
+    body: { model: "gpt-4", messages: [] },
+    config: ECHO_CONFIG,
+  });
+
+  const headers = result.response.headers;
+  assert.equal(result.response.status, 400);
+  assert.equal(headers.get("authorization"), null);
+  assert.equal(headers.get("set-cookie"), null);
+  assert.equal(headers.get("proxy-authorization"), null);
+  assert.notEqual(headers.get("content-length"), "999");
+  const parsed = (await result.response.json()) as { error: unknown };
+  assert.ok(parsed.error);
+
+  globalThis.fetch = ORIGINAL_FETCH;
+});
+
+test("bifrostClient: targetPath and the client's Anthropic protocol headers reach the sidecar", async () => {
+  let capturedUrl = "";
+  let capturedHeaders: Headers | null = null;
+  globalThis.fetch = async (input, init) => {
+    capturedUrl = String(input);
+    capturedHeaders = new Headers(init?.headers);
+    return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  const dummyReq = new Request("http://localhost:20128/v1/messages", {
+    method: "POST",
+    headers: { "anthropic-version": "2023-06-01", "anthropic-beta": "tools-2024-04-04" },
+  });
+  await dispatchToBifrost({
+    request: dummyReq,
+    body: { model: "anthropic/claude", messages: [] },
+    config: ECHO_CONFIG,
+    targetPath: "/anthropic/v1/messages",
+  });
+
+  assert.equal(capturedUrl, "http://127.0.0.1:8080/anthropic/v1/messages");
+  assert.equal(capturedHeaders?.get("anthropic-version"), "2023-06-01");
+  assert.equal(capturedHeaders?.get("anthropic-beta"), "tools-2024-04-04");
+
+  globalThis.fetch = ORIGINAL_FETCH;
+});

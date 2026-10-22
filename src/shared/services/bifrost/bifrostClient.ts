@@ -1,6 +1,10 @@
 import { finalizeReadableStream } from "@/app/api/v1/relay/chat/completions/streamFinalizer";
 import { getProviderPluginManifestHeader } from "@omniroute/open-sse/config/providerPluginManifestUrl.ts";
 import { buildErrorBody, sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import {
+  stripSensitiveResponseHeaders,
+  stripStaleEncodingHeaders,
+} from "@omniroute/open-sse/utils/upstreamResponseHeaders.ts";
 import type { BifrostRoutingConfig } from "./bifrostRouting";
 
 export interface BifrostDispatchOptions {
@@ -26,6 +30,12 @@ function buildUpstreamHeaders(
     "Content-Type": "application/json",
     ...getProviderPluginManifestHeader(origin),
   };
+
+  // Anthropic-compatible endpoint (/v1/messages fast-path) needs the client's protocol headers.
+  for (const name of ["anthropic-version", "anthropic-beta"]) {
+    const value = request.headers.get(name);
+    if (value) headers[name] = value;
+  }
 
   const reqId = request.headers.get("x-request-id") || request.headers.get("x-correlation-id");
   if (reqId) headers["x-request-id"] = reqId;
@@ -73,7 +83,11 @@ export async function dispatchToBifrost({
     throw error;
   }
 
-  const responseHeaders = new Headers(upstream.headers);
+  // Never relay the sidecar's headers wholesale: it receives BIFROST_API_KEY (or the
+  // client's Authorization) and could echo it back, or set its own session cookie that
+  // the browser would store against OUR origin (GHSA-9m72-44hg-w32g). The strip also
+  // drops the stale content-encoding/length that fetch() has already decoded.
+  const responseHeaders = stripSensitiveResponseHeaders(upstream.headers);
   responseHeaders.set("X-Routed-By", "bifrost");
 
   // The sidecar is a third-party binary (@maximhq/bifrost), outside OmniRoute's own
@@ -86,12 +100,12 @@ export async function dispatchToBifrost({
     const rawText = await upstream.text().catch(() => "");
     const safeMessage = sanitizeErrorMessage(`Bifrost error ${upstream.status}: ${rawText}`);
     onUsageRecorded?.("success", upstream.status);
-    responseHeaders.delete("Content-Length");
-    responseHeaders.set("Content-Type", "application/json");
+    const errorHeaders = stripStaleEncodingHeaders(responseHeaders);
+    errorHeaders.set("Content-Type", "application/json");
     return {
       response: new Response(JSON.stringify(buildErrorBody(upstream.status, safeMessage)), {
         status: upstream.status,
-        headers: responseHeaders,
+        headers: errorHeaders,
       }),
       timedOut,
       statusCode: upstream.status,
