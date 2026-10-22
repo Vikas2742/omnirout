@@ -4,7 +4,7 @@ import { getAllCustomModels, getAllSyncedAvailableModels } from "@/lib/db/models
 import { getPricing } from "@/lib/db/settings";
 import { getProviderPrefixIndex } from "@/lib/providerNodePrefixes";
 import { getDbInstance } from "@/lib/db/core";
-import { getNodePrefixHistory, type HistoricalNodePrefix } from "@/lib/db/providers/nodePrefixHistory";
+import { getNodePrefixHistory, getDeletedNodePrefixTombstones, type HistoricalNodePrefix } from "@/lib/db/providers/nodePrefixHistory";
 import { isCompatibleProviderConnectionId } from "@/shared/utils/compatibleProviderId";
 import { isReservedProviderPrefix } from "@/shared/constants/reservedProviderPrefixes";
 
@@ -44,6 +44,7 @@ export async function GET() {
     // associations cannot override a live prefix, built-in alias, or another
     // node's claim. The raw model IDs are captured BEFORE the operator's edit.
     const db = getDbInstance();
+    const tombstonedPrefixes = getDeletedNodePrefixTombstones(db);
     const historyByNode = new Map<string, HistoricalNodePrefix[]>();
     const historicalOwners = new Map<string, string | null>();
     // Include ineligible compatible nodes as possible prior owners: a losing
@@ -56,7 +57,8 @@ export async function GET() {
       if (!history.length) continue;
       historyByNode.set(nodeId, history);
       for (const { prefix } of history) {
-        if (prefixToNode.has(prefix) || isReservedProviderPrefix(prefix)) continue;
+        if (prefixToNode.has(prefix) || isReservedProviderPrefix(prefix) ||
+            tombstonedPrefixes.has(prefix)) continue;
         if (!historicalOwners.has(prefix)) historicalOwners.set(prefix, nodeId);
         else if (historicalOwners.get(prefix) !== nodeId) historicalOwners.set(prefix, null);
       }
@@ -212,7 +214,8 @@ export async function GET() {
       // OpenCode may recover an individual price only with recorded raw-ID
       // provenance AND a matching current served model (#17348).
       const providerAlias = prefixToNode.get(rawProviderAlias) || rawProviderAlias;
-      const historicalNamespace = historicalOwners.has(rawProviderAlias) &&
+      const historicalNamespace =
+        (historicalOwners.has(rawProviderAlias) || tombstonedPrefixes.has(rawProviderAlias)) &&
         !prefixToNode.has(rawProviderAlias);
       const orphaned = orphanedCompatibleNode(providerAlias);
       if (!catalog[providerAlias]) {
