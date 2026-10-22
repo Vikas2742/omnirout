@@ -69,13 +69,15 @@ export default function InputStep({ input, onChange, destination }: InputStepPro
     }
     setIsReading(true);
     try {
-      const content = await readFileContent(file);
+      // CSV conversion needs every row; JSONL keeps a bounded preview (D7).
+      const content = input.kind === "csv" ? await file.text() : await readFileContent(file);
       // A format change invalidates the pending file without skipping read cleanup.
       if (inputRevision !== inputRevisionRef.current) return;
       onChange({
         kind: input.kind,
         fileName: file.name,
         rawContent: content,
+        originalFile: input.kind === "jsonl" ? file : undefined,
         csvMapping: input.kind === "csv" ? (input.csvMapping ?? {}) : undefined,
       });
     } catch (err) {
