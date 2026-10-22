@@ -444,65 +444,110 @@ na-eji `us-central1` dịka ndabara. Mkpebi abụọ ahụ na-eme na `open-sse/h
 
 ---
 
-## Depụta Modelụ
+## Depụta Model
 
 ```bash
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Na-eweghachi modelụ nkata, embedding, na onyonyo niile + ngwakọta n'ụdị OpenAI
+→ Na-eweghachi model nkata, embedding, na onyonyo niile + ngwakọta ha n'ụdị OpenAI
 ```
 
-### Prefix id modelụ (`?prefix=`)
+### Ọnụahịa model (`pricing`)
 
-A na-egosipụta ọtụtụ modelụ n'okpuru **prefix onye na-eweta ọrụ**. Ọkọlọtọ njirimara `MODELS_CATALOG_PREFIX_MODE` na-achịkwa prefix ị ga-enweta, a pụkwara iji paramita ajụjụ dochie ya **maka arịrịọ ọ bụla** — nke a bara uru maka klayịant chọrọ ndepụta dị ọcha na-agbanweghị ntọala sava dum maka onye ọ bụla ọzọ:
+Ndenye nwere ihe `pricing` mgbe OmniRoute maara ọnụahịa model ahụ. Ọnụahịa ahụ na-esite
+na tebụl ọnụahịa nke ngụkọ mmefu na-eji: ndabara arụnyere n'ime sistemụ, ọnụahịa emekọrịtara, na
+mgbanwe ndị edobere site na `/api/pricing`. Ndị a bụ ọnụahịa ndepụta, ya mere ndị na-eweta ọrụ ndenye aha na-egosikwa
+ọnụahịa kwa token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Fields                                                          | Unit                         | Notes                                                                                                                                             |
+| --------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD kwa token, eriri decimal | Dakọtara na OpenRouter, ọ dịghị mgbe ọ na-eji akara exponent. Ogige cache abụọ ahụ na-apụta naanị mgbe e nwere ọnụahịa cache.                     |
+| `input`, `output`, `cached`, `cache_creation`                   | USD kwa token nde 1, ọnụọgụ  | Ogige sitere na ụdị katalọgụ ndị mbụ, nke edobere maka ndị ahịa dị ugbu a. `reasoning` na `long_context` na-apụtakwa mgbe ahịrị ọnụahịa nwere ha. |
+
+- **Ngwakọta** na-eji ọnụahịa nke ebumnuche mbụ ha a na-ahụ anya. Ngwakọta `auto/*` arụnyere n'ime sistemụ na-ahọrọ
+  ebumnuche n'oge arịrịọ, ya mere ha enweghị `pricing`.
+- **Model efu** na-egosi `"0"` (na `0`) mgbe ọnụahịa ha bụ efu. Model na-enweghị ahịrị ọnụahịa
+  na-egosikwa `"0"` mgbe katalọgụ kara ya dị ka nke efu (`free: true`) ma ọ bụ mgbe katalọgụ model efu
+  arụnyere n'ime sistemụ depụtara ya.
+- **Ọnụahịa amaghị:** ndenye ahụ enweghị igodo `pricing`.
+- **Ndị na-eweta ọrụ a na-atụ site na kredit** (dị ka Kiro) na-akwụ ụgwọ kwa arịrịọ kama ịkwụ kwa token. Ndenye ha
+  na-edobe ogige ọnụọgụ kwa nde 1 ha nwere na mbụ ma ghara inwe ogige eriri kwa token.
+- **Ụdị dị iche iche** (id nke mgbalị reasoning, aha nnọchi no-thinking, na oyiri discovery na gateway)
+  na-edepụta ọnụahịa model ha na-ezigara arịrịọ.
+- Ogige ndị ahụ nwere naanị ọnụego ntọala. Ọkwa long-context (ogige ọnụọgụ `long_context`) na
+  ihe mgbakọ service-tier (dịka ọmụmaatụ Codex fast ma ọ bụ flex) anaghị agbanwe `prompt` ma ọ bụ
+  `completion`.
+- Ihe ahụ bụ otu ihe maka ụdị nkwenye njirimara niile, gụnyere arịrịọ n'ụdị Anthropic
+  nwere `x-api-key` na `anthropic-version` (nzaghachi ahụ ka bụ `{ "object": "list",
+"data": [...] }`). Mmejuputa: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefix id model (`?prefix=`)
+
+A na-akpọsa ọtụtụ model n'okpuru **prefix onye na-eweta ọrụ**. Prefix ị ga-enweta na-adabere na
+feature flag `MODELS_CATALOG_PREFIX_MODE`, a pụkwara ịgbanwe ya **maka arịrịọ ọ bụla** site na
+query parameter — nke bara uru nye onye ahịa chọrọ ndepụta dị ọcha na-enweghị ịgbanwe ntọala sava niile
+maka onye ọ bụla ọzọ:
 
 ```bash
-GET /v1/models?prefix=alias        # otu id maka modelụ ọ bụla — prefix utu aha dị mkpụmkpụ
+GET /v1/models?prefix=alias        # otu id kwa model — prefix aha nnọchi dị mkpụmkpụ
 GET /v1/models?prefix=dual         # ụdị abụọ ahụ (ndabara sava)
-GET /v1/models?prefix=canonical    # naanị prefix id onye na-eweta ọrụ zuru ezu
+GET /v1/models?prefix=canonical    # naanị prefix provider-id zuru ezu
 ```
 
-| Ọnọdụ       | Ihe ọ na-ewepụta                                         | Nkọwa                                                                                                                                                                                                               |
-| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **na** `claude/claude-sonnet-4-6` | **Ndabere.** Id abụọ ahụ na-eduga n'otu modelụ; e debere ha ka nhazi klayịant ndị tinyere otu n'ime ụdị ndị ahụ kpọmkwem wee nọgide na-arụ ọrụ. Ọ na-eme ka katalọgụ mụbaa ihe dị ka okpukpu abụọ.                  |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Otu ntinye maka modelụ ọ bụla. Ndị na-eweta ọrụ na-enweghị utu aha dị iche ka na-ewepụta ntinye ha, ya mere ọ dịghị ihe na-efu.                                                                                     |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Otu ntinye maka modelụ ọ bụla n'okpuru prefix id onye na-eweta ọrụ zuru ezu. Ndị na-eweta ọrụ na-enweghị utu aha dị iche (dịka `antigravity/…`, `agy/…`) na-ewepụtakwa otu id ha ebe a, ya mere ọ dịghị ihe na-efu. |
+| Mode        | Emits                                                    | Notes                                                                                                                                                                                                      |
+| ----------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **na** `claude/claude-sonnet-4-6` | **Ndabara.** Id abụọ ahụ na-ezigara otu model arịrịọ; edobere ha ka nhazi ndị ahịa tinyere otu n'ime ụdị abụọ ahụ kpọmkwem wee nọgide na-arụ ọrụ. Ọ na-eme ka katalọgụ dị ihe dịka okpukpu abụọ.           |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Otu ndenye kwa model. Ndị na-eweta ọrụ na-enweghị aha nnọchi pụrụ iche ka na-ewepụta ndenye ha, ya mere ọ dịghị ihe furu efu.                                                                              |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Otu ndenye kwa model n'okpuru prefix provider-id zuru ezu. Ndị na-eweta ọrụ na-enweghị aha nnọchi pụrụ iche (dịka `antigravity/…`, `agy/…`) na-ewepụtakwa naanị id ha ebe a, ya mere ọ dịghị ihe furu efu. |
 
-A pụkwara ịmata enyo nọ n'ọnọdụ `dual` n'enweghị paramita ajụjụ ahụ: ọ nwere oghere `parent`
-na-arụtụ aka na id bụ isi.
+A pụkwara ịmata oyiri mode `dual` na-enweghị query parameter: ọ nwere ogige `parent`
+na-atụ aka na id bụ isi.
 
-Klayịant ndị na-egosipụta ebe ịhọrọ modelụ kwesịrị ịrịọ `?prefix=alias` — nke a bụ ihe
-[mgbakwunye OmniCopilot VS Code](../guides/VSCODE-COPILOT.md) na-eme.
+Ndị ahịa na-egosipụta ihe nhọpụta model kwesịrị ịrịọ `?prefix=alias` — nke a bụ ihe
+[OmniCopilot VS Code extension](../guides/VSCODE-COPILOT.md) na-eme.
 
-### Nzacha nchọpụta (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Ihe nzacha nchọta (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` na-anabata nzacha nchọpụta a na-ahọrọ itinye. Ọ bụrụ na enweghị nke ọ bụla n'ime ha, nzaghachi ahụ
-agaghị agbanwe. Ha na-eme ka katalọgụ onye kpọrọ arịrịọ ahụ hụ dị warara (ikike API-key na-ebu ụzọ metụta ya),
-ha na-agbakwa tupu nhazi ibe `limit` / `after` nke ụdị OpenAI:
+`GET /v1/models` na-anabata ihe nzacha nchọta a na-ahọrọ iji. Na-enweghị nke ọ bụla n'ime ha, nzaghachi ahụ
+anaghị agbanwe. Ha na-eme ka katalọgụ onye kpọrọ arịrịọ ahụ na-ahụ dị warara (ikike API-key na-amalite ọrụ mbụ),
+ha na-agbakwa tupu nkewa peeji `limit` / `after` n'ụdị OpenAI:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # ikike ọ bụla edepụtara ga-abụrịrị eziokwu
+GET /v1/models?capability=vision&capability=tool_calling   # ikike niile edepụtara ga-abụrịrị eziokwu
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # `type` katalọgụ; ahịrị ndị na-enweghị ya bụ `chat`
-GET /v1/models?q=sonnet&limit=10                           # ndakọrịta na-adịghị ele mkpụrụedemede ukwu/nta anya na id ma ọ bụ aha
+GET /v1/models?q=sonnet&limit=10                           # ndakọrịta na-adịghị ele nnukwu ma ọ bụ obere mkpụrụedemede anya na id ma ọ bụ aha
 ```
 
 | Paramita      | Uru                                                                                                 |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | integer na-adịghị njọ, a na-atụnyere ya na `context_length`                                         |
+| `min_context` | nọmba zuru ezu na-adịghị njọ, a na-atụnyere ya na `context_length`                                  |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | mkpụrụedemede 1–200                                                                                 |
 
-Uru a na-amaghị, ma ọ bụ `min_context` nke na-abụghị integer na-adịghị njọ (dịka ọmụmaatụ `1.5`),
+Uru a na-amaghị, ma ọ bụ `min_context` nke na-abụghị nọmba zuru ezu na-adịghị njọ (dịka ọmụmaatụ `1.5`),
 na-eweghachi HTTP `400`, ozi ahụ na-edepụtakwa uru ndị ziri ezi. Mmejuputa:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Ndepụta mkpirikpi modelụ (`POST /v1/models/query`)
+### Ndepụta mkpirikpi model (`POST /v1/models/query`)
 
-`POST /v1/models/query` na-eweghachi ndepụta dị mkpirikpi, nke a pụrụ ịtụkwasị obi na ọ ga-abụ otu ihe mgbe niile, site n'otu katalọgụ ahụ, yana otu
-nkwenye njirimara na nhụta dabere na ki dịka `GET /v1/models`:
+`POST /v1/models/query` na-eweghachi ndepụta dị mkpirikpi ma kwụsie ike site n'otu katalọgụ ahụ, yana otu
+nkwenye njirimara na ọhụhụ kwa-key dịka `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -515,34 +560,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Oghere ọ bụla bụ nhọrọ. `capabilities` na `exclude` na-anabata array ma ọ bụ eriri e kewara na rikoma;
-`max_output` na-atụnyere `max_output_tokens`. A na-ahazi nsonaazụ site na `owned_by`, e mesịa `id`.
-Ndabere `limit` bụ `20`, a na-amachibido uru karịrị `100` na `100`. JSON na-ezighi ezi, oghere a na-amaghị
-ma ọ bụ uru na-ezighi ezi na-eweghachi HTTP `400`.
+Field ọ bụla bụ nke nhọrọ. `capabilities` na `exclude` na-anabata array ma ọ bụ string e ji rikoma kewaa;
+`max_output` na-atụnyere `max_output_tokens`. A na-ahazi nsonaazụ site na `owned_by`, emesịa `id`.
+Uru ndabara nke `limit` bụ `20`, a na-amachibido uru karịrị `100` ka ọ bụrụ `100`. JSON na-ezighi ezi, field
+a na-amaghị, ma ọ bụ uru na-ezighi ezi na-eweghachi HTTP `400`.
 
-### Modelụ nkata ezoro n'otu n'otu
+### Model nkata ndị e zoro n'otu n'otu
 
-A na-ewepụ modelụ akara ya bụ **Zoro ezo** n'ibe onye na-eweta ya na katalọgụ, a na-ajụkwa ya
-site na HTTP `404` / `model_not_found` mgbe a rịọrọ ya kpọmkwem. Nlele ahụ na-eji onye na-eweta ọrụ na modelụ
-e doziri, gụnyere utu aha onye na-eweta ọrụ, prefix node onye na-eweta ọrụ dakọtara, na
-ndabara njikọ. Ngwakọta na-awụfe ebumnuche ezoro ezo ma nwee ike iji nwanne a na-ahụ anya; mgbe ọ dịghị
-ebumnuche a pụrụ ịrụ ọrụ fọdụrụ, ọ na-eweghachi otu koodu njehie ahụ. Iwepụ izochi ahụ na-amalite ịrụ ọrụ n'arịrịọ
-na-esote. Mgbanwe nhụta nke naanị onyonyo anaghị ezo modelụ nkata nwere otu ID ahụ.
+A na-ewepụ model akara dịka **Zoro ezo** na peeji provider ya na katalọgụ ma jụ ya
+site na HTTP `404` / `model_not_found` mgbe a rịọrọ ya kpọmkwem. Nlele ahụ na-eji
+provider na model e kpebisiri ike, gụnyere aha ọzọ nke provider, prefix node nke compatible-provider, na
+ntọala ndabara njikọ. Ngwakọta na-amafere target ndị e zoro ezo ma nwee ike iji sibling a na-ahụ anya; mgbe
+ọ nweghị target a pụrụ imezu fọdụrụ, ọ na-eweghachi otu koodu njehie ahụ. Iwepụ nzuzo ahụ na-amalite ịrụ ọrụ na
+request na-esote. Mgbanwe ọhụhụ maka image naanị anaghị ezobe model nkata nwere otu ID ahụ.
 
-Ntọala modelụ n'otu n'otu a dị iche na
-[ndepụta ikwe/gbochie mkpughe modelụ](../routing/MODEL_EXPOSURE_LIST.md), nke na-enyocha mgbasa ozi katalọgụ
-na ndị ga-abụ nhọrọ maka ntụgharị akpaghị aka ma na-edobe iziga kpọmkwem. Ikike modelụ nke API-key
-ka na-emetụta ya n'onwe ya. Ọnọdụ prefix katalọgụ ndabara ka bụ `dual`.
+Ntọala model nke otu onye a dị iche na
+[ndepụta ikwe/jụ nke ngosi model](../routing/MODEL_EXPOSURE_LIST.md), nke na-enyocha mgbasa ozi katalọgụ
+na ndị ndọrọ-ndọrọ auto-routing ma na-edobe iziga kpọmkwem. Ikike model nke API-key
+na-aga n'ihu itinye n'ọrụ n'adabereghị na nke a. Mode prefix ndabara nke katalọgụ ka bụ `dual`.
 
-### Ụdị modelụ na-enweghị iche echiche
+### Ụdị model na-enweghị echiche
 
-Maka modelụ Claude nwere ikike iche echiche, `/v1/models` na-egosipụtakwa ụdị **na-enweghị iche echiche** nke id ya nwere prefix `claude-3-omniroute-no-thinking/`:
+Maka model Claude ndị nwere ike iche echiche, `/v1/models` na-akpọsakwa ụdị **na-enweghị echiche** nke id ya nwere prefix `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Ịhọrọ njirimara a (dịka ọmụmaatụ, na nhazi Claude Code nke na-etinye ngọngọ `thinking` mgbe niile) na-edughachi na ezigbo `<provider>/<model>` ebe egbochiri ntụgharị uche — `thinking:{type:"disabled"}` n’ụzọ `/v1/messages`, ma ọ bụ wepụ mpaghara `reasoning`/`reasoning_effort` n’ụzọ `/v1/chat/completions`. A na-edepụta ụdị a naanị maka ụdịdị nke ezinụlọ Claude ndị na-akwado ntụgharị uche **ma** na-asọpụrụ `disabled` (ya mere, dịka ọmụmaatụ, a naghị etinye ụdịdị adaptive-only ndị na-ajụ `disabled`). Ndị na-ahụ maka sistemụ nwere ike iji `ModelSpec.noThinkingAlias` manye ka ụdị a dị ire ma ọ bụ ghara ịdị ire n’otu ụdịdị ọ bụla.
+Ịhọrọ id a (dịka ọmụmaatụ, na nhazi Claude Code nke na-etinye block `thinking` mgbe niile) na-eme ka ọ laghachi na `<provider>/<model>` n'ezie ebe e gbochiri reasoning — `thinking:{type:"disabled"}` na path `/v1/messages`, ma ọ bụ wepụ field `reasoning`/`reasoning_effort` na path `/v1/chat/completions`. A na-edepụta ụdị ahụ naanị maka model ezinụlọ Claude ndị na-akwado thinking **ma** na-erube isi na `disabled` (ya mere, dịka ọmụmaatụ, a na-ewepụ model adaptive-only ndị na-ajụ `disabled`). Ndị na-arụ ọrụ nwere ike ịmanye ụdị ahụ ka ọ dị ọkụ ma ọ bụ gbanyụọ maka model ọ bụla site na `ModelSpec.noThinkingAlias`.
 
 ---
 

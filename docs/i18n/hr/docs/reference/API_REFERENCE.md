@@ -429,47 +429,89 @@ zadano postavlja na `us-central1`. Oba razrješavanja se odvijaju u `open-sse/ha
 
 ```bash
 GET /v1/models
-Authorization: Bearer vaš-api-ključ
+Authorization: Bearer your-api-key
 
-→ Vraća sve modele za razgovor, ugradnje i slike + kombinacije u OpenAI formatu
+→ Vraća sve modele za razgovor, ugradnje i slike te kombinacije u OpenAI formatu
 ```
 
-### Prefiksi ID-ja modela (`?prefix=`)
+### Cijene modela (`pricing`)
 
-Većina modela oglašava se pod **prefiksom pružatelja usluge**. Prefiks koji ćete dobiti određuje
-zastavica značajke `MODELS_CATALOG_PREFIX_MODE`, a može se nadjačati **za svaki zahtjev** putem
-parametra upita — korisno za klijenta koji želi čist popis bez promjene postavke na razini
+Unos sadrži objekt `pricing` kada OmniRoute zna cijenu modela. Cijena dolazi
+iz tablice cijena koju koristi obračun troškova: ugrađene zadane vrijednosti, sinkronizirane cijene i
+nadjačavanja postavljena putem `/api/pricing`. To su kataloške cijene, pa pružatelji pretplata također
+prikazuju cijenu po tokenu.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Polja                                                           | Jedinica                     | Napomene                                                                                                                                               |
+| --------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD po tokenu, decimalni niz | Kompatibilno s OpenRouterom, nikada u eksponencijalnom zapisu. Dva polja predmemorije pojavljuju se samo kada postoji cijena predmemorije.             |
+| `input`, `output`, `cached`, `cache_creation`                   | USD po 1M tokena, broj       | Polja iz ranijih verzija kataloga, zadržana za postojeće klijente. `reasoning` i `long_context` također se pojavljuju kada ih redak s cijenama sadrži. |
+
+- **Kombinacije** prenose cijenu svojeg prvog vidljivog cilja. Ugrađene kombinacije `auto/*` odabiru
+  cilj u trenutku zahtjeva, pa nemaju `pricing`.
+- **Besplatni modeli** prikazuju `"0"` (i `0`) kada je njihova cijena nula. Model bez retka s cijenom
+  također prikazuje `"0"` kada ga katalog označava kao besplatnog (`free: true`) ili se nalazi u ugrađenom
+  katalogu besplatnih modela.
+- **Nepoznata cijena:** unos nema ključ `pricing`.
+- **Pružatelji s obračunom po kreditima** (kao što je Kiro) naplaćuju po zahtjevu, a ne po tokenu. Njihovi
+  unosi zadržavaju brojčana polja po 1M tokena koja su imali prije i ne sadrže tekstualna polja cijene po tokenu.
+- **Varijante** (ID-ovi razine napora zaključivanja, pseudonimi bez razmišljanja, zrcala otkrivanja i pristupnika)
+  kopiraju cijenu modela na koji usmjeravaju.
+- Polja sadrže samo osnovne stope. Razine dugog konteksta (brojčano polje `long_context`) i
+  množitelji razine usluge (primjerice Codex fast ili flex) ne mijenjaju `prompt` ni
+  `completion`.
+- Objekt je isti za svaki način autentifikacije, uključujući zahtjev u stilu Anthropica
+  s `x-api-key` i `anthropic-version` (odgovor ostaje `{ "object": "list",
+"data": [...] }`). Implementacija: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefiksi ID-a modela (`?prefix=`)
+
+Većina modela oglašava se pod **prefiksom pružatelja**. Prefiks koji ćete dobiti određuje
+zastavica značajke `MODELS_CATALOG_PREFIX_MODE`, a može se nadjačati **za svaki pojedini zahtjev** pomoću
+parametra upita — što je korisno klijentu koji želi čist popis bez promjene postavke na razini cijelog
 poslužitelja za sve ostale:
 
 ```bash
-GET /v1/models?prefix=alias        # jedan ID po modelu — kratki prefiks aliasa
+GET /v1/models?prefix=alias        # jedan ID po modelu — kratki prefiks pseudonima
 GET /v1/models?prefix=dual         # oba oblika (zadana postavka poslužitelja)
-GET /v1/models?prefix=canonical    # samo puni prefiks ID-ja pružatelja usluge
+GET /v1/models?prefix=canonical    # samo puni prefiks ID-a pružatelja
 ```
 
-| Način       | Vraća                                                   | Napomene                                                                                                                                                                                 |
-| ----------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **i** `claude/claude-sonnet-4-6` | **Zadano.** Oba ID-ja usmjeravaju na isti model; zadržana su kako bi konfiguracije klijenata u kojima je jedan od oblika tvrdo kodiran nastavile raditi. Približno udvostručuje katalog. |
-| `alias`     | `cc/claude-sonnet-4-6`                                  | Jedan unos po modelu. Pružatelji usluga bez zasebnog aliasa i dalje vraćaju svoj unos, pa se ništa ne gubi.                                                                              |
-| `canonical` | `claude/claude-sonnet-4-6`                              | Jedan unos po modelu pod punim prefiksom ID-ja pružatelja usluge. Pružatelji bez zasebnog aliasa (npr. `antigravity/…`, `agy/…`) i ovdje vraćaju svoj jedini ID, pa se ništa ne gubi.    |
+| Način       | Emitira                                                 | Napomene                                                                                                                                                                                |
+| ----------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **i** `claude/claude-sonnet-4-6` | **Zadano.** Oba ID-a usmjeravaju na isti model; zadržani su kako bi konfiguracije klijenata u kojima je bilo koji oblik tvrdo kodiran nastavile raditi. Približno udvostručuje katalog. |
+| `alias`     | `cc/claude-sonnet-4-6`                                  | Jedan unos po modelu. Pružatelji bez zasebnog pseudonima i dalje emitiraju svoj unos, pa se ništa ne gubi.                                                                              |
+| `canonical` | `claude/claude-sonnet-4-6`                              | Jedan unos po modelu pod punim prefiksom ID-a pružatelja. Pružatelji bez zasebnog pseudonima (npr. `antigravity/…`, `agy/…`) i ovdje emitiraju svoj jedini ID, pa se ništa ne gubi.     |
 
-Zrcalni unos u načinu `dual` može se prepoznati i bez parametra upita: sadrži polje `parent`
-koje upućuje na primarni ID.
+Zrcalo u načinu `dual` može se prepoznati i bez parametra upita: sadrži polje `parent`
+koje pokazuje na primarni ID.
 
-Klijenti koji prikazuju birač modela trebali bi zatražiti `?prefix=alias` — to radi i
-[OmniCopilot proširenje za VS Code](../guides/VSCODE-COPILOT.md).
+Klijenti koji prikazuju alat za odabir modela trebali bi zatražiti `?prefix=alias` — to čini
+i [proširenje OmniCopilot za VS Code](../guides/VSCODE-COPILOT.md).
 
 ### Filtri za otkrivanje (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
 `GET /v1/models` prihvaća neobavezne filtre za otkrivanje. Bez ijednog od njih odgovor ostaje
-nepromijenjen. Oni sužavaju katalog koji pozivatelj već vidi (najprije se primjenjuju dopuštenja
-API ključa), a izvršavaju se prije straničenja u stilu OpenAI-ja pomoću `limit` / `after`:
+nepromijenjen. Oni sužavaju katalog koji pozivatelj već vidi (dopuštenja API ključa primjenjuju se prva),
+a izvršavaju se prije straničenja u stilu OpenAI-ja s `limit` / `after`:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # svaka navedena mogućnost mora biti istinita
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # `type` kataloga; retci bez njega smatraju se vrstom `chat`
-GET /v1/models?q=sonnet&limit=10                           # podudaranje ID-ja ili naziva bez razlikovanja velikih i malih slova
+GET /v1/models?q=sonnet&limit=10                           # podudaranje ID-a ili naziva bez razlikovanja velikih i malih slova
 ```
 
 | Parametar     | Vrijednosti                                                                                         |
@@ -479,58 +521,54 @@ GET /v1/models?q=sonnet&limit=10                           # podudaranje ID-ja i
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 znakova                                                                                       |
 
-Nepoznata vrijednost ili `min_context` koji nije cijeli broj koji nije negativan (na primjer `1.5`)
+Nepoznata vrijednost ili `min_context` koji nije cijeli broj koji nije negativan (primjerice `1.5`)
 vraća HTTP `400`, a poruka navodi valjane vrijednosti. Implementacija:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Uži izbor modela (`POST /v1/models/query`)
 
-`POST /v1/models/query` vraća kratak, deterministički popis iz istog kataloga, s istom
-autorizacijom i vidljivošću po ključu kao `GET /v1/models`:
+`POST /v1/models/query` vraća kratak, deterministički popis iz istog kataloga, uz istu
+autentifikaciju i vidljivost po ključu kao `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
-Authorization: Bearer vaš-api-ključ
+Authorization: Bearer your-api-key
 Content-Type: application/json
 
 { "capabilities": ["vision", "tool_calling"], "min_context": 128000, "max_output": 16000,
   "kind": "chat", "q": "gpt", "owned_by": "openai", "exclude": ["openai/gpt-4o"], "limit": 5 }
 
-→ { "object": "list", "data": [ ...modeli ] }
+→ { "object": "list", "data": [ ...models ] }
 ```
 
-Svako je polje neobavezno. `capabilities` i `exclude` prihvaćaju niz ili vrijednosti odvojene
-zarezima; `max_output` uspoređuje se s `max_output_tokens`. Rezultati se razvrstavaju prema
-`owned_by`, a zatim prema `id`. Zadana vrijednost za `limit` jest `20`, a vrijednosti veće od
-`100` ograničavaju se na `100`. Nevaljani JSON, nepoznato polje ili nevaljana vrijednost vraća
-HTTP `400`.
+Svako je polje neobavezno. `capabilities` i `exclude` prihvaćaju niz ili niz znakova s vrijednostima odvojenima zarezima;
+`max_output` uspoređuje se s `max_output_tokens`. Rezultati se razvrstavaju prema `owned_by`, a zatim prema `id`.
+Zadana vrijednost za `limit` jest `20`, a vrijednosti veće od `100` ograničavaju se na `100`. Nevaljani JSON, nepoznato
+polje ili nevaljana vrijednost vraća HTTP `400`.
 
 ### Pojedinačno skriveni modeli za razgovor
 
-Model označen kao **Skriven** na stranici svojeg pružatelja usluge isključuje se iz kataloga i
-odbija uz HTTP `404` / `model_not_found` kada se izričito zatraži. Provjera koristi razriješenog
-pružatelja usluge i model, uključujući aliase pružatelja usluga, prefikse čvorova kompatibilnih
-pružatelja usluga i zadane postavke veze. Kombinacija preskače skrivene ciljeve i može upotrijebiti
-vidljiv srodni model; kada ne preostane nijedan izvršiv cilj, vraća isti kôd pogreške. Poništavanje
-skrivanja stupa na snagu pri sljedećem zahtjevu. Nadjačavanja vidljivosti koja se odnose samo na
-slike ne skrivaju model za razgovor s istim ID-jem.
+Model označen kao **Skriven** na stranici svojeg pružatelja isključuje se iz kataloga i odbija
+uz HTTP `404` / `model_not_found` kada se izričito zatraži. Provjera upotrebljava razriješenog
+pružatelja i model, uključujući pseudonime pružatelja, prefikse čvorova kompatibilnih pružatelja i
+zadane vrijednosti veze. Kombinacija preskače skrivene ciljeve i može upotrijebiti vidljivi srodni model; kada ne
+preostane nijedan izvršivi cilj, vraća isti kôd pogreške. Poništavanje skrivanja stupa na snagu pri sljedećem
+zahtjevu. Nadjačavanja vidljivosti samo za slike ne skrivaju model za razgovor s istim ID-om.
 
 Ova pojedinačna postavka modela odvojena je od
 [popisa dopuštenih/zabranjenih izlaganja modela](../routing/MODEL_EXPOSURE_LIST.md), koji filtriraju
-oglašavanje kataloga i kandidate za automatsko usmjeravanje, a zadržavaju izričito slanje.
-Dopuštenja modela za API ključ nastavljaju se primjenjivati neovisno. Zadani način prefiksa
-kataloga ostaje `dual`.
+prikazivanje u katalogu i kandidate za automatsko usmjeravanje, uz zadržavanje izričitog usmjeravanja. Dopuštenja
+modela za API ključeve i dalje se primjenjuju neovisno. Zadani način prefiksa kataloga ostaje `dual`.
 
 ### Varijante modela bez razmišljanja
 
-Za Claude modele koji podržavaju razmišljanje, `/v1/models` također oglašava varijantu
-**bez razmišljanja** čiji ID ima prefiks `claude-3-omniroute-no-thinking/`:
+Za Claude modele koji podržavaju razmišljanje `/v1/models` također oglašava varijantu **bez razmišljanja** čiji ID ima prefiks `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Odabir ovog ID-a (npr. u konfiguraciji za Claude Code koja uvijek prilaže blok `thinking`) razrješava se natrag na stvarni `<provider>/<model>` uz potisnuto zaključivanje — `thinking:{type:"disabled"}` na putanji `/v1/messages` ili uz izostavljena polja `reasoning`/`reasoning_effort` na putanji `/v1/chat/completions`. Varijanta se navodi samo za modele iz obitelji Claude koji podržavaju razmišljanje **i** poštuju vrijednost `disabled` (stoga su, primjerice, isključeni modeli koji podržavaju samo prilagodljivi način rada i odbijaju `disabled`). Operateri mogu prisilno uključiti ili isključiti varijantu za pojedini model putem `ModelSpec.noThinkingAlias`.
+Odabir tog ID-a (npr. u konfiguraciji Claude Codea koja uvijek prilaže blok `thinking`) razrješava se natrag na stvarni `<provider>/<model>` uz potisnuto zaključivanje — `thinking:{type:"disabled"}` na putanji `/v1/messages` ili uz uklonjena polja `reasoning`/`reasoning_effort` na putanji `/v1/chat/completions`. Varijanta se navodi samo za modele iz obitelji Claude koji podržavaju razmišljanje **i** poštuju `disabled` (stoga su, primjerice, isključeni modeli koji podržavaju samo prilagodljivi način rada i odbijaju `disabled`). Operateri mogu prisilno uključiti ili isključiti varijantu za svaki model putem `ModelSpec.noThinkingAlias`.
 
 ---
 

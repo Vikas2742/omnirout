@@ -454,62 +454,101 @@ standart olaraq `us-central1` istifadə olunur. Hər iki müəyyənləşdirmə `
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Bütün çat, embedding və təsvir modellərini + kombinasiyaları OpenAI formatında qaytarır
+→ Bütün söhbət, daxiletmə və şəkil modellərini + kombinasiyaları OpenAI formatında qaytarır
 ```
 
-### Model id prefiksləri (`?prefix=`)
+### Model qiymətləri (`pricing`)
 
-Əksər modellər **provayder prefiksi** altında təqdim olunur. Hansı prefiksi alacağınız
-`MODELS_CATALOG_PREFIX_MODE` funksiya bayrağı ilə idarə olunur və sorğu parametri vasitəsilə
-**hər sorğu üçün** dəyişdirilə bilər — bu, server üzrə ümumi ayarı digərləri üçün dəyişmədən
-təmiz siyahı əldə etmək istəyən müştəri üçün faydalıdır:
+OmniRoute modelin qiymətini bildikdə, müvafiq qeyd `pricing` obyekti daşıyır. Qiymət xərclərin hesablanmasında istifadə olunan qiymət cədvəlindən əldə edilir: daxili standart dəyərlər, sinxronlaşdırılmış qiymətlər və `/api/pricing` vasitəsilə təyin edilmiş əvəzləmələr. Bunlar siyahı qiymətləridir, buna görə abunəlik təminatçıları da token üzrə qiymət göstərir.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Sahələr                                                         | Vahid                       | Qeydlər                                                                                                                                                    |
+| --------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | Token üzrə USD, onluq sətir | OpenRouter ilə uyğundur, heç vaxt eksponent yazılışında olmur. İki keş sahəsi yalnız keş qiyməti olduqda göstərilir.                                       |
+| `input`, `output`, `cached`, `cache_creation`                   | 1M token üzrə USD, ədəd     | Kataloqun əvvəlki versiyalarından qalan və mövcud müştərilər üçün saxlanılan sahələr. Qiymət sətrində olduqda `reasoning` və `long_context` da göstərilir. |
+
+- **Kombinasiyalar** ilk görünən hədəflərinin qiymətini daşıyır. Daxili `auto/*` kombinasiyaları
+  hədəfi sorğu zamanı seçdiyinə görə onlarda `pricing` olmur.
+- **Pulsuz modellər** qiymətləri sıfır olduqda `"0"` (və `0`) göstərir. Qiymət sətri olmayan model
+  kataloq onu pulsuz kimi işarələdikdə (`free: true`) və ya daxili pulsuz model
+  kataloqunda yer aldıqda da `"0"` göstərir.
+- **Naməlum qiymət:** qeyddə `pricing` açarı olmur.
+- **Kredit əsasında ölçülən təminatçılar** (məsələn, Kiro) token üzrə deyil, sorğu üzrə ödəniş hesablayır. Onların
+  qeydləri əvvəlki 1M üzrə rəqəmsal sahələri saxlayır və token üzrə sətir sahələri daşımır.
+- **Variantlar** (əsaslandırma səyi identifikatorları, düşünməsiz ləqəblər, aşkarlama və şlüz güzgüləri)
+  yönləndirildikləri modelin qiymətini kopyalayır.
+- Sahələr yalnız baza tariflərini daşıyır. Uzun kontekst pillələri (rəqəmsal `long_context` sahəsi) və
+  xidmət səviyyəsi əmsalları (məsələn, Codex fast və ya flex) `prompt` və ya
+  `completion` dəyərlərini dəyişmir.
+- Obyekt bütün autentifikasiya üslubları üçün eynidir, o cümlədən `x-api-key` və
+  `anthropic-version` istifadə edən Anthropic üslublu sorğu üçün (cavab yenə də `{ "object": "list",
+"data": [...] }` olaraq qalır). İmplementasiya: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Model identifikatoru prefiksləri (`?prefix=`)
+
+Əksər modellər **təminatçı prefiksi** altında təqdim olunur. Əldə etdiyiniz prefiks
+`MODELS_CATALOG_PREFIX_MODE` funksiya bayrağı ilə idarə olunur və sorğu parametri vasitəsilə **hər sorğu üçün**
+əvəzlənə bilər — bu, hamı üçün server miqyaslı parametri dəyişmədən təmiz siyahı istəyən
+müştəri üçün faydalıdır:
 
 ```bash
-GET /v1/models?prefix=alias        # hər model üçün bir id — qısa alias prefiksi
-GET /v1/models?prefix=dual         # hər iki forma (serverin standartı)
-GET /v1/models?prefix=canonical    # yalnız tam provayder-id prefiksi
+GET /v1/models?prefix=alias        # hər model üçün bir identifikator — qısa ləqəb prefiksi
+GET /v1/models?prefix=dual         # hər iki forma (serverin standart dəyəri)
+GET /v1/models?prefix=canonical    # yalnız tam təminatçı identifikatoru prefiksi
 ```
 
-| Rejim       | Qaytarır                                                 | Qeydlər                                                                                                                                                                                               |
-| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **və** `claude/claude-sonnet-4-6` | **Standart.** Hər iki id eyni modelə yönləndirilir; formalardan birini sərt şəkildə təyin etmiş müştəri konfiqurasiyalarının işləməyə davam etməsi üçün saxlanılır. Kataloqu təxminən ikiqat böyüdür. |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Hər model üçün bir qeyd. Fərqli alias-ı olmayan provayderlər də öz qeydlərini qaytarır, buna görə heç nə itirilmir.                                                                                   |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Tam provayder-id prefiksi altında hər model üçün bir qeyd. Fərqli alias-ı olmayan provayderlər (məsələn, `antigravity/…`, `agy/…`) burada da vahid id-lərini qaytarır, buna görə heç nə itirilmir.    |
+| Rejim       | Çıxış                                                    | Qeydlər                                                                                                                                                                                                                 |
+| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **və** `claude/claude-sonnet-4-6` | **Standart.** Hər iki identifikator eyni modelə yönləndirilir; hər iki formanı sərt kodlaşdırmış müştəri konfiqurasiyalarının işləməyə davam etməsi üçün saxlanılır. Kataloqu təxminən iki dəfə böyüdür.                |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Hər model üçün bir qeyd. Fərqli ləqəbi olmayan təminatçılar yenə də öz qeydlərini çıxarır, buna görə heç nə itirilmir.                                                                                                  |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Tam təminatçı identifikatoru prefiksi altında hər model üçün bir qeyd. Fərqli ləqəbi olmayan təminatçılar (məsələn, `antigravity/…`, `agy/…`) burada da yeganə identifikatorlarını çıxarır, buna görə heç nə itirilmir. |
 
-`dual` rejimli güzgü sorğu parametri olmadan da tanına bilər: o, əsas id-yə işarə edən `parent`
-sahəsini ehtiva edir.
+`dual` rejimli güzgü sorğu parametri olmadan da tanına bilər: o, əsas identifikatora işarə edən `parent`
+sahəsini daşıyır.
 
-Model seçicisi göstərən müştərilər `?prefix=alias` sorğusu göndərməlidir —
-[OmniCopilot VS Code genişlənməsi](../guides/VSCODE-COPILOT.md) də bunu edir.
+Model seçicisini göstərən müştərilər `?prefix=alias` sorğusu göndərməlidir — [OmniCopilot VS Code genişlənməsi](../guides/VSCODE-COPILOT.md)
+də bunu edir.
 
 ### Aşkarlama filtrləri (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` istəyə bağlı aşkarlama filtrlərini qəbul edir. Onlardan heç biri olmadan cavab
-dəyişmir. Onlar çağıranın artıq görə bildiyi kataloqu daraldır (əvvəlcə API açarı icazələri tətbiq olunur)
-və OpenAI üslublu `limit` / `after` səhifələməsindən əvvəl icra olunur:
+`GET /v1/models` seçim əsasında aktivləşdirilən aşkarlama filtrlərini qəbul edir. Onlardan heç biri olmadıqda cavab
+dəyişmir. Onlar çağıranın artıq gördüyü kataloqu daraldır (əvvəlcə API açarı icazələri tətbiq olunur)
+və OpenAI üslublu `limit` / `after` səhifələməsindən əvvəl işləyir:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # sadalanan hər bir imkan doğru olmalıdır
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # kataloq `type`-ı; bu sahəsi olmayan sətirlər `chat` sayılır
-GET /v1/models?q=sonnet&limit=10                           # id və ya ad üzrə registrdən asılı olmayan uyğunluq
+GET /v1/models?kind=embedding                              # kataloq `type`; növü olmayan sətirlər `chat` sayılır
+GET /v1/models?q=sonnet&limit=10                           # identifikator və ya adda böyük-kiçik hərfə həssas olmayan uyğunluq
 ```
 
 | Parametr      | Dəyərlər                                                                                            |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | mənfi olmayan tam ədəd, `context_length` ilə müqayisə olunur                                        |
+| `min_context` | mənfi olmayan tam ədəd, `context_length` ilə müqayisə edilir                                        |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 simvol                                                                                        |
 
 Naməlum dəyər və ya mənfi olmayan tam ədəd olmayan `min_context` (məsələn, `1.5`)
-HTTP `400` qaytarır və mesajda etibarlı dəyərlər sadalanır. Reallaşdırma:
+HTTP `400` qaytarır və mesajda etibarlı dəyərlər sadalanır. İmplementasiya:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Modellərin qısa siyahısı (`POST /v1/models/query`)
 
-`POST /v1/models/query` eyni kataloqdan, `GET /v1/models` ilə eyni autentifikasiya və açar üzrə
-görünürlük qaydaları ilə qısa, deterministik siyahı qaytarır:
+`POST /v1/models/query`, `GET /v1/models` ilə eyni autentifikasiya və açar üzrə görünürlük
+qaydaları ilə eyni kataloqdan qısa, deterministik siyahı qaytarır:
 
 ```bash
 POST /v1/models/query
@@ -519,40 +558,39 @@ Content-Type: application/json
 { "capabilities": ["vision", "tool_calling"], "min_context": 128000, "max_output": 16000,
   "kind": "chat", "q": "gpt", "owned_by": "openai", "exclude": ["openai/gpt-4o"], "limit": 5 }
 
-→ { "object": "list", "data": [ ...modellər ] }
+→ { "object": "list", "data": [ ...models ] }
 ```
 
-Hər bir sahə istəyə bağlıdır. `capabilities` və `exclude` massiv və ya vergüllə ayrılmış sətir
-qəbul edir; `max_output`, `max_output_tokens` ilə müqayisə olunur. Nəticələr əvvəlcə `owned_by`,
+Hər bir sahə ixtiyaridir. `capabilities` və `exclude` massiv və ya vergüllə ayrılmış sətir
+qəbul edir; `max_output`, `max_output_tokens` ilə müqayisə edilir. Nəticələr əvvəlcə `owned_by`,
 sonra isə `id` üzrə sıralanır. `limit` üçün standart dəyər `20`-dir və `100`-dən böyük dəyərlər
 `100` ilə məhdudlaşdırılır. Etibarsız JSON, naməlum sahə və ya etibarsız dəyər HTTP `400` qaytarır.
 
-### Ayrı-ayrılıqda gizlədilmiş çat modelləri
+### Fərdi olaraq gizlədilmiş çat modelləri
 
 Provayder səhifəsində **Gizli** kimi işarələnmiş model kataloqdan çıxarılır və açıq şəkildə
-sorğu edildikdə HTTP `404` / `model_not_found` ilə rədd edilir. Yoxlama provayder alias-ları,
-uyğun provayder qovşaq prefiksləri və bağlantı standartları daxil olmaqla müəyyən edilmiş
-provayder və modeldən istifadə edir. Kombinasiya gizli hədəfləri ötürür və görünən eyni səviyyəli
-hədəfdən istifadə edə bilər; icra edilə bilən heç bir hədəf qalmadıqda eyni xəta kodunu qaytarır.
-Gizliliyin ləğvi növbəti sorğuda qüvvəyə minir. Yalnız təsvirlərə aid görünürlük dəyişiklikləri
-eyni ID-yə malik çat modelini gizlətmir.
+sorğu edildikdə HTTP `404` / `model_not_found` ilə rədd edilir. Yoxlama provayder ləqəbləri,
+uyğun provayder qovşaq prefiksləri və bağlantının standart dəyərləri daxil olmaqla müəyyən edilmiş
+provayder və modeldən istifadə edir. Kombinasiya gizli hədəfləri ötürür və görünən digər hədəfdən
+istifadə edə bilər; icra edilə bilən heç bir hədəf qalmadıqda eyni xəta kodunu qaytarır. Gizliliyin
+ləğvi növbəti sorğuda qüvvəyə minir. Yalnız təsvirlərə aid görünürlük əvəzləmələri eyni ID-yə malik
+çat modelini gizlətmir.
 
-Bu fərdi model ayarı açıq göndərişi saxlayaraq kataloqda göstərilən modelləri və avtomatik
-yönləndirmə namizədlərini filtrləyən
-[model göstərmə icazə/inkar siyahılarından](../routing/MODEL_EXPOSURE_LIST.md) ayrıdır.
-API açarı üzrə model icazələri müstəqil şəkildə tətbiq olunmağa davam edir. Kataloq prefiksi
-rejiminin standart dəyəri `dual` olaraq qalır.
+Bu fərdi model ayarı kataloqda göstərilən modelləri və avtomatik marşrutlaşdırma namizədlərini
+filtrləyən, lakin açıq yönləndirməni saxlayan
+[modellərin göstərilməsi üçün icazə/qadağa siyahılarından](../routing/MODEL_EXPOSURE_LIST.md)
+ayrıdır. API açarının model icazələri müstəqil şəkildə tətbiq olunmağa davam edir. Standart kataloq
+prefiksi rejimi `dual` olaraq qalır.
 
 ### Düşünməsiz model variantları
 
-Düşünmə qabiliyyətli Claude modelləri üçün `/v1/models`, id-si `claude-3-omniroute-no-thinking/`
-ilə başlayan **düşünməsiz** variantı da təqdim edir:
+Düşünmə qabiliyyətinə malik Claude modelləri üçün `/v1/models`, həmçinin ID-si `claude-3-omniroute-no-thinking/` prefiksi ilə başlayan **düşünməsiz** variantı göstərir:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Bu id-nin seçilməsi (məsələn, həmişə `thinking` bloku əlavə edən Claude Code konfiqurasiyasında) əsas real `<provider>/<model>` modelinə əsaslandırma söndürülmüş şəkildə yönləndirilir — `/v1/messages` yolunda `thinking:{type:"disabled"}`, yaxud `/v1/chat/completions` yolunda `reasoning`/`reasoning_effort` sahələri çıxarılır. Variant yalnız düşünmə funksiyasını dəstəkləyən **və** `disabled` dəyərini nəzərə alan Claude ailəsi modelləri üçün siyahıya alınır (beləliklə, məsələn, `disabled` dəyərini rədd edən yalnız adaptiv modellər daxil edilmir). Operatorlar hər model üçün variantı `ModelSpec.noThinkingAlias` vasitəsilə məcburi şəkildə aktivləşdirə və ya söndürə bilərlər.
+Bu ID-nin seçilməsi (məsələn, həmişə `thinking` bloku əlavə edən Claude Code konfiqurasiyasında) əsaslandırma söndürülməklə yenidən həqiqi `<provider>/<model>` modelinə yönləndirilir — `/v1/messages` yolunda `thinking:{type:"disabled"}` tətbiq edilir və ya `/v1/chat/completions` yolunda `reasoning`/`reasoning_effort` sahələri çıxarılır. Variant yalnız düşünməni dəstəkləyən **və** `disabled` dəyərinə əməl edən Claude ailəsi modelləri üçün siyahıya alınır (beləliklə, məsələn, `disabled` dəyərini rədd edən yalnız adaptiv modellər siyahıya daxil edilmir). Operatorlar `ModelSpec.noThinkingAlias` vasitəsilə hər model üzrə variantı məcburi aktivləşdirə və ya söndürə bilərlər.
 
 ---
 

@@ -451,45 +451,87 @@ ditetapkan secara lalai kepada `us-central1`. Kedua-dua peleraian dilakukan dala
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Mengembalikan semua model sembang, pembenaman dan imej + kombo dalam format OpenAI
+→ Mengembalikan semua model sembang, pembenaman dan imej + gabungan dalam format OpenAI
 ```
 
-### Awalan id model (`?prefix=`)
+### Harga model (`pricing`)
 
-Kebanyakan model dipaparkan di bawah **awalan penyedia**. Awalan yang anda peroleh dikawal oleh
-bendera ciri `MODELS_CATALOG_PREFIX_MODE` dan boleh diatasi **bagi setiap permintaan** dengan
-parameter pertanyaan — berguna untuk klien yang mahukan senarai ringkas tanpa mengubah tetapan
-seluruh pelayan untuk pengguna lain:
+Sesuatu entri mengandungi objek `pricing` apabila OmniRoute mengetahui harga model tersebut. Harga ini datang
+daripada jadual harga yang digunakan oleh perakaunan kos: nilai lalai terbina dalam, harga yang disegerakkan dan
+penggantian yang ditetapkan melalui `/api/pricing`. Ini ialah harga senarai, jadi penyedia langganan juga
+menunjukkan harga per token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Medan                                                           | Unit                                       | Catatan                                                                                                                                                   |
+| --------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD bagi setiap token, rentetan perpuluhan | Serasi dengan OpenRouter, tidak pernah menggunakan notasi eksponen. Kedua-dua medan cache hanya muncul apabila terdapat harga cache.                      |
+| `input`, `output`, `cached`, `cache_creation`                   | USD bagi setiap 1J token, nombor           | Medan daripada versi katalog terdahulu, dikekalkan untuk klien sedia ada. `reasoning` dan `long_context` turut muncul apabila baris harga mengandunginya. |
+
+- **Gabungan** menggunakan harga sasaran pertama yang kelihatan. Gabungan `auto/*` terbina dalam memilih
+  sasaran pada masa permintaan, maka gabungan tersebut tidak mempunyai `pricing`.
+- **Model percuma** menunjukkan `"0"` (dan `0`) apabila harganya sifar. Model tanpa baris harga
+  juga menunjukkan `"0"` apabila katalog menandainya sebagai percuma (`free: true`) atau katalog model percuma
+  terbina dalam menyenaraikannya.
+- **Harga tidak diketahui:** entri tersebut tidak mempunyai kekunci `pricing`.
+- **Penyedia bermeter kredit** (seperti Kiro) mengenakan bayaran bagi setiap permintaan dan bukannya setiap token. Entri
+  mereka mengekalkan medan angka per-1J yang dimiliki sebelum ini dan tidak mengandungi medan rentetan per-token.
+- **Varian** (ID usaha penaakulan, alias tanpa pemikiran, serta cerminan penemuan dan get laluan)
+  menyalin harga model yang menjadi destinasi penghalaannya.
+- Medan tersebut hanya mengandungi kadar asas. Peringkat konteks panjang (medan angka `long_context`) dan
+  pengganda peringkat perkhidmatan (contohnya Codex pantas atau fleksibel) tidak mengubah `prompt` atau
+  `completion`.
+- Objek tersebut adalah sama untuk setiap gaya pengesahan, termasuk permintaan bergaya Anthropic
+  dengan `x-api-key` dan `anthropic-version` (respons kekal `{ "object": "list",
+"data": [...] }`). Pelaksanaan: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Awalan ID model (`?prefix=`)
+
+Kebanyakan model diiklankan di bawah **awalan penyedia**. Awalan yang anda terima dikawal oleh
+bendera ciri `MODELS_CATALOG_PREFIX_MODE`, dan boleh digantikan **bagi setiap permintaan** menggunakan
+parameter pertanyaan — berguna untuk klien yang mahukan senarai bersih tanpa mengubah tetapan seluruh pelayan
+untuk semua pengguna lain:
 
 ```bash
-GET /v1/models?prefix=alias        # satu id bagi setiap model — awalan alias ringkas
+GET /v1/models?prefix=alias        # satu ID bagi setiap model — awalan alias pendek
 GET /v1/models?prefix=dual         # kedua-dua bentuk (lalai pelayan)
-GET /v1/models?prefix=canonical    # hanya awalan id penyedia penuh
+GET /v1/models?prefix=canonical    # hanya awalan ID penyedia penuh
 ```
 
-| Mod         | Menghasilkan                                              | Nota                                                                                                                                                                                                          |
-| ----------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **dan** `claude/claude-sonnet-4-6` | **Lalai.** Kedua-dua id menghala ke model yang sama; dikekalkan supaya konfigurasi klien yang mengekod keras mana-mana bentuk terus berfungsi. Lebih kurang menggandakan katalog.                             |
-| `alias`     | `cc/claude-sonnet-4-6`                                    | Satu entri bagi setiap model. Penyedia tanpa alias tersendiri masih menghasilkan entri mereka, jadi tiada apa-apa yang hilang.                                                                                |
-| `canonical` | `claude/claude-sonnet-4-6`                                | Satu entri bagi setiap model di bawah awalan id penyedia penuh. Penyedia tanpa alias tersendiri (cth. `antigravity/…`, `agy/…`) turut menghasilkan id tunggal mereka di sini, jadi tiada apa-apa yang hilang. |
+| Mod         | Menghasilkan                                              | Catatan                                                                                                                                                                                                         |
+| ----------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **dan** `claude/claude-sonnet-4-6` | **Lalai.** Kedua-dua ID dihalakan kepada model yang sama; dikekalkan supaya konfigurasi klien yang mengekod keras salah satu bentuk terus berfungsi. Secara kasar menggandakan saiz katalog.                    |
+| `alias`     | `cc/claude-sonnet-4-6`                                    | Satu entri bagi setiap model. Penyedia tanpa alias yang berbeza masih menghasilkan entri mereka, maka tiada apa-apa yang hilang.                                                                                |
+| `canonical` | `claude/claude-sonnet-4-6`                                | Satu entri bagi setiap model di bawah awalan ID penyedia penuh. Penyedia tanpa alias yang berbeza (cth. `antigravity/…`, `agy/…`) turut menghasilkan ID tunggal mereka di sini, maka tiada apa-apa yang hilang. |
 
-Cerminan mod `dual` juga boleh dikenal pasti tanpa parameter pertanyaan: ia mempunyai medan `parent`
-yang menunjuk kepada id utama.
+Cerminan mod `dual` juga boleh dikenal pasti tanpa parameter pertanyaan: ia mengandungi medan `parent`
+yang menunjuk kepada ID utama.
 
 Klien yang memaparkan pemilih model hendaklah meminta `?prefix=alias` — inilah yang dilakukan oleh
 [sambungan OmniCopilot VS Code](../guides/VSCODE-COPILOT.md).
 
 ### Penapis penemuan (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` menerima penapis penemuan yang perlu dipilih secara khusus. Tanpa mana-mana penapis tersebut, respons
-tidak berubah. Penapis ini mengecilkan katalog yang sudah dapat dilihat oleh pemanggil (kebenaran kunci API digunakan terlebih dahulu),
-dan dilaksanakan sebelum penomboran halaman `limit` / `after` gaya OpenAI:
+`GET /v1/models` menerima penapis penemuan ikut serta. Tanpa mana-mana penapis tersebut, respons
+tidak berubah. Penapis ini mengecilkan katalog yang sudah boleh dilihat oleh pemanggil (keizinan kunci API digunakan terlebih dahulu),
+dan dijalankan sebelum penomboran halaman `limit` / `after` bergaya OpenAI:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # setiap keupayaan yang disenaraikan mestilah benar
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` katalog; baris tanpanya ialah `chat`
-GET /v1/models?q=sonnet&limit=10                           # padanan tanpa mengira huruf besar atau kecil pada id atau nama
+GET /v1/models?kind=embedding                              # `type` katalog; baris tanpa nilai ini ialah `chat`
+GET /v1/models?q=sonnet&limit=10                           # padanan tanpa mengira huruf besar atau kecil pada ID atau nama
 ```
 
 | Parameter     | Nilai                                                                                               |
@@ -505,8 +547,8 @@ mengembalikan HTTP `400` dan mesej tersebut menyenaraikan nilai yang sah. Pelaks
 
 ### Senarai pendek model (`POST /v1/models/query`)
 
-`POST /v1/models/query` mengembalikan senarai ringkas dan deterministik daripada katalog yang sama, dengan pengesahan
-dan keterlihatan bagi setiap kunci yang sama seperti `GET /v1/models`:
+`POST /v1/models/query` mengembalikan senarai pendek yang deterministik daripada katalog yang sama, dengan
+pengesahan dan keterlihatan setiap kunci yang sama seperti `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -519,34 +561,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Setiap medan adalah pilihan. `capabilities` dan `exclude` menerima tatasusunan atau rentetan yang dipisahkan dengan koma;
+Setiap medan adalah pilihan. `capabilities` dan `exclude` menerima tatasusunan atau rentetan yang dipisahkan koma;
 `max_output` dibandingkan dengan `max_output_tokens`. Hasil diisih mengikut `owned_by`, kemudian `id`.
-`limit` ditetapkan secara lalai kepada `20` dan nilai melebihi `100` dihadkan kepada `100`. JSON yang tidak sah, medan
-yang tidak diketahui atau nilai yang tidak sah mengembalikan HTTP `400`.
+Nilai lalai `limit` ialah `20` dan nilai melebihi `100` dihadkan kepada `100`. JSON yang tidak sah, medan yang tidak
+diketahui atau nilai yang tidak sah mengembalikan HTTP `400`.
 
 ### Model sembang yang disembunyikan secara individu
 
-Model yang ditandai sebagai **Tersembunyi** pada halaman penyedianya dikecualikan daripada katalog dan ditolak
-dengan HTTP `404` / `model_not_found` apabila diminta secara eksplisit. Semakan menggunakan penyedia dan model
-yang telah diselesaikan, termasuk alias penyedia, awalan nod penyedia serasi dan lalai sambungan. Kombo melangkau
-sasaran tersembunyi dan boleh menggunakan model sekeluarga yang kelihatan; apabila tiada sasaran boleh laksana yang
-tinggal, ia mengembalikan kod ralat yang sama. Menyahsembunyikan berkuat kuasa pada permintaan seterusnya.
-Pengatasan keterlihatan khusus imej tidak menyembunyikan model sembang dengan ID yang sama.
+Model yang ditandakan **Tersembunyi** pada halaman penyedianya dikecualikan daripada katalog dan ditolak
+dengan HTTP `404` / `model_not_found` apabila diminta secara eksplisit. Semakan menggunakan penyedia dan
+model yang telah ditentukan, termasuk alias penyedia, awalan nod penyedia serasi dan lalai
+sambungan. Kombo melangkau sasaran tersembunyi dan boleh menggunakan model setara yang kelihatan; apabila tiada
+sasaran boleh laksana yang tinggal, ia mengembalikan kod ralat yang sama. Penyahsembunyian berkuat kuasa pada
+permintaan seterusnya. Penggantian keterlihatan imej sahaja tidak menyembunyikan model sembang dengan ID yang sama.
 
 Tetapan model individu ini berasingan daripada
-[senarai izin/nafi pendedahan model](../routing/MODEL_EXPOSURE_LIST.md), yang menapis pengiklanan katalog
-dan calon penghalaan automatik sambil mengekalkan penghantaran eksplisit. Kebenaran model kunci API
-terus digunakan secara bebas. Mod awalan katalog lalai kekal sebagai `dual`.
+[senarai benarkan/tolak pendedahan model](../routing/MODEL_EXPOSURE_LIST.md), yang menapis pengiklanan katalog
+dan calon penghalaan automatik sambil mengekalkan penghantaran eksplisit. Kebenaran model bagi kunci API
+terus digunakan secara bebas. Mod awalan katalog lalai kekal `dual`.
 
 ### Varian model tanpa pemikiran
 
-Bagi model Claude yang menyokong pemikiran, `/v1/models` turut mengiklankan varian **tanpa pemikiran** yang id-nya diawali dengan `claude-3-omniroute-no-thinking/`:
+Bagi model Claude yang berkeupayaan membuat pemikiran, `/v1/models` turut mengiklankan varian **tanpa pemikiran** yang ID-nya diawali dengan `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Memilih ID ini (cth. dalam konfigurasi Claude Code yang sentiasa melampirkan blok `thinking`) akan memetakan kembali kepada `<provider>/<model>` sebenar dengan penaakulan disekat — `thinking:{type:"disabled"}` pada laluan `/v1/messages`, atau medan `reasoning`/`reasoning_effort` digugurkan pada laluan `/v1/chat/completions`. Varian ini hanya disenaraikan untuk model keluarga Claude yang menyokong pemikiran **dan** mematuhi `disabled` (jadi, sebagai contoh, model adaptive-only yang menolak `disabled` dikecualikan). Pengendali boleh memaksa varian ini dihidupkan atau dimatikan bagi setiap model melalui `ModelSpec.noThinkingAlias`.
+Pemilihan ID ini (contohnya dalam konfigurasi Claude Code yang sentiasa melampirkan blok `thinking`) ditentukan semula kepada `<provider>/<model>` sebenar dengan penaakulan disekat — `thinking:{type:"disabled"}` pada laluan `/v1/messages`, atau medan `reasoning`/`reasoning_effort` digugurkan pada laluan `/v1/chat/completions`. Varian ini hanya disenaraikan untuk model keluarga Claude yang menyokong pemikiran **dan** mematuhi `disabled` (jadi, contohnya, model adaptif sahaja yang menolak `disabled` dikecualikan). Pengendali boleh memaksa varian tersebut dihidupkan atau dimatikan bagi setiap model melalui `ModelSpec.noThinkingAlias`.
 
 ---
 

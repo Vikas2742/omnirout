@@ -451,62 +451,104 @@ hutumia `us-central1` kama chaguo-msingi. Utatuzi wote wawili hufanyika katika `
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Hurejesha modeli zote za mazungumzo, embedding na picha pamoja na michanganyiko katika umbizo la OpenAI
+→ Hurejesha modeli zote za gumzo, upachikaji na picha pamoja na michanganyiko katika muundo wa OpenAI
 ```
 
-### Viambishi awali vya id ya modeli (`?prefix=`)
+### Bei za modeli (`pricing`)
 
-Modeli nyingi hutangazwa chini ya **kiambishi awali cha mtoa huduma**. Kiambishi awali unachopata kinadhibitiwa na
+Ingizo huwa na kipengee cha `pricing` wakati OmniRoute inajua bei ya modeli. Bei hiyo hutoka
+kwenye jedwali la bei linalotumiwa na uhasibu wa gharama: chaguomsingi zilizojengewa ndani, bei zilizosawazishwa, na
+bei mbadala zilizowekwa kupitia `/api/pricing`. Hizi ni bei za orodha, kwa hivyo watoa huduma wa usajili pia
+huonyesha bei kwa kila tokeni.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Sehemu                                                          | Kipimo                                    | Maelezo                                                                                                                                                                 |
+| --------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD kwa kila tokeni, mfuatano wa desimali | Inaoana na OpenRouter, kamwe haitumii unukuu wa kipeo. Sehemu mbili za kache huonekana tu wakati kuna bei ya kache.                                                     |
+| `input`, `output`, `cached`, `cache_creation`                   | USD kwa tokeni milioni 1, nambari         | Sehemu kutoka matoleo ya awali ya katalogi, zimehifadhiwa kwa ajili ya wateja waliopo. `reasoning` na `long_context` pia huonekana wakati safu ya bei ina thamani hizo. |
+
+- **Michanganyiko** hubeba bei ya lengo lake la kwanza linaloonekana. Michanganyiko ya `auto/*` iliyojengewa ndani huchagua
+  lengo wakati wa ombi, kwa hivyo haina `pricing`.
+- **Modeli zisizolipishwa** huonyesha `"0"` (na `0`) wakati bei yake ni sifuri. Modeli isiyo na safu ya bei
+  pia huonyesha `"0"` wakati katalogi inaiweka alama kuwa ya bure (`free: true`) au katalogi ya modeli zisizolipishwa
+  iliyojengewa ndani inaiorodhesha.
+- **Bei isiyojulikana:** ingizo halina ufunguo wa `pricing`.
+- **Watoa huduma wanaopima kwa salio** (kama vile Kiro) hutoza kwa kila ombi badala ya kwa kila tokeni. Maingizo yao
+  huhifadhi sehemu za nambari kwa kila milioni 1 walizokuwa nazo awali na hayana sehemu za mfuatano za bei kwa kila tokeni.
+- **Vibadala** (vitambulisho vya kiwango cha jitihada za ufikiri, lakabu zisizo na ufikiri, vioo vya ugunduzi na lango)
+  hunakili bei ya modeli vinayoelekeza kwake.
+- Sehemu hubeba viwango vya msingi pekee. Viwango vya muktadha mrefu (sehemu ya nambari ya `long_context`) na
+  vizidishi vya kiwango cha huduma (kwa mfano Codex fast au flex) havibadilishi `prompt` au
+  `completion`.
+- Kipengee hiki ni sawa kwa kila mtindo wa uthibitishaji, ikiwemo ombi la mtindo wa Anthropic
+  lenye `x-api-key` na `anthropic-version` (jibu hubaki `{ "object": "list",
+"data": [...] }`). Utekelezaji: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Viambishi awali vya kitambulisho cha modeli (`?prefix=`)
+
+Modeli nyingi hutangazwa chini ya **kiambishi awali cha mtoa huduma**. Kiambishi awali unachopata hudhibitiwa na
 alama ya kipengele ya `MODELS_CATALOG_PREFIX_MODE`, na kinaweza kubatilishwa **kwa kila ombi** kwa kutumia
-kigezo cha hoja — ni muhimu kwa kiteja kinachotaka orodha safi bila kubadilisha mpangilio wa seva nzima
+kigezo cha hoja — jambo muhimu kwa mteja anayetaka orodha safi bila kubadilisha mpangilio wa seva nzima
 kwa kila mtu mwingine:
 
 ```bash
-GET /v1/models?prefix=alias        # id moja kwa kila modeli — kiambishi awali kifupi cha lakabu
-GET /v1/models?prefix=dual         # miundo yote miwili (chaguo-msingi la seva)
-GET /v1/models?prefix=canonical    # kiambishi awali kamili cha id ya mtoa huduma pekee
+GET /v1/models?prefix=alias        # kitambulisho kimoja kwa kila modeli — kiambishi awali kifupi cha lakabu
+GET /v1/models?prefix=dual         # miundo yote miwili (chaguomsingi la seva)
+GET /v1/models?prefix=canonical    # kiambishi awali kamili cha kitambulisho cha mtoa huduma pekee
 ```
 
-| Hali        | Hutoa                                                    | Maelezo                                                                                                                                                                                                                   |
-| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **na** `claude/claude-sonnet-4-6` | **Chaguo-msingi.** id zote mbili huelekezwa kwenye modeli ileile; zimehifadhiwa ili usanidi wa viteja ulioweka moja ya miundo hiyo moja kwa moja uendelee kufanya kazi. Takribani huongeza ukubwa wa katalogi mara mbili. |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Ingizo moja kwa kila modeli. Watoa huduma wasio na lakabu tofauti bado hutoa ingizo lao, kwa hivyo hakuna kinachopotea.                                                                                                   |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Ingizo moja kwa kila modeli chini ya kiambishi awali kamili cha id ya mtoa huduma. Watoa huduma wasio na lakabu tofauti (k.m. `antigravity/…`, `agy/…`) pia hutoa id yao moja hapa, kwa hivyo hakuna kinachopotea.        |
+| Hali        | Hutoa                                                    | Maelezo                                                                                                                                                                                                                                    |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dual`      | `cc/claude-sonnet-4-6` **na** `claude/claude-sonnet-4-6` | **Chaguomsingi.** Vitambulisho vyote viwili huelekeza kwenye modeli ileile; vimehifadhiwa ili usanidi wa wateja ulioweka moja ya miundo hiyo moja kwa moja uendelee kufanya kazi. Takribani huongeza ukubwa wa katalogi mara mbili.        |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Ingizo moja kwa kila modeli. Watoa huduma wasio na lakabu tofauti bado hutoa ingizo lao, kwa hivyo hakuna kinachopotea.                                                                                                                    |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Ingizo moja kwa kila modeli chini ya kiambishi awali kamili cha kitambulisho cha mtoa huduma. Watoa huduma wasio na lakabu tofauti (k.m. `antigravity/…`, `agy/…`) pia hutoa kitambulisho chao kimoja hapa, kwa hivyo hakuna kinachopotea. |
 
-Kioo cha hali ya `dual` kinaweza pia kutambuliwa bila kigezo cha hoja: kina uga wa `parent`
-unaoelekeza kwenye id ya msingi.
+Kioo cha hali ya `dual` kinaweza pia kutambuliwa bila kigezo cha hoja: huwa na sehemu ya `parent`
+inayoelekeza kwenye kitambulisho msingi.
 
-Viteja vinavyoonyesha kichagua modeli vinapaswa kuomba `?prefix=alias` — hivi ndivyo
+Wateja wanaoonyesha kichagua modeli wanapaswa kuomba `?prefix=alias` — hivi ndivyo
 [kiendelezi cha OmniCopilot cha VS Code](../guides/VSCODE-COPILOT.md) kinavyofanya.
 
 ### Vichujio vya ugunduzi (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` hukubali vichujio vya ugunduzi vya hiari. Bila chochote kati yavyo, jibu
-halibadiliki. Vinapunguza katalogi ambayo mwombaji tayari anaiona (ruhusa za ufunguo wa API hutumika kwanza),
-na hutekelezwa kabla ya upangaji wa kurasa wa mtindo wa OpenAI wa `limit` / `after`:
+`GET /v1/models` hukubali vichujio vya hiari vya ugunduzi. Bila chochote kati yavyo, jibu
+halibadiliki. Hupunguza katalogi ambayo mwombaji tayari anaiona (ruhusa za ufunguo wa API hutumika kwanza),
+na hutekelezwa kabla ya ugawaji wa kurasa wa mtindo wa OpenAI wa `limit` / `after`:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # kila uwezo ulioorodheshwa lazima uwe kweli
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # `type` ya katalogi; safu zisizo nayo ni `chat`
-GET /v1/models?q=sonnet&limit=10                           # ulinganishaji usiojali herufi kubwa au ndogo kwenye id au jina
+GET /v1/models?q=sonnet&limit=10                           # ulinganishaji usiojali herufi kubwa au ndogo kwenye kitambulisho au jina
 ```
 
 | Kigezo        | Thamani                                                                                             |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | nambari kamili isiyo hasi, ikilinganishwa na `context_length`                                       |
+| `min_context` | namba kamili isiyo hasi, ikilinganishwa na `context_length`                                         |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
-| `q`           | vibambo 1–200                                                                                       |
+| `q`           | herufi 1–200                                                                                        |
 
-Thamani isiyojulikana, au `min_context` ambayo si nambari kamili isiyo hasi (kwa mfano `1.5`),
-hurejesha HTTP `400` na ujumbe unaorodhesha thamani halali. Utekelezaji:
+Thamani isiyojulikana, au `min_context` ambayo si namba kamili isiyo hasi (kwa mfano `1.5`),
+hurejesha HTTP `400` na ujumbe huorodhesha thamani halali. Utekelezaji:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Orodha fupi ya modeli (`POST /v1/models/query`)
 
-`POST /v1/models/query` hurejesha orodha fupi, thabiti kutoka kwenye katalogi ileile, ikiwa na
-uthibitishaji na mwonekano uleule kwa kila ufunguo kama `GET /v1/models`:
+`POST /v1/models/query` hurejesha orodha fupi, thabiti kutoka kwenye katalogi hiyo hiyo, ikiwa na
+uthibitishaji na uonekanaji wa kila ufunguo sawa na `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -521,32 +563,32 @@ Content-Type: application/json
 
 Kila uga ni wa hiari. `capabilities` na `exclude` hukubali safu au mfuatano uliotenganishwa kwa koma;
 `max_output` hulinganishwa na `max_output_tokens`. Matokeo hupangwa kwa `owned_by`, kisha `id`.
-Thamani chaguo-msingi ya `limit` ni `20`, na thamani zinazozidi `100` hupunguzwa hadi `100`. JSON batili, uga
+Chaguo-msingi la `limit` ni `20`, na thamani zinazozidi `100` huwekewa kikomo cha `100`. JSON batili, uga
 usiojulikana au thamani batili hurejesha HTTP `400`.
 
-### Modeli za mazungumzo zilizofichwa kibinafsi
+### Modeli za gumzo zilizofichwa kibinafsi
 
 Modeli iliyowekwa alama ya **Imefichwa** kwenye ukurasa wa mtoa huduma wake huondolewa kwenye katalogi na kukataliwa
 kwa HTTP `404` / `model_not_found` inapoombwa moja kwa moja. Ukaguzi hutumia mtoa huduma na modeli
-zilizotatuliwa, ikijumuisha lakabu za watoa huduma, viambishi awali vya nodi za watoa huduma wanaooana, na
-chaguo-msingi za muunganisho. Mchanganyiko huruka malengo yaliyofichwa na unaweza kutumia modeli nyingine inayoonekana; wakati hakuna
-lengo linaloweza kutekelezwa linalosalia, hurejesha msimbo huohuo wa hitilafu. Kuondoa ufichaji huanza kutumika kwenye
-ombi linalofuata. Ubatilishaji wa mwonekano wa picha pekee haufichi modeli ya mazungumzo yenye ID ileile.
+zilizotambuliwa, ikiwa ni pamoja na lakabu za watoa huduma, viambishi awali vya nodi vya watoa huduma wanaooana, na
+chaguo-msingi za muunganisho. Mchanganyiko huruka lengwa zilizofichwa na unaweza kutumia modeli nyingine inayoonekana; wakati hakuna
+lengwa linaloweza kutekelezwa linalosalia, hurejesha msimbo huo huo wa hitilafu. Kuondoa ufichaji huanza kutumika kwenye
+ombi linalofuata. Ubatilishaji wa uonekanaji wa picha pekee haufichi modeli ya gumzo yenye ID sawa.
 
 Mpangilio huu wa modeli binafsi ni tofauti na
-[orodha za kuruhusu/kuzuia uonyeshaji wa modeli](../routing/MODEL_EXPOSURE_LIST.md), ambazo huchuja matangazo ya katalogi
-na malengo ya uelekezaji otomatiki huku zikihifadhi utumaji wa moja kwa moja. Ruhusa za modeli za ufunguo wa API
-zinaendelea kutumika kwa kujitegemea. Hali chaguo-msingi ya kiambishi awali cha katalogi inasalia kuwa `dual`.
+[orodha za kuruhusu/kuzuia ufichuaji wa modeli](../routing/MODEL_EXPOSURE_LIST.md), ambazo huchuja utangazaji wa katalogi
+na wagombea wa uelekezaji otomatiki huku zikidumisha utumaji wa moja kwa moja. Ruhusa za modeli za ufunguo wa API
+zinaendelea kutumika kivyake. Hali chaguo-msingi ya kiambishi awali cha katalogi inasalia `dual`.
 
-### Vibadala vya modeli visivyo na kufikiri
+### Vibadala vya modeli visivyofikiri
 
-Kwa modeli za Claude zenye uwezo wa kufikiri, `/v1/models` pia hutangaza kibadala **kisicho na kufikiri** ambacho id yake ina kiambishi awali cha `claude-3-omniroute-no-thinking/`:
+Kwa modeli za Claude zenye uwezo wa kufikiri, `/v1/models` pia hutangaza kibadala cha **kutofikiri** ambacho ID yake huanza na `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Kuchagua id hii (kwa mfano, katika usanidi wa Claude Code ambao huambatisha kila wakati kizuizi cha `thinking`) hurejesha `<provider>/<model>` halisi huku uhawilishaji ukiwa umezimwa — `thinking:{type:"disabled"}` kwenye njia ya `/v1/messages`, au sehemu za `reasoning`/`reasoning_effort` zikiondolewa kwenye njia ya `/v1/chat/completions`. Kibadala hiki huorodheshwa tu kwa modeli za familia ya Claude zinazotumia uhawilishaji **na** zinazotii `disabled` (kwa hivyo, kwa mfano, modeli za hali badilifu pekee zinazokataa `disabled` hazijumuishwi). Waendeshaji wanaweza kulazimisha kibadala hiki kuwashwa au kuzimwa kwa kila modeli kupitia `ModelSpec.noThinkingAlias`.
+Kuchagua ID hii (kwa mfano, katika usanidi wa Claude Code ambao huambatisha kila wakati kizuizi cha `thinking`) huitambua tena kuwa `<provider>/<model>` halisi huku utoaji wa hoja ukizuiwa — `thinking:{type:"disabled"}` kwenye njia ya `/v1/messages`, au uga za `reasoning`/`reasoning_effort` zikiondolewa kwenye njia ya `/v1/chat/completions`. Kibadala huorodheshwa tu kwa modeli za familia ya Claude zinazotumia kufikiri **na** kuheshimu `disabled` (kwa hivyo, kwa mfano, modeli zinazotumia hali badilifu pekee na zinazokataa `disabled` hazijumuishwi). Waendeshaji wanaweza kulazimisha kibadala kuwashwa au kuzimwa kwa kila modeli kupitia `ModelSpec.noThinkingAlias`.
 
 ---
 

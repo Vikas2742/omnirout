@@ -461,67 +461,109 @@ jinak je projekt odvozen z `project_id` v JSON Service Account a jako výchozí 
 
 ---
 
-## Výpis modelů
+## Seznam modelů
 
 ```bash
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Vrátí všechny chatovací, embeddingové a obrázkové modely + kombinace ve formátu OpenAI
+→ Vrátí všechny chatovací, embeddingové a obrazové modely + kombinace ve formátu OpenAI
 ```
 
-### Předpony ID modelů (`?prefix=`)
+### Ceny modelů (`pricing`)
 
-Většina modelů je zveřejněna pod **předponou poskytovatele**. To, jakou předponu získáte, řídí
-příznak funkce `MODELS_CATALOG_PREFIX_MODE` a lze ji přepsat **pro každý požadavek** pomocí
-parametru dotazu — to je užitečné pro klienta, který chce přehledný seznam, aniž by měnil
-celoserverové nastavení pro všechny ostatní:
+Položka obsahuje objekt `pricing`, pokud OmniRoute zná cenu modelu. Cena pochází
+z cenové tabulky používané pro účtování nákladů: vestavěné výchozí hodnoty, synchronizované ceny a
+přepsání nastavená prostřednictvím `/api/pricing`. Jedná se o ceníkové ceny, takže poskytovatelé předplatného také
+zobrazují cenu za token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Pole                                                            | Jednotka                        | Poznámky                                                                                                                                             |
+| --------------------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD za token, desetinný řetězec | Kompatibilní s OpenRouter, nikdy ne v exponenciálním zápisu. Dvě pole mezipaměti se zobrazí pouze tehdy, když je k dispozici cena mezipaměti.        |
+| `input`, `output`, `cached`, `cache_creation`                   | USD za 1 mil. tokenů, číslo     | Pole ze starších verzí katalogu, zachovaná pro stávající klienty. `reasoning` a `long_context` se zobrazí také tehdy, když je obsahuje cenový řádek. |
+
+- **Kombinace** obsahují cenu svého prvního viditelného cíle. Vestavěné kombinace `auto/*` vybírají
+  cíl při zpracování požadavku, takže nemají žádné `pricing`.
+- **Bezplatné modely** zobrazují `"0"` (a `0`), pokud je jejich cena nulová. Model bez cenového řádku
+  také zobrazuje `"0"`, pokud jej katalog označuje jako bezplatný (`free: true`) nebo je uveden ve vestavěném
+  katalogu bezplatných modelů.
+- **Neznámá cena:** položka nemá klíč `pricing`.
+- **Poskytovatelé účtující kredity** (například Kiro) účtují za požadavek, nikoli za token. Jejich
+  položky si zachovávají číselná pole ceny za 1 mil. tokenů, která měly dříve, a neobsahují řetězcová pole ceny za token.
+- **Varianty** (ID úrovně intenzity uvažování, aliasy bez přemýšlení, zrcadla pro vyhledávání a brány)
+  kopírují cenu modelu, na který směrují.
+- Pole obsahují pouze základní sazby. Úrovně dlouhého kontextu (číselné pole `long_context`) a
+  násobitele úrovně služby (například Codex fast nebo flex) nemění `prompt` ani
+  `completion`.
+- Objekt je stejný pro každý způsob ověřování, včetně požadavku ve stylu Anthropic
+  s `x-api-key` a `anthropic-version` (odpověď zůstává `{ "object": "list",
+"data": [...] }`). Implementace: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefixy ID modelů (`?prefix=`)
+
+Většina modelů je zveřejněna pod **prefixem poskytovatele**. Použitý prefix je řízen
+příznakem funkce `MODELS_CATALOG_PREFIX_MODE` a lze jej přepsat **pro každý požadavek** pomocí
+parametru dotazu — což je užitečné pro klienta, který požaduje přehledný seznam, aniž by měnil globální
+nastavení serveru pro všechny ostatní:
 
 ```bash
-GET /v1/models?prefix=alias        # jedno ID na model — krátká předpona aliasu
+GET /v1/models?prefix=alias        # jedno ID pro každý model — krátký prefix aliasu
 GET /v1/models?prefix=dual         # obě podoby (výchozí nastavení serveru)
-GET /v1/models?prefix=canonical    # pouze úplná předpona ID poskytovatele
+GET /v1/models?prefix=canonical    # pouze úplný prefix ID poskytovatele
 ```
 
-| Režim       | Vrací                                                   | Poznámky                                                                                                                                                                                       |
-| ----------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **a** `claude/claude-sonnet-4-6` | **Výchozí.** Obě ID směrují na stejný model; zachováno proto, aby nadále fungovaly konfigurace klientů, které mají napevno nastavenou jednu či druhou podobu. Přibližně zdvojnásobuje katalog. |
-| `alias`     | `cc/claude-sonnet-4-6`                                  | Jedna položka na model. Poskytovatelé bez odlišného aliasu svou položku stále vracejí, takže se nic neztratí.                                                                                  |
-| `canonical` | `claude/claude-sonnet-4-6`                              | Jedna položka na model pod úplnou předponou ID poskytovatele. Poskytovatelé bez odlišného aliasu (např. `antigravity/…`, `agy/…`) zde také vracejí své jediné ID, takže se nic neztratí.       |
+| Režim       | Výstup                                                  | Poznámky                                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **a** `claude/claude-sonnet-4-6` | **Výchozí.** Obě ID směrují na stejný model; režim je zachován, aby nadále fungovaly konfigurace klientů, které mají jednu z podob pevně zadanou. Přibližně zdvojnásobuje katalog.                  |
+| `alias`     | `cc/claude-sonnet-4-6`                                  | Jedna položka pro každý model. Poskytovatelé bez samostatného aliasu stále zobrazují svou položku, takže se nic neztratí.                                                                           |
+| `canonical` | `claude/claude-sonnet-4-6`                              | Jedna položka pro každý model pod úplným prefixem ID poskytovatele. Poskytovatelé bez samostatného aliasu (např. `antigravity/…`, `agy/…`) zde také zobrazují své jediné ID, takže se nic neztratí. |
 
-Zrcadlenou položku v režimu `dual` lze rozpoznat také bez parametru dotazu: obsahuje pole `parent`
+Zrcadlo režimu `dual` lze rozpoznat i bez parametru dotazu: obsahuje pole `parent`
 odkazující na primární ID.
 
-Klienti, kteří vykreslují výběr modelu, by měli požadovat `?prefix=alias` — takto postupuje
+Klienti zobrazující výběr modelu by měli požadovat `?prefix=alias` — takto postupuje
 [rozšíření OmniCopilot pro VS Code](../guides/VSCODE-COPILOT.md).
 
 ### Filtry vyhledávání (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
 `GET /v1/models` podporuje volitelné filtry vyhledávání. Bez kteréhokoli z nich zůstává odpověď
-beze změny. Filtry zužují katalog, který volající již vidí (oprávnění klíče API se uplatní jako první),
-a použijí se před stránkováním ve stylu OpenAI pomocí `limit` / `after`:
+nezměněná. Filtry zužují katalog, který volající již vidí (oprávnění API klíče se uplatní jako první),
+a spouštějí se před stránkováním ve stylu OpenAI pomocí `limit` / `after`:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # každá uvedená schopnost musí být podporována
+GET /v1/models?capability=vision&capability=tool_calling   # každá uvedená schopnost musí být povolena
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` v katalogu; řádky bez něj jsou typu `chat`
-GET /v1/models?q=sonnet&limit=10                           # shoda ID nebo názvu bez rozlišení velikosti písmen
+GET /v1/models?kind=embedding                              # katalogové `type`; řádky bez něj jsou `chat`
+GET /v1/models?q=sonnet&limit=10                           # shoda v ID nebo názvu bez rozlišení velikosti písmen
 ```
 
 | Parametr      | Hodnoty                                                                                             |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | nezáporné celé číslo porovnávané s `context_length`                                                 |
+| `min_context` | nezáporné celé číslo, porovnává se s `context_length`                                               |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 znaků                                                                                         |
 
-Neznámá hodnota nebo `min_context`, který není nezáporným celým číslem (například `1.5`),
-vrátí HTTP `400` a zpráva uvede platné hodnoty. Implementace:
+Neznámá hodnota nebo hodnota `min_context`, která není nezáporným celým číslem (například `1.5`),
+vrátí HTTP `400` a zprávu se seznamem platných hodnot. Implementace:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Užší výběr modelů (`POST /v1/models/query`)
 
-`POST /v1/models/query` vrací krátký deterministický seznam ze stejného katalogu se stejným
+`POST /v1/models/query` vrátí krátký, deterministický seznam ze stejného katalogu, se stejným
 ověřováním a viditelností pro jednotlivé klíče jako `GET /v1/models`:
 
 ```bash
@@ -535,34 +577,36 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Každé pole je volitelné. `capabilities` a `exclude` přijímají pole nebo řetězec oddělený čárkami;
-`max_output` se porovnává s `max_output_tokens`. Výsledky jsou seřazeny podle `owned_by` a poté podle `id`.
-Výchozí hodnota `limit` je `20` a hodnoty nad `100` jsou omezeny na `100`. Neplatný JSON, neznámé
-pole nebo neplatná hodnota vrátí HTTP `400`.
+Všechna pole jsou volitelná. `capabilities` a `exclude` přijímají pole nebo řetězec s hodnotami
+oddělenými čárkami; `max_output` se porovnává s `max_output_tokens`. Výsledky jsou řazeny podle
+`owned_by` a poté podle `id`. Výchozí hodnota `limit` je `20` a hodnoty vyšší než `100` jsou
+omezeny na `100`. Neplatný JSON, neznámé pole nebo neplatná hodnota vrátí HTTP `400`.
 
 ### Jednotlivě skryté chatovací modely
 
-Model označený na stránce svého poskytovatele jako **Skrytý** je z katalogu vyloučen a při
-explicitním požadavku odmítnut s HTTP `404` / `model_not_found`. Kontrola používá vyhodnoceného
-poskytovatele a model, včetně aliasů poskytovatelů, předpon uzlů kompatibilních poskytovatelů
-a výchozích nastavení připojení. Kombinace přeskočí skryté cíle a může použít viditelný alternativní
-model; pokud nezůstane žádný spustitelný cíl, vrátí stejný chybový kód. Zrušení skrytí se projeví
-při příštím požadavku. Přepsání viditelnosti pouze pro obrázky neskryje chatovací model se stejným ID.
+Model označený na stránce svého poskytovatele jako **Skrytý** je vyloučen z katalogu a při
+explicitním vyžádání odmítnut s HTTP `404` / `model_not_found`. Kontrola používá vyhodnoceného
+poskytovatele a model, včetně aliasů poskytovatelů, prefixů uzlů kompatibilních poskytovatelů
+a výchozích nastavení připojení. Kombinace skryté cíle přeskočí a může použít viditelný
+související model; pokud nezůstane žádný spustitelný cíl, vrátí stejný chybový kód. Zrušení
+skrytí se projeví při následujícím požadavku. Přepsání viditelnosti pouze pro obrázky neskryje
+chatovací model se stejným ID.
 
 Toto nastavení jednotlivých modelů je oddělené od
-[seznamů povolených/zakázaných zveřejněných modelů](../routing/MODEL_EXPOSURE_LIST.md), které filtrují
-zveřejnění v katalogu a kandidáty pro automatické směrování, přičemž zachovávají explicitní odesílání.
-Oprávnění modelů pro klíče API se nadále uplatňují nezávisle. Výchozím režimem předpony katalogu zůstává `dual`.
+[seznamů povolených/zakázaných modelů](../routing/MODEL_EXPOSURE_LIST.md), které filtrují
+zveřejnění v katalogu a kandidáty pro automatické směrování, ale zachovávají explicitní
+odesílání. Oprávnění modelů pro klíče API se nadále uplatňují nezávisle. Výchozím režimem
+prefixů katalogu zůstává `dual`.
 
 ### Varianty modelů bez přemýšlení
 
-Pro modely Claude podporující přemýšlení `/v1/models` zveřejňuje také variantu **bez přemýšlení**, jejíž ID má předponu `claude-3-omniroute-no-thinking/`:
+Pro modely Claude podporující přemýšlení `/v1/models` také zveřejňuje variantu **bez přemýšlení**, jejíž id má prefix `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Výběr tohoto ID (např. v konfiguraci Claude Code, která vždy připojuje blok `thinking`) se přeloží zpět na skutečný `<provider>/<model>` s potlačeným uvažováním — pomocí `thinking:{type:"disabled"}` na cestě `/v1/messages` nebo vynecháním polí `reasoning`/`reasoning_effort` na cestě `/v1/chat/completions`. Varianta je uvedena pouze u modelů z rodiny Claude, které podporují uvažování **a zároveň** respektují hodnotu `disabled` (takže jsou např. vyloučeny modely podporující pouze adaptivní režim, které hodnotu `disabled` odmítají). Operátoři mohou tuto variantu pro jednotlivé modely vynutit nebo zakázat pomocí `ModelSpec.noThinkingAlias`.
+Výběr tohoto id (např. v konfiguraci Claude Code, která vždy připojuje blok `thinking`) se vyhodnotí zpět na skutečný `<provider>/<model>` s potlačeným uvažováním — `thinking:{type:"disabled"}` na cestě `/v1/messages`, nebo s vynechanými poli `reasoning`/`reasoning_effort` na cestě `/v1/chat/completions`. Varianta je uvedena pouze pro modely z rodiny Claude, které podporují přemýšlení **a zároveň** respektují `disabled` (takže jsou například vyloučeny modely podporující pouze adaptivní režim, které `disabled` odmítají). Operátoři mohou tuto variantu pro jednotlivé modely vynutit nebo zakázat prostřednictvím `ModelSpec.noThinkingAlias`.
 
 ---
 

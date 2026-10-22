@@ -459,12 +459,54 @@ Authorization: Bearer your-api-key
 → Atgriež visus tērzēšanas, iegulšanas un attēlu modeļus, kā arī kombinācijas OpenAI formātā
 ```
 
+### Modeļu cenas (`pricing`)
+
+Ierakstā ir `pricing` objekts, ja OmniRoute zina modeļa cenu. Cena tiek iegūta
+no cenu tabulas, ko izmanto izmaksu uzskaitei: iebūvētās noklusējuma cenas, sinhronizētās cenas un
+ignorējošās vērtības, kas iestatītas, izmantojot `/api/pricing`. Tās ir kataloga cenas, tāpēc arī abonementu nodrošinātāji
+rāda viena marķiera cenu.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Lauki                                                           | Vienība                            | Piezīmes                                                                                                                                             |
+| --------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD par marķieri, decimālvirkne    | Saderīgs ar OpenRouter, nekad netiek izmantota eksponentpieraksta forma. Abi kešatmiņas lauki ir pieejami tikai tad, ja kešatmiņai ir noteikta cena. |
+| `input`, `output`, `cached`, `cache_creation`                   | USD par 1 milj. marķieru, skaitlis | Lauki no iepriekšējām kataloga versijām, kas saglabāti esošajiem klientiem. `reasoning` un `long_context` arī tiek iekļauti, ja tie ir cenu rindā.   |
+
+- **Kombinācijām** tiek izmantota to pirmā redzamā mērķa cena. Iebūvētās `auto/*` kombinācijas izvēlas
+  mērķi pieprasījuma izpildes laikā, tāpēc tām nav `pricing`.
+- **Bezmaksas modeļi** rāda `"0"` (un `0`), ja to cena ir nulle. Modelis bez cenas rindas
+  arī rāda `"0"`, ja katalogā tas ir atzīmēts kā bezmaksas (`free: true`) vai tas ir iekļauts iebūvētajā bezmaksas modeļu
+  katalogā.
+- **Nezināma cena:** ierakstam nav `pricing` atslēgas.
+- **Kredītos uzskaitīti nodrošinātāji** (piemēram, Kiro) izraksta rēķinu par pieprasījumu, nevis par marķieri. To
+  ieraksti saglabā iepriekš izmantotos skaitliskos laukus par 1 milj. marķieru un neietver viena marķiera virkņu laukus.
+- **Varianti** (spriešanas intensitātes ID, aizstājvārdi bez domāšanas, atklāšanas un vārtejas spoguļi)
+  kopē tā modeļa cenu, uz kuru tie maršrutē.
+- Lauki ietver tikai pamatlikmes. Gara konteksta līmeņi (skaitliskais `long_context` lauks) un
+  pakalpojuma līmeņa reizinātāji (piemēram, Codex fast vai flex) nemaina `prompt` vai
+  `completion`.
+- Objekts ir vienāds visiem autentifikācijas veidiem, tostarp Anthropic stila
+  pieprasījumam ar `x-api-key` un `anthropic-version` (atbilde paliek `{ "object": "list",
+"data": [...] }`). Implementācija: `src/app/api/v1/models/catalogPricing.ts`.
+
 ### Modeļu ID prefiksi (`?prefix=`)
 
-Lielākā daļa modeļu tiek piedāvāti ar **nodrošinātāja prefiksu**. To, kuru prefiksu saņemat, nosaka
-funkcijas karogs `MODELS_CATALOG_PREFIX_MODE`, un to var pārrakstīt **katram pieprasījumam atsevišķi**,
-izmantojot vaicājuma parametru — tas ir noderīgi klientam, kurš vēlas tīru sarakstu, nemainot
-servera kopējo iestatījumu visiem pārējiem:
+Lielākā daļa modeļu tiek piedāvāti ar **nodrošinātāja prefiksu**. To, kuru prefiksu saņemat, kontrolē
+`MODELS_CATALOG_PREFIX_MODE` funkcionalitātes karogs, un to var ignorēt **katram pieprasījumam atsevišķi**, izmantojot
+vaicājuma parametru — tas ir noderīgi klientam, kurš vēlas tīru sarakstu, nemainot servera mēroga
+iestatījumu visiem pārējiem:
 
 ```bash
 GET /v1/models?prefix=alias        # viens ID katram modelim — īsais aizstājvārda prefikss
@@ -474,21 +516,21 @@ GET /v1/models?prefix=canonical    # tikai pilnais nodrošinātāja ID prefikss
 
 | Režīms      | Izvada                                                   | Piezīmes                                                                                                                                                                                                  |
 | ----------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **un** `claude/claude-sonnet-4-6` | **Noklusējums.** Abi ID novirza uz vienu un to pašu modeli; tie ir saglabāti, lai klientu konfigurācijas, kurās iekodēta kāda no formām, turpinātu darboties. Aptuveni divkāršo kataloga apjomu.          |
+| `dual`      | `cc/claude-sonnet-4-6` **un** `claude/claude-sonnet-4-6` | **Noklusējums.** Abi ID maršrutē uz vienu un to pašu modeli; tie ir saglabāti, lai turpinātu darboties klientu konfigurācijas, kurās kāda no formām ir ierakstīta tieši. Aptuveni divkāršo katalogu.      |
 | `alias`     | `cc/claude-sonnet-4-6`                                   | Viens ieraksts katram modelim. Nodrošinātāji bez atsevišķa aizstājvārda joprojām izvada savu ierakstu, tāpēc nekas netiek zaudēts.                                                                        |
 | `canonical` | `claude/claude-sonnet-4-6`                               | Viens ieraksts katram modelim ar pilno nodrošinātāja ID prefiksu. Nodrošinātāji bez atsevišķa aizstājvārda (piem., `antigravity/…`, `agy/…`) arī šeit izvada savu vienīgo ID, tāpēc nekas netiek zaudēts. |
 
-`dual` režīma spoguļierakstu var atpazīt arī bez vaicājuma parametra: tam ir lauks `parent`,
-kas norāda uz primāro ID.
+`dual` režīma spoguli var atpazīt arī bez vaicājuma parametra: tam ir `parent`
+lauks, kas norāda uz primāro ID.
 
-Klientiem, kuri attēlo modeļu izvēlni, jāpieprasa `?prefix=alias` — tā rīkojas
+Klientiem, kas attēlo modeļa izvēlni, jāpieprasa `?prefix=alias` — tā dara arī
 [OmniCopilot VS Code paplašinājums](../guides/VSCODE-COPILOT.md).
 
 ### Atklāšanas filtri (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` pieņem neobligātus atklāšanas filtrus. Ja neviens no tiem nav norādīts, atbilde
-nemainās. Tie sašaurina katalogu, kuru izsaucējs jau var redzēt (vispirms tiek piemērotas API atslēgas atļaujas),
-un tie tiek izpildīti pirms OpenAI stila `limit` / `after` lappušošanas:
+`GET /v1/models` pieņem pēc izvēles izmantojamus atklāšanas filtrus. Ja neviens no tiem nav norādīts, atbilde
+nemainās. Tie sašaurina katalogu, ko izsaucējs jau redz (API atslēgas atļaujas tiek piemērotas vispirms),
+un tiek izpildīti pirms OpenAI stila `limit` / `after` lapošanas:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # katrai norādītajai iespējai jābūt patiesai
@@ -505,10 +547,10 @@ GET /v1/models?q=sonnet&limit=10                           # reģistrnejutīga a
 | `q`           | 1–200 rakstzīmes                                                                                    |
 
 Nezināma vērtība vai `min_context`, kas nav nenegatīvs vesels skaitlis (piemēram, `1.5`),
-atgriež HTTP `400`, un ziņojumā tiek uzskaitītas derīgās vērtības. Implementācija:
+atgriež HTTP `400`, un ziņojumā ir uzskaitītas derīgās vērtības. Implementācija:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Modeļu īsais saraksts (`POST /v1/models/query`)
+### Modeļu saīsinātais saraksts (`POST /v1/models/query`)
 
 `POST /v1/models/query` atgriež īsu, deterministisku sarakstu no tā paša kataloga ar tādu pašu
 autentifikāciju un katrai atslēgai noteikto redzamību kā `GET /v1/models`:
@@ -524,34 +566,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Katrs lauks ir neobligāts. `capabilities` un `exclude` pieņem masīvu vai ar komatiem atdalītu virkni;
+Katrs lauks nav obligāts. `capabilities` un `exclude` pieņem masīvu vai ar komatiem atdalītu virkni;
 `max_output` tiek salīdzināts ar `max_output_tokens`. Rezultāti tiek kārtoti vispirms pēc `owned_by`, pēc tam pēc `id`.
 `limit` noklusējuma vērtība ir `20`, un vērtības virs `100` tiek ierobežotas līdz `100`. Nederīgs JSON, nezināms
 lauks vai nederīga vērtība atgriež HTTP `400`.
 
 ### Atsevišķi paslēpti tērzēšanas modeļi
 
-Modelis, kas tā nodrošinātāja lapā ir atzīmēts kā **Paslēpts**, tiek izslēgts no kataloga, un tā tiešs
-pieprasījums tiek noraidīts ar HTTP `404` / `model_not_found`. Pārbaudē tiek izmantots atrisinātais
+Modelis, kas tā nodrošinātāja lapā ir atzīmēts kā **Paslēpts**, tiek izslēgts no kataloga, un tā
+tiešs pieprasījums tiek noraidīts ar HTTP `404` / `model_not_found`. Pārbaudē tiek izmantots atrisinātais
 nodrošinātājs un modelis, tostarp nodrošinātāju aizstājvārdi, saderīgu nodrošinātāju mezglu prefiksi un
-savienojuma noklusējuma iestatījumi. Kombinācija izlaiž paslēptos mērķus un var izmantot redzamu radniecīgu modeli;
-ja neviens izpildāms mērķis nepaliek, tā atgriež to pašu kļūdas kodu. Paslēpšanas atcelšana stājas spēkā nākamajā
-pieprasījumā. Tikai attēliem paredzēti redzamības pārrakstījumi nepaslēpj tērzēšanas modeli ar tādu pašu ID.
+savienojuma noklusējuma iestatījumi. Kombinācija izlaiž paslēptos mērķus un var izmantot redzamu alternatīvu; ja neviens
+izpildāms mērķis nepaliek, tā atgriež to pašu kļūdas kodu. Paslēpšanas atcelšana stājas spēkā nākamajā
+pieprasījumā. Tikai attēliem paredzēti redzamības pārrakstīšanas iestatījumi nepaslēpj tērzēšanas modeli ar tādu pašu ID.
 
-Šis atsevišķā modeļa iestatījums nav saistīts ar
-[modeļu eksponēšanas atļaušanas/aizliegšanas sarakstiem](../routing/MODEL_EXPOSURE_LIST.md), kas filtrē kataloga
-ierakstus un automātiskās maršrutēšanas kandidātus, vienlaikus saglabājot tiešu nosūtīšanu. API atslēgu modeļu
-atļaujas joprojām tiek piemērotas neatkarīgi. Kataloga noklusējuma prefiksu režīms joprojām ir `dual`.
+Šis atsevišķā modeļa iestatījums ir nodalīts no
+[modeļu pieejamības atļaušanas/aizliegšanas sarakstiem](../routing/MODEL_EXPOSURE_LIST.md), kas filtrē modeļu rādīšanu katalogā
+un automātiskās maršrutēšanas kandidātus, vienlaikus saglabājot tiešu nosūtīšanu. API atslēgas modeļu
+atļaujas joprojām tiek piemērotas neatkarīgi. Kataloga prefiksa noklusējuma režīms joprojām ir `dual`.
 
 ### Modeļu varianti bez domāšanas
 
-Claude modeļiem ar domāšanas iespējām `/v1/models` piedāvā arī variantu **bez domāšanas**, kura ID sākas ar `claude-3-omniroute-no-thinking/`:
+Claude modeļiem, kas atbalsta domāšanu, `/v1/models` piedāvā arī **bezdomāšanas** variantu, kura ID sākas ar `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Atlasot šo ID (piemēram, Claude Code konfigurācijā, kas vienmēr pievieno `thinking` bloku), tas tiek atkal atrisināts uz īsto `<provider>/<model>`, apspiežot spriešanu — `thinking:{type:"disabled"}` ceļā `/v1/messages` vai atmetot laukus `reasoning`/`reasoning_effort` ceļā `/v1/chat/completions`. Šis variants tiek uzskaitīts tikai Claude saimes modeļiem, kas atbalsta domāšanu **un** ievēro `disabled` (tādēļ, piemēram, tikai adaptīvie modeļi, kas noraida `disabled`, netiek iekļauti). Operatori katram modelim var piespiedu kārtā ieslēgt vai izslēgt šo variantu, izmantojot `ModelSpec.noThinkingAlias`.
+Atlasot šo ID (piemēram, Claude Code konfigurācijā, kas vienmēr pievieno `thinking` bloku), tas tiek atrisināts atpakaļ uz īsto `<provider>/<model>`, nomācot spriešanu — `thinking:{type:"disabled"}` ceļā `/v1/messages` vai atmetot laukus `reasoning`/`reasoning_effort` ceļā `/v1/chat/completions`. Variants tiek uzskaitīts tikai Claude saimes modeļiem, kas atbalsta domāšanu **un** ievēro `disabled` (tādēļ, piemēram, tiek izslēgti tikai adaptīvo režīmu atbalstoši modeļi, kas noraida `disabled`). Operatori var piespiedu kārtā ieslēgt vai izslēgt šo variantu katram modelim, izmantojot `ModelSpec.noThinkingAlias`.
 
 ---
 

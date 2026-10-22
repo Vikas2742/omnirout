@@ -471,59 +471,83 @@ Authorization: Bearer your-api-key
 → ሁሉንም የውይይት፣ embedding እና የምስል ሞዴሎችን + combos በOpenAI ቅርጸት ይመልሳል
 ```
 
-### የሞዴል id ቅድመ ቅጥያዎች (`?prefix=`)
+### የሞዴል ዋጋዎች (`pricing`)
 
-አብዛኛዎቹ ሞዴሎች በ**አቅራቢ ቅድመ ቅጥያ** ስር ይታወቃሉ። የሚያገኙት ቅድመ ቅጥያ
-በ`MODELS_CATALOG_PREFIX_MODE` የባህሪ ጠቋሚ የሚቆጣጠር ሲሆን፣ **ለእያንዳንዱ ጥያቄ** በquery parameter
-ሊተካ ይችላል — ይህም ለሌሎች ሁሉ የሰርቨሩን አጠቃላይ ቅንብር ሳይቀይር
-ንጹህ ዝርዝር ለሚፈልግ client ጠቃሚ ነው፦
+OmniRoute የሞዴሉን ዋጋ በሚያውቅበት ጊዜ አንድ ግቤት የ`pricing` ኦብጀክት ይይዛል። ዋጋው የወጪ ሒሳብ አያያዝ ከሚጠቀምበት የዋጋ ሰንጠረዥ ይመጣል፦ አብረው የተካተቱ ነባሪዎች፣ የተመሳሰሉ ዋጋዎች እና በ`/api/pricing` በኩል የተዘጋጁ overrides። እነዚህ የዝርዝር ዋጋዎች ስለሆኑ፣ የደንበኝነት ምዝገባ አቅራቢዎችም የእያንዳንዱ token ዋጋ ያሳያሉ።
 
-```bash
-GET /v1/models?prefix=alias        # ለእያንዳንዱ ሞዴል አንድ id — አጭሩ alias ቅድመ ቅጥያ
-GET /v1/models?prefix=dual         # ሁለቱም ቅርጾች (የሰርቨሩ ነባሪ)
-GET /v1/models?prefix=canonical    # ሙሉው የprovider-id ቅድመ ቅጥያ ብቻ
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
 ```
 
-| ሁነታ         | የሚያወጣው                                                   | ማስታወሻዎች                                                                                                                                            |
-| ----------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **እና** `claude/claude-sonnet-4-6` | **ነባሪ።** ሁለቱም ids ወደ አንድ ሞዴል ይመራሉ፤ ከሁለቱ ቅርጾች አንዱን በቋሚነት ያስቀመጡ የclient ቅንብሮች መስራታቸውን እንዲቀጥሉ ተደርጓል። catalogን በግምት በእጥፍ ያሳድገዋል።                       |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | ለእያንዳንዱ ሞዴል አንድ ግቤት። የተለየ alias የሌላቸው አቅራቢዎችም ግቤታቸውን ያወጣሉ፤ ስለዚህ ምንም ነገር አይጠፋም።                                                                     |
-| `canonical` | `claude/claude-sonnet-4-6`                               | ለእያንዳንዱ ሞዴል በሙሉው የprovider-id ቅድመ ቅጥያ ስር አንድ ግቤት። የተለየ alias የሌላቸው አቅራቢዎች (ለምሳሌ `antigravity/…`፣ `agy/…`) እዚህም ነጠላ idቸውን ያወጣሉ፤ ስለዚህ ምንም ነገር አይጠፋም። |
+| መስኮች                                                            | መለኪያ                             | ማስታወሻዎች                                                                                                 |
+| --------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD በእያንዳንዱ token፣ የአስርዮሽ ሕብረቁምፊ | ከOpenRouter ጋር ተኳሃኝ፣ በፍጹም በኤክስፖነንት አጻጻፍ አይቀርብም። ሁለቱ የcache መስኮች የcache ዋጋ ሲኖር ብቻ ይታያሉ።                  |
+| `input`, `output`, `cached`, `cache_creation`                   | USD በ1M tokens፣ ቁጥር              | ከቀደሙ የካታሎግ ስሪቶች የመጡ መስኮች፣ ለነባር clients ተጠብቀዋል። የዋጋው ረድፍ ሲይዛቸው `reasoning` እና `long_context` እንዲሁም ይታያሉ። |
 
-የ`dual` ሁነታ mirror ያለquery parameterም ሊታወቅ ይችላል፤ ወደ ዋናው id
-የሚያመለክት `parent` field ይይዛል።
+- **Combos** የመጀመሪያውን የሚታይ target ዋጋ ይይዛሉ። አብረው የተካተቱ `auto/*` combos በጥያቄው ጊዜ target ስለሚመርጡ፣ `pricing` የላቸውም።
+- **ነጻ ሞዴሎች** ዋጋቸው ዜሮ ሲሆን `"0"` (እና `0`) ያሳያሉ። የዋጋ ረድፍ የሌለው ሞዴልም ካታሎጉ ነጻ መሆኑን (`free: true`) ምልክት ካደረገበት ወይም አብሮ የተካተተው የነጻ ሞዴሎች ካታሎግ ከዘረዘረው `"0"` ያሳያል።
+- **ያልታወቀ ዋጋ፦** ግቤቱ የ`pricing` key የለውም።
+- **በcredit የሚለኩ አቅራቢዎች** (እንደ Kiro ያሉ) በtoken ሳይሆን በእያንዳንዱ ጥያቄ ያስከፍላሉ። ግቤቶቻቸው ቀደም ሲል የነበሯቸውን ቁጥራዊ የእያንዳንዱ-1M መስኮች ይዘው ይቆያሉ፣ ነገር ግን የእያንዳንዱ-token ሕብረቁምፊ መስኮችን አይይዙም።
+- **Variants** (የreasoning-effort ids፣ no-thinking aliases፣ discovery እና gateway mirrors) የሚመሩበትን ሞዴል ዋጋ ይቀዳሉ።
+- መስኮቹ የመሠረት ተመኖችን ብቻ ይይዛሉ። የlong-context ደረጃዎች (ቁጥራዊው `long_context` መስክ) እና የservice-tier ማባዣዎች (ለምሳሌ Codex fast ወይም flex) `prompt` ወይም `completion`ን አይቀይሩም።
+- ኦብጀክቱ `x-api-key` እና `anthropic-version` ያለውን የAnthropic ቅጥ ጥያቄ ጨምሮ፣ ለእያንዳንዱ የማረጋገጫ ዘይቤ ተመሳሳይ ነው (ምላሹ `{ "object": "list",
+"data": [...] }` ሆኖ ይቆያል)። አተገባበር፦ `src/app/api/v1/models/catalogPricing.ts`።
 
-የሞዴል መምረጫ የሚያሳዩ clients `?prefix=alias`ን መጠየቅ አለባቸው — የ
-[OmniCopilot VS Code extension](../guides/VSCODE-COPILOT.md) የሚያደርገውም ይህንኑ ነው።
+### የሞዴል id prefixes (`?prefix=`)
 
-### የማግኛ ማጣሪያዎች (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
-
-`GET /v1/models` በምርጫ የሚጠቀሙ የማግኛ ማጣሪያዎችን ይቀበላል። ከእነዚህ አንዳቸውም ከሌለ ምላሹ
-አይቀየርም። ጥሪ አድራጊው አስቀድሞ የሚያየውን catalog ያጠባሉ (የAPI-key ፈቃዶች መጀመሪያ ተግባራዊ ይሆናሉ)፣
-እና ከOpenAI-style `limit` / `after` paging በፊት ይሰራሉ፦
+አብዛኞቹ ሞዴሎች በ**provider prefix** ስር ይቀርባሉ። የሚያገኙት prefix በ`MODELS_CATALOG_PREFIX_MODE` feature flag የሚቆጣጠር ሲሆን፣ በquery parameter በመጠቀም **ለእያንዳንዱ ጥያቄ** override ማድረግ ይቻላል—ይህም ለሁሉም ሰው የserver-wide ቅንብሩን ሳይቀይር ንጹሕ ዝርዝር ለሚፈልግ client ጠቃሚ ነው፦
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # እያንዳንዱ የተዘረዘረ capability true መሆን አለበት
+GET /v1/models?prefix=alias        # ለእያንዳንዱ ሞዴል አንድ id — አጭሩ alias prefix
+GET /v1/models?prefix=dual         # ሁለቱም ቅርጾች (የserver ነባሪ)
+GET /v1/models?prefix=canonical    # ሙሉው provider-id prefix ብቻ
+```
+
+| ሁነታ         | የሚያወጣው                                                   | ማስታወሻዎች                                                                                                                                          |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dual`      | `cc/claude-sonnet-4-6` **እና** `claude/claude-sonnet-4-6` | **ነባሪ።** ሁለቱም ids ወደ ተመሳሳዩ ሞዴል ይመራሉ፤ ከሁለቱ ቅርጾች አንዱን hardcode ያደረጉ የclient ውቅሮች መስራታቸውን እንዲቀጥሉ ተጠብቀዋል። የካታሎጉን መጠን በግምት በእጥፍ ያሳድጋል።                |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | ለእያንዳንዱ ሞዴል አንድ ግቤት። የተለየ alias የሌላቸው አቅራቢዎችም ግቤታቸውን ያወጣሉ፣ ስለዚህ ምንም ነገር አይጠፋም።                                                                   |
+| `canonical` | `claude/claude-sonnet-4-6`                               | በሙሉው provider-id prefix ስር ለእያንዳንዱ ሞዴል አንድ ግቤት። የተለየ alias የሌላቸው አቅራቢዎች (ለምሳሌ `antigravity/…`፣ `agy/…`) እዚህም ነጠላ idቸውን ያወጣሉ፣ ስለዚህ ምንም ነገር አይጠፋም። |
+
+የ`dual`-mode mirror query parameter ሳይኖርም ሊታወቅ ይችላል፦ ወደ ዋናው id የሚያመለክት የ`parent` መስክ ይይዛል።
+
+የሞዴል መራጭ የሚያቀርቡ clients `?prefix=alias`ን መጠየቅ አለባቸው—የ[OmniCopilot VS Code ቅጥያ](../guides/VSCODE-COPILOT.md) የሚያደርገውም ይህንኑ ነው።
+
+### የDiscovery filters (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+
+`GET /v1/models` በፍላጎት የሚነቁ discovery filtersን ይቀበላል። ከእነዚህ አንዳቸውም ከሌሉ ምላሹ አይቀየርም። ጠያቂው አስቀድሞ የሚያየውን ካታሎግ ያጠባሉ (የAPI-key ፈቃዶች መጀመሪያ ተግባራዊ ይሆናሉ)፣ እና ከOpenAI-style `limit` / `after` paging በፊት ይሰራሉ፦
+
+```bash
+GET /v1/models?capability=vision&capability=tool_calling   # እያንዳንዱ የተዘረዘረ capability እውነት መሆን አለበት
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # የcatalog `type`፤ የሌላቸው rows `chat` ናቸው
-GET /v1/models?q=sonnet&limit=10                           # በid ወይም name ላይ የፊደል መጠንን የማይለይ ማዛመድ
+GET /v1/models?kind=embedding                              # የካታሎግ `type`፤ ይህ የሌላቸው ረድፎች `chat` ናቸው
+GET /v1/models?q=sonnet&limit=10                           # በid ወይም በስም ላይ የፊደል ካፒታላይዜሽንን የማይለይ ማዛመድ
 ```
 
-| Param         | እሴቶች                                                                                                |
+| መለኪያ          | እሴቶች                                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | አሉታዊ ያልሆነ integer፣ ከ`context_length` ጋር ይነጻጸራል                                                      |
+| `min_context` | አሉታዊ ያልሆነ ሙሉ ቁጥር፣ ከ`context_length` ጋር ይነጻጸራል                                                       |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 ቁምፊዎች                                                                                         |
 
-ያልታወቀ እሴት ወይም አሉታዊ ያልሆነ integer ያልሆነ `min_context` (ለምሳሌ `1.5`)
-HTTP `400` ይመልሳል፣ መልዕክቱም ትክክለኛ እሴቶችን ይዘረዝራል። ትግበራ፦
+ያልታወቀ እሴት፣ ወይም አሉታዊ ያልሆነ ሙሉ ቁጥር ያልሆነ `min_context` (ለምሳሌ `1.5`)፣
+HTTP `400` ይመልሳል፣ እና መልዕክቱ ትክክለኛ እሴቶችን ይዘረዝራል። ትግበራው፦
 `src/app/api/v1/models/catalogFilters.ts`።
 
 ### የሞዴል አጭር ዝርዝር (`POST /v1/models/query`)
 
-`POST /v1/models/query` ከተመሳሳዩ catalog አጭር እና የማይለዋወጥ ዝርዝር ይመልሳል፤ እንደ
-`GET /v1/models` ተመሳሳይ auth እና የእያንዳንዱ key ታይነት ይጠቀማል፦
+`POST /v1/models/query` ከተመሳሳዩ ካታሎግ አጭርና ቆራጥ ዝርዝር ይመልሳል፤ ማረጋገጫውና
+የእያንዳንዱ ቁልፍ ታይነትም ከ`GET /v1/models` ጋር ተመሳሳይ ነው፦
 
 ```bash
 POST /v1/models/query
@@ -536,34 +560,33 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-እያንዳንዱ field አማራጭ ነው። `capabilities` እና `exclude` array ወይም በcomma የተለየ string ይቀበላሉ፤
-`max_output` ከ`max_output_tokens` ጋር ይነጻጸራል። ውጤቶች መጀመሪያ በ`owned_by`፣ ከዚያም በ`id` ይደረደራሉ።
-የ`limit` ነባሪ እሴት `20` ሲሆን፣ ከ`100` በላይ የሆኑ እሴቶች በ`100` ይገደባሉ። ትክክል ያልሆነ JSON፣ ያልታወቀ
-field ወይም ትክክል ያልሆነ እሴት HTTP `400` ይመልሳል።
+እያንዳንዱ መስክ አማራጭ ነው። `capabilities` እና `exclude` ድርድር ወይም በነጠላ ሰረዝ የተለየ ሕብረቁምፊ
+ይቀበላሉ፤ `max_output` ከ`max_output_tokens` ጋር ይነጻጸራል። ውጤቶች መጀመሪያ በ`owned_by`፣ ከዚያም በ`id`
+ይደረደራሉ። የ`limit` ነባሪ እሴት `20` ሲሆን፣ ከ`100` በላይ ያሉ እሴቶች በ`100` ይገደባሉ። ልክ ያልሆነ JSON፣ ያልታወቀ
+መስክ ወይም ልክ ያልሆነ እሴት HTTP `400` ይመልሳል።
 
 ### በተናጠል የተደበቁ የውይይት ሞዴሎች
 
-በአቅራቢው ገጽ ላይ **Hidden** ተብሎ ምልክት የተደረገበት ሞዴል ከcatalog ይወገዳል፣ እና
-በግልጽ ሲጠየቅ HTTP `404` / `model_not_found` በመመለስ ውድቅ ይደረጋል። ማረጋገጫው የተፈታውን
-አቅራቢ እና ሞዴል ይጠቀማል፤ ይህም የአቅራቢ aliasesን፣ የcompatible-provider node ቅድመ ቅጥያዎችን እና
-የconnection ነባሪዎችን ያካትታል። combo የተደበቁ targetsን በመዝለል የሚታይ sibling መጠቀም ይችላል፤ ምንም
-ሊፈጸም የሚችል target ካልቀረ ተመሳሳዩን የስህተት code ይመልሳል። ድብቀቱን ማንሳት በሚቀጥለው
-ጥያቄ ተግባራዊ ይሆናል። ለምስል ብቻ የሆኑ የታይነት overrides ተመሳሳይ ID ያለውን የውይይት ሞዴል አይደብቁም።
+በአቅራቢው ገጽ ላይ **የተደበቀ** ተብሎ ምልክት የተደረገበት ሞዴል ከካታሎጉ ይወገዳል፣ እና
+በግልጽ ሲጠየቅ HTTP `404` / `model_not_found` በመመለስ ውድቅ ይደረጋል። ፍተሻው የአቅራቢ ተለዋጭ ስሞችን፣ የተኳኋኝ-አቅራቢ ኖድ ቅድመ ቅጥያዎችን እና
+የግንኙነት ነባሪዎችን ጨምሮ የተፈቱትን አቅራቢ እና ሞዴል ይጠቀማል። ጥምረት የተደበቁ ዒላማዎችን ይዘላል እና የሚታይ አቻ ሞዴልን ሊጠቀም ይችላል፤
+ምንም ሊፈጸም የሚችል ዒላማ ካልቀረ ተመሳሳዩን የስህተት ኮድ ይመልሳል። ድብቁን ማንሳት በሚቀጥለው
+ጥያቄ ላይ ተግባራዊ ይሆናል። ለምስል ብቻ የሚደረጉ የታይነት ማሻሻያዎች ተመሳሳይ ID ያለውን የውይይት ሞዴል አይደብቁም።
 
 ይህ የግለሰብ ሞዴል ቅንብር ከ
-[የሞዴል ተጋላጭነት allow/deny ዝርዝሮች](../routing/MODEL_EXPOSURE_LIST.md) የተለየ ነው፤ እነዚህ ግልጽ dispatchን እንደተጠበቀ በማቆየት
-የcatalog ማስታወቂያን እና የauto-routing ዕጩዎችን ያጣራሉ። የAPI-key ሞዴል
-ፈቃዶች በተናጠል ተግባራዊ መሆናቸውን ይቀጥላሉ። የcatalog ቅድመ ቅጥያ ነባሪ ሁነታ `dual` እንደሆነ ይቆያል።
+[የሞዴል ተጋላጭነት የፍቀድ/ከልክል ዝርዝሮች](../routing/MODEL_EXPOSURE_LIST.md) የተለየ ነው፤ እነዚህ ዝርዝሮች ግልጽ ማስተላለፍን እንደተጠበቀ በማቆየት የካታሎግ
+ማስታወቂያንና የራስ-ሰር ማዘዋወሪያ ዕጩዎችን ያጣራሉ። የAPI ቁልፍ ሞዴል
+ፈቃዶች በተናጠል መተግበራቸውን ይቀጥላሉ። የካታሎጉ ነባሪ የቅድመ ቅጥያ ሁነታ `dual` ሆኖ ይቀጥላል።
 
-### thinking የሌላቸው የሞዴል ልዩነቶች
+### ማሰብ-አልባ የሞዴል ተለዋጮች
 
-thinkingን ለሚደግፉ Claude ሞዴሎች፣ `/v1/models` idው በ`claude-3-omniroute-no-thinking/` የሚጀምር **no-thinking** ልዩነትንም ያስተዋውቃል፦
+የማሰብ ችሎታ ላላቸው Claude ሞዴሎች፣ `/v1/models` መለያው በ`claude-3-omniroute-no-thinking/` ቅድመ ቅጥያ የሚጀምር **ማሰብ-አልባ** ተለዋጭንም ያስተዋውቃል፦
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-ይህን መለያ መምረጥ (ለምሳሌ፣ ሁልጊዜ `thinking` ብሎክ በሚያያይዝ የClaude Code ውቅር ውስጥ) ምክንያታዊ ትንተናው ታፍኖ ወደ ትክክለኛው `<provider>/<model>` እንዲመለስ ያደርጋል—በ`/v1/messages` ዱካ ላይ `thinking:{type:"disabled"}` ይጠቀማል፣ ወይም በ`/v1/chat/completions` ዱካ ላይ የ`reasoning`/`reasoning_effort` መስኮችን ያስወግዳል። ይህ ተለዋጭ የሚዘረዘረው አስተሳሰብን ለሚደግፉ **እና** `disabled`ን ለሚያከብሩ የClaude ቤተሰብ ሞዴሎች ብቻ ነው (ስለዚህ፣ ለምሳሌ `disabled`ን የማይቀበሉ ተስማሚ-ብቻ ሞዴሎች አይካተቱም)። ኦፕሬተሮች `ModelSpec.noThinkingAlias`ን በመጠቀም ተለዋጩን ለእያንዳንዱ ሞዴል በግድ ማብራት ወይም ማጥፋት ይችላሉ።
+ይህን መለያ መምረጥ (ለምሳሌ ሁልጊዜ `thinking` ብሎክ በሚያያይዝ የClaude Code ውቅር ውስጥ) ማመዛዘን ታፍኖ ወደ እውነተኛው `<provider>/<model>` ይፈታል — በ`/v1/messages` ዱካ ላይ `thinking:{type:"disabled"}`፣ ወይም በ`/v1/chat/completions` ዱካ ላይ የ`reasoning`/`reasoning_effort` መስኮች ይወገዳሉ። ተለዋጩ የሚዘረዘረው ማሰብን ለሚደግፉ **እና** `disabled`ን ለሚያከብሩ የClaude ቤተሰብ ሞዴሎች ብቻ ነው (ስለዚህ፣ ለምሳሌ `disabled`ን ውድቅ የሚያደርጉ ተስማሚ-ብቻ ሞዴሎች አይካተቱም)። ኦፕሬተሮች `ModelSpec.noThinkingAlias`ን በመጠቀም ለእያንዳንዱ ሞዴል ተለዋጩ እንዲበራ ወይም እንዲጠፋ ማስገደድ ይችላሉ።
 
 ---
 
@@ -1506,7 +1529,7 @@ GET /api/telemetry/summary
 ## በጀት
 
 ```bash
-# ለሁሉም API ቁልፎች የበጀት ሁኔታ ያግኙ
+# የሁሉንም API ቁልፎች የበጀት ሁኔታ ያግኙ
 GET /api/usage/budget
 
 # በጀት ያዘጋጁ ወይም ያዘምኑ
@@ -1523,7 +1546,7 @@ Content-Type: application/json
 }
 ```
 
-> **የስኬማ ማስታወሻዎች** (`setBudgetSchema`)፦ `apiKeyId` ያስፈልጋል; ቢያንስ አንዱ ከ`dailyLimitUsd`፣ `weeklyLimitUsd` ወይም `monthlyLimitUsd` ከዜሮ መብለጥ አለበት። አማራጭ መስኮች፦ `warningThreshold` (0–1)፣ `resetInterval` (`daily` | `weekly` | `monthly`)፣ `resetTime` (`HH:MM`)። ያረጀው `{keyId, limit, period}` ቅርጽ `400 Bad Request` ይመልሳል።
+> **የስኪማ ማስታወሻዎች** (`setBudgetSchema`)፦ `apiKeyId` ያስፈልጋል፤ ከ`dailyLimitUsd`፣ `weeklyLimitUsd` ወይም `monthlyLimitUsd` ቢያንስ አንዱ ከዜሮ መብለጥ አለበት። አማራጭ መስኮች፦ `warningThreshold` (0–1)፣ `resetInterval` (`daily` | `weekly` | `monthly`)፣ `resetTime` (`HH:MM`)። የቆየው `{keyId, limit, period}` ቅርጽ `400 Bad Request` ይመልሳል።
 
 ## የቶከን ገደቦች
 

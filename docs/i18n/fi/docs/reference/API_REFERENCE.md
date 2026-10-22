@@ -482,58 +482,100 @@ Authorization: Bearer your-api-key
 → Palauttaa kaikki keskustelu-, upotus- ja kuvamallit sekä yhdistelmät OpenAI-muodossa
 ```
 
-### Mallitunnusten etuliitteet (`?prefix=`)
+### Mallien hinnat (`pricing`)
 
-Useimmat mallit esitetään **palveluntarjoajan etuliitteen** alla. Käytettävää etuliitettä ohjataan
-`MODELS_CATALOG_PREFIX_MODE`-ominaisuuslipulla, ja se voidaan ohittaa **pyyntökohtaisesti**
-kyselyparametrilla — tämä on hyödyllistä asiakasohjelmalle, joka haluaa selkeän luettelon muuttamatta
-palvelimen laajuista asetusta kaikkien muiden osalta:
+Tietue sisältää `pricing`-objektin, kun OmniRoute tuntee mallin hinnan. Hinta tulee
+kustannuslaskennan käyttämästä hinnoittelutaulukosta: sisäänrakennetuista oletusarvoista, synkronoiduista hinnoista ja
+`/api/pricing`-rajapinnan kautta määritetyistä ohituksista. Nämä ovat listahintoja, joten myös tilauspohjaiset palveluntarjoajat
+näyttävät tokenikohtaisen hinnan.
 
-```bash
-GET /v1/models?prefix=alias        # yksi tunnus mallia kohden — lyhyt alias-etuliite
-GET /v1/models?prefix=dual         # molemmat muodot (palvelimen oletus)
-GET /v1/models?prefix=canonical    # vain täydellinen palveluntarjoajatunnuksen etuliite
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
 ```
 
-| Tila        | Tuottaa                                                  | Huomautukset                                                                                                                                                                                                                              |
-| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **ja** `claude/claude-sonnet-4-6` | **Oletus.** Molemmat tunnukset ohjautuvat samaan malliin; ne säilytetään, jotta kumman tahansa muodon kiinteästi määrittäneet asiakasmääritykset toimivat edelleen. Luettelon koko noin kaksinkertaistuu.                                 |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Yksi merkintä mallia kohden. Palveluntarjoajat, joilla ei ole erillistä aliasta, tuottavat silti oman merkintänsä, joten mitään ei menetetä.                                                                                              |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Yksi merkintä mallia kohden täydellisen palveluntarjoajatunnuksen etuliitteen alla. Palveluntarjoajat, joilla ei ole erillistä aliasta (esim. `antigravity/…`, `agy/…`), tuottavat tässäkin ainoan tunnuksensa, joten mitään ei menetetä. |
+| Kentät                                                          | Yksikkö                        | Huomautukset                                                                                                                                                       |
+| --------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD/token, desimaalimerkkijono | OpenRouter-yhteensopiva, ei koskaan eksponenttimerkintää. Kaksi välimuistikenttää näkyvät vain, kun välimuistille on määritetty hinta.                             |
+| `input`, `output`, `cached`, `cache_creation`                   | USD / 1M tokenia, luku         | Aiempien luetteloversioiden kentät, jotka säilytetään nykyisiä asiakkaita varten. Myös `reasoning` ja `long_context` näkyvät, kun ne sisältyvät hinnoitteluriviin. |
 
-`dual`-tilan peilaus voidaan tunnistaa myös ilman kyselyparametria: siinä on ensisijaiseen
-tunnukseen viittaava `parent`-kenttä.
+- **Yhdistelmät** käyttävät ensimmäisen näkyvän kohteensa hintaa. Sisäänrakennetut `auto/*`-yhdistelmät valitsevat
+  kohteen pyyntöhetkellä, joten niillä ei ole `pricing`-objektia.
+- **Ilmaiset mallit** näyttävät arvon `"0"` (ja `0`), kun niiden hinta on nolla. Malli, jolla ei ole hinnoitteluriviä,
+  näyttää myös arvon `"0"`, kun luettelo merkitsee sen ilmaiseksi (`free: true`) tai sisäänrakennettu ilmaisten mallien
+  luettelo sisältää sen.
+- **Tuntematon hinta:** tietueessa ei ole `pricing`-avainta.
+- **Krediittiperusteisesti laskuttavat palveluntarjoajat** (kuten Kiro) laskuttavat pyyntökohtaisesti tokenikohtaisen laskutuksen sijaan. Niiden
+  tietueet säilyttävät aiemmat numeeriset miljoonan tokenin kentät eivätkä sisällä tokenikohtaisia merkkijonokenttiä.
+- **Variantit** (päättelyponnistuksen tunnisteet, ajatteluttomat aliakset sekä etsintä- ja yhdyskäytäväpeilit)
+  kopioivat sen mallin hinnan, johon ne reitittävät.
+- Kentät sisältävät vain perushinnat. Pitkän kontekstin tasot (numeerinen `long_context`-kenttä) ja
+  palvelutasokertoimet (esimerkiksi Codex fast tai flex) eivät muuta `prompt`- tai
+  `completion`-arvoa.
+- Objekti on sama kaikissa todennustavoissa, mukaan lukien Anthropic-tyylinen
+  pyyntö, jossa käytetään `x-api-key`- ja `anthropic-version`-otsakkeita (vastaus pysyy muodossa `{ "object": "list",
+"data": [...] }`). Toteutus: `src/app/api/v1/models/catalogPricing.ts`.
 
-Mallivalitsimen näyttävien asiakasohjelmien tulisi pyytää `?prefix=alias` — näin toimii
+### Mallitunnisteiden etuliitteet (`?prefix=`)
+
+Useimmat mallit ilmoitetaan **palveluntarjoajan etuliitteellä**. Käytettävää etuliitettä ohjaa
+`MODELS_CATALOG_PREFIX_MODE`-ominaisuuslippu, ja se voidaan ohittaa **pyyntökohtaisesti**
+kyselyparametrilla — tämä on hyödyllistä asiakkaalle, joka haluaa selkeän luettelon muuttamatta palvelimenlaajuista
+asetusta kaikille muille:
+
+```bash
+GET /v1/models?prefix=alias        # yksi tunniste mallia kohden — lyhyt aliasetuliite
+GET /v1/models?prefix=dual         # molemmat muodot (palvelimen oletus)
+GET /v1/models?prefix=canonical    # vain palveluntarjoajan täyden tunnisteen etuliite
+```
+
+| Tila        | Tuottaa                                                  | Huomautukset                                                                                                                                                                                                                               |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dual`      | `cc/claude-sonnet-4-6` **ja** `claude/claude-sonnet-4-6` | **Oletus.** Molemmat tunnisteet reitittävät samaan malliin; ne säilytetään, jotta kumman tahansa muodon kiinteästi määrittäneet asiakaskokoonpanot toimivat edelleen. Suunnilleen kaksinkertaistaa luettelon koon.                         |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Yksi tietue mallia kohden. Palveluntarjoajat, joilla ei ole erillistä aliasta, tuottavat silti tietueensa, joten mitään ei menetetä.                                                                                                       |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Yksi tietue mallia kohden palveluntarjoajan täyden tunnisteen etuliitteellä. Palveluntarjoajat, joilla ei ole erillistä aliasta (esim. `antigravity/…`, `agy/…`), tuottavat myös tässä yksittäisen tunnisteensa, joten mitään ei menetetä. |
+
+`dual`-tilan peili voidaan tunnistaa myös ilman kyselyparametria: se sisältää `parent`-kentän,
+joka viittaa ensisijaiseen tunnisteeseen.
+
+Mallivalitsimen näyttävien asiakkaiden kannattaa pyytää `?prefix=alias` — näin toimii
 [OmniCopilotin VS Code -laajennus](../guides/VSCODE-COPILOT.md).
 
-### Hakusuodattimet (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Etsintäsuodattimet (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` hyväksyy valinnaisia hakusuodattimia. Ilman niitä vastaus pysyy
-muuttumattomana. Ne rajaavat luetteloa, jonka kutsuja jo näkee (API-avaimen käyttöoikeuksia sovelletaan ensin),
-ja ne suoritetaan ennen OpenAI-tyylisiä `limit`- ja `after`-sivutuksia:
+`GET /v1/models` hyväksyy valinnaiset etsintäsuodattimet. Ilman niitä vastaus
+säilyy muuttumattomana. Ne rajaavat luetteloa, jonka kutsuja jo näkee (API-avaimen käyttöoikeuksia sovelletaan ensin),
+ja ne suoritetaan ennen OpenAI-tyylisiä `limit`- / `after`-sivutuksia:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # jokaisen luetellun ominaisuuden on oltava tosi
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # luettelon `type`; rivit, joilla sitä ei ole, ovat `chat`
-GET /v1/models?q=sonnet&limit=10                           # kirjainkoosta riippumaton vastaavuus tunnukseen tai nimeen
+GET /v1/models?q=sonnet&limit=10                           # kirjainkoosta riippumaton vastaavuus tunnisteeseen tai nimeen
 ```
 
 | Parametri     | Arvot                                                                                               |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | ei-negatiivinen kokonaisluku, jota verrataan `context_length`-arvoon                                |
+| `min_context` | ei-negatiivinen kokonaisluku, jota verrataan arvoon `context_length`                                |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 merkkiä                                                                                       |
 
 Tuntematon arvo tai `min_context`, joka ei ole ei-negatiivinen kokonaisluku (esimerkiksi `1.5`),
-palauttaa HTTP `400` -virheen, ja viestissä luetellaan kelvolliset arvot. Toteutus:
+palauttaa HTTP-tilan `400`, ja viestissä luetellaan kelvolliset arvot. Toteutus:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Mallien suppea luettelo (`POST /v1/models/query`)
 
-`POST /v1/models/query` palauttaa samasta luettelosta lyhyen ja deterministisen luettelon käyttäen samoja
+`POST /v1/models/query` palauttaa lyhyen, deterministisen luettelon samasta katalogista käyttäen samoja
 todennus- ja avainkohtaisia näkyvyyssääntöjä kuin `GET /v1/models`:
 
 ```bash
@@ -544,37 +586,37 @@ Content-Type: application/json
 { "capabilities": ["vision", "tool_calling"], "min_context": 128000, "max_output": 16000,
   "kind": "chat", "q": "gpt", "owned_by": "openai", "exclude": ["openai/gpt-4o"], "limit": 5 }
 
-→ { "object": "list", "data": [ ...mallit ] }
+→ { "object": "list", "data": [ ...models ] }
 ```
 
 Jokainen kenttä on valinnainen. `capabilities` ja `exclude` hyväksyvät taulukon tai pilkuilla erotellun merkkijonon;
-`max_output`-arvoa verrataan `max_output_tokens`-arvoon. Tulokset lajitellaan ensin `owned_by`-arvon ja sitten `id`-arvon mukaan.
-`limit`-arvon oletus on `20`, ja arvot, jotka ylittävät `100`, rajataan arvoon `100`. Virheellinen JSON, tuntematon
-kenttä tai virheellinen arvo palauttaa HTTP `400` -virheen.
+`max_output`-arvoa verrataan arvoon `max_output_tokens`. Tulokset lajitellaan ensin arvon `owned_by` ja sitten arvon `id` mukaan.
+`limit`-arvon oletus on `20`, ja arvon `100` ylittävät arvot rajoitetaan arvoon `100`. Virheellinen JSON, tuntematon
+kenttä tai virheellinen arvo palauttaa HTTP-tilan `400`.
 
-### Yksittäin piilotetut keskustelumallit
+### Yksittäin piilotetut chat-mallit
 
-Palveluntarjoajan sivulla **Hidden**-merkinnällä merkitty malli jätetään pois luettelosta ja hylätään
-HTTP `404` / `model_not_found` -virheellä, kun sitä pyydetään nimenomaisesti. Tarkistus käyttää ratkaistua
-palveluntarjoajaa ja mallia, mukaan lukien palveluntarjoajien aliakset, yhteensopivien palveluntarjoajien solmujen etuliitteet ja
-yhteyden oletusarvot. Yhdistelmä ohittaa piilotetut kohteet ja voi käyttää näkyvää rinnakkaiskohdetta; jos
+Palveluntarjoajan sivulla **Piilotettu**-merkinnän saanut malli jätetään pois katalogista, ja sen
+eksplisiittinen pyyntö hylätään vastauksella HTTP `404` / `model_not_found`. Tarkistus käyttää selvitettyä
+palveluntarjoajaa ja mallia, mukaan lukien palveluntarjoajan aliakset, yhteensopivien palveluntarjoajien solmujen etuliitteet ja
+yhteyden oletusasetukset. Yhdistelmä ohittaa piilotetut kohteet ja voi käyttää näkyvää sisarmallia; jos
 suoritettavaa kohdetta ei jää jäljelle, se palauttaa saman virhekoodin. Piilotuksen poistaminen tulee voimaan seuraavassa
-pyynnössä. Vain kuvia koskevat näkyvyysohitukset eivät piilota samalla tunnuksella olevaa keskustelumallia.
+pyynnössä. Vain kuvia koskevat näkyvyyden ohitukset eivät piilota samalla tunnisteella olevaa chat-mallia.
 
 Tämä yksittäisen mallin asetus on erillinen
-[mallien näkyvyyden sallittujen ja estettyjen luetteloista](../routing/MODEL_EXPOSURE_LIST.md), jotka suodattavat luettelossa
-esittämistä ja automaattisen reitityksen ehdokkaita säilyttäen samalla nimenomaisen välityksen. API-avainten mallikohtaisia
-käyttöoikeuksia sovelletaan edelleen itsenäisesti. Luettelon oletusetuliitetila on edelleen `dual`.
+[mallien näkyvyyden sallimis- ja estoluetteloista](../routing/MODEL_EXPOSURE_LIST.md), jotka suodattavat katalogissa
+ilmoitettavia malleja ja automaattisen reitityksen ehdokkaita, mutta säilyttävät eksplisiittisen välityksen. API-avaimen mallikohtaiset
+käyttöoikeudet ovat edelleen voimassa itsenäisesti. Katalogin etuliitetilan oletusarvo on edelleen `dual`.
 
-### Ajatteluttomat mallimuunnelmat
+### Ajattelutoiminnottomat mallivariantit
 
-Ajatteluun kykeneville Claude-malleille `/v1/models` esittää myös **ajatteluttoman** muunnelman, jonka tunnuksen etuliite on `claude-3-omniroute-no-thinking/`:
+Ajattelua tukeville Claude-malleille `/v1/models` ilmoittaa myös **ajattelutoiminnottoman** variantin, jonka tunnisteen etuliite on `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Tämän id:n valitseminen (esim. Claude Code -määrityksessä, joka liittää aina `thinking`-lohkon) palautuu todelliseen `<provider>/<model>`-malliin päättely estettynä — `thinking:{type:"disabled"}` polulla `/v1/messages`, tai `reasoning`/`reasoning_effort`-kentät poistettuina polulla `/v1/chat/completions`. Variantti luetellaan vain Claude-perheen malleille, jotka tukevat ajattelua **ja** noudattavat `disabled`-asetusta (joten esim. vain mukautuvaa tilaa tukevat mallit, jotka hylkäävät `disabled`-asetuksen, jätetään pois). Operaattorit voivat pakottaa variantin käyttöön tai pois käytöstä mallikohtaisesti `ModelSpec.noThinkingAlias`-asetuksella.
+Tämän tunnisteen valitseminen (esimerkiksi Claude Code -määrityksessä, joka liittää aina `thinking`-lohkon) selvitetään takaisin todelliseksi malliksi `<provider>/<model>` siten, että päättely estetään — `/v1/messages`-polulla käytetään asetusta `thinking:{type:"disabled"}`, kun taas `/v1/chat/completions`-polulla `reasoning`- ja `reasoning_effort`-kentät jätetään pois. Variantti luetellaan vain Claude-perheen malleille, jotka tukevat ajattelua **ja** noudattavat arvoa `disabled` (joten esimerkiksi vain mukautuvaa tilaa tukevat mallit, jotka hylkäävät arvon `disabled`, jätetään pois). Operaattorit voivat ottaa variantin käyttöön tai poistaa sen käytöstä mallikohtaisesti asetuksella `ModelSpec.noThinkingAlias`.
 
 ---
 

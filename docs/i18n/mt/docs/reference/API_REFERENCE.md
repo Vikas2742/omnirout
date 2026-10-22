@@ -445,44 +445,93 @@ jieħu l-valur predefinit `us-central1`. Iż-żewġ riżoluzzjonijiet iseħħu f
 
 ---
 
-## Elenka tal-Mudelli
+## Lista tal-Mudelli
 
 ```bash
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Jirritorna l-mudelli kollha taċ-chat, embeddings u immaġnijiet + combos fil-format OpenAI
+→ Jirritorna l-mudelli kollha taċ-chat, tal-embeddings u tal-immaġnijiet + il-kombinazzjonijiet fil-format OpenAI
 ```
 
-### Prefissi tal-id tal-mudell (`?prefix=`)
+### Prezzijiet tal-mudelli (`pricing`)
 
-Il-biċċa l-kbira tal-mudelli jiġu ppubblikati taħt **prefiss tal-fornitur**. Il-prefiss li tirċievi huwa kkontrollat mill-feature flag `MODELS_CATALOG_PREFIX_MODE`, u jista’ jiġi sostitwit **għal kull talba** permezz ta’ parametru tal-query — utli għal klijent li jkun irid lista nadifa mingħajr ma jibdel l-issettjar tas-server kollu għal kulħadd:
+Entrata jkollha oġġett `pricing` meta OmniRoute jkun jaf il-prezz tal-mudell. Il-prezz jiġi
+mit-tabella tal-prezzijiet li tuża l-kontabilità tal-ispejjeż: valuri awtomatiċi inkorporati, prezzijiet sinkronizzati, u
+sovrastrutturi stabbiliti permezz ta’ `/api/pricing`. Dawn huma prezzijiet tal-lista, għalhekk il-fornituri b’abbonament ukoll
+juru prezz għal kull token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Oqsma                                                           | Unità                                  | Noti                                                                                                                                                                               |
+| --------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD għal kull token, sekwenza deċimali | Kompatibbli ma’ OpenRouter, qatt f’notazzjoni esponenzjali. Iż-żewġ oqsma tal-cache jidhru biss meta jkun hemm prezz tal-cache.                                                    |
+| `input`, `output`, `cached`, `cache_creation`                   | USD għal kull 1M token, numru          | Oqsma minn verżjonijiet preċedenti tal-katalgu, miżmuma għall-klijenti eżistenti. `reasoning` u `long_context` jidhru wkoll meta r-ringiela tal-prezzijiet ikollha dawn il-valuri. |
+
+- **Il-kombinazzjonijiet** ikollhom il-prezz tal-ewwel mira viżibbli tagħhom. Il-kombinazzjonijiet inkorporati `auto/*` jagħżlu
+  mira fil-ħin tat-talba, għalhekk ma jkollhomx `pricing`.
+- **Il-mudelli bla ħlas** juru `"0"` (u `0`) meta l-prezz tagħhom ikun żero. Mudell mingħajr ringiela tal-prezzijiet
+  juri wkoll `"0"` meta l-katalgu jimmarkah bħala bla ħlas (`free: true`) jew meta jkun elenkat fil-katalgu inkorporat
+  tal-mudelli bla ħlas.
+- **Prezz mhux magħruf:** l-entrata ma jkollhiex ċavetta `pricing`.
+- **Il-fornituri mkejla bil-krediti** (bħal Kiro) jiffatturaw għal kull talba minflok għal kull token. L-entrati tagħhom
+  jżommu l-oqsma numeriċi għal kull 1M li kellhom qabel u ma jkollhom ebda qasam ta’ sekwenza għal kull token.
+- **Il-varjanti** (IDs tal-livell tal-isforz tar-raġunament, psewdonimi mingħajr ħsieb, u mirja tal-iskoperta u tal-gateway)
+  jikkopjaw il-prezz tal-mudell li lejh jidderieġu.
+- L-oqsma jinkludu biss ir-rati bażiċi. Il-livelli ta’ kuntest twil (il-qasam numeriku `long_context`) u
+  l-multiplikaturi tal-livell tas-servizz (pereżempju Codex fast jew flex) ma jbiddlux `prompt` jew
+  `completion`.
+- L-oġġett huwa l-istess għal kull stil ta’ awtentikazzjoni, inkluża talba fl-istil Anthropic
+  b’`x-api-key` u `anthropic-version` (it-tweġiba tibqa’ `{ "object": "list",
+"data": [...] }`). Implimentazzjoni: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefissi tal-ID tal-mudelli (`?prefix=`)
+
+Il-biċċa l-kbira tal-mudelli jiġu ppubblikati taħt **prefiss tal-fornitur**. Liema prefiss tirċievi huwa kkontrollat
+mill-bandiera tal-karatteristika `MODELS_CATALOG_PREFIX_MODE`, u jista’ jiġi sovrastrutturat **għal kull talba** permezz ta’
+parametru tal-mistoqsija — utli għal klijent li jrid lista nadifa mingħajr ma jibdel l-issettjar
+tas-server kollu għal kulħadd:
 
 ```bash
-GET /v1/models?prefix=alias        # id wieħed għal kull mudell — il-prefiss qasir tal-alias
-GET /v1/models?prefix=dual         # iż-żewġ forom (il-default tas-server)
-GET /v1/models?prefix=canonical    # il-prefiss sħiħ tal-id tal-fornitur biss
+GET /v1/models?prefix=alias        # ID wieħed għal kull mudell — il-prefiss qasir tal-psewdonimu
+GET /v1/models?prefix=dual         # iż-żewġ forom (il-valur awtomatiku tas-server)
+GET /v1/models?prefix=canonical    # il-prefiss sħiħ tal-ID tal-fornitur biss
 ```
 
-| Modalità    | Joħroġ                                                  | Noti                                                                                                                                                                                                              |
-| ----------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **u** `claude/claude-sonnet-4-6` | **Default.** Iż-żewġ ids jiġu diretti lejn l-istess mudell; jinżammu sabiex il-konfigurazzjonijiet tal-klijenti li għandhom waħda mill-forom hardcoded jibqgħu jaħdmu. Bejn wieħed u ieħor jirdoppja l-katalgu.   |
-| `alias`     | `cc/claude-sonnet-4-6`                                  | Entrata waħda għal kull mudell. Il-fornituri mingħajr alias distint xorta joħorġu l-entrata tagħhom, għalhekk ma jintilef xejn.                                                                                   |
-| `canonical` | `claude/claude-sonnet-4-6`                              | Entrata waħda għal kull mudell taħt il-prefiss sħiħ tal-id tal-fornitur. Il-fornituri mingħajr alias distint (eż. `antigravity/…`, `agy/…`) joħorġu wkoll l-id uniku tagħhom hawnhekk, għalhekk ma jintilef xejn. |
+| Modalità    | Joħroġ                                                  | Noti                                                                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **u** `claude/claude-sonnet-4-6` | **Valur awtomatiku.** Iż-żewġ IDs jidderieġu lejn l-istess mudell; jinżammu sabiex il-konfigurazzjonijiet tal-klijenti li daħħlu kwalunkwe waħda mill-forom b’mod fiss jibqgħu jaħdmu. Bejn wieħed u ieħor jirdoppja l-katalgu. |
+| `alias`     | `cc/claude-sonnet-4-6`                                  | Entrata waħda għal kull mudell. Il-fornituri mingħajr psewdonimu distint xorta joħorġu l-entrata tagħhom, għalhekk ma jintilef xejn.                                                                                            |
+| `canonical` | `claude/claude-sonnet-4-6`                              | Entrata waħda għal kull mudell taħt il-prefiss sħiħ tal-ID tal-fornitur. Il-fornituri mingħajr psewdonimu distint (eż. `antigravity/…`, `agy/…`) joħorġu wkoll l-ID uniku tagħhom hawnhekk, għalhekk ma jintilef xejn.          |
 
-Mirror fil-modalità `dual` jista’ jiġi rikonoxxut ukoll mingħajr il-parametru tal-query: ikollu field `parent` li jipponta lejn l-id primarju.
+Mera fil-modalità `dual` tista’ tiġi rikonoxxuta wkoll mingħajr il-parametru tal-mistoqsija: ikollha qasam `parent`
+li jindika l-ID primarju.
 
-Il-klijenti li jirrendu selettur tal-mudelli għandhom jitolbu `?prefix=alias` — hekk tagħmel l-[estensjoni OmniCopilot għal VS Code](../guides/VSCODE-COPILOT.md).
+Il-klijenti li jirrendu selettur tal-mudelli għandhom jitolbu `?prefix=alias` — dan huwa dak li tagħmel
+[l-estensjoni OmniCopilot għal VS Code](../guides/VSCODE-COPILOT.md).
 
 ### Filtri tal-iskoperta (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` jaċċetta filtri tal-iskoperta opt-in. Mingħajr ebda wieħed minnhom, ir-risposta ma tinbidilx. Dawn jirrestrinġu l-katalgu li diġà jara min qed jagħmel it-talba (il-permessi tal-API key jiġu applikati l-ewwel), u jiġu eżegwiti qabel il-paging bl-istil ta’ OpenAI permezz ta’ `limit` / `after`:
+`GET /v1/models` jaċċetta filtri tal-iskoperta fakultattivi. Mingħajr ebda wieħed minnhom, it-tweġiba
+ma tinbidilx. Dawn inaqqsu l-katalgu li diġà jara min jagħmel it-talba (il-permessi taċ-ċavetta tal-API jiġu applikati l-ewwel),
+u jitħaddmu qabel il-paġinazzjoni `limit` / `after` fl-istil OpenAI:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # kull kapaċità elenkata trid tkun vera
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` tal-katalgu; ir-ringieli mingħajr wieħed huma `chat`
-GET /v1/models?q=sonnet&limit=10                           # tqabbil fuq id jew name mingħajr sensittività għall-ittri kapitali
+GET /v1/models?kind=embedding                              # `type` tal-katalgu; ringieli mingħajru huma `chat`
+GET /v1/models?q=sonnet&limit=10                           # tqabbil mhux sensittiv għall-ittri kapitali jew żgħar fuq l-ID jew l-isem
 ```
 
 | Parametru     | Valuri                                                                                              |
@@ -492,12 +541,14 @@ GET /v1/models?q=sonnet&limit=10                           # tqabbil fuq id jew 
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 karattru                                                                                      |
 
-Valur mhux magħruf, jew `min_context` li mhuwiex numru sħiħ mhux negattiv (pereżempju `1.5`), jirritorna HTTP `400` u l-messaġġ jelenka l-valuri validi. Implimentazzjoni:
+Valur mhux magħruf, jew `min_context` li mhuwiex numru sħiħ mhux negattiv (pereżempju `1.5`),
+jirritorna HTTP `400` u l-messaġġ jelenka l-valuri validi. Implimentazzjoni:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Lista qasira ta’ mudelli (`POST /v1/models/query`)
 
-`POST /v1/models/query` jirritorna lista qasira u deterministika mill-istess katalgu, bl-istess awtentikazzjoni u viżibbiltà għal kull key bħal `GET /v1/models`:
+`POST /v1/models/query` jirritorna lista qasira u deterministika mill-istess katalgu, bl-istess
+awtentikazzjoni u viżibbiltà għal kull ċavetta bħal `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -510,23 +561,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Kull field huwa fakultattiv. `capabilities` u `exclude` jaċċettaw array jew string separata b’virgoli; `max_output` jitqabbel ma’ `max_output_tokens`. Ir-riżultati jiġu magħżula skont `owned_by`, imbagħad skont `id`. Il-valur default ta’ `limit` huwa `20`, u l-valuri ogħla minn `100` jiġu limitati għal `100`. JSON invalidu, field mhux magħruf jew valur invalidu jirritorna HTTP `400`.
+Kull qasam huwa fakultattiv. `capabilities` u `exclude` jaċċettaw array jew string separata b’virgoli;
+`max_output` jitqabbel ma’ `max_output_tokens`. Ir-riżultati jiġu magħżula skont `owned_by`, imbagħad `id`.
+`limit` għandu valur predefinit ta’ `20` u l-valuri ogħla minn `100` jiġu limitati għal `100`. JSON invalidu, qasam mhux magħruf
+jew valur invalidu jirritorna HTTP `400`.
 
 ### Mudelli taċ-chat moħbija individwalment
 
-Mudell immarkat bħala **Hidden** fil-paġna tal-fornitur tiegħu jiġi eskluż mill-katalgu u miċħud b’HTTP `404` / `model_not_found` meta jintalab b’mod espliċitu. Il-kontroll juża l-fornitur u l-mudell riżolti, inklużi l-aliases tal-fornituri, il-prefissi tan-nodi ta’ fornituri kompatibbli, u d-defaults tal-konnessjoni. Combo jaqbeż it-targets moħbija u jista’ juża wieħed viżibbli fl-istess grupp; meta ma jibqa’ ebda target eżegwibbli, jirritorna l-istess kodiċi ta’ żball. It-tneħħija tal-ħabi tidħol fis-seħħ mat-talba li jmiss. Is-sostituzzjonijiet tal-viżibbiltà għal immaġnijiet biss ma jaħbux il-mudell taċ-chat bl-istess ID.
+Mudell immarkat bħala **Moħbi** fil-paġna tal-fornitur tiegħu jiġi eskluż mill-katalgu u miċħud
+b’HTTP `404` / `model_not_found` meta jintalab b’mod espliċitu. Il-verifika tuża l-fornitur
+u l-mudell riżolti, inklużi l-aliases tal-fornitur, il-prefissi tan-nodi ta’ fornituri kompatibbli, u
+l-valuri predefiniti tal-konnessjoni. Combo jaqbeż il-miri moħbija u jista’ juża mudell aħwa viżibbli; meta ma
+jibqa’ l-ebda mira eżegwibbli, jirritorna l-istess kodiċi tal-iżball. It-tneħħija tal-istat moħbi tidħol fis-seħħ mat-talba
+li jmiss. Is-sostituzzjonijiet tal-viżibbiltà għall-immaġnijiet biss ma jaħbux il-mudell taċ-chat bl-istess ID.
 
-Dan l-issettjar individwali tal-mudell huwa separat mil-[listi allow/deny għall-espożizzjoni tal-mudelli](../routing/MODEL_EXPOSURE_LIST.md), li jiffiltraw il-pubblikazzjoni fil-katalgu u l-kandidati għar-routing awtomatiku filwaqt li jżommu d-dispatch espliċitu. Il-permessi tal-mudelli għall-API keys jibqgħu japplikaw b’mod indipendenti. Il-modalità default tal-prefiss tal-katalgu tibqa’ `dual`.
+Dan l-issettjar individwali tal-mudell huwa separat mil-
+[listi ta’ permess/projbizzjoni għall-esponiment tal-mudelli](../routing/MODEL_EXPOSURE_LIST.md), li jiffiltraw ir-reklamar
+tal-katalgu u l-kandidati għall-instradar awtomatiku filwaqt li jżommu d-dispaċċ espliċitu. Il-permessi tal-mudelli
+għaċ-ċwievet tal-API jibqgħu japplikaw b’mod indipendenti. Il-modalità predefinita tal-prefiss tal-katalgu tibqa’ `dual`.
 
-### Varjanti tal-mudelli mingħajr thinking
+### Varjanti ta’ mudelli mingħajr ħsieb
 
-Għall-mudelli Claude li jappoġġjaw thinking, `/v1/models` jippubblika wkoll varjant **mingħajr thinking** li l-id tiegħu jkollu l-prefiss `claude-3-omniroute-no-thinking/`:
+Għall-mudelli Claude li jappoġġjaw il-ħsieb, `/v1/models` jirreklama wkoll varjant **mingħajr ħsieb** li l-id tiegħu għandu l-prefiss `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-L-għażla ta’ dan l-id (eż. f’konfigurazzjoni ta’ Claude Code li dejjem tehmeż blokka `thinking`) terġa’ tirriżolvi għall-`<provider>/<model>` reali bir-raġunament imrażżan — `thinking:{type:"disabled"}` fil-perkors `/v1/messages`, jew bil-kampijiet `reasoning`/`reasoning_effort` imneħħija fil-perkors `/v1/chat/completions`. Il-varjant jidher biss għal mudelli tal-familja Claude li jappoġġjaw il-ħsieb **u** jirrispettaw `disabled` (għalhekk, eż. mudelli adaptive-only li jirrifjutaw `disabled` huma esklużi). L-operaturi jistgħu jġiegħlu l-varjant ikun mixgħul jew mitfi għal kull mudell permezz ta’ `ModelSpec.noThinkingAlias`.
+Meta jintgħażel dan l-id (pereżempju f’konfigurazzjoni ta’ Claude Code li dejjem tehmeż blokka `thinking`), dan jiġi riżolt lura għall-`<provider>/<model>` reali bir-raġunament imrażżan — `thinking:{type:"disabled"}` fil-passaġġ `/v1/messages`, jew jitneħħew l-oqsma `reasoning`/`reasoning_effort` fil-passaġġ `/v1/chat/completions`. Il-varjant jiġi elenkat biss għal mudelli tal-familja Claude li jappoġġjaw il-ħsieb **u** jirrispettaw `disabled` (għalhekk, pereżempju, mudelli adattivi biss li jirrifjutaw `disabled` jiġu esklużi). L-operaturi jistgħu jisfurzaw il-varjant mixgħul jew mitfi għal kull mudell permezz ta’ `ModelSpec.noThinkingAlias`.
 
 ---
 

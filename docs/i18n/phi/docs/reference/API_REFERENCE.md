@@ -445,7 +445,7 @@ ang default na region ay `us-central1`. Isinasagawa ang parehong resolution sa `
 
 ---
 
-## Ilista ang mga Modelo
+## Listahan ng mga Modelo
 
 ```bash
 GET /v1/models
@@ -454,59 +454,101 @@ Authorization: Bearer your-api-key
 → Ibinabalik ang lahat ng modelo ng chat, embedding, at image + mga combo sa format ng OpenAI
 ```
 
+### Mga presyo ng modelo (`pricing`)
+
+May kasamang `pricing` object ang isang entry kapag alam ng OmniRoute ang presyo ng modelo. Ang presyo ay nagmumula
+sa talahanayan ng pagpepresyo na ginagamit ng accounting ng gastos: mga built-in na default, mga naka-sync na presyo, at
+mga override na itinakda sa pamamagitan ng `/api/pricing`. Mga presyong nakalista ang mga ito, kaya nagpapakita rin ang mga provider ng subscription
+ng presyo kada token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Mga field                                                       | Unit                           | Mga tala                                                                                                                                                                                        |
+| --------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD kada token, decimal string | Compatible sa OpenRouter, hindi kailanman nasa exponent notation. Lumalabas lamang ang dalawang cache field kapag may presyo ang cache.                                                         |
+| `input`, `output`, `cached`, `cache_creation`                   | USD kada 1M token, number      | Mga field mula sa mga naunang bersyon ng katalogo, pinanatili para sa mga kasalukuyang client. Lumalabas din ang `reasoning` at `long_context` kapag mayroon ang row ng pagpepresyo ng mga ito. |
+
+- Ang mga **Combo** ay may presyo ng kanilang unang nakikitang target. Pumipili ang mga built-in na `auto/*` combo ng
+  target sa oras ng request, kaya wala silang `pricing`.
+- Ipinapakita ng mga **Libreng modelo** ang `"0"` (at `0`) kapag zero ang kanilang presyo. Ang modelong walang row ng pagpepresyo
+  ay nagpapakita rin ng `"0"` kapag minarkahan ito ng katalogo bilang libre (`free: true`) o nakalista ito sa built-in na katalogo
+  ng mga libreng modelo.
+- **Hindi alam na presyo:** walang `pricing` key ang entry.
+- Ang mga **Provider na sinusukat ayon sa credit** (gaya ng Kiro) ay naniningil kada request sa halip na kada token. Pinapanatili ng kanilang
+  mga entry ang mga numeric na per-1M field na mayroon sila dati at wala silang per-token na string field.
+- Kinokopya ng mga **Variant** (mga reasoning-effort id, no-thinking alias, discovery at gateway mirror)
+  ang presyo ng modelong kanilang niruruta.
+- Mga base rate lamang ang nilalaman ng mga field. Hindi binabago ng mga long-context tier (ang numeric na `long_context` field) at
+  mga service-tier multiplier (halimbawa, Codex fast o flex) ang `prompt` o
+  `completion`.
+- Pareho ang object para sa bawat paraan ng authentication, kabilang ang isang Anthropic-style
+  request na may `x-api-key` at `anthropic-version` (nananatiling `{ "object": "list",
+"data": [...] }` ang response). Implementasyon: `src/app/api/v1/models/catalogPricing.ts`.
+
 ### Mga prefix ng model id (`?prefix=`)
 
-Karamihan sa mga modelo ay inilalathala sa ilalim ng isang **provider prefix**. Ang prefix na makukuha mo ay kinokontrol ng
+Karamihan ng mga modelo ay inilalathala sa ilalim ng isang **provider prefix**. Ang prefix na makukuha mo ay kinokontrol ng
 `MODELS_CATALOG_PREFIX_MODE` feature flag, at maaaring i-override **sa bawat request** gamit ang isang
-query parameter — kapaki-pakinabang para sa client na nais ng malinis na listahan nang hindi binabago ang setting
-sa buong server para sa lahat:
+query parameter—kapaki-pakinabang para sa client na nais ng malinis na listahan nang hindi binabago ang server-wide
+na setting para sa lahat:
 
 ```bash
-GET /v1/models?prefix=alias        # isang id bawat modelo — ang maikling alias prefix
+GET /v1/models?prefix=alias        # isang id kada modelo—ang maikling alias prefix
 GET /v1/models?prefix=dual         # parehong anyo (default ng server)
 GET /v1/models?prefix=canonical    # ang buong provider-id prefix lamang
 ```
 
-| Mode        | Inilalabas                                               | Mga Tala                                                                                                                                                                                                          |
-| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **at** `claude/claude-sonnet-4-6` | **Default.** Ang parehong id ay niruruta sa iisang modelo; pinanatili upang patuloy na gumana ang mga configuration ng client na naka-hardcode sa alinmang anyo. Halos dinodoble nito ang catalog.                |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Isang entry bawat modelo. Inilalabas pa rin ng mga provider na walang natatanging alias ang kanilang entry, kaya walang nawawala.                                                                                 |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Isang entry bawat modelo sa ilalim ng buong provider-id prefix. Inilalabas din dito ng mga provider na walang natatanging alias (hal. `antigravity/…`, `agy/…`) ang kanilang nag-iisang id, kaya walang nawawala. |
+| Mode        | Inilalabas                                               | Mga tala                                                                                                                                                                                                        |
+| ----------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **at** `claude/claude-sonnet-4-6` | **Default.** Ang parehong id ay nagruruta sa iisang modelo; pinanatili upang patuloy na gumana ang mga config ng client na nag-hardcode sa alinmang anyo. Halos dinodoble nito ang katalogo.                    |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Isang entry kada modelo. Inilalabas pa rin ng mga provider na walang hiwalay na alias ang kanilang entry, kaya walang nawawala.                                                                                 |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Isang entry kada modelo sa ilalim ng buong provider-id prefix. Inilalabas din dito ng mga provider na walang hiwalay na alias (hal. `antigravity/…`, `agy/…`) ang kanilang nag-iisang id, kaya walang nawawala. |
 
-Maaari ring makilala ang isang mirror na nasa `dual` mode kahit walang query parameter: mayroon itong `parent`
+Maaari ring makilala ang isang `dual`-mode mirror nang walang query parameter: mayroon itong `parent`
 field na tumuturo sa pangunahing id.
 
-Dapat humiling ang mga client na nagpapakita ng model picker gamit ang `?prefix=alias` — ito ang ginagawa ng
+Dapat humiling ang mga client na nagre-render ng tagapili ng modelo gamit ang `?prefix=alias`—ito ang ginagawa ng
 [OmniCopilot VS Code extension](../guides/VSCODE-COPILOT.md).
 
-### Mga discovery filter (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Mga filter sa discovery (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-Tumatanggap ang `GET /v1/models` ng mga opsyonal na discovery filter. Kung wala ang alinman sa mga ito, hindi
-magbabago ang response. Pinapaliit ng mga ito ang catalog na nakikita na ng tumatawag (unang inilalapat ang mga pahintulot ng API key),
+Tumatanggap ang `GET /v1/models` ng mga opt-in na filter sa discovery. Kung wala ang alinman sa mga ito, hindi
+magbabago ang response. Pinapaliit ng mga ito ang katalogong nakikita na ng tumatawag (unang inilalapat ang mga pahintulot ng API key),
 at pinapatakbo ang mga ito bago ang OpenAI-style na `limit` / `after` paging:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # dapat true ang bawat nakalistang capability
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` ng catalog; ang mga row na wala nito ay `chat`
+GET /v1/models?kind=embedding                              # `type` ng katalogo; ang mga row na wala nito ay `chat`
 GET /v1/models?q=sonnet&limit=10                           # case-insensitive na pagtutugma sa id o pangalan
 ```
 
-| Param         | Mga Value                                                                                           |
+| Parametro     | Mga Value                                                                                           |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | non-negative integer, ikinukumpara sa `context_length`                                              |
+| `min_context` | integer na hindi negatibo, inihahambing sa `context_length`                                         |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
-| `q`           | 1–200 character                                                                                     |
+| `q`           | 1–200 karakter                                                                                      |
 
-Ang hindi kilalang value, o isang `min_context` na hindi non-negative integer (halimbawa, `1.5`),
-ay nagbabalik ng HTTP `400`, at inililista ng mensahe ang mga valid na value. Implementation:
+Ang hindi kilalang value, o isang `min_context` na hindi integer na hindi negatibo (halimbawa, `1.5`),
+ay nagbabalik ng HTTP `400`, at inililista ng mensahe ang mga wastong value. Implementasyon:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Maikling listahan ng modelo (`POST /v1/models/query`)
+### Maikling listahan ng mga modelo (`POST /v1/models/query`)
 
-Nagbabalik ang `POST /v1/models/query` ng maikli at deterministic na listahan mula sa parehong catalog, na may parehong
-auth at visibility sa bawat key gaya ng `GET /v1/models`:
+Ang `POST /v1/models/query` ay nagbabalik ng maikli at deterministikong listahan mula sa parehong katalogo, na may parehong
+awtentikasyon at visibility ayon sa key gaya ng `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -520,33 +562,33 @@ Content-Type: application/json
 ```
 
 Opsyonal ang bawat field. Tumatanggap ang `capabilities` at `exclude` ng array o string na pinaghihiwalay ng kuwit;
-ikinukumpara ang `max_output` sa `max_output_tokens`. Inaayos ang mga resulta ayon sa `owned_by`, pagkatapos ay sa `id`.
-Ang default ng `limit` ay `20`, at nililimitahan sa `100` ang mga value na higit sa `100`. Ang invalid na JSON, hindi kilalang
-field, o invalid na value ay nagbabalik ng HTTP `400`.
+inihahambing ang `max_output` sa `max_output_tokens`. Pinagbubukod-bukod muna ang mga resulta ayon sa `owned_by`, at pagkatapos ay ayon sa `id`.
+Ang default ng `limit` ay `20`, at nililimitahan sa `100` ang mga value na higit sa `100`. Ang di-wastong JSON, hindi kilalang
+field, o di-wastong value ay nagbabalik ng HTTP `400`.
 
 ### Mga indibidwal na nakatagong chat model
 
-Ang modelong minarkahang **Hidden** sa page ng provider nito ay hindi isinasama sa catalog at tinatanggihan
-gamit ang HTTP `404` / `model_not_found` kapag tahasang hiniling. Ginagamit ng pagsusuri ang na-resolve na
-provider at modelo, kabilang ang mga provider alias, compatible-provider node prefix, at
-mga default ng connection. Nilalaktawan ng combo ang mga nakatagong target at maaari itong gumamit ng nakikitang sibling; kapag walang
-natitirang executable na target, ibinabalik nito ang parehong error code. Magkakabisa ang pag-unhide sa susunod na
+Ang modelong minarkahang **Nakatago** sa page ng provider nito ay hindi isinasama sa katalogo at tinatanggihan
+gamit ang HTTP `404` / `model_not_found` kapag tahasang hiniling. Ginagamit ng pagsusuri ang natukoy na
+provider at modelo, kabilang ang mga alias ng provider, mga prefix ng node ng compatible na provider, at
+mga default ng koneksyon. Nilalaktawan ng combo ang mga nakatagong target at maaari itong gumamit ng nakikitang kaparehong modelo; kapag walang
+natitirang target na maaaring patakbuhin, ibinabalik nito ang parehong error code. Magkakabisa ang pag-aalis sa pagkakatago sa susunod na
 request. Hindi itinatago ng mga visibility override na para lamang sa image ang chat model na may parehong ID.
 
 Hiwalay ang setting na ito ng indibidwal na modelo sa
-[mga allow/deny list para sa model exposure](../routing/MODEL_EXPOSURE_LIST.md), na nagfi-filter sa paglalathala sa catalog
-at mga kandidato sa auto-routing habang pinananatili ang tahasang dispatch. Patuloy na nalalapat nang hiwalay ang mga pahintulot
-ng modelo para sa API key. Nananatiling `dual` ang default na prefix mode ng catalog.
+[mga allow/deny list para sa paglalantad ng modelo](../routing/MODEL_EXPOSURE_LIST.md), na nagfi-filter sa pag-aanunsiyo ng katalogo
+at sa mga kandidato para sa awtomatikong routing habang pinapanatili ang tahasang dispatch. Patuloy na nalalapat nang hiwalay ang mga
+pahintulot ng modelo para sa API key. Nananatiling `dual` ang default na prefix mode ng katalogo.
 
-### Mga variant ng modelo na walang thinking
+### Mga variant ng modelong walang thinking
 
-Para sa mga Claude model na may kakayahang mag-thinking, naglalathala rin ang `/v1/models` ng variant na **walang thinking** na ang id ay may prefix na `claude-3-omniroute-no-thinking/`:
+Para sa mga Claude model na may kakayahang mag-thinking, nag-aanunsiyo rin ang `/v1/models` ng isang **no-thinking** na variant na may id na nilalagyan ng prefix na `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Ang pagpili sa id na ito (hal., sa isang Claude Code config na palaging nag-a-attach ng `thinking` block) ay bumabalik sa tunay na `<provider>/<model>` nang naka-suppress ang reasoning — `thinking:{type:"disabled"}` sa `/v1/messages` path, o inaalis ang mga field na `reasoning`/`reasoning_effort` sa `/v1/chat/completions` path. Inililista lamang ang variant para sa mga Claude-family model na sumusuporta sa thinking **at** sumusunod sa `disabled` (kaya, hal., hindi kasama ang mga adaptive-only model na tumatanggi sa `disabled`). Maaaring sapilitang i-on o i-off ng mga operator ang variant para sa bawat model sa pamamagitan ng `ModelSpec.noThinkingAlias`.
+Kapag pinili ang id na ito (halimbawa, sa isang Claude Code config na palaging naglalakip ng `thinking` block), muli itong nire-resolve sa tunay na `<provider>/<model>` nang naka-suppress ang reasoning — `thinking:{type:"disabled"}` sa `/v1/messages` path, o inaalis ang mga field na `reasoning`/`reasoning_effort` sa `/v1/chat/completions` path. Inililista lamang ang variant para sa mga Claude-family model na sumusuporta sa thinking **at** sumusunod sa `disabled` (kaya, halimbawa, hindi isinasama ang mga adaptive-only model na tumatanggi sa `disabled`). Maaaring puwersahang i-on o i-off ng mga operator ang variant sa bawat modelo sa pamamagitan ng `ModelSpec.noThinkingAlias`.
 
 ---
 

@@ -454,39 +454,81 @@ Authorization: Bearer your-api-key
 → Filleann sé gach samhail comhrá, leabaithe agus íomhá + teaglamaí i bhformáid OpenAI
 ```
 
-### Réimí aitheantais samhla (`?prefix=`)
+### Praghsanna samhlacha (`pricing`)
 
-Fógraítear formhór na samhlacha faoi **réim soláthraí**. Is í an bhratach ghné
-`MODELS_CATALOG_PREFIX_MODE` a rialaíonn cén réim a fhaigheann tú, agus is féidir í a shárú **do gach iarratas ar leith** le
-paraiméadar iarratais — úsáideach do chliant atá ag iarraidh liosta glan gan an socrú ar fud an fhreastalaí
+Bíonn oibiacht `pricing` in iontráil nuair is eol do OmniRoute praghas na samhla. Tagann an praghas
+ón tábla praghsála a úsáideann cuntasaíocht costas: réamhshocruithe ionsuite, praghsanna sioncronaithe, agus
+sáruithe a socraíodh trí `/api/pricing`. Is praghsanna liosta iad seo, mar sin taispeánann soláthraithe síntiúis
+praghas in aghaidh an chomhartha freisin.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Réimsí                                                          | Aonad                                             | Nótaí                                                                                                                                                                               |
+| --------------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD in aghaidh an chomhartha, teaghrán deachúlach | Comhoiriúnach le OpenRouter, agus ní bhíonn sé i nodaireacht easpónantúil riamh. Ní bhíonn an dá réimse taisce le feiceáil ach amháin nuair atá praghas taisce ann.                 |
+| `input`, `output`, `cached`, `cache_creation`                   | USD in aghaidh 1M comhartha, uimhir               | Réimsí ó leaganacha níos luaithe den chatalóg, coinnithe do chliaint atá ann cheana. Bíonn `reasoning` agus `long_context` le feiceáil freisin nuair atá siad sa tsraith praghsála. |
+
+- Iompraíonn **teaglamaí** praghas a gcéad sprice infheicthe. Roghnaíonn teaglamaí ionsuite `auto/*`
+  sprioc tráth na hiarrata, mar sin níl `pricing` acu.
+- Taispeánann **samhlacha saor in aisce** `"0"` (agus `0`) nuair is nialas a bpraghas. Taispeánann samhail nach bhfuil sraith praghsála aici
+  `"0"` freisin nuair a mharcálann an chatalóg mar shaor in aisce í (`free: true`) nó nuair atá sí
+  i gcatalóg ionsuite na samhlacha saor in aisce.
+- **Praghas anaithnid:** níl eochair `pricing` san iontráil.
+- Gearrann **soláthraithe a mhéadraítear de réir creidmheasa** (amhail Kiro) táille in aghaidh na hiarrata seachas in aghaidh an chomhartha. Coinníonn a gcuid
+  iontrálacha na réimsí uimhriúla in aghaidh 1M a bhí acu roimhe seo agus níl aon réimsí teaghráin in aghaidh an chomhartha iontu.
+- Cóipeálann **malairtí** (aitheantais iarrachta réasúnaíochta, ailiasanna gan smaointeoireacht, scátháin fionnachtana agus geata)
+  praghas na samhla a seolann siad chuici.
+- Ní iompraíonn na réimsí ach bunrátaí. Ní athraíonn sraitheanna comhthéacs fhada (an réimse uimhriúil `long_context`) ná
+  iolraitheoirí sraithe seirbhíse (mar shampla Codex tapa nó solúbtha) `prompt` ná
+  `completion`.
+- Is ionann an oibiacht do gach stíl fíordheimhnithe, lena n-áirítear iarratas ar stíl Anthropic
+  le `x-api-key` agus `anthropic-version` (fanann an freagra mar `{ "object": "list",
+"data": [...] }`). Cur chun feidhme: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Réimíreanna aitheantais samhlacha (`?prefix=`)
+
+Fógraítear formhór na samhlacha faoi **réimír soláthraí**. Is í an bhratach ghné
+`MODELS_CATALOG_PREFIX_MODE` a rialaíonn cén réimír a fhaigheann tú, agus is féidir í a shárú **in aghaidh na hiarrata** le
+paraiméadar iarratais — úsáideach do chliant ar mian leis liosta glan gan an socrú ar fud an fhreastalaí
 a athrú do gach duine eile:
 
 ```bash
-GET /v1/models?prefix=alias        # aitheantas amháin in aghaidh na samhla — an réim ghearr ailias
+GET /v1/models?prefix=alias        # aitheantas amháin in aghaidh na samhla — réimír ghearr an ailias
 GET /v1/models?prefix=dual         # an dá fhoirm (réamhshocrú an fhreastalaí)
-GET /v1/models?prefix=canonical    # réim iomlán aitheantas an tsoláthraí amháin
+GET /v1/models?prefix=canonical    # réimír iomlán aitheantais an tsoláthraí amháin
 ```
 
-| Mód         | Aschur                                                     | Nótaí                                                                                                                                                                                                                                   |
-| ----------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **agus** `claude/claude-sonnet-4-6` | **Réamhshocrú.** Seolann an dá aitheantas chuig an tsamhail chéanna; coinnítear iad ionas go leanfaidh cumraíochtaí cliant a chruachódaigh ceachtar den dá fhoirm ag obair. Déanann sé méid na catalóige a dhúbailt, a bheag nó a mhór. |
-| `alias`     | `cc/claude-sonnet-4-6`                                     | Iontráil amháin in aghaidh na samhla. Eisíonn soláthraithe nach bhfuil ailias ar leith acu a n-iontráil fós, mar sin ní chailltear aon rud.                                                                                             |
-| `canonical` | `claude/claude-sonnet-4-6`                                 | Iontráil amháin in aghaidh na samhla faoi réim iomlán aitheantas an tsoláthraí. Eisíonn soláthraithe nach bhfuil ailias ar leith acu (m.sh. `antigravity/…`, `agy/…`) a n-aon aitheantas anseo freisin, mar sin ní chailltear aon rud.  |
+| Mód         | Aschur                                                     | Nótaí                                                                                                                                                                                                                                     |
+| ----------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **agus** `claude/claude-sonnet-4-6` | **Réamhshocrú.** Seoltar an dá aitheantas chuig an tsamhail chéanna; coinnítear iad ionas go leanfaidh cumraíochtaí cliant a chruachódaigh ceachtar den dá fhoirm ag obair. Méadaíonn sé méid na catalóige faoi dhó, a bheag nó a mhór.   |
+| `alias`     | `cc/claude-sonnet-4-6`                                     | Iontráil amháin in aghaidh na samhla. Eisíonn soláthraithe nach bhfuil ailias ar leith acu a n-iontráil fós, mar sin ní chailltear aon rud.                                                                                               |
+| `canonical` | `claude/claude-sonnet-4-6`                                 | Iontráil amháin in aghaidh na samhla faoi réimír iomlán aitheantais an tsoláthraí. Eisíonn soláthraithe nach bhfuil ailias ar leith acu (m.sh. `antigravity/…`, `agy/…`) a n-aon aitheantas anseo freisin, mar sin ní chailltear aon rud. |
 
-Is féidir scáthán mód `dual` a aithint gan an paraiméadar iarratais freisin: bíonn réimse `parent`
+Is féidir scáthán i mód `dual` a aithint gan paraiméadar na hiarrata freisin: bíonn réimse `parent`
 ann a dhíríonn ar an bpríomhaitheantas.
 
-Ba cheart do chliaint a rindreálann roghnóir samhla `?prefix=alias` a iarraidh — seo a dhéanann an
+Ba cheart do chliaint a rindreálann roghnóir samhlacha `?prefix=alias` a iarraidh — is é seo a dhéanann
 [síneadh OmniCopilot do VS Code](../guides/VSCODE-COPILOT.md).
 
-### Scagairí aimsithe (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Scagairí fionnachtana (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-Glacann `GET /v1/models` le scagairí roghnacha aimsithe. Gan aon cheann acu, ní athraítear
-an freagra. Caolaíonn siad an chatalóg a fheiceann an glaoiteoir cheana féin (cuirtear ceadanna eochrach API i bhfeidhm ar dtús),
-agus ritear iad roimh leathanachú `limit` / `after` de stíl OpenAI:
+Glacann `GET /v1/models` le scagairí fionnachtana roghnacha. Gan aon cheann acu, ní athraítear an
+freagra. Caolaíonn siad an chatalóg a fheiceann an glaoiteoir cheana féin (cuirtear ceadanna na heochrach API i bhfeidhm ar dtús),
+agus ritear iad roimh leathanachú ar stíl OpenAI le `limit` / `after`:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # ní mór do gach cumas liostaithe a bheith fíor
+GET /v1/models?capability=vision&capability=tool_calling   # caithfidh gach cumas liostaithe a bheith fíor
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # `type` na catalóige; is `chat` iad sraitheanna nach bhfuil ceann acu
 GET /v1/models?q=sonnet&limit=10                           # meaitseáil nach bhfuil cásíogair ar aitheantas nó ainm
@@ -500,13 +542,13 @@ GET /v1/models?q=sonnet&limit=10                           # meaitseáil nach bh
 | `q`           | 1–200 carachtar                                                                                     |
 
 Má thugtar luach anaithnid, nó `min_context` nach slánuimhir neamh-dhiúltach é (`1.5`, mar shampla),
-filleann sé HTTP `400` agus liostaítear na luachanna bailí sa teachtaireacht. Cur chun feidhme:
+seoltar HTTP `400` ar ais agus liostaítear na luachanna bailí sa teachtaireacht. Cur chun feidhme:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Gearrliosta samhlacha (`POST /v1/models/query`)
 
-Filleann `POST /v1/models/query` liosta gearr cinntitheach ón gcatalóg chéanna, leis an
-údarú céanna agus an infheictheacht chéanna de réir eochrach agus atá ag `GET /v1/models`:
+Seolann `POST /v1/models/query` liosta gearr, cinntitheach ar ais ón gcatalóg chéanna, leis an
+bhfíordheimhniú agus an infheictheacht chéanna de réir eochrach agus atá ag `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -519,34 +561,46 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Tá gach réimse roghnach. Glacann `capabilities` agus `exclude` le heagar nó le teaghrán deighilte le camóga;
-cuireann `max_output` i gcomparáid le `max_output_tokens`. Sórtáiltear torthaí de réir `owned_by`, agus ansin de réir `id`.
-Is é `20` réamhshocrú `limit` agus cuirtear teorainn `100` le luachanna os cionn `100`. Má thugtar JSON neamhbhailí, réimse anaithnid
-nó luach neamhbhailí, filleann sé HTTP `400`.
+Tá gach réimse roghnach. Glacann `capabilities` agus `exclude` le heagar nó le teaghrán de luachanna
+scartha le camóga; cuirtear `max_output` i gcomparáid le `max_output_tokens`. Sórtáiltear na torthaí
+de réir `owned_by`, agus ansin de réir `id`. Is é `20` luach réamhshocraithe `limit`, agus cuirtear
+uasteorainn `100` le luachanna os cionn `100`. Má thugtar JSON neamhbhailí, réimse anaithnid nó
+luach neamhbhailí, seoltar HTTP `400` ar ais.
 
-### Samhlacha comhrá folaithe ar leithligh
+### Samhlacha comhrá a folaíodh ar leithligh
 
-Eisiatar samhail atá marcáilte **Folaithe** ar leathanach a soláthraí ón gcatalóg agus diúltaítear di
-le HTTP `404` / `model_not_found` nuair a iarrtar go sainráite í. Úsáideann an tseiceáil an soláthraí agus an tsamhail
-réitithe, lena n-áirítear ailiasanna soláthraithe, réimí nóid soláthraithe chomhoiriúnacha, agus
-réamhshocruithe ceangail. Scipeálann teaglama spriocanna folaithe agus is féidir leis comhsamhail infheicthe a úsáid; nuair nach
-bhfuil aon sprioc inrite fágtha, filleann sé an cód earráide céanna. Tagann an dífholú i bhfeidhm ar an gcéad
-iarratas eile. Ní fholaíonn sáruithe infheictheachta d’íomhánna amháin an tsamhail chomhrá a bhfuil an t-aitheantas céanna aici.
+Déantar samhail atá marcáilte **Folaithe** ar leathanach a soláthraí a eisiamh ón gcatalóg agus
+diúltaítear di le HTTP `404` / `model_not_found` nuair a iarrtar go sainráite í. Úsáideann an
+tseiceáil an soláthraí agus an tsamhail réitithe, lena n-áirítear ailiasanna soláthraí, réimíreanna
+nód soláthraí chomhoiriúnaigh, agus réamhshocruithe ceangail. Scipeálann teaglaim spriocanna
+folaithe agus is féidir léi samhail ghaolmhar infheicthe a úsáid; nuair nach mbíonn aon sprioc
+inrite fágtha, seolann sí an cód earráide céanna ar ais. Tagann dífholú i bhfeidhm leis an gcéad
+iarratas eile. Ní fholaíonn sáruithe infheictheachta d’íomhánna amháin an tsamhail chomhrá a bhfuil
+an t-aitheantas céanna aici.
 
-Tá an socrú samhla aonair seo ar leithligh ó na
-[liostaí ceadaithe/diúltaithe nochta samhlacha](../routing/MODEL_EXPOSURE_LIST.md), a scagann fógraíocht na catalóige
-agus iarrthóirí uathródaithe agus seoladh sainráite á choinneáil acu. Leanann ceadanna samhlacha
-eochrach API de bheith i bhfeidhm go neamhspleách. Is é `dual` mód réamhshocraithe réim na catalóige fós.
+Tá socrú na samhla aonair seo ar leithligh ó na
+[liostaí ceadaithe/coiscthe maidir le nochtadh samhlacha](../routing/MODEL_EXPOSURE_LIST.md), a
+scagann foilsiú sa chatalóg agus iarrthóirí uathródaithe agus seoladh sainráite á choinneáil acu.
+Leanann ceadanna samhlacha eochracha API de bheith i bhfeidhm go neamhspleách. Is é `dual` modh
+réamhshocraithe réimíre na catalóige i gcónaí.
 
 ### Malairtí samhlacha gan smaointeoireacht
 
-I gcás samhlacha Claude atá ábalta smaoineamh, fógraíonn `/v1/models` malairt **gan smaointeoireacht** freisin a bhfuil `claude-3-omniroute-no-thinking/` mar réim ar a haitheantas:
+I gcás samhlacha Claude atá ábalta smaointeoireacht a dhéanamh, fógraíonn `/v1/models` malairt
+**gan smaointeoireacht** freisin a bhfuil `claude-3-omniroute-no-thinking/` mar réimír ar a
+haitheantas:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Má roghnaítear an t-aitheantas seo (m.sh. i gcumraíocht Claude Code a cheanglaíonn bloc `thinking` i gcónaí), réitítear ar ais é chuig an bhfíor-aitheantas `<provider>/<model>` agus réasúnaíocht faoi chois — `thinking:{type:"disabled"}` ar an gconair `/v1/messages`, nó na réimsí `reasoning`/`reasoning_effort` fágtha ar lár ar an gconair `/v1/chat/completions`. Ní liostaítear an malairt ach amháin do shamhlacha de theaghlach Claude a thacaíonn le smaointeoireacht **agus** a urramaíonn `disabled` (mar sin, mar shampla, eisiatar samhlacha oiriúnaitheacha amháin a dhiúltaíonn do `disabled`). Is féidir le hoibreoirí an mhalairt a chur i bhfeidhm nó a dhíchumasú do gach samhail ar leith trí `ModelSpec.noThinkingAlias`.
+Má roghnaítear an t-aitheantas seo (m.sh. i gcumraíocht Claude Code a cheanglaíonn bloc `thinking`
+i gcónaí), réitítear é ar ais go dtí an fíor-`<provider>/<model>` agus an réasúnaíocht faoi chois —
+`thinking:{type:"disabled"}` ar chonair `/v1/messages`, nó fágtar na réimsí `reasoning`/`reasoning_effort`
+ar lár ar chonair `/v1/chat/completions`. Ní liostaítear an mhalairt ach amháin do shamhlacha de
+theaghlach Claude a thacaíonn le smaointeoireacht **agus** a urramaíonn `disabled` (mar sin, mar
+shampla, eisiatar samhlacha oiriúnaitheacha amháin a dhiúltaíonn do `disabled`). Is féidir le
+hoibreoirí an mhalairt a fhórsáil ar siúl nó as de réir samhla trí `ModelSpec.noThinkingAlias`.
 
 ---
 

@@ -443,68 +443,110 @@ Service Account JSON 자격 증명(JWT bearer 흐름을 통해 수명이 짧은 
 
 ---
 
-## 모델 목록 조회
+## 모델 목록
 
 ```bash
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ 모든 채팅, 임베딩 및 이미지 모델과 조합을 OpenAI 형식으로 반환
+→ 모든 채팅, 임베딩 및 이미지 모델과 콤보를 OpenAI 형식으로 반환
 ```
+
+### 모델 가격 (`pricing`)
+
+OmniRoute가 모델의 가격을 알고 있는 경우 항목에 `pricing` 객체가 포함됩니다. 가격은
+비용 산정에 사용되는 가격표, 즉 기본 제공 기본값, 동기화된 가격 및
+`/api/pricing`을 통해 설정된 재정의 값에서 가져옵니다. 이는 정가이므로 구독형 제공자에도
+토큰당 가격이 표시됩니다.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| 필드                                                            | 단위                      | 참고                                                                                                                                        |
+| --------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | 토큰당 USD, 10진수 문자열 | OpenRouter와 호환되며 지수 표기법은 사용하지 않습니다. 두 캐시 필드는 캐시 가격이 있는 경우에만 표시됩니다.                                 |
+| `input`, `output`, `cached`, `cache_creation`                   | 100만 토큰당 USD, 숫자    | 이전 카탈로그 버전의 필드로, 기존 클라이언트를 위해 유지됩니다. 가격 행에 `reasoning` 및 `long_context`가 있는 경우 해당 필드도 표시됩니다. |
+
+- **콤보**에는 표시되는 첫 번째 대상의 가격이 적용됩니다. 기본 제공 `auto/*` 콤보는
+  요청 시 대상을 선택하므로 `pricing`이 없습니다.
+- **무료 모델**은 가격이 0일 때 `"0"`(및 `0`)을 표시합니다. 가격 행이 없는 모델도
+  카탈로그에서 무료로 표시되거나(`free: true`) 기본 제공 무료 모델
+  카탈로그에 포함된 경우 `"0"`을 표시합니다.
+- **알 수 없는 가격:** 해당 항목에 `pricing` 키가 없습니다.
+- **크레딧 기준 과금 제공자**(예: Kiro)는 토큰이 아닌 요청 단위로 요금을 청구합니다. 해당
+  항목은 이전부터 있던 100만 토큰당 숫자 필드를 유지하며 토큰당 문자열 필드는 포함하지 않습니다.
+- **변형**(추론 강도 ID, 비사고 별칭, 디스커버리 및 게이트웨이 미러)은
+  라우팅 대상 모델의 가격을 복사합니다.
+- 필드에는 기본 요금만 포함됩니다. 긴 컨텍스트 구간(숫자형 `long_context` 필드)과
+  서비스 티어 배수(예: Codex fast 또는 flex)는 `prompt` 또는
+  `completion`을 변경하지 않습니다.
+- 이 객체는 `x-api-key` 및 `anthropic-version`을 사용하는 Anthropic 스타일
+  요청을 포함하여 모든 인증 방식에서 동일합니다(응답은 `{ "object": "list",
+"data": [...] }` 형식을 유지합니다). 구현: `src/app/api/v1/models/catalogPricing.ts`.
 
 ### 모델 ID 접두사 (`?prefix=`)
 
 대부분의 모델은 **제공자 접두사** 아래에 표시됩니다. 어떤 접두사를 사용할지는
-`MODELS_CATALOG_PREFIX_MODE` 기능 플래그로 제어되며, 쿼리 매개변수를 사용하여 **요청별로**
-재정의할 수 있습니다. 이는 다른 모든 사용자의 서버 전역 설정을 변경하지 않고 깔끔한 목록을
-원하는 클라이언트에 유용합니다.
+`MODELS_CATALOG_PREFIX_MODE` 기능 플래그로 제어되며, 쿼리 매개변수를 사용하여
+**요청별로** 재정의할 수 있습니다. 이는 모든 사용자에 대한 서버 전체 설정을 변경하지 않고
+깔끔한 목록을 원하는 클라이언트에 유용합니다.
 
 ```bash
-GET /v1/models?prefix=alias        # 모델마다 하나의 ID — 짧은 별칭 접두사
+GET /v1/models?prefix=alias        # 모델당 하나의 ID — 짧은 별칭 접두사
 GET /v1/models?prefix=dual         # 두 형식 모두(서버 기본값)
 GET /v1/models?prefix=canonical    # 전체 제공자 ID 접두사만
 ```
 
-| 모드        | 출력                                                     | 참고                                                                                                                                                                          |
-| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **및** `claude/claude-sonnet-4-6` | **기본값.** 두 ID 모두 동일한 모델로 라우팅됩니다. 두 형식 중 하나를 하드코딩한 클라이언트 설정이 계속 작동하도록 유지됩니다. 카탈로그 크기는 대략 두 배가 됩니다.            |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | 모델마다 항목 하나가 제공됩니다. 고유한 별칭이 없는 제공자도 해당 항목을 계속 출력하므로 누락되는 것은 없습니다.                                                              |
-| `canonical` | `claude/claude-sonnet-4-6`                               | 전체 제공자 ID 접두사 아래에 모델마다 항목 하나가 제공됩니다. 고유한 별칭이 없는 제공자(예: `antigravity/…`, `agy/…`)도 여기에서 단일 ID를 출력하므로 누락되는 것은 없습니다. |
+| 모드        | 출력                                                     | 참고                                                                                                                                                                            |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **및** `claude/claude-sonnet-4-6` | **기본값입니다.** 두 ID는 동일한 모델로 라우팅됩니다. 두 형식 중 하나를 하드코딩한 클라이언트 설정이 계속 작동하도록 유지됩니다. 카탈로그 크기가 대략 두 배가 됩니다.           |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | 모델당 하나의 항목입니다. 별도의 별칭이 없는 제공자도 해당 항목을 계속 출력하므로 누락되는 항목이 없습니다.                                                                     |
+| `canonical` | `claude/claude-sonnet-4-6`                               | 전체 제공자 ID 접두사 아래에 모델당 하나의 항목이 표시됩니다. 별도의 별칭이 없는 제공자(예: `antigravity/…`, `agy/…`)도 여기에서 단일 ID를 출력하므로 누락되는 항목이 없습니다. |
 
 `dual` 모드 미러는 쿼리 매개변수 없이도 식별할 수 있습니다. 기본 ID를 가리키는 `parent`
-필드가 포함되어 있기 때문입니다.
+필드가 포함되어 있습니다.
 
 모델 선택기를 렌더링하는 클라이언트는 `?prefix=alias`를 요청해야 합니다. 이는
 [OmniCopilot VS Code 확장 프로그램](../guides/VSCODE-COPILOT.md)에서 사용하는 방식입니다.
 
-### 탐색 필터 (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### 디스커버리 필터 (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models`는 선택적으로 사용할 수 있는 탐색 필터를 지원합니다. 이러한 필터가 없으면 응답은
-변경되지 않습니다. 필터는 호출자가 이미 볼 수 있는 카탈로그 범위를 좁히며(API 키 권한이 먼저 적용됨),
-OpenAI 스타일의 `limit` / `after` 페이지 처리 전에 실행됩니다.
+`GET /v1/models`는 선택적으로 사용하는 디스커버리 필터를 지원합니다. 이러한 필터가 없으면 응답은
+변경되지 않습니다. 필터는 호출자가 이미 볼 수 있는 카탈로그의 범위를 좁히며(API 키 권한이 먼저 적용됨),
+OpenAI 스타일 `limit` / `after` 페이지네이션보다 먼저 실행됩니다.
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # 나열된 모든 기능이 참이어야 함
+GET /v1/models?capability=vision&capability=tool_calling   # 나열된 모든 기능이 true여야 함
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # 카탈로그 `type`; 값이 없는 행은 `chat`
-GET /v1/models?q=sonnet&limit=10                           # ID 또는 이름에서 대소문자를 구분하지 않고 일치
+GET /v1/models?kind=embedding                              # 카탈로그 `type`; 해당 값이 없는 행은 `chat`
+GET /v1/models?q=sonnet&limit=10                           # ID 또는 이름을 대소문자 구분 없이 검색
 ```
 
 | 매개변수      | 값                                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | `context_length`와 비교되는 음이 아닌 정수                                                          |
+| `min_context` | 음이 아닌 정수이며, `context_length`와 비교됨                                                       |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1~200자                                                                                             |
 
-알 수 없는 값이나 음이 아닌 정수가 아닌 `min_context` 값(예: `1.5`)을 지정하면
+알 수 없는 값이나 음이 아닌 정수가 아닌 `min_context`(예: `1.5`)를 지정하면
 HTTP `400`이 반환되며 메시지에 유효한 값이 나열됩니다. 구현:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### 모델 후보 목록 (`POST /v1/models/query`)
 
-`POST /v1/models/query`는 `GET /v1/models`와 동일한 카탈로그에서 짧고 결정론적인 목록을 반환하며,
-인증 및 키별 표시 범위도 동일하게 적용됩니다.
+`POST /v1/models/query`는 `GET /v1/models`와 동일한 카탈로그에서 짧고 결정적인 목록을 반환하며,
+인증 및 키별 가시성도 동일하게 적용됩니다.
 
 ```bash
 POST /v1/models/query
@@ -518,33 +560,31 @@ Content-Type: application/json
 ```
 
 모든 필드는 선택 사항입니다. `capabilities`와 `exclude`에는 배열 또는 쉼표로 구분된 문자열을 사용할 수 있으며,
-`max_output`은 `max_output_tokens`와 비교됩니다. 결과는 `owned_by`, 그다음 `id` 순으로 정렬됩니다.
-`limit`의 기본값은 `20`이며, `100`을 초과하는 값은 `100`으로 제한됩니다. 잘못된 JSON, 알 수 없는
-필드 또는 유효하지 않은 값은 HTTP `400`을 반환합니다.
+`max_output`은 `max_output_tokens`와 비교됩니다. 결과는 먼저 `owned_by`, 그다음 `id`를 기준으로 정렬됩니다.
+`limit`의 기본값은 `20`이며 `100`을 초과하는 값은 `100`으로 제한됩니다. 유효하지 않은 JSON, 알 수 없는
+필드 또는 유효하지 않은 값을 지정하면 HTTP `400`이 반환됩니다.
 
 ### 개별적으로 숨겨진 채팅 모델
 
-제공자 페이지에서 **숨김**으로 표시된 모델은 카탈로그에서 제외되며, 명시적으로 요청할 경우
-HTTP `404` / `model_not_found`로 거부됩니다. 이 검사는 제공자 별칭, 호환 제공자 노드 접두사 및
-연결 기본값을 포함하여 해석된 제공자와 모델을 사용합니다. 조합은 숨겨진 대상을 건너뛰고 표시되는
-형제 모델을 사용할 수 있습니다. 실행 가능한 대상이 남아 있지 않으면 동일한 오류 코드를 반환합니다.
-숨김 해제는 다음 요청부터 적용됩니다. 이미지 전용 표시 여부 재정의는 동일한 ID를 가진 채팅 모델을
-숨기지 않습니다.
+공급자 페이지에서 **숨김**으로 표시된 모델은 카탈로그에서 제외되며, 명시적으로 요청하면
+HTTP `404` / `model_not_found`로 거부됩니다. 이 검사는 공급자 별칭, 호환 공급자 노드 접두사 및
+연결 기본값을 포함하여 해석된 공급자와 모델을 사용합니다. 콤보는 숨겨진 대상을 건너뛰고 표시되는 형제 모델을
+사용할 수 있습니다. 실행 가능한 대상이 하나도 남지 않으면 동일한 오류 코드를 반환합니다. 숨김 해제는 다음
+요청부터 적용됩니다. 이미지 전용 가시성 재정의는 ID가 동일한 채팅 모델을 숨기지 않습니다.
 
-이 개별 모델 설정은 카탈로그 표시와 자동 라우팅 후보를 필터링하면서 명시적 디스패치는 유지하는
-[모델 노출 허용/거부 목록](../routing/MODEL_EXPOSURE_LIST.md)과 별개입니다. API 키 모델 권한도
-독립적으로 계속 적용됩니다. 기본 카탈로그 접두사 모드는 `dual`로 유지됩니다.
+이 개별 모델 설정은 명시적 디스패치를 유지하면서 카탈로그 노출 및 자동 라우팅 후보를 필터링하는
+[모델 노출 허용/거부 목록](../routing/MODEL_EXPOSURE_LIST.md)과는 별개입니다. API 키 모델
+권한도 계속 독립적으로 적용됩니다. 기본 카탈로그 접두사 모드는 `dual`로 유지됩니다.
 
 ### 비사고 모델 변형
 
-사고 기능을 지원하는 Claude 모델의 경우 `/v1/models`는 ID 앞에 `claude-3-omniroute-no-thinking/`이 붙은
-**비사고** 변형도 표시합니다.
+사고 기능을 지원하는 Claude 모델의 경우 `/v1/models`는 ID 앞에 `claude-3-omniroute-no-thinking/`이 붙은 **비사고** 변형도 제공합니다.
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-이 id를 선택하면(예: 항상 `thinking` 블록을 첨부하는 Claude Code 구성에서) 추론이 억제된 실제 `<provider>/<model>`로 다시 해석됩니다. 즉, `/v1/messages` 경로에서는 `thinking:{type:"disabled"}`가 사용되고, `/v1/chat/completions` 경로에서는 `reasoning`/`reasoning_effort` 필드가 제거됩니다. 이 변형은 thinking을 지원하면서 **동시에** `disabled`를 준수하는 Claude 계열 모델에만 표시됩니다(따라서 예를 들어 `disabled`를 거부하는 adaptive 전용 모델은 제외됩니다). 운영자는 `ModelSpec.noThinkingAlias`를 통해 모델별로 이 변형을 강제로 활성화하거나 비활성화할 수 있습니다.
+이 ID를 선택하면(예: 항상 `thinking` 블록을 첨부하는 Claude Code 구성에서) 추론이 억제된 상태로 실제 `<provider>/<model>`에 다시 해석됩니다. 즉, `/v1/messages` 경로에서는 `thinking:{type:"disabled"}`가 적용되고 `/v1/chat/completions` 경로에서는 `reasoning`/`reasoning_effort` 필드가 제거됩니다. 이 변형은 사고 기능을 지원하면서 **동시에** `disabled`를 준수하는 Claude 계열 모델에만 표시됩니다. 따라서 `disabled`를 거부하는 적응형 전용 모델 등은 제외됩니다. 운영자는 `ModelSpec.noThinkingAlias`를 통해 모델별로 이 변형을 강제로 활성화하거나 비활성화할 수 있습니다.
 
 ---
 
@@ -1481,7 +1521,7 @@ GET /api/telemetry/summary
 ## 예산
 
 ```bash
-# 모든 API 키의 예산 상태 조회
+# 모든 API 키의 예산 상태 가져오기
 GET /api/usage/budget
 
 # 예산 설정 또는 업데이트
@@ -1498,7 +1538,7 @@ Content-Type: application/json
 }
 ```
 
-> **스키마 참고** (`setBudgetSchema`): `apiKeyId`는 필수이며, `dailyLimitUsd`, `weeklyLimitUsd`, `monthlyLimitUsd` 중 하나 이상이 0보다 커야 합니다. 선택적 필드: `warningThreshold` (0–1), `resetInterval` (`daily` | `weekly` | `monthly`), `resetTime` (`HH:MM`). 레거시 `{keyId, limit, period}` 형식은 `400 Bad Request`를 반환합니다.
+> **스키마 참고 사항** (`setBudgetSchema`): `apiKeyId`는 필수이며, `dailyLimitUsd`, `weeklyLimitUsd`, `monthlyLimitUsd` 중 하나 이상이 0보다 커야 합니다. 선택적 필드: `warningThreshold`(0–1), `resetInterval`(`daily` | `weekly` | `monthly`), `resetTime`(`HH:MM`). 기존 `{keyId, limit, period}` 형식을 사용하면 `400 Bad Request`가 반환됩니다.
 
 ## 토큰 한도
 

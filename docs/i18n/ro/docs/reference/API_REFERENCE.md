@@ -451,45 +451,87 @@ are ca valoare implicită `us-central1`. Ambele rezolvări au loc în `open-sse/
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Returnează toate modelele de chat, înglobare și imagini + combinațiile, în format OpenAI
+→ Returnează toate modelele de chat, embeddings și imagini + combinațiile, în format OpenAI
 ```
 
-### Prefixele id-urilor modelelor (`?prefix=`)
+### Prețurile modelelor (`pricing`)
 
-Majoritatea modelelor sunt prezentate sub un **prefix de furnizor**. Prefixul pe care îl primiți este controlat de
-indicatorul de funcționalitate `MODELS_CATALOG_PREFIX_MODE` și poate fi suprascris **pentru fiecare solicitare** printr-un
-parametru de interogare — util pentru un client care dorește o listă simplificată fără a modifica setarea
-la nivelul întregului server pentru toți ceilalți:
+O intrare conține un obiect `pricing` atunci când OmniRoute cunoaște prețul modelului. Prețul provine
+din tabelul de prețuri utilizat pentru calcularea costurilor: valori implicite încorporate, prețuri sincronizate și
+suprascrieri configurate prin `/api/pricing`. Acestea sunt prețuri de listă, astfel încât furnizorii pe bază de abonament afișează și
+un preț per token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Câmpuri                                                         | Unitate                       | Note                                                                                                                                                                              |
+| --------------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD per token, șir zecimal    | Compatibile cu OpenRouter, niciodată în notație exponențială. Cele două câmpuri pentru cache apar numai atunci când există un preț pentru cache.                                  |
+| `input`, `output`, `cached`, `cache_creation`                   | USD per 1M de tokenuri, număr | Câmpuri din versiunile anterioare ale catalogului, păstrate pentru clienții existenți. `reasoning` și `long_context` apar, de asemenea, atunci când rândul de prețuri le conține. |
+
+- **Combinațiile** preiau prețul primei lor ținte vizibile. Combinațiile `auto/*` încorporate aleg o
+  țintă în momentul solicitării, deci nu au `pricing`.
+- **Modelele gratuite** afișează `"0"` (și `0`) atunci când prețul lor este zero. Un model fără un rând de prețuri
+  afișează, de asemenea, `"0"` atunci când catalogul îl marchează drept gratuit (`free: true`) sau când catalogul încorporat
+  de modele gratuite îl include.
+- **Preț necunoscut:** intrarea nu are cheia `pricing`.
+- **Furnizorii contorizați prin credite** (precum Kiro) facturează per solicitare, nu per token. Intrările lor
+  păstrează câmpurile numerice per 1M pe care le aveau anterior și nu conțin câmpuri șir per token.
+- **Variantele** (identificatori pentru nivelul de efort de raționament, aliasuri fără gândire, oglinzi de descoperire și de gateway)
+  copiază prețul modelului către care direcționează.
+- Câmpurile conțin doar tarifele de bază. Nivelurile pentru context extins (câmpul numeric `long_context`) și
+  multiplicatorii nivelurilor de servicii (de exemplu Codex fast sau flex) nu modifică `prompt` sau
+  `completion`.
+- Obiectul este același pentru fiecare stil de autentificare, inclusiv pentru o solicitare în stil Anthropic
+  cu `x-api-key` și `anthropic-version` (răspunsul rămâne `{ "object": "list",
+"data": [...] }`). Implementare: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefixele identificatorilor de model (`?prefix=`)
+
+Majoritatea modelelor sunt publicate sub un **prefix de furnizor**. Prefixul primit este controlat de
+indicatorul de funcționalitate `MODELS_CATALOG_PREFIX_MODE` și poate fi suprascris **pentru fiecare solicitare** cu un
+parametru de interogare — util pentru un client care dorește o listă curată fără a modifica setarea valabilă la nivelul întregului server
+pentru toți ceilalți:
 
 ```bash
-GET /v1/models?prefix=alias        # un id pentru fiecare model — prefixul scurt de alias
+GET /v1/models?prefix=alias        # un identificator per model — prefixul scurt al aliasului
 GET /v1/models?prefix=dual         # ambele forme (valoarea implicită a serverului)
-GET /v1/models?prefix=canonical    # numai prefixul complet al id-ului furnizorului
+GET /v1/models?prefix=canonical    # numai prefixul complet al identificatorului furnizorului
 ```
 
-| Mod         | Emite                                                    | Observații                                                                                                                                                                                                                        |
-| ----------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **și** `claude/claude-sonnet-4-6` | **Implicit.** Ambele id-uri sunt direcționate către același model; sunt păstrate pentru ca acele configurații de client care au codificat direct oricare dintre forme să continue să funcționeze. Aproximativ dublează catalogul. |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | O intrare pentru fiecare model. Furnizorii fără un alias distinct își emit în continuare intrarea, astfel încât nu se pierde nimic.                                                                                               |
-| `canonical` | `claude/claude-sonnet-4-6`                               | O intrare pentru fiecare model sub prefixul complet al id-ului furnizorului. Furnizorii fără un alias distinct (de exemplu, `antigravity/…`, `agy/…`) își emit și aici id-ul unic, astfel încât nu se pierde nimic.               |
+| Mod         | Emite                                                    | Note                                                                                                                                                                                                                                   |
+| ----------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **și** `claude/claude-sonnet-4-6` | **Implicit.** Ambii identificatori direcționează către același model; sunt păstrați astfel încât configurațiile clienților care au codificat explicit oricare dintre forme să continue să funcționeze. Aproximativ dublează catalogul. |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | O intrare per model. Furnizorii fără un alias distinct își emit în continuare intrarea, astfel încât nu se pierde nimic.                                                                                                               |
+| `canonical` | `claude/claude-sonnet-4-6`                               | O intrare per model sub prefixul complet al identificatorului furnizorului. Furnizorii fără un alias distinct (de ex. `antigravity/…`, `agy/…`) își emit și aici identificatorul unic, astfel încât nu se pierde nimic.                |
 
-O oglindă în modul `dual` poate fi recunoscută și fără parametrul de interogare: aceasta conține un câmp `parent`
-care indică id-ul principal.
+O oglindă în modul `dual` poate fi recunoscută și fără parametrul de interogare: conține un câmp `parent`
+care indică identificatorul principal.
 
 Clienții care afișează un selector de modele ar trebui să solicite `?prefix=alias` — aceasta este abordarea utilizată de
 [extensia OmniCopilot pentru VS Code](../guides/VSCODE-COPILOT.md).
 
 ### Filtre de descoperire (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` acceptă filtre opționale de descoperire. Fără niciunul dintre acestea, răspunsul rămâne
-neschimbat. Acestea restrâng catalogul pe care apelantul îl poate vedea deja (permisiunile cheii API se aplică primele)
-și sunt aplicate înaintea paginării de tip OpenAI cu `limit` / `after`:
+`GET /v1/models` acceptă filtre de descoperire opționale. Fără niciunul dintre acestea, răspunsul rămâne
+neschimbat. Acestea restrâng catalogul pe care apelantul îl vede deja (permisiunile cheii API se aplică mai întâi)
+și sunt aplicate înaintea paginării în stil OpenAI cu `limit` / `after`:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # fiecare capabilitate enumerată trebuie să fie adevărată
+GET /v1/models?capability=vision&capability=tool_calling   # fiecare capabilitate listată trebuie să fie adevărată
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` din catalog; rândurile fără această valoare sunt `chat`
-GET /v1/models?q=sonnet&limit=10                           # potrivire fără diferențiere între majuscule și minuscule după id sau nume
+GET /v1/models?kind=embedding                              # câmpul `type` din catalog; rândurile fără acesta sunt `chat`
+GET /v1/models?q=sonnet&limit=10                           # potrivire fără diferențiere între majuscule și minuscule după identificator sau nume
 ```
 
 | Parametru     | Valori                                                                                              |
@@ -506,7 +548,7 @@ returnează HTTP `400`, iar mesajul enumeră valorile valide. Implementare:
 ### Lista restrânsă de modele (`POST /v1/models/query`)
 
 `POST /v1/models/query` returnează o listă scurtă și deterministă din același catalog, cu aceeași
-autentificare și vizibilitate per cheie ca `GET /v1/models`:
+autentificare și vizibilitate pentru fiecare cheie ca `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -521,32 +563,32 @@ Content-Type: application/json
 
 Fiecare câmp este opțional. `capabilities` și `exclude` acceptă un tablou sau un șir separat prin virgule;
 `max_output` este comparat cu `max_output_tokens`. Rezultatele sunt sortate după `owned_by`, apoi după `id`.
-Valoarea implicită pentru `limit` este `20`, iar valorile mai mari de `100` sunt limitate la `100`. Un JSON nevalid, un câmp
-necunoscut sau o valoare nevalidă returnează HTTP `400`.
+Valoarea implicită pentru `limit` este `20`, iar valorile mai mari de `100` sunt limitate la `100`. Un JSON nevalid, un câmp necunoscut
+sau o valoare nevalidă returnează HTTP `400`.
 
 ### Modele de chat ascunse individual
 
 Un model marcat ca **Ascuns** pe pagina furnizorului său este exclus din catalog și respins
-cu HTTP `404` / `model_not_found` atunci când este solicitat explicit. Verificarea utilizează furnizorul și modelul
-rezolvate, inclusiv aliasurile furnizorilor, prefixele nodurilor furnizorilor compatibili și
-valorile implicite ale conexiunii. O combinație omite țintele ascunse și poate utiliza un model similar vizibil; atunci când nu mai
-rămâne nicio țintă executabilă, aceasta returnează același cod de eroare. Anularea ascunderii produce efecte la următoarea
+cu HTTP `404` / `model_not_found` atunci când este solicitat explicit. Verificarea utilizează
+furnizorul și modelul determinate, inclusiv aliasurile furnizorilor, prefixele nodurilor furnizorilor compatibili și
+valorile implicite ale conexiunii. O combinație omite țintele ascunse și poate utiliza o alternativă vizibilă; când nu mai
+rămâne nicio țintă executabilă, returnează același cod de eroare. Anularea ascunderii intră în vigoare la următoarea
 solicitare. Suprascrierile de vizibilitate exclusiv pentru imagini nu ascund modelul de chat cu același ID.
 
 Această setare individuală a modelului este separată de
-[listele de permitere/interzicere pentru expunerea modelelor](../routing/MODEL_EXPOSURE_LIST.md), care filtrează publicarea în catalog
-și candidații pentru direcționarea automată, păstrând în același timp expedierea explicită. Permisiunile modelelor asociate cheilor API
-continuă să se aplice independent. Modul implicit pentru prefixul catalogului rămâne `dual`.
+[Listele de permitere/refuzare pentru expunerea modelelor](../routing/MODEL_EXPOSURE_LIST.md), care filtrează modelele
+afișate în catalog și candidații pentru rutarea automată, păstrând în același timp expedierea explicită. Permisiunile pentru modele
+asociate cheilor API continuă să se aplice independent. Modul implicit pentru prefixele catalogului rămâne `dual`.
 
-### Variante de modele fără raționare
+### Variante de modele fără gândire
 
-Pentru modelele Claude care acceptă raționarea, `/v1/models` prezintă și o variantă **fără raționare**, al cărei id este prefixat cu `claude-3-omniroute-no-thinking/`:
+Pentru modelele Claude capabile de gândire, `/v1/models` afișează și o variantă **fără gândire**, al cărei ID are prefixul `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Selectarea acestui id (de exemplu, într-o configurație Claude Code care atașează întotdeauna un bloc `thinking`) redirecționează către modelul real `<provider>/<model>`, cu raționamentul dezactivat — `thinking:{type:"disabled"}` pe ruta `/v1/messages` sau cu câmpurile `reasoning`/`reasoning_effort` eliminate pe ruta `/v1/chat/completions`. Varianta este listată numai pentru modelele din familia Claude care acceptă thinking **și** respectă valoarea `disabled` (astfel, de exemplu, modelele exclusiv adaptive care resping `disabled` sunt excluse). Operatorii pot activa sau dezactiva forțat varianta pentru fiecare model prin `ModelSpec.noThinkingAlias`.
+Selectarea acestui ID (de exemplu, într-o configurație Claude Code care atașează întotdeauna un bloc `thinking`) este redirecționată către modelul real `<provider>/<model>`, cu raționamentul suprimat — `thinking:{type:"disabled"}` pe calea `/v1/messages` sau cu câmpurile `reasoning`/`reasoning_effort` eliminate pe calea `/v1/chat/completions`. Varianta este afișată numai pentru modelele din familia Claude care acceptă gândirea **și** respectă `disabled` (astfel, de exemplu, modelele exclusiv adaptive care resping `disabled` sunt excluse). Operatorii pot activa sau dezactiva forțat varianta pentru fiecare model prin `ModelSpec.noThinkingAlias`.
 
 ---
 

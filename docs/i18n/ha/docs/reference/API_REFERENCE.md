@@ -440,53 +440,104 @@ yana komawa `us-central1` a matsayin tsoho. Dukkan waɗannan ƙayyadewoyin suna 
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Yana mayar da duk samfuran hira, embedding, da hoto + haɗe-haɗe a tsarin OpenAI
+→ Yana dawo da duk samfuran tattaunawa, embedding, da hoto + haɗe-haɗe a tsarin OpenAI
 ```
 
-### Gaba-gaban id na samfuri (`?prefix=`)
+### Farashin samfura (`pricing`)
 
-Ana tallata yawancin samfura ƙarƙashin **gaba-gaban mai samarwa**. Gaba-gaban da za ka samu yana ƙarƙashin ikon tutar fasalin `MODELS_CATALOG_PREFIX_MODE`, kuma ana iya soke shi **ga kowace buƙata** ta hanyar ma'aunin query — yana da amfani ga abokin hulɗa da ke son jeri mai tsabta ba tare da canza saitin gaba ɗaya na sabar ga kowa ba:
+Shigarwa tana ɗauke da abin `pricing` idan OmniRoute ya san farashin samfurin. Farashin yana fitowa
+daga jadawalin farashin da lissafin kuɗi ke amfani da shi: tsoffin ƙimomin da aka gina a ciki, farashin da aka daidaita, da
+sauye-sauyen da aka saita ta `/api/pricing`. Waɗannan farashin jeri ne, don haka masu samar da sabis na rajista su ma
+suna nuna farashin kowace token.
 
-```bash
-GET /v1/models?prefix=alias        # id ɗaya ga kowane samfuri — gajeren gaba-gaban alias
-GET /v1/models?prefix=dual         # duka nau'ikan (tsohon saitin saba)
-GET /v1/models?prefix=canonical    # cikakken gaba-gaban provider-id kawai
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
 ```
 
-| Yanayi      | Abin da yake fitarwa                                     | Bayanan kula                                                                                                                                                                                                            |
-| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **da** `claude/claude-sonnet-4-6` | **Tsohon saiti.** Duk id biyun suna kaiwa ga samfuri ɗaya; an riƙe su domin saitunan abokin hulɗa da suka rubuta ɗaya daga cikinsu kai tsaye su ci gaba da aiki. Yana kusan ninka katalogin.                            |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Shigarwa ɗaya ga kowane samfuri. Masu samarwa marasa alias na daban har yanzu suna fitar da shigarwarsu, don haka babu abin da ya ɓace.                                                                                 |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Shigarwa ɗaya ga kowane samfuri ƙarƙashin cikakken gaba-gaban provider-id. Masu samarwa marasa alias na daban (misali `antigravity/…`, `agy/…`) su ma suna fitar da id ɗinsu guda a nan, don haka babu abin da ya ɓace. |
+| Filaye                                                          | Raka'a                              | Bayanan kula                                                                                                                                                  |
+| --------------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD ga kowace token, decimal string | Mai dacewa da OpenRouter, ba a taɓa amfani da exponent notation ba. Filayen cache guda biyu suna bayyana ne kawai idan akwai farashin cache.                  |
+| `input`, `output`, `cached`, `cache_creation`                   | USD ga tokens miliyan 1, number     | Filaye daga tsofaffin nau'ikan catalog, an riƙe su don clients da ake da su. `reasoning` da `long_context` su ma suna bayyana idan layin farashin yana da su. |
 
-Ana kuma iya gane madubi mai yanayin `dual` ba tare da ma'aunin query ba: yana ɗauke da filin `parent` da ke nuna id na farko.
+- **Haɗe-haɗe** suna ɗauke da farashin target ɗinsu na farko da ake gani. Haɗe-haɗen `auto/*` da aka gina a ciki suna zaɓar
+  target a lokacin request, don haka ba su da `pricing`.
+- **Samfuran kyauta** suna nuna `"0"` (da `0`) idan farashinsu sifili ne. Samfurin da ba shi da layin farashi
+  shi ma yana nuna `"0"` idan catalog ya yi masa alamar kyauta (`free: true`) ko kuma catalog na samfuran kyauta da aka
+  gina a ciki ya jera shi.
+- **Farashin da ba a sani ba:** shigarwar ba ta da maɓallin `pricing`.
+- **Masu samarwa da ke aunawa da credits** (kamar Kiro) suna cajin kowace request maimakon kowace token. Shigarwar su
+  suna riƙe filayen lambobi na kowace miliyan 1 da suke da su a baya kuma ba su ɗauke da filayen string na kowace token.
+- **Nau'ukan daban-daban** (IDs na reasoning-effort, aliases na no-thinking, da mirrors na discovery da gateway)
+  suna kwafi farashin samfurin da suke tura request zuwa gare shi.
+- Filayen suna ɗauke da ƙimar asali kawai. Matakan long-context (filin lambobi na `long_context`) da
+  masu ninka service-tier (misali Codex fast ko flex) ba sa canza `prompt` ko
+  `completion`.
+- Abin iri ɗaya ne ga kowane salon tantancewa, har da request mai salon Anthropic
+  tare da `x-api-key` da `anthropic-version` (response ɗin yana nan `{ "object": "list",
+"data": [...] }`). Aiwatarwa: `src/app/api/v1/models/catalogPricing.ts`.
 
-Ya kamata abokan hulɗa da ke nuna mai zaɓar samfuri su nemi `?prefix=alias` — wannan shi ne abin da [ƙarin OmniCopilot na VS Code](../guides/VSCODE-COPILOT.md) yake yi.
+### Prefixes na ID ɗin samfura (`?prefix=`)
 
-### Matatan ganowa (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
-
-`GET /v1/models` yana karɓar matatan ganowa na zaɓi. Idan babu ɗaya daga cikinsu, amsar ba ta canzawa. Suna taƙaita katalogin da mai kira yake iya gani tun farko (ana fara amfani da izinin API-key), kuma suna gudana kafin rarraba shafuka irin na OpenAI na `limit` / `after`:
+Yawancin samfura ana tallata su ƙarƙashin **prefix na provider**. Prefix ɗin da za ka samu yana ƙarƙashin ikon
+feature flag na `MODELS_CATALOG_PREFIX_MODE`, kuma ana iya maye gurbinsa **ga kowace request** da
+query parameter — mai amfani ga client da ke son jeri mai tsabta ba tare da canza saitin gaba ɗaya na server
+ga kowa ba:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # dole kowace damar da aka jera ta kasance gaskiya
+GET /v1/models?prefix=alias        # ID guda ɗaya ga kowane samfuri — gajeren alias prefix
+GET /v1/models?prefix=dual         # duka siffofin biyu (tsohon saitin server)
+GET /v1/models?prefix=canonical    # cikakken provider-id prefix kawai
+```
+
+| Yanayi      | Abin da yake fitarwa                                     | Bayanan kula                                                                                                                                                                                                                    |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **da** `claude/claude-sonnet-4-6` | **Tsohon saiti.** Duk IDs ɗin biyu suna tura request zuwa samfuri ɗaya; an riƙe su domin saitunan client da suka hardcode ɗaya daga cikin siffofin su ci gaba da aiki. Wannan yana kusan ninka catalog sau biyu.                |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Shigarwa ɗaya ga kowane samfuri. Providers da ba su da wani alias na daban har yanzu suna fitar da shigarwar su, don haka babu abin da ya ɓace.                                                                                 |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Shigarwa ɗaya ga kowane samfuri ƙarƙashin cikakken provider-id prefix. Providers da ba su da wani alias na daban (misali `antigravity/…`, `agy/…`) su ma suna fitar da ID ɗinsu guda ɗaya a nan, don haka babu abin da ya ɓace. |
+
+Ana kuma iya gane mirror mai yanayin `dual` ba tare da query parameter ba: yana ɗauke da filin `parent`
+da ke nuna primary ID.
+
+Clients da ke nuna wajen zaɓar samfuri ya kamata su nemi `?prefix=alias` — wannan ne
+[OmniCopilot VS Code extension](../guides/VSCODE-COPILOT.md) yake yi.
+
+### Tacewar discovery (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+
+`GET /v1/models` yana karɓar tacewar discovery da ake zaɓar amfani da ita. Idan babu ɗaya daga cikinsu, response ɗin
+ba ya canzawa. Suna taƙaita catalog da mai kiran ya riga ya gani (ana fara amfani da izinin API-key),
+kuma suna aiki kafin paging mai salon OpenAI na `limit` / `after`:
+
+```bash
+GET /v1/models?capability=vision&capability=tool_calling   # dole ne duk capability da aka jera su zama true
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` na katalog; layukan da ba su da shi `chat` ne
-GET /v1/models?q=sonnet&limit=10                           # daidaitawa a kan id ko suna ba tare da kula da manyan ko ƙananan haruffa ba
+GET /v1/models?kind=embedding                              # `type` na catalog; layukan da ba su da shi su ne `chat`
+GET /v1/models?q=sonnet&limit=10                           # daidaitawa ba tare da la'akari da case ba a kan ID ko suna
 ```
 
-| Ma'auni       | Ƙimomi                                                                                              |
+| Siga          | Ƙimomi                                                                                              |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
 | `min_context` | lamba cikakkiya marar korau, ana kwatanta ta da `context_length`                                    |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | haruffa 1–200                                                                                       |
 
-Ƙimar da ba a sani ba, ko `min_context` da ba lamba cikakkiya marar korau ba (misali `1.5`), yana mayar da HTTP `400`, kuma saƙon yana jera ingantattun ƙimomin. Aiwatarwa:
+Ƙimar da ba a sani ba, ko `min_context` da ba lamba cikakkiya marar korau ba (misali `1.5`),
+tana mayar da HTTP `400`, kuma saƙon yana jera ingantattun ƙimomin. Aiwatarwa:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Gajeren jerin samfura (`POST /v1/models/query`)
+### Taƙaitaccen jerin samfura (`POST /v1/models/query`)
 
-`POST /v1/models/query` yana mayar da gajeren jeri tabbatacce daga katalog ɗin guda, tare da ingantaccen izini da ganuwa ta kowane maɓalli iri ɗaya da `GET /v1/models`:
+`POST /v1/models/query` yana mayar da taƙaitaccen, tabbataccen jeri daga wannan katalo, tare da
+irin tantancewa da ganuwa ta kowane maɓalli ɗaya da `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -499,24 +550,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Kowane fili na zaɓi ne. `capabilities` da `exclude` suna karɓar array ko kirtani da aka raba da waƙafi; `max_output` yana kwatantawa da `max_output_tokens`. Ana jera sakamako ta `owned_by`, sannan `id`. Tsohon saitin `limit` shi ne `20`, kuma ƙimomin da suka wuce `100` ana iyakance su zuwa `100`. JSON mara inganci, filin da ba a sani ba, ko ƙima mara inganci yana mayar da HTTP `400`.
+Kowane fili zaɓi ne. `capabilities` da `exclude` suna karɓar jerin tsararru ko zaren da aka raba da waƙafi;
+`max_output` yana yin kwatanci da `max_output_tokens`. Ana jera sakamakon bisa `owned_by`, sannan `id`.
+Tsohuwar ƙimar `limit` ita ce `20`, kuma ana iyakance ƙimomin da suka haura `100` zuwa `100`. JSON mara inganci, fili
+da ba a sani ba, ko ƙima mara inganci suna mayar da HTTP `400`.
 
-### Samfuran hira da aka ɓoye ɗaya-ɗaya
+### Samfuran tattaunawa da aka ɓoye ɗaya-ɗaya
 
-Samfurin da aka yi masa alamar **Ɓoyayye** a shafin mai samar da shi ana cire shi daga katalog kuma ana ƙin amincewa da shi da HTTP `404` / `model_not_found` idan aka nema kai tsaye. Binciken yana amfani da mai samarwa da samfurin da aka warware, ciki har da aliases na mai samarwa, gaba-gaban node na masu samarwa masu jituwa, da tsoffin saitunan haɗi. Haɗe-haɗe yana tsallake abubuwan da aka ɓoye kuma yana iya amfani da takwaran da ake iya gani; idan babu wani abin da za a iya aiwatarwa da ya rage, yana mayar da lambar kuskure iri ɗaya. Cire ɓoyewar yana fara aiki a buƙata ta gaba. Sauye-sauyen ganuwa na hoto kaɗai ba sa ɓoye samfurin hira mai ID iri ɗaya.
+Ana cire samfurin da aka yi wa alamar **Ɓoyayye** a shafin mai samar da shi daga katalo, kuma ana ƙin
+buƙatarsa da HTTP `404` / `model_not_found` idan aka nema kai tsaye. Binciken yana amfani da mai samarwa
+da samfurin da aka warware, gami da laƙaban masu samarwa, kari na nodes na masu samarwa masu dacewa, da
+tsoffin ƙimomin haɗi. Haɗin samfura yana tsallake maƙasudan da aka ɓoye kuma zai iya amfani da wani samfurin da ake gani; idan babu
+maƙasudin da za a iya aiwatarwa da ya rage, yana mayar da wannan lambar kuskuren. Cire ɓoyewar yana fara aiki a buƙata
+ta gaba. Keɓancewar ganuwa ta hoto kaɗai ba ta ɓoye samfurin tattaunawa mai ID iri ɗaya.
 
-Wannan saitin samfuri na ɗaiɗaiku ya bambanta da
-[jeren ba da izini/hanawa na bayyana samfura](../routing/MODEL_EXPOSURE_LIST.md), waɗanda ke tace tallan katalog da zaɓuɓɓukan auto-routing yayin da suke riƙe aika buƙata kai tsaye. Izinin samfuri na API-key yana ci gaba da aiki da kansa. Tsohon yanayin gaba-gaban katalog ya kasance `dual`.
+Wannan saitin samfurin ɗaya-ɗaya ya bambanta da
+[jerin izini/hanawa na bayyana samfura](../routing/MODEL_EXPOSURE_LIST.md), waɗanda ke tace tallatawar katalo
+da masu neman zaɓin hanya ta atomatik, yayin da suke barin turawar kai tsaye. Izinin samfura na maɓallin API
+yana ci gaba da aiki daban. Tsohon yanayin karin sunan katalo ya kasance `dual`.
 
-### Nau'ikan samfuri marasa tunani
+### Nau'ikan samfura marasa tunani
 
-Ga samfuran Claude masu iya tunani, `/v1/models` yana kuma tallata nau'in **marar tunani** wanda aka sanya wa id ɗinsa gaba-gaban `claude-3-omniroute-no-thinking/`:
+Ga samfuran Claude masu iya tunani, `/v1/models` yana kuma tallata nau'in **marar tunani** wanda aka fara id ɗinsa da `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Zaɓar wannan id (misali, a cikin saitin Claude Code wanda koyaushe yake haɗa tubalin `thinking`) yana mayar da shi zuwa ainihin `<provider>/<model>` tare da kashe reasoning — `thinking:{type:"disabled"}` a kan hanyar `/v1/messages`, ko kuma a cire filayen `reasoning`/`reasoning_effort` a kan hanyar `/v1/chat/completions`. Ana jera wannan variant ne kawai ga model na dangin Claude waɗanda ke goyon bayan thinking **kuma** suke bin `disabled` (don haka, misali, ba a haɗa model masu adaptive-only waɗanda ke ƙin `disabled` ba). Operators za su iya tilasta kunna ko kashe variant ɗin ga kowane model ta hanyar `ModelSpec.noThinkingAlias`.
+Zaɓar wannan id (misali a cikin saitin Claude Code wanda koyaushe yake haɗa tubalin `thinking`) yana warwarewa zuwa ainihin `<provider>/<model>` tare da danne yin tunani — `thinking:{type:"disabled"}` a hanyar `/v1/messages`, ko kuma a cire filayen `reasoning`/`reasoning_effort` a hanyar `/v1/chat/completions`. Ana jera wannan nau'in ne kawai ga samfuran dangin Claude waɗanda ke goyon bayan tunani **kuma** suke mutunta `disabled` (don haka, misali, an cire samfuran adaptive-only waɗanda ke ƙin `disabled`). Masu gudanarwa za su iya tilasta kunna ko kashe nau'in ga kowane samfurin ta hanyar `ModelSpec.noThinkingAlias`.
 
 ---
 

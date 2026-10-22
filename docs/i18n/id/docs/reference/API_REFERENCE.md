@@ -435,42 +435,84 @@ Authorization: Bearer your-api-key
 → Mengembalikan semua model chat, embedding, dan gambar + combo dalam format OpenAI
 ```
 
-### Prefiks id model (`?prefix=`)
+### Harga model (`pricing`)
 
-Sebagian besar model ditampilkan di bawah **prefiks penyedia**. Prefiks yang Anda dapatkan dikontrol oleh
-feature flag `MODELS_CATALOG_PREFIX_MODE`, dan dapat diganti **per permintaan** dengan
-parameter kueri — berguna bagi klien yang menginginkan daftar bersih tanpa mengubah pengaturan
-seluruh server untuk pengguna lain:
+Sebuah entri memiliki objek `pricing` ketika OmniRoute mengetahui harga model tersebut. Harga ini berasal
+dari tabel harga yang digunakan oleh penghitungan biaya: nilai bawaan bawaan, harga yang disinkronkan, dan
+penggantian yang ditetapkan melalui `/api/pricing`. Ini adalah harga daftar, sehingga penyedia langganan juga
+menampilkan harga per token.
 
-```bash
-GET /v1/models?prefix=alias        # satu id per model — prefiks alias singkat
-GET /v1/models?prefix=dual         # kedua bentuk (default server)
-GET /v1/models?prefix=canonical    # hanya prefiks lengkap id penyedia
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
 ```
 
-| Mode        | Menghasilkan                                              | Catatan                                                                                                                                                                                                   |
-| ----------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **dan** `claude/claude-sonnet-4-6` | **Default.** Kedua id diarahkan ke model yang sama; dipertahankan agar konfigurasi klien yang mengodekan salah satu bentuk secara tetap dapat terus berfungsi. Kira-kira menggandakan katalog.            |
-| `alias`     | `cc/claude-sonnet-4-6`                                    | Satu entri per model. Penyedia tanpa alias yang berbeda tetap menghasilkan entrinya, sehingga tidak ada yang hilang.                                                                                      |
-| `canonical` | `claude/claude-sonnet-4-6`                                | Satu entri per model di bawah prefiks lengkap id penyedia. Penyedia tanpa alias yang berbeda (misalnya `antigravity/…`, `agy/…`) juga menghasilkan id tunggalnya di sini, sehingga tidak ada yang hilang. |
+| Bidang                                                          | Satuan                        | Catatan                                                                                                                                                  |
+| --------------------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD per token, string desimal | Kompatibel dengan OpenRouter, tidak pernah menggunakan notasi eksponen. Kedua bidang cache hanya muncul jika terdapat harga cache.                       |
+| `input`, `output`, `cached`, `cache_creation`                   | USD per 1 juta token, angka   | Bidang dari versi katalog sebelumnya, dipertahankan untuk klien yang sudah ada. `reasoning` dan `long_context` juga muncul jika baris harga memilikinya. |
 
-Mirror mode `dual` juga dapat dikenali tanpa parameter kueri: mirror tersebut memiliki field `parent`
+- **Combo** menggunakan harga target pertama yang terlihat. Combo bawaan `auto/*` memilih
+  target pada saat permintaan, sehingga tidak memiliki `pricing`.
+- **Model gratis** menampilkan `"0"` (dan `0`) ketika harganya nol. Model tanpa baris harga
+  juga menampilkan `"0"` ketika katalog menandainya sebagai gratis (`free: true`) atau katalog
+  model gratis bawaan mencantumkannya.
+- **Harga tidak diketahui:** entri tidak memiliki kunci `pricing`.
+- **Penyedia dengan pengukuran berbasis kredit** (seperti Kiro) menagih per permintaan, bukan per token. Entri
+  mereka mempertahankan bidang numerik per 1 juta yang dimiliki sebelumnya dan tidak memiliki bidang string per token.
+- **Varian** (id upaya penalaran, alias tanpa berpikir, serta mirror penemuan dan gateway)
+  menyalin harga model yang menjadi tujuan peruteannya.
+- Bidang-bidang tersebut hanya memuat tarif dasar. Tingkatan konteks panjang (bidang numerik `long_context`) dan
+  pengali tingkatan layanan (misalnya Codex fast atau flex) tidak mengubah `prompt` atau
+  `completion`.
+- Objeknya sama untuk setiap gaya autentikasi, termasuk permintaan bergaya Anthropic
+  dengan `x-api-key` dan `anthropic-version` (respons tetap `{ "object": "list",
+"data": [...] }`). Implementasi: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefiks id model (`?prefix=`)
+
+Sebagian besar model ditampilkan di bawah **prefiks penyedia**. Prefiks yang Anda dapatkan dikendalikan oleh
+feature flag `MODELS_CATALOG_PREFIX_MODE`, dan dapat diganti **per permintaan** dengan
+parameter kueri — berguna bagi klien yang menginginkan daftar bersih tanpa mengubah pengaturan
+tingkat server untuk semua pengguna lain:
+
+```bash
+GET /v1/models?prefix=alias        # satu id per model — prefiks alias pendek
+GET /v1/models?prefix=dual         # kedua bentuk (nilai bawaan server)
+GET /v1/models?prefix=canonical    # hanya prefiks id penyedia lengkap
+```
+
+| Mode        | Menghasilkan                                              | Catatan                                                                                                                                                                                                            |
+| ----------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `dual`      | `cc/claude-sonnet-4-6` **dan** `claude/claude-sonnet-4-6` | **Bawaan.** Kedua id dirutekan ke model yang sama; dipertahankan agar konfigurasi klien yang mengodekan salah satu bentuk secara permanen tetap berfungsi. Kira-kira menggandakan ukuran katalog.                  |
+| `alias`     | `cc/claude-sonnet-4-6`                                    | Satu entri per model. Penyedia tanpa alias yang berbeda tetap menghasilkan entrinya, sehingga tidak ada yang hilang.                                                                                               |
+| `canonical` | `claude/claude-sonnet-4-6`                                | Satu entri per model di bawah prefiks id penyedia lengkap. Penyedia tanpa alias yang berbeda (misalnya `antigravity/…`, `agy/…`) juga menghasilkan satu-satunya id mereka di sini, sehingga tidak ada yang hilang. |
+
+Mirror mode `dual` juga dapat dikenali tanpa parameter kueri: mirror tersebut memiliki bidang `parent`
 yang menunjuk ke id utama.
 
-Klien yang merender pemilih model sebaiknya meminta `?prefix=alias` — inilah yang dilakukan oleh
+Klien yang menampilkan pemilih model sebaiknya meminta `?prefix=alias` — inilah yang dilakukan oleh
 [ekstensi OmniCopilot VS Code](../guides/VSCODE-COPILOT.md).
 
 ### Filter penemuan (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
 `GET /v1/models` menerima filter penemuan opsional. Tanpa filter tersebut, respons
-tidak berubah. Filter tersebut mempersempit katalog yang sudah dapat dilihat pemanggil (izin kunci API diterapkan terlebih dahulu),
+tidak berubah. Filter ini mempersempit katalog yang sudah dapat dilihat pemanggil (izin kunci API diterapkan terlebih dahulu),
 dan dijalankan sebelum paginasi bergaya OpenAI `limit` / `after`:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # setiap kapabilitas yang dicantumkan harus bernilai true
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` katalog; baris tanpa nilai tersebut dianggap `chat`
-GET /v1/models?q=sonnet&limit=10                           # pencocokan id atau nama tanpa membedakan huruf besar-kecil
+GET /v1/models?kind=embedding                              # `type` katalog; baris tanpa nilai ini dianggap `chat`
+GET /v1/models?q=sonnet&limit=10                           # pencocokan id atau nama yang tidak peka huruf besar-kecil
 ```
 
 | Param         | Nilai                                                                                               |
@@ -481,13 +523,13 @@ GET /v1/models?q=sonnet&limit=10                           # pencocokan id atau 
 | `q`           | 1–200 karakter                                                                                      |
 
 Nilai yang tidak dikenal, atau `min_context` yang bukan bilangan bulat nonnegatif (misalnya `1.5`),
-mengembalikan HTTP `400` dan pesan yang mencantumkan nilai-nilai yang valid. Implementasi:
+akan mengembalikan HTTP `400` dan pesannya mencantumkan nilai-nilai yang valid. Implementasi:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Daftar pendek model (`POST /v1/models/query`)
 
-`POST /v1/models/query` mengembalikan daftar pendek yang deterministik dari katalog yang sama, dengan autentikasi
-dan visibilitas per kunci yang sama seperti `GET /v1/models`:
+`POST /v1/models/query` mengembalikan daftar pendek yang deterministik dari katalog yang sama, dengan
+autentikasi dan visibilitas per kunci yang sama seperti `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -500,34 +542,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Setiap field bersifat opsional. `capabilities` dan `exclude` menerima array atau string yang dipisahkan koma;
+Setiap bidang bersifat opsional. `capabilities` dan `exclude` menerima array atau string yang dipisahkan koma;
 `max_output` dibandingkan dengan `max_output_tokens`. Hasil diurutkan berdasarkan `owned_by`, lalu `id`.
-Nilai default `limit` adalah `20` dan nilai di atas `100` dibatasi menjadi `100`. JSON yang tidak valid, field yang tidak dikenal,
-atau nilai yang tidak valid akan mengembalikan HTTP `400`.
+Nilai default `limit` adalah `20` dan nilai di atas `100` dibatasi menjadi `100`. JSON yang tidak valid, bidang
+yang tidak dikenal, atau nilai yang tidak valid akan mengembalikan HTTP `400`.
 
 ### Model chat yang disembunyikan secara individual
 
-Model yang ditandai **Tersembunyi** pada halaman penyedianya dikecualikan dari katalog dan ditolak
-dengan HTTP `404` / `model_not_found` saat diminta secara eksplisit. Pemeriksaan menggunakan
-penyedia dan model yang telah di-resolve, termasuk alias penyedia, prefiks node penyedia yang kompatibel, dan
-default koneksi. Combo melewati target tersembunyi dan dapat menggunakan model lain yang terlihat; jika tidak ada
-target yang dapat dieksekusi, combo tersebut mengembalikan kode kesalahan yang sama. Membatalkan penyembunyian mulai berlaku pada
+Model yang ditandai **Tersembunyi** pada halaman penyedianya tidak disertakan dalam katalog dan akan ditolak
+dengan HTTP `404` / `model_not_found` saat diminta secara eksplisit. Pemeriksaan menggunakan penyedia
+dan model yang telah di-resolve, termasuk alias penyedia, prefiks node penyedia kompatibel, dan
+default koneksi. Sebuah combo melewati target tersembunyi dan dapat menggunakan model sejenis yang terlihat; ketika
+tidak ada target yang dapat dieksekusi, combo tersebut mengembalikan kode kesalahan yang sama. Pembatalan penyembunyian berlaku pada
 permintaan berikutnya. Penggantian visibilitas khusus gambar tidak menyembunyikan model chat dengan ID yang sama.
 
 Pengaturan model individual ini terpisah dari
-[daftar izinkan/tolak eksposur model](../routing/MODEL_EXPOSURE_LIST.md), yang memfilter model yang ditampilkan dalam katalog
-dan kandidat perutean otomatis, sambil tetap mempertahankan dispatch eksplisit. Izin model
-kunci API tetap diterapkan secara independen. Mode prefiks katalog default tetap `dual`.
+[daftar izin/tolak eksposur model](../routing/MODEL_EXPOSURE_LIST.md), yang memfilter model yang ditampilkan dalam katalog
+dan kandidat perutean otomatis, tetapi tetap mempertahankan dispatch eksplisit. Izin model untuk kunci API
+tetap berlaku secara independen. Mode prefiks katalog default tetap `dual`.
 
 ### Varian model tanpa thinking
 
-Untuk model Claude yang mendukung thinking, `/v1/models` juga menampilkan varian **tanpa thinking** dengan id yang diawali `claude-3-omniroute-no-thinking/`:
+Untuk model Claude yang mendukung thinking, `/v1/models` juga menampilkan varian **tanpa thinking** yang ID-nya diawali dengan `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Memilih id ini (misalnya dalam konfigurasi Claude Code yang selalu menyertakan blok `thinking`) akan kembali merujuk ke `<provider>/<model>` yang sebenarnya dengan penalaran dinonaktifkan — `thinking:{type:"disabled"}` pada jalur `/v1/messages`, atau kolom `reasoning`/`reasoning_effort` dihapus pada jalur `/v1/chat/completions`. Varian ini hanya dicantumkan untuk model keluarga Claude yang mendukung thinking **dan** mematuhi `disabled` (sehingga, misalnya, model khusus adaptif yang menolak `disabled` tidak disertakan). Operator dapat mengaktifkan atau menonaktifkan varian ini secara paksa untuk setiap model melalui `ModelSpec.noThinkingAlias`.
+Memilih ID ini (misalnya dalam konfigurasi Claude Code yang selalu menyertakan blok `thinking`) akan di-resolve kembali ke `<provider>/<model>` yang sebenarnya dengan reasoning dinonaktifkan — `thinking:{type:"disabled"}` pada jalur `/v1/messages`, atau bidang `reasoning`/`reasoning_effort` dihapus pada jalur `/v1/chat/completions`. Varian ini hanya dicantumkan untuk model keluarga Claude yang mendukung thinking **dan** mematuhi `disabled` (sehingga, misalnya, model yang hanya mendukung adaptif dan menolak `disabled` tidak disertakan). Operator dapat memaksa varian ini aktif atau nonaktif untuk setiap model melalui `ModelSpec.noThinkingAlias`.
 
 ---
 

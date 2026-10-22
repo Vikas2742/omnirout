@@ -476,41 +476,83 @@ Authorization: Bearer your-api-key
 → Returnerar alla chatt-, inbäddnings- och bildmodeller samt kombinationer i OpenAI-format
 ```
 
-### Modell-id-prefix (`?prefix=`)
+### Modellpriser (`pricing`)
 
-De flesta modeller publiceras under ett **leverantörsprefix**. Vilket prefix du får styrs av
+En post innehåller ett `pricing`-objekt när OmniRoute känner till modellens pris. Priset kommer
+från pristabellen som kostnadsredovisningen använder: inbyggda standardvärden, synkroniserade priser och
+åsidosättningar som angetts via `/api/pricing`. Dessa är listpriser, så abonnemangsleverantörer visar också
+ett pris per token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Fält                                                            | Enhet                        | Anmärkningar                                                                                                                                    |
+| --------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD per token, decimalsträng | OpenRouter-kompatibla, aldrig i exponentnotation. De två cachefälten visas endast när det finns ett cachepris.                                  |
+| `input`, `output`, `cached`, `cache_creation`                   | USD per 1M token, tal        | Fält från tidigare katalogversioner, behållna för befintliga klienter. `reasoning` och `long_context` visas också när prisraden innehåller dem. |
+
+- **Kombinationer** använder priset för sitt första synliga mål. Inbyggda `auto/*`-kombinationer väljer ett
+  mål vid tidpunkten för begäran och har därför inget `pricing`.
+- **Kostnadsfria modeller** visar `"0"` (och `0`) när priset är noll. En modell utan prisrad
+  visar också `"0"` när katalogen markerar den som kostnadsfri (`free: true`) eller den inbyggda katalogen
+  över kostnadsfria modeller listar den.
+- **Okänt pris:** posten har ingen `pricing`-nyckel.
+- **Kreditdebiterade leverantörer** (som Kiro) debiterar per begäran i stället för per token. Deras
+  poster behåller de numeriska fälten per 1M som de hade tidigare och innehåller inga strängfält per token.
+- **Varianter** (id:n för resonemangsansträngning, alias utan tänkande samt speglingar för upptäckt och gateways)
+  kopierar priset från modellen som de dirigerar till.
+- Fälten innehåller endast baspriser. Nivåer för långa kontexter (det numeriska fältet `long_context`) och
+  multiplikatorer för tjänstenivåer (till exempel Codex fast eller flex) ändrar inte `prompt` eller
+  `completion`.
+- Objektet är detsamma för alla autentiseringsmetoder, inklusive en begäran i Anthropic-stil
+  med `x-api-key` och `anthropic-version` (svaret förblir `{ "object": "list",
+"data": [...] }`). Implementering: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefix för modell-id:n (`?prefix=`)
+
+De flesta modeller annonseras med ett **leverantörsprefix**. Vilket prefix du får styrs av
 funktionsflaggan `MODELS_CATALOG_PREFIX_MODE` och kan åsidosättas **per begäran** med en
-frågeparameter – användbart för en klient som vill ha en ren lista utan att ändra den
-serverövergripande inställningen för alla andra:
+frågeparameter — användbart för en klient som vill ha en ren lista utan att ändra den serveromfattande
+inställningen för alla andra:
 
 ```bash
-GET /v1/models?prefix=alias        # ett id per modell – det korta aliasprefixet
+GET /v1/models?prefix=alias        # ett id per modell — det korta aliasprefixet
 GET /v1/models?prefix=dual         # båda formerna (serverns standardvärde)
 GET /v1/models?prefix=canonical    # endast det fullständiga leverantörs-id-prefixet
 ```
 
-| Läge        | Genererar                                                 | Kommentarer                                                                                                                                                                                         |
+| Läge        | Genererar                                                 | Anmärkningar                                                                                                                                                                                        |
 | ----------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **och** `claude/claude-sonnet-4-6` | **Standard.** Båda id:n dirigeras till samma modell; behålls så att klientkonfigurationer där någon av formerna är hårdkodad fortsätter att fungera. Fördubblar katalogen ungefär.                  |
-| `alias`     | `cc/claude-sonnet-4-6`                                    | En post per modell. Leverantörer utan ett separat alias genererar fortfarande sin post, så ingenting går förlorat.                                                                                  |
+| `dual`      | `cc/claude-sonnet-4-6` **och** `claude/claude-sonnet-4-6` | **Standard.** Båda id:n dirigerar till samma modell; behålls så att klientkonfigurationer som hårdkodat endera formen fortsätter att fungera. Fördubblar katalogen ungefär.                         |
+| `alias`     | `cc/claude-sonnet-4-6`                                    | En post per modell. Leverantörer utan ett separat alias genererar ändå sin post, så ingenting går förlorat.                                                                                         |
 | `canonical` | `claude/claude-sonnet-4-6`                                | En post per modell under det fullständiga leverantörs-id-prefixet. Leverantörer utan ett separat alias (t.ex. `antigravity/…`, `agy/…`) genererar även här sitt enda id, så ingenting går förlorat. |
 
-En spegling i läget `dual` kan också identifieras utan frågeparametern: den innehåller ett
-`parent`-fält som pekar på det primära id:t.
+En spegling i `dual`-läge kan också identifieras utan frågeparametern: den innehåller ett `parent`-fält
+som pekar på det primära id:t.
 
-Klienter som återger en modellväljare bör begära `?prefix=alias` – det är vad
+Klienter som visar en modellväljare bör begära `?prefix=alias` — det är vad
 [OmniCopilot-tillägget för VS Code](../guides/VSCODE-COPILOT.md) gör.
 
-### Identifieringsfilter (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Upptäcktsfilter (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` accepterar valfria identifieringsfilter. Utan något av dem är svaret
-oförändrat. De begränsar katalogen som anroparen redan kan se (API-nyckelbehörigheter tillämpas först),
-och de körs före OpenAI-liknande sidindelning med `limit` / `after`:
+`GET /v1/models` accepterar valfria upptäcktsfilter. Utan något av dem är svaret
+oförändrat. De begränsar katalogen som anroparen redan ser (API-nyckelbehörigheter tillämpas först),
+och de körs före den OpenAI-liknande sidindelningen med `limit` / `after`:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # varje angiven funktion måste vara aktiverad
+GET /v1/models?capability=vision&capability=tool_calling   # varje angiven kapacitet måste vara sann
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # katalogens `type`; rader utan en sådan är `chat`
+GET /v1/models?kind=embedding                              # katalogens `type`; rader utan ett sådant värde är `chat`
 GET /v1/models?q=sonnet&limit=10                           # skiftlägesokänslig matchning mot id eller namn
 ```
 
@@ -522,10 +564,10 @@ GET /v1/models?q=sonnet&limit=10                           # skiftlägesokänsli
 | `q`           | 1–200 tecken                                                                                        |
 
 Ett okänt värde, eller ett `min_context` som inte är ett icke-negativt heltal (till exempel `1.5`),
-returnerar HTTP `400`, och meddelandet listar de giltiga värdena. Implementering:
+returnerar HTTP `400` och meddelandet listar de giltiga värdena. Implementering:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Begränsad modellista (`POST /v1/models/query`)
+### Kortlista över modeller (`POST /v1/models/query`)
 
 `POST /v1/models/query` returnerar en kort, deterministisk lista från samma katalog, med samma
 autentisering och synlighet per nyckel som `GET /v1/models`:
@@ -551,24 +593,25 @@ fält eller ett ogiltigt värde returnerar HTTP `400`.
 En modell som är markerad som **Dold** på sin leverantörssida utesluts från katalogen och avvisas
 med HTTP `404` / `model_not_found` när den begärs uttryckligen. Kontrollen använder den matchade
 leverantören och modellen, inklusive leverantörsalias, nodprefix för kompatibla leverantörer och
-standardvärden för anslutningar. En kombination hoppar över dolda mål och kan använda ett synligt syskon; när inget
-körbart mål återstår returneras samma felkod. Att sluta dölja en modell börjar gälla vid nästa
-begäran. Synlighetsåsidosättningar enbart för bilder döljer inte chattmodellen med samma id.
+standardvärden för anslutningen. En kombination hoppar över dolda mål och kan använda ett synligt syskon;
+när inget körbart mål återstår returnerar den samma felkod. Att göra modellen synlig igen träder i kraft vid
+nästa begäran. Synlighetsåsidosättningar som endast gäller bilder döljer inte chattmodellen med samma ID.
 
 Den här individuella modellinställningen är separat från
-[tillåt-/neka-listorna för modellexponering](../routing/MODEL_EXPOSURE_LIST.md), som filtrerar katalogens
-publicerade modeller och kandidater för automatisk dirigering, samtidigt som uttrycklig dirigering behålls. Modellbehörigheter
-för API-nycklar fortsätter att gälla oberoende. Katalogens standardläge för prefix förblir `dual`.
+[tillåt-/neka-listorna för modellexponering](../routing/MODEL_EXPOSURE_LIST.md), som filtrerar vilka modeller
+som visas i katalogen och vilka kandidater som används för automatisk routning, samtidigt som uttrycklig
+dirigering behålls. Modellbehörigheter för API-nycklar fortsätter att gälla oberoende. Standardläget för
+katalogprefix förblir `dual`.
 
 ### Modellvarianter utan tänkande
 
-För Claude-modeller med stöd för tänkande publicerar `/v1/models` även en variant **utan tänkande** vars id har prefixet `claude-3-omniroute-no-thinking/`:
+För Claude-modeller med stöd för tänkande visar `/v1/models` även en variant **utan tänkande** vars ID har prefixet `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Om du väljer detta id (t.ex. i en Claude Code-konfiguration som alltid bifogar ett `thinking`-block) matchas det tillbaka till den verkliga `<provider>/<model>` med resonemang inaktiverat — `thinking:{type:"disabled"}` på sökvägen `/v1/messages`, eller genom att fälten `reasoning`/`reasoning_effort` tas bort på sökvägen `/v1/chat/completions`. Varianten listas endast för modeller i Claude-familjen som stöder thinking **och** respekterar `disabled` (så t.ex. modeller som enbart stöder adaptivt läge och avvisar `disabled` exkluderas). Operatörer kan aktivera eller inaktivera varianten per modell via `ModelSpec.noThinkingAlias`.
+När detta ID väljs (t.ex. i en Claude Code-konfiguration som alltid bifogar ett `thinking`-block) matchas det tillbaka till den verkliga `<provider>/<model>` med resonemang inaktiverat — `thinking:{type:"disabled"}` för sökvägen `/v1/messages`, eller med fälten `reasoning`/`reasoning_effort` borttagna för sökvägen `/v1/chat/completions`. Varianten listas endast för modeller i Claude-familjen som stöder tänkande **och** respekterar `disabled` (så t.ex. modeller som endast stöder adaptivt läge och avvisar `disabled` utesluts). Driftansvariga kan tvinga varianten att vara aktiverad eller inaktiverad per modell via `ModelSpec.noThinkingAlias`.
 
 ---
 

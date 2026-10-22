@@ -445,59 +445,110 @@ máa ń lo `us-central1` gẹ́gẹ́ bí àkóbá. Àwọn ìpinnu méjèèjì 
 
 ---
 
-## Ṣàkójọ Àwọn Módẹ́ẹ̀lì
+## Àkójọ Àwọn Mọ́dẹ́lì
 
 ```bash
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Ó dá gbogbo àwọn módẹ́ẹ̀lì ìfọ̀rọ̀wérọ̀, embedding, àti àwòrán + àwọn àkópọ̀ padà ní ìṣàkóso OpenAI
+→ Ó dá gbogbo àwọn mọ́dẹ́lì ìjíròrò, embedding, àti àwòrán + àwọn àkójọpọ̀ padà ní ọ̀nà kika OpenAI
 ```
 
-### Àwọn ìṣáájú id módẹ́ẹ̀lì (`?prefix=`)
+### Àwọn iye owó mọ́dẹ́lì (`pricing`)
 
-Ọ̀pọ̀ módẹ́ẹ̀lì ni a ń polówó lábẹ́ **ìṣáájú olùpèsè**. Irú ìṣáájú tí o máa rí ni àsíá ẹ̀ya `MODELS_CATALOG_PREFIX_MODE` ń ṣàkóso, a sì lè ṣàtúnṣe rẹ̀ **fún ìbéèrè kọ̀ọ̀kan** pẹ̀lú párámítà ìbéèrè — èyí wúlò fún client tí ó fẹ́ àkójọ mímọ́ láìyí ètò gbogbo server padà fún gbogbo àwọn mìíràn:
+Àkọsílẹ̀ kan ní ohun `pricing` nígbà tí OmniRoute bá mọ iye owó mọ́dẹ́lì náà. Iye owó náà wá
+láti inú tábìlì iye owó tí ìṣirò iye ná ń lò: àwọn iye àtìlẹ́yìn tí a kọ sínú rẹ̀, àwọn iye owó tí a mú bá ara wọn mu, àti
+àwọn àtúnṣe tí a ṣètò nípasẹ̀ `/api/pricing`. Àwọn wọ̀nyí jẹ́ iye owó àkọsílẹ̀, nítorí náà àwọn olùpèsè ìforúkọsílẹ̀ náà tún
+ń ṣàfihàn iye owó fún token kọ̀ọ̀kan.
 
-```bash
-GET /v1/models?prefix=alias        # id kan fún módẹ́ẹ̀lì kọ̀ọ̀kan — ìṣáájú alias kúkúrú
-GET /v1/models?prefix=dual         # àwọn fọ́ọ̀mù méjèèjì (àìyípadà server)
-GET /v1/models?prefix=canonical    # ìṣáájú provider-id kíkún nìkan
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
 ```
 
-| Ìpo         | Ohun tí ó ń jáde                                          | Àwọn àkíyèsí                                                                                                                                                                                              |
-| ----------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **àti** `claude/claude-sonnet-4-6` | **Àìyípadà.** Àwọn id méjèèjì ń darí sí módẹ́ẹ̀lì kan náà; a pa wọ́n mọ́ kí àwọn àtòpọ̀ client tí ó fi ọ̀kan nínú àwọn fọ́ọ̀mù náà sínú kóòdù lè máa ṣiṣẹ́. Ó fẹ́rẹ̀ẹ́ sọ ìwọ̀n àkójọ náà di ìlọ́po méjì.               |
-| `alias`     | `cc/claude-sonnet-4-6`                                    | Àkọsílẹ̀ kan fún módẹ́ẹ̀lì kọ̀ọ̀kan. Àwọn olùpèsè tí kò ní alias ọ̀tọ̀ ṣì ń gbé àkọsílẹ̀ wọn jáde, nítorí náà kò sí ohun tí ó sọnù.                                                                               |
-| `canonical` | `claude/claude-sonnet-4-6`                                | Àkọsílẹ̀ kan fún módẹ́ẹ̀lì kọ̀ọ̀kan lábẹ́ ìṣáájú provider-id kíkún. Àwọn olùpèsè tí kò ní alias ọ̀tọ̀ (fún àpẹẹrẹ `antigravity/…`, `agy/…`) tún ń gbé id kan ṣoṣo wọn jáde níbí, nítorí náà kò sí ohun tí ó sọnù. |
+| Àwọn pápá                                                       | Ìwọ̀n                                    | Àwọn àkíyèsí                                                                                                                                               |
+| --------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD fún token kọ̀ọ̀kan, ọ̀rọ̀ nọ́ńbà decimal | Ó bá OpenRouter mu, kò sì sí ní àmì exponent láéláé. Àwọn pápá cache méjèèjì yóò hàn nígbà tí iye owó cache bá wà nìkan.                                   |
+| `input`, `output`, `cached`, `cache_creation`                   | USD fún token mílíọ̀nù kan, nọ́ńbà        | Àwọn pápá láti inú àwọn ẹ̀yà catalog àtijọ́, tí a pa mọ́ fún àwọn client tó ti wà. `reasoning` àti `long_context` náà yóò hàn nígbà tí ìlà iye owó bá ní wọn. |
 
-A tún lè dá dígí ìpo `dual` mọ̀ láìsí párámítà ìbéèrè náà: ó ní field `parent` tí ó tọ́ka sí id àkọ́kọ́.
+- **Àwọn àkójọpọ̀** ní iye owó ibi-àfojúsùn àkọ́kọ́ wọn tí ó hàn. Àwọn àkójọpọ̀ `auto/*` tí a kọ sínú ẹ̀rọ máa ń yan
+  ibi-àfojúsùn ní àkókò ìbéèrè, nítorí náà wọn kò ní `pricing`.
+- **Àwọn mọ́dẹ́lì ọ̀fẹ́** máa ń fi `"0"` (àti `0`) hàn nígbà tí iye owó wọn bá jẹ́ òdo. Mọ́dẹ́lì tí kò ní ìlà iye owó
+  náà tún máa ń fi `"0"` hàn nígbà tí catalog bá sàmì sí i gẹ́gẹ́ bí ọ̀fẹ́ (`free: true`) tàbí tí catalog mọ́dẹ́lì ọ̀fẹ́
+  tí a kọ sínú ẹ̀rọ bá ṣe àkójọ rẹ̀.
+- **Iye owó àìmọ̀:** àkọsílẹ̀ náà kò ní kọ́kọ́rọ́ `pricing`.
+- **Àwọn olùpèsè tí a ń wọn ní credit** (gẹ́gẹ́ bí Kiro) ń gba owó fún ìbéèrè kọ̀ọ̀kan dípò fún token kọ̀ọ̀kan. Àwọn
+  àkọsílẹ̀ wọn pa àwọn pápá nọ́ńbà fún mílíọ̀nù kan tí wọ́n ní tẹ́lẹ̀ mọ́, wọn kò sì ní àwọn pápá ọ̀rọ̀ iye owó fún token kọ̀ọ̀kan.
+- **Àwọn ẹ̀yà** (àwọn id ìsapá ìrònú, àwọn alias tí kò ní ìrònú, àti àwọn mirror ìṣàwárí àti gateway)
+  ń da iye owó mọ́dẹ́lì tí wọ́n ń darí sí kọ.
+- Àwọn pápá náà ní àwọn iye ìpìlẹ̀ nìkan. Àwọn ìpele long-context (pápá nọ́ńbà `long_context`) àti
+  àwọn multiplier ìpele iṣẹ́ (fún àpẹẹrẹ Codex fast tàbí flex) kò yí `prompt` tàbí
+  `completion` padà.
+- Ohun náà jẹ́ ọ̀kan náà fún gbogbo ọ̀nà ìfàṣẹsí, pẹ̀lú ìbéèrè ara Anthropic
+  tó ní `x-api-key` àti `anthropic-version` (ìdáhùn náà ṣì jẹ́ `{ "object": "list",
+"data": [...] }`). Ìmúṣẹ: `src/app/api/v1/models/catalogPricing.ts`.
 
-Àwọn client tí ń ṣàfihàn ohun ìyan módẹ́ẹ̀lì yẹ kí wọ́n béèrè `?prefix=alias` — èyí ni ohun tí [àfikún OmniCopilot VS Code](../guides/VSCODE-COPILOT.md) ń ṣe.
+### Àwọn ìpele aṣáájú id mọ́dẹ́lì (`?prefix=`)
 
-### Àwọn àsẹ àwárí (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
-
-`GET /v1/models` gba àwọn àsẹ àwárí tí a yan láti lò. Láìsí èyíkéyìí nínú wọn, ìdáhùn náà kò ní yí padà. Wọ́n dín àkójọ tí olùpè ti ń rí tẹ́lẹ̀ kù (àwọn àṣẹ API-key ni a kọ́kọ́ lò), wọ́n sì ń ṣiṣẹ́ ṣáájú pípín ojú-ewé `limit` / `after` ti ara OpenAI:
+Ọ̀pọ̀ jù lọ àwọn mọ́dẹ́lì ni a ń polówó lábẹ́ **ìpele aṣáájú olùpèsè**. Irú ìpele aṣáájú tí o máa rí ni
+asia ẹ̀ya `MODELS_CATALOG_PREFIX_MODE` ń ṣàkóso, a sì lè kọjá àtúnṣe rẹ̀ **fún ìbéèrè kọ̀ọ̀kan** pẹ̀lú
+paramita query — èyí wúlò fún client tí ó fẹ́ àkójọ mímọ́ láì yí ètò gbogbo server padà
+fún gbogbo àwọn yòókù:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # gbogbo agbára tí a tò gbọdọ̀ jẹ́ òótọ́
+GET /v1/models?prefix=alias        # id kan fún mọ́dẹ́lì kọ̀ọ̀kan — ìpele aṣáájú alias kúkúrú
+GET /v1/models?prefix=dual         # àwọn ọ̀nà méjèèjì (àtìlẹ́yìn server)
+GET /v1/models?prefix=canonical    # ìpele aṣáájú provider-id kíkún nìkan
+```
+
+| Ìpo         | Ohun tí ó ń jáde                                          | Àwọn àkíyèsí                                                                                                                                                                                                      |
+| ----------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **àti** `claude/claude-sonnet-4-6` | **Àtìlẹ́yìn.** Àwọn id méjèèjì ń darí sí mọ́dẹ́lì kan náà; a pa wọ́n mọ́ kí àwọn ìṣètò client tí wọ́n ti kọ ọ̀kan lára wọn sínú kóòdù lè máa ṣiṣẹ́. Ó fẹ́rẹ̀ẹ́ sọ catalog di ìlọ́po méjì.                                     |
+| `alias`     | `cc/claude-sonnet-4-6`                                    | Àkọsílẹ̀ kan fún mọ́dẹ́lì kọ̀ọ̀kan. Àwọn olùpèsè tí kò ní alias ọ̀tọ̀ ṣì máa ń fi àkọsílẹ̀ wọn jáde, nítorí náà kò sí ohun tí ó sọnù.                                                                                     |
+| `canonical` | `claude/claude-sonnet-4-6`                                | Àkọsílẹ̀ kan fún mọ́dẹ́lì kọ̀ọ̀kan lábẹ́ ìpele aṣáájú provider-id kíkún. Àwọn olùpèsè tí kò ní alias ọ̀tọ̀ (fún àpẹẹrẹ `antigravity/…`, `agy/…`) tún máa ń fi id kan ṣoṣo wọn jáde níbí, nítorí náà kò sí ohun tí ó sọnù. |
+
+A tún lè dá mirror ipo `dual` mọ̀ láìsí paramita query: ó ní pápá `parent`
+tí ó ń tọ́ka sí id àkọ́kọ́.
+
+Àwọn client tí ń ṣe àfihàn ohun yíyan mọ́dẹ́lì yẹ kí wọ́n béèrè `?prefix=alias` — èyí ni ohun tí
+[ẹ̀kúnrẹ́rẹ́ OmniCopilot VS Code](../guides/VSCODE-COPILOT.md) ń ṣe.
+
+### Àwọn àlẹ̀mọ́ ìṣàwárí (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+
+`GET /v1/models` gba àwọn àlẹ̀mọ́ ìṣàwárí tí a yàn láti lò. Láìsí èyíkéyìí nínú wọn, ìdáhùn náà
+kò yí padà. Wọ́n dín catalog tí olùpè náà ti lè rí kù (àwọn àṣẹ kọ́kọ́rọ́ API ni a kọ́kọ́ lò),
+wọ́n sì ń ṣiṣẹ́ ṣáájú pínpín ojúewé ara OpenAI `limit` / `after`:
+
+```bash
+GET /v1/models?capability=vision&capability=tool_calling   # gbogbo agbára tí a ṣe àkójọ rẹ̀ gbọ́dọ̀ jẹ́ òótọ́
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` àkójọ; àwọn ìlà tí kò ní ọ̀kan jẹ́ `chat`
-GET /v1/models?q=sonnet&limit=10                           # ìbámu tí kò ka lẹ́tà ńlá tàbí kékeré lórí id tàbí orúkọ
+GET /v1/models?kind=embedding                              # `type` catalog; àwọn ìlà tí kò ní ọ̀kan jẹ́ `chat`
+GET /v1/models?q=sonnet&limit=10                           # ìbámu tí kò ka lẹ́tà ńlá tàbí kékeré sí lórí id tàbí orúkọ
 ```
 
-| Párámítà      | Àwọn iye                                                                                            |
+| Pàràmítà      | Àwọn iye                                                                                            |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | odidi tí kì í ṣe òdì, tí a fi wé `context_length`                                                   |
+| `min_context` | odidi tí kò kéré ju òdo lọ, tí a fi wé `context_length`                                             |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
-| `q`           | àwọn àmì 1–200                                                                                      |
+| `q`           | àwọn àmì ọ̀rọ̀ 1–200                                                                                  |
 
-Iye tí a kò mọ̀, tàbí `min_context` tí kì í ṣe odidi tí kò jẹ́ òdì (fún àpẹẹrẹ `1.5`), máa dá HTTP `400` padà, ìfiránṣẹ́ náà yóò sì ṣe àkójọ àwọn iye tó bófin mu. Ìmúṣẹ:
+Iye tí a kò mọ̀, tàbí `min_context` tí kì í ṣe odidi tí kò kéré ju òdo lọ (fún àpẹẹrẹ `1.5`),
+yóò dá HTTP `400` padà, ìfiránṣẹ́ náà yóò sì ṣe àtòjọ àwọn iye tó fẹsẹ̀ múlẹ̀. Ìmúṣẹ:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Àkójọ módẹ́ẹ̀lì kúkúrú (`POST /v1/models/query`)
+### Àkójọ àṣàyàn kúkúrú awoṣe (`POST /v1/models/query`)
 
-`POST /v1/models/query` máa ń dá àkójọ kúkúrú tí àbájáde rẹ̀ dúró ṣinṣin padà láti inú àkójọ kan náà, pẹ̀lú ìfàṣẹsí àti hírí fún kọ́kọ́rọ́ kọ̀ọ̀kan bíi `GET /v1/models`:
+`POST /v1/models/query` máa ń dá àkójọ kúkúrú tí àbájáde rẹ̀ dúró ṣinṣin padà láti inú katalogi kan náà, pẹ̀lú
+ìfàṣẹsí kan náà àti híhan fún kọ́kọ́rọ́ kọ̀ọ̀kan gẹ́gẹ́ bí `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -510,23 +561,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Gbogbo field jẹ́ àṣàyàn. `capabilities` àti `exclude` gba array tàbí string tí àmì kọ́mà pín sí ọ̀tọ̀ọ̀tọ̀; `max_output` ni a fi wé `max_output_tokens`. A tò àwọn àbájáde nípasẹ̀ `owned_by`, lẹ́yìn náà `id`. Iye àìyípadà `limit` jẹ́ `20`, àwọn iye tó ga ju `100` lọ sì ni a fi òpin sí `100`. JSON tí kò bófin mu, field tí a kò mọ̀, tàbí iye tí kò bófin mu máa dá HTTP `400` padà.
+Gbogbo pápá jẹ́ àṣàyàn. `capabilities` àti `exclude` gba àkójọpọ̀ kan tàbí okun ọ̀rọ̀ tí a fi àmì kọ́má yà;
+`max_output` máa ń fi iye wé `max_output_tokens`. A máa ń ṣètò àwọn àbájáde nípasẹ̀ `owned_by`, lẹ́yìn náà `id`.
+Iye àìròtẹ́lẹ̀ fún `limit` ni `20`, a ó sì dín àwọn iye tó ju `100` lọ sí `100`. JSON tí kò fẹsẹ̀ múlẹ̀, pápá tí a kò mọ̀
+tàbí iye tí kò fẹsẹ̀ múlẹ̀ yóò dá HTTP `400` padà.
 
-### Àwọn módẹ́ẹ̀lì ìfọ̀rọ̀wérọ̀ tí a fi pamọ́ lọ́kọ̀ọ̀kan
+### Àwọn awoṣe ìfọ̀rọ̀wérọ̀ tí a fi pamọ́ lọ́kọ̀ọ̀kan
 
-Módẹ́ẹ̀lì tí a sàmì sí **Fí pamọ́** lórí ojú-ewé olùpèsè rẹ̀ ni a yọ kúrò nínú àkójọ, a ó sì kọ̀ ọ́ pẹ̀lú HTTP `404` / `model_not_found` nígbà tí a bá béèrè rẹ̀ ní tààrà. Àyẹ̀wò náà ń lo olùpèsè àti módẹ́ẹ̀lì tí a ti pinnu, pẹ̀lú àwọn alias olùpèsè, àwọn ìṣáájú node olùpèsè tó bá ara wọn mu, àti àwọn àìyípadà ìsopọ̀. Àkópọ̀ kan máa ń fo àwọn ibi-afẹ́ tí a fi pamọ́, ó sì lè lo ẹ̀gbọ́n tàbí àbúrò tó hàn; nígbà tí kò bá sí ibi-afẹ́ tó ṣeé ṣiṣẹ́ mọ́, ó máa dá kóòdù àṣìṣe kan náà padà. Yíyọ ìpamọ́ náà máa bẹ̀rẹ̀ sí í ṣiṣẹ́ lórí ìbéèrè tó kàn. Àwọn ìṣàtúnṣe hírí fún àwòrán-nìkan kò fi módẹ́ẹ̀lì ìfọ̀rọ̀wérọ̀ tí ó ní ID kan náà pamọ́.
+A máa yọ awoṣe tí a sàmì sí **Fífipamọ́** lórí ojú-ewé olupèsè rẹ̀ kúrò nínú katalogi, a ó sì kọ̀ ọ́
+pẹ̀lú HTTP `404` / `model_not_found` nígbà tí a bá béèrè rẹ̀ ní tààrà. Ìṣàyẹ̀wò náà máa ń lo
+olupèsè àti awoṣe tí a ti yanjú, tó fi mọ́ àwọn orúkọ-àpèjúwe olupèsè, àwọn ìpele ìbẹ̀rẹ̀ node ti olupèsè tó bá a mu, àti
+àwọn iye àìròtẹ́lẹ̀ àsopọ̀. Àpapọ̀ máa ń foju kọ àwọn ibi-afẹ́ tí a fi pamọ́, ó sì lè lo ẹlẹgbẹ́ tí ó hàn; nígbà tí kò bá sí
+ibi-afẹ́ tí a lè ṣiṣẹ́ mọ́, yóò dá kóòdù àṣìṣe kan náà padà. Yíyọ fífipamọ́ kúrò máa bẹ̀rẹ̀ sí í ṣiṣẹ́ nígbà ìbéèrè
+tó kàn. Àwọn ìyípadà híhan fún àwòrán nìkan kì í fi awoṣe ìfọ̀rọ̀wérọ̀ tó ní ID kan náà pamọ́.
 
-Ètò módẹ́ẹ̀lì kọ̀ọ̀kan yìí yàtọ̀ sí [àwọn àkójọ gbígbà/kíkọ́ ìṣípayá módẹ́ẹ̀lì](../routing/MODEL_EXPOSURE_LIST.md), tí ń ṣe àsẹ polówó àkójọ àti àwọn olùdíje ìdarí aládàáṣiṣẹ́, nígbà tí wọ́n ṣì ń pa ìfiránṣẹ́ tààrà mọ́. Àwọn àṣẹ módẹ́ẹ̀lì API-key ṣì ń ṣiṣẹ́ lọ́tọ̀. Ìpo ìṣáájú àìyípadà àkójọ ṣì jẹ́ `dual`.
+Ètò awoṣe kọ̀ọ̀kan yìí yàtọ̀ sí
+[àwọn àkójọ ìgbààyè/ìkọ̀ hàn awoṣe](../routing/MODEL_EXPOSURE_LIST.md), èyí tó máa ń ṣàlẹ̀mọ́
+ìpolówó katalogi àti àwọn àṣàyàn ìdarí aládàáṣiṣẹ́ nígbà tó ń pa fífiránṣẹ́ ní tààrà mọ́. Àwọn àṣẹ awoṣe
+kọ́kọ́rọ́ API ṣì máa ń ṣiṣẹ́ lọ́tọ̀. Ipo ìpele ìbẹ̀rẹ̀ katalogi àìròtẹ́lẹ̀ ṣì jẹ́ `dual`.
 
-### Àwọn ẹ̀yà módẹ́ẹ̀lì láìsí ìrònú
+### Àwọn ẹ̀yà awoṣe tí kò ní ìrònú
 
-Fún àwọn módẹ́ẹ̀lì Claude tó lè ronú, `/v1/models` tún ń polówó ẹ̀yà **láìsí ìrònú** tí id rẹ̀ bẹ̀rẹ̀ pẹ̀lú `claude-3-omniroute-no-thinking/`:
+Fún àwọn awoṣe Claude tó lágbára láti ronú, `/v1/models` tún máa ń polówó ẹ̀yà **tí kò ní ìrònú** kan, tí id rẹ̀ ní ìpele ìbẹ̀rẹ̀ `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Yíyan id yìí (fún àpẹẹrẹ, nínú àtòpọ̀ Claude Code kan tí ó máa ń so búlọ́ọ̀kù `thinking` mọ́ ọn nígbà gbogbo) yóò tọ́ka padà sí `<provider>/<model>` gidi pẹ̀lú fífi reasoning pamọ́ — `thinking:{type:"disabled"}` lórí ipa-ọ̀nà `/v1/messages`, tàbí kí a yọ àwọn ààyè `reasoning`/`reasoning_effort` kúrò lórí ipa-ọ̀nà `/v1/chat/completions`. A máa ń ṣe àfihàn variant náà fún àwọn model ìdílé Claude tí ó ṣe àtìlẹ́yìn fún thinking **tí** wọ́n sì gba `disabled` nìkan (nítorí náà, fún àpẹẹrẹ, a kò fi àwọn model adaptive-only tí kò gba `disabled` sínú rẹ̀). Àwọn olùṣàkóso lè fi tipátipá tan tàbí pa variant náà fún model kọ̀ọ̀kan nípasẹ̀ `ModelSpec.noThinkingAlias`.
+Yíyan id yìí (fún àpẹẹrẹ, nínú àtúnṣe Claude Code tó máa ń so búlọ́ọ̀kù `thinking` mọ́ ọn ní gbogbo ìgbà) máa ń yanjú padà sí `<provider>/<model>` gidi pẹ̀lú dídènà ìrònú — `thinking:{type:"disabled"}` lórí ipa-ọ̀nà `/v1/messages`, tàbí yíyọ àwọn pápá `reasoning`/`reasoning_effort` kúrò lórí ipa-ọ̀nà `/v1/chat/completions`. Ẹ̀yà náà ni a máa ń ṣàfihàn fún àwọn awoṣe ìdílé Claude tó ṣètìlẹ́yìn fún ìrònú **tí wọ́n sì** tẹ̀lé `disabled` nìkan (nítorí náà, fún àpẹẹrẹ, a yọ àwọn awoṣe tó jẹ́ adaptive-nìkan tí wọ́n kọ `disabled` kúrò). Àwọn olùṣàkóso lè fipá mú ẹ̀yà náà ṣiṣẹ́ tàbí dá a dúró fún awoṣe kọ̀ọ̀kan nípasẹ̀ `ModelSpec.noThinkingAlias`.
 
 ---
 

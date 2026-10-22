@@ -477,45 +477,87 @@ regionas yra `us-central1`. Abu nustatymai atliekami faile `open-sse/handlers/oc
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Grąžina visus pokalbių, įterpinių ir vaizdų modelius bei jų derinius OpenAI formatu
+→ Grąžina visus pokalbių, įterpinių ir vaizdų modelius bei derinius OpenAI formatu
 ```
 
-### Modelių ID priešdėliai (`?prefix=`)
+### Modelių kainos (`pricing`)
 
-Dauguma modelių pateikiami su **teikėjo priešdėliu**. Kurį priešdėlį gausite, valdo
-`MODELS_CATALOG_PREFIX_MODE` funkcijos vėliavėlė, o ją galima pakeisti **kiekvienai užklausai atskirai**
-naudojant užklausos parametrą — tai naudinga klientui, kuris nori aiškaus sąrašo nekeisdamas viso
-serverio nustatymo visiems kitiems:
+Įraše yra objektas `pricing`, kai OmniRoute žino modelio kainą. Kaina gaunama
+iš kainodaros lentelės, kurią naudoja sąnaudų apskaita: integruotųjų numatytųjų verčių, sinchronizuotų kainų ir
+per `/api/pricing` nustatytų perrašymų. Tai yra kainoraščio kainos, todėl prenumeratos teikėjai taip pat
+rodo vieno prieigos rakto kainą.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Laukai                                                          | Vienetas                                 | Pastabos                                                                                                                                              |
+| --------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD už prieigos raktą, dešimtainė eilutė | Suderinama su OpenRouter, niekada nenaudojamas eksponentinis žymėjimas. Du podėlio laukai pateikiami tik tada, kai yra podėlio kaina.                 |
+| `input`, `output`, `cached`, `cache_creation`                   | USD už 1 mln. prieigos raktų, skaičius   | Ankstesnių katalogo versijų laukai, išsaugoti esamiems klientams. `reasoning` ir `long_context` taip pat pateikiami, kai jie yra kainodaros eilutėje. |
+
+- **Deriniai** naudoja pirmojo matomo tikslinio modelio kainą. Integruotieji `auto/*` deriniai pasirenka
+  tikslinį modelį užklausos metu, todėl jie neturi `pricing`.
+- **Nemokami modeliai** rodo `"0"` (ir `0`), kai jų kaina lygi nuliui. Modelis be kainodaros eilutės
+  taip pat rodo `"0"`, kai kataloge jis pažymėtas kaip nemokamas (`free: true`) arba yra įtrauktas į integruotąjį nemokamų modelių
+  katalogą.
+- **Nežinoma kaina:** įraše nėra rakto `pricing`.
+- **Kreditais apskaitantys teikėjai** (pvz., Kiro) apmokestina už užklausą, o ne už prieigos raktą. Jų
+  įrašuose išlieka anksčiau turėti skaitiniai vieno milijono prieigos raktų laukai, tačiau nėra vieno prieigos rakto kainos eilučių laukų.
+- **Variantai** (samprotavimo pastangų identifikatoriai, pseudonimai be mąstymo, aptikimo ir tinklų sietuvo veidrodžiai)
+  nukopijuoja modelio, į kurį nukreipia, kainą.
+- Laukuose pateikiami tik baziniai tarifai. Ilgo konteksto pakopos (skaitinis laukas `long_context`) ir
+  paslaugų pakopų daugikliai (pvz., Codex spartusis arba lankstusis režimas) nekeičia `prompt` ar
+  `completion`.
+- Objektas yra toks pats naudojant bet kurį autentifikavimo būdą, įskaitant Anthropic stiliaus
+  užklausą su `x-api-key` ir `anthropic-version` (atsakymas išlieka `{ "object": "list",
+"data": [...] }`). Įgyvendinimas: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Modelių identifikatorių priešdėliai (`?prefix=`)
+
+Dauguma modelių pateikiami su **teikėjo priešdėliu**. Gaunamą priešdėlį valdo
+funkcijos vėliavėlė `MODELS_CATALOG_PREFIX_MODE`, o jį galima perrašyti **kiekvienai užklausai atskirai**
+naudojant užklausos parametrą — tai naudinga klientui, kuris nori tvarkingo sąrašo nekeisdamas viso serverio
+nuostatos visiems kitiems:
 
 ```bash
-GET /v1/models?prefix=alias        # po vieną ID kiekvienam modeliui — trumpasis pseudonimo priešdėlis
-GET /v1/models?prefix=dual         # abi formos (numatytoji serverio reikšmė)
-GET /v1/models?prefix=canonical    # tik visas teikėjo ID priešdėlis
+GET /v1/models?prefix=alias        # vienas identifikatorius kiekvienam modeliui — trumpasis pseudonimo priešdėlis
+GET /v1/models?prefix=dual         # abi formos (serverio numatytoji nuostata)
+GET /v1/models?prefix=canonical    # tik visas teikėjo identifikatoriaus priešdėlis
 ```
 
-| Režimas     | Pateikia                                                 | Pastabos                                                                                                                                                                                                         |
-| ----------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **ir** `claude/claude-sonnet-4-6` | **Numatytasis.** Abu ID nukreipiami į tą patį modelį; tai išlaikyta, kad klientų konfigūracijos, kuriose buvo tiesiogiai įrašyta bet kuri forma, veiktų toliau. Katalogas tampa maždaug dvigubai didesnis.       |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Po vieną įrašą kiekvienam modeliui. Teikėjai, neturintys atskiro pseudonimo, vis tiek pateikia savo įrašą, todėl niekas neprarandama.                                                                            |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Po vieną įrašą kiekvienam modeliui su visu teikėjo ID priešdėliu. Teikėjai, neturintys atskiro pseudonimo (pvz., `antigravity/…`, `agy/…`), čia taip pat pateikia savo vienintelį ID, todėl niekas neprarandama. |
+| Režimas     | Pateikia                                                 | Pastabos                                                                                                                                                                                                                                    |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **ir** `claude/claude-sonnet-4-6` | **Numatytasis.** Abu identifikatoriai nukreipia į tą patį modelį; išlaikyta, kad klientų konfigūracijos, kuriose viena iš formų įrašyta tiesiogiai, ir toliau veiktų. Katalogas tampa maždaug dvigubai didesnis.                            |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Vienas įrašas kiekvienam modeliui. Teikėjai, neturintys atskiro pseudonimo, vis tiek pateikia savo įrašą, todėl niekas neprarandama.                                                                                                        |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Vienas įrašas kiekvienam modeliui su visu teikėjo identifikatoriaus priešdėliu. Teikėjai, neturintys atskiro pseudonimo (pvz., `antigravity/…`, `agy/…`), čia taip pat pateikia savo vienintelį identifikatorių, todėl niekas neprarandama. |
 
-`dual` režimo veidrodinį įrašą galima atpažinti ir be užklausos parametro: jame yra `parent`
-laukas, nurodantis pagrindinį ID.
+`dual` režimo veidrodį taip pat galima atpažinti be užklausos parametro: jame yra laukas `parent`,
+nurodantis pagrindinį identifikatorių.
 
-Klientai, rodantys modelio pasirinkimo sąsają, turėtų siųsti užklausą su `?prefix=alias` — taip daro
+Klientai, rodantys modelio pasirinkimo priemonę, turėtų prašyti `?prefix=alias` — taip daro
 [OmniCopilot VS Code plėtinys](../guides/VSCODE-COPILOT.md).
 
 ### Aptikimo filtrai (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` priima pasirenkamuosius aptikimo filtrus. Nenurodžius nė vieno iš jų, atsakymas
-nesikeičia. Jie susiaurina katalogą, kurį užklausos siuntėjas jau gali matyti (pirmiausia taikomi API rakto leidimai),
-ir vykdomi prieš OpenAI stiliaus puslapiavimą su `limit` / `after`:
+`GET /v1/models` priima pasirinktinius aptikimo filtrus. Nenurodžius nė vieno iš jų, atsakymas
+nesikeičia. Jie susiaurina skambinančiajam jau matomą katalogą (pirmiausia taikomi API rakto leidimai)
+ir vykdomi prieš OpenAI stiliaus puslapiavimą naudojant `limit` / `after`:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # kiekviena nurodyta galimybė turi būti įjungta
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # katalogo `type`; eilutės be jo laikomos `chat`
-GET /v1/models?q=sonnet&limit=10                           # didžiosioms ir mažosioms raidėms nejautri atitiktis pagal ID arba pavadinimą
+GET /v1/models?q=sonnet&limit=10                           # raidžių dydžiui nejautri atitiktis pagal identifikatorių arba pavadinimą
 ```
 
 | Parametras    | Reikšmės                                                                                            |
@@ -526,13 +568,13 @@ GET /v1/models?q=sonnet&limit=10                           # didžiosioms ir ma�
 | `q`           | 1–200 simbolių                                                                                      |
 
 Nežinoma reikšmė arba `min_context`, kuris nėra neneigiamas sveikasis skaičius (pavyzdžiui, `1.5`),
-grąžina HTTP `400`, o pranešime išvardijamos galimos reikšmės. Įgyvendinimas:
+grąžina HTTP `400`, o pranešime išvardijamos galimos reikšmės. Realizacija:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Trumpasis modelių sąrašas (`POST /v1/models/query`)
 
-`POST /v1/models/query` grąžina trumpą, deterministinį sąrašą iš to paties katalogo, taikant tokį patį
-autentifikavimą ir kiekvieno rakto matomumo taisykles kaip `GET /v1/models`:
+`POST /v1/models/query` grąžina trumpą, deterministinį sąrašą iš to paties katalogo, taikydamas tą patį
+autentifikavimą ir kiekvienam raktui nustatytą matomumą kaip `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -545,23 +587,23 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Kiekvienas laukas yra neprivalomas. `capabilities` ir `exclude` priima masyvą arba kableliais atskirtą eilutę;
-`max_output` lyginamas su `max_output_tokens`. Rezultatai rikiuojami pagal `owned_by`, tada pagal `id`.
+Visi laukai yra neprivalomi. `capabilities` ir `exclude` priima masyvą arba kableliais atskirtą eilutę;
+`max_output` lyginamas su `max_output_tokens`. Rezultatai rikiuojami pirmiausia pagal `owned_by`, tada pagal `id`.
 Numatytoji `limit` reikšmė yra `20`, o didesnės nei `100` reikšmės apribojamos iki `100`. Netinkamas JSON, nežinomas
 laukas arba netinkama reikšmė grąžina HTTP `400`.
 
 ### Atskirai paslėpti pokalbių modeliai
 
-Modelis, kurio teikėjo puslapyje pažymėta **Hidden**, neįtraukiamas į katalogą, o pateikus tiesioginę
-jo užklausą ji atmetama su HTTP `404` / `model_not_found`. Tikrinant naudojami nustatyti
-teikėjas ir modelis, įskaitant teikėjų pseudonimus, suderinamų teikėjų mazgų priešdėlius ir
-numatytąsias ryšio reikšmes. Derinys praleidžia paslėptas paskirties vietas ir gali naudoti matomą alternatyvą; kai
-nelieka nė vienos vykdomos paskirties vietos, grąžinamas tas pats klaidos kodas. Paslėpimo išjungimas įsigalioja su kita
-užklausa. Tik vaizdams skirti matomumo perrašymai nepaslepia pokalbių modelio su tuo pačiu ID.
+Modelis, teikėjo puslapyje pažymėtas kaip **Paslėptas**, neįtraukiamas į katalogą, o pateikus
+tiesioginę jo užklausą grąžinamas HTTP `404` / `model_not_found`. Tikrinant naudojami nustatyti
+teikėjas ir modelis, įskaitant teikėjų alternatyviuosius vardus, suderinamų teikėjų mazgų priešdėlius ir
+numatytąsias ryšio reikšmes. Derinys praleidžia paslėptus tikslus ir gali naudoti matomą alternatyvą; kai
+nelieka vykdytinų tikslų, grąžinamas tas pats klaidos kodas. Paslėpimo išjungimas įsigalioja gavus kitą
+užklausą. Tik vaizdams taikomi matomumo pakeitimai nepaslepia pokalbių modelio su tuo pačiu ID.
 
-Šis individualus modelio nustatymas yra atskiras nuo
-[modelių pateikimo leidžiamųjų ir draudžiamųjų sąrašų](../routing/MODEL_EXPOSURE_LIST.md), kurie filtruoja kataloge
-rodomus modelius ir automatinio nukreipimo kandidatus, bet išlaiko tiesioginį siuntimą. API rakto modelių
+Šis atskiro modelio nustatymas skiriasi nuo
+[modelių pateikimo leidimo ir draudimo sąrašų](../routing/MODEL_EXPOSURE_LIST.md), kurie filtruoja kataloge
+skelbiamus modelius ir automatinio maršruto parinkimo kandidatus, tačiau išlaiko tiesioginį nukreipimą. API rakto modelių
 leidimai ir toliau taikomi nepriklausomai. Numatytasis katalogo priešdėlių režimas išlieka `dual`.
 
 ### Modelių variantai be mąstymo
@@ -572,7 +614,7 @@ Mąstymą palaikantiems Claude modeliams `/v1/models` taip pat pateikia **be mą
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Pasirinkus šį identifikatorių (pvz., Claude Code konfigūracijoje, kuri visada prideda `thinking` bloką), jis susiejamas su tikruoju `<provider>/<model>`, išjungus samprotavimą — `thinking:{type:"disabled"}` naudojant `/v1/messages` kelią arba pašalinant `reasoning` / `reasoning_effort` laukus naudojant `/v1/chat/completions` kelią. Šis variantas pateikiamas tik tiems Claude šeimos modeliams, kurie palaiko mąstymą **ir** paiso `disabled` (todėl, pvz., tik adaptyvųjį režimą palaikantys modeliai, kurie atmeta `disabled`, neįtraukiami). Operatoriai gali priverstinai įjungti arba išjungti šį variantą kiekvienam modeliui naudodami `ModelSpec.noThinkingAlias`.
+Pasirinkus šį ID (pvz., Claude Code konfigūracijoje, kuri visada prideda `thinking` bloką), jis susiejamas su tikruoju `<provider>/<model>`, išjungiant argumentavimą — `thinking:{type:"disabled"}` naudojant `/v1/messages` kelią arba pašalinant `reasoning` / `reasoning_effort` laukus naudojant `/v1/chat/completions` kelią. Šis variantas pateikiamas tik Claude šeimos modeliams, kurie palaiko mąstymą **ir** atsižvelgia į `disabled` (todėl, pvz., tik adaptyvųjį režimą palaikantys modeliai, kurie atmeta `disabled`, neįtraukiami). Operatoriai gali priverstinai įjungti arba išjungti šį variantą kiekvienam modeliui naudodami `ModelSpec.noThinkingAlias`.
 
 ---
 

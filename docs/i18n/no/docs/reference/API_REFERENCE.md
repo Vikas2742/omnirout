@@ -475,55 +475,97 @@ standardiseres til `us-central1`. Begge oppløsningene skjer i `open-sse/handler
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Returnerer alle chat-, embedding- og bildemodeller + kombinasjoner i OpenAI-format
+→ Returnerer alle chatte-, innebyggings- og bildemodeller samt kombinasjoner i OpenAI-format
 ```
 
-### Modell-ID-prefikser (`?prefix=`)
+### Modellpriser (`pricing`)
 
-De fleste modeller annonseres under et **leverandørprefiks**. Hvilket prefiks du får, styres av
+En oppføring inneholder et `pricing`-objekt når OmniRoute kjenner modellens pris. Prisen kommer
+fra pristabellen som kostnadsregnskapet bruker: innebygde standardverdier, synkroniserte priser og
+overstyringer angitt gjennom `/api/pricing`. Dette er listepriser, så abonnementstilbydere viser også
+en pris per token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Felter                                                          | Enhet                        | Merknader                                                                                                                                 |
+| --------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD per token, desimalstreng | OpenRouter-kompatibel, aldri i eksponentnotasjon. De to hurtigbufferfeltene vises bare når det finnes en hurtigbufferpris.                |
+| `input`, `output`, `cached`, `cache_creation`                   | USD per 1M tokens, tall      | Felter fra tidligere katalogversjoner, beholdt for eksisterende klienter. `reasoning` og `long_context` vises også når prisraden har dem. |
+
+- **Kombinasjoner** bruker prisen til det første synlige målet. Innebygde `auto/*`-kombinasjoner velger et
+  mål på forespørselstidspunktet, så de har ingen `pricing`.
+- **Gratis modeller** viser `"0"` (og `0`) når prisen deres er null. En modell uten noen prisrad
+  viser også `"0"` når katalogen merker den som gratis (`free: true`), eller når den er oppført i den innebygde
+  katalogen over gratismodeller.
+- **Ukjent pris:** Oppføringen har ingen `pricing`-nøkkel.
+- **Kredittmålte tilbydere** (som Kiro) fakturerer per forespørsel i stedet for per token. Oppføringene deres
+  beholder de numeriske per-1M-feltene de hadde tidligere, og inneholder ingen per-token-strengfelt.
+- **Varianter** (ID-er for resonneringsinnsats, aliaser uten tenkning samt speil for oppdagelse og gateway)
+  kopierer prisen til modellen de ruter til.
+- Feltene inneholder bare grunnsatser. Nivåer for lang kontekst (det numeriske `long_context`-feltet) og
+  multiplikatorer for tjenestenivå (for eksempel Codex fast eller flex) endrer ikke `prompt` eller
+  `completion`.
+- Objektet er det samme for alle autentiseringsmetoder, inkludert en Anthropic-lignende
+  forespørsel med `x-api-key` og `anthropic-version` (svaret forblir `{ "object": "list",
+"data": [...] }`). Implementasjon: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefikser for modell-ID-er (`?prefix=`)
+
+De fleste modeller annonseres under et **tilbyderprefiks**. Hvilket prefiks du får, styres av
 funksjonsflagget `MODELS_CATALOG_PREFIX_MODE`, og kan overstyres **per forespørsel** med en
-spørringsparameter — nyttig for en klient som ønsker en ryddig liste uten å endre innstillingen
-på servernivå for alle andre:
+spørringsparameter — nyttig for en klient som ønsker en ryddig liste uten å endre den serveromfattende
+innstillingen for alle andre:
 
 ```bash
 GET /v1/models?prefix=alias        # én ID per modell — det korte aliasprefikset
 GET /v1/models?prefix=dual         # begge former (serverstandard)
-GET /v1/models?prefix=canonical    # bare det fullstendige leverandør-ID-prefikset
+GET /v1/models?prefix=canonical    # bare hele tilbyder-ID-prefikset
 ```
 
-| Modus       | Returnerer                                               | Merknader                                                                                                                                                                                        |
-| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `dual`      | `cc/claude-sonnet-4-6` **og** `claude/claude-sonnet-4-6` | **Standard.** Begge ID-ene rutes til samme modell; beholdt slik at klientkonfigurasjoner som har hardkodet en av formene, fortsatt fungerer. Omtrent dobler katalogen.                           |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Én oppføring per modell. Leverandører uten et eget alias returnerer fortsatt oppføringen sin, så ingenting går tapt.                                                                             |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Én oppføring per modell under det fullstendige leverandør-ID-prefikset. Leverandører uten et eget alias (f.eks. `antigravity/…`, `agy/…`) returnerer også sin ene ID her, så ingenting går tapt. |
+| Modus       | Sender                                                   | Merknader                                                                                                                                                                           |
+| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **og** `claude/claude-sonnet-4-6` | **Standard.** Begge ID-ene ruter til samme modell. Dette beholdes slik at klientkonfigurasjoner som har hardkodet én av formene, fortsatt fungerer. Omtrent fordobler katalogen.    |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Én oppføring per modell. Tilbydere uten et eget alias sender fortsatt oppføringen sin, slik at ingenting går tapt.                                                                  |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Én oppføring per modell under hele tilbyder-ID-prefikset. Tilbydere uten et eget alias (f.eks. `antigravity/…`, `agy/…`) sender også sin eneste ID her, slik at ingenting går tapt. |
 
-Et speil i `dual`-modus kan også gjenkjennes uten spørringsparameteren: Det har et `parent`-felt
-som peker til den primære ID-en.
+Et speil i `dual`-modus kan også gjenkjennes uten spørringsparameteren: Det inneholder et `parent`-
+felt som peker på den primære ID-en.
 
-Klienter som viser en modellvelger, bør be om `?prefix=alias` — dette er hva
+Klienter som viser en modellvelger, bør be om `?prefix=alias` — dette er det
 [OmniCopilot VS Code-utvidelsen](../guides/VSCODE-COPILOT.md) gjør.
 
 ### Oppdagelsesfiltre (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` godtar valgfrie oppdagelsesfiltre. Uten noen av dem er responsen
+`GET /v1/models` godtar valgfrie oppdagelsesfiltre. Uten noen av dem er svaret
 uendret. De avgrenser katalogen som innringeren allerede kan se (API-nøkkeltillatelser brukes først),
-og de kjøres før OpenAI-lignende paginering med `limit` / `after`:
+og de kjøres før OpenAI-lignende sideinndeling med `limit` / `after`:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # alle oppførte funksjoner må være tilgjengelige
+GET /v1/models?capability=vision&capability=tool_calling   # alle oppførte egenskaper må være sanne
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # katalogens `type`; rader uten en type er `chat`
-GET /v1/models?q=sonnet&limit=10                           # skiller ikke mellom store og små bokstaver ved samsvar med ID eller navn
+GET /v1/models?q=sonnet&limit=10                           # treff uten skille mellom store og små bokstaver i ID eller navn
 ```
 
 | Parameter     | Verdier                                                                                             |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | ikke-negativt heltall, sammenlignet med `context_length`                                            |
+| `min_context` | ikke-negativt heltall, sammenlignes med `context_length`                                            |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 tegn                                                                                          |
 
-En ukjent verdi eller en `min_context` som ikke er et ikke-negativt heltall (for eksempel `1.5`),
+En ukjent verdi, eller en `min_context` som ikke er et ikke-negativt heltall (for eksempel `1.5`),
 returnerer HTTP `400`, og meldingen viser de gyldige verdiene. Implementasjon:
 `src/app/api/v1/models/catalogFilters.ts`.
 
@@ -543,34 +585,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Alle felt er valgfrie. `capabilities` og `exclude` godtar en matrise eller en kommaseparert streng;
+Alle felt er valgfrie. `capabilities` og `exclude` tar en matrise eller en kommaseparert streng;
 `max_output` sammenlignes med `max_output_tokens`. Resultatene sorteres etter `owned_by`, deretter `id`.
 `limit` har standardverdien `20`, og verdier over `100` begrenses til `100`. Ugyldig JSON, et ukjent
 felt eller en ugyldig verdi returnerer HTTP `400`.
 
 ### Individuelt skjulte chatmodeller
 
-En modell som er merket **Skjult** på leverandørsiden sin, utelates fra katalogen og avvises
-med HTTP `404` / `model_not_found` når den forespørres eksplisitt. Kontrollen bruker den utledede
+En modell som er merket **Skjult** på leverandørsiden, utelates fra katalogen og avvises
+med HTTP `404` / `model_not_found` når den forespørres eksplisitt. Kontrollen bruker den løste
 leverandøren og modellen, inkludert leverandøraliaser, nodeprefikser for kompatible leverandører og
-standardverdier for tilkoblinger. En kombinasjon hopper over skjulte mål og kan bruke et synlig søskenmål;
-når ingen kjørbare mål gjenstår, returnerer den samme feilkode. Oppheving av skjuling trer i kraft ved neste
+standardverdier for tilkoblinger. En kombinasjon hopper over skjulte mål og kan bruke et synlig alternativ; når ingen
+kjørbare mål gjenstår, returneres den samme feilkoden. Når en modell gjøres synlig igjen, trer endringen i kraft ved neste
 forespørsel. Synlighetsoverstyringer kun for bilder skjuler ikke chatmodellen med samme ID.
 
 Denne individuelle modellinnstillingen er separat fra
-[tillatelses-/blokkeringslistene for modelleksponering](../routing/MODEL_EXPOSURE_LIST.md), som filtrerer
-katalogannonsering og kandidater for automatisk ruting, samtidig som eksplisitt ruting beholdes. Modelltillatelser
-for API-nøkler gjelder fortsatt uavhengig. Standardmodus for katalogprefikset er fortsatt `dual`.
+[tillatelses-/avvisningslistene for modelleksponering](../routing/MODEL_EXPOSURE_LIST.md), som filtrerer katalogens
+oppføringer og kandidater for automatisk ruting, samtidig som eksplisitt ruting beholdes. Modelltillatelser for
+API-nøkler gjelder fortsatt uavhengig. Standard prefiksmodus for katalogen forblir `dual`.
 
-### Modellvarianter uten tenking
+### Modellvarianter uten tenkning
 
-For Claude-modeller som støtter tenking, annonserer `/v1/models` også en **uten-tenking**-variant der ID-en har prefikset `claude-3-omniroute-no-thinking/`:
+For Claude-modeller som støtter tenkning, annonserer `/v1/models` også en **variant uten tenkning** der ID-en har prefikset `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Hvis du velger denne ID-en (f.eks. i en Claude Code-konfigurasjon som alltid legger ved en `thinking`-blokk), løses den tilbake til den faktiske `<provider>/<model>` med resonnering deaktivert — `thinking:{type:"disabled"}` på `/v1/messages`-banen, eller med feltene `reasoning`/`reasoning_effort` fjernet på `/v1/chat/completions`-banen. Varianten vises bare for modeller i Claude-familien som støtter tenkning **og** respekterer `disabled` (så f.eks. modeller som kun støtter adaptiv tenkning og avviser `disabled`, er utelatt). Operatører kan aktivere eller deaktivere varianten per modell via `ModelSpec.noThinkingAlias`.
+Hvis denne ID-en velges (f.eks. i en Claude Code-konfigurasjon som alltid legger ved en `thinking`-blokk), løses den tilbake til den faktiske `<provider>/<model>` med resonnering deaktivert — `thinking:{type:"disabled"}` på `/v1/messages`-banen, eller med feltene `reasoning`/`reasoning_effort` fjernet på `/v1/chat/completions`-banen. Varianten oppføres bare for modeller i Claude-familien som støtter tenkning **og** respekterer `disabled` (derfor utelates f.eks. modeller som kun støtter adaptiv modus og avviser `disabled`). Operatører kan tvinge varianten av eller på per modell via `ModelSpec.noThinkingAlias`.
 
 ---
 

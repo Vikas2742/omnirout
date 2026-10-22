@@ -481,51 +481,101 @@ Authorization: Bearer your-api-key
 → Gibt alle Chat-, Embedding- und Bildmodelle sowie Kombinationen im OpenAI-Format zurück
 ```
 
+### Modellpreise (`pricing`)
+
+Ein Eintrag enthält ein `pricing`-Objekt, wenn OmniRoute den Preis des Modells kennt. Der Preis stammt
+aus der Preistabelle, die für die Kostenabrechnung verwendet wird: integrierte Standardwerte, synchronisierte Preise und
+über `/api/pricing` festgelegte Überschreibungen. Hierbei handelt es sich um Listenpreise, daher zeigen auch Abonnementanbieter
+einen Preis pro Token an.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Felder                                                          | Einheit                            | Hinweise                                                                                                                                                                                   |
+| --------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD pro Token, Dezimalzeichenfolge | OpenRouter-kompatibel, niemals in Exponentialschreibweise. Die beiden Cache-Felder werden nur angezeigt, wenn ein Cache-Preis vorhanden ist.                                               |
+| `input`, `output`, `cached`, `cache_creation`                   | USD pro 1 Mio. Token, Zahl         | Felder aus früheren Katalogversionen, die für bestehende Clients beibehalten werden. `reasoning` und `long_context` werden ebenfalls angezeigt, wenn sie in der Preiszeile vorhanden sind. |
+
+- **Kombinationen** übernehmen den Preis ihres ersten sichtbaren Ziels. Integrierte `auto/*`-Kombinationen wählen ein
+  Ziel zum Anfragezeitpunkt aus und enthalten daher kein `pricing`.
+- **Kostenlose Modelle** zeigen `"0"` (und `0`) an, wenn ihr Preis null beträgt. Ein Modell ohne Preiszeile
+  zeigt ebenfalls `"0"` an, wenn der Katalog es als kostenlos kennzeichnet (`free: true`) oder es im integrierten Katalog
+  kostenloser Modelle aufgeführt ist.
+- **Unbekannter Preis:** Der Eintrag enthält keinen `pricing`-Schlüssel.
+- **Nach Guthaben abgerechnete Anbieter** (wie Kiro) rechnen pro Anfrage statt pro Token ab. Ihre
+  Einträge behalten die zuvor vorhandenen numerischen Felder pro 1 Mio. Token bei und enthalten keine Zeichenfolgenfelder für Preise pro Token.
+- **Varianten** (IDs für den Reasoning-Aufwand, Aliasse ohne Thinking sowie Discovery- und Gateway-Spiegelungen)
+  kopieren den Preis des Modells, an das sie weiterleiten.
+- Die Felder enthalten nur die Basistarife. Tarife für lange Kontexte (das numerische Feld `long_context`) und
+  Multiplikatoren für Service-Stufen (beispielsweise Codex Fast oder Flex) verändern `prompt` oder
+  `completion` nicht.
+- Das Objekt ist für jede Authentifizierungsmethode identisch, einschließlich einer Anfrage im Anthropic-Stil
+  mit `x-api-key` und `anthropic-version` (die Antwort bleibt `{ "object": "list",
+"data": [...] }`). Implementierung: `src/app/api/v1/models/catalogPricing.ts`.
+
 ### Modell-ID-Präfixe (`?prefix=`)
 
-Die meisten Modelle werden unter einem **Anbieterpräfix** bereitgestellt. Welches Präfix verwendet wird, wird durch das Feature-Flag `MODELS_CATALOG_PREFIX_MODE` gesteuert und kann **pro Anfrage** mit einem Abfrageparameter überschrieben werden — nützlich für einen Client, der eine übersichtliche Liste benötigt, ohne die serverweite Einstellung für alle anderen zu ändern:
+Die meisten Modelle werden unter einem **Anbieterpräfix** angeboten. Welches Präfix verwendet wird, wird durch
+das Feature-Flag `MODELS_CATALOG_PREFIX_MODE` gesteuert und kann **pro Anfrage** mit einem
+Abfrageparameter überschrieben werden – nützlich für einen Client, der eine übersichtliche Liste erhalten möchte, ohne die serverweite
+Einstellung für alle anderen zu ändern:
 
 ```bash
-GET /v1/models?prefix=alias        # eine ID pro Modell — das kurze Aliaspräfix
+GET /v1/models?prefix=alias        # eine ID pro Modell – das kurze Aliaspräfix
 GET /v1/models?prefix=dual         # beide Formen (Serverstandard)
 GET /v1/models?prefix=canonical    # nur das vollständige Anbieter-ID-Präfix
 ```
 
-| Modus       | Gibt aus                                                  | Hinweise                                                                                                                                                                                                          |
-| ----------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **und** `claude/claude-sonnet-4-6` | **Standard.** Beide IDs leiten an dasselbe Modell weiter; dies bleibt erhalten, damit Clientkonfigurationen, in denen eine der Formen fest codiert ist, weiterhin funktionieren. Verdoppelt den Katalog ungefähr. |
-| `alias`     | `cc/claude-sonnet-4-6`                                    | Ein Eintrag pro Modell. Anbieter ohne eindeutigen Alias geben ihren Eintrag dennoch aus, sodass nichts verloren geht.                                                                                             |
-| `canonical` | `claude/claude-sonnet-4-6`                                | Ein Eintrag pro Modell unter dem vollständigen Anbieter-ID-Präfix. Anbieter ohne eindeutigen Alias (z. B. `antigravity/…`, `agy/…`) geben hier ebenfalls ihre einzelne ID aus, sodass nichts verloren geht.       |
+| Modus       | Gibt aus                                                  | Hinweise                                                                                                                                                                                                                  |
+| ----------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **und** `claude/claude-sonnet-4-6` | **Standard.** Beide IDs leiten an dasselbe Modell weiter; dies wird beibehalten, damit Clientkonfigurationen, in denen eine der beiden Formen fest codiert ist, weiterhin funktionieren. Verdoppelt den Katalog ungefähr. |
+| `alias`     | `cc/claude-sonnet-4-6`                                    | Ein Eintrag pro Modell. Anbieter ohne eindeutigen Alias geben ihren Eintrag dennoch aus, sodass nichts verloren geht.                                                                                                     |
+| `canonical` | `claude/claude-sonnet-4-6`                                | Ein Eintrag pro Modell unter dem vollständigen Anbieter-ID-Präfix. Anbieter ohne eindeutigen Alias (z. B. `antigravity/…`, `agy/…`) geben auch hier ihre einzelne ID aus, sodass nichts verloren geht.                    |
 
-Ein Spiegel im Modus `dual` kann auch ohne den Abfrageparameter erkannt werden: Er enthält ein `parent`-Feld, das auf die primäre ID verweist.
+Eine Spiegelung im `dual`-Modus kann auch ohne den Abfrageparameter erkannt werden: Sie enthält ein `parent`-Feld,
+das auf die primäre ID verweist.
 
-Clients, die eine Modellauswahl darstellen, sollten `?prefix=alias` anfordern — dies macht auch die
-[OmniCopilot VS Code-Erweiterung](../guides/VSCODE-COPILOT.md).
+Clients, die eine Modellauswahl darstellen, sollten `?prefix=alias` anfordern – so verfährt auch die
+[OmniCopilot-Erweiterung für VS Code](../guides/VSCODE-COPILOT.md).
 
-### Ermittlungsfilter (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Discovery-Filter (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` akzeptiert optionale Ermittlungsfilter. Ohne diese bleibt die Antwort unverändert. Sie grenzen den Katalog ein, den der Aufrufer bereits sehen kann (API-Schlüsselberechtigungen werden zuerst angewendet), und werden vor der OpenAI-ähnlichen Seitennavigation mit `limit` / `after` ausgeführt:
+`GET /v1/models` akzeptiert optionale Discovery-Filter. Ohne diese bleibt die Antwort
+unverändert. Sie schränken den Katalog ein, den der Aufrufer bereits sehen kann (API-Schlüsselberechtigungen werden zuerst angewendet),
+und werden vor der OpenAI-ähnlichen Paginierung mit `limit` / `after` ausgeführt:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # jede aufgeführte Fähigkeit muss vorhanden sein
+GET /v1/models?capability=vision&capability=tool_calling   # jede aufgeführte Fähigkeit muss wahr sein
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # Katalog-`type`; Zeilen ohne Typ gelten als `chat`
+GET /v1/models?kind=embedding                              # Katalog-`type`; Zeilen ohne einen solchen sind `chat`
 GET /v1/models?q=sonnet&limit=10                           # Übereinstimmung ohne Beachtung der Groß-/Kleinschreibung bei ID oder Name
 ```
 
 | Parameter     | Werte                                                                                               |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | nicht negative Ganzzahl, die mit `context_length` verglichen wird                                   |
+| `min_context` | nicht negative Ganzzahl, wird mit `context_length` verglichen                                       |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 Zeichen                                                                                       |
 
-Ein unbekannter Wert oder ein `min_context`, das keine nicht negative Ganzzahl ist (zum Beispiel `1.5`), führt zu HTTP `400`; die Meldung enthält die gültigen Werte. Implementierung:
+Ein unbekannter Wert oder ein `min_context`, das keine nicht negative Ganzzahl ist (zum Beispiel `1.5`),
+führt zu HTTP `400`, wobei die Meldung die gültigen Werte auflistet. Implementierung:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Modell-Auswahlliste (`POST /v1/models/query`)
+### Modellauswahl (`POST /v1/models/query`)
 
-`POST /v1/models/query` gibt eine kurze, deterministische Liste aus demselben Katalog zurück, mit derselben Authentifizierung und Sichtbarkeit pro Schlüssel wie `GET /v1/models`:
+`POST /v1/models/query` gibt eine kurze, deterministische Liste aus demselben Katalog zurück, mit derselben
+Authentifizierung und Sichtbarkeit pro Schlüssel wie `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -538,24 +588,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Jedes Feld ist optional. `capabilities` und `exclude` akzeptieren ein Array oder eine durch Kommas getrennte Zeichenfolge; `max_output` wird mit `max_output_tokens` verglichen. Die Ergebnisse werden zuerst nach `owned_by` und anschließend nach `id` sortiert. Der Standardwert von `limit` ist `20`; Werte über `100` werden auf `100` begrenzt. Ungültiges JSON, ein unbekanntes Feld oder ein ungültiger Wert führt zu HTTP `400`.
+Jedes Feld ist optional. `capabilities` und `exclude` akzeptieren ein Array oder eine durch Kommas getrennte Zeichenfolge;
+`max_output` wird mit `max_output_tokens` verglichen. Die Ergebnisse werden zuerst nach `owned_by` und dann nach `id` sortiert.
+Der Standardwert für `limit` ist `20`; Werte über `100` werden auf `100` begrenzt. Ungültiges JSON, ein unbekanntes
+Feld oder ein ungültiger Wert führt zu HTTP `400`.
 
-### Einzeln ausgeblendete Chatmodelle
+### Individuell ausgeblendete Chatmodelle
 
-Ein Modell, das auf seiner Anbieterseite als **Ausgeblendet** markiert ist, wird aus dem Katalog ausgeschlossen und bei expliziter Anforderung mit HTTP `404` / `model_not_found` abgelehnt. Die Prüfung verwendet den aufgelösten Anbieter und das aufgelöste Modell, einschließlich Anbieter-Aliassen, Knotenpräfixen kompatibler Anbieter und Verbindungsstandardwerten. Eine Kombination überspringt ausgeblendete Ziele und kann ein sichtbares verwandtes Modell verwenden; wenn kein ausführbares Ziel verbleibt, wird derselbe Fehlercode zurückgegeben. Das Einblenden wird mit der nächsten Anfrage wirksam. Sichtbarkeitsüberschreibungen ausschließlich für Bilder blenden das Chatmodell mit derselben ID nicht aus.
+Ein Modell, das auf seiner Anbieterseite als **Ausgeblendet** markiert ist, wird aus dem Katalog ausgeschlossen und
+bei expliziter Anforderung mit HTTP `404` / `model_not_found` abgewiesen. Die Prüfung verwendet den aufgelösten
+Anbieter und das aufgelöste Modell, einschließlich Anbieter-Aliasnamen, Knotenpräfixen kompatibler Anbieter und
+Verbindungsstandardwerten. Eine Kombination überspringt ausgeblendete Ziele und kann ein sichtbares verwandtes Modell verwenden; wenn kein
+ausführbares Ziel verbleibt, wird derselbe Fehlercode zurückgegeben. Das Aufheben der Ausblendung wird bei der nächsten
+Anfrage wirksam. Sichtbarkeitsüberschreibungen, die nur für Bilder gelten, blenden das Chatmodell mit derselben ID nicht aus.
 
 Diese individuelle Modelleinstellung ist von den
-[Zulassungs-/Sperrlisten für die Modellbereitstellung](../routing/MODEL_EXPOSURE_LIST.md) getrennt, die die Kataloganzeige und Kandidaten für das automatische Routing filtern, während die explizite Weiterleitung erhalten bleibt. Modellberechtigungen für API-Schlüssel gelten weiterhin unabhängig davon. Der standardmäßige Katalogpräfixmodus bleibt `dual`.
+[Zulassungs-/Sperrlisten für die Modellfreigabe](../routing/MODEL_EXPOSURE_LIST.md) getrennt, die Katalogeinträge
+und Kandidaten für automatisches Routing filtern, während die explizite Weiterleitung erhalten bleibt. Modellberechtigungen für
+API-Schlüssel gelten weiterhin unabhängig davon. Der Standardpräfixmodus des Katalogs bleibt `dual`.
 
 ### Modellvarianten ohne Thinking
 
-Für Claude-Modelle mit Thinking-Unterstützung stellt `/v1/models` außerdem eine **No-Thinking-Variante** bereit, deren ID das Präfix `claude-3-omniroute-no-thinking/` trägt:
+Für Thinking-fähige Claude-Modelle bietet `/v1/models` außerdem eine **No-Thinking**-Variante an, deren ID das Präfix `claude-3-omniroute-no-thinking/` trägt:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Die Auswahl dieser ID (z. B. in einer Claude-Code-Konfiguration, die immer einen `thinking`-Block anhängt) wird wieder auf das tatsächliche `<provider>/<model>` aufgelöst, wobei Reasoning unterdrückt wird — mit `thinking:{type:"disabled"}` im Pfad `/v1/messages` beziehungsweise durch Entfernen der Felder `reasoning`/`reasoning_effort` im Pfad `/v1/chat/completions`. Die Variante wird nur für Modelle der Claude-Familie aufgeführt, die Thinking unterstützen **und** `disabled` berücksichtigen (sodass z. B. reine adaptive Modelle, die `disabled` ablehnen, ausgeschlossen sind). Betreiber können die Variante über `ModelSpec.noThinkingAlias` für jedes Modell explizit aktivieren oder deaktivieren.
+Die Auswahl dieser ID (z. B. in einer Claude-Code-Konfiguration, die immer einen `thinking`-Block anhängt) wird wieder zum tatsächlichen `<provider>/<model>` aufgelöst, wobei Reasoning unterdrückt wird — `thinking:{type:"disabled"}` im `/v1/messages`-Pfad oder durch Weglassen der Felder `reasoning`/`reasoning_effort` im `/v1/chat/completions`-Pfad. Die Variante wird nur für Modelle der Claude-Familie aufgeführt, die Thinking unterstützen **und** `disabled` berücksichtigen (daher sind z. B. ausschließlich adaptive Modelle, die `disabled` ablehnen, ausgeschlossen). Betreiber können die Variante pro Modell über `ModelSpec.noThinkingAlias` erzwingen oder deaktivieren.
 
 ---
 

@@ -451,45 +451,87 @@ mặc định là `us-central1`. Cả hai quá trình phân giải đều diễn
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Trả về tất cả mô hình trò chuyện, embedding và hình ảnh cùng các combo theo định dạng OpenAI
+→ Trả về tất cả mô hình trò chuyện, nhúng và hình ảnh + các combo theo định dạng OpenAI
 ```
 
-### Tiền tố id mô hình (`?prefix=`)
+### Giá mô hình (`pricing`)
 
-Hầu hết các mô hình được công bố dưới một **tiền tố nhà cung cấp**. Tiền tố bạn nhận được được kiểm soát bởi
-cờ tính năng `MODELS_CATALOG_PREFIX_MODE` và có thể được ghi đè **theo từng yêu cầu** bằng một
-tham số truy vấn — hữu ích cho ứng dụng khách muốn có danh sách gọn gàng mà không thay đổi thiết lập
-trên toàn máy chủ cho những người khác:
+Một mục chứa đối tượng `pricing` khi OmniRoute biết giá của mô hình. Giá được lấy
+từ bảng giá mà hệ thống hạch toán chi phí sử dụng: các giá trị mặc định tích hợp sẵn, giá đã đồng bộ và
+các giá trị ghi đè được thiết lập thông qua `/api/pricing`. Đây là giá niêm yết, vì vậy các nhà cung cấp theo gói đăng ký cũng
+hiển thị giá trên mỗi token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Trường                                                          | Đơn vị                              | Ghi chú                                                                                                                                                           |
+| --------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD trên mỗi token, chuỗi thập phân | Tương thích với OpenRouter, không bao giờ dùng ký hiệu số mũ. Hai trường bộ nhớ đệm chỉ xuất hiện khi có giá bộ nhớ đệm.                                          |
+| `input`, `output`, `cached`, `cache_creation`                   | USD trên mỗi 1 triệu token, số      | Các trường từ những phiên bản danh mục trước, được giữ lại cho các máy khách hiện có. `reasoning` và `long_context` cũng xuất hiện khi hàng giá có các trường đó. |
+
+- **Combo** mang giá của đích hiển thị đầu tiên. Các combo `auto/*` tích hợp sẵn chọn một
+  đích tại thời điểm yêu cầu, vì vậy chúng không có `pricing`.
+- **Mô hình miễn phí** hiển thị `"0"` (và `0`) khi giá bằng không. Một mô hình không có hàng giá
+  cũng hiển thị `"0"` khi danh mục đánh dấu mô hình đó là miễn phí (`free: true`) hoặc danh mục mô hình miễn phí
+  tích hợp sẵn có liệt kê mô hình đó.
+- **Không rõ giá:** mục đó không có khóa `pricing`.
+- **Nhà cung cấp tính phí theo tín dụng** (chẳng hạn như Kiro) tính phí theo mỗi yêu cầu thay vì theo token. Các
+  mục của họ giữ lại những trường số theo 1 triệu token trước đây và không có các trường chuỗi theo mỗi token.
+- **Biến thể** (ID mức độ suy luận, bí danh không suy nghĩ, bản sao khám phá và cổng)
+  sao chép giá của mô hình mà chúng định tuyến đến.
+- Các trường chỉ chứa mức giá cơ sở. Các bậc ngữ cảnh dài (trường số `long_context`) và
+  hệ số nhân theo bậc dịch vụ (ví dụ Codex nhanh hoặc linh hoạt) không làm thay đổi `prompt` hay
+  `completion`.
+- Đối tượng này giống nhau đối với mọi kiểu xác thực, bao gồm cả yêu cầu theo kiểu Anthropic
+  với `x-api-key` và `anthropic-version` (phản hồi vẫn là `{ "object": "list",
+"data": [...] }`). Phần triển khai: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Tiền tố ID mô hình (`?prefix=`)
+
+Hầu hết mô hình được công bố dưới một **tiền tố nhà cung cấp**. Tiền tố bạn nhận được do
+cờ tính năng `MODELS_CATALOG_PREFIX_MODE` kiểm soát và có thể được ghi đè **cho từng yêu cầu** bằng một
+tham số truy vấn — hữu ích cho máy khách muốn có danh sách gọn gàng mà không thay đổi thiết lập
+trên toàn máy chủ cho tất cả người dùng khác:
 
 ```bash
-GET /v1/models?prefix=alias        # một id cho mỗi mô hình — tiền tố bí danh ngắn
+GET /v1/models?prefix=alias        # một ID cho mỗi mô hình — tiền tố bí danh ngắn
 GET /v1/models?prefix=dual         # cả hai dạng (mặc định của máy chủ)
-GET /v1/models?prefix=canonical    # chỉ tiền tố id đầy đủ của nhà cung cấp
+GET /v1/models?prefix=canonical    # chỉ tiền tố ID đầy đủ của nhà cung cấp
 ```
 
-| Chế độ      | Xuất ra                                                  | Ghi chú                                                                                                                                                                                                       |
-| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **và** `claude/claude-sonnet-4-6` | **Mặc định.** Cả hai id đều định tuyến đến cùng một mô hình; được giữ lại để các cấu hình ứng dụng khách đã mã hóa cứng một trong hai dạng vẫn tiếp tục hoạt động. Kích thước danh mục gần như tăng gấp đôi.  |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Một mục cho mỗi mô hình. Các nhà cung cấp không có bí danh riêng vẫn xuất mục của mình, vì vậy không có gì bị mất.                                                                                            |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Một mục cho mỗi mô hình dưới tiền tố id đầy đủ của nhà cung cấp. Các nhà cung cấp không có bí danh riêng (ví dụ: `antigravity/…`, `agy/…`) cũng xuất id duy nhất của mình tại đây, vì vậy không có gì bị mất. |
+| Chế độ      | Xuất ra                                                  | Ghi chú                                                                                                                                                                                                        |
+| ----------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **và** `claude/claude-sonnet-4-6` | **Mặc định.** Cả hai ID đều định tuyến đến cùng một mô hình; được giữ lại để cấu hình máy khách đã mã hóa cứng một trong hai dạng tiếp tục hoạt động. Làm danh mục lớn gần gấp đôi.                            |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Một mục cho mỗi mô hình. Các nhà cung cấp không có bí danh riêng biệt vẫn xuất mục của họ, vì vậy không có gì bị mất.                                                                                          |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Một mục cho mỗi mô hình dưới tiền tố ID đầy đủ của nhà cung cấp. Các nhà cung cấp không có bí danh riêng biệt (ví dụ: `antigravity/…`, `agy/…`) cũng xuất ID duy nhất của họ ở đây, vì vậy không có gì bị mất. |
 
-Một bản sao ở chế độ `dual` cũng có thể được nhận biết mà không cần tham số truy vấn: nó có trường `parent`
-trỏ đến id chính.
+Một bản sao ở chế độ `dual` cũng có thể được nhận biết mà không cần tham số truy vấn: nó chứa trường `parent`
+trỏ đến ID chính.
 
-Các ứng dụng khách hiển thị trình chọn mô hình nên yêu cầu `?prefix=alias` — đây là cách
+Các máy khách hiển thị trình chọn mô hình nên yêu cầu `?prefix=alias` — đây là cách
 [tiện ích mở rộng OmniCopilot cho VS Code](../guides/VSCODE-COPILOT.md) hoạt động.
 
 ### Bộ lọc khám phá (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` chấp nhận các bộ lọc khám phá tùy chọn. Nếu không có bất kỳ bộ lọc nào, phản hồi
-không thay đổi. Chúng thu hẹp danh mục mà bên gọi đã có thể xem (quyền của khóa API được áp dụng trước),
-và chúng chạy trước quá trình phân trang `limit` / `after` theo kiểu OpenAI:
+`GET /v1/models` chấp nhận các bộ lọc khám phá tùy chọn. Khi không có bất kỳ bộ lọc nào, phản hồi
+không thay đổi. Chúng thu hẹp danh mục mà bên gọi vốn đã có thể xem (quyền của khóa API được áp dụng trước),
+và chúng chạy trước phân trang kiểu OpenAI bằng `limit` / `after`:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # mọi khả năng được liệt kê đều phải là true
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` trong danh mục; các hàng không có giá trị này được xem là `chat`
-GET /v1/models?q=sonnet&limit=10                           # đối sánh không phân biệt chữ hoa chữ thường trên id hoặc tên
+GET /v1/models?kind=embedding                              # `type` của danh mục; các hàng không có trường này là `chat`
+GET /v1/models?q=sonnet&limit=10                           # đối sánh không phân biệt chữ hoa chữ thường trên ID hoặc tên
 ```
 
 | Tham số       | Giá trị                                                                                             |
@@ -499,14 +541,14 @@ GET /v1/models?q=sonnet&limit=10                           # đối sánh không
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 ký tự                                                                                         |
 
-Một giá trị không xác định hoặc `min_context` không phải là số nguyên không âm (ví dụ: `1.5`)
-sẽ trả về HTTP `400`, đồng thời thông báo sẽ liệt kê các giá trị hợp lệ. Phần triển khai:
+Một giá trị không xác định, hoặc `min_context` không phải là số nguyên không âm (ví dụ `1.5`),
+sẽ trả về HTTP `400` và thông báo liệt kê các giá trị hợp lệ. Phần triển khai:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Danh sách rút gọn mô hình (`POST /v1/models/query`)
+### Danh sách rút gọn các mô hình (`POST /v1/models/query`)
 
 `POST /v1/models/query` trả về một danh sách ngắn, có tính xác định từ cùng danh mục, với cùng
-cơ chế xác thực và khả năng hiển thị theo từng khóa như `GET /v1/models`:
+cơ chế xác thực và phạm vi hiển thị theo từng khóa như `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -519,34 +561,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Mọi trường đều là tùy chọn. `capabilities` và `exclude` nhận một mảng hoặc một chuỗi phân tách bằng dấu phẩy;
+Mọi trường đều không bắt buộc. `capabilities` và `exclude` chấp nhận một mảng hoặc một chuỗi phân tách bằng dấu phẩy;
 `max_output` được so sánh với `max_output_tokens`. Kết quả được sắp xếp theo `owned_by`, sau đó theo `id`.
-Giá trị mặc định của `limit` là `20` và các giá trị lớn hơn `100` bị giới hạn ở `100`. JSON không hợp lệ, trường
-không xác định hoặc giá trị không hợp lệ sẽ trả về HTTP `400`.
+`limit` mặc định là `20` và các giá trị lớn hơn `100` được giới hạn ở `100`. JSON không hợp lệ, trường không xác định
+hoặc giá trị không hợp lệ sẽ trả về HTTP `400`.
 
 ### Các mô hình trò chuyện bị ẩn riêng lẻ
 
-Một mô hình được đánh dấu **Ẩn** trên trang nhà cung cấp của nó sẽ bị loại khỏi danh mục và bị từ chối
-với HTTP `404` / `model_not_found` khi được yêu cầu tường minh. Quá trình kiểm tra sử dụng nhà cung cấp
+Một mô hình được đánh dấu **Ẩn** trên trang nhà cung cấp của mô hình đó sẽ bị loại khỏi danh mục và bị từ chối
+với HTTP `404` / `model_not_found` khi được yêu cầu tường minh. Việc kiểm tra sử dụng nhà cung cấp
 và mô hình đã được phân giải, bao gồm bí danh nhà cung cấp, tiền tố nút của nhà cung cấp tương thích và
-giá trị mặc định của kết nối. Một combo sẽ bỏ qua các đích bị ẩn và có thể sử dụng một mô hình cùng nhóm
-đang hiển thị; khi không còn đích nào có thể thực thi, nó trả về cùng mã lỗi. Việc bỏ ẩn có hiệu lực từ yêu cầu
-tiếp theo. Các thiết lập ghi đè khả năng hiển thị chỉ dành cho hình ảnh không làm ẩn mô hình trò chuyện có cùng ID.
+giá trị mặc định của kết nối. Một tổ hợp sẽ bỏ qua các đích bị ẩn và có thể sử dụng một mô hình cùng nhóm đang hiển thị; khi không còn
+đích nào có thể thực thi, tổ hợp sẽ trả về cùng mã lỗi. Việc bỏ ẩn có hiệu lực ở yêu cầu tiếp theo.
+Các ghi đè về phạm vi hiển thị chỉ dành cho hình ảnh không ẩn mô hình trò chuyện có cùng ID.
 
-Thiết lập riêng cho từng mô hình này tách biệt với
-[danh sách cho phép/từ chối hiển thị mô hình](../routing/MODEL_EXPOSURE_LIST.md), vốn lọc việc công bố
-danh mục và các ứng viên định tuyến tự động trong khi vẫn duy trì điều phối tường minh. Quyền mô hình
-của khóa API tiếp tục được áp dụng độc lập. Chế độ tiền tố danh mục mặc định vẫn là `dual`.
+Thiết lập mô hình riêng lẻ này độc lập với
+[danh sách cho phép/từ chối hiển thị mô hình](../routing/MODEL_EXPOSURE_LIST.md), vốn lọc các mô hình được quảng bá trong danh mục
+và các ứng viên định tuyến tự động, trong khi vẫn duy trì việc điều phối tường minh. Các quyền mô hình của khóa API
+tiếp tục được áp dụng độc lập. Chế độ tiền tố danh mục mặc định vẫn là `dual`.
 
 ### Các biến thể mô hình không suy luận
 
-Đối với các mô hình Claude có khả năng suy luận, `/v1/models` cũng công bố một biến thể **không suy luận** có id được thêm tiền tố `claude-3-omniroute-no-thinking/`:
+Đối với các mô hình Claude hỗ trợ suy luận, `/v1/models` cũng quảng bá một biến thể **không suy luận** có id được thêm tiền tố `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Việc chọn id này (ví dụ: trong cấu hình Claude Code luôn đính kèm một khối `thinking`) sẽ phân giải trở lại thành `<provider>/<model>` thực với khả năng suy luận bị tắt — `thinking:{type:"disabled"}` trên đường dẫn `/v1/messages`, hoặc các trường `reasoning`/`reasoning_effort` bị loại bỏ trên đường dẫn `/v1/chat/completions`. Biến thể này chỉ được liệt kê cho các mô hình thuộc họ Claude có hỗ trợ khả năng suy nghĩ **và** chấp nhận `disabled` (do đó, ví dụ: các mô hình chỉ hỗ trợ chế độ thích ứng nhưng từ chối `disabled` sẽ bị loại trừ). Người vận hành có thể buộc bật hoặc tắt biến thể này cho từng mô hình thông qua `ModelSpec.noThinkingAlias`.
+Việc chọn id này (ví dụ trong cấu hình Claude Code luôn đính kèm một khối `thinking`) sẽ phân giải trở lại `<provider>/<model>` thực với khả năng suy luận bị tắt — `thinking:{type:"disabled"}` trên đường dẫn `/v1/messages`, hoặc các trường `reasoning`/`reasoning_effort` bị loại bỏ trên đường dẫn `/v1/chat/completions`. Biến thể này chỉ được liệt kê cho các mô hình thuộc họ Claude hỗ trợ suy luận **và** chấp nhận `disabled` (do đó, ví dụ, các mô hình chỉ hỗ trợ chế độ thích ứng và từ chối `disabled` sẽ bị loại trừ). Người vận hành có thể buộc bật hoặc tắt biến thể này theo từng mô hình thông qua `ModelSpec.noThinkingAlias`.
 
 ---
 

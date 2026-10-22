@@ -454,59 +454,101 @@ Authorization: Bearer your-api-key
 → Tagastab kõik vestlus-, manustus- ja pildimudelid ning kombinatsioonid OpenAI vormingus
 ```
 
-### Mudeli ID prefiksid (`?prefix=`)
+### Mudelite hinnad (`pricing`)
 
-Enamikku mudeleid kuvatakse **teenusepakkuja prefiksiga**. Kasutatavat prefiksit juhib
-funktsioonilipp `MODELS_CATALOG_PREFIX_MODE` ning selle saab alistada **iga päringu kohta eraldi**
-päringuparameetriga — see on kasulik kliendi puhul, mis soovib puhast loendit ilma kõigi teiste
-jaoks kogu serverit hõlmavat seadistust muutmata:
+Kirje sisaldab objekti `pricing`, kui OmniRoute teab mudeli hinda. Hind pärineb
+hinnatabelist, mida kasutatakse kulude arvestamiseks: sisseehitatud vaikehinnad, sünkroonitud hinnad ja
+`/api/pricing` kaudu määratud ülekirjutused. Need on hinnakirjahinnad, seega kuvavad ka tellimuspõhised teenusepakkujad
+tokenipõhist hinda.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Väljad                                                          | Ühik                                   | Märkused                                                                                                                                                               |
+| --------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD tokeni kohta, kümnendarvuline sõne | OpenRouteriga ühilduv, mitte kunagi eksponentkujul. Kaks vahemäluvälja kuvatakse ainult siis, kui vahemälul on hind.                                                   |
+| `input`, `output`, `cached`, `cache_creation`                   | USD 1 miljoni tokeni kohta, arv        | Varasemate kataloogiversioonide väljad, mis on olemasolevate klientide jaoks säilitatud. `reasoning` ja `long_context` kuvatakse samuti, kui hinnareal on need olemas. |
+
+- **Kombinatsioonid** kannavad oma esimese nähtava sihtmudeli hinda. Sisseehitatud `auto/*` kombinatsioonid valivad
+  sihtmudeli päringu ajal, mistõttu neil puudub `pricing`.
+- **Tasuta mudelid** kuvavad `"0"` (ja `0`), kui nende hind on null. Hinnareata mudel
+  kuvab samuti `"0"`, kui kataloog märgib selle tasuta mudeliks (`free: true`) või sisseehitatud tasuta mudelite
+  kataloog sisaldab seda.
+- **Tundmatu hind:** kirjel puudub võti `pricing`.
+- **Krediidipõhise mõõtmisega teenusepakkujad** (näiteks Kiro) esitavad arve päringu, mitte tokeni alusel. Nende
+  kirjed säilitavad varasemad arvulised miljoni tokeni väljad ega sisalda tokenipõhiseid sõnevälju.
+- **Variandid** (arutluspingutuse ID-d, mõtlemiseta aliased ning tuvastus- ja lüüsipeeglid)
+  kopeerivad selle mudeli hinna, kuhu nad marsruudivad.
+- Väljad sisaldavad ainult baasmäärasid. Pika konteksti astmed (arvuline väli `long_context`) ja
+  teenusetaseme kordajad (näiteks Codex fast või flex) ei muuda väärtusi `prompt` ega
+  `completion`.
+- Objekt on kõigi autentimisviiside puhul sama, sealhulgas Anthropicu stiilis
+  päringu korral, mis kasutab `x-api-key` ja `anthropic-version` (vastuseks jääb `{ "object": "list",
+"data": [...] }`). Teostus: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Mudeli ID-de prefiksid (`?prefix=`)
+
+Enamikku mudeleid reklaamitakse **teenusepakkuja prefiksiga**. Saadava prefiksi määrab
+funktsioonilipp `MODELS_CATALOG_PREFIX_MODE` ning selle saab **iga päringu puhul** alistada
+päringuparameetriga — see on kasulik kliendile, kes soovib puhast loendit ilma kõigi teiste jaoks
+serveriülest seadistust muutmata:
 
 ```bash
-GET /v1/models?prefix=alias        # üks ID mudeli kohta — lühike pseudonüümi prefiks
-GET /v1/models?prefix=dual         # mõlemad vormid (serveri vaikeseade)
+GET /v1/models?prefix=alias        # üks ID mudeli kohta — lühike aliaseprefiks
+GET /v1/models?prefix=dual         # mõlemad vormid (serveri vaikeväärtus)
 GET /v1/models?prefix=canonical    # ainult täielik teenusepakkuja ID prefiks
 ```
 
-| Režiim      | Väljastab                                                | Märkused                                                                                                                                                                                              |
-| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **ja** `claude/claude-sonnet-4-6` | **Vaikeseade.** Mõlemad ID-d suunatakse samale mudelile; see säilitatakse, et kummagi vormi püsikodeerinud kliendikonfiguratsioonid töötaksid edasi. Ligikaudu kahekordistab kataloogi.               |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Üks kirje mudeli kohta. Eraldiseisva pseudonüümita teenusepakkujad väljastavad endiselt oma kirje, seega midagi ei lähe kaotsi.                                                                       |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Üks kirje mudeli kohta täieliku teenusepakkuja ID prefiksiga. Eraldiseisva pseudonüümita teenusepakkujad (nt `antigravity/…`, `agy/…`) väljastavad ka siin oma ainsa ID, seega midagi ei lähe kaotsi. |
+| Režiim      | Väljastab                                                | Märkused                                                                                                                                                                                          |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **ja** `claude/claude-sonnet-4-6` | **Vaikeväärtus.** Mõlemad ID-d marsruudivad samale mudelile; see on säilitatud, et kummagi vormi püsikodeerinud kliendikonfiguratsioonid töötaksid edasi. Kataloogi maht ligikaudu kahekordistub. |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Üks kirje mudeli kohta. Eraldi aliaseta teenusepakkujad väljastavad endiselt oma kirje, seega midagi ei lähe kaotsi.                                                                              |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Üks kirje mudeli kohta täieliku teenusepakkuja ID prefiksiga. Eraldi aliaseta teenusepakkujad (nt `antigravity/…`, `agy/…`) väljastavad ka siin oma ainsa ID, seega midagi ei lähe kaotsi.        |
 
-`dual`-režiimis peegelkirje saab tuvastada ka ilma päringuparameetrita: sellel on põhikirjele
-osutav väli `parent`.
+Režiimi `dual` peegli saab ära tunda ka ilma päringuparameetrita: sellel on väli `parent`,
+mis osutab esmasele ID-le.
 
-Mudelivalikut kuvavad kliendid peaksid pärima `?prefix=alias` — nii teeb ka
+Mudelivaliku kuvavad kliendid peaksid pärima `?prefix=alias` — nii teeb seda
 [OmniCopiloti VS Code'i laiendus](../guides/VSCODE-COPILOT.md).
 
 ### Tuvastusfiltrid (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` aktsepteerib valikulisi tuvastusfiltreid. Kui ühtegi neist ei kasutata, jääb
-vastus muutumatuks. Need kitsendavad kataloogi, mida kutsuja juba näeb (esmalt rakendatakse
-API-võtme õigusi), ning need käivitatakse enne OpenAI-laadset `limit` / `after` lehekülgjaotust:
+`GET /v1/models` aktsepteerib valikulisi tuvastusfiltreid. Kui neid pole määratud, jääb vastus
+muutmata. Need kitsendavad kataloogi, mida kutsuja juba näeb (esmalt rakenduvad API-võtme õigused),
+ning neid rakendatakse enne OpenAI stiilis `limit` / `after` lehekülgjaotust:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # iga loetletud võimekus peab olema tõene
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # kataloogi `type`; ilma selleta read on `chat`
-GET /v1/models?q=sonnet&limit=10                           # tõstutundetu vaste ID või nime põhjal
+GET /v1/models?q=sonnet&limit=10                           # tõstutundetu vaste ID või nime alusel
 ```
 
 | Parameeter    | Väärtused                                                                                           |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | mittenegatiivne täisarv, mida võrreldakse väljaga `context_length`                                  |
+| `min_context` | mittenegatiivne täisarv, mida võrreldakse väärtusega `context_length`                               |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 märki                                                                                         |
 
-Tundmatu väärtus või `min_context`, mis pole mittenegatiivne täisarv (näiteks `1.5`),
-tagastab HTTP `400` ning sõnum loetleb lubatud väärtused. Teostus:
+Tundmatu väärtus või `min_context`, mis ei ole mittenegatiivne täisarv (näiteks `1.5`),
+tagastab HTTP `400` ja teates loetletakse kehtivad väärtused. Teostus:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Mudelite lühiloend (`POST /v1/models/query`)
+### Mudelite valikloend (`POST /v1/models/query`)
 
-`POST /v1/models/query` tagastab samast kataloogist lühikese deterministliku loendi, kasutades
-sama autentimist ja võtmekohast nähtavust nagu `GET /v1/models`:
+`POST /v1/models/query` tagastab samast kataloogist lühikese deterministliku loendi, kasutades sama
+autentimist ja võtmekohast nähtavust nagu `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -519,37 +561,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Kõik väljad on valikulised. `capabilities` ja `exclude` aktsepteerivad massiivi või komadega
-eraldatud stringi; `max_output` võrreldakse väljaga `max_output_tokens`. Tulemused sorditakse
-esmalt välja `owned_by`, seejärel välja `id` järgi. Parameetri `limit` vaikeväärtus on `20` ning
-väärtused üle `100` piiratakse väärtusele `100`. Vigane JSON, tundmatu väli või sobimatu väärtus
-tagastab HTTP `400`.
+Kõik väljad on valikulised. `capabilities` ja `exclude` võtavad vastu massiivi või komadega eraldatud stringi;
+`max_output` võrreldakse väärtusega `max_output_tokens`. Tulemused sorditakse esmalt `owned_by` ja seejärel `id` järgi.
+`limit` vaikeväärtus on `20` ning väärtused üle `100` piiratakse väärtusele `100`. Vigane JSON, tundmatu
+väli või sobimatu väärtus tagastab HTTP `400`.
 
 ### Eraldi peidetud vestlusmudelid
 
-Teenusepakkuja lehel märkega **Peidetud** mudel jäetakse kataloogist välja ning selle otsesel
-pärimisel lükatakse päring tagasi veaga HTTP `404` / `model_not_found`. Kontroll kasutab
-lahendatud teenusepakkujat ja mudelit, sealhulgas teenusepakkuja pseudonüüme, ühilduva
-teenusepakkuja sõlmede prefikseid ning ühenduse vaikeseadeid. Kombinatsioon jätab peidetud
-sihtmärgid vahele ja võib kasutada nähtavat sõsarmudelit; kui ühtegi käivitatavat sihtmärki
-ei jää, tagastatakse sama veakood. Peitmise tühistamine jõustub järgmise päringuga. Ainult
-piltidele kehtivad nähtavuse alistused ei peida sama ID-ga vestlusmudelit.
+Pakkuja lehel märkega **Peidetud** mudel jäetakse kataloogist välja ja selle otsesel
+taotlemisel tagastatakse HTTP `404` / `model_not_found`. Kontroll kasutab lahendatud
+pakkujat ja mudelit, sealhulgas pakkuja pseudonüüme, ühilduva pakkuja sõlme eesliiteid ning
+ühenduse vaikeväärtusi. Kombinatsioon jätab peidetud sihtkohad vahele ja võib kasutada nähtavat sõsarmudelit; kui ühtegi
+käivitatavat sihtkohta ei jää, tagastatakse sama veakood. Peitmise tühistamine jõustub järgmise
+päringuga. Ainult piltidele rakenduvad nähtavuse alistused ei peida sama ID-ga vestlusmudelit.
 
-See eraldi mudeli seadistus on lahus
-[mudelite avaldamise lubamis- ja keelamisloenditest](../routing/MODEL_EXPOSURE_LIST.md), mis filtreerivad
-kataloogis kuvamist ja automaatse suunamise kandidaate, säilitades samal ajal otsese suunamise.
-API-võtme mudeliõigused rakenduvad jätkuvalt sõltumatult. Kataloogi prefiksirežiimi vaikeväärtus
-on endiselt `dual`.
+See eraldiseisva mudeli säte on lahus
+[mudelite avaldamise lubamis- ja keelamisloenditest](../routing/MODEL_EXPOSURE_LIST.md), mis filtreerivad kataloogis
+kuvamist ja automaatse marsruutimise kandidaate, säilitades samal ajal otsese edastamise. API-võtme mudeliõigused
+rakenduvad jätkuvalt sõltumatult. Kataloogi eesliiterežiimi vaikeväärtuseks jääb `dual`.
 
 ### Mõtlemiseta mudelivariandid
 
-Mõtlemisvõimega Claude'i mudelite puhul avaldab `/v1/models` ka **mõtlemiseta** variandi, mille ID prefiks on `claude-3-omniroute-no-thinking/`:
+Mõtlemist toetavate Claude’i mudelite puhul avaldab `/v1/models` ka **mõtlemiseta** variandi, mille ID eesliide on `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Selle id valimine (nt Claude Code'i konfiguratsioonis, mis lisab alati `thinking`-ploki) suunab tagasi tegelikule mudelile `<provider>/<model>`, kus arutluskäik on maha surutud — `/v1/messages` teel kasutatakse `thinking:{type:"disabled"}`, `/v1/chat/completions` teel aga jäetakse väljad `reasoning`/`reasoning_effort` välja. Variant kuvatakse ainult Claude'i perekonna mudelite puhul, mis toetavad mõtlemist **ja** arvestavad väärtust `disabled` (seega jäetakse välja näiteks ainult kohanduvat mõtlemist toetavad mudelid, mis lükkavad väärtuse `disabled` tagasi). Operaatorid saavad variandi mudelipõhiselt sundkorras sisse või välja lülitada atribuudi `ModelSpec.noThinkingAlias` kaudu.
+Selle ID valimine (nt Claude Code’i konfiguratsioonis, mis lisab alati `thinking` ploki) lahendatakse tagasi tegelikuks `<provider>/<model>` mudeliks, kus arutluskäik on välja lülitatud — `/v1/messages` teel kasutatakse `thinking:{type:"disabled"}` või `/v1/chat/completions` teel jäetakse väljad `reasoning`/`reasoning_effort` välja. Variant kuvatakse ainult Claude’i perekonna mudelite puhul, mis toetavad mõtlemist **ja** arvestavad väärtusega `disabled` (seega jäetakse välja näiteks ainult adaptiivset režiimi toetavad mudelid, mis lükkavad väärtuse `disabled` tagasi). Operaatorid saavad variandi iga mudeli puhul `ModelSpec.noThinkingAlias` kaudu sunnitult sisse või välja lülitada.
 
 ---
 

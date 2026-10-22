@@ -447,45 +447,87 @@ konsumowane przez `src/app/api/v1/ocr/route.ts` przed przekazaniem do `handleOcr
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Zwraca wszystkie modele czatu, osadzania i generowania obrazów oraz kombinacje w formacie OpenAI
+→ Zwraca wszystkie modele czatu, osadzania i obrazów oraz kombinacje w formacie OpenAI
 ```
+
+### Ceny modeli (`pricing`)
+
+Wpis zawiera obiekt `pricing`, gdy OmniRoute zna cenę modelu. Cena pochodzi
+z tabeli cen używanej do rozliczania kosztów: wbudowanych wartości domyślnych, zsynchronizowanych cen oraz
+nadpisań ustawionych za pośrednictwem `/api/pricing`. Są to ceny katalogowe, dlatego dostawcy subskrypcji również
+wyświetlają cenę za token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Pola                                                            | Jednostka                     | Uwagi                                                                                                                                                         |
+| --------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD za token, ciąg dziesiętny | Zgodne z OpenRouter, nigdy w notacji wykładniczej. Dwa pola pamięci podręcznej pojawiają się tylko wtedy, gdy istnieje cena pamięci podręcznej.               |
+| `input`, `output`, `cached`, `cache_creation`                   | USD za 1 mln tokenów, liczba  | Pola z wcześniejszych wersji katalogu, zachowane dla istniejących klientów. `reasoning` i `long_context` również pojawiają się, gdy zawiera je wiersz cenowy. |
+
+- **Kombinacje** mają cenę swojego pierwszego widocznego celu. Wbudowane kombinacje `auto/*` wybierają
+  cel w czasie żądania, dlatego nie mają pola `pricing`.
+- **Bezpłatne modele** wyświetlają `"0"` (oraz `0`), gdy ich cena wynosi zero. Model bez wiersza cenowego
+  również wyświetla `"0"`, gdy katalog oznacza go jako bezpłatny (`free: true`) lub znajduje się on we wbudowanym
+  katalogu bezpłatnych modeli.
+- **Nieznana cena:** wpis nie ma klucza `pricing`.
+- **Dostawcy rozliczani kredytami** (tacy jak Kiro) naliczają opłaty za żądanie, a nie za token. Ich
+  wpisy zachowują numeryczne pola ceny za 1 mln tokenów, które miały wcześniej, i nie zawierają pól tekstowych ceny za token.
+- **Warianty** (identyfikatory poziomu intensywności rozumowania, aliasy bez myślenia, kopie lustrzane na potrzeby wykrywania i bramy)
+  kopiują cenę modelu, do którego kierują ruch.
+- Pola zawierają wyłącznie stawki bazowe. Progi długiego kontekstu (numeryczne pole `long_context`) oraz
+  mnożniki poziomu usługi (na przykład Codex fast lub flex) nie zmieniają `prompt` ani
+  `completion`.
+- Obiekt jest taki sam dla każdego sposobu uwierzytelniania, w tym dla żądania w stylu Anthropic
+  z `x-api-key` i `anthropic-version` (odpowiedź pozostaje `{ "object": "list",
+"data": [...] }`). Implementacja: `src/app/api/v1/models/catalogPricing.ts`.
 
 ### Prefiksy identyfikatorów modeli (`?prefix=`)
 
-Większość modeli jest udostępniana z **prefiksem dostawcy**. Używany prefiks jest kontrolowany przez
-flagę funkcji `MODELS_CATALOG_PREFIX_MODE` i może zostać nadpisany **dla każdego żądania** za pomocą
-parametru zapytania — jest to przydatne dla klienta, który chce uzyskać przejrzystą listę bez zmieniania
-ustawienia obejmującego cały serwer dla wszystkich pozostałych użytkowników:
+Większość modeli jest udostępniana z **prefiksem dostawcy**. Otrzymywany prefiks jest kontrolowany przez
+flagę funkcji `MODELS_CATALOG_PREFIX_MODE` i można go nadpisać **dla każdego żądania** za pomocą
+parametru zapytania — jest to przydatne dla klienta, który potrzebuje przejrzystej listy bez zmiany ustawienia
+obejmującego cały serwer dla wszystkich pozostałych użytkowników:
 
 ```bash
 GET /v1/models?prefix=alias        # jeden identyfikator na model — krótki prefiks aliasu
-GET /v1/models?prefix=dual         # obie formy (ustawienie domyślne serwera)
+GET /v1/models?prefix=dual         # obie formy (domyślne ustawienie serwera)
 GET /v1/models?prefix=canonical    # tylko pełny prefiks identyfikatora dostawcy
 ```
 
-| Tryb        | Emituje                                                    | Uwagi                                                                                                                                                                                                             |
-| ----------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **oraz** `claude/claude-sonnet-4-6` | **Domyślny.** Oba identyfikatory kierują do tego samego modelu; zachowano je, aby konfiguracje klientów z zakodowaną na stałe jedną z tych form nadal działały. W przybliżeniu podwaja katalog.                   |
-| `alias`     | `cc/claude-sonnet-4-6`                                     | Jeden wpis na model. Dostawcy bez odrębnego aliasu nadal emitują swój wpis, więc nic nie zostaje pominięte.                                                                                                       |
-| `canonical` | `claude/claude-sonnet-4-6`                                 | Jeden wpis na model z pełnym prefiksem identyfikatora dostawcy. Dostawcy bez odrębnego aliasu (np. `antigravity/…`, `agy/…`) również emitują tutaj swój pojedynczy identyfikator, więc nic nie zostaje pominięte. |
+| Tryb        | Emituje                                                    | Uwagi                                                                                                                                                                                                            |
+| ----------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **oraz** `claude/claude-sonnet-4-6` | **Domyślny.** Oba identyfikatory kierują do tego samego modelu; zachowano je, aby konfiguracje klientów z wpisaną na stałe którąkolwiek formą nadal działały. Mniej więcej podwaja rozmiar katalogu.             |
+| `alias`     | `cc/claude-sonnet-4-6`                                     | Jeden wpis na model. Dostawcy bez odrębnego aliasu nadal emitują swój wpis, więc nic nie zostaje utracone.                                                                                                       |
+| `canonical` | `claude/claude-sonnet-4-6`                                 | Jeden wpis na model z pełnym prefiksem identyfikatora dostawcy. Dostawcy bez odrębnego aliasu (np. `antigravity/…`, `agy/…`) również emitują tutaj swój pojedynczy identyfikator, więc nic nie zostaje utracone. |
 
-Kopię lustrzaną w trybie `dual` można również rozpoznać bez parametru zapytania: zawiera pole `parent`
-wskazujące na główny identyfikator.
+Kopię lustrzaną w trybie `dual` można również rozpoznać bez parametru zapytania: zawiera ona pole `parent`
+wskazujące główny identyfikator.
 
 Klienci wyświetlający selektor modeli powinni wysyłać żądanie z `?prefix=alias` — tak robi
 [rozszerzenie OmniCopilot dla VS Code](../guides/VSCODE-COPILOT.md).
 
-### Filtry wyszukiwania (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Filtry wykrywania (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` obsługuje opcjonalne filtry wyszukiwania. Bez żadnego z nich odpowiedź pozostaje
-niezmieniona. Zawężają one katalog już widoczny dla wywołującego (najpierw stosowane są uprawnienia
-klucza API) i są stosowane przed stronicowaniem w stylu OpenAI za pomocą `limit` / `after`:
+`GET /v1/models` obsługuje opcjonalne filtry wykrywania. Bez żadnego z nich odpowiedź pozostaje
+niezmieniona. Zawężają one katalog, który wywołujący już widzi (najpierw stosowane są uprawnienia klucza API),
+i są stosowane przed stronicowaniem w stylu OpenAI za pomocą `limit` / `after`:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # każda wymieniona funkcja musi być dostępna
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` katalogu; wiersze bez wartości są typu `chat`
-GET /v1/models?q=sonnet&limit=10                           # dopasowanie do identyfikatora lub nazwy bez rozróżniania wielkości liter
+GET /v1/models?kind=embedding                              # katalogowe `type`; wiersze bez niego mają typ `chat`
+GET /v1/models?q=sonnet&limit=10                           # dopasowanie bez uwzględniania wielkości liter w identyfikatorze lub nazwie
 ```
 
 | Parametr      | Wartości                                                                                            |
@@ -495,14 +537,14 @@ GET /v1/models?q=sonnet&limit=10                           # dopasowanie do iden
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 znaków                                                                                        |
 
-Nieznana wartość lub `min_context`, który nie jest nieujemną liczbą całkowitą (na przykład `1.5`),
-powoduje zwrócenie HTTP `400`, a komunikat zawiera listę prawidłowych wartości. Implementacja:
+Nieznana wartość lub `min_context`, które nie jest nieujemną liczbą całkowitą (na przykład `1.5`),
+powoduje zwrócenie kodu HTTP `400`, a komunikat zawiera listę prawidłowych wartości. Implementacja:
 `src/app/api/v1/models/catalogFilters.ts`.
 
 ### Krótka lista modeli (`POST /v1/models/query`)
 
-`POST /v1/models/query` zwraca krótką, deterministyczną listę z tego samego katalogu, z tym samym
-uwierzytelnianiem i widocznością dla poszczególnych kluczy co `GET /v1/models`:
+`POST /v1/models/query` zwraca krótką, deterministyczną listę z tego samego katalogu, z takim samym
+uwierzytelnianiem i widocznością dla poszczególnych kluczy jak `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -515,37 +557,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Każde pole jest opcjonalne. `capabilities` i `exclude` przyjmują tablicę lub ciąg wartości rozdzielonych
-przecinkami; `max_output` jest porównywane z `max_output_tokens`. Wyniki są sortowane najpierw według
-`owned_by`, a następnie według `id`. Domyślna wartość `limit` to `20`, a wartości powyżej `100` są
-ograniczane do `100`. Nieprawidłowy JSON, nieznane pole lub nieprawidłowa wartość powodują zwrócenie
-HTTP `400`.
+Każde pole jest opcjonalne. `capabilities` i `exclude` przyjmują tablicę lub ciąg znaków rozdzielony przecinkami;
+`max_output` jest porównywane z `max_output_tokens`. Wyniki są sortowane według `owned_by`, a następnie `id`.
+Wartość domyślna `limit` to `20`, a wartości większe niż `100` są ograniczane do `100`. Nieprawidłowy JSON, nieznane
+pole lub nieprawidłowa wartość powodują zwrócenie kodu HTTP `400`.
 
 ### Indywidualnie ukryte modele czatu
 
-Model oznaczony jako **Ukryty** na stronie jego dostawcy jest wykluczany z katalogu i odrzucany
-z błędem HTTP `404` / `model_not_found`, gdy zostanie jawnie wskazany w żądaniu. Kontrola wykorzystuje
-ustalonego dostawcę i model, w tym aliasy dostawców, prefiksy węzłów zgodnych dostawców oraz wartości
-domyślne połączenia. Kombinacja pomija ukryte cele i może użyć widocznego modelu równorzędnego; jeśli
-nie pozostanie żaden możliwy do wykonania cel, zwracany jest ten sam kod błędu. Wyłączenie ukrywania
-zaczyna obowiązywać przy następnym żądaniu. Nadpisania widoczności dotyczące wyłącznie obrazów nie
-ukrywają modelu czatu o tym samym identyfikatorze.
+Model oznaczony jako **Ukryty** na stronie dostawcy jest wykluczany z katalogu, a jego jawne
+wywołanie jest odrzucane z kodem HTTP `404` / `model_not_found`. Sprawdzanie wykorzystuje ustalonego
+dostawcę i model, z uwzględnieniem aliasów dostawców, prefiksów węzłów zgodnych dostawców oraz
+domyślnych ustawień połączenia. Kombinacja pomija ukryte cele i może użyć widocznego modelu równorzędnego; gdy nie
+pozostanie żaden możliwy do wykonania cel, zwracany jest ten sam kod błędu. Wyłączenie ukrywania zaczyna obowiązywać przy następnym
+żądaniu. Nadpisania widoczności dotyczące wyłącznie obrazów nie ukrywają modelu czatu o tym samym identyfikatorze.
 
 To indywidualne ustawienie modelu jest niezależne od
 [list dozwolonych/zabronionych modeli](../routing/MODEL_EXPOSURE_LIST.md), które filtrują modele
-udostępniane w katalogu i kandydatów do automatycznego routingu, zachowując jednocześnie możliwość
-jawnego kierowania. Uprawnienia modeli dla kluczy API nadal obowiązują niezależnie. Domyślnym trybem
-prefiksu katalogu pozostaje `dual`.
+prezentowane w katalogu i kandydatów do automatycznego routingu, zachowując jednocześnie możliwość jawnego kierowania żądań. Uprawnienia modeli
+dla kluczy API nadal obowiązują niezależnie. Domyślnym trybem prefiksów katalogu pozostaje `dual`.
 
-### Warianty modeli bez myślenia
+### Warianty modeli bez rozumowania
 
-W przypadku modeli Claude obsługujących myślenie `/v1/models` udostępnia również wariant **bez myślenia**, którego identyfikator ma prefiks `claude-3-omniroute-no-thinking/`:
+W przypadku modeli Claude obsługujących rozumowanie `/v1/models` udostępnia również wariant **bez rozumowania**, którego identyfikator jest poprzedzony prefiksem `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Wybranie tego identyfikatora (np. w konfiguracji Claude Code, która zawsze dołącza blok `thinking`) powoduje odwołanie do rzeczywistego modelu `<provider>/<model>` z wyłączonym rozumowaniem — przez `thinking:{type:"disabled"}` dla ścieżki `/v1/messages` lub przez pominięcie pól `reasoning`/`reasoning_effort` dla ścieżki `/v1/chat/completions`. Wariant jest wyświetlany tylko dla modeli z rodziny Claude, które obsługują myślenie **i** respektują wartość `disabled` (dlatego np. modele działające wyłącznie w trybie adaptacyjnym, które odrzucają `disabled`, są wykluczone). Operatorzy mogą wymusić włączenie lub wyłączenie wariantu dla poszczególnych modeli za pomocą `ModelSpec.noThinkingAlias`.
+Wybranie tego identyfikatora (np. w konfiguracji Claude Code, która zawsze dołącza blok `thinking`) powoduje ponowne wskazanie rzeczywistego `<provider>/<model>` z wyłączonym rozumowaniem — `thinking:{type:"disabled"}` w ścieżce `/v1/messages` albo pominięcie pól `reasoning`/`reasoning_effort` w ścieżce `/v1/chat/completions`. Wariant jest wyświetlany tylko dla modeli z rodziny Claude, które obsługują rozumowanie **i** respektują `disabled` (dlatego wykluczone są np. modele wyłącznie adaptacyjne, które odrzucają `disabled`). Operatorzy mogą wymusić włączenie lub wyłączenie wariantu dla poszczególnych modeli za pomocą `ModelSpec.noThinkingAlias`.
 
 ---
 

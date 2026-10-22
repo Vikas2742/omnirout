@@ -453,45 +453,87 @@ assume por predefinição `us-central1`. Ambas as resoluções ocorrem em `open-
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Devolve todos os modelos de chat, embeddings e imagens + combinações no formato OpenAI
+→ Devolve todos os modelos de conversação, embeddings e imagem + combinações no formato OpenAI
 ```
 
-### Prefixos de ID dos modelos (`?prefix=`)
+### Preços dos modelos (`pricing`)
 
-A maioria dos modelos é anunciada sob um **prefixo de fornecedor**. O prefixo obtido é controlado pela
-feature flag `MODELS_CATALOG_PREFIX_MODE` e pode ser substituído **por pedido** através de um
-parâmetro de consulta — útil para um cliente que pretenda uma lista limpa sem alterar a definição
-global do servidor para todos os outros:
+Uma entrada contém um objeto `pricing` quando o OmniRoute conhece o preço do modelo. O preço provém
+da tabela de preços utilizada pela contabilização de custos: valores predefinidos integrados, preços sincronizados e
+substituições definidas através de `/api/pricing`. Estes são preços de tabela, pelo que os fornecedores por subscrição também
+apresentam um preço por token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Campos                                                          | Unidade                       | Notas                                                                                                                                                         |
+| --------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD por token, cadeia decimal | Compatível com OpenRouter, nunca em notação exponencial. Os dois campos de cache só aparecem quando existe um preço de cache.                                 |
+| `input`, `output`, `cached`, `cache_creation`                   | USD por 1M de tokens, número  | Campos de versões anteriores do catálogo, mantidos para clientes existentes. `reasoning` e `long_context` também aparecem quando a linha de preços os inclui. |
+
+- As **combinações** têm o preço do respetivo primeiro destino visível. As combinações `auto/*`
+  integradas escolhem um destino no momento do pedido, pelo que não têm `pricing`.
+- Os **modelos gratuitos** apresentam `"0"` (e `0`) quando o respetivo preço é zero. Um modelo sem uma linha de preços
+  também apresenta `"0"` quando o catálogo o assinala como gratuito (`free: true`) ou quando o catálogo integrado de modelos
+  gratuitos o inclui.
+- **Preço desconhecido:** a entrada não tem a chave `pricing`.
+- Os **fornecedores faturados por créditos** (como o Kiro) faturam por pedido em vez de por token. As respetivas
+  entradas mantêm os campos numéricos por 1M que tinham anteriormente e não contêm campos de cadeia por token.
+- As **variantes** (ids de nível de esforço de raciocínio, aliases sem raciocínio, réplicas de descoberta e de gateway)
+  copiam o preço do modelo para o qual encaminham.
+- Os campos contêm apenas as tarifas base. Os escalões de contexto longo (o campo numérico `long_context`) e
+  os multiplicadores do escalão de serviço (por exemplo, Codex rápido ou flexível) não alteram `prompt` nem
+  `completion`.
+- O objeto é igual para todos os estilos de autenticação, incluindo um pedido ao estilo Anthropic
+  com `x-api-key` e `anthropic-version` (a resposta continua a ser `{ "object": "list",
+"data": [...] }`). Implementação: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Prefixos dos ids dos modelos (`?prefix=`)
+
+A maioria dos modelos é anunciada com um **prefixo de fornecedor**. O prefixo recebido é controlado pelo
+sinalizador de funcionalidade `MODELS_CATALOG_PREFIX_MODE` e pode ser substituído **por pedido** através de um
+parâmetro de consulta — útil para um cliente que pretenda uma lista simples sem alterar a definição global
+do servidor para todos os outros:
 
 ```bash
-GET /v1/models?prefix=alias        # um ID por modelo — o prefixo de alias curto
+GET /v1/models?prefix=alias        # um id por modelo — o prefixo de alias curto
 GET /v1/models?prefix=dual         # ambas as formas (predefinição do servidor)
-GET /v1/models?prefix=canonical    # apenas o prefixo completo do ID do fornecedor
+GET /v1/models?prefix=canonical    # apenas o prefixo completo do id do fornecedor
 ```
 
-| Modo        | Emite                                                   | Notas                                                                                                                                                                                                             |
-| ----------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **e** `claude/claude-sonnet-4-6` | **Predefinição.** Ambos os IDs encaminham para o mesmo modelo; são mantidos para que as configurações de clientes que tenham codificado uma das formas continuem a funcionar. Duplica aproximadamente o catálogo. |
-| `alias`     | `cc/claude-sonnet-4-6`                                  | Uma entrada por modelo. Os fornecedores sem um alias distinto continuam a emitir a respetiva entrada, pelo que nada se perde.                                                                                     |
-| `canonical` | `claude/claude-sonnet-4-6`                              | Uma entrada por modelo sob o prefixo completo do ID do fornecedor. Os fornecedores sem um alias distinto (por exemplo, `antigravity/…`, `agy/…`) também emitem aqui o seu único ID, pelo que nada se perde.       |
+| Modo        | Emite                                                   | Notas                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **e** `claude/claude-sonnet-4-6` | **Predefinição.** Ambos os ids encaminham para o mesmo modelo; são mantidos para que as configurações dos clientes que tenham qualquer uma das formas incorporada continuem a funcionar. Aproximadamente duplica o catálogo. |
+| `alias`     | `cc/claude-sonnet-4-6`                                  | Uma entrada por modelo. Os fornecedores sem um alias distinto continuam a emitir a respetiva entrada, pelo que nada se perde.                                                                                                |
+| `canonical` | `claude/claude-sonnet-4-6`                              | Uma entrada por modelo com o prefixo completo do id do fornecedor. Os fornecedores sem um alias distinto (por exemplo, `antigravity/…`, `agy/…`) também emitem aqui o seu único id, pelo que nada se perde.                  |
 
-Um espelho no modo `dual` também pode ser reconhecido sem o parâmetro de consulta: inclui um campo
-`parent` que aponta para o ID principal.
+Uma réplica no modo `dual` também pode ser reconhecida sem o parâmetro de consulta: contém um campo `parent`
+que aponta para o id principal.
 
-Os clientes que apresentem um seletor de modelos devem solicitar `?prefix=alias` — é isto que a
-[extensão OmniCopilot para VS Code](../guides/VSCODE-COPILOT.md) faz.
+Os clientes que apresentem um seletor de modelos devem pedir `?prefix=alias` — é isto que a
+[extensão OmniCopilot para o VS Code](../guides/VSCODE-COPILOT.md) faz.
 
 ### Filtros de descoberta (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
 `GET /v1/models` aceita filtros de descoberta opcionais. Sem qualquer um deles, a resposta permanece
-inalterada. Estes restringem o catálogo que o autor do pedido já consegue ver (as permissões da chave de API são aplicadas primeiro)
-e são executados antes da paginação `limit` / `after` ao estilo da OpenAI:
+inalterada. Estes restringem o catálogo que o autor do pedido já vê (as permissões da chave da API são aplicadas primeiro)
+e são executados antes da paginação `limit` / `after` ao estilo OpenAI:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # todas as capacidades indicadas têm de ser verdadeiras
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` do catálogo; as linhas sem um são `chat`
-GET /v1/models?q=sonnet&limit=10                           # correspondência sem distinção entre maiúsculas e minúsculas no ID ou nome
+GET /v1/models?kind=embedding                              # `type` do catálogo; as linhas sem um valor são `chat`
+GET /v1/models?q=sonnet&limit=10                           # correspondência sem distinção entre maiúsculas e minúsculas no id ou no nome
 ```
 
 | Parâmetro     | Valores                                                                                             |
@@ -499,7 +541,7 @@ GET /v1/models?q=sonnet&limit=10                           # correspondência se
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
 | `min_context` | número inteiro não negativo, comparado com `context_length`                                         |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
-| `q`           | 1–200 carateres                                                                                     |
+| `q`           | 1–200 caracteres                                                                                    |
 
 Um valor desconhecido, ou um `min_context` que não seja um número inteiro não negativo (por exemplo, `1.5`),
 devolve HTTP `400` e a mensagem apresenta os valores válidos. Implementação:
@@ -521,34 +563,34 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Todos os campos são opcionais. `capabilities` e `exclude` aceitam uma matriz ou uma cadeia de texto separada por vírgulas;
-`max_output` é comparado com `max_output_tokens`. Os resultados são ordenados por `owned_by` e, depois, por `id`.
-O valor predefinido de `limit` é `20`, e os valores acima de `100` são limitados a `100`. JSON inválido, um campo
-desconhecido ou um valor inválido devolve HTTP `400`.
+Todos os campos são opcionais. `capabilities` e `exclude` aceitam uma matriz ou uma cadeia de caracteres separada por vírgulas;
+`max_output` é comparado com `max_output_tokens`. Os resultados são ordenados por `owned_by` e, em seguida, por `id`.
+Por predefinição, `limit` é `20`, e os valores superiores a `100` são limitados a `100`. JSON inválido, um campo
+desconhecido ou um valor inválido devolvem HTTP `400`.
 
-### Modelos de chat ocultos individualmente
+### Modelos de conversação ocultos individualmente
 
-Um modelo marcado como **Oculto** na página do respetivo fornecedor é excluído do catálogo e rejeitado
-com HTTP `404` / `model_not_found` quando solicitado explicitamente. A verificação utiliza o fornecedor
+Um modelo marcado como **Oculto** na respetiva página do fornecedor é excluído do catálogo e rejeitado
+com HTTP `404` / `model_not_found` quando é solicitado explicitamente. A verificação utiliza o fornecedor
 e o modelo resolvidos, incluindo aliases de fornecedores, prefixos de nós de fornecedores compatíveis e
-predefinições de ligação. Uma combinação ignora destinos ocultos e pode utilizar um modelo relacionado visível; quando não
-resta qualquer destino executável, devolve o mesmo código de erro. Remover a ocultação produz efeitos no pedido
-seguinte. As substituições de visibilidade exclusivas para imagens não ocultam o modelo de chat com o mesmo ID.
+predefinições de ligação. Uma combinação ignora destinos ocultos e pode utilizar um modelo semelhante visível;
+quando não resta qualquer destino executável, devolve o mesmo código de erro. Tornar o modelo visível produz efeitos
+no pedido seguinte. As substituições de visibilidade apenas para imagens não ocultam o modelo de conversação com o mesmo ID.
 
 Esta definição individual do modelo é distinta das
-[listas de permissões/proibições de exposição de modelos](../routing/MODEL_EXPOSURE_LIST.md), que filtram o anúncio
+[listas de permissão/negação de exposição de modelos](../routing/MODEL_EXPOSURE_LIST.md), que filtram a apresentação
 no catálogo e os candidatos ao encaminhamento automático, mantendo o envio explícito. As permissões de modelos
-da chave de API continuam a ser aplicadas de forma independente. O modo de prefixo predefinido do catálogo permanece `dual`.
+das chaves de API continuam a ser aplicadas de forma independente. O modo de prefixo predefinido do catálogo continua a ser `dual`.
 
 ### Variantes de modelos sem raciocínio
 
-Para modelos Claude com capacidade de raciocínio, `/v1/models` também anuncia uma variante **sem raciocínio**, cujo ID tem o prefixo `claude-3-omniroute-no-thinking/`:
+Para modelos Claude com capacidade de raciocínio, `/v1/models` também apresenta uma variante **sem raciocínio**, cujo ID tem o prefixo `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Selecionar este id (por exemplo, numa configuração do Claude Code que anexa sempre um bloco `thinking`) remete novamente para o `<provider>/<model>` real com o raciocínio suprimido — `thinking:{type:"disabled"}` no caminho `/v1/messages`, ou os campos `reasoning`/`reasoning_effort` omitidos no caminho `/v1/chat/completions`. A variante só é apresentada para modelos da família Claude que suportam raciocínio **e** respeitam `disabled` (pelo que, por exemplo, são excluídos os modelos exclusivamente adaptativos que rejeitam `disabled`). Os operadores podem ativar ou desativar explicitamente a variante por modelo através de `ModelSpec.noThinkingAlias`.
+A seleção deste ID (por exemplo, numa configuração do Claude Code que inclui sempre um bloco `thinking`) é novamente resolvida para o verdadeiro `<provider>/<model>`, com o raciocínio suprimido — `thinking:{type:"disabled"}` no caminho `/v1/messages`, ou com os campos `reasoning`/`reasoning_effort` removidos no caminho `/v1/chat/completions`. A variante só é apresentada para modelos da família Claude que suportem raciocínio **e** respeitem `disabled` (por isso, por exemplo, os modelos exclusivamente adaptativos que rejeitam `disabled` são excluídos). Os operadores podem forçar a ativação ou desativação da variante por modelo através de `ModelSpec.noThinkingAlias`.
 
 ---
 

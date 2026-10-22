@@ -451,44 +451,86 @@ standaard `us-central1` gebruikt. Beide resoluties vinden plaats in `open-sse/ha
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Retourneert alle chat-, embedding- en afbeeldingsmodellen + combo's in OpenAI-indeling
+→ Retourneert alle chat-, embedding- en afbeeldingsmodellen + combinaties in OpenAI-indeling
 ```
 
-### Model-id-prefixen (`?prefix=`)
+### Modelprijzen (`pricing`)
 
-De meeste modellen worden aangeboden onder een **providerprefix**. Welke prefix je krijgt, wordt bepaald door
-de featureflag `MODELS_CATALOG_PREFIX_MODE` en kan **per verzoek** worden overschreven met een
+Een item bevat een `pricing`-object wanneer OmniRoute de prijs van het model kent. De prijs is
+afkomstig uit de prijstabel die voor kostenregistratie wordt gebruikt: ingebouwde standaardwaarden, gesynchroniseerde prijzen en
+overschrijvingen die via `/api/pricing` zijn ingesteld. Dit zijn catalogusprijzen, dus aanbieders met een abonnement tonen ook
+een prijs per token.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Velden                                                          | Eenheid                            | Opmerkingen                                                                                                                                           |
+| --------------------------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD per token, decimale tekenreeks | Compatibel met OpenRouter, nooit in exponentnotatie. De twee cachevelden verschijnen alleen wanneer er een cacheprijs is.                             |
+| `input`, `output`, `cached`, `cache_creation`                   | USD per 1M tokens, getal           | Velden uit eerdere catalogusversies, behouden voor bestaande clients. `reasoning` en `long_context` verschijnen ook wanneer de prijsregel deze bevat. |
+
+- **Combinaties** krijgen de prijs van hun eerste zichtbare doel. Ingebouwde `auto/*`-combinaties kiezen tijdens
+  de aanvraag een doel en hebben daarom geen `pricing`.
+- **Gratis modellen** tonen `"0"` (en `0`) wanneer hun prijs nul is. Een model zonder prijsregel
+  toont ook `"0"` wanneer de catalogus het als gratis markeert (`free: true`) of wanneer het in de ingebouwde catalogus
+  met gratis modellen staat.
+- **Onbekende prijs:** het item heeft geen `pricing`-sleutel.
+- **Aanbieders met afrekening op basis van credits** (zoals Kiro) factureren per aanvraag in plaats van per token. Hun
+  items behouden de numerieke velden per 1M die ze eerder hadden en bevatten geen tekenreeksvelden per token.
+- **Varianten** (id's voor reasoning-inspanning, aliassen zonder thinking, discovery- en gateway-spiegelingen)
+  kopiëren de prijs van het model waarnaar ze routeren.
+- De velden bevatten alleen basistarieven. Long-contextniveaus (het numerieke veld `long_context`) en
+  service-tiervermenigvuldigers (bijvoorbeeld Codex fast of flex) wijzigen `prompt` of
+  `completion` niet.
+- Het object is voor elke authenticatiestijl hetzelfde, inclusief een aanvraag in Anthropic-stijl
+  met `x-api-key` en `anthropic-version` (het antwoord blijft `{ "object": "list",
+"data": [...] }`). Implementatie: `src/app/api/v1/models/catalogPricing.ts`.
+
+### Voorvoegsels van model-id's (`?prefix=`)
+
+De meeste modellen worden aangeboden onder een **aanbiedersvoorvoegsel**. Welk voorvoegsel u krijgt, wordt bepaald door
+de featureflag `MODELS_CATALOG_PREFIX_MODE` en kan **per aanvraag** worden overschreven met een
 queryparameter — handig voor een client die een overzichtelijke lijst wil zonder de serverbrede
 instelling voor alle anderen te wijzigen:
 
 ```bash
-GET /v1/models?prefix=alias        # één id per model — de korte aliasprefix
-GET /v1/models?prefix=dual         # beide vormen (serverstandaard)
-GET /v1/models?prefix=canonical    # alleen de volledige provider-id-prefix
+GET /v1/models?prefix=alias        # één id per model — het korte aliasvoorvoegsel
+GET /v1/models?prefix=dual         # beide vormen (standaardwaarde van de server)
+GET /v1/models?prefix=canonical    # alleen het volledige provider-id-voorvoegsel
 ```
 
-| Modus       | Levert op                                                | Opmerkingen                                                                                                                                                                                           |
-| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **en** `claude/claude-sonnet-4-6` | **Standaard.** Beide id's worden naar hetzelfde model gerouteerd; behouden zodat clientconfiguraties waarin een van beide vormen hardgecodeerd is, blijven werken. Verdubbelt de catalogus ongeveer.  |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Eén vermelding per model. Providers zonder afzonderlijke alias leveren nog steeds hun vermelding op, zodat er niets verloren gaat.                                                                    |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Eén vermelding per model onder de volledige provider-id-prefix. Providers zonder afzonderlijke alias (bijv. `antigravity/…`, `agy/…`) leveren hier ook hun enige id op, zodat er niets verloren gaat. |
+| Modus       | Genereert                                                | Opmerkingen                                                                                                                                                                                                           |
+| ----------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **en** `claude/claude-sonnet-4-6` | **Standaard.** Beide id's routeren naar hetzelfde model; dit is behouden zodat clientconfiguraties waarin een van beide vormen hardcoded is, blijven werken. Hierdoor wordt de catalogus ongeveer twee keer zo groot. |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Eén item per model. Aanbieders zonder een afzonderlijke alias genereren nog steeds hun item, zodat er niets verloren gaat.                                                                                            |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Eén item per model onder het volledige provider-id-voorvoegsel. Aanbieders zonder een afzonderlijke alias (bijv. `antigravity/…`, `agy/…`) genereren hier ook hun enige id, zodat er niets verloren gaat.             |
 
-Een mirror in de modus `dual` kan ook zonder de queryparameter worden herkend: deze bevat een `parent`-veld
+Een spiegeling in de modus `dual` kan ook zonder de queryparameter worden herkend: deze bevat een veld `parent`
 dat naar het primaire id verwijst.
 
-Clients die een modelkiezer weergeven, moeten `?prefix=alias` opvragen — dit is wat de
+Clients die een modelkiezer weergeven, moeten `?prefix=alias` aanvragen — dit is wat de
 [OmniCopilot VS Code-extensie](../guides/VSCODE-COPILOT.md) doet.
 
-### Detectiefilters (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+### Discovery-filters (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` accepteert optionele detectiefilters. Zonder deze filters blijft het antwoord
-ongewijzigd. Ze beperken de catalogus die de aanroeper al kan zien (API-sleutelrechten worden eerst toegepast),
-en ze worden uitgevoerd vóór de OpenAI-achtige paginering met `limit` / `after`:
+`GET /v1/models` accepteert optionele discovery-filters. Zonder deze filters blijft het antwoord
+ongewijzigd. Ze beperken de catalogus die de aanroeper al kan zien (API-sleutelmachtigingen worden eerst toegepast)
+en worden uitgevoerd vóór de OpenAI-achtige paginering met `limit` / `after`:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # elke vermelde capability moet waar zijn
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # catalogus-`type`; rijen zonder type zijn `chat`
+GET /v1/models?kind=embedding                              # catalogus-`type`; regels zonder type zijn `chat`
 GET /v1/models?q=sonnet&limit=10                           # hoofdletterongevoelige overeenkomst met id of naam
 ```
 
@@ -499,11 +541,11 @@ GET /v1/models?q=sonnet&limit=10                           # hoofdletterongevoel
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 tekens                                                                                        |
 
-Een onbekende waarde of een `min_context` die geen niet-negatief geheel getal is (bijvoorbeeld `1.5`),
+Een onbekende waarde, of een `min_context` die geen niet-negatief geheel getal is (bijvoorbeeld `1.5`),
 retourneert HTTP `400` en het bericht vermeldt de geldige waarden. Implementatie:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Modellenvoorselectie (`POST /v1/models/query`)
+### Korte modellenlijst (`POST /v1/models/query`)
 
 `POST /v1/models/query` retourneert een korte, deterministische lijst uit dezelfde catalogus, met dezelfde
 authenticatie en zichtbaarheid per sleutel als `GET /v1/models`:
@@ -520,33 +562,33 @@ Content-Type: application/json
 ```
 
 Elk veld is optioneel. `capabilities` en `exclude` accepteren een array of een door komma's gescheiden tekenreeks;
-`max_output` wordt vergeleken met `max_output_tokens`. Resultaten worden eerst op `owned_by` en daarna op `id` gesorteerd.
-`limit` is standaard `20` en waarden boven `100` worden begrensd op `100`. Ongeldige JSON, een onbekend
+`max_output` wordt vergeleken met `max_output_tokens`. Resultaten worden eerst op `owned_by` en vervolgens op `id` gesorteerd.
+`limit` is standaard `20` en waarden hoger dan `100` worden begrensd op `100`. Ongeldige JSON, een onbekend
 veld of een ongeldige waarde retourneert HTTP `400`.
 
 ### Afzonderlijk verborgen chatmodellen
 
 Een model dat op de providerpagina als **Verborgen** is gemarkeerd, wordt uitgesloten van de catalogus en geweigerd
-met HTTP `404` / `model_not_found` wanneer het expliciet wordt opgevraagd. De controle gebruikt de opgeloste
-provider en het opgeloste model, inclusief provideraliases, nodeprefixen van compatibele providers en
-standaardwaarden voor verbindingen. Een combo slaat verborgen doelen over en kan een zichtbare variant gebruiken; wanneer er geen
-uitvoerbaar doel overblijft, wordt dezelfde foutcode geretourneerd. Het zichtbaar maken gaat bij het volgende
-verzoek in. Zichtbaarheidsoverschrijvingen die alleen voor afbeeldingen gelden, verbergen het chatmodel met hetzelfde ID niet.
+met HTTP `404` / `model_not_found` wanneer het expliciet wordt aangevraagd. De controle gebruikt de herleide
+provider en het herleide model, inclusief provideraliassen, knooppuntvoorvoegsels van compatibele providers en
+standaardwaarden voor verbindingen. Een combinatie slaat verborgen doelen over en kan een zichtbaar zustermodel gebruiken; wanneer er geen
+uitvoerbaar doel overblijft, wordt dezelfde foutcode geretourneerd. Het zichtbaar maken wordt bij de volgende
+aanvraag van kracht. Zichtbaarheidsoverschrijvingen die uitsluitend voor afbeeldingen gelden, verbergen niet het chatmodel met dezelfde ID.
 
-Deze afzonderlijke modelinstelling staat los van de
-[allow-/deny-lijsten voor modelblootstelling](../routing/MODEL_EXPOSURE_LIST.md), die catalogusvermeldingen
-en kandidaten voor automatische routering filteren, terwijl expliciete dispatch behouden blijft. Modelrechten voor
-API-sleutels blijven onafhankelijk van toepassing. De standaardmodus voor catalogusprefixen blijft `dual`.
+Deze instelling voor afzonderlijke modellen staat los van de
+[allow-/deny-lijsten voor modelblootstelling](../routing/MODEL_EXPOSURE_LIST.md), die de weergave in de catalogus
+en kandidaten voor automatische routering filteren, terwijl expliciete routering behouden blijft. Modelmachtigingen
+voor API-sleutels blijven onafhankelijk van toepassing. De standaardmodus voor catalogusvoorvoegsels blijft `dual`.
 
 ### Modelvarianten zonder thinking
 
-Voor Claude-modellen met thinking-ondersteuning biedt `/v1/models` ook een **variant zonder thinking** aan waarvan het id is voorzien van de prefix `claude-3-omniroute-no-thinking/`:
+Voor Claude-modellen die thinking ondersteunen, vermeldt `/v1/models` ook een **no-thinking**-variant waarvan de id voorafgegaan wordt door `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Het selecteren van deze id (bijv. in een Claude Code-configuratie die altijd een `thinking`-blok toevoegt) wordt terugvertaald naar het werkelijke `<provider>/<model>`, waarbij redeneren wordt onderdrukt — `thinking:{type:"disabled"}` op het `/v1/messages`-pad, of waarbij de velden `reasoning`/`reasoning_effort` worden weggelaten op het `/v1/chat/completions`-pad. De variant wordt alleen vermeld voor modellen uit de Claude-familie die thinking ondersteunen **en** `disabled` respecteren (dus bijv. modellen die uitsluitend adaptief werken en `disabled` afwijzen, worden uitgesloten). Operators kunnen de variant per model afdwingen of uitschakelen via `ModelSpec.noThinkingAlias`.
+Het selecteren van deze id (bijvoorbeeld in een Claude Code-configuratie die altijd een `thinking`-blok toevoegt) wordt teruggeleid naar het echte `<provider>/<model>`, waarbij reasoning wordt onderdrukt — `thinking:{type:"disabled"}` op het `/v1/messages`-pad, of de velden `reasoning`/`reasoning_effort` worden weggelaten op het `/v1/chat/completions`-pad. De variant wordt alleen vermeld voor modellen uit de Claude-familie die thinking ondersteunen **en** `disabled` respecteren (dus bijvoorbeeld modellen die alleen adaptive ondersteunen en `disabled` weigeren, worden uitgesloten). Operators kunnen de variant per model geforceerd in- of uitschakelen via `ModelSpec.noThinkingAlias`.
 
 ---
 

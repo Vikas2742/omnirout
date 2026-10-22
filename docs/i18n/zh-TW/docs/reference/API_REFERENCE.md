@@ -433,58 +433,85 @@ Azure Document Intelligence 的 `analyze` API 是非同步的：初始請求會�
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ 以 OpenAI 格式傳回所有聊天、嵌入與圖像模型及組合
+→ 以 OpenAI 格式傳回所有聊天、嵌入和影像模型及組合
 ```
 
-### 模型 id 前綴（`?prefix=`）
+### 模型價格（`pricing`）
 
-大多數模型會以**提供者前綴**列出。使用哪種前綴由
-`MODELS_CATALOG_PREFIX_MODE` 功能旗標控制，也可以透過查詢參數針對**每個請求**覆寫——這對希望取得簡潔清單，但不想變更所有使用者共用之伺服器全域設定的客戶端很有用：
+當 OmniRoute 知道模型價格時，項目會包含一個 `pricing` 物件。價格來自成本核算所使用的定價表：內建預設值、同步的價格，以及透過 `/api/pricing` 設定的覆寫值。這些是牌價，因此訂閱制提供者也會顯示每個 token 的價格。
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| 欄位                                                            | 單位                               | 備註                                                                                                      |
+| --------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | 每個 token 的美元價格，十進位字串  | 與 OpenRouter 相容，絕不使用指數表示法。只有在存在快取價格時，才會顯示兩個快取欄位。                      |
+| `input`, `output`, `cached`, `cache_creation`                   | 每 100 萬個 token 的美元價格，數值 | 舊版目錄中的欄位，為現有用戶端保留。當定價資料列包含 `reasoning` 和 `long_context` 時，也會顯示這些欄位。 |
+
+- **組合**會採用其第一個可見目標的價格。內建 `auto/*` 組合會在請求時選擇目標，因此沒有 `pricing`。
+- **免費模型**在價格為零時會顯示 `"0"`（以及 `0`）。若模型沒有定價資料列，但目錄將其標示為免費（`free: true`），或內建的免費模型目錄有列出該模型，也會顯示 `"0"`。
+- **價格未知：**項目沒有 `pricing` 鍵。
+- **按點數計費的提供者**（例如 Kiro）會按請求而不是按 token 計費。其項目會保留先前已有的每 100 萬 token 數值欄位，且不包含每個 token 的字串欄位。
+- **變體**（推理強度 ID、無思考別名、探索與閘道鏡像）會複製其所路由至之模型的價格。
+- 這些欄位只包含基準費率。長上下文級距（數值型 `long_context` 欄位）與服務層級乘數（例如 Codex fast 或 flex）不會變更 `prompt` 或 `completion`。
+- 此物件在所有驗證方式下都相同，包括使用 `x-api-key` 和 `anthropic-version` 的 Anthropic 風格請求（回應仍為 `{ "object": "list",
+"data": [...] }`）。實作：`src/app/api/v1/models/catalogPricing.ts`。
+
+### 模型 ID 前綴（`?prefix=`）
+
+大多數模型會使用**提供者前綴**公開。所取得的前綴由 `MODELS_CATALOG_PREFIX_MODE` 功能旗標控制，也可以透過查詢參數針對**每個請求**覆寫——這適合希望取得簡潔清單，但不想變更所有使用者共用之伺服器全域設定的用戶端：
 
 ```bash
-GET /v1/models?prefix=alias        # 每個模型一個 id——簡短別名前綴
+GET /v1/models?prefix=alias        # 每個模型一個 ID——簡短的別名前綴
 GET /v1/models?prefix=dual         # 兩種形式（伺服器預設值）
-GET /v1/models?prefix=canonical    # 僅完整提供者 id 前綴
+GET /v1/models?prefix=canonical    # 僅使用完整的提供者 ID 前綴
 ```
 
-| 模式        | 輸出                                                     | 備註                                                                                                                                           |
-| ----------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **與** `claude/claude-sonnet-4-6` | **預設值。** 兩個 id 都會路由至同一個模型；保留兩者，讓硬式編碼任一形式的客戶端設定都能繼續運作。目錄大小大約會增加一倍。                      |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | 每個模型一個項目。沒有不同別名的提供者仍會輸出其項目，因此不會遺漏任何內容。                                                                   |
-| `canonical` | `claude/claude-sonnet-4-6`                               | 每個模型在完整提供者 id 前綴下各有一個項目。沒有不同別名的提供者（例如 `antigravity/…`、`agy/…`）也會在此輸出其唯一 id，因此不會遺漏任何內容。 |
+| 模式        | 輸出內容                                                   | 備註                                                                                                                                           |
+| ----------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **以及** `claude/claude-sonnet-4-6` | **預設值。**兩個 ID 都會路由至同一模型；保留此模式是為了讓硬編碼任一形式的用戶端設定都能繼續運作。目錄大小約會增加一倍。                       |
+| `alias`     | `cc/claude-sonnet-4-6`                                     | 每個模型一個項目。沒有不同別名的提供者仍會輸出其項目，因此不會遺漏任何內容。                                                                   |
+| `canonical` | `claude/claude-sonnet-4-6`                                 | 每個模型在完整提供者 ID 前綴下各有一個項目。沒有不同別名的提供者（例如 `antigravity/…`、`agy/…`）也會在此輸出其唯一 ID，因此不會遺漏任何內容。 |
 
-即使不使用查詢參數，也能辨識 `dual` 模式的鏡像項目：它會帶有指向主要 id 的 `parent`
-欄位。
+即使沒有查詢參數，也可以識別 `dual` 模式的鏡像：它會帶有指向主要 ID 的 `parent` 欄位。
 
-呈現模型選擇器的客戶端應請求 `?prefix=alias`——
-[OmniCopilot VS Code 擴充功能](../guides/VSCODE-COPILOT.md)就是採用此方式。
+呈現模型選擇器的用戶端應請求 `?prefix=alias`——[OmniCopilot VS Code 擴充功能](../guides/VSCODE-COPILOT.md)採用的正是此方式。
 
 ### 探索篩選器（`?capability=`、`?min_context=`、`?kind=`、`?q=`）
 
-`GET /v1/models` 接受選擇性啟用的探索篩選器。若未使用任何篩選器，回應將維持不變。
-它們會縮小呼叫端原本可見的目錄範圍（先套用 API 金鑰權限），並且會在 OpenAI 樣式的 `limit` / `after` 分頁之前執行：
+`GET /v1/models` 接受選用的探索篩選器。不使用任何篩選器時，回應不會改變。這些篩選器會縮小呼叫端原本可見的目錄範圍（會先套用 API 金鑰權限），並在 OpenAI 風格的 `limit` / `after` 分頁之前執行：
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # 列出的每項能力都必須為 true
 GET /v1/models?capability=vision,reasoning&min_context=200000
 GET /v1/models?kind=embedding                              # 目錄 `type`；沒有此欄位的資料列視為 `chat`
-GET /v1/models?q=sonnet&limit=10                           # 不區分大小寫地比對 id 或名稱
+GET /v1/models?q=sonnet&limit=10                           # 對 ID 或名稱進行不區分大小寫的比對
 ```
 
 | 參數          | 值                                                                                                  |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`、`reasoning`、`structured_output`、`temperature`、`thinking`、`tool_calling`、`vision` |
-| `min_context` | 非負整數，與 `context_length` 比較                                                                  |
+| `min_context` | 非負整數，會與 `context_length` 比較                                                                |
 | `kind`        | `chat`、`audio`、`embedding`、`image`、`moderation`、`music`、`rerank`、`video`                     |
 | `q`           | 1–200 個字元                                                                                        |
 
 未知值，或不是非負整數的 `min_context`（例如 `1.5`），
-會傳回 HTTP `400`，訊息中會列出有效值。實作位置：
+會傳回 HTTP `400`，且訊息會列出有效值。實作位置：
 `src/app/api/v1/models/catalogFilters.ts`。
 
 ### 模型候選清單（`POST /v1/models/query`）
 
-`POST /v1/models/query` 會從同一個目錄傳回簡短且確定性的清單，其驗證與每個金鑰的可見性均與 `GET /v1/models` 相同：
+`POST /v1/models/query` 會從相同目錄中傳回一份簡短且具確定性的清單，其驗證方式及各金鑰可見性與 `GET /v1/models` 相同：
 
 ```bash
 POST /v1/models/query
@@ -497,27 +524,29 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-每個欄位都是選用的。`capabilities` 和 `exclude` 接受陣列或以逗號分隔的字串；
-`max_output` 會與 `max_output_tokens` 比較。結果會先依 `owned_by`、再依 `id` 排序。
-`limit` 預設為 `20`，超過 `100` 的值會限制為 `100`。無效的 JSON、未知欄位或無效值會傳回 HTTP `400`。
+每個欄位皆為選填。`capabilities` 和 `exclude` 可接受陣列或逗號分隔的字串；
+`max_output` 會與 `max_output_tokens` 比較。結果會先依 `owned_by` 排序，再依 `id` 排序。
+`limit` 預設為 `20`，超過 `100` 的值會被限制為 `100`。無效的 JSON、未知欄位或無效值會傳回 HTTP `400`。
 
 ### 個別隱藏的聊天模型
 
-在其提供者頁面上標示為 **Hidden** 的模型會從目錄中排除，明確請求該模型時也會遭到拒絕，
-並傳回 HTTP `404` / `model_not_found`。此檢查會使用解析後的提供者與模型，包括提供者別名、相容提供者的節點前綴及連線預設值。組合會略過隱藏的目標，並可使用可見的同層項目；若沒有剩餘的可執行目標，則會傳回相同的錯誤代碼。取消隱藏會在下一個請求時生效。僅限圖像的可見性覆寫不會隱藏具有相同 ID 的聊天模型。
+在其提供者頁面上標記為 **隱藏** 的模型會從目錄中排除，且明確請求時會遭到拒絕，
+並傳回 HTTP `404` / `model_not_found`。此檢查會使用解析後的提供者與模型，包括提供者別名、相容提供者的節點前綴，以及
+連線預設值。組合會略過隱藏的目標，並可使用可見的同層項目；若沒有任何可執行的目標，
+則會傳回相同的錯誤代碼。取消隱藏會在下一次請求時生效。僅限圖片的可見性覆寫不會隱藏具有相同 ID 的聊天模型。
 
-這項個別模型設定不同於
-[模型公開允許/拒絕清單](../routing/MODEL_EXPOSURE_LIST.md)，後者會篩選目錄中公開的項目及自動路由候選項目，同時保留明確分派功能。API 金鑰的模型權限會繼續獨立套用。預設的目錄前綴模式仍為 `dual`。
+此個別模型設定與
+[模型公開允許／拒絕清單](../routing/MODEL_EXPOSURE_LIST.md)分開運作；後者會篩選目錄中公告的模型及自動路由候選項目，同時保留明確分派功能。API 金鑰的模型權限仍會獨立套用。預設的目錄前綴模式仍為 `dual`。
 
 ### 無思考模型變體
 
-對於支援思考功能的 Claude 模型，`/v1/models` 也會列出一個 **no-thinking** 變體，其 id 以 `claude-3-omniroute-no-thinking/` 為前綴：
+對於支援思考的 Claude 模型，`/v1/models` 也會公告一個 **無思考** 變體，其 id 會加上 `claude-3-omniroute-no-thinking/` 前綴：
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-選取此 ID（例如在一律附加 `thinking` 區塊的 Claude Code 設定中）時，會解析回實際的 `<provider>/<model>`，並抑制推理——在 `/v1/messages` 路徑上使用 `thinking:{type:"disabled"}`，或在 `/v1/chat/completions` 路徑上移除 `reasoning`/`reasoning_effort` 欄位。此變體僅會為支援思考功能**且**遵循 `disabled` 的 Claude 系列模型列出（因此，例如會拒絕 `disabled`、僅支援自適應模式的模型將被排除）。操作人員可透過 `ModelSpec.noThinkingAlias`，針對各模型強制啟用或停用此變體。
+選取此 id（例如，在總是附加 `thinking` 區塊的 Claude Code 設定中）會解析回實際的 `<provider>/<model>`，並抑制推理功能——在 `/v1/messages` 路徑上使用 `thinking:{type:"disabled"}`，或在 `/v1/chat/completions` 路徑上移除 `reasoning`/`reasoning_effort` 欄位。只有支援思考功能**且**接受 `disabled` 的 Claude 系列模型才會列出此變體（因此，例如會拒絕 `disabled` 的僅限自適應模型將被排除）。操作人員可透過 `ModelSpec.noThinkingAlias`，為每個模型強制開啟或關閉此變體。
 
 ---
 
@@ -1435,7 +1464,7 @@ Content-Type: application/json
 }
 ```
 
-> **結構描述說明**（`setBudgetSchema`）：`apiKeyId` 為必填；`dailyLimitUsd`、`weeklyLimitUsd` 或 `monthlyLimitUsd` 之中至少一項必須大於零。選用欄位：`warningThreshold`（0–1）、`resetInterval`（`daily` | `weekly` | `monthly`）、`resetTime`（`HH:MM`）。舊版 `{keyId, limit, period}` 格式會回傳 `400 Bad Request`。
+> **結構描述備註**（`setBudgetSchema`）：`apiKeyId` 為必填；`dailyLimitUsd`、`weeklyLimitUsd` 或 `monthlyLimitUsd` 中至少一項必須大於零。選填欄位：`warningThreshold`（0–1）、`resetInterval`（`daily` | `weekly` | `monthly`）、`resetTime`（`HH:MM`）。舊版的 `{keyId, limit, period}` 格式會傳回 `400 Bad Request`。
 
 ## Token 限制
 

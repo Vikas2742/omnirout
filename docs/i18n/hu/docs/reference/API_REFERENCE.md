@@ -451,15 +451,57 @@ alapértelmezett értéke pedig `us-central1`. Mindkét feloldás az `open-sse/h
 GET /v1/models
 Authorization: Bearer your-api-key
 
-→ Az összes csevegési, beágyazási és képmodellt, valamint kombinációt visszaadja OpenAI-formátumban
+→ Visszaadja az összes csevegési, beágyazási és képmodellt, valamint kombinációt OpenAI-formátumban
 ```
+
+### Modellárak (`pricing`)
+
+Egy bejegyzés akkor tartalmaz `pricing` objektumot, ha az OmniRoute ismeri a modell árát. Az ár
+a költségelszámoláshoz használt ártáblából származik: a beépített alapértékekből, a szinkronizált árakból és
+az `/api/pricing` használatával beállított felülírásokból. Ezek listaárak, ezért az előfizetéses szolgáltatók is
+megjelenítenek tokenenkénti árat.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Mezők                                                           | Mértékegység                      | Megjegyzések                                                                                                                                                                     |
+| --------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD/token, decimális karakterlánc | OpenRouter-kompatibilis, soha nem exponenciális jelöléssel. A két gyorsítótármező csak akkor jelenik meg, ha van gyorsítótárazási ár.                                            |
+| `input`, `output`, `cached`, `cache_creation`                   | USD/1 millió token, szám          | A katalógus korábbi verzióiból származó mezők, a meglévő kliensek támogatása érdekében megőrizve. A `reasoning` és a `long_context` is megjelenik, ha az ársor tartalmazza őket. |
+
+- A **kombinációk** az első látható célpontjuk árát tartalmazzák. A beépített `auto/*` kombinációk a
+  kérés időpontjában választanak célpontot, ezért nincs `pricing` mezőjük.
+- Az **ingyenes modellek** esetében az ár nulla, ezért `"0"` (és `0`) jelenik meg. Az ársor nélküli modelleknél
+  szintén `"0"` jelenik meg, ha a katalógus ingyenesként jelöli őket (`free: true`), vagy ha szerepelnek a beépített
+  ingyenesmodell-katalógusban.
+- **Ismeretlen ár:** a bejegyzés nem tartalmaz `pricing` kulcsot.
+- A **kreditalapú elszámolást használó szolgáltatók** (például a Kiro) tokenek helyett kérésenként számláznak. A
+  bejegyzéseik megtartják a korábbi numerikus, egymillió tokenre vonatkozó mezőket, és nem tartalmaznak tokenenkénti árat megadó karakterláncmezőket.
+- A **változatok** (következtetési erőfeszítést jelölő azonosítók, gondolkodás nélküli aliasok, felderítési és átjárótükrök)
+  annak a modellnek az árát másolják, amelyhez az útválasztásuk vezet.
+- A mezők csak az alapdíjakat tartalmazzák. A hosszú kontextusra vonatkozó ársávok (a numerikus `long_context` mező) és
+  a szolgáltatási szintek szorzói (például Codex fast vagy flex) nem módosítják a `prompt` vagy
+  `completion` értékét.
+- Az objektum minden hitelesítési módnál azonos, beleértve az Anthropic-stílusú,
+  `x-api-key` és `anthropic-version` fejléceket tartalmazó kéréseket is (a válasz továbbra is `{ "object": "list",
+"data": [...] }`). Megvalósítás: `src/app/api/v1/models/catalogPricing.ts`.
 
 ### Modellazonosító-előtagok (`?prefix=`)
 
-A legtöbb modell **szolgáltatói előtaggal** jelenik meg. A kapott előtagot a
-`MODELS_CATALOG_PREFIX_MODE` funkciójelző szabályozza, és ez **kérésenként** felülírható egy
-lekérdezési paraméterrel — ez akkor hasznos, ha egy kliens letisztult listát szeretne anélkül,
-hogy mindenki más számára módosítaná a teljes kiszolgálóra érvényes beállítást:
+A legtöbb modellt **szolgáltatói előtaggal** teszik közzé. A kapott előtagot a
+`MODELS_CATALOG_PREFIX_MODE` funkciójelző szabályozza, és kérésenként felülírható egy
+lekérdezési paraméterrel — ez hasznos olyan kliensek számára, amelyek letisztult listát szeretnének anélkül, hogy mindenki más számára módosítanák a kiszolgálószintű
+beállítást:
 
 ```bash
 GET /v1/models?prefix=alias        # modellenként egy azonosító — a rövid alias-előtag
@@ -467,46 +509,45 @@ GET /v1/models?prefix=dual         # mindkét forma (a kiszolgáló alapértelme
 GET /v1/models?prefix=canonical    # csak a teljes szolgáltatóazonosító-előtag
 ```
 
-| Mód         | Kibocsátott azonosítók                                   | Megjegyzések                                                                                                                                                                                                          |
-| ----------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **és** `claude/claude-sonnet-4-6` | **Alapértelmezett.** Mindkét azonosító ugyanahhoz a modellhez irányít; ez biztosítja, hogy a bármelyik formát rögzítetten használó klienskonfigurációk továbbra is működjenek. Nagyjából megkétszerezi a katalógust.  |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | Modellenként egy bejegyzés. A külön aliassal nem rendelkező szolgáltatók bejegyzése továbbra is megjelenik, így semmi sem vész el.                                                                                    |
-| `canonical` | `claude/claude-sonnet-4-6`                               | Modellenként egy bejegyzés a teljes szolgáltatóazonosító-előtag alatt. A külön aliassal nem rendelkező szolgáltatók (például `antigravity/…`, `agy/…`) egyetlen azonosítója itt is megjelenik, így semmi sem vész el. |
+| Mód         | Kibocsátott azonosítók                                   | Megjegyzések                                                                                                                                                                                                              |
+| ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **és** `claude/claude-sonnet-4-6` | **Alapértelmezett.** Mindkét azonosító ugyanahhoz a modellhez irányít; azért maradt meg, hogy a bármelyik formát rögzítetten használó klienskonfigurációk továbbra is működjenek. Körülbelül megkétszerezi a katalógust.  |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | Modellenként egy bejegyzés. A különálló aliassal nem rendelkező szolgáltatók bejegyzései továbbra is megjelennek, így semmi sem vész el.                                                                                  |
+| `canonical` | `claude/claude-sonnet-4-6`                               | Modellenként egy bejegyzés a teljes szolgáltatóazonosító-előtag alatt. A különálló aliassal nem rendelkező szolgáltatók (például `antigravity/…`, `agy/…`) egyetlen azonosítója itt is megjelenik, így semmi sem vész el. |
 
-A `dual` módban megjelenő tükörbejegyzés a lekérdezési paraméter nélkül is felismerhető: egy,
-az elsődleges azonosítóra mutató `parent` mezőt tartalmaz.
+A `dual` módú tükör a lekérdezési paraméter nélkül is felismerhető: rendelkezik egy `parent`
+mezővel, amely az elsődleges azonosítóra mutat.
 
 A modellválasztót megjelenítő klienseknek a `?prefix=alias` paramétert kell kérniük — ezt teszi az
 [OmniCopilot VS Code-bővítmény](../guides/VSCODE-COPILOT.md) is.
 
 ### Felderítési szűrők (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-A `GET /v1/models` opcionálisan használható felderítési szűrőket fogad el. Egyikük megadása
-nélkül a válasz változatlan marad. Ezek a hívó számára már látható katalógust szűkítik
-(először az API-kulcs jogosultságai érvényesülnek), és az OpenAI-stílusú `limit` / `after`
-lapozás előtt futnak le:
+A `GET /v1/models` támogatja a külön bekapcsolható felderítési szűrőket. Ezek egyike nélkül a válasz
+változatlan marad. A szűrők a hívó számára már látható katalógust szűkítik (először az API-kulcs engedélyei érvényesülnek),
+és az OpenAI-stílusú `limit` / `after` lapozás előtt futnak le:
 
 ```bash
 GET /v1/models?capability=vision&capability=tool_calling   # minden felsorolt képességnek igaznak kell lennie
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # a katalógus `type` értéke; az e nélküli sorok `chat` típusúak
+GET /v1/models?kind=embedding                              # a katalógus `type` mezője; az e nélküli sorok `chat` típusúak
 GET /v1/models?q=sonnet&limit=10                           # kis- és nagybetűktől független egyezés az azonosítóban vagy a névben
 ```
 
 | Paraméter     | Értékek                                                                                             |
 | ------------- | --------------------------------------------------------------------------------------------------- |
 | `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
-| `min_context` | nemnegatív egész szám, összehasonlítva a `context_length` értékével                                 |
+| `min_context` | nemnegatív egész szám, a `context_length` értékével összehasonlítva                                 |
 | `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
 | `q`           | 1–200 karakter                                                                                      |
 
 Ismeretlen érték, illetve nem nemnegatív egész számként megadott `min_context` (például `1.5`)
-esetén HTTP `400` válasz érkezik, és az üzenet felsorolja az érvényes értékeket. Megvalósítás:
+esetén a válasz HTTP `400`, az üzenet pedig felsorolja az érvényes értékeket. Implementáció:
 `src/app/api/v1/models/catalogFilters.ts`.
 
-### Modell-szűkített lista (`POST /v1/models/query`)
+### Modellek szűkített listája (`POST /v1/models/query`)
 
-A `POST /v1/models/query` rövid, determinisztikus listát ad vissza ugyanabból a katalógusból,
+A `POST /v1/models/query` ugyanabból a katalógusból ad vissza egy rövid, determinisztikus listát,
 ugyanolyan hitelesítéssel és kulcsonkénti láthatósággal, mint a `GET /v1/models`:
 
 ```bash
@@ -520,39 +561,45 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Minden mező opcionális. A `capabilities` és az `exclude` tömböt vagy vesszővel elválasztott
-karakterláncot fogad el; a `max_output` értékét a rendszer a `max_output_tokens` értékével
-hasonlítja össze. Az eredmények rendezése először az `owned_by`, majd az `id` szerint történik.
-A `limit` alapértelmezett értéke `20`, a `100` feletti értékeket pedig `100`-ra korlátozza a
-rendszer. Érvénytelen JSON, ismeretlen mező vagy érvénytelen érték esetén HTTP `400` válasz érkezik.
+Minden mező opcionális. A `capabilities` és az `exclude` tömböt vagy vesszővel elválasztott karakterláncot
+fogad el; a `max_output` a `max_output_tokens` értékével lesz összehasonlítva. Az eredmények először
+az `owned_by`, majd az `id` szerint vannak rendezve. A `limit` alapértelmezett értéke `20`, a `100`
+feletti értékek pedig `100`-ra vannak korlátozva. Érvénytelen JSON, ismeretlen mező vagy érvénytelen
+érték esetén a válasz HTTP `400`.
 
 ### Egyenként elrejtett csevegési modellek
 
-A szolgáltatói oldalán **Hidden** jelöléssel ellátott modell kimarad a katalógusból, és explicit
-kérés esetén HTTP `404` / `model_not_found` hibával kerül elutasításra. Az ellenőrzés a feloldott
-szolgáltatót és modellt használja, beleértve a szolgáltatói aliasokat, a kompatibilis szolgáltatók
-csomópont-előtagjait és a kapcsolat alapértelmezéseit. Egy kombináció kihagyja a rejtett
-célpontokat, és használhat egy látható testvérmodellt; ha nem marad végrehajtható célpont,
-ugyanazt a hibakódot adja vissza. A modell láthatóvá tétele a következő kéréskor lép életbe.
-A kizárólag képekre vonatkozó láthatósági felülbírálások nem rejtik el az azonos ID-jű
-csevegési modellt.
+A szolgáltatói oldalán **Rejtett** jelöléssel ellátott modellek nem szerepelnek a katalógusban, és
+explicit kérésük esetén a rendszer HTTP `404` / `model_not_found` hibával utasítja el őket. Az ellenőrzés
+a feloldott szolgáltatót és modellt használja, beleértve a szolgáltatói aliasokat, a kompatibilis
+szolgáltatók csomópont-előtagjait és a kapcsolat alapértelmezett értékeit. Egy kombináció kihagyja a
+rejtett célokat, és használhat egy látható testvérmodellt; ha nem marad végrehajtható cél, ugyanazt a
+hibakódot adja vissza. A rejtettség feloldása a következő kéréskor lép életbe. A csak képekre vonatkozó
+láthatósági felülbírálások nem rejtik el az azonos azonosítójú csevegési modellt.
 
 Ez az egyedi modellbeállítás elkülönül a
 [modellközzétételi engedélyezési/tiltási listáktól](../routing/MODEL_EXPOSURE_LIST.md), amelyek a
-katalógusban való megjelenést és az automatikus útválasztás jelöltjeit szűrik, miközben
-megőrzik az explicit továbbítást. Az API-kulcs modelljogosultságai továbbra is egymástól
-függetlenül érvényesülnek. A katalóguselőtag alapértelmezett módja továbbra is `dual`.
+katalógusban való megjelenítést és az automatikus útválasztás jelöltjeit szűrik, miközben megtartják
+az explicit továbbítást. Az API-kulcsok modellengedélyei továbbra is ettől függetlenül érvényesek.
+A katalógus alapértelmezett előtagmódja továbbra is `dual`.
 
 ### Gondolkodás nélküli modellváltozatok
 
-A gondolkodásra képes Claude-modellek esetében a `/v1/models` egy **gondolkodás nélküli**
-változatot is közzétesz, amelynek azonosítója a `claude-3-omniroute-no-thinking/` előtaggal kezdődik:
+A gondolkodásra képes Claude-modellekhez a `/v1/models` egy **gondolkodás nélküli** változatot is
+meghirdet, amelynek azonosítója a `claude-3-omniroute-no-thinking/` előtaggal kezdődik:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Ennek az azonosítónak a kiválasztása (például egy olyan Claude Code-konfigurációban, amely mindig csatol egy `thinking` blokkot) a valódi `<provider>/<model>` értékre oldódik fel, letiltott következtetéssel — a `/v1/messages` útvonalon `thinking:{type:"disabled"}` beállítással, a `/v1/chat/completions` útvonalon pedig a `reasoning`/`reasoning_effort` mezők elhagyásával. A változat csak azoknál a Claude-modellcsaládba tartozó modelleknél jelenik meg, amelyek támogatják a gondolkodást, **és** elfogadják a `disabled` értéket (így például a kizárólag adaptív modellek, amelyek elutasítják a `disabled` értéket, ki vannak zárva). Az üzemeltetők modellenként kényszeríthetik a változat be- vagy kikapcsolását a `ModelSpec.noThinkingAlias` használatával.
+Ennek az azonosítónak a kiválasztása (például egy olyan Claude Code-konfigurációban, amely mindig
+csatol egy `thinking` blokkot) visszafejtődik a valódi `<provider>/<model>` modellre, elnyomott
+következtetési funkcióval — a `/v1/messages` útvonalon `thinking:{type:"disabled"}`, a
+`/v1/chat/completions` útvonalon pedig a `reasoning`/`reasoning_effort` mezők elhagyásával. A változat
+csak azoknál a Claude-családba tartozó modelleknél szerepel a listán, amelyek támogatják a gondolkodást,
+**és** elfogadják a `disabled` értéket (így például a kizárólag adaptív modellek, amelyek elutasítják a
+`disabled` értéket, ki vannak zárva). Az üzemeltetők modellenként kényszeríthetik ki a változat be- vagy
+kikapcsolását a `ModelSpec.noThinkingAlias` használatával.
 
 ---
 

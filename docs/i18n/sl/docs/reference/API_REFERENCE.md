@@ -454,12 +454,54 @@ Authorization: Bearer your-api-key
 → Vrne vse modele za klepet, vdelave in slike ter kombinacije v obliki OpenAI
 ```
 
+### Cene modelov (`pricing`)
+
+Vnos vsebuje objekt `pricing`, kadar OmniRoute pozna ceno modela. Cena izvira
+iz tabele cen, ki jo uporablja obračunavanje stroškov: vgrajene privzete vrednosti, sinhronizirane cene in
+preglasitve, nastavljene prek `/api/pricing`. To so maloprodajne cene, zato tudi ponudniki naročnin
+prikazujejo ceno na žeton.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Polja                                                           | Enota                          | Opombe                                                                                                                                                          |
+| --------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD na žeton, decimalni niz    | Združljivo z OpenRouterjem, nikoli v eksponentnem zapisu. Polji predpomnilnika sta prisotni le, kadar obstaja cena predpomnilnika.                              |
+| `input`, `output`, `cached`, `cache_creation`                   | USD na 1 mio. žetonov, število | Polja iz prejšnjih različic kataloga, ohranjena za obstoječe odjemalce. `reasoning` in `long_context` sta prav tako prisotna, kadar ju vsebuje cenovna vrstica. |
+
+- **Kombinacije** vsebujejo ceno svojega prvega vidnega cilja. Vgrajene kombinacije `auto/*` izberejo
+  cilj ob času zahteve, zato nimajo polja `pricing`.
+- **Brezplačni modeli** prikazujejo `"0"` (in `0`), kadar je njihova cena enaka nič. Model brez cenovne vrstice
+  prav tako prikazuje `"0"`, kadar ga katalog označuje kot brezplačnega (`free: true`) ali pa je naveden v vgrajenem
+  katalogu brezplačnih modelov.
+- **Neznana cena:** vnos nima ključa `pricing`.
+- **Ponudniki z obračunavanjem po dobroimetju** (kot je Kiro) zaračunavajo na zahtevo in ne na žeton. Njihovi
+  vnosi ohranijo številska polja na 1 mio. žetonov, ki so jih imeli prej, in ne vsebujejo nizovnih polj s ceno na žeton.
+- **Različice** (ID-ji ravni intenzivnosti razmišljanja, vzdevki brez razmišljanja ter zrcalne različice za odkrivanje in prehode)
+  kopirajo ceno modela, na katerega usmerjajo.
+- Polja vsebujejo samo osnovne tarife. Ravni za dolg kontekst (številsko polje `long_context`) in
+  množilniki ravni storitve (na primer Codex fast ali flex) ne spreminjajo polj `prompt` ali
+  `completion`.
+- Objekt je enak za vse načine preverjanja pristnosti, vključno z zahtevo v slogu Anthropic
+  z `x-api-key` in `anthropic-version` (odziv ostane `{ "object": "list",
+"data": [...] }`). Implementacija: `src/app/api/v1/models/catalogPricing.ts`.
+
 ### Predpone ID-jev modelov (`?prefix=`)
 
-Večina modelov je objavljena pod **predpono ponudnika**. Katero predpono dobite, določa
-zastavica funkcionalnosti `MODELS_CATALOG_PREFIX_MODE`, ki jo je mogoče preglasiti **za posamezno zahtevo** s
-parametrom poizvedbe — uporabno za odjemalca, ki želi čist seznam, ne da bi za vse druge spreminjal
-nastavitev na ravni strežnika:
+Večina modelov je objavljena s **predpono ponudnika**. Katero predpono prejmete, določa
+zastavica funkcionalnosti `MODELS_CATALOG_PREFIX_MODE`, preglasiti pa jo je mogoče **za posamezno zahtevo**
+s poizvedbenim parametrom — uporabno za odjemalca, ki želi čist seznam, ne da bi spremenil nastavitev
+za celoten strežnik za vse druge:
 
 ```bash
 GET /v1/models?prefix=alias        # en ID na model — kratka predpona vzdevka
@@ -467,13 +509,13 @@ GET /v1/models?prefix=dual         # obe obliki (privzeta nastavitev strežnika)
 GET /v1/models?prefix=canonical    # samo polna predpona ID-ja ponudnika
 ```
 
-| Način       | Odda                                                     | Opombe                                                                                                                                                                                               |
-| ----------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **in** `claude/claude-sonnet-4-6` | **Privzeto.** Oba ID-ja usmerjata na isti model; ohranjena sta, da konfiguracije odjemalcev, v katerih je katera koli oblika trdo kodirana, še naprej delujejo. Približno podvoji velikost kataloga. |
-| `alias`     | `cc/claude-sonnet-4-6`                                   | En vnos na model. Ponudniki brez ločenega vzdevka še vedno oddajo svoj vnos, zato se nič ne izgubi.                                                                                                  |
-| `canonical` | `claude/claude-sonnet-4-6`                               | En vnos na model pod polno predpono ID-ja ponudnika. Ponudniki brez ločenega vzdevka (npr. `antigravity/…`, `agy/…`) tudi tukaj oddajo svoj edini ID, zato se nič ne izgubi.                         |
+| Način       | Oddaja                                                   | Opombe                                                                                                                                                                              |
+| ----------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **in** `claude/claude-sonnet-4-6` | **Privzeto.** Oba ID-ja usmerjata na isti model; ohranjena sta, da konfiguracije odjemalcev, ki imajo eno od oblik trdo kodirano, še naprej delujejo. Katalog se približno podvoji. |
+| `alias`     | `cc/claude-sonnet-4-6`                                   | En vnos na model. Ponudniki brez ločenega vzdevka še vedno oddajo svoj vnos, zato se nič ne izgubi.                                                                                 |
+| `canonical` | `claude/claude-sonnet-4-6`                               | En vnos na model pod polno predpono ID-ja ponudnika. Ponudniki brez ločenega vzdevka (npr. `antigravity/…`, `agy/…`) tudi tukaj oddajo svoj edini ID, zato se nič ne izgubi.        |
 
-Zrcalni vnos v načinu `dual` je mogoče prepoznati tudi brez parametra poizvedbe: vsebuje polje `parent`,
+Zrcalno različico načina `dual` je mogoče prepoznati tudi brez poizvedbenega parametra: vsebuje polje `parent`,
 ki kaže na primarni ID.
 
 Odjemalci, ki prikazujejo izbirnik modelov, naj zahtevajo `?prefix=alias` — tako deluje
@@ -481,15 +523,15 @@ Odjemalci, ki prikazujejo izbirnik modelov, naj zahtevajo `?prefix=alias` — ta
 
 ### Filtri za odkrivanje (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
 
-`GET /v1/models` podpira izbirne filtre za odkrivanje. Brez njih ostane odziv
-nespremenjen. Zožijo katalog, ki ga klicatelj že vidi (najprej se uveljavijo dovoljenja ključa API),
-in se izvedejo pred ostranjevanjem `limit` / `after` v slogu OpenAI:
+`GET /v1/models` sprejema izbirne filtre za odkrivanje. Brez katerega koli od njih ostane odziv
+nespremenjen. Zožijo katalog, ki ga klicatelj že vidi (najprej se uporabijo dovoljenja ključa API),
+izvedejo pa se pred ostranjevanjem `limit` / `after` v slogu OpenAI:
 
 ```bash
-GET /v1/models?capability=vision&capability=tool_calling   # vsaka navedena zmožnost mora biti omogočena
+GET /v1/models?capability=vision&capability=tool_calling   # vsaka navedena zmožnost mora biti resnična
 GET /v1/models?capability=vision,reasoning&min_context=200000
-GET /v1/models?kind=embedding                              # `type` kataloga; vrstice brez njega so `chat`
-GET /v1/models?q=sonnet&limit=10                           # ujemanje ID-ja ali imena brez razlikovanja velikosti črk
+GET /v1/models?kind=embedding                              # kataloški `type`; vrstice brez njega so `chat`
+GET /v1/models?q=sonnet&limit=10                           # ujemanje ID-ja ali imena brez razlikovanja med velikimi in malimi črkami
 ```
 
 | Parameter     | Vrednosti                                                                                           |
@@ -506,7 +548,7 @@ vrne HTTP `400`, sporočilo pa navede veljavne vrednosti. Implementacija:
 ### Ožji izbor modelov (`POST /v1/models/query`)
 
 `POST /v1/models/query` vrne kratek, determinističen seznam iz istega kataloga z enakim
-preverjanjem pristnosti in vidnostjo za posamezni ključ kot `GET /v1/models`:
+preverjanjem pristnosti in vidnostjo za posamezen ključ kot `GET /v1/models`:
 
 ```bash
 POST /v1/models/query
@@ -519,7 +561,7 @@ Content-Type: application/json
 → { "object": "list", "data": [ ...models ] }
 ```
 
-Vsako polje je izbirno. `capabilities` in `exclude` sprejmeta matriko ali niz, ločen z vejicami;
+Vsako polje je izbirno. `capabilities` in `exclude` sprejmeta polje ali niz, ločen z vejicami;
 `max_output` se primerja z `max_output_tokens`. Rezultati so razvrščeni po `owned_by`, nato po `id`.
 Privzeta vrednost za `limit` je `20`, vrednosti nad `100` pa so omejene na `100`. Neveljaven JSON, neznano
 polje ali neveljavna vrednost vrne HTTP `400`.
@@ -529,24 +571,24 @@ polje ali neveljavna vrednost vrne HTTP `400`.
 Model, ki je na strani svojega ponudnika označen kot **Skrit**, je izključen iz kataloga in ob izrecni
 zahtevi zavrnjen z napako HTTP `404` / `model_not_found`. Preverjanje uporablja razrešenega
 ponudnika in model, vključno z vzdevki ponudnikov, predponami vozlišč združljivih ponudnikov in
-privzetimi nastavitvami povezav. Kombinacija preskoči skrite cilje in lahko uporabi vidni sorodni model; če ne
-ostane noben izvedljiv cilj, vrne isto kodo napake. Razkritje modela začne veljati ob naslednji
+privzetimi vrednostmi povezave. Kombinacija preskoči skrite cilje in lahko uporabi vidni sorodni model; če ne
+ostane noben izvedljiv cilj, vrne isto kodo napake. Razkritje začne veljati pri naslednji
 zahtevi. Preglasitve vidnosti, ki veljajo samo za slike, ne skrijejo modela za klepet z istim ID-jem.
 
 Ta nastavitev posameznega modela je ločena od
-[seznamov dovoljenih/prepovedanih modelov za izpostavitev](../routing/MODEL_EXPOSURE_LIST.md), ki filtrirajo objavo
-v katalogu in kandidate za samodejno usmerjanje, hkrati pa ohranijo izrecno posredovanje. Dovoljenja modelov
-za ključe API se še naprej uporabljajo neodvisno. Privzeti način predpone kataloga ostaja `dual`.
+[seznamov dovoljenih/prepovedanih izpostavitev modelov](../routing/MODEL_EXPOSURE_LIST.md), ki filtrirajo
+oglaševanje v katalogu in kandidate za samodejno usmerjanje, hkrati pa ohranijo izrecno posredovanje. Dovoljenja
+modelov za ključe API še naprej veljajo neodvisno. Privzeti način predpone kataloga ostaja `dual`.
 
 ### Različice modelov brez razmišljanja
 
-Za modele Claude, ki podpirajo razmišljanje, `/v1/models` objavi tudi različico **brez razmišljanja**, katere ID ima predpono `claude-3-omniroute-no-thinking/`:
+Za modele Claude, ki podpirajo razmišljanje, `/v1/models` oglašuje tudi različico **brez razmišljanja**, katere ID ima predpono `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Izbira tega id-ja (npr. v konfiguraciji Claude Code, ki vedno priloži blok `thinking`) se preslika nazaj na dejanski `<provider>/<model>` z onemogočenim sklepanjem — `thinking:{type:"disabled"}` na poti `/v1/messages` oziroma z izpuščenima poljema `reasoning`/`reasoning_effort` na poti `/v1/chat/completions`. Različica je navedena samo za modele družine Claude, ki podpirajo razmišljanje **in** upoštevajo vrednost `disabled` (zato so npr. izključeni modeli, ki podpirajo samo prilagodljivi način in zavrnejo vrednost `disabled`). Upravljavci lahko različico za posamezen model prisilno omogočijo ali onemogočijo prek `ModelSpec.noThinkingAlias`.
+Izbira tega ID-ja (npr. v konfiguraciji Claude Code, ki vedno doda blok `thinking`) se razreši nazaj v pravi `<provider>/<model>` z onemogočenim sklepanjem — `thinking:{type:"disabled"}` na poti `/v1/messages` oziroma z odstranjenima poljema `reasoning`/`reasoning_effort` na poti `/v1/chat/completions`. Različica je navedena samo za modele iz družine Claude, ki podpirajo razmišljanje **in** upoštevajo `disabled` (zato so na primer izključeni modeli, ki podpirajo samo prilagodljivi način in zavračajo `disabled`). Upravljavci lahko različico prisilno vklopijo ali izklopijo za posamezen model prek `ModelSpec.noThinkingAlias`.
 
 ---
 
