@@ -538,8 +538,9 @@ export const updateSettingsSchema = z.object({
   // opencode server (the headless server of the opencode CLI, `opencode serve`).
   // Empty = fall back to OPENCODE_SERVER_URL / http://127.0.0.1:4096. The
   // executor interpolates this into fetch(`${url}/...`), so restrict to http(s)
-  // like headroomUrl above. The bin path is a local absolute path (may be blank
-  // to auto-detect); both keys are stripped without these schema fields.
+  // like headroomUrl above. There is intentionally NO setting for the CLI binary:
+  // it is resolved from the environment only (OPENCODE_SERVER_BIN), never from a
+  // DB value that the request path would hand to spawn().
   opencode_server_url: z
     .string()
     .trim()
@@ -554,7 +555,6 @@ export const updateSettingsSchema = z.object({
       ])
     )
     .optional(),
-  opencode_server_bin: z.string().trim().max(500).optional(),
   // #7645: dedicated CLIProxyAPI credential. CLIProxyAPI requires its own
   // separately-configured `api-keys:` credential and rejects any other token
   // with 401 — without this field, the fallback/passthrough legs had no way

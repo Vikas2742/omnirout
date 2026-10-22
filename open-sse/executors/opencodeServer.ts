@@ -1,9 +1,28 @@
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { closeSync, existsSync, mkdirSync, openSync } from "node:fs";
 import { join } from "node:path";
 
 import { BaseExecutor, type ExecuteInput } from "./base.ts";
 import { PROVIDERS } from "../config/constants.ts";
+import { buildErrorBody } from "../utils/error.ts";
+import {
+  OpencodeEventBus,
+  type EventProperties,
+  type EventLike,
+  type OpencodeMessageInfo,
+  type OpencodePart,
+} from "../services/opencodeServerEventBus.ts";
+import {
+  buildServerEnv,
+  isForwardableFileUrl,
+  isLoopbackHost,
+} from "../services/opencodeServerSafety.ts";
+import {
+  clearOpencodeServerSettingsCache,
+  readOpencodeServerSettings,
+  type OpencodeServerSettings,
+} from "../services/opencodeServerSettings.ts";
 
 // Executor for the local `opencode serve` process (the headless server that the
 // opencode CLI itself starts; the TUI is just a client of it, see
@@ -34,44 +53,16 @@ import { PROVIDERS } from "../config/constants.ts";
 const DEFAULT_BASE_URL = "http://127.0.0.1:4096";
 const DEFAULT_TIMEOUT_MS = 180_000;
 const CATALOG_TTL_MS = 60_000;
-const SETTINGS_CACHE_TTL_MS = 60_000;
 const DEFAULT_AUTOSTART_TIMEOUT_MS = 45_000;
 
-type OpencodeServerSettings = { url?: string; bin?: string };
-
 // Settings come from the dashboard (Providers → local → opencode server) and
-// win over env, which in turn wins over the defaults. Cached because the
-// executor sits on the request hot path; the PATCH /api/settings handler calls
-// clearOpencodeServerSettingsCache() so an operator edit takes effect at once.
-let cachedSettings: { value: OpencodeServerSettings; ts: number } | null = null;
+// win over the defaults; the cache lives in services/opencodeServerSettings.ts so
+// the settings route can invalidate it without importing an executor.
+export { clearOpencodeServerSettingsCache };
+
 // Refreshed on every ensureOpencodeServer() (i.e. before each request) so the
 // synchronous helpers below can read it without becoming async themselves.
 let resolvedSettings: OpencodeServerSettings = {};
-
-export function clearOpencodeServerSettingsCache(): void {
-  cachedSettings = null;
-}
-
-async function readSettings(): Promise<OpencodeServerSettings> {
-  if (cachedSettings && Date.now() - cachedSettings.ts < SETTINGS_CACHE_TTL_MS) {
-    return cachedSettings.value;
-  }
-  let value: OpencodeServerSettings = {};
-  try {
-    // Imported lazily so this module never hard-depends on the DB at import time
-    // (same pattern as executors/dario.ts).
-    const { getSettings } = await import("@/lib/db/settings");
-    const settings = (await getSettings()) as Record<string, unknown>;
-    value = {
-      url: typeof settings.opencode_server_url === "string" ? settings.opencode_server_url : undefined,
-      bin: typeof settings.opencode_server_bin === "string" ? settings.opencode_server_bin : undefined,
-    };
-  } catch {
-    value = {};
-  }
-  cachedSettings = { value, ts: Date.now() };
-  return value;
-}
 
 type OpencodeServerModel = {
   providerID: string;
@@ -84,28 +75,6 @@ type OpencodeServerModel = {
   reasoning: boolean;
   image: boolean;
   synthetic?: boolean;
-};
-
-type OpencodeMessageInfo = {
-  id?: string;
-  role?: string;
-  sessionID?: string;
-  providerID?: string;
-  modelID?: string;
-  finish?: string;
-  tokens?: {
-    input?: number;
-    output?: number;
-    reasoning?: number;
-    cache?: { read?: number; write?: number };
-  };
-};
-
-type OpencodePart = {
-  id?: string;
-  type?: string;
-  text?: string;
-  messageID?: string;
 };
 
 type OpencodeUsage = {
@@ -140,16 +109,19 @@ const ROLE_LABEL: Record<string, string> = {
 
 function serverBaseUrl(): string {
   const configured =
-    String(process.env.OPENCODE_SERVER_URL || "").trim() || String(resolvedSettings.url || "").trim();
+    String(process.env.OPENCODE_SERVER_URL || "").trim() ||
+    String(resolvedSettings.url || "").trim();
   return (configured || DEFAULT_BASE_URL).replace(/\/+$/, "");
 }
 
 // The CLI binary is usually on PATH, but on managed/bundled installs it may not
 // be (npm shim vs. the real exe inside the package). Resolution order mirrors
-// executors/auggie.ts: explicit override, then known install locations, then PATH.
+// executors/auggie.ts: explicit ENV override, then known install locations, then
+// PATH. It is never read from the settings DB / dashboard (see
+// services/opencodeServerSettings.ts).
 function resolveBinary(): string | null {
   const explicit = String(
-    resolvedSettings.bin || process.env.OPENCODE_SERVER_BIN || process.env.CLI_OPENCODE_BIN || ""
+    process.env.OPENCODE_SERVER_BIN || process.env.CLI_OPENCODE_BIN || ""
   ).trim();
   if (explicit) return explicit;
   const home = process.env.HOME || process.env.USERPROFILE || "";
@@ -170,7 +142,11 @@ function resolveBinary(): string | null {
     }
     return "opencode.cmd";
   }
-  for (const candidate of [join(home, ".bun", "bin", "opencode"), "/usr/local/bin/opencode", "/opt/homebrew/bin/opencode"]) {
+  for (const candidate of [
+    join(home, ".bun", "bin", "opencode"),
+    "/usr/local/bin/opencode",
+    "/opt/homebrew/bin/opencode",
+  ]) {
     try {
       if (existsSync(candidate)) return candidate;
     } catch {
@@ -194,19 +170,17 @@ function autostartEnabled(): boolean {
   return !/^(0|false|no|off)$/i.test(String(process.env.OPENCODE_SERVER_AUTOSTART ?? "1"));
 }
 
-function includePaidModels(): boolean {
-  return /^(1|true|yes)$/i.test(String(process.env.OPENCODE_SERVER_INCLUDE_PAID || ""));
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function newId(prefix: string): string {
-  return `${prefix}${Math.random().toString(16).slice(2, 14)}${Date.now().toString(16)}`;
+  return `${prefix}${randomUUID().replace(/-/g, "")}`;
 }
 
-async function probeHealth(timeoutMs = 1500): Promise<{ healthy: boolean; version?: string } | null> {
+async function probeHealth(
+  timeoutMs = 1500
+): Promise<{ healthy: boolean; version?: string } | null> {
   try {
     const response = await fetch(`${serverBaseUrl()}/global/health`, {
       signal: AbortSignal.timeout(timeoutMs),
@@ -220,18 +194,15 @@ async function probeHealth(timeoutMs = 1500): Promise<{ healthy: boolean; versio
 
 // Owns the lazy autostart of `opencode serve`. Concurrent requests share the same
 // promise so a burst never spawns more than one server.
-const autostartState: { pending: Promise<{ healthy: boolean; version?: string }> | null; pid: number | null } = {
+const autostartState: {
+  pending: Promise<{ healthy: boolean; version?: string }> | null;
+  pid: number | null;
+} = {
   pending: null,
   pid: null,
 };
 
-async function spawnServer(): Promise<{ healthy: boolean; version?: string }> {
-  const binary = resolveBinary();
-  if (!binary) {
-    throw new Error(
-      "[opencode-server] server unreachable and no opencode binary found (set opencode_server_bin in settings)"
-    );
-  }
+function openServerLogs(): { stdoutFd: number | null; stderrFd: number | null } {
   const logDir =
     process.env.OMNIROUTE_LOG_DIR ||
     join(process.env.HOME || process.env.USERPROFILE || "", ".omniroute", "logs");
@@ -248,17 +219,41 @@ async function spawnServer(): Promise<{ healthy: boolean; version?: string }> {
   } catch {
     /* fall back to inherited stdio */
   }
+  return { stdoutFd, stderrFd };
+}
+
+async function spawnServer(): Promise<{ healthy: boolean; version?: string }> {
+  // Autostart only ever applies to a server on this machine; a remote URL means
+  // someone else owns that process.
+  if (!isLoopbackHost(new URL(serverBaseUrl()).hostname)) {
+    throw new Error(
+      `[opencode-server] no server reachable on ${serverBaseUrl()} and autostart only applies to a loopback URL`
+    );
+  }
+  const binary = resolveBinary();
+  if (!binary) {
+    throw new Error(
+      "[opencode-server] server unreachable and no opencode binary found (set OPENCODE_SERVER_BIN in the OmniRoute environment)"
+    );
+  }
+  const { stdoutFd, stderrFd } = openServerLogs();
 
   const url = new URL(serverBaseUrl());
   const child = spawn(
     binary,
-    ["serve", "--port", url.port || "4096", "--hostname", url.hostname || "127.0.0.1"],
+    [
+      "serve",
+      "--port",
+      url.port || "4096",
+      "--hostname",
+      url.hostname.replace(/^\[|\]$/g, "") || "127.0.0.1",
+    ],
     {
       cwd: process.env.OPENCODE_SERVER_CWD || process.cwd(),
       detached: true,
       windowsHide: true,
       stdio: ["ignore", stdoutFd, stderrFd],
-      env: process.env,
+      env: buildServerEnv(),
     }
   );
   child.on("error", () => {});
@@ -281,7 +276,7 @@ async function spawnServer(): Promise<{ healthy: boolean; version?: string }> {
 }
 
 export async function ensureOpencodeServer(): Promise<{ healthy: boolean; version?: string }> {
-  resolvedSettings = await readSettings();
+  resolvedSettings = await readOpencodeServerSettings();
   const health = await probeHealth();
   if (health) return health;
   if (!autostartEnabled()) {
@@ -297,7 +292,12 @@ export async function ensureOpencodeServer(): Promise<{ healthy: boolean; versio
   return autostartState.pending;
 }
 
-type ServerJsonOptions = { method?: string; body?: unknown; signal?: AbortSignal | null; timeoutMs?: number };
+type ServerJsonOptions = {
+  method?: string;
+  body?: unknown;
+  signal?: AbortSignal | null;
+  timeoutMs?: number;
+};
 
 async function serverJson<T>(path: string, options: ServerJsonOptions = {}): Promise<T> {
   const timeout = AbortSignal.timeout(options.timeoutMs ?? requestTimeoutMs());
@@ -316,11 +316,10 @@ async function serverJson<T>(path: string, options: ServerJsonOptions = {}): Pro
     parsed = null;
   }
   if (!response.ok) {
-    const detail = (parsed as { data?: { message?: string }; message?: string; error?: unknown } | null);
-    const message =
-      detail?.data?.message || detail?.message || (typeof detail?.error === "string" ? detail.error : "") ||
-      text.slice(0, 300) || `HTTP ${response.status}`;
-    const error = new Error(`[opencode-server] ${path} -> ${response.status}: ${message}`) as Error & {
+    // The upstream body is deliberately NOT echoed: it can carry server paths,
+    // stack frames or credentials of the local opencode install, and this text
+    // ends up in client-visible HTTP / SSE errors (Hard Rule 12).
+    const error = new Error(`[opencode-server] ${path} -> ${response.status}`) as Error & {
       status?: number;
     };
     error.status = response.status;
@@ -336,12 +335,20 @@ const catalog = {
 };
 
 async function loadCatalog(force = false): Promise<typeof catalog> {
-  if (!force && Date.now() - catalog.at < CATALOG_TTL_MS && catalog.byModel.size > 0) return catalog;
+  if (!force && Date.now() - catalog.at < CATALOG_TTL_MS && catalog.byModel.size > 0)
+    return catalog;
   await ensureOpencodeServer();
   const payload = await serverJson<{
     providers?: Array<{
       id: string;
-      models?: Record<string, OpencodeServerModel & { cost?: Record<string, number>; limit?: Record<string, number>; capabilities?: Record<string, unknown> }>;
+      models?: Record<
+        string,
+        OpencodeServerModel & {
+          cost?: Record<string, number>;
+          limit?: Record<string, number>;
+          capabilities?: Record<string, unknown>;
+        }
+      >;
     }>;
     default?: Record<string, string>;
   }>("/config/providers");
@@ -366,7 +373,9 @@ async function loadCatalog(force = false): Promise<typeof catalog> {
     }
   }
   catalog.byModel = byModel;
-  catalog.defaultProvider = payload?.default?.opencode ? "opencode" : Object.keys(payload?.default || {})[0] || "opencode";
+  catalog.defaultProvider = payload?.default?.opencode
+    ? "opencode"
+    : Object.keys(payload?.default || {})[0] || "opencode";
   catalog.at = Date.now();
   return catalog;
 }
@@ -374,7 +383,9 @@ async function loadCatalog(force = false): Promise<typeof catalog> {
 function resolveModel(model: string): OpencodeServerModel {
   const requested = String(model || "").trim();
   if (!requested) throw new Error("[opencode-server] missing model");
-  const bare = requested.includes("/") ? requested.slice(requested.lastIndexOf("/") + 1) : requested;
+  const bare = requested.includes("/")
+    ? requested.slice(requested.lastIndexOf("/") + 1)
+    : requested;
   return (
     catalog.byModel.get(bare) ||
     catalog.byModel.get(requested) || {
@@ -450,15 +461,27 @@ function collectFiles(content: unknown): Array<{ url: string; mime: string }> {
     if (type === "image_url") {
       const imageUrl = record.image_url as { url?: string; mime?: string } | string | undefined;
       const url = typeof imageUrl === "string" ? imageUrl : imageUrl?.url;
-      if (url) files.push({ url, mime: imageUrl && typeof imageUrl !== "string" ? imageUrl.mime || mimeFromUrl(url) : mimeFromUrl(url) });
+      if (isForwardableFileUrl(url))
+        files.push({
+          url,
+          mime:
+            imageUrl && typeof imageUrl !== "string"
+              ? imageUrl.mime || mimeFromUrl(url)
+              : mimeFromUrl(url),
+        });
     } else if (type === "input_image") {
       const imageUrl = record.image_url as string | { url?: string } | undefined;
-      const url = typeof imageUrl === "string" ? imageUrl : imageUrl?.url || (record.url as string | undefined);
-      if (url) files.push({ url, mime: String(record.mime_type || mimeFromUrl(url)) });
+      const url =
+        typeof imageUrl === "string"
+          ? imageUrl
+          : imageUrl?.url || (record.url as string | undefined);
+      if (isForwardableFileUrl(url))
+        files.push({ url, mime: String(record.mime_type || mimeFromUrl(url)) });
     } else if (type === "input_file") {
       const fileUrl = record.file_url as string | undefined;
       const url = fileUrl || (record.url as string | undefined);
-      if (url) files.push({ url, mime: String(record.mime_type || mimeFromUrl(url)) });
+      if (isForwardableFileUrl(url))
+        files.push({ url, mime: String(record.mime_type || mimeFromUrl(url)) });
     }
   }
   return files;
@@ -471,10 +494,10 @@ function buildTurns(body: Record<string, unknown>): { systemChunks: string[]; tu
   const raw = Array.isArray(body.messages)
     ? (body.messages as unknown[])
     : Array.isArray(body.input)
-    ? (body.input as unknown[])
-    : typeof body.input === "string" && body.input.trim()
-    ? [{ role: "user", content: body.input }]
-    : [];
+      ? (body.input as unknown[])
+      : typeof body.input === "string" && body.input.trim()
+        ? [{ role: "user", content: body.input }]
+        : [];
 
   const systemChunks: string[] = [];
   const turns: Turn[] = [];
@@ -488,7 +511,11 @@ function buildTurns(body: Record<string, unknown>): { systemChunks: string[]; tu
       continue;
     }
     if (typeof record.type === "string" && record.type.startsWith("function_")) {
-      turns.push({ role: "tool", text: `${String(record.name || "function")} -> ${text}`, files: [] });
+      turns.push({
+        role: "tool",
+        text: `${String(record.name || "function")} -> ${text}`,
+        files: [],
+      });
       continue;
     }
     turns.push({ role, text, files: collectFiles(record.content) });
@@ -518,7 +545,10 @@ function buildParts(turns: Turn[]): OpencodePart[] {
   return parts;
 }
 
-type NormalizedTools = { tools: Array<{ name: string; description: string; parameters: unknown }>; choice: unknown };
+type NormalizedTools = {
+  tools: Array<{ name: string; description: string; parameters: unknown }>;
+  choice: unknown;
+};
 
 function normalizeTools(body: Record<string, unknown>): NormalizedTools {
   const list = Array.isArray(body.tools) ? (body.tools as unknown[]) : [];
@@ -533,7 +563,9 @@ function normalizeTools(body: Record<string, unknown>): NormalizedTools {
         parameters: fn.parameters ?? { type: "object", properties: {} },
       };
     })
-    .filter((tool): tool is { name: string; description: string; parameters: unknown } => tool !== null);
+    .filter(
+      (tool): tool is { name: string; description: string; parameters: unknown } => tool !== null
+    );
 
   let choice: unknown = body.tool_choice;
   if (choice && typeof choice === "object") {
@@ -648,101 +680,18 @@ type TurnResult = {
   error?: string | null;
 };
 
-type EventLike = { type?: string; properties?: Record<string, unknown> };
+const eventBus = new OpencodeEventBus(serverBaseUrl);
 
-// One shared /event connection for the whole process. opencode publishes every
-// session's events on it, so requests filter by sessionID (+ the assistant
-// messageID, otherwise the echoed user prompt leaks into the content).
-class EventBus {
-  private listeners = new Map<string, Set<(event: EventLike) => void>>();
-  private task: Promise<void> | null = null;
-  private generation = 0;
-
-  subscribe(sessionID: string, handler: (event: EventLike) => void): () => void {
-    const set = this.listeners.get(sessionID) || new Set();
-    set.add(handler);
-    this.listeners.set(sessionID, set);
-    void this.ensure();
-    return () => {
-      set.delete(handler);
-      if (set.size === 0) this.listeners.delete(sessionID);
-    };
-  }
-
-  private ensure(): Promise<void> {
-    if (this.task) return this.task;
-    const generation = ++this.generation;
-    this.task = this.loop(generation).finally(() => {
-      this.task = null;
-    });
-    return this.task;
-  }
-
-  private async loop(generation: number): Promise<void> {
-    let attempt = 0;
-    while (generation === this.generation) {
-      try {
-        const response = await fetch(`${serverBaseUrl()}/event`, {
-          headers: { accept: "text/event-stream" },
-        });
-        if (!response.ok || !response.body) throw new Error(`event stream HTTP ${response.status}`);
-        attempt = 0;
-        await this.consume(response.body);
-      } catch {
-        if (generation !== this.generation) return;
-        attempt += 1;
-        await sleep(Math.min(5000, 250 * attempt));
-      }
-    }
-  }
-
-  private async consume(body: ReadableStream<Uint8Array>): Promise<void> {
-    const reader = body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) return;
-      buffer += decoder.decode(value, { stream: true });
-      let index: number;
-      while ((index = buffer.indexOf("\n\n")) >= 0) {
-        const frame = buffer.slice(0, index);
-        buffer = buffer.slice(index + 2);
-        const dataLine = frame.split("\n").find((line) => line.startsWith("data:"));
-        if (!dataLine) continue;
-        let event: EventLike;
-        try {
-          event = JSON.parse(dataLine.slice(5).trim()) as EventLike;
-        } catch {
-          continue;
-        }
-        this.dispatch(event);
-      }
-    }
-  }
-
-  private dispatch(event: EventLike): void {
-    const properties = (event?.properties || {}) as Record<string, any>;
-    const part = (properties.part || {}) as { sessionID?: string };
-    const info = (properties.info || {}) as { sessionID?: string };
-    const sessionID = properties.sessionID || part.sessionID || info.sessionID;
-    if (!sessionID) return;
-    const handlers = this.listeners.get(sessionID);
-    if (!handlers || handlers.size === 0) return;
-    for (const handler of [...handlers]) {
-      try {
-        handler(event);
-      } catch {
-        /* a broken listener must not kill the bus */
-      }
-    }
-  }
+/** Closes the shared /event stream and stops its reconnect loop (tests, shutdown). */
+export function closeOpencodeServerEventBus(): void {
+  eventBus.close();
 }
 
-const eventBus = new EventBus();
-
 async function createSession(title: string): Promise<string> {
-  const session = await serverJson<{ id?: string }>("/session", { method: "POST", body: { title } });
+  const session = await serverJson<{ id?: string }>("/session", {
+    method: "POST",
+    body: { title },
+  });
   const id = session?.id;
   if (!id) throw new Error("[opencode-server] session creation returned no id");
   return id;
@@ -773,7 +722,14 @@ type RunOptions = {
   wait: boolean;
 };
 
-async function runTurn({ sessionID, payload, signal, onText, onReasoning, wait }: RunOptions): Promise<TurnResult> {
+async function runTurn({
+  sessionID,
+  payload,
+  signal,
+  onText,
+  onReasoning,
+  wait,
+}: RunOptions): Promise<TurnResult> {
   if (!wait) {
     const result = await serverJson<{ info?: OpencodeMessageInfo; parts?: OpencodePart[] }>(
       `/session/${sessionID}/message`,
@@ -782,7 +738,10 @@ async function runTurn({ sessionID, payload, signal, onText, onReasoning, wait }
     const parts = result?.parts || [];
     return {
       info: result?.info || {},
-      text: parts.filter((part) => part.type === "text").map((part) => part.text || "").join(""),
+      text: parts
+        .filter((part) => part.type === "text")
+        .map((part) => part.text || "")
+        .join(""),
       reasoning: parts
         .filter((part) => part.type === "reasoning" || part.type === "thinking")
         .map((part) => part.text || "")
@@ -802,7 +761,7 @@ async function runTurn({ sessionID, payload, signal, onText, onReasoning, wait }
     !!messageID && assistantMessages.size > 0 && assistantMessages.has(messageID);
 
   const onEvent = (event: EventLike): void => {
-    const properties = (event?.properties || {}) as Record<string, any>;
+    const properties = (event?.properties || {}) as EventProperties;
     if (event.type === "message.updated") {
       const messageInfo = properties.info as OpencodeMessageInfo | undefined;
       if (messageInfo?.role === "assistant") {
@@ -868,7 +827,10 @@ async function runTurn({ sessionID, payload, signal, onText, onReasoning, wait }
       onEvent(event);
       if (event.type === "session.idle" || event.type === "session.error") resolve();
     });
-    setTimeout(() => reject(new Error("[opencode-server] streaming timeout")), requestTimeoutMs()).unref?.();
+    setTimeout(
+      () => reject(new Error("[opencode-server] streaming timeout")),
+      requestTimeoutMs()
+    ).unref?.();
   });
 
   const onAbort = () => rejectRun?.(new Error("[opencode-server] request aborted"));
@@ -982,25 +944,12 @@ function jsonResponse(payload: unknown): Response {
   });
 }
 
-function sseResponse(initial: string): Response {
-  const stream = new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(new TextEncoder().encode(initial));
-      controller.close();
-    },
-  });
-  return new Response(stream, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/event-stream; charset=utf-8",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-    },
-  });
-}
-
-function detectWireFormat(body: Record<string, unknown>, clientHeaders?: Record<string, string> | null): "chat" | "responses" {
-  const explicit = clientHeaders?.["x-omniroute-opencode-format"] || clientHeaders?.["x-opencode-wire"];
+function detectWireFormat(
+  body: Record<string, unknown>,
+  clientHeaders?: Record<string, string> | null
+): "chat" | "responses" {
+  const explicit =
+    clientHeaders?.["x-omniroute-opencode-format"] || clientHeaders?.["x-opencode-wire"];
   if (explicit) return String(explicit).includes("response") ? "responses" : "chat";
   if (Array.isArray(body.input) && !Array.isArray(body.messages)) return "responses";
   if (typeof body.input === "string" && !body.messages) return "responses";
@@ -1028,7 +977,9 @@ export class OpencodeServerExecutor extends BaseExecutor {
     const target = resolveModel(input.model);
     if (target.synthetic) {
       throw Object.assign(
-        new Error(`[opencode-server] unknown model "${input.model}" (not in ${serverBaseUrl()}/config/providers)`),
+        new Error(
+          `[opencode-server] unknown model "${input.model}" (not in ${serverBaseUrl()}/config/providers)`
+        ),
         { status: 404 }
       );
     }
@@ -1054,9 +1005,10 @@ export class OpencodeServerExecutor extends BaseExecutor {
     if (!wantsStream) {
       try {
         const result = await runTurn({ sessionID, payload, signal: input.signal, wait: false });
-        const toolCalls = normalized.tools.length > 0 && normalized.choice !== "none"
-          ? parseToolEnvelope(result.text, normalized.tools)
-          : null;
+        const toolCalls =
+          normalized.tools.length > 0 && normalized.choice !== "none"
+            ? parseToolEnvelope(result.text, normalized.tools)
+            : null;
         const text = toolCalls ? "" : result.text;
         if (wireFormat === "responses") {
           return {
@@ -1067,7 +1019,15 @@ export class OpencodeServerExecutor extends BaseExecutor {
         }
         return {
           response: jsonResponse(
-            buildChatCompletion({ id, created, model, text, reasoning: result.reasoning, toolCalls, info: result.info })
+            buildChatCompletion({
+              id,
+              created,
+              model,
+              text,
+              reasoning: result.reasoning,
+              toolCalls,
+              info: result.info,
+            })
           ),
         };
       } finally {
@@ -1137,7 +1097,14 @@ export class OpencodeServerExecutor extends BaseExecutor {
       isResponses
         ? `data: ${JSON.stringify({
             type: "response.created",
-            response: { id, object: "response", created_at: created, status: "in_progress", model, output: [] },
+            response: {
+              id,
+              object: "response",
+              created_at: created,
+              status: "in_progress",
+              model,
+              output: [],
+            },
           })}\n\n`
         : sseLine(chunkEnvelope({ id, created, model, delta: { role: "assistant", content: "" } }))
     );
@@ -1163,7 +1130,14 @@ export class OpencodeServerExecutor extends BaseExecutor {
       };
 
       try {
-        const result = await runTurn({ sessionID, payload, signal, onText, onReasoning, wait: true });
+        const result = await runTurn({
+          sessionID,
+          payload,
+          signal,
+          onText,
+          onReasoning,
+          wait: true,
+        });
         const toolCalls = toolMode ? parseToolEnvelope(result.text, tools) : null;
         const text = toolCalls ? "" : result.text;
 
@@ -1201,7 +1175,10 @@ export class OpencodeServerExecutor extends BaseExecutor {
                           index: 0,
                           id: call.id,
                           type: "function",
-                          function: { name: call.function.name, arguments: call.function.arguments },
+                          function: {
+                            name: call.function.name,
+                            arguments: call.function.arguments,
+                          },
                         },
                       ],
                     },
@@ -1214,24 +1191,40 @@ export class OpencodeServerExecutor extends BaseExecutor {
           isResponses
             ? `data: ${JSON.stringify({
                 type: "response.completed",
-                response: buildResponsesPayload({ id, created, model, text, toolCalls, info: result.info }),
+                response: buildResponsesPayload({
+                  id,
+                  created,
+                  model,
+                  text,
+                  toolCalls,
+                  info: result.info,
+                }),
               })}\n\n`
             : `data: ${JSON.stringify({
                 id,
                 object: "chat.completion.chunk",
                 created,
                 model,
-                choices: [{ index: 0, delta: {}, finish_reason: finishReason(result.info, !!(toolCalls && toolCalls.length)) }],
+                choices: [
+                  {
+                    index: 0,
+                    delta: {},
+                    finish_reason: finishReason(result.info, !!(toolCalls && toolCalls.length)),
+                  },
+                ],
                 usage: usageFromTokens(result.info?.tokens),
               })}\n\n`
         );
         emit("data: [DONE]\n\n");
       } catch (error) {
+        // Same envelope every other route uses: sanitized message, no raw
+        // upstream text (Hard Rule 12).
         const message = error instanceof Error ? error.message : String(error);
+        const errorBody = buildErrorBody(502, message);
         emit(
           isResponses
-            ? `data: ${JSON.stringify({ type: "error", error: { message } })}\n\n`
-            : sseLine({ error: { message, type: "opencode_server_error" } })
+            ? `data: ${JSON.stringify({ type: "error", error: errorBody.error })}\n\n`
+            : sseLine({ error: errorBody.error })
         );
       } finally {
         await destroySession(sessionID);

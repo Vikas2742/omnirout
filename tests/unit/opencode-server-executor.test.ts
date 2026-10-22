@@ -1,11 +1,41 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
+import path from "node:path";
 import type { AddressInfo } from "node:net";
 
-const TEST_DATA_DIR = process.env.DATA_DIR;
+// The executor reads its URL setting through the settings DB; isolate it so the
+// suite never opens the real ~/.omniroute database.
+const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-opencode-server-"));
+process.env.DATA_DIR = TEST_DATA_DIR;
 
-type Captured = { method: string; url: string; body: any };
+const core = await import("../../src/lib/db/core.ts");
+const executorModule = await import("../../open-sse/executors/opencodeServer.ts");
+const { buildServerEnv } = await import("../../open-sse/services/opencodeServerSafety.ts");
+
+// Every handle must be released or the node:test process never exits: the shared
+// /event stream has a reconnect loop that otherwise keeps retrying a dead fake.
+test.after(() => {
+  executorModule.closeOpencodeServerEventBus();
+  core.resetDbInstance();
+  fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+});
+
+type Json = Record<string, unknown>;
+
+// Walks a parsed JSON value without `any`: returns undefined on any missing hop.
+function dig(value: unknown, ...path: Array<string | number>): unknown {
+  let current = value;
+  for (const key of path) {
+    if (current === null || typeof current !== "object") return undefined;
+    current = (current as Record<string | number, unknown>)[key];
+  }
+  return current;
+}
+
+type Captured = { method: string; url: string; body: Json | null };
 
 /**
  * Minimal stand-in for `opencode serve`.
@@ -20,11 +50,13 @@ async function startFakeServer(): Promise<{
   calls: Captured[];
   lastPrompt: () => Captured | undefined;
   setAssistantText: (text: string) => void;
+  failWith: (route: "session" | "prompt_async", status: number, body: string) => void;
 }> {
   const calls: Captured[] = [];
-  const eventLog = new Map<string, any[]>();
+  const eventLog = new Map<string, Json[]>();
   let assistantText = "OK";
   let sessionSeq = 0;
+  const failures = new Map<string, { status: number; body: string }>();
 
   const server = http.createServer((req, res) => {
     const url = req.url || "/";
@@ -48,7 +80,7 @@ async function startFakeServer(): Promise<{
     req.on("data", (chunk) => chunks.push(chunk));
     req.on("end", () => {
       const raw = Buffer.concat(chunks).toString("utf8");
-      let body: any = null;
+      let body: Json | null = null;
       try {
         body = raw ? JSON.parse(raw) : null;
       } catch {
@@ -92,6 +124,11 @@ async function startFakeServer(): Promise<{
       }
 
       if (url === "/session" && req.method === "POST") {
+        const failure = failures.get("session");
+        if (failure) {
+          res.writeHead(failure.status, { "content-type": "text/plain" });
+          return res.end(failure.body);
+        }
         sessionSeq += 1;
         return json(200, { id: `ses_test_${sessionSeq}`, title: body?.title });
       }
@@ -116,6 +153,11 @@ async function startFakeServer(): Promise<{
 
       const asyncMatch = /^\/session\/([^/]+)\/prompt_async$/.exec(url);
       if (asyncMatch && req.method === "POST") {
+        const failure = failures.get("prompt_async");
+        if (failure) {
+          res.writeHead(failure.status, { "content-type": "text/plain" });
+          return res.end(failure.body);
+        }
         res.writeHead(204);
         res.end();
         // Deliver the same shape the real server emits on /event.
@@ -134,10 +176,19 @@ async function startFakeServer(): Promise<{
   const eventClients = new Set<http.ServerResponse>();
   function broadcast(sessionID: string): void {
     const frames = [
-      { type: "message.updated", properties: { info: { id: "msg_assistant", role: "assistant", sessionID } } },
+      {
+        type: "message.updated",
+        properties: { info: { id: "msg_assistant", role: "assistant", sessionID } },
+      },
       {
         type: "message.part.delta",
-        properties: { sessionID, messageID: "msg_assistant", partID: "prt_2", field: "text", delta: assistantText },
+        properties: {
+          sessionID,
+          messageID: "msg_assistant",
+          partID: "prt_2",
+          field: "text",
+          delta: assistantText,
+        },
       },
       { type: "session.idle", properties: { sessionID } },
     ];
@@ -157,6 +208,9 @@ async function startFakeServer(): Promise<{
     setAssistantText: (text: string) => {
       assistantText = text;
     },
+    failWith: (route, status, body) => {
+      failures.set(route, { status, body });
+    },
     close: () =>
       new Promise<void>((resolve) => {
         for (const client of eventClients) client.end();
@@ -165,14 +219,13 @@ async function startFakeServer(): Promise<{
   };
 }
 
-void TEST_DATA_DIR;
-
 test("opencode-server: maps a chat request onto an opencode session turn", async () => {
   const fake = await startFakeServer();
   process.env.OPENCODE_SERVER_URL = fake.url;
   process.env.OPENCODE_SERVER_AUTOSTART = "0";
   const { OpencodeServerExecutor } = await import("../../open-sse/executors/opencodeServer.ts");
-  const { clearOpencodeServerSettingsCache } = await import("../../open-sse/executors/opencodeServer.ts");
+  const { clearOpencodeServerSettingsCache } =
+    await import("../../open-sse/executors/opencodeServer.ts");
   clearOpencodeServerSettingsCache();
 
   try {
@@ -186,30 +239,30 @@ test("opencode-server: maps a chat request onto an opencode session turn", async
         ],
       },
       stream: false,
-      credentials: {} as any,
+      credentials: {},
     });
 
     assert.equal(result.response.status, 200);
-    const payload = (await result.response.json()) as any;
-    assert.equal(payload.object, "chat.completion");
-    assert.equal(payload.choices[0].message.content, "OK");
-    assert.equal(payload.choices[0].finish_reason, "stop");
+    const payload = (await result.response.json()) as Json;
+    assert.equal(dig(payload, "object"), "chat.completion");
+    assert.equal(dig(payload, "choices", 0, "message", "content"), "OK");
+    assert.equal(dig(payload, "choices", 0, "finish_reason"), "stop");
     // input 12 + cache.read 8
-    assert.equal(payload.usage.prompt_tokens, 20);
-    assert.equal(payload.usage.completion_tokens_details.reasoning_tokens, 1);
+    assert.equal(dig(payload, "usage", "prompt_tokens"), 20);
+    assert.equal(dig(payload, "usage", "completion_tokens_details", "reasoning_tokens"), 1);
 
     const prompt = fake.lastPrompt();
     assert.ok(prompt, "expected a POST to /session/:id/message");
     // `system` is a STRING on purpose: on the server it replaces the agent
     // system prompt (~6.8k tokens) instead of appending to it.
-    assert.equal(typeof prompt.body.system, "string");
-    assert.match(prompt.body.system, /be terse/);
+    assert.equal(typeof dig(prompt, "body", "system"), "string");
+    assert.match(String(dig(prompt, "body", "system")), /be terse/);
     // Tools must be disabled, otherwise the agent toolset is injected again.
-    assert.deepEqual(prompt.body.tools, {});
-    assert.equal(prompt.body.model.providerID, "opencode");
-    assert.equal(prompt.body.model.modelID, "test-model");
-    assert.equal(prompt.body.parts[0].type, "text");
-    assert.match(prompt.body.parts[0].text, /\[user\] hi/);
+    assert.deepEqual(dig(prompt, "body", "tools"), {});
+    assert.equal(dig(prompt, "body", "model", "providerID"), "opencode");
+    assert.equal(dig(prompt, "body", "model", "modelID"), "test-model");
+    assert.equal(dig(prompt, "body", "parts", 0, "type"), "text");
+    assert.match(String(dig(prompt, "body", "parts", 0, "text")), /\[user\] hi/);
   } finally {
     await fake.close();
   }
@@ -219,9 +272,8 @@ test("opencode-server: unknown model fails loudly instead of hitting the upstrea
   const fake = await startFakeServer();
   process.env.OPENCODE_SERVER_URL = fake.url;
   process.env.OPENCODE_SERVER_AUTOSTART = "0";
-  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } = await import(
-    "../../open-sse/executors/opencodeServer.ts"
-  );
+  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } =
+    await import("../../open-sse/executors/opencodeServer.ts");
   clearOpencodeServerSettingsCache();
 
   try {
@@ -231,7 +283,7 @@ test("opencode-server: unknown model fails loudly instead of hitting the upstrea
         model: "opencode-server/does-not-exist",
         body: { messages: [{ role: "user", content: "hi" }] },
         stream: false,
-        credentials: {} as any,
+        credentials: {},
       }),
       /unknown model/
     );
@@ -245,9 +297,8 @@ test("opencode-server: streaming forwards deltas and terminates with [DONE]", as
   fake.setAssistantText("streamed-text");
   process.env.OPENCODE_SERVER_URL = fake.url;
   process.env.OPENCODE_SERVER_AUTOSTART = "0";
-  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } = await import(
-    "../../open-sse/executors/opencodeServer.ts"
-  );
+  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } =
+    await import("../../open-sse/executors/opencodeServer.ts");
   clearOpencodeServerSettingsCache();
 
   try {
@@ -256,7 +307,7 @@ test("opencode-server: streaming forwards deltas and terminates with [DONE]", as
       model: "opencode-server/test-model",
       body: { messages: [{ role: "user", content: "hi" }] },
       stream: true,
-      credentials: {} as any,
+      credentials: {},
     });
 
     assert.equal(result.response.status, 200);
@@ -276,9 +327,8 @@ test("opencode-server: tool envelope becomes OpenAI tool_calls", async () => {
   fake.setAssistantText('{"tool_calls":[{"name":"get_weather","arguments":{"city":"Lisboa"}}]}');
   process.env.OPENCODE_SERVER_URL = fake.url;
   process.env.OPENCODE_SERVER_AUTOSTART = "0";
-  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } = await import(
-    "../../open-sse/executors/opencodeServer.ts"
-  );
+  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } =
+    await import("../../open-sse/executors/opencodeServer.ts");
   clearOpencodeServerSettingsCache();
 
   try {
@@ -290,22 +340,34 @@ test("opencode-server: tool envelope becomes OpenAI tool_calls", async () => {
         tools: [
           {
             type: "function",
-            function: { name: "get_weather", description: "weather", parameters: { type: "object" } },
+            function: {
+              name: "get_weather",
+              description: "weather",
+              parameters: { type: "object" },
+            },
           },
         ],
         tool_choice: "required",
       },
       stream: false,
-      credentials: {} as any,
+      credentials: {},
     });
 
-    const payload = (await result.response.json()) as any;
-    assert.equal(payload.choices[0].finish_reason, "tool_calls");
-    assert.equal(payload.choices[0].message.content, null);
-    assert.equal(payload.choices[0].message.tool_calls[0].function.name, "get_weather");
-    assert.deepEqual(JSON.parse(payload.choices[0].message.tool_calls[0].function.arguments), {
-      city: "Lisboa",
-    });
+    const payload = (await result.response.json()) as Json;
+    assert.equal(dig(payload, "choices", 0, "finish_reason"), "tool_calls");
+    assert.equal(dig(payload, "choices", 0, "message", "content"), null);
+    assert.equal(
+      dig(payload, "choices", 0, "message", "tool_calls", 0, "function", "name"),
+      "get_weather"
+    );
+    assert.deepEqual(
+      JSON.parse(
+        String(dig(payload, "choices", 0, "message", "tool_calls", 0, "function", "arguments"))
+      ),
+      {
+        city: "Lisboa",
+      }
+    );
   } finally {
     await fake.close();
   }
@@ -315,9 +377,8 @@ test("opencode-server: Responses input produces a Responses payload", async () =
   const fake = await startFakeServer();
   process.env.OPENCODE_SERVER_URL = fake.url;
   process.env.OPENCODE_SERVER_AUTOSTART = "0";
-  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } = await import(
-    "../../open-sse/executors/opencodeServer.ts"
-  );
+  const { OpencodeServerExecutor, clearOpencodeServerSettingsCache } =
+    await import("../../open-sse/executors/opencodeServer.ts");
   clearOpencodeServerSettingsCache();
 
   try {
@@ -326,15 +387,173 @@ test("opencode-server: Responses input produces a Responses payload", async () =
       model: "opencode-server/test-model",
       body: { input: "just say OK" },
       stream: false,
-      credentials: {} as any,
+      credentials: {},
     });
 
-    const payload = (await result.response.json()) as any;
-    assert.equal(payload.object, "response");
-    assert.equal(payload.status, "completed");
-    assert.equal(payload.output_text, "OK");
-    assert.equal(payload.usage.input_tokens, 20);
+    const payload = (await result.response.json()) as Json;
+    assert.equal(dig(payload, "object"), "response");
+    assert.equal(dig(payload, "status"), "completed");
+    assert.equal(dig(payload, "output_text"), "OK");
+    assert.equal(dig(payload, "usage", "input_tokens"), 20);
   } finally {
     await fake.close();
   }
+});
+const LEAKY_UPSTREAM_BODY =
+  "Error: boom at /home/operator/.local/share/opencode/auth.json sk-live-SECRETSECRETSECRET12345 (stack: at Object.<anonymous> /srv/app.js:1:1)";
+
+test("opencode-server: upstream error text is never echoed to the client (non-stream)", async () => {
+  const fake = await startFakeServer();
+  fake.failWith("session", 500, LEAKY_UPSTREAM_BODY);
+  process.env.OPENCODE_SERVER_URL = fake.url;
+  process.env.OPENCODE_SERVER_AUTOSTART = "0";
+  executorModule.clearOpencodeServerSettingsCache();
+
+  try {
+    const executor = new executorModule.OpencodeServerExecutor();
+    await assert.rejects(
+      executor.execute({
+        model: "opencode-server/test-model",
+        body: { messages: [{ role: "user", content: "hi" }] },
+        stream: false,
+        credentials: {},
+      }),
+      (error: Error) => {
+        assert.match(error.message, /\[opencode-server\] \/session -> 500/);
+        assert.doesNotMatch(error.message, /SECRET|auth\.json|stack|\/srv\/app/);
+        return true;
+      }
+    );
+  } finally {
+    await fake.close();
+  }
+});
+
+test("opencode-server: streaming errors use the sanitized error envelope", async () => {
+  const fake = await startFakeServer();
+  fake.failWith("prompt_async", 500, LEAKY_UPSTREAM_BODY);
+  process.env.OPENCODE_SERVER_URL = fake.url;
+  process.env.OPENCODE_SERVER_AUTOSTART = "0";
+  executorModule.clearOpencodeServerSettingsCache();
+
+  try {
+    const executor = new executorModule.OpencodeServerExecutor();
+    const result = await executor.execute({
+      model: "opencode-server/test-model",
+      body: { messages: [{ role: "user", content: "hi" }] },
+      stream: true,
+      credentials: {},
+    });
+    const raw = await result.response.text();
+    assert.match(raw, /"error":/);
+    assert.match(raw, /"code":"bad_gateway"/);
+    assert.match(raw, /\[opencode-server\]/);
+    assert.doesNotMatch(raw, /SECRET|auth\.json|stack|\/srv\/app/);
+  } finally {
+    await fake.close();
+  }
+});
+
+test("opencode-server: only https and data URLs are forwarded as file parts", async () => {
+  const fake = await startFakeServer();
+  process.env.OPENCODE_SERVER_URL = fake.url;
+  process.env.OPENCODE_SERVER_AUTOSTART = "0";
+  executorModule.clearOpencodeServerSettingsCache();
+
+  try {
+    const executor = new executorModule.OpencodeServerExecutor();
+    await executor.execute({
+      model: "opencode-server/test-model",
+      body: {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "look" },
+              { type: "image_url", image_url: { url: "file:///etc/passwd" } },
+              { type: "image_url", image_url: { url: "http://127.0.0.1:8080/secret.png" } },
+              { type: "image_url", image_url: { url: "https://localhost/secret.png" } },
+              { type: "image_url", image_url: { url: "https://192.168.1.10/secret.png" } },
+              { type: "input_file", file_url: "/etc/shadow" },
+              { type: "image_url", image_url: { url: "https://example.com/ok.png" } },
+              { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } },
+            ],
+          },
+        ],
+      },
+      stream: false,
+      credentials: {},
+    });
+    const prompt = fake.lastPrompt();
+    assert.ok(prompt);
+    const urls = (dig(prompt, "body", "parts") as Json[])
+      .filter((part) => part.type === "file")
+      .map((part) => part.url);
+    assert.deepEqual(urls, ["https://example.com/ok.png", "data:image/png;base64,AAAA"]);
+  } finally {
+    await fake.close();
+  }
+});
+
+test("opencode-server: the spawned server gets a minimal environment, not process.env", () => {
+  const env = buildServerEnv({
+    PATH: "/usr/bin",
+    HOME: "/home/op",
+    JWT_SECRET: "jwt-secret-value",
+    API_KEY_SECRET: "api-key-secret-value",
+    STORAGE_ENCRYPTION_KEY: "storage-key",
+    OPENAI_API_KEY: "sk-provider",
+    OPENCODE_CONFIG: "/home/op/opencode.json",
+  });
+  assert.deepEqual(env, {
+    PATH: "/usr/bin",
+    HOME: "/home/op",
+    OPENCODE_CONFIG: "/home/op/opencode.json",
+  });
+});
+
+test("opencode-server: the CLI binary is not a settings key", async () => {
+  const { updateSettingsSchema } = await import("../../src/shared/validation/settingsSchemas.ts");
+  const parsed = updateSettingsSchema.safeParse({
+    opencode_server_url: "http://127.0.0.1:4096",
+    opencode_server_bin: "/tmp/evil",
+  });
+  if (parsed.success) {
+    assert.equal(parsed.data.opencode_server_url, "http://127.0.0.1:4096");
+    assert.equal("opencode_server_bin" in parsed.data, false);
+  }
+});
+
+test("opencode-server: autostart refuses a non-loopback URL instead of spawning", async () => {
+  process.env.OPENCODE_SERVER_URL = "http://192.0.2.1:4096";
+  process.env.OPENCODE_SERVER_AUTOSTART = "1";
+  process.env.OPENCODE_SERVER_BIN = "/definitely/not/executed";
+  executorModule.clearOpencodeServerSettingsCache();
+  try {
+    await assert.rejects(executorModule.ensureOpencodeServer(), /loopback/);
+  } finally {
+    delete process.env.OPENCODE_SERVER_BIN;
+    process.env.OPENCODE_SERVER_AUTOSTART = "0";
+  }
+});
+
+test("opencode-server: closing the event bus stops its reconnect loop", async () => {
+  const fake = await startFakeServer();
+  process.env.OPENCODE_SERVER_URL = fake.url;
+  process.env.OPENCODE_SERVER_AUTOSTART = "0";
+  executorModule.clearOpencodeServerSettingsCache();
+
+  const executor = new executorModule.OpencodeServerExecutor();
+  const result = await executor.execute({
+    model: "opencode-server/test-model",
+    body: { messages: [{ role: "user", content: "hi" }] },
+    stream: true,
+    credentials: {},
+  });
+  await result.response.text();
+  // Kill the server first: with the old bus this left a retry loop (and its
+  // timers) running forever against a dead port.
+  await fake.close();
+  executorModule.closeOpencodeServerEventBus();
+  executorModule.closeOpencodeServerEventBus(); // idempotent
 });
