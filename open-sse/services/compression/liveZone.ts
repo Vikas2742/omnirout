@@ -5,6 +5,7 @@ import { jsonSha256 } from "../../utils/jsonHash.ts";
 export interface LiveZoneOptions {
   principalId?: string;
   sessionId?: string;
+  connectionId?: string;
   variant: unknown;
   ttlMinutes?: number;
 }
@@ -66,6 +67,53 @@ function digest(value: unknown): string | null {
     return null;
   }
 }
+/**
+ * `cache_control` is client cache metadata, not prompt content. Claude Code moves its
+ * breakpoints forward as the transcript grows, which rewrote already-frozen messages and made
+ * every later turn miss. Prefix matching therefore digests without it.
+ */
+function stripCacheControl(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stripCacheControl);
+  if (!value || typeof value !== "object") return value;
+  const stripped: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (key !== "cache_control") stripped[key] = stripCacheControl(entry);
+  }
+  return stripped;
+}
+function prefixDigest(value: unknown): string | null {
+  try {
+    return digest(stripCacheControl(value));
+  } catch {
+    // Circular or otherwise non-serializable input fails open, exactly like digest().
+    return null;
+  }
+}
+/**
+ * Frozen items stay byte-stable, but the caller's breakpoints replace the stored ones: keeping a
+ * marker the client dropped could exceed Anthropic's limit of four. Subtrees whose shape the
+ * compressor changed are skipped rather than mapped onto the wrong block.
+ */
+function syncCacheControl(frozen: unknown, raw: unknown): void {
+  if (Array.isArray(frozen) && Array.isArray(raw)) {
+    if (frozen.length !== raw.length) return;
+    for (let index = 0; index < frozen.length; index++) syncCacheControl(frozen[index], raw[index]);
+    return;
+  }
+  if (!frozen || typeof frozen !== "object" || !raw || typeof raw !== "object") return;
+  const frozenRecord = frozen as Record<string, unknown>;
+  const rawRecord = raw as Record<string, unknown>;
+  if ("cache_control" in rawRecord) {
+    frozenRecord.cache_control = structuredClone(rawRecord.cache_control);
+  } else if ("cache_control" in frozenRecord) {
+    delete frozenRecord.cache_control;
+  }
+  for (const [key, entry] of Object.entries(rawRecord)) {
+    if (key !== "cache_control" && key in frozenRecord) {
+      syncCacheControl(frozenRecord[key], entry);
+    }
+  }
+}
 
 function cloneItems(items: unknown[]): unknown[] | null {
   try {
@@ -109,6 +157,17 @@ function sequenceField(body: Record<string, unknown>): "messages" | "input" | nu
   return null;
 }
 
+// Anthropic carries tool results as `tool_result` blocks inside a user message, not as a
+// top-level item, so the item itself must be recognised through its content blocks.
+function hasNestedToolResult(item: Record<string, unknown>): boolean {
+  if (!Array.isArray(item.content)) return false;
+  return item.content.some(
+    (block) =>
+      !!block &&
+      typeof block === "object" &&
+      (block as Record<string, unknown>).type === "tool_result"
+  );
+}
 function isToolOutputItem(value: unknown): boolean {
   if (!value || typeof value !== "object") return false;
   const item = value as Record<string, unknown>;
@@ -120,7 +179,8 @@ function isToolOutputItem(value: unknown): boolean {
     item.type === "local_shell_call_output" ||
     item.type === "apply_patch_call_output" ||
     item.type === "computer_call_output" ||
-    item.type === "tool_result"
+    item.type === "tool_result" ||
+    hasNestedToolResult(item)
   );
 }
 
@@ -139,6 +199,15 @@ function toolLinkage(value: unknown): string | null {
   const item = value as Record<string, unknown>;
   const link = item.tool_call_id ?? item.call_id ?? item.tool_use_id ?? item.id;
   if (typeof link === "string" && link.length > 0) return `call:${link}`;
+  if (Array.isArray(item.content)) {
+    for (const block of item.content) {
+      if (!block || typeof block !== "object") continue;
+      const nested =
+        (block as Record<string, unknown>).tool_use_id ??
+        (block as Record<string, unknown>).tool_call_id;
+      if (typeof nested === "string" && nested.length > 0) return `call:${nested}`;
+    }
+  }
   // Legacy function results use the function name rather than a call ID.
   return item.role === "function" && typeof item.name === "string" && item.name.length > 0
     ? `function:${item.name}`
@@ -148,9 +217,10 @@ function toolLinkage(value: unknown): string | null {
 function makeKey(options: LiveZoneOptions, field: string): string | null {
   const principal = options.principalId?.trim();
   const session = options.sessionId?.trim();
-  const variant = digest(options.variant);
+  const connection = options.connectionId?.trim() ?? "";
+  const variant = prefixDigest(options.variant);
   if (!principal || !session || !variant) return null;
-  return `${principal}:${session}:${field}:${variant}`;
+  return `${principal}:${session}:${connection}:${field}:${variant}`;
 }
 
 function deleteEntry(key: string): void {
@@ -220,6 +290,11 @@ function restoreStableFields(
   stableFields: Record<string, unknown>
 ): Record<string, unknown> | null {
   const restored = cloneValue(stableFields);
+  if (!restored) return null;
+  const current = pickStableFields(body) ?? {};
+  for (const field of STABLE_PREFIX_FIELDS) {
+    if (field in restored && field in current) syncCacheControl(restored[field], current[field]);
+  }
   return restored ? { ...body, ...restored } : null;
 }
 
@@ -279,9 +354,9 @@ function resolveLiveZoneContext(
   if (!field || !key) return null;
 
   const rawItems = body[field] as unknown[];
-  const rawItemDigests = rawItems.map(digest);
+  const rawItemDigests = rawItems.map(prefixDigest);
   if (rawItemDigests.some((value) => value === null)) return null;
-  const rawStableFieldsDigest = digest(pickStableFields(body));
+  const rawStableFieldsDigest = prefixDigest(pickStableFields(body));
   if (!rawStableFieldsDigest) return null;
   const ttlMinutes = Math.min(60, Math.max(1, options.ttlMinutes ?? DEFAULT_TTL_MINUTES));
   const now = Date.now();
@@ -407,6 +482,9 @@ async function reuseLiveZoneEntry(
   if (!live) return compress(body);
   const restoredBody = restoreStableFields(live.liveResult.body, previous.transformedStableFields);
   if (!restoredBody) return compress(body);
+  for (let index = 0; index < frozenPrefix.length; index++) {
+    syncCacheControl(frozenPrefix[index], context.rawItems[index]);
+  }
   const combinedBody = {
     ...restoredBody,
     [context.field]: [...frozenPrefix, ...live.transformedLive],

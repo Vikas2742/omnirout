@@ -257,4 +257,83 @@ describe("cache-aligned live-zone compression", () => {
     assert.equal((calls[1].messages as unknown[]).length, 2);
     assert.equal(getLiveZoneCacheStats().entries, 0);
   });
+
+  it("reuses the frozen prefix when Anthropic cache_control breakpoints move forward", async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const compress = toolCompressor(calls);
+    const first = {
+      system: [{ type: "text", text: "sys", cache_control: { type: "ephemeral" } }],
+      messages: [
+        {
+          role: "user",
+          content: [{ type: "text", text: "q1", cache_control: { type: "ephemeral" } }],
+        },
+      ],
+    };
+    await applyLiveZoneCompression(first, options, compress);
+    // Claude Code drops the old breakpoints and moves them onto the newest turn.
+    const second = {
+      system: [{ type: "text", text: "sys" }],
+      messages: [
+        { role: "user", content: [{ type: "text", text: "q1" }] },
+        {
+          role: "assistant",
+          content: [{ type: "text", text: "a1", cache_control: { type: "ephemeral" } }],
+        },
+        { role: "user", content: [{ type: "text", text: "q2" }] },
+      ],
+    };
+    const reused = await applyLiveZoneCompression(second, options, compress);
+
+    assert.equal(calls.length, 1);
+    assert.equal(reused.stats?.liveZone?.cacheHit, true);
+    assert.deepEqual(reused.body.system, [{ type: "text", text: "sys" }]);
+    const messages = reused.body.messages as Array<Record<string, unknown>>;
+    assert.deepEqual(messages[0].content, [{ type: "text", text: "q1" }]);
+    assert.deepEqual(messages[1].content, [
+      { type: "text", text: "a1", cache_control: { type: "ephemeral" } },
+    ]);
+  });
+
+  it("rewrites nested Anthropic tool_result blocks in the live tail", async () => {
+    const calls: Array<Record<string, unknown>> = [];
+    const compress = async (body: Record<string, unknown>): Promise<CompressionResult> => {
+      calls.push(structuredClone(body));
+      return result({
+        ...body,
+        messages: (body.messages as Array<Record<string, unknown>>).map((item) =>
+          Array.isArray(item.content)
+            ? {
+                ...item,
+                content: (item.content as Array<Record<string, unknown>>).map((block) =>
+                  block?.type === "tool_result" ? { ...block, content: "compressed" } : block
+                ),
+              }
+            : item
+        ),
+      });
+    };
+    const first = { messages: [{ role: "user", content: [{ type: "text", text: "read file" }] }] };
+    await applyLiveZoneCompression(first, options, compress);
+    const second = {
+      messages: [
+        ...first.messages,
+        { role: "assistant", content: [{ type: "tool_use", id: "tu1", name: "Read", input: {} }] },
+        {
+          role: "user",
+          content: [{ type: "tool_result", tool_use_id: "tu1", content: "x".repeat(4000) }],
+        },
+      ],
+    };
+    const reused = await applyLiveZoneCompression(second, options, compress);
+
+    assert.equal(reused.stats?.liveZone?.cacheHit, true);
+    assert.equal(calls.length, 2);
+    const liveTail = calls[1].messages as Array<Record<string, unknown>>;
+    const tailContent = liveTail[1].content as Array<Record<string, unknown>>;
+    assert.equal(tailContent[0].type, "tool_result");
+    const reusedMessages = reused.body.messages as Array<Record<string, unknown>>;
+    const reusedContent = reusedMessages[2].content as Array<Record<string, unknown>>;
+    assert.equal(reusedContent[0].content, "compressed");
+  });
 });
