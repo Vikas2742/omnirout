@@ -606,7 +606,7 @@ async function expandRestrictedAutoComboCandidatePool(
 ): Promise<ResolvedComboTarget[]> {
   let allConnections: Array<Record<string, unknown>>;
   try {
-    allConnections = (await getCachedProviderConnections({
+    allConnections = (await getCachedProviderPoolConnections({
       isActive: true,
     })) as Array<Record<string, unknown>>;
   } catch {
