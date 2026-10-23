@@ -1,1 +1,0 @@
-- Add `POST /api/keys/import` to register caller-supplied API keys with create-key policies, atomic duplicate checks, non-mutating UUID retries, management authentication, and masked responses without restoring unrelated configuration.
