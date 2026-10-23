@@ -4,6 +4,7 @@ import { getProviderConnections, updateProviderConnection } from "@/lib/db/provi
 import { getCachedProviderConnectionById } from "@/lib/db/readCache";
 import { isRetestAutoDisabledEnabled } from "@/lib/credentialHealth/retestAutoDisabledFlag";
 import { applyOperatorActivationIntent } from "@/lib/providers/operatorDisable";
+import { toNumberOrNull } from "@/shared/utils/numeric";
 import { clearProviderFailure, clearModelLock } from "@omniroute/open-sse/services/accountFallback";
 import { resolveProviderAlias } from "@omniroute/open-sse/services/model";
 
@@ -105,10 +106,6 @@ export interface ExecuteProviderAutopilotActionInput {
 const TERMINAL_STATUSES = new Set(["banned", "expired", "credits_exhausted"]);
 const OPEN_BREAKER_STATES = new Set(["OPEN", "HALF_OPEN"]);
 
-function toRecord(value: unknown): JsonRecord {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as JsonRecord) : {};
-}
-
 function toString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
@@ -116,15 +113,6 @@ function toString(value: unknown): string | null {
 function canonicalProviderId(value: unknown): string | null {
   const provider = toString(value);
   return provider ? (resolveProviderAlias(provider) ?? provider) : null;
-}
-
-function toNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim()) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return null;
 }
 
 function parseTimeMs(value: unknown): number | null {
@@ -330,8 +318,8 @@ export async function buildProviderHealthAutopilotReport(
       const target = { provider: toString(breaker.name) ?? provider };
       const evidence = {
         state: breaker.state,
-        failureCount: toNumber(breaker.failureCount) ?? 0,
-        retryAfterMs: toNumber(breaker.retryAfterMs) ?? 0,
+        failureCount: toNumberOrNull(breaker.failureCount) ?? 0,
+        retryAfterMs: toNumberOrNull(breaker.retryAfterMs) ?? 0,
         lastFailureTime: breaker.lastFailureTime ?? null,
       };
       const isOpen = breaker.state === "OPEN";
@@ -469,8 +457,8 @@ export async function buildProviderHealthAutopilotReport(
       };
       const evidence = {
         reason: lockout.reason ?? null,
-        remainingMs: toNumber(lockout.remainingMs) ?? 0,
-        failureCount: toNumber(lockout.failureCount) ?? 0,
+        remainingMs: toNumberOrNull(lockout.remainingMs) ?? 0,
+        failureCount: toNumberOrNull(lockout.failureCount) ?? 0,
         lockedAt: lockout.lockedAt ?? null,
         until: lockout.until ?? null,
         connectionExists: Boolean(connection),

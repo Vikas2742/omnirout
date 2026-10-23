@@ -445,7 +445,7 @@ test("provider health autopilot action accepts LAN dashboard requests (#6277)", 
   // itself; without PEER_IP_HEADER, the per-route check cannot resolve the LAN
   // "direct-local-host" candidate and rejects a same-origin-but-LAN mutation.
   await enableManagementAuth();
-  const connection = await createCooldownConnection();
+  await createCooldownConnection();
   const report = await autopilot.buildProviderHealthAutopilotReport({
     provider: PROVIDER,
     includeHealthy: true,
