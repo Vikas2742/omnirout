@@ -9207,7 +9207,7 @@
       }
     },
     "docs/architecture/ARCHITECTURE.md": {
-      "source_hash": "d20dab578daf10b769726f1cbe05dce112902ebbc1462adf44b28fd31177fb58",
+      "source_hash": "501f0b56cb3182b85182aac7da5033ba8e646eb4ba93d7010041dc7b3bc2edff",
       "locales": {
         "ar": {
           "source_hash": "f7704f3ee62f83c64fd44b7ab8689e97e7c3f2998c0ea84efd5308cf2e392b4a",
@@ -13573,7 +13573,7 @@
       }
     },
     "docs/architecture/CODEBASE_DOCUMENTATION.md": {
-      "source_hash": "65714b8f85c602c3740e82108a3412a6381974d81b64f9941615b74df1934406",
+      "source_hash": "6dca66a2a38de514c6f12464208b3c6c74cff4e49e6a8574f03dca0193f41b08",
       "locales": {
         "ar": {
           "source_hash": "160ea7188dd5cbc726815717d7cf61d1a10f58bf19b5c3e4914054e428d4995a",
@@ -16893,7 +16893,7 @@
       }
     },
     "docs/architecture/REPOSITORY_MAP.md": {
-      "source_hash": "89c69b540bafd9f82b05358d65981adaf2909aba6966f6c7291fd659d76888ad",
+      "source_hash": "e7e658cb522ebbc195a514db505d696ca835325ba16db4dfcfbad2d2f093861d",
       "locales": {
         "pl": {
           "source_hash": "3b1b62ca7b129c68b86ea05bab0bb6ae0d60642709fff170f533e3bf946d4d95",
@@ -86297,7 +86297,7 @@
       }
     },
     "docs/reference/ENVIRONMENT.md": {
-      "source_hash": "3e31ff32b106ec7ee5b9b3790e29a7198891955e9adbfb9abe9c4a127d21f214",
+      "source_hash": "767829110c346bf67a125422044ca1fb20801945f50d9914ddc0b1560650db3a",
       "locales": {
         "ar": {
           "source_hash": "9449f680918596f6f0a4efc0ee2f70b18cfeb6552f8ab9f4763c7b30540c5e0f",
@@ -92064,7 +92064,7 @@
       }
     },
     "docs/reference/PROVIDER_REFERENCE.md": {
-      "source_hash": "fe275b823ceb191c95807109e6c8d453ca29047d8a014253590b09443cd1ce34",
+      "source_hash": "9cbe921c15d63c794e71a021bb7c7ac552e59736c2a99d694dbe18c4b6ea1592",
       "locales": {
         "cs": {
           "source_hash": "0e74cb2fee34efeee63afc56a646d87747730701d0e5ee7ab6700b72ec594761",
