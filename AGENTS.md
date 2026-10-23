@@ -116,12 +116,15 @@ When creating _any_ validation tests or one-off logic scripts, default to `scrip
 
 - **Root `_*` paths are private and NEVER tracked** (`_tasks/`, `_references/`, `_mono_repo/`,
   `_ideia/`, `_cache/` and any future `_<name>`): they live on disk only, are gitignored by the
-  anchored patterns `/_*/` + `/_*`, and some are full git repositories of their own (`_tasks` →
-  private remote `_tasks_omniroute`). Never `git add` anything inside them (a plain `add` is
-  already blocked by the ignore; never use `-f`), and never "clean them up" from the main repo —
-  untracking is done with `git rm --cached` so the disk content stays. The
-  `check:tracked-artifacts` gate (pre-commit + CI) fails on ANY tracked root path starting with
-  `_`, present or future. See Hard Rule #23 for the `_tasks` specifics.
+  anchored patterns `/_*/` + `/_*` (`.gitignore` Category 14: Draft & Internal Documentation),
+  and some are full git repositories of their own (`_tasks` → private remote `_tasks_omniroute`).
+  The `.gitignore` now uses 15 organized categories (Secrets, Build Artifacts, Dependencies,
+  Databases, OS/IDE, Logs, Cache, Temporary Files, Testing, Platform-Specific, Docker,
+  Documentation, Media, Draft & Internal Documentation, Miscellaneous). Never `git add` anything
+  inside `_*` paths (a plain `add` is already blocked by the ignore; never use `-f`), and never
+  "clean them up" from the main repo — untracking is done with `git rm --cached` so the disk
+  content stays. The `check:tracked-artifacts` gate (pre-commit + CI) fails on ANY tracked root
+  path starting with `_`, present or future. See Hard Rule #23 for the `_tasks` specifics.
 
 ---
 
@@ -211,7 +214,7 @@ For any non-trivial change, read the matching deep-dive first:
 - API reference + OpenAPI — `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` · Provider catalog (auto-generated) — `docs/reference/PROVIDER_REFERENCE.md`
 - Tunnels — `docs/ops/TUNNELS_GUIDE.md` · Release flow — `docs/ops/RELEASE_CHECKLIST.md` · Worktree protocol — `docs/ops/WORKTREE_ISOLATION.md` · Hard Rules detail — `docs/ops/HARD_RULES_DETAIL.md` · Build warnings + Bun troubleshooting — `docs/ops/BUILD_WARNINGS.md`
 - Electron desktop app — `docs/guides/ELECTRON_GUIDE.md` · VS Code Copilot Chat (OmniCopilot extension) — `docs/guides/VSCODE-COPILOT.md`
-- Embedded services — `docs/frameworks/EMBEDDED-SERVICES.md` · Quality gates (~90 scripts, allowlist policy) — `docs/architecture/QUALITY_GATES.md`
+- Embedded services — `docs/frameworks/EMBEDDED-SERVICES.md` · Quality gates (124 scripts, allowlist policy) — `docs/architecture/QUALITY_GATES.md`
 
 ---
 
@@ -352,7 +355,7 @@ This checkout is a fork of `diegosouzapw/OmniRoute`. Keep fork-only deployment a
 
 ## Quality Gates & Ratchets
 
-OmniRoute has **~90 quality-gate scripts** (`scripts/check/` + `scripts/quality/`) wired across **9 gate-running jobs** in `.github/workflows/ci.yml`, plus the `quality.yml` fast-gates job (PR→`release/**`) and 5 quality nightly workflows. Full inventory, per-job breakdown, and operational procedures: [`docs/architecture/QUALITY_GATES.md`](docs/architecture/QUALITY_GATES.md).
+OmniRoute has **124 quality-gate scripts** (`scripts/check/` + `scripts/quality/`) wired across **9 gate-running jobs** in `.github/workflows/ci.yml`, plus the `quality.yml` fast-gates job (PR→`release/**`) and 5 quality nightly workflows. Full inventory, per-job breakdown, and operational procedures: [`docs/architecture/QUALITY_GATES.md`](docs/architecture/QUALITY_GATES.md).
 
 **Quick reference:**
 
