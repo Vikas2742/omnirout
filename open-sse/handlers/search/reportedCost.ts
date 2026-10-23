@@ -114,26 +114,51 @@ export function computeSearchCostUsd(
   requestBody: unknown,
   resultCount: number
 ): number {
-  const byMode = config.costByMode;
-  if (!byMode) return config.costPerQuery;
-  let parsed: Record<string, unknown> | undefined;
-  try {
-    parsed = typeof requestBody === "string" ? JSON.parse(requestBody) : undefined;
-  } catch {
-    parsed = undefined;
-  }
-  const mode = parsed?.[config.costModeField ?? "mode"];
-  const base =
-    typeof mode === "string" && Object.hasOwn(byMode, mode) ? byMode[mode] : config.costPerQuery;
-  const extraResults = Math.max(0, resultCount - (config.includedResults ?? resultCount));
-  let total = base + extraResults * (config.extraResultCost ?? 0);
-  const contents = parsed?.contents;
-  if (config.contentsCostPerResult && contents && typeof contents === "object") {
-    for (const [key, perResult] of Object.entries(config.contentsCostPerResult)) {
-      if ((contents as Record<string, unknown>)[key]) total += perResult * resultCount;
-    }
-  }
+  if (!config.costByMode) return config.costPerQuery;
+  const parsed = parseRequestBody(requestBody);
+  const total =
+    modePrice(config, parsed) +
+    extraResultsCost(config, resultCount) +
+    contentsCost(config, parsed, resultCount);
   return Math.round(total * 1e6) / 1e6;
+}
+
+function parseRequestBody(requestBody: unknown): Record<string, unknown> | undefined {
+  if (typeof requestBody !== "string") return undefined;
+  try {
+    return JSON.parse(requestBody);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Price of the mode sent in `costModeField`; unknown or absent mode → `costPerQuery`. */
+function modePrice(config: SearchProviderConfig, parsed: Record<string, unknown> | undefined) {
+  const byMode = config.costByMode ?? {};
+  const mode = parsed?.[config.costModeField ?? "mode"];
+  return typeof mode === "string" && Object.hasOwn(byMode, mode)
+    ? byMode[mode]
+    : config.costPerQuery;
+}
+
+function extraResultsCost(config: SearchProviderConfig, resultCount: number): number {
+  const extraResults = Math.max(0, resultCount - (config.includedResults ?? resultCount));
+  return extraResults * (config.extraResultCost ?? 0);
+}
+
+/** `contentsCostPerResult[key]` per result for each `contents.<key>` the request sets. */
+function contentsCost(
+  config: SearchProviderConfig,
+  parsed: Record<string, unknown> | undefined,
+  resultCount: number
+): number {
+  const contents = parsed?.contents;
+  if (!config.contentsCostPerResult || !contents || typeof contents !== "object") return 0;
+  let total = 0;
+  for (const [key, perResult] of Object.entries(config.contentsCostPerResult)) {
+    if ((contents as Record<string, unknown>)[key]) total += perResult * resultCount;
+  }
+  return total;
 }
 
 /**
