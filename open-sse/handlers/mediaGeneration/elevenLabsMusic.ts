@@ -17,6 +17,29 @@ const NATIVE_FIELDS = [
   "sign_with_c2pa",
 ] as const;
 
+/** Map the unified route's fields onto ElevenLabs' native music body. */
+function buildNativeMusicBody(model: string, body: Record<string, unknown>) {
+  const nativeBody: Record<string, unknown> = {
+    model_id: model,
+    music_length_ms:
+      body.music_length_ms ??
+      (typeof body.duration === "number" ? body.duration * 1000 : undefined),
+    force_instrumental: body.force_instrumental ?? body.instrumental,
+  };
+  for (const field of NATIVE_FIELDS) {
+    if (body[field] !== undefined) nativeBody[field] = body[field];
+  }
+  return nativeBody;
+}
+
+async function upstreamErrorMessage(response: Response): Promise<string> {
+  const payload: unknown = await response.json().catch(() => null);
+  const detail = (payload as { detail?: { message?: unknown } } | null)?.detail;
+  return typeof detail?.message === "string"
+    ? detail.message
+    : `ElevenLabs music generation failed (${response.status})`;
+}
+
 /** Normalize native binary music to the unified route's base64 JSON contract. */
 export async function handleElevenLabsMusicGeneration({
   model,
@@ -34,17 +57,7 @@ export async function handleElevenLabsMusicGeneration({
       error: "Use POST /v1/music/stream for native ElevenLabs audio streaming",
     };
   }
-  const nativeBody: Record<string, unknown> = {
-    model_id: model,
-    music_length_ms:
-      body.music_length_ms ??
-      (typeof body.duration === "number" ? body.duration * 1000 : undefined),
-    force_instrumental: body.force_instrumental ?? body.instrumental,
-  };
-  for (const field of NATIVE_FIELDS) {
-    if (body[field] !== undefined) nativeBody[field] = body[field];
-  }
-  const parsed = elevenLabsMusicSchema.safeParse(nativeBody);
+  const parsed = elevenLabsMusicSchema.safeParse(buildNativeMusicBody(model, body));
   if (!parsed.success) {
     return { success: false as const, status: 400, error: parsed.error.issues[0].message };
   }
@@ -62,16 +75,10 @@ export async function handleElevenLabsMusicGeneration({
       body: JSON.stringify(parsed.data),
     });
     if (!response.ok) {
-      const payload: unknown = await response.json().catch(() => null);
-      const detail = (payload as { detail?: { message?: unknown } } | null)?.detail;
-      const message =
-        typeof detail?.message === "string"
-          ? detail.message
-          : `ElevenLabs music generation failed (${response.status})`;
       return {
         success: false as const,
         status: response.status,
-        error: sanitizeErrorMessage(message),
+        error: sanitizeErrorMessage(await upstreamErrorMessage(response)),
       };
     }
     const contentType = response.headers.get("content-type")?.split(";")[0];
