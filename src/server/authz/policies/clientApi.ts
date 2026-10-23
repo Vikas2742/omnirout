@@ -25,12 +25,12 @@ function maskKeyId(apiKey: string): string {
   return `key_${tail}`;
 }
 
-function redactCredentialFromUserAgent(
-  userAgent: string | null,
+function redactCredentials(
+  value: string | null,
   credentials: Array<string | null | undefined>
 ): string | null {
-  if (!userAgent) return null;
-  let sanitized = userAgent;
+  if (!value) return null;
+  let sanitized = value;
   for (const credential of credentials) {
     if (credential) sanitized = sanitized.split(credential).join("[redacted]");
   }
@@ -96,10 +96,11 @@ export const clientApiPolicy: RoutePolicy = {
             recordApiKeyAuthTouch({
               apiKeyId: metadata.id,
               method,
-              normalizedPath: ctx.classification.normalizedPath,
+              normalizedPath:
+                redactCredentials(ctx.classification.normalizedPath, credentials) || "/",
               ipAddress: getAuthTouchClientIp(ctx),
-              userAgent: redactCredentialFromUserAgent(ctx.request.headers.get("user-agent"), [
-                credential,
+              userAgent: redactCredentials(ctx.request.headers.get("user-agent"), [
+                ...credentials,
                 metadata.keyHash,
               ]),
               requestId: ctx.requestId,

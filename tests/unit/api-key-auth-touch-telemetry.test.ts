@@ -119,6 +119,43 @@ test("successful discovery auth records bounded metadata without the credential 
   assert.doesNotMatch(serialized, /authorization/i);
 });
 
+test("multi-credential and path-token auth audit only the credential that validated", async () => {
+  const created = await apiKeysDb.createApiKey("alternate credential", "machine-alt-touch");
+  const staleBearer = "stale-claude-session-secret";
+  const policy = await loadPolicy();
+
+  const alternateOutcome = await policy.evaluate(
+    context({
+      headers: new Headers({
+        authorization: `Bearer ${staleBearer}`,
+        "x-api-key": created.key,
+        "user-agent": `ClaudeCode bearer=${staleBearer} key=${created.key}`,
+      }),
+      requestId: "req_alternate_credential",
+    })
+  );
+  assert.equal(alternateOutcome.allow, true);
+
+  const encodedKey = encodeURIComponent(created.key);
+  const tokenizedPath = `/api/v1/vscode/${encodedKey}/models`;
+  const pathOutcome = await policy.evaluate(
+    context({
+      headers: new Headers({ "user-agent": "VSCode/1.0" }),
+      normalizedPath: tokenizedPath,
+      requestId: "req_path_credential",
+    })
+  );
+  assert.equal(pathOutcome.allow, true);
+
+  const rows = authTouchRows();
+  assert.equal(rows.length, 2);
+  assert.ok(rows.every((row) => row.target === created.id));
+  const serialized = JSON.stringify(rows);
+  assert.doesNotMatch(serialized, new RegExp(created.key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(serialized, new RegExp(staleBearer));
+  assert.match(serialized, /\[redacted\]/);
+});
+
 test("trusted proxy forwarding is recorded while a direct peer cannot spoof it", async () => {
   const created = await apiKeysDb.createApiKey("proxy attribution", "machine-proxy-touch");
   const policy = await loadPolicy();
