@@ -132,17 +132,20 @@ test("PATCH route and API Manager wire the key policy end to end", () => {
     /if \(allowCcDiscoveryAliases !== undefined\)[\s\S]*?payload\.allowCcDiscoveryAliases = allowCcDiscoveryAliases/
   );
 
-  const client = read("src/app/(dashboard)/dashboard/api-manager/ApiManagerPageClient.tsx");
-  assert.ok(client.includes("ApiKeyCcDiscoveryAliasesToggle"));
-  assert.ok(client.includes("apiKey?.allowCcDiscoveryAliases !== false"));
-  assert.match(client, /body: JSON\.stringify\(\{[\s\S]*?allowCcDiscoveryAliases,[\s\S]*?\}\)/);
+  const form = read("src/app/(dashboard)/dashboard/api-manager/[id]/access/useApiKeyAccessForm.ts");
+  const combosTab = read(
+    "src/app/(dashboard)/dashboard/api-manager/[id]/access/tabs/CombosTab.tsx"
+  );
+  assert.ok(combosTab.includes("ApiKeyCcDiscoveryAliasesToggle"));
+  assert.ok(form.includes("apiKey?.allowCcDiscoveryAliases !== false"));
+  assert.match(form, /allowCcDiscoveryAliases: formState\.allowCcDiscoveryAliases/);
 
   const catalog = read("src/app/api/v1/models/catalog.ts");
   assert.equal(
     catalog.match(/allowCcDiscoveryAliases: earlyKeyMeta\?\.allowCcDiscoveryAliases !== false/g)
       ?.length,
-    2,
-    "both the quota short-circuit and full catalog must apply the key flag after filtering"
+    1,
+    "the shared post-filter context must apply the key flag to both catalog paths"
   );
 });
 
