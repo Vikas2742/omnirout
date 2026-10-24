@@ -185,48 +185,6 @@ export async function getCachedProviderNodes(
   });
 }
 
-// ──────────────── LKGP Cache Wrappers ────────────────
-
-interface LKGPRecordCache {
-  provider: string;
-  connectionId?: string;
-}
-
-const lkgpCache = new TTLCache<LKGPRecordCache | null>(SETTINGS_TTL_MS);
-
-export async function getCachedLKGP(
-  comboName: string,
-  modelId: string
-): Promise<LKGPRecordCache | null> {
-  const cacheKey = `lkgp:${comboName}:${modelId}`;
-  return lkgpCache.load(cacheKey, async () => {
-    const { getLKGP } = await import("@/lib/db/settings");
-    return getLKGP(comboName, modelId);
-  });
-}
-
-export async function setCachedLKGP(
-  comboName: string,
-  modelId: string,
-  providerId: string,
-  connectionId?: string
-): Promise<void> {
-  const { setLKGP } = await import("@/lib/db/settings");
-  await setLKGP(comboName, modelId, providerId, connectionId);
-  lkgpCache.invalidate(`lkgp:${comboName}:${modelId}`);
-}
-
-/**
- * Invalidate one persisted LKGP pin by its `${comboName}:${modelId}` storage key,
- * or every cached LKGP pin when no key is provided. Used both when a target
- * fails (`clearLKGP`) and when its provider connection is deleted (#8887,
- * `deleteLKGPByConnectionIds`), so a stale pin cannot be served from memory
- * for the rest of the TTL window.
- */
-export function invalidateCachedLKGP(pinKey?: string): void {
-  lkgpCache.invalidate(pinKey ? `lkgp:${pinKey}` : undefined);
-}
-
 // ──────────────── Combo Cache Invalidation Signal ────────────────
 //
 // The nested-combo expansion caches live in request handlers

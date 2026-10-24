@@ -1401,6 +1401,7 @@ Métricas canônicas em 2026-10-18: **1.976 vídeos únicos** · **20.220.289 vi
   <tr><td nowrap><b><a href="docs/guides/I18N.md">i18n Guide</a></b></td><td>67-language support, translation workflow, RTL</td></tr>
   <tr><td nowrap><b><a href="docs/ops/RELEASE_CHECKLIST.md">Release Checklist</a></b></td><td>Pre-release validation steps</td></tr>
   <tr><td nowrap><b><a href="docs/ops/COVERAGE_PLAN.md">Coverage Plan</a></b></td><td>Test coverage strategy for 56,000+ static test declarations across 7,800+ tracked test files</td></tr>
+  <tr><td nowrap><b><a href="docs/audit/IMPROVEMENT-PLAN.md">Improvement Plan</a></b></td><td>Performance & reliability roadmap from comprehensive codebase audit</td></tr>
 </table>
 
 <br/>
