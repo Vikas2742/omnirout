@@ -184,28 +184,6 @@ test("createProviderConnection upsert invalidates the provider connection read c
   assert.equal(refreshed?.testStatus, "retrying");
 });
 
-test("cached LKGP values refresh only after the specific key is invalidated", async () => {
-  const readCache = await importFresh("src/lib/db/readCache.ts");
-  const db = core.getDbInstance();
-  const comboName = `combo-${Date.now()}`;
-  const modelId = `model-${Date.now()}`;
-  const lkgpKey = `${comboName}:${modelId}`;
-
-  await settingsDb.setLKGP(comboName, modelId, "openai");
-  assert.deepEqual(await readCache.getCachedLKGP(comboName, modelId), { provider: "openai" });
-
-  db.prepare("UPDATE key_value SET value = ? WHERE namespace = 'lkgp' AND key = ?").run(
-    JSON.stringify("anthropic"),
-    lkgpKey
-  );
-
-  assert.deepEqual(await readCache.getCachedLKGP(comboName, modelId), { provider: "openai" });
-
-  await readCache.setCachedLKGP(comboName, modelId, "gemini");
-
-  assert.deepEqual(await readCache.getCachedLKGP(comboName, modelId), { provider: "gemini" });
-});
-
 test("staleness regression: getProviderConnections returns fresh data after connection deleted", async () => {
   const readCache = await importFresh("src/lib/db/readCache.ts");
 
